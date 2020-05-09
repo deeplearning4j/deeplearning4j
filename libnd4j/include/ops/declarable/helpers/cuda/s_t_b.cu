@@ -108,7 +108,7 @@ void batchToSpace(sd::LaunchContext* context, const NDArray& input, NDArray& out
         PointersManager manager(context, "batchToSpace");
 
         NDArray::prepareSpecialUse({&output}, {&inputRearranged1});
-        BUILD_SINGLE_SELECTOR(input.dataType(), batchToSpaceCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), inputRearranged1.getSpecialBuffer(), inputRearranged1.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), cropBottom, cropLeft), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input.dataType(), batchToSpaceCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), inputRearranged1.specialBuffer(), inputRearranged1.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), cropBottom, cropLeft), LIBND4J_TYPES);
         NDArray::registerSpecialUse({&output}, {&inputRearranged1});
 
         manager.synchronize();
@@ -239,7 +239,7 @@ void batchToSpaceND(sd::LaunchContext* context, const NDArray& input, const NDAr
         PointersManager manager(context, "batchToSpaceND");
 
         NDArray::prepareSpecialUse({&output}, {&inputRearranged1, &crop});
-        BUILD_DOUBLE_SELECTOR(input.dataType(), crop.dataType(), batchToSpaceNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), inputRearranged1.getSpecialBuffer(), inputRearranged1.getSpecialShapeInfo(), crop.getSpecialBuffer(), crop.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(input.dataType(), crop.dataType(), batchToSpaceNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), inputRearranged1.specialBuffer(), inputRearranged1.specialShapeInfo(), crop.specialBuffer(), crop.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
         NDArray::registerSpecialUse({&output}, {&inputRearranged1, &crop});
 
         manager.synchronize();
@@ -331,12 +331,12 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
         PointersManager manager(context, "spaceToBatch");
 
         NDArray::prepareSpecialUse({&outputRearranged1}, {&input});
-        BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), outputRearranged1.specialBuffer(), outputRearranged1.specialShapeInfo(), padBottom, padTop, padLeft, padRight), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), outputRearranged1.specialBuffer(), outputRearranged1.specialShapeInfo(), padBottom, padTop, padLeft, padRight), LIBND4J_TYPES);
         NDArray::registerSpecialUse({&outputRearranged1}, {&input});
 
         manager.synchronize();
 
-        if(output.getSpecialBuffer() != outputRearranged1.getSpecialBuffer())
+        if(output.specialBuffer() != outputRearranged1.specialBuffer())
             outputRearranged0.assign(outputRearranged1);
     }
 }
@@ -478,12 +478,12 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
         PointersManager manager(context, "spaceToBatchND");
 
         NDArray::prepareSpecialUse({&outputRearranged1}, {&input, &padding});
-        BUILD_DOUBLE_SELECTOR(input.dataType(), padding.dataType(), spaceToBatchNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), padding.getSpecialBuffer(), padding.getSpecialShapeInfo(), outputRearranged1.specialBuffer(), outputRearranged1.specialShapeInfo(), numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(input.dataType(), padding.dataType(), spaceToBatchNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), padding.specialBuffer(), padding.specialShapeInfo(), outputRearranged1.specialBuffer(), outputRearranged1.specialShapeInfo(), numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
         NDArray::registerSpecialUse({&outputRearranged1}, {&input, &padding});
 
         manager.synchronize();
 
-        if(output.getSpecialBuffer() != outputRearranged1.getSpecialBuffer())
+        if(output.specialBuffer() != outputRearranged1.specialBuffer())
             outputRearranged0.assign(outputRearranged1);
     }
 }

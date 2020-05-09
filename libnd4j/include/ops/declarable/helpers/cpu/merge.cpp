@@ -131,10 +131,10 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
         return;
     }
     
-    auto gradShape = inArrs[numArgs]->getShapeInfo();
+    auto gradShape = inArrs[numArgs]->shapeInfo();
     std::vector<bool> vbSameShaepeAndStrides(numArgs);
     for (int i = 0; i < numArgs; ++i) {
-        vbSameShaepeAndStrides[i] = shape::haveSameShapeAndStrides(gradShape, inArrs[i]->getShapeInfo());
+        vbSameShaepeAndStrides[i] = shape::haveSameShapeAndStrides(gradShape, inArrs[i]->shapeInfo());
     }
 
     auto func = PRAGMA_THREADS_FOR{
@@ -151,7 +151,7 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
 
                  for (Nd4jLong i = 0; i < numArgs; i++) {
                      
-                     const auto xOffset = vbSameShaepeAndStrides[i] ? gradOffset : shape::getOffset(inArrs[i]->getShapeInfo(), coords);
+                     const auto xOffset = vbSameShaepeAndStrides[i] ? gradOffset : shape::getOffset(inArrs[i]->shapeInfo(), coords);
                      const T* v = inArrs[i]->bufferAsT<T>();
                      if (v[xOffset] > max) {
                          max = v[xOffset];
@@ -159,7 +159,7 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
                      }
                  }
 
-                const auto zOffset = vbSameShaepeAndStrides[nMaxIndex] ? gradOffset : shape::getOffset(outArrs[nMaxIndex]->getShapeInfo(), coords);
+                const auto zOffset = vbSameShaepeAndStrides[nMaxIndex] ? gradOffset : shape::getOffset(outArrs[nMaxIndex]->shapeInfo(), coords);
                 
                 T* z = outArrs[nMaxIndex]->bufferAsT<T>();
                 z[zOffset] = gradient[gradOffset];

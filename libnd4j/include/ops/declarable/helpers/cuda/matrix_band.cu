@@ -43,9 +43,13 @@ namespace helpers {
 // inputLength - input subarray length
 //
     template <typename T>
-    static __global__ void matrixBandKernel(void* inputBuffer, Nd4jLong* inputShape,
-            void* outputBuffer, Nd4jLong* outputShape, Nd4jLong lowerBand, Nd4jLong upperBand, Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong* tadInputOffsets,
-                                            Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong* tadOutputOffsets, Nd4jLong numTads, Nd4jLong inputLength) {
+    static __global__ void matrixBandKernel(const void* inputBuffer, const Nd4jLong* inputShape,
+                                            void* outputBuffer, const Nd4jLong* outputShape,
+                                            Nd4jLong lowerBand, Nd4jLong upperBand,
+                                            const Nd4jLong* tadOnlyInputShapeInfo,  const Nd4jLong* tadInputOffsets,
+                                            const Nd4jLong* tadOnlyOutputShapeInfo, const Nd4jLong* tadOutputOffsets,
+                                            Nd4jLong numTads,
+                                            Nd4jLong inputLength) {
         int totalThreads = blockDim.x;
         Nd4jLong rows = shape::sizeAt(inputShape, -2);
         Nd4jLong cols = shape::sizeAt(inputShape, -1);
@@ -90,14 +94,14 @@ namespace helpers {
         std::vector<int> lastDims({input->rankOf() - 2, input->rankOf() - 1});
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims);
 
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), lastDims);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), lastDims);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), lastDims);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), lastDims);
 
         const Nd4jLong numTads = packX.numberOfTads();
 
         NDArray::prepareSpecialUse({output}, {input});
-        matrixBandKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->getSpecialBuffer(),
-                input->getSpecialShapeInfo(), output->getSpecialBuffer(), output->getSpecialShapeInfo(),
+        matrixBandKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->specialBuffer(),
+                input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
                 lowerBand, upperBand, packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), numTads, input->lengthOf());
         NDArray::registerSpecialUse({output}, {input});
     }
@@ -106,7 +110,6 @@ namespace helpers {
     void matrixBandPart(sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (context, input, output, lowerBand, upperBand), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void matrixBandPart_, (sd::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand), FLOAT_TYPES);
 }
 }
 }

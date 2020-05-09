@@ -67,7 +67,7 @@ namespace sd {
         static _CUDA_H void convertToThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
         template <typename T>
-        static _CUDA_H void convertFromThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
+        static _CUDA_H void convertFromThreshold(Nd4jPointer * extras, const void *dx, Nd4jLong N, void *dz);
 
         FORCEINLINE static _CUDA_H Nd4jLong estimateQuantizedSize(Nd4jLong rawSize) {
             if (rawSize <= 0)
@@ -115,7 +115,7 @@ namespace sd {
     }
 
     template<typename T>
-    __host__ void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz, float threshold);
+    __host__ void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz, float threshold);
 
 
     template<typename T>
@@ -123,14 +123,14 @@ namespace sd {
 
 
     template<typename T>
-    __host__ void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz);
+    __host__ void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz);
 
     template<typename T>
     __host__ void cudaEncodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *vdx, Nd4jLong N, int *dz, int *scalar, int *reductionBuffer, float threshold);
 
 
     template<typename T>
-    __host__ void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *vdz);
+    __host__ void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *vdz);
 
     __global__ void uniformAdd(int *g_data, int *uniforms, int n, int blockOffset, int baseIndex);
 

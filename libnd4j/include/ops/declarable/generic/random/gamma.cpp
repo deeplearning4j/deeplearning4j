@@ -60,7 +60,9 @@ namespace sd {
             if (inputShape->size() > 2) {
                 auto rest = inputShape->at(2); additionalShape = nullptr;
                 REQUIRE_TRUE(ShapeUtils::areShapesBroadcastable(alphaShape, rest), 0, "random_gamma: alpha and beta shapes should be broadcastable.");
-                ShapeUtils::evalBroadcastShapeInfo(alphaShape, rest, true, additionalShape, block.workspace());
+                const Nd4jLong* additionalShapeBroadcasted = nullptr;
+                ShapeUtils::evalBroadcastShapeInfo(alphaShape, rest, true, additionalShapeBroadcasted, block.workspace());
+                additionalShape = additionalShapeBroadcasted;
             }
             auto lastDim = shape::sizeAt(alphaShape, 0);
             auto dtype = ArrayOptions::dataType(alphaShape);

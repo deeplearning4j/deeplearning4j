@@ -27,7 +27,7 @@ namespace helpers {
 
     template <typename T>
     static void __depthToSpace(const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
-        T *input_ptr = reinterpret_cast<T *>(input.getBuffer());
+        T const*input_ptr = reinterpret_cast<T const*>(input.buffer());
         T *output_ptr = reinterpret_cast<T *>(output->buffer());
 
         const int batch_size = input.sizeAt(0);

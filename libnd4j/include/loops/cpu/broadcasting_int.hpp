@@ -33,20 +33,13 @@ namespace functions {
 
         template <typename X>
         void BroadcastInt<X>::exec(const int opNum,
-                             void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *y,
-                             Nd4jLong *yShapeInfo,
-                             void *z,
-                             Nd4jLong *zShapeInfo,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *xTadShapeInfo,
-                             Nd4jLong *xTadOffset,
-                             Nd4jLong *zTadShapeInfo,
-                             Nd4jLong *zTadOffset,
-                             uint64_t start,
-                             uint64_t stop) {
+                                   const void *x, const Nd4jLong *xShapeInfo,
+                                   const void *y, const Nd4jLong *yShapeInfo,
+                                   void *z, const Nd4jLong *zShapeInfo,
+                                   int *dimension, int dimensionLength,
+                                   const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffset,
+                                   const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffset,
+                                   uint64_t start, uint64_t stop) {
             DISPATCH_BY_OPNUM_T(exec, PARAMS(x,
                                                xShapeInfo,
                                                y,
@@ -72,20 +65,13 @@ namespace functions {
 
         template <typename X>
         void BroadcastInt<X>::execInverse(const int opNum,
-                             void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *y,
-                             Nd4jLong *yShapeInfo,
-                             void *z,
-                             Nd4jLong *zShapeInfo,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *xTadShapeInfo,
-                             Nd4jLong *xTadOffset,
-                             Nd4jLong *zTadShapeInfo,
-                             Nd4jLong *zTadOffset,
-                             uint64_t start,
-                             uint64_t stop) {
+                                          const void *x, const Nd4jLong *xShapeInfo,
+                                          const void *y, const Nd4jLong *yShapeInfo,
+                                          void *z, const Nd4jLong *zShapeInfo,
+                                          int *dimension, int dimensionLength,
+                                          const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffset,
+                                          const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffset,
+                                          uint64_t start, uint64_t stop) {
             DISPATCH_BY_OPNUM_T(execInverse, PARAMS(x,
                                                xShapeInfo,
                                                y,
@@ -102,23 +88,16 @@ namespace functions {
 
         template <typename X>
         template<typename OpType>
-        void BroadcastInt<X>::exec(void *vx,
-                             Nd4jLong *xShapeInfo,
-                             void *vy,
-                             Nd4jLong *yShapeInfo,
-                             void *vz,
-                             Nd4jLong *zShapeInfo,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *xTadShapeInfo,
-                             Nd4jLong *xTadOffset,
-                             Nd4jLong *zTadShapeInfo,
-                             Nd4jLong *zTadOffset,
-                             uint64_t start,
-                             uint64_t stop) {
+        void BroadcastInt<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
+                                   const void *vy, const Nd4jLong *yShapeInfo,
+                                   void *vz, const Nd4jLong *zShapeInfo,
+                                   int *dimension, int dimensionLength,
+                                   const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffset,
+                                   const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffset,
+                                   uint64_t start, uint64_t stop) {
 
-                auto x = reinterpret_cast<X *>(vx);
-                auto y = reinterpret_cast<X *>(vy);
+                auto x = reinterpret_cast<const X *>(vx);
+                auto y = reinterpret_cast<const X *>(vy);
                 auto z = reinterpret_cast<X *>(vz);
 
                 //decompose in to several sub tads after
@@ -131,8 +110,8 @@ namespace functions {
                 if (xTadShapeInfo == nullptr || tadOffsets == nullptr) {
                     auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
-                    xTadShapeShapeInfo = tadPack.primaryShapeInfo();
-                    tadOffsets = tadPack.primaryOffsets();
+                    xTadShapeShapeInfo = const_cast<Nd4jLong*>(tadPack.primaryShapeInfo());
+                    tadOffsets = const_cast<Nd4jLong*>(tadPack.primaryOffsets());
                 }
 
                 //int *resultStride = shape::stride(xTadShapeShapeInfo);
@@ -272,23 +251,16 @@ namespace functions {
 
         template <typename X>
         template<typename OpType>
-        void BroadcastInt<X>::execInverse(void *vx,
-                             Nd4jLong *xShapeInfo,
-                             void *vy,
-                             Nd4jLong *yShapeInfo,
-                             void *vz,
-                             Nd4jLong *zShapeInfo,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *yTadShapeInfo,
-                             Nd4jLong *yTadOffset,
-                             Nd4jLong *zTadShapeInfo,
-                             Nd4jLong *zTadOffset,
-                             uint64_t start,
-                             uint64_t stop) {
+        void BroadcastInt<X>::execInverse(const void *vx, const Nd4jLong *xShapeInfo,
+                                          const void *vy, const Nd4jLong *yShapeInfo,
+                                          void *vz, const Nd4jLong *zShapeInfo,
+                                          int *dimension, const int dimensionLength,
+                                          const Nd4jLong *yTadShapeInfo, const Nd4jLong *yTadOffset,
+                                          const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffset,
+                                          uint64_t start, uint64_t stop) {
 
-                auto x = reinterpret_cast<X *>(vx);
-                auto y = reinterpret_cast<X *>(vy);
+                auto x = reinterpret_cast<const X *>(vx);
+                auto y = reinterpret_cast<const X *>(vy);
                 auto z = reinterpret_cast<X *>(vz);
 
                 //decompose in to several sub tads after
@@ -301,8 +273,8 @@ namespace functions {
                 if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
                     auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
-                    yTadShapeShapeInfo = tadPack.primaryShapeInfo();
-                    tadOffsets = tadPack.primaryOffsets();
+                    yTadShapeShapeInfo = const_cast<Nd4jLong*>(tadPack.primaryShapeInfo());
+                    tadOffsets = const_cast<Nd4jLong*>(tadPack.primaryOffsets());
                 }
 
                 //int *resultStride = shape::stride(yTadShapeShapeInfo);

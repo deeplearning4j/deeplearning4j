@@ -34,9 +34,9 @@ namespace helpers {
 template<typename X, typename Y>
 static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
-    const X* x = reinterpret_cast<X*>(input.getBuffer());
-    const Y* y = reinterpret_cast<Y*>(indices.getBuffer());
-          X* z = reinterpret_cast<X*>(output.getBuffer());
+    const X* x = reinterpret_cast<X*>(input.buffer());
+    const Y* y = reinterpret_cast<Y*>(indices.buffer());
+          X* z = reinterpret_cast<X*>(output.buffer());
 
     const int xRank    = input.rankOf();
     const int yRank    = indices.rankOf();
@@ -56,13 +56,13 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
         for (auto i = start; i < stop; i++) {
 
-            shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
+            shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
 
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
+            const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
 
             temp = zCoords[yRank - 1];
             zCoords[yRank - 1] = 0;
-            const auto yOffset = shape::getOffset(indices.getShapeInfo(), zCoords);
+            const auto yOffset = shape::getOffset(indices.shapeInfo(), zCoords);
             zCoords[yRank - 1] = temp;
 
             if(bEqual)
@@ -75,7 +75,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
             for (uint j = 0; j < yLastDim; ++j)
                 xCoords[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];   // last stride
 
-            const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoords);
+            const auto xOffset = shape::getOffset(input.shapeInfo(), xCoords);
 
             z[zOffset] = x[xOffset];
         }
@@ -116,9 +116,9 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 output->assign(scalarNDArray);
             } else {
                 auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-                auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
+                auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
 
-                auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->getBuffer()) + tadPack.primaryOffsets()[indices->e<Nd4jLong>(0)]), tadPack.primaryShapeInfo(), output->getContext());
+                auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->buffer()) + tadPack.primaryOffsets()[indices->e<Nd4jLong>(0)]), tadPack.primaryShapeInfo(), output->getContext());
                 output->assign(&tadArr);
 			}
         }
@@ -135,7 +135,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
 
             std::vector<int> dimsOut(indices->rankOf());
             std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... indices->rankOf()-1
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), dimsOut);
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->shapeInfo(), dimsOut);
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i++) {
@@ -159,7 +159,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
             output->assign((*input)(intArgs[1], {axis}));
         }
         else { // vector case
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), {axis});
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->shapeInfo(), {axis});
 
             auto func = PRAGMA_THREADS_FOR {
                 for (auto i = start; i < stop; i++) {

@@ -52,8 +52,8 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
             for (auto i = start; i < stop; i++) {
 
-                shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
-                const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
+                shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
+                const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
 
                 memcpy(xCoords, zCoords, rank * sizeof(int));
 
@@ -75,7 +75,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
                 }
 
                 if (within)
-                    z[zOffset] = x[shape::getOffset(input.getShapeInfo(), xCoords)];
+                    z[zOffset] = x[shape::getOffset(input.shapeInfo(), xCoords)];
                 else
                     z[zOffset] = padVal;
             }
@@ -94,8 +94,8 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
             for (auto i = start; i < stop; i++) {
 
-                shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
-                const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
+                shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
+                const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
 
                 memcpy(xCoords, zCoords, rank * sizeof(int));
 
@@ -112,7 +112,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
                         xCoords[j] = 2 * xShape[j] - xCoords[j] - shift2; // means fill from right
                 }
 
-                const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoords);
+                const auto xOffset = shape::getOffset(input.shapeInfo(), xCoords);
                 z[zOffset] = x[xOffset];
             }
         };
@@ -148,7 +148,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 //     Nd4jLong startL = mode == 1 ? 1 : 0;                            // REFLECT or SYMMETRIC
 //     Nd4jLong startR = mode == 1 ? inDimSize-2 : inDimSize-1;        // REFLECT or SYMMETRIC
 
-//     Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+//     Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.shapeInfo(), dimsToExclude);
 
 //     NDArray outSubArr0 = output(outIdx[0], true);
 
@@ -209,7 +209,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 //         startL = mode == 1 ? numLeft + 1 : numLeft;                            // REFLECT or SYMMETRIC
 //         startR = mode == 1 ? numLeft + inDimSize - 2 : numLeft + inDimSize-1;      // REFLECT or SYMMETRIC
 
-//         numOfSubArrs = ShapeUtils::getNumOfSubArrs(output.getShapeInfo(), dimsToExclude);
+//         numOfSubArrs = ShapeUtils::getNumOfSubArrs(output.shapeInfo(), dimsToExclude);
 
 //         PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(outIdxOuter, outIdxInner))
 //         for(Nd4jLong j = 0; j < numOfSubArrs; ++j) {
@@ -294,7 +294,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
 
             for (auto i = start; i < stop; i++) {
 
-                shape::index2coordsCPU(start, i, output.getShapeInfo(), outIdx);
+                shape::index2coordsCPU(start, i, output.shapeInfo(), outIdx);
 
                 for (int j = 0; j < rank; ++j) {
                     const Nd4jLong inLen = input.sizeAt(j);
@@ -312,9 +312,9 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
                         inIdx[j] = len - outIdx[j];
                 }
 
-                auto outOffset = shape::getOffset(output.getShapeInfo(), outIdx);
-                auto inOffset = shape::getOffset(input.getShapeInfo(), inIdx);
-                reinterpret_cast<T *>(output.buffer())[outOffset] = reinterpret_cast<T *>(input.getBuffer())[inOffset];
+                auto outOffset = shape::getOffset(output.shapeInfo(), outIdx);
+                auto inOffset = shape::getOffset(input.shapeInfo(), inIdx);
+                reinterpret_cast<T *>(output.buffer())[outOffset] = reinterpret_cast<T const*>(input.buffer())[inOffset];
             }
         };
 
@@ -340,13 +340,13 @@ static void recursiveLoopForPad_(const int mode, NDArray& input, const NDArray& 
     // then we use this array for tads building, every time while recursion the number of built tads becomes bigger
     dimensions.erase(dimensions.begin());
     // build tad basing on output array, also create auxiliary arrays pointing on required output array ranges
-    shape::TAD tadOut(output.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD tadOut(output.shapeInfo(), dimensions.data(), dimensions.size());
     tadOut.createTadOnlyShapeInfo();
     tadOut.createOffsets();
     auto subArrOut = NDArray(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getContext());
     auto subArr = NDArray(output.getBuffer(), tadOut.tadOnlyShapeInfo, output.getContext());
     // build tad basing on input array, also create auxiliary array pointing on required input array range
-    shape::TAD tadIn(input.getShapeInfo(), dimensions.data(), dimensions.size());
+    shape::TAD tadIn(input.shapeInfo(), dimensions.data(), dimensions.size());
     tadIn.createTadOnlyShapeInfo();
     tadIn.createOffsets();
     auto subArrIn = NDArray(input.getBuffer(), tadIn.tadOnlyShapeInfo, output.getContext());

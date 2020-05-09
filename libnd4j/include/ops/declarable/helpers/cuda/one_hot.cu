@@ -93,12 +93,12 @@ void onehot(const sd::LaunchContext* context, const NDArray *indices, NDArray *o
 
 	const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (output->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-	const int sharedMem = threadsPerBlock * sizeof(decltype(*output->getShapeInfo())) * output->rankOf() + 128;
+	const int sharedMem = threadsPerBlock * sizeof(decltype(*output->shapeInfo())) * output->rankOf() + 128;
 
 	PointersManager manager(context, "onehot");
 
     NDArray::prepareSpecialUse({output}, {indices});
-  	BUILD_DOUBLE_SELECTOR(xType, zType, onehotCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices->getSpecialBuffer(), indices->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), axis, depth, on, off), LIBND4J_TYPES, LIBND4J_TYPES);
+  	BUILD_DOUBLE_SELECTOR(xType, zType, onehotCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices->specialBuffer(), indices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), axis, depth, on, off), LIBND4J_TYPES, LIBND4J_TYPES);
   	NDArray::registerSpecialUse({output}, {indices});
 
     manager.synchronize();

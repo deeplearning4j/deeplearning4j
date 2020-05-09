@@ -26,7 +26,7 @@
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(decode_bitmap, 2, 1, true, 0, 0) {
-            auto encoded = INPUT_VARIABLE(1);
+            const auto encoded = INPUT_VARIABLE(1);
             auto updates = OUTPUT_VARIABLE(0);
 
             helpers::decodeBitmap(block.launchContext(), encoded, updates);

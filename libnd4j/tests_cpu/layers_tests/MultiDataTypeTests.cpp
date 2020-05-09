@@ -1962,7 +1962,7 @@ TEST_F(MultiDataTypeTests, aaa) {
 
     NativeOpExecutioner::execRandom(LaunchContext::defaultContext(), sd::random::UniformDistribution,
                                 &gen,
-                                z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                                z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                                 extras.argumentsAsT<double>());
     // z.printIndexedBuffer();
 

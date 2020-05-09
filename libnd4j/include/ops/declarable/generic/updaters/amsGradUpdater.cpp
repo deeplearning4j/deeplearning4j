@@ -44,14 +44,14 @@ namespace sd {
                 return Status::OK();
 
             REQUIRE_TRUE(gradient->isSameShape(initStateV), 0, "AMSGRAD UPDATER OP: input state Msg must have the same shape as gradient,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->getShapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initStateV->getShapeInfo()).c_str());
+                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+                ShapeUtils::shapeAsString(initStateV->shapeInfo()).c_str());
             REQUIRE_TRUE(gradient->isSameShape(initStateM), 0, "AMSGRAD UPDATER OP: input state Msdx must have the same shape as gradient,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->getShapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initStateM->getShapeInfo()).c_str());
+                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+                ShapeUtils::shapeAsString(initStateM->shapeInfo()).c_str());
             REQUIRE_TRUE(gradient->isSameShape(initStateH), 0, "AMSGRAD UPDATER OP: input state Msdx must have the same shape as gradient!,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->getShapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initStateH->getShapeInfo()).c_str());
+                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+                ShapeUtils::shapeAsString(initStateH->shapeInfo()).c_str());
 
             bool bParamsSupply = 8 == block.width() || 4 == block.getTArguments()->size();
 

@@ -47,7 +47,7 @@ namespace helpers {
     // Unsorted segment ops functors implementation
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename I>
-    static __global__ void unsortedSegmentIndexValidateKernel(I* indices, Nd4jLong* indicesShape, I expected, I* found) {
+    static __global__ void unsortedSegmentIndexValidateKernel(const I* indices, const Nd4jLong* indicesShape, I expected, I* found) {
         __shared__ bool onlyTrue;
         __shared__ Nd4jLong len;
 
@@ -90,12 +90,12 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     // fill up segments starts and ends - splitted ordered case
     template <typename I>
-    static __global__ void fillUpSegmentsKernel(void* indices, Nd4jLong* indexShape, int numClasses, int* classesRangesStart, int* classesRangesLenghts) {
-        __shared__ I* idxBuf;
+    static __global__ void fillUpSegmentsKernel(const void* indices, const Nd4jLong* indexShape, int numClasses, int* classesRangesStart, int* classesRangesLenghts) {
+        __shared__ const I* idxBuf;
         __shared__ Nd4jLong idxLen;
         __shared__ int* result;
         if (threadIdx.x == 0) {
-            idxBuf = reinterpret_cast<I*>(indices);
+            idxBuf = reinterpret_cast<const I*>(indices);
             idxLen = shape::length(indexShape);
         }
         __syncthreads();
@@ -115,8 +115,8 @@ namespace helpers {
         template <typename I>
         static void fillUpSegments_(NDArray* indices, Nd4jLong numClasses, NDArray& classesRangesBegs, NDArray& classesRangesLens) {
             dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
-            int* begins = reinterpret_cast<int*>(classesRangesBegs.getSpecialBuffer());
-            int* lengths = reinterpret_cast<int*>(classesRangesLens.getSpecialBuffer());
+            int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
+            int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
             auto stream = classesRangesBegs.getContext()->getCudaStream();
             fillUpSegmentsKernel<I><<<dims.x, dims.y, dims.z, *stream >>>(indices->specialBuffer(), indices->specialShapeInfo(), numClasses, begins, lengths);
         }

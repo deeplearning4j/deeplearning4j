@@ -66,7 +66,7 @@ void diGamma(sd::LaunchContext* context, const NDArray& x, NDArray& z) {
     int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
     NDArray::prepareSpecialUse({&z}, {&x});
-    BUILD_SINGLE_SELECTOR(x.dataType(), diGammaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo()), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(x.dataType(), diGammaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), x.specialBuffer(), x.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()), FLOAT_TYPES);
     NDArray::registerSpecialUse({&z}, {&x});
 }
 

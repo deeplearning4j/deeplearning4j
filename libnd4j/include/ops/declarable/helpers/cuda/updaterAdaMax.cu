@@ -111,7 +111,7 @@ linkage void adaMaxUpdaterCudaLauncher(const int blocksPerGrid, const int thread
     const T epsilon = static_cast<T>(dEpsilon);
     const T iteration = static_cast<T>(nIteration);
 
-    adaMaxUpdaterCuda<T> << <blocksPerGrid, threadsPerBlock, 256, * stream >> > (vx, xShapeInfo, vinv, invShapeInfo, vinm, inmShapeInfo, vz,
+    adaMaxUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, * stream>>>(vx, xShapeInfo, vinv, invShapeInfo, vinm, inmShapeInfo, vz,
          zShapeInfo, vstV, stvShapeInfo, vstM, stmShapeInfo, lr, beta1, beta2, epsilon, iteration);
 }
 
@@ -127,10 +127,10 @@ void updaterAdaMax(sd::LaunchContext* context, const NDArray& gradient, const ND
 
     NDArray::prepareSpecialUse({ &update, &stateU, &stateM }, { &gradient, &initStateU, &initStateM });
     BUILD_SINGLE_SELECTOR(gradient.dataType(), adaMaxUpdaterCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), 
-                          gradient.getSpecialBuffer(), gradient.getSpecialShapeInfo(), initStateU.getSpecialBuffer(), 
-                          initStateU.getSpecialShapeInfo(), initStateM.getSpecialBuffer(), initStateM.getSpecialShapeInfo(),
-                          update.getSpecialBuffer(), update.getSpecialShapeInfo(), stateU.getSpecialBuffer(), 
-                          stateU.getSpecialShapeInfo(), stateM.getSpecialBuffer(), stateM.getSpecialShapeInfo(), 
+                          gradient.specialBuffer(), gradient.specialShapeInfo(), initStateU.specialBuffer(),
+                          initStateU.specialShapeInfo(), initStateM.specialBuffer(), initStateM.specialShapeInfo(),
+                          update.specialBuffer(), update.specialShapeInfo(), stateU.specialBuffer(),
+                          stateU.specialShapeInfo(), stateM.specialBuffer(), stateM.specialShapeInfo(),
                           dLr, dBeta1, dBeta2, dEpsilon, nIteration ), FLOAT_TYPES);
     NDArray::registerSpecialUse({ &update, &stateU, &stateM }, { &gradient, &initStateU, &initStateM });
 

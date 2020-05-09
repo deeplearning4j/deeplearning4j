@@ -55,7 +55,7 @@ namespace sd {
             }
 
             void thresholdDecode(const NDArray &encoded, NDArray &updates) {
-                BUILD_SINGLE_SELECTOR(updates.dataType(), sd::TypeCast::convertFromThreshold, (nullptr, encoded.getBuffer(), updates.lengthOf(), updates.buffer()), FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR(updates.dataType(), sd::TypeCast::convertFromThreshold, (nullptr, encoded.buffer(), updates.lengthOf(), updates.buffer()), FLOAT_TYPES);
             }
         }
     }

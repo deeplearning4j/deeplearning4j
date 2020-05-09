@@ -42,11 +42,11 @@ namespace sd {
                 return Status::OK();
 
             REQUIRE_TRUE(gradient->isSameShape(initStateU), 0, "ADA_MAX UPDATER OP: input state V must have the same shape as gradient,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->getShapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initStateU->getShapeInfo()).c_str());
+                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+                ShapeUtils::shapeAsString(initStateU->shapeInfo()).c_str());
             REQUIRE_TRUE(gradient->isSameShape(initStateM), 0, "ADA_MAX UPDATER OP: input state M must have the same shape as gradient,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->getShapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initStateM->getShapeInfo()).c_str());
+                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+                ShapeUtils::shapeAsString(initStateM->shapeInfo()).c_str());
 
 
             bool bParamsSupply = 7 == block.width() || 4 == block.getTArguments()->size();

@@ -30,7 +30,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static __global__ void fillUpElementKernel(void* outputBuffer, Nd4jLong* outputShapeInfo, void* inputBuffer, Nd4jLong* inputShapeInfo, Nd4jLong* pTadShape, Nd4jLong* pTadOffsets, Nd4jLong n) {
+    static __global__ void fillUpElementKernel(void* outputBuffer, Nd4jLong const* outputShapeInfo, void* inputBuffer, Nd4jLong const* inputShapeInfo, Nd4jLong const* pTadShape, Nd4jLong const* pTadOffsets, Nd4jLong n) {
         __shared__ Nd4jLong bufferLength;
 
         auto z = reinterpret_cast<T*>(outputBuffer);
@@ -66,7 +66,7 @@ namespace helpers {
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
 
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.getShapeInfo(), lastDims);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.shapeInfo(), lastDims);
 
             auto pTadShape = packX.specialShapeInfo();
             auto pTadShapeH = packX.primaryShapeInfo();

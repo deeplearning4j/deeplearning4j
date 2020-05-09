@@ -181,7 +181,7 @@ void betaInc(sd::LaunchContext* context, const NDArray& a, const NDArray& b, con
     PointersManager manager(context, "betaInc");
 
     NDArray::prepareSpecialUse({&output}, {&a, &b, &x});
-	BUILD_SINGLE_SELECTOR(xType, betaIncForArrayCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), a.getSpecialBuffer(), a.getSpecialShapeInfo(), b.getSpecialBuffer(), b.getSpecialShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()), FLOAT_TYPES);
+	BUILD_SINGLE_SELECTOR(xType, betaIncForArrayCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), a.specialBuffer(), a.specialShapeInfo(), b.specialBuffer(), b.specialShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()), FLOAT_TYPES);
 	NDArray::registerSpecialUse({&output}, {&a, &b, &x});
 
     manager.synchronize();

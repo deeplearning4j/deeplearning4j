@@ -29,27 +29,22 @@ using namespace simdOps;
 namespace functions {
     namespace transform {
         template <typename X, typename Y>
-        void TransformFloat<X, Y>::exec(
-				int opNum,
-				void *x,
-				Nd4jLong *xShapeInfo,
-				void *z,
-				Nd4jLong *zShapeInfo,
-				void *extraParams,
-                uint64_t threadId, uint64_t numThreads) {
+        void TransformFloat<X, Y>::exec(int opNum,
+                                        const void *x, const Nd4jLong *xShapeInfo,
+                                        void *z, const Nd4jLong *zShapeInfo,
+                                        void *extraParams,
+                                        uint64_t threadId, uint64_t numThreads) {
                     DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads), TRANSFORM_FLOAT_OPS);
 		}
 
         template <typename X, typename Z>
         template<typename OpType>
-		void _CUDA_H TransformFloat<X, Z>::exec(
-                    void *vx,
-                    Nd4jLong *xShapeInfo,
-                    void *vz,
-                    Nd4jLong *zShapeInfo,
-                    void *vextraParams, uint64_t threadId, uint64_t numThreads) {
+		void _CUDA_H TransformFloat<X, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
+                                                void *vz, const Nd4jLong *zShapeInfo,
+                                                void *vextraParams,
+                                                uint64_t threadId, uint64_t numThreads) {
 
-            auto x = reinterpret_cast<X *>(vx);
+            auto x = reinterpret_cast<const X *>(vx);
 		    auto z = reinterpret_cast<Z *>(vz);
 		    auto extraParams = reinterpret_cast<Z *>(vextraParams);
 

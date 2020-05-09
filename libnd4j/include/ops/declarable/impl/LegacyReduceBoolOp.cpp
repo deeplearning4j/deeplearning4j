@@ -63,7 +63,7 @@ namespace sd {
                 if ((axis.empty()) ||
                     (axis.size() == 1 && axis[0] == sd::DataTypeUtils::max<int>()) || allAxes) {
                     // scalar
-                    NativeOpExecutioner::execReduceBoolScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    NativeOpExecutioner::execReduceBoolScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
@@ -75,15 +75,15 @@ namespace sd {
 
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
                     auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
                     auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
-                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                             extras.argumentsAsT(x->dataType()),
-                            z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                            dims.data(), (int) dims.size(), reinterpret_cast<Nd4jLong *>(pTadShape), reinterpret_cast<Nd4jLong *>(pTadOffsets));
+                            z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                            dims.data(), (int) dims.size(), reinterpret_cast<Nd4jLong const*>(pTadShape), reinterpret_cast<Nd4jLong const*>(pTadOffsets));
                 }
 
                 STORE_RESULT(*z);
@@ -103,7 +103,7 @@ namespace sd {
 
                 if ((block.getIArguments()->size() == 1 && INT_ARG(0) == sd::DataTypeUtils::max<int>()) || allAxes) {
                     // scalar
-                    NativeOpExecutioner::execReduceBoolScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
+                    NativeOpExecutioner::execReduceBoolScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {
                     // TAD
                     if (indices->lengthOf() > 1)
@@ -111,13 +111,13 @@ namespace sd {
 
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+                    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
                     auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
                     auto pTadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
 
-                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()),
-                            z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), (int) dims.size(), pTadShape, pTadOffsets);
+                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()),
+                            z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), (int) dims.size(), pTadShape, pTadOffsets);
                 }
             }
 

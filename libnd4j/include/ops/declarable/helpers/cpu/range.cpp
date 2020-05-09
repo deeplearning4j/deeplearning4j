@@ -34,7 +34,7 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
         
     const Nd4jLong len = outVector.lengthOf();
 
-    auto buff = reinterpret_cast<T *>(outVector.getBuffer());
+    auto buff = reinterpret_cast<T *>(outVector.buffer());
     auto s = start.e<T>(0);
     auto d = delta.e<T>(0);
 

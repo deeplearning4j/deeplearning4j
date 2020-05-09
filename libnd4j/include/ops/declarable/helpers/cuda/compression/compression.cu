@@ -24,7 +24,7 @@
 namespace sd {
 namespace ops {
 namespace helpers {
-    void decodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output) {
+    void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {input});
 

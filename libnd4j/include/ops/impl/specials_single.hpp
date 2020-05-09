@@ -100,7 +100,7 @@ namespace sd {
 //         auto func = PRAGMA_THREADS_FOR {
 //             for (auto i = start; i < stop; i += increment) {
 //                 auto temp = output(indices[i], true);
-//                 sd::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr, 0, 1);
+//                 sd::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->shapeInfo(), temp.bufferAsT<T>(), temp.shapeInfo(), nullptr, 0, 1);
 //             }
 //         };
 
@@ -150,7 +150,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
     //         if(!areInputsContin || !allSameOrder)
     //             break;
 
-    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->getShapeInfo());
+    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->shapeInfo());
     //     }
     // }
 
@@ -158,7 +158,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
 
     // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and output array
 
-    //     const auto zStep = shape::strideOverContigAxis(axis, output.getShapeInfo());
+    //     const auto zStep = shape::strideOverContigAxis(axis, output.shapeInfo());
 
     //     for (uint i = 0; i < output.lengthOf() / output.sizeAt(axis); ++i) {
 
@@ -182,9 +182,9 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
 
         for (auto i = start; i < stop; i += increment) {
 
-            shape::index2coordsCPU(start, i, output.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
 
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+            const auto zOffset = shape::getOffset(output.shapeInfo(), coords);
 
             uint inArrIdx = 0;
             uint xDim = inArrs[inArrIdx]->sizeAt(axis);
@@ -196,7 +196,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
             }
 
             const T* x = inArrs[inArrIdx]->bufferAsT<T>();
-            const auto xOffset = shape::getOffset(inArrs[inArrIdx]->getShapeInfo(), coords);
+            const auto xOffset = shape::getOffset(inArrs[inArrIdx]->shapeInfo(), coords);
 
             zBuff[zOffset] = x[xOffset];
 
@@ -212,11 +212,11 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<const NDArray*>& inAr
 * along a particular dimension
 */
 template <typename T>
-void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *vresult, Nd4jLong *resultShapeInfo) {
+void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *vresult, Nd4jLong const* resultShapeInfo) {
     auto result = reinterpret_cast<T *>(vresult);
     std::vector<const NDArray*> inputs(numArrays);
 
-    NDArray output(static_cast<void*>(result), static_cast<Nd4jLong*>(resultShapeInfo));
+    NDArray output(static_cast<void*>(result), resultShapeInfo);
 
     for(int i = 0; i < numArrays; ++i)
         inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<Nd4jLong*>(inputShapeInfo[i]));
@@ -235,7 +235,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
 
     const auto sizeofT = input.sizeOfT();
 
-    T* xBuff = input.bufferAsT<T>();
+    auto xBuff = input.bufferAsT<T>();
 
     bool luckCase1 = ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f')) && input.ews() == 1;
 
@@ -272,7 +272,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
     //         if (!areOutsContin || !allSameOrder)
     //             break;
 
-    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, outArrs[i]->getShapeInfo());
+    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, outArrs[i]->shapeInfo());
     //     }
     // }
 
@@ -280,7 +280,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
 
     // if (luckCase2) {
 
-    //     const auto xStep = shape::strideOverContigAxis(axis, input.getShapeInfo());
+    //     const auto xStep = shape::strideOverContigAxis(axis, input.shapeInfo());
 
     //     for (uint i = 0; i < input.lengthOf() / input.sizeAt(axis); ++i) {
 
@@ -306,8 +306,8 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
 
         for (auto i = start; i < stop; i += increment) {
 
-            shape::index2coordsCPU(start, i, input.getShapeInfo(), coords);
-            const auto xOffset = shape::getOffset(input.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
+            const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
 
             uint outArrIdx = 0;
             temp = coords[axis];
@@ -318,7 +318,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
             }
 
             T* z = outArrs[outArrIdx]->bufferAsT<T>();
-            const auto zOffset = shape::getOffset(outArrs[outArrIdx]->getShapeInfo(), coords);
+            const auto zOffset = shape::getOffset(outArrs[outArrIdx]->shapeInfo(), coords);
             z[zOffset] = xBuff[xOffset];
 
             coords[axis] = temp;
@@ -339,7 +339,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
  * @param length
  */
     template<typename T>
-    void SpecialMethods<T>::accumulateGeneric(void **vx, void *vz, Nd4jLong *zShapeInfo, int n, const Nd4jLong length) {
+    void SpecialMethods<T>::accumulateGeneric(void **vx, void *vz, Nd4jLong const* zShapeInfo, int n, const Nd4jLong length) {
         auto z = reinterpret_cast<T *>(vz);
         auto x = reinterpret_cast<T **>(vx);
 
@@ -366,7 +366,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
  * @param propagate
  */
     template<typename T>
-    void SpecialMethods<T>::averageGeneric(void **vx, void *vz, Nd4jLong *zShapeInfo, int n, const Nd4jLong length, bool propagate) {
+    void SpecialMethods<T>::averageGeneric(void **vx, void *vz, Nd4jLong const* zShapeInfo, int n, const Nd4jLong length, bool propagate) {
         auto z = reinterpret_cast<T *>(vz);
         auto x = reinterpret_cast<T **>(vx);
 
@@ -416,7 +416,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
     }
 
     template <typename T>
-    Nd4jLong SpecialMethods<T>::getPosition(Nd4jLong *xShapeInfo, Nd4jLong index) {
+    Nd4jLong SpecialMethods<T>::getPosition(Nd4jLong const* xShapeInfo, Nd4jLong index) {
         auto xEWS = shape::elementWiseStride(xShapeInfo);
 
         if (xEWS == 1)
@@ -428,7 +428,7 @@ void SpecialMethods<T>::splitCpuGeneric(const NDArray& input, const std::vector<
     }
 
     template<typename T>
-    void SpecialMethods<T>::quickSort_parallel_internal(T* array, Nd4jLong *xShapeInfo, int left, int right, int cutoff, bool descending) {
+    void SpecialMethods<T>::quickSort_parallel_internal(T* array, Nd4jLong const* xShapeInfo, int left, int right, int cutoff, bool descending) {
 
         int i = left, j = right;
         T tmp;
@@ -482,7 +482,7 @@ PRAGMA_OMP_TASK
     }
 
     template<typename T>
-    void SpecialMethods<T>::quickSort_parallel(void *varray, Nd4jLong *xShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
+    void SpecialMethods<T>::quickSort_parallel(void *varray, Nd4jLong const* xShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
         auto array = reinterpret_cast<T *>(varray);
         int cutoff = 1000;
 
@@ -521,14 +521,14 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
 
 
     template<typename T>
-    void SpecialMethods<T>::sortGeneric(void *vx, Nd4jLong *xShapeInfo, bool descending) {
+    void SpecialMethods<T>::sortGeneric(void *vx, Nd4jLong const* xShapeInfo, bool descending) {
         auto x = reinterpret_cast<T *>(vx);
 
         quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
     }
 
     template<typename T>
-    void SpecialMethods<T>::sortTadGeneric(void *vx, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
+    void SpecialMethods<T>::sortTadGeneric(void *vx, Nd4jLong const* xShapeInfo, int *dimension, int dimensionLength, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool descending) {
         auto x = reinterpret_cast<T *>(vx);
 
         //quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
@@ -548,9 +548,9 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
 
 
     template<typename T>
-    void SpecialMethods<T>::decodeBitmapGeneric(void *dx, Nd4jLong N, void *vz, Nd4jLong *zShapeInfo) {
+    void SpecialMethods<T>::decodeBitmapGeneric(const void *dx, Nd4jLong N, void *vz, Nd4jLong const* zShapeInfo) {
         auto dz = reinterpret_cast<T *>(vz);
-        auto x = reinterpret_cast<int *>(dx);
+        auto x = reinterpret_cast<const int *>(dx);
         Nd4jLong lim = N / 16 + 5;
 
         FloatBits2 fb;
@@ -585,7 +585,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
     }
 
     template<typename T>
-    Nd4jLong SpecialMethods<T>::encodeBitmapGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
+    Nd4jLong SpecialMethods<T>::encodeBitmapGeneric(void *vx, Nd4jLong const* xShapeInfo, Nd4jLong N, int *dz, float threshold) {
         auto dx = reinterpret_cast<T *>(vx);
         const T two(2.0f);
         const T zero(0.0f);

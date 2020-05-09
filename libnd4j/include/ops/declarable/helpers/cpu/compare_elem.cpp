@@ -22,7 +22,7 @@ namespace sd {
         namespace helpers {
             template<typename T>
             static void _compare_elem(NDArray *input, bool isStrictlyIncreasing, bool& output) {
-                auto length = shape::length(input->getShapeInfo());
+                auto length = shape::length(input->shapeInfo());
 
                 int elementsPerThread = length / ELEMENT_THRESHOLD;
                 int num_threads = sd::math::nd4j_max<int>(1, elementsPerThread);

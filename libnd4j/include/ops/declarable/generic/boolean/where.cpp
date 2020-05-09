@@ -99,9 +99,9 @@ namespace sd {
                 for (Nd4jLong i = 0; i < condition->lengthOf(); i++)
                     if (condition->e<bool>(i)) numOfTrue++;
 
-                Nd4jLong *newShape;
-
+                Nd4jLong const* theNewShape;
                 if (numOfTrue > 0) {
+                    Nd4jLong* newShape;
                     ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
 
                     newShape[0] = 2;
@@ -114,13 +114,13 @@ namespace sd {
                     newShape[7] = 99;
                     ShapeUtils::updateStridesAndType(newShape, sd::DataType::INT64, 'c');
 
-                    newShape = CONSTANT(newShape);
+                    theNewShape = CONSTANT(newShape);
                 }
                 else {
-                    newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(sd::DataType::INT64);
+                    theNewShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(sd::DataType::INT64);
                 }
 
-                return SHAPELIST(newShape);
+                return SHAPELIST(theNewShape);
             }
         }
 

@@ -39,7 +39,7 @@ namespace helpers {
     // be careful: outVector must have c-order and ews = 1 !!!
     template <typename T>
     static void _range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
-        global_range<T><<<512, 512, 2048, *context->getCudaStream()>>>(outVector.getSpecialBuffer(), outVector.lengthOf(), start.e<T>(0), delta.e<T>(0));
+        global_range<T><<<512, 512, 2048, *context->getCudaStream()>>>(outVector.specialBuffer(), outVector.lengthOf(), start.e<T>(0), delta.e<T>(0));
     }
 
     void range(sd::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {

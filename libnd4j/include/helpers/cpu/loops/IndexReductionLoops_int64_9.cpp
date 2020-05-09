@@ -21,4 +21,4 @@
 
 #include "./IndexReductionLoops.hpp"
 
-BUILD_DOUBLE_TEMPLATE(template void sd::IndexReductionLoops, ::wrapIndexReduce(const int opNum, void* vx, Nd4jLong* xShapeInfo, void* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams), LIBND4J_TYPES_9, (sd::DataType::INT64, Nd4jLong));
+BUILD_DOUBLE_TEMPLATE(template void sd::IndexReductionLoops, ::wrapIndexReduce(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* vextraParams), LIBND4J_TYPES_9, (sd::DataType::INT64, Nd4jLong));

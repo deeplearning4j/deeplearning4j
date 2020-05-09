@@ -70,7 +70,7 @@ namespace helpers {
 
 /* m = I - v v^T */
     template <typename T>
-    static __global__ void vmulKernel(T* resBuf, Nd4jLong* resShape, T const* vBuff, Nd4jLong const* vShape, Nd4jLong n) {
+    static __global__ void vmulKernel(T* resBuf, const Nd4jLong* resShape, T const* vBuff, Nd4jLong const* vShape, Nd4jLong n) {
         for (auto i = blockIdx.x; i < n; i += gridDim.x)
             for (auto j = threadIdx.x; j < n; j += blockDim.x) {
                 Nd4jLong posR[] = {i, j};
@@ -89,7 +89,7 @@ namespace helpers {
 
         auto stream = context->getCudaStream();
         vmulKernel<T><<<128, 128, 128, *stream>>>(res.dataBuffer()->specialAsT<T>(), res.specialShapeInfo(),
-                reinterpret_cast<T const*>(v.getSpecialBuffer()), v.getSpecialShapeInfo(), n);
+                reinterpret_cast<T const*>(v.specialBuffer()), v.specialShapeInfo(), n);
         return res;
     }
 

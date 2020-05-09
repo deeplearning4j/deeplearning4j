@@ -221,8 +221,8 @@ namespace sd {
  * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
  */
 template<typename T>
-__global__ static void execEncoderKernelP1(void *dx, Nd4jLong N, void *dz, float threshold) {
-        auto x = reinterpret_cast<T *> (dx);
+__global__ static void execEncoderKernelP1(const void *dx, Nd4jLong N, void *dz, float threshold) {
+        auto x = reinterpret_cast<const T *> (dx);
         auto z = reinterpret_cast<int *> (dz);
 
         //basically, for phase One we want do calculation: how many eligible values we have, and which blocks will be holding data
@@ -242,12 +242,12 @@ __global__ static void execEncoderKernelP1(void *dx, Nd4jLong N, void *dz, float
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-__host__ void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz, float threshold) {
+__host__ void encoderKernelP1Generic(dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz, float threshold) {
 
     execEncoderKernelP1<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz, threshold);
         sd::DebugHelper::checkErrorCode(stream, "encoderP1(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP1Generic, (dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz, float threshold), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP1Generic, (dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz, float threshold), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 /*
@@ -332,8 +332,8 @@ BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT encoderKernelP3Generic, (dim3 &l
  *   PLEASE NOTE: Z is expected to be memset to 0
 */
 template<typename T>
-__global__ static void execDecoderKernel(void *dx, Nd4jLong N, void *dz) {
-        auto x = reinterpret_cast<int *> (dx);
+__global__ static void execDecoderKernel(const void *dx, Nd4jLong N, void *dz) {
+        auto x = reinterpret_cast<const int *> (dx);
         auto z = reinterpret_cast<T *> (dz);
 
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -359,12 +359,12 @@ __global__ static void execDecoderKernel(void *dx, Nd4jLong N, void *dz) {
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-__host__ void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz) {
+__host__ void decoderKernelGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz) {
 
     execDecoderKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, dz);
     sd::DebugHelper::checkErrorCode(stream, "execDecoder(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT decoderKernelGeneric, (dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *dz), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT decoderKernelGeneric, (dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *dz), FLOAT_TYPES);
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -450,18 +450,18 @@ BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaEncodeBitmapGeneric, (dim3 &
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ static void execCudaDecodeBitmapKernel(void *dx, Nd4jLong N, void *vdz) {
+__global__ static void execCudaDecodeBitmapKernel(const void *dx, Nd4jLong N, void *vdz) {
         auto dz = static_cast<T*>(vdz);
 
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
         __shared__ T *shmem;
         __shared__ FloatBits fb;
         __shared__ float threshold;
-        __shared__ int *x;
+        __shared__ const int *x;
         if (threadIdx.x == 0){
             extern __shared__ char mem[];
             shmem = reinterpret_cast<T*>(mem);
-            x = reinterpret_cast<int *>(dx);
+            x = reinterpret_cast<const int *>(dx);
             fb.i_ = x[2];
             threshold = fb.f_;
         }
@@ -505,12 +505,12 @@ __global__ static void execCudaDecodeBitmapKernel(void *dx, Nd4jLong N, void *vd
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-__host__ void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *vdz) {
+__host__ void cudaDecodeBitmapGeneric(dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *vdz) {
 
     execCudaDecodeBitmapKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, N, vdz);
     sd::DebugHelper::checkErrorCode(stream, "cudeDecodeBitmap(...) failed");
 }
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaDecodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong N, void *vdz), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaDecodeBitmapGeneric, (dim3 &launchDims, cudaStream_t *stream, const void *dx, Nd4jLong N, void *vdz), FLOAT_TYPES);
 
 
     template <bool storeSum, bool isNP2>

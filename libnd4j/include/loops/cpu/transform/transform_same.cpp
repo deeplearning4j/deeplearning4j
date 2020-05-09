@@ -30,24 +30,22 @@ namespace functions {
     namespace transform {
 
         template <typename X>
-        void TransformSame<X>::exec(
-				int opNum,
-				void *x,
-				Nd4jLong *xShapeInfo,
-				void *z,
-				Nd4jLong *zShapeInfo,
-				void *extraParams, uint64_t threadId, uint64_t numThreads) {
+        void TransformSame<X>::exec(int opNum,
+                                    const void *x, const Nd4jLong *xShapeInfo,
+                                    void *z, const Nd4jLong *zShapeInfo,
+                                    void *extraParams,
+                                    uint64_t threadId, uint64_t numThreads) {
                     DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads), TRANSFORM_SAME_OPS);
 		}
 
         template <typename X>
         template<typename OpType>
-		void _CUDA_H TransformSame<X>::exec(void *vx, Nd4jLong *xShapeInfo,
-                                            void *vz, Nd4jLong *zShapeInfo,
+		void _CUDA_H TransformSame<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
+                                            void *vz, const Nd4jLong *zShapeInfo,
                                             void *vextraParams,
                                             uint64_t threadId, uint64_t numThreads) {
 
-		    auto x = reinterpret_cast<X *>(vx);
+		    auto x = reinterpret_cast<const X *>(vx);
 		    auto z = reinterpret_cast<X *>(vz);
 		    auto extraParams = reinterpret_cast<X *>(vextraParams);
 

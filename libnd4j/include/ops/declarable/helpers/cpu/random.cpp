@@ -34,11 +34,13 @@ namespace helpers {
     template <typename T>
     void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
 
-        Nd4jLong* broadcasted = nullptr;
-        if (beta != nullptr)
-            ShapeUtils::evalBroadcastShapeInfo(*alpha, *beta, true, broadcasted, context->getWorkspace());
-        else
-            broadcasted = alpha->shapeInfo();
+        auto broadcasted = alpha->shapeInfo();
+        if (beta != nullptr) {
+            const Nd4jLong* broadcastedShape = nullptr;
+            ShapeUtils::evalBroadcastShapeInfo(*alpha, *beta, true, broadcastedShape, context->getWorkspace());
+            broadcasted = broadcastedShape;
+        }
+
         auto step = shape::length(broadcasted);
         auto shift = output->lengthOf() / step;
 

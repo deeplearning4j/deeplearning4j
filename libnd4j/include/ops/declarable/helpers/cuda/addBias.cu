@@ -126,7 +126,7 @@ void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bia
 
     if (input.rankOf() == 2 && bias.rankOf() == 1 && input.ordering() == 'c' && output.ordering() == 'c' && input.ews() == 1 && bias.ews() == 1 && input.sizeAt(1) == bias.sizeAt(0)) {
         BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias2DCudaLauncher,
-                              (block.launchContext()->getCudaStream(), input.getSpecialBuffer(), bias.getSpecialBuffer(), output.specialBuffer(), input.sizeAt(0), bias.sizeAt(0)),
+                              (block.launchContext()->getCudaStream(), input.specialBuffer(), bias.specialBuffer(), output.specialBuffer(), input.sizeAt(0), bias.sizeAt(0)),
                               FLOAT_TYPES, FLOAT_TYPES);
     } else {
         // default case
@@ -136,7 +136,7 @@ void addBias(sd::graph::Context& block, const NDArray& input, const NDArray& bia
 
 
         BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBiasCudaLauncher,
-                              (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), bias.getSpecialBuffer(), bias.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), isNCHW),
+                              (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), bias.specialBuffer(), bias.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), isNCHW),
                               FLOAT_TYPES, FLOAT_TYPES);
     }
     NDArray::registerSpecialUse({&output}, {&input, &bias});

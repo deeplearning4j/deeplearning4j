@@ -33,12 +33,10 @@ namespace functions {
     namespace reduce {
         template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceLongFunction<X,Z>::execScalar(void *vx,
-                                                Nd4jLong *xShapeInfo,
-                                                void *vextraParams,
-                                                void *vz,
-                                                Nd4jLong *zShapeInfo) {
-            auto x = reinterpret_cast<X *>(vx);
+        void _CUDA_H ReduceLongFunction<X,Z>::execScalar(const void *vx, const Nd4jLong *xShapeInfo,
+                                                         void *vextraParams,
+                                                         void *vz, const Nd4jLong *zShapeInfo) {
+            auto x = reinterpret_cast<const X *>(vx);
             auto z = reinterpret_cast<Z *>(vz);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
 
@@ -93,10 +91,8 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-            Z _CUDA_H ReduceLongFunction<X, Z>::execScalar(void *vx,
-                    Nd4jLong *xShapeInfo,
-                    void *vextraParams) {
-                auto x = reinterpret_cast<X *>(vx);
+            Z _CUDA_H ReduceLongFunction<X, Z>::execScalar(const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams) {
+                auto x = reinterpret_cast<const X *>(vx);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 const Nd4jLong length = shape::length(xShapeInfo);
@@ -120,49 +116,40 @@ namespace functions {
 
         template <typename X, typename Y>
         Y ReduceLongFunction<X, Y>::execScalar(const int opNum,
-                void *x,
-                Nd4jLong *xShapeInfo,
-                void *extraParams) {
+                                               const void *x, const Nd4jLong *xShapeInfo,
+                                               void *extraParams) {
                 RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_LONG_OPS);
         }
 
         template <typename X, typename Y>
         void ReduceLongFunction<X, Y>::execScalar(const int opNum,
-                                        void *x,
-                                        Nd4jLong *xShapeInfo,
-                                        void *extraParams,
-                                        void *z,
-                                        Nd4jLong *zShapeInfo) {
+                                                  const void *x, const Nd4jLong *xShapeInfo,
+                                                  void *extraParams,
+                                                  void *z, const Nd4jLong *zShapeInfo) {
             DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_LONG_OPS);
         }
 
         template <typename X, typename Y>
         void ReduceLongFunction<X, Y>::exec(const int opNum,
-                             void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *extraParams,
-                             void *z,
-                             Nd4jLong *zShapeInfo,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset, int64_t start, int64_t stop) {
+                                            const void *x, const Nd4jLong *xShapeInfo,
+                                            void *extraParams,
+                                            void *z, const Nd4jLong *zShapeInfo,
+                                            int *dimension, int dimensionLength,
+                                            const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                                            int64_t start, int64_t stop) {
                 DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset, start, stop), REDUCE_LONG_OPS);
         }
 
         template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceLongFunction<X,Z>::exec(void *vx,
-                             Nd4jLong *xShapeInfo,
-                             void *vextraParams,
-                             void *vresult,
-                             Nd4jLong *zShapeInfo,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset, int64_t start, int64_t stop) {
+        void _CUDA_H ReduceLongFunction<X,Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
+                                                   void *vextraParams,
+                                                   void *vresult, const Nd4jLong *zShapeInfo,
+                                                   int *dimension, int dimensionLength,
+                                                   const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                                                   int64_t start, int64_t stop) {
 
-                auto x = reinterpret_cast<X *>(vx);
+                auto x = reinterpret_cast<const X *>(vx);
                 auto z = reinterpret_cast<Z *>(vresult);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
@@ -215,21 +202,18 @@ namespace functions {
 
         template <typename X, typename Z>
         template<typename OpType>
-        void _CUDA_H ReduceLongFunction<X,Z>::exec(void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *extraParams,
-                             void *vresult,
-                             Nd4jLong *resultShapeInfo) {
-                // FIXME: wtf???
+        void _CUDA_H ReduceLongFunction<X,Z>::exec(const void *x, const Nd4jLong *xShapeInfo,
+                                                   void *extraParams,
+                                                   void *vresult, const Nd4jLong *resultShapeInfo) {
                 auto z = reinterpret_cast<Z*>(vresult);
                 z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
         }
 
         template <typename X, typename Z>
         template <typename OpType>
-        Z _CUDA_H ReduceLongFunction<X, Z>::execScalar(void *vx, Nd4jLong xEws, Nd4jLong length, void *vextraParams) {
+        Z _CUDA_H ReduceLongFunction<X, Z>::execScalar(const void *vx, Nd4jLong xEws, Nd4jLong length, void *vextraParams) {
 
-            auto x = reinterpret_cast<X *>(vx);
+            auto x = reinterpret_cast<const X *>(vx);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
             int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance()->maxThreads());
             Z intermediate[64];

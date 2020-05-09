@@ -29,7 +29,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static __global__ void dropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probVal, int inLen, sd::graph::RandomGenerator* nodeRng) {
+    static __global__ void dropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong const* outputShape, double probVal, int inLen, sd::graph::RandomGenerator* nodeRng) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
         T const* input = reinterpret_cast<T const*>(inputBuf);
@@ -62,7 +62,7 @@ namespace helpers {
             throw cuda_exception::build("helpers::dropoutSimple: Cannot set up device memory for random generator.", err);
         }
 
-        dropoutSimpleKernel<T><<<128, 256, 1024, *stream>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), probValue, inLen, dRandom);
+        dropoutSimpleKernel<T><<<128, 256, 1024, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), probValue, inLen, dRandom);
         err = cudaFree(dRandom);
         if (err) {
             throw cuda_exception::build("helpers::dropoutSimple: Cannot deallocate device memory for random generator.", err);
@@ -124,7 +124,7 @@ namespace helpers {
 
 /////////////////////////////////// backrpopagations ///////////////////////////////////////////////
     template <typename T>
-    static __global__ void dropoutBPKernel(void* outputBuf, Nd4jLong* outputShape, void* gradOutBuf, Nd4jLong* gradOutShape, double probValue) {
+    static __global__ void dropoutBPKernel(void* outputBuf, Nd4jLong const* outputShape, void* gradOutBuf, Nd4jLong const* gradOutShape, double probValue) {
         __shared__ T* output;
         __shared__ T* input;
         __shared__ int len;
@@ -165,7 +165,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static __global__ void alphaDropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probValue, double alpha, double alpha1, double beta, int inLen, sd::graph::RandomGenerator* nodeRng) {
+    static __global__ void alphaDropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong const* outputShape, double probValue, double alpha, double alpha1, double beta, int inLen, sd::graph::RandomGenerator* nodeRng) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
         T const* input = reinterpret_cast<T const*>(inputBuf);
@@ -191,7 +191,7 @@ namespace helpers {
             throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot set up device memory for random generator.", err);
         }
 
-        alphaDropoutSimpleKernel<T><<<128, 256, 1024, *stream>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), probValue, alpha, alpha1, beta, output->lengthOf(), dRandom);
+        alphaDropoutSimpleKernel<T><<<128, 256, 1024, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), probValue, alpha, alpha1, beta, output->lengthOf(), dRandom);
 
         err = cudaFree(dRandom);
         if (err) {

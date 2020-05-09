@@ -34,8 +34,8 @@ namespace ops {
 
         BROADCAST_CHECK_EMPTY(x,y,z);
 
-        Nd4jLong* zShapeInfo = nullptr;
-        const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, zShapeInfo, block.getWorkspace());
+        const Nd4jLong* zShapeInfo = nullptr;
+        const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, zShapeInfo, block.getWorkspace());
         REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
 
         auto tZ = BroadcastHelper::broadcastApply(sd::BroadcastOpsTuple::Multiply(), x, y, z);
@@ -70,8 +70,8 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
     auto dLdx = OUTPUT_VARIABLE(0);
     auto dLdy = OUTPUT_VARIABLE(1);
 
-    Nd4jLong* dLdzShapeInfo = nullptr;
-    const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
+    const Nd4jLong* dLdzShapeInfo = nullptr;
+    const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
     REQUIRE_TRUE(areShapesBroadcastable, 0, "MULTIPLY_BP OP: the shapes of x %s and y %s are not suitable for broadcast !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
     REQUIRE_TRUE(shape::equalsSoft(dLdz->shapeInfo(), dLdzShapeInfo), 0, "MULTIPLY_BP OP: wrong shape of next epsilon array (dLdOut), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(dLdzShapeInfo).c_str(), ShapeUtils::shapeAsString(dLdz).c_str());
 
@@ -102,7 +102,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
 
         auto yTiled = NDArray(dLdz, false, block.launchContext());
         y->tile(yTiled);
-        std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
+        std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
         dLdy->assign( (*x * *dLdz).reduceAlongDimension(reduce::Sum, axesForY) );
         yTiled.applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdx);
@@ -111,7 +111,7 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
 
         auto xTiled = NDArray(dLdz, false, block.launchContext());
         x->tile(xTiled);
-        std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
+        std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
 
         dLdx->assign( (*y * *dLdz).reduceAlongDimension(reduce::Sum, axesForX) );
         xTiled.applyPairwiseTransform(pairwise::Multiply, *dLdz, *dLdy);
@@ -122,8 +122,8 @@ CUSTOM_OP_IMPL(multiply_bp, 3, 2, false, 0, 0) {
         auto yTiled = NDArray(dLdz, false, block.launchContext());
         x->tile(xTiled);
         y->tile(yTiled);
-        std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
-        std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
+        std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
+        std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
 
         dLdx->assign( (*y * *dLdz).reduceAlongDimension(reduce::Sum, axesForX) );
         dLdy->assign( (*x * *dLdz).reduceAlongDimension(reduce::Sum, axesForY) );

@@ -62,8 +62,8 @@ namespace ops {
            auto dLdx = OUTPUT_VARIABLE(0);
            auto dLdy = OUTPUT_VARIABLE(1);
        
-           Nd4jLong* dLdzShapeInfo = nullptr;
-           const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->getShapeInfo(), y->getShapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
+           const Nd4jLong* dLdzShapeInfo = nullptr;
+           const bool areShapesBroadcastable = ShapeUtils::evalBroadcastShapeInfo(x->shapeInfo(), y->shapeInfo(), true, dLdzShapeInfo, block.getWorkspace());
            REQUIRE_TRUE(areShapesBroadcastable, 0, "POW_BP OP: the shapes of x %s"
                " and y %s are not suitable for broadcast !", 
                ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(y).c_str());
@@ -82,7 +82,7 @@ namespace ops {
                dLdy->assign(temp); 
            }
            else {
-               std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->getShapeInfo(), dLdz->getShapeInfo());
+               std::vector<int> axesForY = ShapeUtils::evalBroadcastBackwardAxis(y->shapeInfo(), dLdz->shapeInfo());
                dLdy->assign(temp.reduceAlongDimension(reduce::Sum, axesForY)); // dL/dy = sum(c * dL/dz)
            }
            
@@ -94,7 +94,7 @@ namespace ops {
                dLdx->assign(temp); // dLdx = a*dL/dz
            }
            else {
-               std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->getShapeInfo(), dLdz->getShapeInfo());
+               std::vector<int> axesForX = ShapeUtils::evalBroadcastBackwardAxis(x->shapeInfo(), dLdz->shapeInfo());
                dLdx->assign(temp.reduceAlongDimension(reduce::Sum, axesForX)); // dLdx = a*dL/dz
            }
        

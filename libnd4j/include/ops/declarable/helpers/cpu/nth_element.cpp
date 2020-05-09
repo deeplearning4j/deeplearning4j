@@ -34,7 +34,7 @@ namespace helpers {
         NDArray sortedVals(*input);
         if (input->isVector()) {
             //std::vector<float> data(input->lengthOf());
-            //memcpy(&data[0], input->getBuffer(), sizeof(T) * data.size());
+            //memcpy(&data[0], input->buffer(), sizeof(T) * data.size());
             //size_t l = 0;
             //for (size_t l = 0; l < data.size(); ++l)
             //    data[l] = input->e<float>(l);

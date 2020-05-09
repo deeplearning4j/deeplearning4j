@@ -33,16 +33,13 @@ namespace functions {
         template<typename X>
         template<typename OpClass>
         void RandomFunction<X>::execTransform(Nd4jPointer state,
-                void *vx,
-                Nd4jLong *xShapeInfo,
-                void *vy,
-                Nd4jLong *yShapeInfo,
-                void *vz,
-                Nd4jLong *zShapeInfo,
-                void *vextraArguments) {
+                                              const void *vx, const Nd4jLong *xShapeInfo,
+                                              const void *vy, const Nd4jLong *yShapeInfo,
+                                              void *vz, const Nd4jLong *zShapeInfo,
+                                              void *vextraArguments) {
 
-            auto x = reinterpret_cast<X *>(vx);
-            auto y = reinterpret_cast<X *>(vy);
+            auto x = reinterpret_cast<const X *>(vx);
+            auto y = reinterpret_cast<const X *>(vy);
             auto z = reinterpret_cast<X *>(vz);
             auto extraArguments = reinterpret_cast<X *>(vextraArguments);
 
@@ -166,12 +163,10 @@ namespace functions {
         template<typename X>
         template<typename OpClass>
         void RandomFunction<X>::execTransform(Nd4jPointer state,
-                void *vx,
-                Nd4jLong *xShapeInfo,
-                void *vz,
-                Nd4jLong *zShapeInfo,
-                void *vextraArguments) {
-            auto x = reinterpret_cast<X *>(vx);
+                                              const void *vx, const Nd4jLong *xShapeInfo,
+                                              void *vz, const Nd4jLong *zShapeInfo,
+                                              void *vextraArguments) {
+            auto x = reinterpret_cast<const X *>(vx);
             auto z = reinterpret_cast<X *>(vz);
             auto extraArguments = reinterpret_cast<X *>(vextraArguments);
 
@@ -227,7 +222,7 @@ namespace functions {
 
         template<typename X>
         template<typename OpClass>
-        void RandomFunction<X>::execTransform(Nd4jPointer state, void *vz, Nd4jLong  *zShapeInfo, void *vextraArguments) {
+        void RandomFunction<X>::execTransform(Nd4jPointer state, void *vz, const Nd4jLong  *zShapeInfo, void *vextraArguments) {
 
             auto z = reinterpret_cast<X *>(vz);
             auto extraArguments = reinterpret_cast<X *>(vextraArguments);
@@ -266,17 +261,17 @@ namespace functions {
         }
 
         template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, const void *x, const Nd4jLong *xShapeInfo, void *z, const Nd4jLong *zShapeInfo, void *extraArguments) {
             DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeInfo, z, zShapeInfo, extraArguments), RANDOM_OPS)
         }
 
         template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, const void *x, const Nd4jLong *xShapeInfo, const void *y, const Nd4jLong *yShapeInfo, void *z, const Nd4jLong *zShapeInfo, void *extraArguments) {
             DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraArguments), RANDOM_OPS)
         }
 
         template<typename X>
-        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *z, Nd4jLong *zShapeInfo, void *extraArguments) {
+        void RandomFunction<X>::execTransform(int opNum, Nd4jPointer state, void *z, const Nd4jLong *zShapeInfo, void *extraArguments) {
             DISPATCH_BY_OPNUM_T(execTransform, PARAMS(state, z, zShapeInfo, extraArguments), RANDOM_OPS)
         }
 

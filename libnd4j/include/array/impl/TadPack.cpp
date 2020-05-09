@@ -29,18 +29,19 @@ namespace sd {
         _numTads = numTads;
     }
 
-    Nd4jLong* TadPack::primaryShapeInfo() const {
+    const Nd4jLong* TadPack::primaryShapeInfo() const {
         return reinterpret_cast<Nd4jLong *>(_tadShape.primary());
     }
-    Nd4jLong* TadPack::primaryOffsets() const {
+
+    const Nd4jLong* TadPack::primaryOffsets() const {
         return reinterpret_cast<Nd4jLong *>(_tadOffsets.primary());
     }
 
-    Nd4jLong* TadPack::specialShapeInfo() const {
+    const Nd4jLong* TadPack::specialShapeInfo() const {
         return reinterpret_cast<Nd4jLong *>(_tadShape.special());
     }
 
-    Nd4jLong* TadPack::specialOffsets() const {
+    const Nd4jLong* TadPack::specialOffsets() const {
         return reinterpret_cast<Nd4jLong *>(_tadOffsets.special());
     }
 
@@ -48,11 +49,11 @@ namespace sd {
         return _numTads;
     }
 
-    Nd4jLong* TadPack::platformShapeInfo() const {
+    const Nd4jLong* TadPack::platformShapeInfo() const {
         return sd::Environment::getInstance()->isCPU() ? primaryShapeInfo() : specialShapeInfo();
     }
 
-    Nd4jLong* TadPack::platformOffsets() const {
+    const Nd4jLong* TadPack::platformOffsets() const {
         return sd::Environment::getInstance()->isCPU() ? primaryOffsets() : specialOffsets();
     }
 

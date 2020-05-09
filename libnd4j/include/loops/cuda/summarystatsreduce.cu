@@ -39,7 +39,7 @@ namespace functions {
     namespace summarystats {
 
 template <typename X, typename Z>
-void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *z, Nd4jLong *zShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeInfo, int xRank, void *extraParams, void *z, Nd4jLong const* zShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets) {
 
     functions::summarystats::SummaryStatsReduce<X,Z>::transform(op,dx,xShapeInfo,extraParams,z,zShapeInfo,dimension,dimensionLength,biasCorrected,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
 }
@@ -103,15 +103,15 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 			 */
         template<typename X, typename Z>
         template<typename OpType>
-        _CUDA_D void SummaryStatsReduce<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
+        _CUDA_D void SummaryStatsReduce<X,Z>::transform(void const* vx, Nd4jLong const* xShapeInfo,
                                                         void *vextraParams,
-                                                        void *vz, Nd4jLong *zShapeInfo,
+                                                        void *vz, Nd4jLong const* zShapeInfo,
                                                         int *dimension, int dimensionLength,
                                                         int postProcessOrNot,
                                                         int *allocationBuffer, void *vreductionBuffer,
-                                                        Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+                                                        Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets) {
 
-            auto dx = static_cast<X*>(vx);
+            auto dx = static_cast<X const*>(vx);
             auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
             auto reductionBuffer = static_cast<Z*>(vreductionBuffer);
@@ -331,15 +331,15 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
 
         template <typename X, typename Y>
-        _CUDA_D void SummaryStatsReduce<X,Y>::transform(const int opNum, void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        _CUDA_D void SummaryStatsReduce<X,Y>::transform(const int opNum, void const* dx, Nd4jLong const* xShapeInfo, void *extraParams, void *z, Nd4jLong const* zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets) {
             DISPATCH_BY_OPNUM_TT(transform, PARAMS(dx, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets), SUMMARY_STATS_OPS);
         };
 
 
         template <typename X, typename Z>
-        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
+        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t *stream, int opNum, void const* vx, Nd4jLong const* xShapeInfo, Nd4jLong const* hxShapeInfo, void *vextraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hzShapeInfo, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool biasCorrected, void *reductionBuffer) {
 
-            auto x = static_cast<X*>(vx);
+            auto x = static_cast<X const*>(vx);
             auto extraParams = static_cast<Z*>(vextraParams);
             auto z = reinterpret_cast<Z*>(vz);
             auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
@@ -363,9 +363,9 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
         }
 
         template <typename X, typename Z>
-        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
+        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void const* vx, Nd4jLong const* xShapeInfo, Nd4jLong const* hxShapeInfo, void *vextraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hzShapeInfo, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool biasCorrected, void *reductionBuffer) {
 
-            auto x = static_cast<X*>(vx);
+            auto x = static_cast<X const*>(vx);
             auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
 
@@ -390,9 +390,9 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
 
         template<typename X, typename Z>
-        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
+        _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void const* vx, Nd4jLong const* xShapeInfo, Nd4jLong const* hxShapeInfo, void *vextraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool biasCorrected, void *reductionBuffer) {
 
-            auto x = static_cast<X*>(vx);
+            auto x = static_cast<X const*>(vx);
             auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
 

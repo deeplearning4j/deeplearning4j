@@ -113,7 +113,7 @@ namespace sd {
                 sd::DebugHelper::checkErrorCode(stream, "encodeThresholdP2Int(...) failed");
             }
 
-            static void encodeThresholdP3_(void *dx, Nd4jLong *hXShapeInfo, int *offsets, Nd4jLong N, int *dz){
+            static void encodeThresholdP3_(void *dx, const Nd4jLong *hXShapeInfo, int *offsets, Nd4jLong N, int *dz){
                 auto stream = LaunchContext::defaultContext()->getCudaStream();
 
                 int blockSize = 512;
@@ -137,7 +137,7 @@ namespace sd {
                 auto xType = updates.dataType();
 
                 NDArray::prepareSpecialUse({&tmp}, {&updates});
-                BUILD_SINGLE_SELECTOR(xType, encoderKernelP1Generic, (launchDims, LaunchContext::defaultContext()->getCudaStream(), updates.getSpecialBuffer(), updates.lengthOf(), tmp.specialBuffer(), threshold), FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR(xType, encoderKernelP1Generic, (launchDims, LaunchContext::defaultContext()->getCudaStream(), updates.specialBuffer(), updates.lengthOf(), tmp.specialBuffer(), threshold), FLOAT_TYPES);
                 NDArray::registerSpecialUse({&tmp}, {&updates});
 
                 return std::move(tmp);
@@ -199,9 +199,9 @@ namespace sd {
 
                 // filling offsets
                 encodeThresholdP2Int_(reinterpret_cast<void **>(dptr),
-                                      reinterpret_cast<int*>(blocks.getSpecialBuffer()),
+                                      reinterpret_cast<int*>(blocks.specialBuffer()),
                                       numBlocks,
-                                      reinterpret_cast<int*>(offsets.getSpecialBuffer()));
+                                      reinterpret_cast<int*>(offsets.specialBuffer()));
 
                 NDArray::registerSpecialUse({&blocks, &offsets}, {});
                 pm.synchronize();
@@ -209,7 +209,7 @@ namespace sd {
 
                 encodeThresholdP3_(updates.specialBuffer(),
                                    updates.shapeInfo(),
-                                   reinterpret_cast<int*>(offsets.getSpecialBuffer()),
+                                   reinterpret_cast<int*>(offsets.specialBuffer()),
                                    updates.lengthOf(),
                                    reinterpret_cast<int*>(encoded.specialBuffer()));
 
@@ -223,7 +223,7 @@ namespace sd {
                 auto xType = updates.dataType();
 
                 NDArray::prepareSpecialUse({&updates}, {&encoded});
-                BUILD_SINGLE_SELECTOR(xType, decoderKernelGeneric, (launchDims, LaunchContext::defaultContext()->getCudaStream(), encoded.getSpecialBuffer(), updates.lengthOf(), updates.specialBuffer()), FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR(xType, decoderKernelGeneric, (launchDims, LaunchContext::defaultContext()->getCudaStream(), encoded.specialBuffer(), updates.lengthOf(), updates.specialBuffer()), FLOAT_TYPES);
                 NDArray::registerSpecialUse({&updates}, {&encoded});
             }
         }

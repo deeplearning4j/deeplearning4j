@@ -37,9 +37,9 @@ namespace helpers {
 //  invert the second diagonal for lower diagonal matrix
     template<typename T>
     static __global__ void
-    invertKernelLow(void *invertedBuf, Nd4jLong *invertedShape, void *inputBuf, Nd4jLong *inputShape, Nd4jLong n) {
-        T* inverted = reinterpret_cast<T *>(invertedBuf);
-        T* input = reinterpret_cast<T*>(inputBuf);
+    invertKernelLow(void *invertedBuf, const Nd4jLong *invertedShape, const void *inputBuf, const Nd4jLong *inputShape, Nd4jLong n) {
+        auto inverted = reinterpret_cast<T *>(invertedBuf);
+        auto input = reinterpret_cast<const T*>(inputBuf);
 
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
@@ -61,9 +61,9 @@ namespace helpers {
 // invert diagonal vals to upper diagonal matrix
     template<typename T>
     static __global__ void
-    upvertKernel(void *invertedBuf, Nd4jLong *invertedShape, void *inputBuf, Nd4jLong *inputShape, Nd4jLong n) {
-        T *inverted = reinterpret_cast<T *>(invertedBuf);
-        T *input = reinterpret_cast<T *>(inputBuf);
+    upvertKernel(void *invertedBuf, const Nd4jLong *invertedShape, const void *inputBuf, const Nd4jLong *inputShape, Nd4jLong n) {
+        auto inverted = reinterpret_cast<T *>(invertedBuf);
+        auto input = reinterpret_cast<const T *>(inputBuf);
 
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
@@ -72,7 +72,7 @@ namespace helpers {
             Nd4jLong pos[] = {i, i};
             auto xIndex = shape::getOffset(inputShape, pos);
             auto zIndex = shape::getOffset(invertedShape, pos);
-//            math::atomics::nd4j_atomicDiv(&inverted[zIndex], input[xIndex]);
+
             // invert diagonal elements
             inverted[zIndex] /= input[xIndex];
         }
@@ -82,13 +82,13 @@ namespace helpers {
 //  invert upper second diagonal
     template<typename T>
     static __global__ void
-    upvertKernelUp(void *invertedBuf, Nd4jLong *invertedShape, void *inputBuf, Nd4jLong *inputShape, Nd4jLong n) {
+    upvertKernelUp(void *invertedBuf, const Nd4jLong *invertedShape, const void *inputBuf, const Nd4jLong *inputShape, Nd4jLong n) {
 
         __shared__ T* inverted;
-        __shared__ T* input;
+        __shared__ const T* input;
         if (threadIdx.x == 0) {
             inverted = reinterpret_cast<T *>(invertedBuf);
-            input = reinterpret_cast<T *>(inputBuf);
+            input = reinterpret_cast<const T *>(inputBuf);
         }
         __syncthreads();
 
@@ -110,15 +110,11 @@ namespace helpers {
 // ------------------------------------------------------------------------------------------------------------------ //
     template<typename T>
     static __global__ void
-    invertLowKernel(void *invertedBuf, Nd4jLong *invertedShape, void *inputBuf, Nd4jLong *inputShape, Nd4jLong n) {
+    invertLowKernel(void *invertedBuf, const Nd4jLong *invertedShape, const void *inputBuf, const Nd4jLong *inputShape, Nd4jLong n) {
 
-        T *inverted = reinterpret_cast<T *>(invertedBuf);
-        T *input = reinterpret_cast<T *>(inputBuf);
-        if (threadIdx.x == 0) {
-            inverted = reinterpret_cast<T *>(invertedBuf);
-            input = reinterpret_cast<T *>(inputBuf);
-        }
-        __syncthreads();
+        auto input = reinterpret_cast<const T *>(inputBuf);
+        auto inverted = reinterpret_cast<T *>(invertedBuf);
+
 
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = gridDim.x * blockDim.x;
@@ -145,15 +141,14 @@ namespace helpers {
 // Invertion of upper triangular matrix non-diagonal elements when main and second diagonals already processed
     template<typename T>
     static __global__ void
-    invertUpKernel(void *invertedBuf, Nd4jLong *invertedShape, void *inputBuf, Nd4jLong *inputShape, Nd4jLong n) {
-        __shared__ T* inverted;
-        __shared__ T* input;
+    invertUpKernel(
+            void *invertedBuf, const Nd4jLong *invertedShape,
+            const void *inputBuf, const Nd4jLong *inputShape,
+            Nd4jLong n) {
 
-        if (threadIdx.x == 0) {
-            inverted = reinterpret_cast<T *>(invertedBuf);;
-            input = reinterpret_cast<T *>(inputBuf);
-        }
-        __syncthreads();
+        auto inverted = reinterpret_cast<T *>(invertedBuf);;
+        auto input = reinterpret_cast<const T *>(inputBuf);
+
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
 
@@ -264,15 +259,15 @@ namespace helpers {
     // output - a N-D tensor buffer with rank not less than 2, input - 2D square n x n matrix with n = rowLen
     template<typename T, typename F>
     static __global__ void
-    fillMatrix(void *output, Nd4jLong *outShape, void *input, Nd4jLong *inputShape, Nd4jLong pos, Nd4jLong rowLen) {
+    fillMatrix(void *output, const Nd4jLong *outShape, const void *input, const Nd4jLong *inputShape, Nd4jLong pos, Nd4jLong rowLen) {
         __shared__ F *matrix;
-        __shared__ T *inputBuf;
+        __shared__ const T *inputBuf;
         __shared__ Nd4jLong inputLen;
         __shared__ Nd4jLong n2;
 
         if (threadIdx.x == 0) {
             matrix = reinterpret_cast<F*>(output);
-            inputBuf = reinterpret_cast<T*>(input);
+            inputBuf = reinterpret_cast<const T*>(input);
             inputLen = shape::length(inputShape);
             n2 = rowLen * rowLen;
         }
@@ -291,15 +286,14 @@ namespace helpers {
 // same as above, but without type conversion
     template<typename T>
     static __global__ void
-    returnMatrix(void *output, Nd4jLong *outputShape, void *input, Nd4jLong *inputShape, Nd4jLong pos, Nd4jLong rowLen) {
-        __shared__ T* matrix;
-        __shared__ T* outputBuf;
+    returnMatrix(void *output, const Nd4jLong *outputShape, const void *input, const Nd4jLong *inputShape, Nd4jLong pos, Nd4jLong rowLen) {
         __shared__ Nd4jLong outputLen;
         __shared__ Nd4jLong n2;
+        auto matrix = reinterpret_cast<const T *>(input);
+        auto outputBuf = reinterpret_cast<T *>(output);
 
         if (threadIdx.x == 0) {
-            matrix = reinterpret_cast<T *>(input);
-            outputBuf = reinterpret_cast<T *>(output);
+
             outputLen = shape::length(inputShape);
             n2 = rowLen * rowLen;
         }
@@ -316,7 +310,7 @@ namespace helpers {
 // ------------------------------------------------------------------------------------------------------------------ //
     // fill up permutaion matrix kernel. Permutation matrix filled with zeros and ones
     template<typename F>
-    static __global__ void fillUpPermutation(void *output, Nd4jLong *shape, int *source, int rowNum) {
+    static __global__ void fillUpPermutation(void *output, const Nd4jLong *shape, int *source, int rowNum) {
         F *permutation = reinterpret_cast<F *>(output);
 
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
@@ -515,7 +509,7 @@ namespace helpers {
     BUILD_DOUBLE_TEMPLATE(template void lup_,(LaunchContext * context, NDArray * input, NDArray * output, NDArray * permutation), FLOAT_NATIVE, INDEXING_TYPES);
 
     template <typename T>
-    static __device__ void  swapRows(T* matrix, Nd4jLong* shape, Nd4jLong theFirst, Nd4jLong theSecond, Nd4jLong n) {
+    static __device__ void  swapRows(T* matrix, const Nd4jLong* shape, Nd4jLong theFirst, Nd4jLong theSecond, Nd4jLong n) {
         if (theFirst != theSecond) {
             for (auto i = 0; i < n; i++) {
                 Nd4jLong theFirstPos[] = {theFirst, i};
@@ -528,7 +522,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static __device__ void processColumns(Nd4jLong currentRow, Nd4jLong rowNum, T* compoundBuf, Nd4jLong* compoundShape) {
+    static __device__ void processColumns(Nd4jLong currentRow, Nd4jLong rowNum, T* compoundBuf, const Nd4jLong* compoundShape) {
         Nd4jLong xDiag[] = {currentRow, currentRow};
         auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
         for (auto j = currentRow + 1; j < rowNum; j++) {
@@ -546,7 +540,7 @@ namespace helpers {
     }
 
     template <typename T>
-    __device__ Nd4jLong argmaxCol(Nd4jLong column, T* compoundBuffer, Nd4jLong* compoundShape) {
+    __device__ Nd4jLong argmaxCol(Nd4jLong column, T* compoundBuffer, const Nd4jLong* compoundShape) {
         auto rowNum = shape::sizeAt(compoundShape, 0);
         Nd4jLong xInitial[] = {column, column};
         auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
@@ -565,7 +559,7 @@ namespace helpers {
     }
 
         template <typename T, typename I>
-    static __device__ int  luNN(T* matrix, Nd4jLong* shape, I* permutation, Nd4jLong* permuShape, Nd4jLong n) {
+    static __device__ int  luNN(T* matrix, const Nd4jLong* shape, I* permutation, const Nd4jLong* permuShape, Nd4jLong n) {
 
         for (auto i = 0; i < n - 1; i++) {
             auto pivotIndex = argmaxCol(i, matrix, shape);
@@ -581,9 +575,12 @@ namespace helpers {
     }
 
     template <typename T, typename I>
-    static __global__ void luBatchedKernel(T* outputBuf, Nd4jLong* outputShape, I* permutations, Nd4jLong* permuShape,
-         Nd4jLong* outputTadShape, Nd4jLong* outputTadOffsets, Nd4jLong* permuTadShape, Nd4jLong* permuTadOffsets,
-         Nd4jLong batchNum) {
+    static __global__ void luBatchedKernel(
+            T* outputBuf, const Nd4jLong* outputShape,
+            I* permutations, const Nd4jLong* permuShape,
+            const Nd4jLong* outputTadShape, const Nd4jLong* outputTadOffsets,
+            const Nd4jLong* permuTadShape, const Nd4jLong* permuTadOffsets,
+            Nd4jLong batchNum) {
 
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
@@ -627,7 +624,7 @@ namespace helpers {
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
         std::vector<int> dims();
-        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {input->rankOf() - 2, input->rankOf() - 1});
+        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), {input->rankOf() - 2, input->rankOf() - 1});
         //auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {output->rankOf() - 1});
 //        DataType dtype = input->dataType();
 //        if (dtype != DataType::DOUBLE)
@@ -651,8 +648,7 @@ namespace helpers {
             auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
             auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
 //            if (matrix.dataType() == input->dataType())
-            determinantKernel<T> << < launchDims.x, launchDims.y, launchDims.z, *stream >> >
-                                                                                (inputBuf, outputBuf, n);
+            determinantKernel<T><<< launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuf, outputBuf, n);
 //            else
 //                determinantKernel<T, float><<<launchDims.x, launchDims.y, launchDims.z, *stream >>> (inputBuf, outputBuf, n);
         }
@@ -672,7 +668,7 @@ namespace helpers {
             Nd4jLong n = input->sizeAt(-1);
             Nd4jLong n2 = n * n;
             std::vector<int> dims();
-            auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {input->rankOf() - 2, input->rankOf() - 1});
+            auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), {input->rankOf() - 2, input->rankOf() - 1});
             //auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {output->rankOf() - 1});
             DataType dtype = input->dataType();
             if (dtype != DataType::DOUBLE)
@@ -718,8 +714,11 @@ namespace helpers {
 
         template<typename T>
         static __global__ void
-        fillLowerUpperKernel(void *lowerBuf, Nd4jLong *lowerShape, void *upperBuf, Nd4jLong *upperShape,
-                             void *matrixBuf, Nd4jLong *matrixShape, Nd4jLong n) {
+        fillLowerUpperKernel(
+                void *lowerBuf, const Nd4jLong *lowerShape,
+                void *upperBuf, const Nd4jLong *upperShape,
+                void *matrixBuf, const Nd4jLong *matrixShape,
+                Nd4jLong n) {
 
             __shared__ T *lowerMatrix;
             __shared__ T *upperMatrix;
@@ -760,10 +759,10 @@ namespace helpers {
             NDArray lower = NDArrayFactory::create('c', {n, n}, dtype, context);
             NDArray compound = NDArrayFactory::create('c', {n, n}, dtype, context);
             NDArray permutation = NDArrayFactory::create('c', {n, n}, dtype, context);
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(),
                                                                                   {input->rankOf() - 2,
                                                                                    input->rankOf() - 1});
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(),
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(),
                                                                                   {output->rankOf() - 2,
                                                                                    output->rankOf() - 1});
             auto stream = context->getCudaStream();
@@ -792,7 +791,7 @@ namespace helpers {
                 sd::MmulHelper::mmul(&matrix, &compound, &upper, 1.0, 0.0);
                 upper.tickWriteDevice();
 //                upper.printIndexedBuffer("Full inverted");
-                returnMatrix<T> <<<1, n2, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), i * n2, n);
+                returnMatrix<T><<<1, n2, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), i * n2, n);
             }
             return Status::OK();
         }
@@ -808,7 +807,7 @@ namespace helpers {
         }
 
         template<typename F>
-        __global__ void fillBatchKernel(F **dArrayBatch, F *buf, Nd4jLong *offsets, Nd4jLong batchSize) {
+        __global__ void fillBatchKernel(F **dArrayBatch, F *buf, const Nd4jLong *offsets, Nd4jLong batchSize) {
             auto start = blockIdx.x * blockDim.x + threadIdx.x;
             auto step = blockDim.x * gridDim.x;
 
@@ -819,7 +818,7 @@ namespace helpers {
 
         template<typename F>
         __global__ void
-        adjustResultsKernel(F *dArray, Nd4jLong *shape, Nd4jLong *offsets, Nd4jLong batchSize, Nd4jLong n) {
+        adjustResultsKernel(F *dArray, const Nd4jLong *shape, const Nd4jLong *offsets, Nd4jLong batchSize, Nd4jLong n) {
             //auto i = blockIdx.x * blockDim.x + threadIdx.x;
             Nd4jLong *shapeOf = shape::shapeOf(shape);
             Nd4jLong *strideOf = shape::stride(shape);
@@ -850,7 +849,7 @@ namespace helpers {
                 throw cuda_exception::build("helpers::cholesky_: Cannot create solver handle", status);
             }
             F **dArrayBatch = nullptr;
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.shapeInfo(),
                                                                                   {tempOutput.rankOf() - 2,
                                                                                    tempOutput.rankOf() - 1});
             const Nd4jLong batchSize = packX.numberOfTads();
@@ -865,8 +864,7 @@ namespace helpers {
                 throw cuda_exception::build("helpers::cholesky_: Cannot allocate memory for solver errors buffer", err);
             }
             auto stream = context->getCudaStream();
-            fillBatchKernel<F> << < 1, batchSize, 128, *stream >> >
-                                                       (dArrayBatch, reinterpret_cast<F *>(tempOutput.specialBuffer()), packX.specialOffsets(), batchSize);
+            fillBatchKernel<F><<<1, batchSize, 128, *stream>>>(dArrayBatch, reinterpret_cast<F *>(tempOutput.specialBuffer()), packX.specialOffsets(), batchSize);
 
             status = cusolverDnSetStream(handle, *stream);
             if (CUSOLVER_STATUS_SUCCESS != status) {
@@ -895,8 +893,7 @@ namespace helpers {
             if (CUSOLVER_STATUS_SUCCESS != status) {
                 throw cuda_exception::build("helpers::cholesky_: Cholesky factorization failed for batch", status);
             }
-            adjustResultsKernel<F> << < batchSize, n2, 128, *stream >> >
-                                                            (reinterpret_cast<F *>(tempOutput.specialBuffer()), packX.specialShapeInfo(), packX.specialOffsets(), batchSize, n);
+            adjustResultsKernel<F><<<batchSize, n2, 128, *stream>>>(reinterpret_cast<F *>(tempOutput.specialBuffer()), packX.specialShapeInfo(), packX.specialOffsets(), batchSize, n);
 
             err = cudaFree(dArrayBatch);
             if (err) {
@@ -944,9 +941,11 @@ namespace helpers {
                               FLOAT_NATIVE);
 
         template<typename T>
-        __global__ void
-        logDetKernel(T *inputBuf, Nd4jLong *inputShape, Nd4jLong batchNum, Nd4jLong *tadShape, Nd4jLong *tadOffsets,
-                     T *outputBuf, Nd4jLong *outputShape) {
+        __global__ void logDetKernel(
+                const T *inputBuf, const Nd4jLong *inputShape,
+                Nd4jLong batchNum,
+                const Nd4jLong *tadShape, const Nd4jLong *tadOffsets,
+                T *outputBuf, const Nd4jLong *outputShape) {
 
             __shared__ int n;
             if (threadIdx.x == 0) {
@@ -954,11 +953,11 @@ namespace helpers {
             }
             __syncthreads();
 
-            T *output = outputBuf;
-            T *input = inputBuf;
+            auto output = outputBuf;
+            auto input = inputBuf;
 
             for (auto i = blockIdx.x; i < batchNum; i += gridDim.x) {
-                T *current = input + tadOffsets[i];
+                auto current = input + tadOffsets[i];
 
                 auto zIndex = shape::getIndexOffset(i, outputShape);
                 for (auto e = threadIdx.x; e < n; e += blockDim.x) {
@@ -981,10 +980,10 @@ namespace helpers {
             auto outputBuf = output->dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(output->specialBuffer()); // + e * n2; // + e * n2;
             auto inputBuf = tempOutput.dataBuffer()->specialAsT<T>(); //reinterpret_cast<T*>(tempOutput.specialBuffer());
             output->nullify();
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.getShapeInfo(),
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput.shapeInfo(),
                                                                                   {tempOutput.rankOf() - 2,
                                                                                    tempOutput.rankOf() - 1});
-            logDetKernel<T> <<<128, 512, 256, *stream>>>(inputBuf, tempOutput.specialShapeInfo(),
+            logDetKernel<T><<<128, 512, 256, *stream>>>(inputBuf, tempOutput.specialShapeInfo(),
                     packX.numberOfTads(), packX.specialShapeInfo(),
                     packX.specialOffsets(), outputBuf, output->specialShapeInfo());
             output->tickWriteDevice();

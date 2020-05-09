@@ -21,6 +21,7 @@
 #define DEV_TESTS_BROADCASTSCALARCONVERTER_H
 
 #include <system/op_boilerplate.h>
+#include <system/op_enums.h>
 #include <stdexcept>
 
 namespace sd {

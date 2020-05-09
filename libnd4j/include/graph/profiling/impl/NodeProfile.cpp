@@ -116,11 +116,11 @@ namespace sd {
             return _executionTime;
         }
 
-        void NodeProfile::addInputShape(Nd4jLong *shapeInfo) {
+        void NodeProfile::addInputShape(Nd4jLong const* shapeInfo) {
             _inputShapes.emplace_back(ShapeUtils::shapeInfoAsString(shapeInfo));
         }
 
-        void NodeProfile::addOutputShape(Nd4jLong *shapeInfo) {
+        void NodeProfile::addOutputShape(Nd4jLong const*shapeInfo) {
             _outputShapes.emplace_back(ShapeUtils::shapeInfoAsString(shapeInfo));
         }
 

@@ -106,7 +106,7 @@ DECLARE_SHAPE_FN(maxpool3dnew) {
 
     REQUIRE_TRUE(dD != 0 && dH != 0 && dW != 0, 0, "MAXPOOL3DNEW op: dilation must not be zero, but got instead {%i, %i, %i}", dD, dH, dW);
 
-    Nd4jLong* inputShapeInfo = inputShape->at(0);
+    auto inputShapeInfo = inputShape->at(0);
 
     int idxID, idxIC;
     if(isNCDHW) { idxID = 2; idxIC = 1;}

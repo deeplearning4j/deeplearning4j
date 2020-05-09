@@ -27,7 +27,7 @@ namespace sd {
     // input - theSecondBuffer/Shape from input NDArray
     // output - theFirstBuffer/Shape from input NDArray
     template <typename T>
-    static __global__ void swapUnsafeKernel(void* theFirstBuffer, Nd4jLong* theFirstShape, void* theSecondBuffer, Nd4jLong* theSecondShape) {
+    static __global__ void swapUnsafeKernel(void* theFirstBuffer, Nd4jLong const* theFirstShape, void* theSecondBuffer, Nd4jLong const* theSecondShape) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         int totalThreads = gridDim.x * blockDim.x;
 
@@ -51,12 +51,12 @@ namespace sd {
         }
     }
 
-    BUILD_SINGLE_TEMPLATE(template __global__ void swapUnsafeKernel, (void* theFirstBuffer, Nd4jLong* theFirstShape, void* theSecondBuffer, Nd4jLong* theSecondShape), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template __global__ void swapUnsafeKernel, (void* theFirstBuffer, Nd4jLong const* theFirstShape, void* theSecondBuffer, Nd4jLong const* theSecondShape), LIBND4J_TYPES);
 
     template <typename T>
-    void templatedSwapUnsafe(void* theFirstBuffer, Nd4jLong* theFirstShape, void* theSecondBuffer, Nd4jLong* theSecondShape, cudaStream_t* theStream) {
+    void templatedSwapUnsafe(void* theFirstBuffer, Nd4jLong const* theFirstShape, void* theSecondBuffer, Nd4jLong const* theSecondShape, cudaStream_t* theStream) {
         swapUnsafeKernel<T><<<256, 512, 8192, *theStream>>>(theFirstBuffer, theFirstShape, theSecondBuffer, theSecondShape);
     }
-    BUILD_SINGLE_TEMPLATE(template void templatedSwapUnsafe, (void* theFirstBuffer, Nd4jLong* theFirstShape, void* theSecondBuffer, Nd4jLong* theSecondShape, cudaStream_t* theStream), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void templatedSwapUnsafe, (void* theFirstBuffer, Nd4jLong const* theFirstShape, void* theSecondBuffer, Nd4jLong const* theSecondShape, cudaStream_t* theStream), LIBND4J_TYPES);
 
 }

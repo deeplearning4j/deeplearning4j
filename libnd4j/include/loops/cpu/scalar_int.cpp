@@ -34,18 +34,18 @@ namespace functions {
 
         template<typename X>
         template<typename OpType>
-        void ScalarIntTransform<X>::transform(void *vx, Nd4jLong *xShapeInfo,
-                                                void *vextraParams,
-                                                void *vz,  Nd4jLong *zShapeInfo,
-                                                void *vscalars,
-                                                int *dimension, int dimensionLength,
-                                                Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
-                                                Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets,
-                                                const uint64_t start, const uint64_t stop) {
+        void ScalarIntTransform<X>::transform(const void *vx, const Nd4jLong *xShapeInfo,
+                                              void *vextraParams,
+                                              void *vz, const Nd4jLong *zShapeInfo,
+                                              const void *vscalars,
+                                              int *dimension, int dimensionLength,
+                                              const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffsets,
+                                              const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffsets,
+                                              const uint64_t start, const uint64_t stop) {
 
-            auto x = reinterpret_cast<X *>(vx);
+            auto x = reinterpret_cast<const X *>(vx);
             auto z = reinterpret_cast<X *>(vz);
-            auto scalars = reinterpret_cast<X *>(vscalars);
+            auto scalars = reinterpret_cast<const X *>(vscalars);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
 
             if (zTadShapeInfo == nullptr) {
@@ -92,19 +92,14 @@ namespace functions {
 
         template<typename X>
         void ScalarIntTransform<X>::transform(int opNum,
-                              void *x,
-                              Nd4jLong *xShapeInfo,
-                              void *extraParams,
-                              void *z,
-                              Nd4jLong *zShapeInfo,
-                              void *scalars,
-                              int *dimension,
-                              int dimensionLength,
-                              Nd4jLong *xTadShapeInfo,
-                              Nd4jLong *xTadOffsets,
-                              Nd4jLong *zTadShapeInfo,
-                              Nd4jLong *zTadOffsets,
-                              const uint64_t start, const uint64_t stop) {
+                                              const void *x, const Nd4jLong *xShapeInfo,
+                                              void *extraParams,
+                                              void *z, const Nd4jLong *zShapeInfo,
+                                              const void *scalars,
+                                              int *dimension, int dimensionLength,
+                                              const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffsets,
+                                              const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffsets,
+                                              const uint64_t start, const uint64_t stop) {
 
             DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop), SCALAR_INT_OPS);
         }
@@ -112,42 +107,35 @@ namespace functions {
 
         template<typename X>
         void ScalarIntTransform<X>::transform(const int opNum,
-                void *x,
-                Nd4jLong xEws,
-                void *z,
-                Nd4jLong zEws,
-                void *scalar,
-                void *extraParams,
-                const uint64_t n,
-                const uint64_t start, const uint64_t stop) {
+                                              const void *x, Nd4jLong xEws,
+                                              void *z, Nd4jLong zEws,
+                                              const void *scalar,
+                                              void *extraParams,
+                                              const uint64_t n,
+                                              const uint64_t start, const uint64_t stop) {
             DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xEws, z, zEws, scalar, extraParams, n, start, stop), SCALAR_INT_OPS);
         }
 
         template<typename X>
         void ScalarIntTransform<X>::transform(const int opNum,
-                void *x,
-                Nd4jLong *xShapeInfo,
-                void *z,
-                Nd4jLong *zShapeInfo,
-                void *scalar,
-                void *extraParams,
-                const uint64_t start, const uint64_t stop) {
+                                              const void *x, const Nd4jLong *xShapeInfo,
+                                              void *z, const Nd4jLong *zShapeInfo,
+                                              const void *scalar,
+                                              void *extraParams,
+                                              const uint64_t start, const uint64_t stop) {
             DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, start, stop), SCALAR_INT_OPS);
         }
 
         template<typename X>
         template<typename OpType>
-        void ScalarIntTransform<X>::transform(void *vx,
-                               Nd4jLong *xShapeInfo,
-                               void *vz,
-                               Nd4jLong *zShapeInfo,
-                               void *vscalar,
-                               void *vextraParams,
-                               const uint64_t start, const uint64_t stop) {
+        void ScalarIntTransform<X>::transform(const void *vx, const Nd4jLong *xShapeInfo,
+                                              void *vz, const Nd4jLong *zShapeInfo,
+                                              const void *vscalar, void *vextraParams,
+                                              const uint64_t start, const uint64_t stop) {
 
-            auto x = reinterpret_cast<X *>(vx);
+            auto x = reinterpret_cast<const X *>(vx);
             auto z = reinterpret_cast<X *>(vz);
-            auto scalar = reinterpret_cast<X *>(vscalar)[0];
+            auto scalar = reinterpret_cast<const X *>(vscalar)[0];
             auto extraParams = reinterpret_cast<X *>(vextraParams);
 
             auto xEws = shape::elementWiseStride(xShapeInfo);
@@ -187,18 +175,15 @@ namespace functions {
 
             template<typename X>
             template<typename OpType>
-            void ScalarIntTransform<X>::transform(void *vx,
-                    Nd4jLong xEws,
-                    void *vz,
-                    Nd4jLong zEws,
-                    void *vscalar,
-                    void *vextraParams,
-                    const uint64_t len,
-                    const uint64_t start, const uint64_t stop) {
+            void ScalarIntTransform<X>::transform(const void *vx, Nd4jLong xEws,
+                                                  void *vz, Nd4jLong zEws,
+                                                  const void *vscalar,
+                                                  void *vextraParams,
+                                                  const uint64_t len, const uint64_t start, const uint64_t stop) {
 
-                auto x = reinterpret_cast<X *>(vx);
+                auto x = reinterpret_cast<const X *>(vx);
                 auto z = reinterpret_cast<X *>(vz);
-                auto scalar = reinterpret_cast<X *>(vscalar)[0];
+                auto scalar = reinterpret_cast<const X *>(vscalar)[0];
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 if (scalar < (sizeof(X) * 8)) {

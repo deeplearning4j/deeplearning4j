@@ -27,7 +27,7 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
-            static void prefix_(scalar::Ops op, const void* vx, Nd4jLong* xShapeInfo, void* vz, Nd4jLong* zShapeInfo, bool exclusive, bool reverse) {
+            static void prefix_(scalar::Ops op, const void* vx, Nd4jLong const* xShapeInfo, void* vz, Nd4jLong const* zShapeInfo, bool exclusive, bool reverse) {
                 const auto x = reinterpret_cast<const T *>(vx);
                       auto z = reinterpret_cast<T *>(vz);
                 auto length = shape::length(xShapeInfo);
@@ -113,7 +113,7 @@ namespace sd {
 
             template <typename T>
             static void prefix_(scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
-                    prefix_<T>(op, x->getBuffer(), x->getShapeInfo(), z->buffer(), z->shapeInfo(), exclusive, reverse);
+                    prefix_<T>(op, x->buffer(), x->shapeInfo(), z->buffer(), z->shapeInfo(), exclusive, reverse);
             };
 
             void prefix(sd::LaunchContext * context, scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse) {
@@ -124,7 +124,7 @@ namespace sd {
                 BUILD_SINGLE_SELECTOR(x->dataType(), prefix_, (op, x, z, dims, exclusive, reverse), LIBND4J_TYPES);
             }
 
-            BUILD_SINGLE_TEMPLATE(template void prefix_, (scalar::Ops op, const void* vx, Nd4jLong* xShapeInfo, void* vz, Nd4jLong* zShapeInfo, bool exclusive, bool reverse), LIBND4J_TYPES);
+            BUILD_SINGLE_TEMPLATE(template void prefix_, (scalar::Ops op, const void* vx, Nd4jLong const* xShapeInfo, void* vz, Nd4jLong const* zShapeInfo, bool exclusive, bool reverse), LIBND4J_TYPES);
             BUILD_SINGLE_TEMPLATE(template void prefix_, (scalar::Ops op, const NDArray* x, NDArray* z, const std::vector<int>& dims, bool exclusive, bool reverse), LIBND4J_TYPES);
             BUILD_SINGLE_TEMPLATE(template void prefix_, (scalar::Ops op, const NDArray* x, NDArray* z, bool exclusive, bool reverse), LIBND4J_TYPES);
 

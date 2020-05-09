@@ -56,8 +56,8 @@ namespace helpers {
     Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
 
         int* pRowCounts = reinterpret_cast<int*>(rowCounts.specialBuffer());
-        int const* pRows = reinterpret_cast<int const*>(rowP->getSpecialBuffer());
-        int const* pCols = reinterpret_cast<int const*>(colP->getSpecialBuffer());
+        int const* pRows = reinterpret_cast<int const*>(rowP->specialBuffer());
+        int const* pCols = reinterpret_cast<int const*>(colP->specialBuffer());
         auto stream = rowCounts.getContext()->getCudaStream();
         countRowsKernel<<<1, 1, 128, *stream>>>(pRowCounts, pRows, pCols, N);
         NDArray numElementsArr = rowCounts.sumNumber(); //reduceAlongDimension(reduce::Sum, {});
@@ -146,7 +146,7 @@ namespace helpers {
 //
     template <typename T>
     static void barnes_symmetrize_(const NDArray* rowP, const NDArray* colP, const NDArray* valP, Nd4jLong N, NDArray* outputRows, NDArray* outputCols, NDArray* outputVals, NDArray* rowCounts) {
-        int const* pRows = reinterpret_cast<int const*>(rowP->getSpecialBuffer());
+        int const* pRows = reinterpret_cast<int const*>(rowP->specialBuffer());
         int* symRowP = reinterpret_cast<int*>(outputRows->specialBuffer());
         int* pRowCounts = reinterpret_cast<int*>(rowCounts->specialBuffer());
         auto stream = outputCols->getContext()->getCudaStream();
@@ -156,8 +156,8 @@ namespace helpers {
 //        outputRows->printBuffer("output rows");
         int* symColP = reinterpret_cast<int*>(outputCols->specialBuffer());
 //        outputRows->printBuffer("SymRows are");
-        int const* pCols = reinterpret_cast<int const*>(colP->getSpecialBuffer());
-        T const* pVals = reinterpret_cast<T const*>(valP->getSpecialBuffer());
+        int const* pCols = reinterpret_cast<int const*>(colP->specialBuffer());
+        T const* pVals = reinterpret_cast<T const*>(valP->specialBuffer());
         T* pOutput = reinterpret_cast<T*>(outputVals->specialBuffer());
         //std::vector<int> rowCountsV = rowCounts->getBufferAsVector<int>();
         auto offsetArr = NDArrayFactory::create<int>('c', {N});
@@ -211,11 +211,11 @@ namespace helpers {
     template <typename T>
     static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {data, rowP, colP, valP, valP});
-        T const* dataP = reinterpret_cast<T const*>(data->getSpecialBuffer());
-        T const* vals  = reinterpret_cast<T const*>(valP->getSpecialBuffer());
+        T const* dataP = reinterpret_cast<T const*>(data->specialBuffer());
+        T const* vals  = reinterpret_cast<T const*>(valP->specialBuffer());
         T* outputP = reinterpret_cast<T*>(output->specialBuffer());
-        int const* pRows = reinterpret_cast<int const*>(rowP->getSpecialBuffer());
-        int const* pCols = reinterpret_cast<int const*>(colP->getSpecialBuffer());
+        int const* pRows = reinterpret_cast<int const*>(rowP->specialBuffer());
+        int const* pCols = reinterpret_cast<int const*>(colP->specialBuffer());
         int colCount = data->columns();
         //auto shift = 0;
         auto rowSize = sizeof(T) * colCount;

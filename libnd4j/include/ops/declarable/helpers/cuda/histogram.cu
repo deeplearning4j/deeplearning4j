@@ -25,7 +25,7 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename Z>
-            void _CUDA_G histogramKernel(void *xBuffer, Nd4jLong *xShapeInfo, void *zBuffer, Nd4jLong *zShapeInfo, void *allocationPointer, void *reductionPointer, Nd4jLong numBins, X* min_val, X* max_val) {
+            void _CUDA_G histogramKernel(void *xBuffer, const Nd4jLong *xShapeInfo, void *zBuffer, const Nd4jLong *zShapeInfo, void *allocationPointer, void *reductionPointer, Nd4jLong numBins, X* min_val, X* max_val) {
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
                 auto dx = reinterpret_cast<X*>(xBuffer);
                 auto result = reinterpret_cast<Z*>(zBuffer);
@@ -108,13 +108,13 @@ namespace sd {
             }
 
             template <typename X, typename Z>
-            static void histogram_(sd::LaunchContext *context, void *xBuffer, Nd4jLong *xShapeInfo, Nd4jLong *dxShapeInfo, void *zBuffer, Nd4jLong *zShapeInfo, Nd4jLong numBins, void* min_val, void* max_val) {
+            static void histogram_(sd::LaunchContext *context, void *xBuffer, const Nd4jLong *xShapeInfo, const Nd4jLong *dxShapeInfo, void *zBuffer, const Nd4jLong *zShapeInfo, Nd4jLong numBins, void* min_val, void* max_val) {
                 int numThreads = 256;
                 int numBlocks = sd::math::nd4j_max<int>(256, sd::math::nd4j_min<int>(1, shape::length(xShapeInfo) / numThreads));
                 int workspaceSize = numBlocks * numBins;
                 auto tmp = NDArrayFactory::create<Z>('c', {workspaceSize}, context);
 
-                histogramKernel<X, Z><<<numBlocks, numThreads, 32768, *context->getCudaStream()>>>(xBuffer, dxShapeInfo, zBuffer, zShapeInfo, tmp.getSpecialBuffer(), context->getReductionPointer(), numBins, reinterpret_cast<X*>(min_val), reinterpret_cast<X*>(max_val));
+                histogramKernel<X, Z><<<numBlocks, numThreads, 32768, *context->getCudaStream()>>>(xBuffer, dxShapeInfo, zBuffer, zShapeInfo, tmp.specialBuffer(), context->getReductionPointer(), numBins, reinterpret_cast<X*>(min_val), reinterpret_cast<X*>(max_val));
 
                 cudaStreamSynchronize(*context->getCudaStream());
             }
@@ -127,7 +127,7 @@ namespace sd {
                 auto max_val = input.reduceNumber(reduce::SameOps::Max);
 //                min_val.printIndexedBuffer("MIN");
 //                max_val.printIndexedBuffer("MAX");
-                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogram_, (context, input.specialBuffer(), input.shapeInfo(), input.specialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), numBins, min_val.specialBuffer(), max_val.specialBuffer()), LIBND4J_TYPES, INTEGER_TYPES);
+                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogram_, (context, input.specialBuffer(), input.shapeInfo(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), numBins, min_val.specialBuffer(), max_val.specialBuffer()), LIBND4J_TYPES, INTEGER_TYPES);
                 NDArray::registerSpecialUse({&output}, {&input});
             }
         }

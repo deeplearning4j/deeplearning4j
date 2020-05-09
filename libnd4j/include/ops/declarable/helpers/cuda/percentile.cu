@@ -30,7 +30,10 @@ namespace ops     {
 namespace helpers {
 
     template <typename X>
-    static _CUDA_G void percentileKernel(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, const Nd4jLong numTads, const Nd4jLong tadLength, void *vz, Nd4jLong *zShapeInfo, const Nd4jLong zLength, const Nd4jLong position) {
+    static _CUDA_G void percentileKernel(void *vx, const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffsets,
+                                         const Nd4jLong numTads, const Nd4jLong tadLength,
+                                         void *vz, const Nd4jLong *zShapeInfo, const Nd4jLong zLength,
+                                         const Nd4jLong position) {
         for (int t = blockIdx.x; t < numTads; t += gridDim.x) {
             auto x = reinterpret_cast<X*>(vx) + xTadOffsets[t];
             auto z = reinterpret_cast<X*>(vz);
@@ -93,8 +96,8 @@ namespace helpers {
         else
             shape::checkDimensions(inputRank, axis);
 
-        auto tempArray = input.dup(input.ordering());
-        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(tempArray.getShapeInfo(), axis);
+        auto tempArray = input.dup();
+        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(tempArray.shapeInfo(), axis);
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 

@@ -193,7 +193,7 @@ void col2im(sd::LaunchContext& context, const NDArray& col, NDArray& im, const i
     const int sharedMem = col.rankOf() * sizeof(uint) * threadsPerBlock  + 256;
 
     NDArray::prepareSpecialUse({&im}, {&col});
-    BUILD_SINGLE_SELECTOR(im.dataType(), col2imCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context.getCudaStream(), col.getSpecialBuffer(), col.getSpecialShapeInfo(), im.specialBuffer(), im.specialShapeInfo(), sH, sW, pH, pW, dH, dW), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(im.dataType(), col2imCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context.getCudaStream(), col.specialBuffer(), col.specialShapeInfo(), im.specialBuffer(), im.specialShapeInfo(), sH, sW, pH, pW, dH, dW), FLOAT_TYPES);
     NDArray::registerSpecialUse({&im}, {&col});
 
     manager.synchronize();

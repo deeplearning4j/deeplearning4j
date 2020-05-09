@@ -57,18 +57,40 @@ class TransformAny {
 #ifdef __CUDACC__
 
 		template<typename OpType>
-		static  __device__ void transformCuda(void *vx, Nd4jLong *xShapeInfo, void *params, void *vz, Nd4jLong *zShapeInfo, int *allocationPointer, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+		static  __device__ void transformCuda(const void *vx, const Nd4jLong *xShapeInfo,
+                                              void *params,
+                                              void *vz, const Nd4jLong *zShapeInfo,
+                                              int *allocationPointer, void *reductionPointer,
+                                              const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
 		template <typename OpType>
-		static _CUDA_H void intermediateShaped(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+		static _CUDA_H void intermediateShaped(dim3 launchDims, cudaStream_t *stream,
+                                               const void *x, const Nd4jLong *xShape, int xRank,
+                                               void *extraParams,
+                                               void *z, const Nd4jLong *zShape, int zRank,
+                                               int *allocationPointer, void *reductionPointer,
+                                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
-		static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+		static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream,
+                                                   int opNum,
+                                                   const void *x, const Nd4jLong *xShape, int xRank,
+                                                   void *extraParams,
+                                                   void *z, const Nd4jLong *zShape, int zRank,
+                                                   int *allocationPointer, void *reductionPointer,
+                                                   const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
 #else
-		static void exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *extraParams, uint64_t threadId, uint64_t numThreads);
+		static void exec(int opNum,
+                         const void *dx, const Nd4jLong *xShapeInfo,
+                         void *vz, const Nd4jLong *zShapeInfo,
+                         void *extraParams,
+                         uint64_t threadId, uint64_t numThreads);
 
 		template<typename OpType>
-		static ND4J_EXPORT void exec(void *dx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *extraParams, uint64_t threadId, uint64_t numThreads);
+		static ND4J_EXPORT void exec(const void *dx, const Nd4jLong *xShapeInfo,
+		                             void *vz, const Nd4jLong *zShapeInfo,
+		                             void *extraParams,
+		                             uint64_t threadId, uint64_t numThreads);
 #endif
 };
 

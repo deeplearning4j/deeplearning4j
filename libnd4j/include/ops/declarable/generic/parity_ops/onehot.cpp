@@ -90,7 +90,6 @@ namespace sd {
 
             REQUIRE_TRUE(depth > 0, 0, "OneHot: depth must be positive value");
 
-            Nd4jLong *newShape;
             int rank = shape::rank(inShape);
 
             if (axis < 0)
@@ -101,7 +100,7 @@ namespace sd {
                 shape.push_back(shape::shapeOf(inShape)[e]);
 
             shape.insert(shape.begin() + axis, depth);
-            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', rank + 1, shape.data());
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', rank + 1, shape.data());
 
             return SHAPELIST(newShape);
         }

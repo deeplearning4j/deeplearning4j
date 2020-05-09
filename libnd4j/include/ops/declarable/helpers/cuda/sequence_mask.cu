@@ -25,13 +25,13 @@ namespace ops {
 namespace helpers {
 
     template <typename I, typename B>
-    static __global__ void sequenceMaskKernel(void* inputBuf, Nd4jLong* inputShape, void* outputBuf, Nd4jLong* outputShape, int maxIndex) {
+    static __global__ void sequenceMaskKernel(const void* inputBuf, const Nd4jLong* inputShape, void* outputBuf, const Nd4jLong* outputShape, int maxIndex) {
 
-        __shared__ I* input;
+        __shared__ const I* input;
         __shared__ B* output;
         __shared__ Nd4jLong inputLen, outputLen;
         if (threadIdx.x == 0) {
-            input = reinterpret_cast<I*>(inputBuf);
+            input = reinterpret_cast<const I*>(inputBuf);
             output = reinterpret_cast<B*>(outputBuf);
             inputLen = shape::length(inputShape);
             outputLen = shape::length(outputShape);

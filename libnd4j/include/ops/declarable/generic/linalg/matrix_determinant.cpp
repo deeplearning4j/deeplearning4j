@@ -38,7 +38,7 @@ namespace sd {
         DECLARE_SHAPE_FN(matrix_determinant) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong* determinantShape;
+            Nd4jLong const* determinantShape;
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
@@ -85,7 +85,7 @@ namespace sd {
         DECLARE_SHAPE_FN(log_matrix_determinant) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong* determinantShape;
+            Nd4jLong const* determinantShape;
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
@@ -126,7 +126,7 @@ namespace sd {
         DECLARE_SHAPE_FN(logdet) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong* determinantShape;
+            Nd4jLong const* determinantShape;
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only

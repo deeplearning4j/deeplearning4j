@@ -88,7 +88,7 @@ linkage void adaGradUpdaterCudaLauncher(const int blocksPerGrid, const int threa
     const T lr = static_cast<T>(dLr);
     const T epsilon = static_cast<T>(dEpsilon);
 
-    adaGradUpdaterCuda<T> << <blocksPerGrid, threadsPerBlock, 256, * stream >> > (vx, xShapeInfo, vin, inShapeInfo,
+    adaGradUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, * stream>>>(vx, xShapeInfo, vin, inShapeInfo,
                                          vz, zShapeInfo, vst, stShapeInfo, lr, epsilon);
 }
 
@@ -103,10 +103,10 @@ void updaterAdaGrad(sd::LaunchContext* context, const NDArray& gradient, const N
 
     NDArray::prepareSpecialUse({ &update, &stateH }, { &gradient, &initState });
     BUILD_SINGLE_SELECTOR(gradient.dataType(), adaGradUpdaterCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), 
-                          gradient.getSpecialBuffer(), gradient.getSpecialShapeInfo(), 
-                          initState.getSpecialBuffer(), initState.getSpecialShapeInfo(), 
-                          update.getSpecialBuffer(), update.getSpecialShapeInfo(), 
-                          stateH.getSpecialBuffer(), stateH.getSpecialShapeInfo(), dLr, dEpsilon), FLOAT_TYPES);
+                          gradient.specialBuffer(), gradient.specialShapeInfo(),
+                          initState.specialBuffer(), initState.specialShapeInfo(),
+                          update.specialBuffer(), update.specialShapeInfo(),
+                          stateH.specialBuffer(), stateH.specialShapeInfo(), dLr, dEpsilon), FLOAT_TYPES);
     NDArray::registerSpecialUse({ &update, &stateH }, { &gradient, &initState });
 
     manager.synchronize();

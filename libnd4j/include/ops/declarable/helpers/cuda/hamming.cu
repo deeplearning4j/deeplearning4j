@@ -25,9 +25,9 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename Z>
-            static _CUDA_G void _hammingKernel(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, void *reductionBuffer, Nd4jLong length) {
-                auto x = reinterpret_cast<X*>(vx);
-                auto y = reinterpret_cast<X*>(vy);
+            static _CUDA_G void _hammingKernel(const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, void *reductionBuffer, Nd4jLong length) {
+                auto x = reinterpret_cast<const X*>(vx);
+                auto y = reinterpret_cast<const X*>(vy);
                 auto z = reinterpret_cast<Z*>(vz);
 
                 __shared__ Nd4jLong *shared;

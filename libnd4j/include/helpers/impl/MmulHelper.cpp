@@ -91,7 +91,7 @@ void sd::MmulHelper::tensorDot(const sd::NDArray* a, const sd::NDArray* b, sd::N
 
     mmul(aPR, bPR, cPR, 1.0, 0.0);
 
-    if(cPR->getBuffer() != cP->getBuffer() || cPR->getSpecialBuffer() != cP->getSpecialBuffer() )   // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
+    if(cPR->buffer() != cP->buffer() || cPR->specialBuffer() != cP->specialBuffer() )   // this means both permute and reshape have been performed on c, cP always points on c->buffer()
         cP->assign(cPR);
 
    if(aP != aPR)
@@ -150,7 +150,7 @@ void sd::MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c, c
     // check whether new buffer allocation was happened for c array
     if(!whatToDoWithC.empty()) {
         for(int i = cArrs.size()-1; i > 0; --i) {
-            if(cArrs[i]->getBuffer() != cArrs[i-1]->getBuffer() || cArrs[i]->getSpecialBuffer() != cArrs[i-1]->getSpecialBuffer())
+            if(cArrs[i]->buffer() != cArrs[i-1]->buffer() || cArrs[i]->specialBuffer() != cArrs[i-1]->specialBuffer())
                 cArrs[i-1]->assign(cArrs[i]);
             delete cArrs[i];
         }
@@ -203,8 +203,8 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
     int lenDim;
     const int aRank = A->rankOf();
     const int bRank = B->rankOf();
-    const bool isAVector = shape::isCommonVector(A->getShapeInfo(), lenDim);
-    const bool isBVector = shape::isCommonVector(B->getShapeInfo(), lenDim);
+    const bool isAVector = shape::isCommonVector(A->shapeInfo(), lenDim);
+    const bool isBVector = shape::isCommonVector(B->shapeInfo(), lenDim);
 
     // dot product of 2 vectors
     if(isAVector && isBVector && (aRank != 2 || aRank == 2 && (A->isSameShape(B) || bRank == 1 && A->sizeAt(1) == 1)))  // (1x1x1 * 1x1) or (1x4 * 1*4) or (4x1 * 4x1) or (4x1 * 4)
@@ -243,7 +243,7 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
         int xRank = x->rankOf();
         int yRank = y->rankOf();
 
-        auto outShape = ShapeUtils::evalShapeForMatmul(x->getShapeInfo(), y->getShapeInfo(), transX, transY);
+        auto outShape = ShapeUtils::evalShapeForMatmul(x->shapeInfo(), y->shapeInfo(), transX, transY);
         if(!z->isSameShape(outShape)) {
             nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
             throw std::invalid_argument("");
@@ -285,7 +285,7 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
             for(int i = 0; i < batchRank; ++i)
                 dimsToExclude[i] = i;
 
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->getShapeInfo(), dimsToExclude);
+            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->shapeInfo(), dimsToExclude);
 
 //PRAGMA_OMP_PARALLEL_FOR
             for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {

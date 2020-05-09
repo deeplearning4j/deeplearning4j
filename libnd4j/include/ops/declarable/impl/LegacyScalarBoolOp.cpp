@@ -64,19 +64,19 @@ namespace sd {
 
                 NDArray::prepareSpecialUse({z}, {x, y});
 
-                NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
+                NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
             } else if (block.getTArguments()->size() > 0) {
                 auto y = NDArrayFactory::create(T_ARG(0), block.launchContext());
 
                 NDArray::prepareSpecialUse({z}, {x, &y});
 
-                NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), extras.argumentsAsT(x->dataType(), 1));
+                NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->buffer(), z->shapeInfo(),z->specialBuffer(), z->specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), extras.argumentsAsT(x->dataType(), 1));
 
                 manager.synchronize();
             } else {
                 NDArray::prepareSpecialUse({z}, {x, _scalar});
 
-                NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->getBuffer(), z->getShapeInfo(),z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(), _scalar->specialBuffer(), _scalar->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
+                NativeOpExecutioner::execScalarBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),z->buffer(), z->shapeInfo(),z->specialBuffer(), z->specialShapeInfo(), _scalar->buffer(), _scalar->shapeInfo(), _scalar->specialBuffer(), _scalar->specialShapeInfo(), extras.argumentsAsT(x->dataType()));
             }
             manager.synchronize();
             STORE_RESULT(*z);

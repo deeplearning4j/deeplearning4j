@@ -37,21 +37,21 @@
 #define DOUBLE_PI_T T(2.0 * 3.14159265358979323846)
 #define DOUBLE_PI_X X(2.0 * 3.14159265358979323846)
 
-#define no_op_exec_special_any 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_bool 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_same 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, Z *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_accumulation 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, Z *extraParams, Z *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
-#define no_op_exec_special_accumulation_long 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, Z *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
-#define no_op_exec_special_accumulation_same 	static const bool requiresSpecialAccumulation = false; static void execSpecial(X *x, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset){}
+#define no_op_exec_special_any 	static const bool requiresSpecial = false; static void execSpecial(const X *dx, const Nd4jLong *xShapeBuffer, Z *result, const Nd4jLong *resultShapeBuffer, X *extraParams, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_bool 	static const bool requiresSpecial = false; static void execSpecial(const X *dx, const Nd4jLong *xShapeBuffer, Z *result, const Nd4jLong *resultShapeBuffer, X *extraParams, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_same 	static const bool requiresSpecial = false; static void execSpecial(const X *dx, const Nd4jLong *xShapeBuffer, X *result, const Nd4jLong *resultShapeBuffer, X *extraParams, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special 	static const bool requiresSpecial = false; static void execSpecial(const X *dx, const Nd4jLong *xShapeBuffer, Z *result, const Nd4jLong *resultShapeBuffer, Z *extraParams, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_accumulation 	static const bool requiresSpecialAccumulation = false; static void execSpecial(const X *x, const Nd4jLong *xShapeInfo, Z *extraParams, Z *result, const Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset){}
+#define no_op_exec_special_accumulation_long 	static const bool requiresSpecialAccumulation = false; static void execSpecial(const X *x, const Nd4jLong *xShapeInfo, X *extraParams, Z *result, const Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset){}
+#define no_op_exec_special_accumulation_same 	static const bool requiresSpecialAccumulation = false; static void execSpecial(const X *x, const Nd4jLong *xShapeInfo, X *extraParams, X *result, const Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset){}
 #ifdef __CUDACC__
-#define no_op_exec_special_any_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, Z *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_bool_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, Z *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, Z *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_same_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, X *result, Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, X *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_cuda static __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer,Z *result, Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_accumulation_same_cuda static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeInfo, X *extraParams, X *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, X *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_accumulation_long_cuda static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeInfo, X *extraParams, Z *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Z *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {}
-#define no_op_exec_special_accumulation_cuda static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeInfo, Z *extraParams, Z *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Z *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_any_cuda static __device__ void execSpecialCuda(const X *dx, const Nd4jLong *xShapeBuffer, Z *result, const Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, Z *reductionPointer, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_bool_cuda static __device__ void execSpecialCuda(const X *dx, const Nd4jLong *xShapeBuffer, Z *result, const Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, Z *reductionPointer, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_same_cuda static __device__ void execSpecialCuda(const X *dx, const Nd4jLong *xShapeBuffer, X *result, const Nd4jLong *resultShapeBuffer, X *extraParams, int *allocationPointer, X *reductionPointer, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_cuda static __device__ void execSpecialCuda(const X *dx, const Nd4jLong *xShapeBuffer,Z *result, const Nd4jLong *resultShapeBuffer,Z *extraParams, int *allocationPointer, Z *reductionPointer, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_accumulation_same_cuda static inline __device__ void execSpecialCuda(const X *dx, const Nd4jLong *xShapeInfo, X *extraParams, X *result, const Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, X *reductionBuffer, const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_accumulation_long_cuda static inline __device__ void execSpecialCuda(const X *dx, const Nd4jLong *xShapeInfo, X *extraParams, Z *result, const Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Z *reductionBuffer, const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets) {}
+#define no_op_exec_special_accumulation_cuda static inline __device__ void execSpecialCuda(const X *dx, const Nd4jLong *xShapeInfo, Z *extraParams, Z *result, const Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Z *reductionBuffer, const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets) {}
 
 #else
 // hacky fix for isnan/being being out of scope
@@ -4017,7 +4017,7 @@ namespace simdOps {
 			return 0;
 		}
 
-        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = 0;
@@ -4064,7 +4064,7 @@ namespace simdOps {
             return -sd::DataTypeUtils::infOrMax<X>();
         }
 
-        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = -1;
@@ -4123,7 +4123,7 @@ namespace simdOps {
             return -sd::DataTypeUtils::infOrMax<X>();
         }
 
-        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = -1;
@@ -4191,7 +4191,7 @@ namespace simdOps {
 			return -sd::DataTypeUtils::infOrMax<X>();
 		}
 
-        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = 0;
@@ -4217,7 +4217,7 @@ namespace simdOps {
 			return sd::DataTypeUtils::infOrMax<X>();
 		}
 
-        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = 0;
@@ -4273,7 +4273,7 @@ namespace simdOps {
 			return sd::DataTypeUtils::infOrMax<X>();
 		}
 
-        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(X *input) {
+        static _CUDA_HD inline functions::indexreduce::IndexValue<X> startingIndexValue(const X *input) {
             functions::indexreduce::IndexValue<X> local;
             local.value = startingValue(input);
             local.index = 0;

@@ -54,7 +54,7 @@ FORCEINLINE Nd4jStatus outputSize(sd::LaunchContext * context, const int inSize,
 }
 
 //////////////////////////////////////////////////////////////////////
-FORCEINLINE Nd4jStatus dilation_hw(sd::LaunchContext * context, Nd4jLong *in, Nd4jLong *wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *sH, int *sW, int *pH, int *pW, int *dH, int *dW, int *oH, int *oW) {
+FORCEINLINE Nd4jStatus dilation_hw(sd::LaunchContext * context, Nd4jLong const* in, Nd4jLong const* wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *sH, int *sW, int *pH, int *pW, int *dH, int *dW, int *oH, int *oW) {
     const int iH = shape::sizeAt(in, 1);
     const int iW = shape::sizeAt(in, 2);
     const int iC = shape::sizeAt(in, 3);

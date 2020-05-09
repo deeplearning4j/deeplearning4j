@@ -34,13 +34,13 @@ namespace reduce3   {
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
-                                    void *vextraParams,
-                                    void *vy, Nd4jLong *yShapeInfo,
-                                    void *vz, Nd4jLong *zShapeInfo) {
+void Reduce3<X,Z>::execScalar(const void *vx, const Nd4jLong *xShapeInfo,
+                              void *vextraParams,
+                              const void *vy, const Nd4jLong *yShapeInfo,
+                              void *vz, const Nd4jLong *zShapeInfo) {
 
-    auto x = reinterpret_cast<X *>(vx);
-    auto y = reinterpret_cast<X *>(vy);
+    auto x = reinterpret_cast<const X *>(vx);
+    auto y = reinterpret_cast<const X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
@@ -134,10 +134,10 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void Reduce3<X,Y>::execScalar(const int opNum,
-                                        void *vx, Nd4jLong *xShapeInfo,
-                                        void *extraParamsVals,
-                                        void *vy, Nd4jLong *yShapeInfo,
-                                        void *vz, Nd4jLong *zShapeInfo) {
+                              const void *vx, const Nd4jLong *xShapeInfo,
+                              void *extraParamsVals,
+                              const void *vy, const Nd4jLong *yShapeInfo,
+                              void *vz, const Nd4jLong *zShapeInfo) {
 
     DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo), REDUCE3_OPS);
 }
@@ -146,14 +146,15 @@ void Reduce3<X,Y>::execScalar(const int opNum,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
-                    void *vextraParams,
-                    void *vy, Nd4jLong *yShapeInfo,
-                    void *vz, Nd4jLong *zShapeInfo,
-                    int *dimension, int dimensionLength, int64_t start, int64_t stop) {
+void Reduce3<X,Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
+                        void *vextraParams,
+                        const void *vy, const Nd4jLong *yShapeInfo,
+                        void *vz, const Nd4jLong *zShapeInfo,
+                        int *dimension, int dimensionLength,
+                        int64_t start, int64_t stop) {
 
-    auto x = reinterpret_cast<X*>(vx);
-    auto y = reinterpret_cast<X*>(vy);
+    auto x = reinterpret_cast<const X*>(vx);
+    auto y = reinterpret_cast<const X*>(vy);
     auto z = reinterpret_cast<Z*>(vz);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
 
@@ -171,15 +172,16 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
+void Reduce3<X,Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
                         void *vextraParams,
-                        void *vy, Nd4jLong *yShapeInfo,
-                        void *vz, Nd4jLong *zShapeInfo,
+                        const void *vy, const Nd4jLong *yShapeInfo,
+                        void *vz, const Nd4jLong *zShapeInfo,
                         int *dimension, int dimensionLength,
-                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, int64_t start, int64_t stop) {
+                        const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                        int64_t start, int64_t stop) {
 
-    auto x = reinterpret_cast<X *>(vx);
-    auto y = reinterpret_cast<X *>(vy);
+    auto x = reinterpret_cast<const X *>(vx);
+    auto y = reinterpret_cast<const X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 #ifdef INLINE_LOOPS
@@ -193,16 +195,17 @@ void Reduce3<X,Z>::exec(void *vx, Nd4jLong *xShapeInfo,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
+void Reduce3<X,Z>:: execAll(const void *vx, const Nd4jLong *xShapeInfo,
                             void *vextraParams,
-                            void *vy, Nd4jLong *yShapeInfo,
-                            void *vz, Nd4jLong *zShapeInfo,
+                            const void *vy, const Nd4jLong *yShapeInfo,
+                            void *vz, const Nd4jLong *zShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
-                            Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets, int64_t start, int64_t stop) {
+                            const Nd4jLong *xTadShapeInfo, const Nd4jLong *xOffsets,
+                            const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets,
+                            int64_t start, int64_t stop) {
 
-    auto x = reinterpret_cast<X *>(vx);
-    auto y = reinterpret_cast<X *>(vy);
+    auto x = reinterpret_cast<const X *>(vx);
+    auto y = reinterpret_cast<const X *>(vy);
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
 
@@ -215,12 +218,13 @@ void Reduce3<X,Z>:: execAll(void *vx, Nd4jLong *xShapeInfo,
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void Reduce3<X,Y>::exec( const int opNum,
-                        void *vx, Nd4jLong *xShapeInfo,
+void Reduce3<X,Y>::exec(const int opNum,
+                        const void *vx, const Nd4jLong *xShapeInfo,
                         void *extraParamsVals,
-                        void *vy, Nd4jLong *yShapeInfo,
-                        void *vz, Nd4jLong *zShapeInfo,
-                        int *dimension, int dimensionLength, int64_t start, int64_t stop) {
+                        const void *vy, const Nd4jLong *yShapeInfo,
+                        void *vz, const Nd4jLong *zShapeInfo,
+                        int *dimension, int dimensionLength,
+                        int64_t start, int64_t stop) {
 
     DISPATCH_BY_OPNUM_TT(exec, PARAMS(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo, dimension, dimensionLength, start, stop), REDUCE3_OPS);
 }
@@ -228,13 +232,14 @@ void Reduce3<X,Y>::exec( const int opNum,
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-void Reduce3<X,Y>::exec( const int opNum,
-                        void *vx, Nd4jLong *xShapeInfo,
+void Reduce3<X,Y>::exec(const int opNum,
+                        const void *vx, const Nd4jLong *xShapeInfo,
                         void *extraParamsVals,
-                        void *vy, Nd4jLong *yShapeInfo,
-                        void *vz, Nd4jLong *zShapeInfo,
+                        const void *vy, const Nd4jLong *yShapeInfo,
+                        void *vz, const Nd4jLong *zShapeInfo,
                         int *dimension, int dimensionLength,
-                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, int64_t start, int64_t stop) {
+                        const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                        int64_t start, int64_t stop) {
 
     DISPATCH_BY_OPNUM_TT(exec, PARAMS(vx,xShapeInfo,extraParamsVals,vy, yShapeInfo,vz,zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, start, stop), REDUCE3_OPS);
 }
@@ -243,13 +248,14 @@ void Reduce3<X,Y>::exec( const int opNum,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void Reduce3<X,Y>::execAll(const int opNum,
-                            void *vx, Nd4jLong *xShapeInfo,
-                            void *extraParamsVals,
-                            void *vy, Nd4jLong *yShapeInfo,
-                            void *vz, Nd4jLong *zShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
-                            Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets, int64_t start, int64_t stop) {
+                           const void *vx, const Nd4jLong *xShapeInfo,
+                           void *extraParamsVals,
+                           const void *vy, const Nd4jLong *yShapeInfo,
+                           void *vz, const Nd4jLong *zShapeInfo,
+                           int *dimension, int dimensionLength,
+                           const Nd4jLong *xTadShapeInfo, const Nd4jLong *xOffsets,
+                           const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets,
+                           int64_t start, int64_t stop) {
 
     DISPATCH_BY_OPNUM_TT(execAll, PARAMS(vx, xShapeInfo, extraParamsVals, vy, yShapeInfo, vz, zShapeInfo, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets, start, stop), REDUCE3_OPS);
 }

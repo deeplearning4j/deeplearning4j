@@ -26,7 +26,7 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-    void decodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output);
+    void decodeBitmap(sd::LaunchContext* context, const NDArray* input, NDArray* output);
     Nd4jLong encodeBitmap(sd::LaunchContext* context, NDArray* input, NDArray* output, float threshold);
 }
 }

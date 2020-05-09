@@ -107,7 +107,7 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
     mkldnnUtils::loadDataToMklStream(gradO, engine, stream, gradO_user_md, op_data_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
 
     // gradI
-    auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
+    auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->buffer());
     const bool gradIReorder = op_data_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc();
     auto gradI_mkl_mem = gradIReorder ? dnnl::memory(op_data_bp_prim_desc.diff_src_desc(), engine) : gradI_user_mem;
     args[DNNL_ARG_DIFF_SRC] = gradI_mkl_mem;

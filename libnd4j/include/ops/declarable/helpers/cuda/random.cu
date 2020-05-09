@@ -44,8 +44,8 @@ namespace helpers {
      *  output - distributed output.
      * */
     template <typename T>
-    static __global__ void fillGammaKernel(T* uList, Nd4jLong uLength, T* alpha, Nd4jLong* alphaShape,
-            T* beta, Nd4jLong* betaShape, T* output, Nd4jLong* outputShape) {
+    static __global__ void fillGammaKernel(T* uList, Nd4jLong uLength, T* alpha, const Nd4jLong* alphaShape,
+            T* beta, const Nd4jLong* betaShape, T* output, const Nd4jLong* outputShape) {
         // fill up
         __shared__ Nd4jLong aLength;
         if (threadIdx.x == 0) {
@@ -70,7 +70,7 @@ namespace helpers {
     template <typename T>
     static void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
         // To fill up output need to broadcast alpha and beta to the same shape and in
-        Nd4jLong* broadcasted = nullptr;
+        const Nd4jLong* broadcasted = nullptr;
         if (beta != nullptr)
             ShapeUtils::evalBroadcastShapeInfo(*alpha, *beta, true, broadcasted, context->getWorkspace());
         else
@@ -136,8 +136,8 @@ namespace helpers {
     return x.
      * */
     template <typename T>
-    static __global__ void fillPoissonKernel(T* uList, Nd4jLong uLength, T* lambda, Nd4jLong* lambdaShape, T* output,
-            Nd4jLong* outputShape) {
+    static __global__ void fillPoissonKernel(T* uList, Nd4jLong uLength, T* lambda, const Nd4jLong* lambdaShape,
+                                             T* output, const Nd4jLong* outputShape) {
 
         __shared__ Nd4jLong step;
 
@@ -186,7 +186,7 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template void fillRandomPoisson_, (LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output), FLOAT_NATIVE);
 
     template <typename T>
-    static __global__ void fillUniformKernel(graph::RandomGenerator* devRng, T from, T to, T* output, Nd4jLong* outputShape) {
+    static __global__ void fillUniformKernel(graph::RandomGenerator* devRng, T from, T to, T* output, const Nd4jLong* outputShape) {
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
 
@@ -246,9 +246,6 @@ namespace helpers {
     void fillRandomUniform(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
         BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomUniform_, (context, rng, min, max, output), NUMERIC_TYPES);
     }
-
-    BUILD_SINGLE_TEMPLATE(template void fillRandomUniform_, (LaunchContext* context,
-            graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output), NUMERIC_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 // used https://en.wikipedia.org/wiki/Categorical_distribution
@@ -346,8 +343,8 @@ void fillRandomMultiNomial(LaunchContext* context, graph::RandomGenerator& rng, 
 
      NDArray::prepareSpecialUse({ &output }, { &input });
      BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), fillMultiNomialCudaLauncher, 
-      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), devRng, input.getSpecialBuffer(), 
-       input.getSpecialShapeInfo(), output.specialBuffer(), 
+      (blocksPerGrid, threadsPerBlock, context->getCudaStream(), devRng, input.specialBuffer(),
+       input.specialShapeInfo(), output.specialBuffer(),
        output.specialShapeInfo(), batchValue, numOfSamples, 
        numOfClassX, dimA), FLOAT_TYPES, INDEXING_TYPES);
      NDArray::registerSpecialUse({ &output }, { &input });

@@ -83,7 +83,7 @@ namespace sd {
                 mkldnnUtils::loadDataToMklStream(x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
                 // z
-                auto z_user_mem = dnnl::memory(z_user_md, engine, z->getBuffer());
+                auto z_user_mem = dnnl::memory(z_user_md, engine, z->buffer());
                 const bool zReorder = op_prim_desc.dst_desc() != z_user_mem.get_desc();
                 auto z_mkl_mem = zReorder ? dnnl::memory(op_prim_desc.dst_desc(), engine) : z_user_mem;
                 args[DNNL_ARG_DST] = z_mkl_mem;
@@ -191,7 +191,7 @@ namespace sd {
                 mkldnnUtils::loadDataToMklStream(x, engine, stream, x_user_md, op_ff_prim_desc.src_desc(), argsff[DNNL_ARG_SRC]);
 
                 // dLdx
-                auto dLdx_user_mem = dnnl::memory(dLdx_user_md, engine, dLdx->getBuffer());
+                auto dLdx_user_mem = dnnl::memory(dLdx_user_md, engine, dLdx->buffer());
                 const bool dLdxReorder = op_ff_prim_desc.dst_desc() != dLdx_user_mem.get_desc();
                 auto dLdx_mkl_mem = dLdxReorder ? dnnl::memory(op_ff_prim_desc.dst_desc(), engine) : dLdx_user_mem;
                 argsff[DNNL_ARG_DST] = dLdx_mkl_mem;

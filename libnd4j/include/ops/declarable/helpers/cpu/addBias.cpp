@@ -396,15 +396,15 @@ namespace sd {
 			    }
 			    */
 
-				Nd4jLong* x_shapeInfo = input.getShapeInfo();
-				Nd4jLong* z_shapeInfo = output.getShapeInfo();
-				X* x = input.bufferAsT<X>();
-				X* z = output.bufferAsT<X>();
-				const Y* b = bias.bufferAsT<Y>();
+				auto x_shapeInfo = input.shapeInfo();
+				auto z_shapeInfo = output.shapeInfo();
+				auto x = input.bufferAsT<X>();
+				auto z = output.bufferAsT<X>();
+				auto b = bias.bufferAsT<Y>();
 				const Nd4jLong  rank = x_shapeInfo[0];
-				const Nd4jLong* bases = &(x_shapeInfo[1]);
-				const Nd4jLong* x_strides = &(x_shapeInfo[rank + 1]);
-				const Nd4jLong* z_strides = &(z_shapeInfo[rank + 1]);
+				auto bases = &(x_shapeInfo[1]);
+				auto x_strides = &(x_shapeInfo[rank + 1]);
+				auto z_strides = &(z_shapeInfo[rank + 1]);
 				const bool inplaceOp = (x == z);
 				const bool same_order = inplaceOp || (input.ordering() == output.ordering());
 				const bool channel_atTheEnd = !isNCHW;
@@ -502,27 +502,27 @@ namespace sd {
 					FUNC_1D func = [order, isContinuous, rank, x, b, bias_new, z, x_shapeInfo, z_shapeInfo, same_stride, same_order, yStrideC, rank_skip]
 					(uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void {
 						const Nd4jLong  rank = x_shapeInfo[0];
-						const Nd4jLong* bases = &(x_shapeInfo[1]);
-						const Nd4jLong* x_strides = &(x_shapeInfo[rank + 1]);
-						const Nd4jLong* z_strides = &(z_shapeInfo[rank + 1]);
+						auto bases = &(x_shapeInfo[1]);
+						auto x_strides = &(x_shapeInfo[rank + 1]);
+						auto z_strides = &(z_shapeInfo[rank + 1]);
 						const bool inplaceOp = (x == z);
 						if (order == 'c') {
 							if (isContinuous) {
-								channel_atTheEnd_continous_C(x, bias_new, z, inplaceOp, start, stop, increment);
+								channel_atTheEnd_continous_C(const_cast<X*>(x), bias_new, z, inplaceOp, start, stop, increment);
 							}
 							// rank is in [2,5]
 							else if (rank == 4) {
-								channel_atTheEnd_generic_C<X, 4>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, x, bias_new, z, start, stop, increment);
+								channel_atTheEnd_generic_C<X, 4>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, const_cast<X*>(x), bias_new, z, start, stop, increment);
 
 							}
 							else if (rank == 5) {
-								channel_atTheEnd_generic_C<X, 5>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, x, bias_new, z, start, stop, increment);
+								channel_atTheEnd_generic_C<X, 5>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, const_cast<X*>(x), bias_new, z, start, stop, increment);
 							}
 							else if (rank == 2) {
-								channel_atTheEnd_generic_C<X, 2>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, x, bias_new, z, start, stop, increment);
+								channel_atTheEnd_generic_C<X, 2>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, const_cast<X*>(x), bias_new, z, start, stop, increment);
 							}
 							else if (rank == 3) {
-								channel_atTheEnd_generic_C<X, 3>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, x, bias_new, z, start, stop, increment);
+								channel_atTheEnd_generic_C<X, 3>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, const_cast<X*>(x), bias_new, z, start, stop, increment);
 							}
 						}
 						else {
@@ -530,36 +530,36 @@ namespace sd {
 							if (isContinuous) {
 								if (rank == 4) {
 									if (rank_skip == rank - 2) {
-										channel_generic_stride_skip_F<X, Y, 4, 3, 2>(x_strides, bases, x, b, z, inplaceOp, yStrideC, start, stop, increment);
+										channel_generic_stride_skip_F<X, Y, 4, 3, 2>(x_strides, bases, const_cast<X*>(x), b, z, inplaceOp, yStrideC, start, stop, increment);
 									}
 									else {
-										channel_generic_stride_skip_F<X, Y, 4, 3, 3>(x_strides, bases, x, b, z, inplaceOp, yStrideC, start, stop, increment);
+										channel_generic_stride_skip_F<X, Y, 4, 3, 3>(x_strides, bases, const_cast<X*>(x), b, z, inplaceOp, yStrideC, start, stop, increment);
 									}
 								}
 								else if (rank == 5) {
 									if (rank_skip == rank - 2) {
 										//skip==3
-										channel_generic_stride_skip_F<X, Y, 5, 4, 3>(x_strides, bases, x, b, z, inplaceOp, yStrideC, start, stop, increment);
+										channel_generic_stride_skip_F<X, Y, 5, 4, 3>(x_strides, bases, const_cast<X*>(x), b, z, inplaceOp, yStrideC, start, stop, increment);
 									}
 									else {
-										channel_generic_stride_skip_F<X, Y, 5, 4, 4>(x_strides, bases, x, b, z, inplaceOp, yStrideC, start, stop, increment);
+										channel_generic_stride_skip_F<X, Y, 5, 4, 4>(x_strides, bases, const_cast<X*>(x), b, z, inplaceOp, yStrideC, start, stop, increment);
 									}
 								}
 								else if (rank == 3) {
-									channel_generic_stride_skip_F<X, Y, 3, 2, 2>(x_strides, bases, x, b, z, inplaceOp, yStrideC, start, stop, increment);
+									channel_generic_stride_skip_F<X, Y, 3, 2, 2>(x_strides, bases, const_cast<X*>(x), b, z, inplaceOp, yStrideC, start, stop, increment);
 								}
 							}
 							else if (rank == 4) {
-								channel_generic_F<X, Y, 4, 3>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_generic_F<X, Y, 4, 3>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 							}
 							else if (rank == 5) {
-								channel_generic_F<X, Y, 5, 4>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_generic_F<X, Y, 5, 4>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 							}
 							else if (rank == 2) {
-								channel_generic_F<X, Y, 2, 1>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_generic_F<X, Y, 2, 1>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 							}
 							else if (rank == 3) {
-								channel_generic_F<X, Y, 3, 2>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_generic_F<X, Y, 3, 2>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 							}
 
 						}
@@ -600,18 +600,18 @@ namespace sd {
 						const bool inplaceOp = (x == z);
 						if (order == 'c') {
 							if (isContinuous) {
-								channel_NC_continous_numHW_C<X, Y>(rank, bases, x_strides, x, b, z, inplaceOp, yStrideC, start, stop, increment);
+								channel_NC_continous_numHW_C<X, Y>(rank, bases, x_strides, const_cast<X*>(x), b, z, inplaceOp, yStrideC, start, stop, increment);
 							}
 							// rank is in [3,5]
 							else if (rank == 4) {
-								channel_NC_generic_C<X, Y, 4>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_NC_generic_C<X, Y, 4>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 
 							}
 							else if (rank == 5) {
-								channel_NC_generic_C<X, Y, 5>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_NC_generic_C<X, Y, 5>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 							}
 							else if (rank == 3) {
-								channel_NC_generic_C<X, Y, 3>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_NC_generic_C<X, Y, 3>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 							}
 						}
 						else {
@@ -620,13 +620,13 @@ namespace sd {
 							//continous case is missing
 
 							if (rank == 4) {
-								channel_generic_F<X, Y, 4, 1>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_generic_F<X, Y, 4, 1>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 							}
 							else if (rank == 5) {
-								channel_generic_F<X, Y, 5, 1>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_generic_F<X, Y, 5, 1>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 							}
 							else if (rank == 3) {
-								channel_generic_F<X, Y, 3, 1>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, x, b, z, start, stop, increment);
+								channel_generic_F<X, Y, 3, 1>(bases, x_strides, z_strides, inplaceOp, same_stride, same_order, yStrideC, const_cast<X*>(x), b, z, start, stop, increment);
 							}
 						}
 					};

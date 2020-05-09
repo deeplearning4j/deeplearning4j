@@ -80,7 +80,7 @@ namespace sd {
         DECLARE_SHAPE_FN(non_max_suppression) {
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);
-            Nd4jLong *outputShape = nullptr;
+            const Nd4jLong *outputShape = nullptr;
 
             int maxOutputSize;
             if (block.width() > 2)
@@ -178,7 +178,7 @@ namespace sd {
         DECLARE_SHAPE_FN(non_max_suppression_v3) {
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);
-            Nd4jLong *outputShape = nullptr;
+
 
             int maxOutputSize;
             if (block.width() > 2)
@@ -211,7 +211,7 @@ namespace sd {
             if (len > 0)
                 len = helpers::nonMaxSuppressionV3(block.launchContext(), boxes, scales, maxOutputSize, overlayThreshold, scoreThreshold, nullptr);
 
-            outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(len, DataType::INT32);
+            auto outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(len, DataType::INT32);
 
             return SHAPELIST(outputShape);
         }

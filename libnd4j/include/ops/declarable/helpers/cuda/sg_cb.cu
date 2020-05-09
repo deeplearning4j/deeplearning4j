@@ -289,7 +289,7 @@ namespace sd {
                             if (irow < 0 || irow >= vocabSize)
                                 continue;
 
-                            auto syn1row = reinterpret_cast<T*>(s1.getSpecialBuffer()) + (irow * vectorLength);
+                            auto syn1row = reinterpret_cast<T*>(s1.specialBuffer()) + (irow * vectorLength);
                             auto code = bCodes[e + cShift];
 
                             //nd4j_printf("syn0: [%i]; syn1: [%i]; code: [%i]\n", target, irow, code);
@@ -315,7 +315,7 @@ namespace sd {
                                 if (irow == nsStarter)
                                     continue;
                             }
-                            auto syn1row = reinterpret_cast<T*>(s1n.getSpecialBuffer()) + (irow * vectorLength);
+                            auto syn1row = reinterpret_cast<T*>(s1n.specialBuffer()) + (irow * vectorLength);
 
                             nSampling_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, false, stream);
                         }

@@ -135,7 +135,7 @@ PLATFORM_CHECK(avgpool3dnew_bp, ENGINE_CUDA) {
 
     return goodType && (input->dataType() == gradO->dataType())
                     && (input->dataType() == gradI->dataType())
-                    && shape::haveSameShapeAndStrides(input->getShapeInfo(), gradI->getShapeInfo());
+                    && shape::haveSameShapeAndStrides(input->shapeInfo(), gradI->shapeInfo());
 }
 
 

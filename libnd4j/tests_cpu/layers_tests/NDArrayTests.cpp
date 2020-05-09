@@ -99,7 +99,7 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
     }
 
     for (int i = 0; i < 8; i++) {
-        ASSERT_EQ(fShape[i], arrayF->getShapeInfo()[i]);
+        ASSERT_EQ(fShape[i], arrayF->shapeInfo()[i]);
     }
 
     for (int i = 0; i < 4; i++) {
@@ -107,7 +107,7 @@ TEST_F(NDArrayTest, NDArrayOrder1) {
     }
 
     for (int i = 0; i < 8; i++) {
-        ASSERT_EQ(cShape[i], arrayC2->getShapeInfo()[i]);
+        ASSERT_EQ(cShape[i], arrayC2->shapeInfo()[i]);
     }
 
 
@@ -237,13 +237,13 @@ TEST_F(NDArrayTest, TestPermuteReshape1) {
 
     array.permutei({1, 2, 3, 0});
 
-    for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
-        ASSERT_EQ(pShape[e], array.getShapeInfo()[e]);
+    for (int e = 0; e < shape::shapeInfoLength(array.shapeInfo()); e++)
+        ASSERT_EQ(pShape[e], array.shapeInfo()[e]);
 
     array.reshapei('c', {2, 25, 2});
 
-    for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
-        ASSERT_EQ(rShape[e], array.getShapeInfo()[e]);
+    for (int e = 0; e < shape::shapeInfoLength(array.shapeInfo()); e++)
+        ASSERT_EQ(rShape[e], array.shapeInfo()[e]);
 }
 
 
@@ -259,15 +259,15 @@ TEST_F(NDArrayTest, TestPermuteReshape2) {
 
     // array.printShapeInfo("after ");
 
-    auto aShape = array.getShapeInfo();
+    auto aShape = array.shapeInfo();
 
-    for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
+    for (int e = 0; e < shape::shapeInfoLength(array.shapeInfo()); e++)
         ASSERT_EQ(pShape[e], aShape[e]);
 
     array.reshapei('c', {2, 72, 25});
 
-    for (int e = 0; e < shape::shapeInfoLength(array.getShapeInfo()); e++)
-        ASSERT_EQ(rShape[e], array.getShapeInfo()[e]);
+    for (int e = 0; e < shape::shapeInfoLength(array.shapeInfo()); e++)
+        ASSERT_EQ(rShape[e], array.shapeInfo()[e]);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -947,9 +947,9 @@ TEST_F(NDArrayTest, TestMmulHelper2) {
     auto z = NDArrayFactory::create_<float>('f', {5, 1});
 
     auto expBuffer = new float[5]{28.00f,  64.00f,  100.00f,  136.00f,  172.00f};
-    auto exp = new NDArray(expBuffer, z->getShapeInfo(), sd::LaunchContext ::defaultContext(), true);
+    auto exp = new NDArray(expBuffer, z->shapeInfo(), sd::LaunchContext ::defaultContext(), true);
 
-    //sd::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
+    //sd::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->buffer(), y->rows(), y->buffer(), 1, 0.0, z->buffer(), 1);
 
     MmulHelper::mmul(x, y, z);
 
@@ -976,9 +976,9 @@ TEST_F(NDArrayTest, TestMmulHelper3) {
     auto z = NDArrayFactory::create_<float>('f', {5, 1});
 
     auto expBuffer = new float[5]{92.00f,  104.00f,  116.00f,  128.00f,  140.00f};
-    auto exp = new NDArray(expBuffer, z->getShapeInfo());
+    auto exp = new NDArray(expBuffer, z->shapeInfo());
 
-    //sd::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
+    //sd::blas::GEMV<float>::op('f',  x->rows(), x->columns(), 1.0f, x->buffer(), y->rows(), y->buffer(), 1, 0.0, z->buffer(), 1);
 
     MmulHelper::mmul(x, y, z);
 
@@ -1011,7 +1011,7 @@ TEST_F(NDArrayTest, TestMmulHelper4) {
     auto z = NDArrayFactory::create_<float>('f', {3, 3});
 
     auto expBuffer = new float[9]{7.0f, 21.0f, 35.0f, 10.0f, 28.0f, 46.0f, 13.0f, 35.0f, 57.0f};
-    auto exp = new NDArray(expBuffer, z->getShapeInfo());
+    auto exp = new NDArray(expBuffer, z->shapeInfo());
 
     MmulHelper::mmul(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
@@ -1041,7 +1041,7 @@ TEST_F(NDArrayTest, TestMmulHelper5) {
     auto z = NDArrayFactory::create_<float>('f', {3, 3});
 
     auto expBuffer = new float[9]{7.0f, 14.0f, 21.0f, 12.0f, 21.0f, 30.0f, 17.0f, 28.0f, 39.0f};
-    auto exp = new NDArray(expBuffer, z->getShapeInfo());
+    auto exp = new NDArray(expBuffer, z->shapeInfo());
 
     MmulHelper::mmul(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
@@ -1071,7 +1071,7 @@ TEST_F(NDArrayTest, TestMmulHelper6) {
     auto z = NDArrayFactory::create_<float>('f', {3, 3});
 
     auto expBuffer = new float[9]{39.0f, 54.0f, 69.0f, 9.0f, 18.0f, 27.0f, 9.0f, 12.0f, 15.0f};
-    auto exp = new NDArray(expBuffer, z->getShapeInfo());
+    auto exp = new NDArray(expBuffer, z->shapeInfo());
 
     MmulHelper::mmul(x, y, z);
     ASSERT_TRUE(z->equalsTo(exp));
@@ -1102,7 +1102,7 @@ TEST_F(NDArrayTest, TestMmulHelper7) {
     auto z = NDArrayFactory::create_<float>('f', {1, 3});
 
     auto expBuffer = new float[9]{110.00f,  260.00f,  410.00f};
-    auto exp = new NDArray(expBuffer, z->getShapeInfo());
+    auto exp = new NDArray(expBuffer, z->shapeInfo());
 
     MmulHelper::mmul(y, x, z);
 
@@ -1301,7 +1301,7 @@ TEST_F(NDArrayTest, TestIndexedPut2) {
     x.p(1, 1.0f);
 
     //x.printBuffer("after");
-    ASSERT_NEAR(reinterpret_cast<float *>(x.getBuffer())[2], 1.0, 1e-5);
+    ASSERT_NEAR(reinterpret_cast<float *>(x.buffer())[2], 1.0, 1e-5);
 }
 
 TEST_F(NDArrayTest, TestIndexedPut3) {
@@ -1309,7 +1309,7 @@ TEST_F(NDArrayTest, TestIndexedPut3) {
     x.p(1, 1.0f);
 
     //x.printBuffer("after");
-    ASSERT_NEAR(reinterpret_cast<float *>(x.getBuffer())[1], 1.0, 1e-5);
+    ASSERT_NEAR(reinterpret_cast<float *>(x.buffer())[1], 1.0, 1e-5);
 }
 
 TEST_F(NDArrayTest, TestIndexedPut4) {
@@ -1317,7 +1317,7 @@ TEST_F(NDArrayTest, TestIndexedPut4) {
     x.p(0, 1, 1.0f);
 
     //x.printBuffer("after");
-    ASSERT_NEAR(reinterpret_cast<float *>(x.getBuffer())[2], 1.0, 1e-5);
+    ASSERT_NEAR(reinterpret_cast<float *>(x.buffer())[2], 1.0, 1e-5);
 }
 
 

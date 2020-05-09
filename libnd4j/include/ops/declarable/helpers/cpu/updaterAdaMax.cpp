@@ -73,23 +73,23 @@ static void adaMaxUpdater_(const NDArray& gradient, const NDArray& initStateU, c
            return;
     }
     
-    bool bXZsame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), update.getShapeInfo());
-    bool bXInVSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), initStateU.getShapeInfo());
-    bool bXStVSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), stateU.getShapeInfo());
-    bool bXInMSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), initStateM.getShapeInfo());
-    bool bXStMSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), stateM.getShapeInfo());
+    bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
+    bool bXInVSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateU.shapeInfo());
+    bool bXStVSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateU.shapeInfo());
+    bool bXInMSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateM.shapeInfo());
+    bool bXStMSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateM.shapeInfo());
 
     auto func = PRAGMA_THREADS_FOR{
 
         int coords[MAX_RANK];
         for (auto i = start; i < stop; i++) {
-            shape::index2coordsCPU(start, i, gradient.getShapeInfo(), coords);
-            const auto xOffset =  shape::getOffset(gradient.getShapeInfo(), coords);
-            const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.getShapeInfo(), coords);
-            const auto initUOffset = bXInVSame ? xOffset : shape::getOffset(initStateU.getShapeInfo(), coords);
-            const auto stUOffset = bXStVSame ? xOffset : shape::getOffset(stateU.getShapeInfo(), coords);
-            const auto initMOffset = bXInMSame ? xOffset : shape::getOffset(initStateM.getShapeInfo(), coords);
-            const auto stMOffset = bXStMSame ? xOffset : shape::getOffset(stateM.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
+            const auto xOffset =  shape::getOffset(gradient.shapeInfo(), coords);
+            const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
+            const auto initUOffset = bXInVSame ? xOffset : shape::getOffset(initStateU.shapeInfo(), coords);
+            const auto stUOffset = bXStVSame ? xOffset : shape::getOffset(stateU.shapeInfo(), coords);
+            const auto initMOffset = bXInMSame ? xOffset : shape::getOffset(initStateM.shapeInfo(), coords);
+            const auto stMOffset = bXStMSame ? xOffset : shape::getOffset(stateM.shapeInfo(), coords);
             
             //m = B_1 * m + (1-B_1)*grad
             stM[stMOffset] = beta1 * initM[initMOffset] + grad[xOffset] * (1 - beta1);

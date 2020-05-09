@@ -59,7 +59,7 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(choose) {
-            Nd4jLong *shape;
+            Nd4jLong const* shape;
             int rank;
             int mode = INT_ARG(0);
             auto numResults = NDArrayFactory::create<Nd4jLong>(0L);
@@ -67,11 +67,11 @@ namespace sd {
                 auto first = INPUT_VARIABLE(0);
                 auto second = INPUT_VARIABLE(1);
                 if(first->lengthOf() > second->lengthOf()) {
-                    shape = first->getShapeInfo();
+                    shape = first->shapeInfo();
                     rank = first->rankOf();
                 }
                 else {
-                    shape = second->getShapeInfo();
+                    shape = second->shapeInfo();
                     rank = second->rankOf();
                 }
 
@@ -79,7 +79,7 @@ namespace sd {
             }
             else {
                 auto first = INPUT_VARIABLE(0);
-                shape = first->getShapeInfo();
+                shape = first->shapeInfo();
                 rank = first->rankOf();
                 double scalar = T_ARG(0);
 

@@ -161,13 +161,13 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
                                                                                   sizeof(Nd4jLong)));
 
             NDArray::prepareSpecialUse({output}, {input, pIndices});
-            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLauncher, (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets), LIBND4J_TYPES, INDEXING_TYPES);
+            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLauncher, (context->getCudaStream(), numOfSubArrs, input->specialBuffer(), xShapeInfo, xOffsets, pIndices->specialBuffer(), pIndices->specialShapeInfo(), output->specialBuffer(), zShapeInfo, zOffsets), LIBND4J_TYPES, INDEXING_TYPES);
             NDArray::registerSpecialUse({output}, {input, pIndices});
             manager.synchronize();
         }
         else {
             NDArray::prepareSpecialUse({output}, {input, pIndices});
-            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLinear, (context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()), LIBND4J_TYPES, INDEXING_TYPES);
+            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLinear, (context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), pIndices->specialBuffer(), pIndices->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()), LIBND4J_TYPES, INDEXING_TYPES);
             NDArray::registerSpecialUse({output}, {input, pIndices});
 
         }

@@ -35,7 +35,7 @@ namespace sd {
         std::vector<double> _floatValues;
     public:
         ConstantDescriptor(double* values, int length);
-        ConstantDescriptor(Nd4jLong* values, int length);
+        ConstantDescriptor(Nd4jLong const* values, int length);
         ConstantDescriptor(std::initializer_list<double> values);
 
         explicit ConstantDescriptor(std::vector<Nd4jLong> &values);

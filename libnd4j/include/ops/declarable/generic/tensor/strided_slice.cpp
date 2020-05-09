@@ -415,7 +415,7 @@ namespace sd {
                 ALLOCATE(subArrShapeInfo, block.getWorkspace(), shape::shapeInfoLength(x->rankOf()), Nd4jLong);
                 Nd4jLong offset;
 
-                shape::calcSubArrShapeInfoAndOffset(indices.data(), x->getShapeInfo(), subArrShapeInfo, offset, true, true);
+                shape::calcSubArrShapeInfoAndOffset(indices.data(), x->shapeInfo(), subArrShapeInfo, offset, true, true);
                 auto subArrShapeInfoPack = ConstantShapeHelper::getInstance()->bufferForShapeInfo(subArrShapeInfo);
 
                 NDArray::prepareSpecialUse({z}, {x});
@@ -502,7 +502,6 @@ namespace sd {
                 ++e;
             }
 
-            Nd4jLong *newShape;
             std::vector<Nd4jLong> input_shape; //(shape::rank(inShape));
             auto inputLen = shape::length(inShape);
             std::vector<Nd4jLong> shape;
@@ -519,7 +518,7 @@ namespace sd {
             std::vector<Nd4jLong> indices;
             bool result = _preprocess_strided_slice(&indices, &shape, input_shape, begin, end, strides, begin_mask, ellipsis_mask, end_mask, new_axis_mask, shrink_axis_mask, &is_identity, &is_simple_slice, &is_dim0);
             if (indices.size()) {
-                newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c',
+                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c',
                                                                                shape);
 //                if (inputLen > 1) {
 //                    newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c',
@@ -527,10 +526,10 @@ namespace sd {
 //                } else {
 //                    newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
 //                }
-            } else
-                newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(ArrayOptions::dataType(inShape));
+                return SHAPELIST(newShape);
+            }
 
-            return SHAPELIST(newShape);
+            return SHAPELIST(ConstantShapeHelper::getInstance()->emptyShapeInfo(ArrayOptions::dataType(inShape)));
         }
 
 

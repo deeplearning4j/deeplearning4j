@@ -96,7 +96,7 @@ Nd4jLong checkIndices(sd::LaunchContext *context, const NDArray& indices, const 
     NDArray numOfBadIndx(sd::DataType::INT64, context, true);
 
     NDArray::prepareSpecialUse({&numOfBadIndx}, {&indices});
-    BUILD_SINGLE_SELECTOR(xType, checkIndicesCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), reinterpret_cast<Nd4jLong*>(numOfBadIndx.getSpecialBuffer()), output.getSpecialShapeInfo(), axis), INDEXING_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, checkIndicesCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.specialBuffer(), indices.specialShapeInfo(), reinterpret_cast<Nd4jLong*>(numOfBadIndx.specialBuffer()), output.specialShapeInfo(), axis), INDEXING_TYPES);
     NDArray::registerSpecialUse({&numOfBadIndx}, {&indices});
 
     manager.synchronize();
@@ -346,7 +346,7 @@ void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indic
     PointersManager manager(context, "scatter");
 
     NDArray::prepareSpecialUse({&output}, {&updates, &indices});
-    BUILD_DOUBLE_SELECTOR(xType, yType, scatterCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), lock), INDEXING_TYPES, GENERIC_NUMERIC_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, scatterCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock), INDEXING_TYPES, GENERIC_NUMERIC_TYPES);
     NDArray::registerSpecialUse({&output}, {&updates, &indices});
 
     manager.synchronize();
@@ -612,7 +612,7 @@ void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
     PointersManager manager(context, "scatterND");
 
     NDArray::prepareSpecialUse({&output}, {&updates, &indices});
-    BUILD_DOUBLE_SELECTOR(xType, yType, scatterNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), lock), INDEXING_TYPES, GENERIC_NUMERIC_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, scatterNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), lock), INDEXING_TYPES, GENERIC_NUMERIC_TYPES);
     NDArray::registerSpecialUse({&output}, {&updates, &indices});
 
     manager.synchronize();
@@ -682,12 +682,12 @@ void scatterForLoss(sd::LaunchContext* context, const NDArray& indices, NDArray&
 
     if(calcGrad) {
         NDArray::prepareSpecialUse({&updates}, {&indices});
-        BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterForLossCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), nullptr, nullptr), INDEXING_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterForLossCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), nullptr, nullptr), INDEXING_TYPES, FLOAT_TYPES);
         NDArray::registerSpecialUse({&updates}, {&indices});
     }
     else {
         NDArray::prepareSpecialUse({&output}, {&indices, &updates});
-        BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterForLossCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()), INDEXING_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_SELECTOR(indices.dataType(), updates.dataType(), scatterForLossCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(), updates.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()), INDEXING_TYPES, FLOAT_TYPES);
         NDArray::registerSpecialUse({&output}, {&indices, &updates});
     }
 
@@ -736,8 +736,8 @@ __global__ static void scatterLockCuda(const int opCode,
         std::vector<int> yTadDims(sizeOfUpdDims);
         std::iota(yTadDims.begin(), yTadDims.end(), 0);
 
-        auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), ShapeUtils::evalDimsToExclude(updates.rankOf(), yTadDims));
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), zTadDims);
+        auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(updates.shapeInfo(), ShapeUtils::evalDimsToExclude(updates.rankOf(), yTadDims));
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.shapeInfo(), zTadDims);
 
         const Nd4jLong zTadLen = shape::length(packZ.primaryShapeInfo());
         const Nd4jLong yTadLen = shape::length(packY.primaryShapeInfo());
@@ -748,7 +748,7 @@ __global__ static void scatterLockCuda(const int opCode,
         const auto xType = indices.dataType();
         const auto yType = updates.dataType();
 
-        BUILD_DOUBLE_SELECTOR(xType, yType, scatterLockCudaLauncher, (blocksPerGrid, threadsPerBlock, 1024, context->getCudaStream(), op, indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), updates.getSpecialBuffer(), packY.specialShapeInfo(), packY.specialOffsets(), output.getSpecialBuffer(), packZ.specialShapeInfo(), packZ.specialOffsets(), indices.lengthOf(), yTadLen, zTadLen), INDEXING_TYPES, GENERIC_NUMERIC_TYPES);
+        BUILD_DOUBLE_SELECTOR(xType, yType, scatterLockCudaLauncher, (blocksPerGrid, threadsPerBlock, 1024, context->getCudaStream(), op, indices.specialBuffer(), indices.specialShapeInfo(), updates.specialBuffer(), packY.specialShapeInfo(), packY.specialOffsets(), output.specialBuffer(), packZ.specialShapeInfo(), packZ.specialOffsets(), indices.lengthOf(), yTadLen, zTadLen), INDEXING_TYPES, GENERIC_NUMERIC_TYPES);
 
 
 
@@ -963,8 +963,8 @@ __global__ static void scatterLockCuda(const int opCode,
                 std::vector<int> dims = {0};
                 auto inverted = ShapeUtils::evalDimsToExclude(output.rankOf(), dims);
 
-                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), inverted);
-                auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), inverted);
+                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.shapeInfo(), inverted);
+                auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(updates.shapeInfo(), inverted);
 
                 auto psX = packX.specialShapeInfo();
                 auto psY = packY.specialShapeInfo();
@@ -984,9 +984,9 @@ __global__ static void scatterLockCuda(const int opCode,
                 auto blockSize = sd::math::nd4j_max<int>(32, sd::math::nd4j_min<int>(tadLengthX, 1024));
 
                 if (lock)
-                    scatterCuda<T, true><<<512, blockSize, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()), tadLengthX, tadLengthY);
+                    scatterCuda<T, true><<<512, blockSize, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.specialBuffer(), psX, poX, updates.specialBuffer(), psY, poY, reinterpret_cast<int *>(indices.specialBuffer()), tadLengthX, tadLengthY);
                 else
-                    scatterCuda<T, false><<<512, blockSize, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.getSpecialBuffer(), psX, poX, updates.getSpecialBuffer(), psY, poY, reinterpret_cast<int *>(indices.getSpecialBuffer()), tadLengthX, tadLengthY);
+                    scatterCuda<T, false><<<512, blockSize, 1024, *context->getCudaStream()>>>(op, indices.lengthOf(), output.specialBuffer(), psX, poX, updates.specialBuffer(), psY, poY, reinterpret_cast<int *>(indices.specialBuffer()), tadLengthX, tadLengthY);
 
                  NDArray::registerSpecialUse({&output}, {&updates, &indices});
                 manager.synchronize();
@@ -1016,9 +1016,9 @@ const int xLastDim = indices.sizeAt(-1);
             zTadDims[i] = zRank - 1 - j;
         }
 
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(indices.getShapeInfo(), {xRank - 1});
-        auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), yTadDims);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), zTadDims);
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(indices.shapeInfo(), {xRank - 1});
+        auto packY = sd::ConstantTadHelper::getInstance()->tadForDimensions(updates.shapeInfo(), yTadDims);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.shapeInfo(), zTadDims);
 
         const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = packZ.numberOfTads();
@@ -1151,11 +1151,11 @@ const int xLastDim = indices.sizeAt(-1);
         // PointersManager::printDevContentOnDev<Nd4jLong>(yShapeInfo, 8);
         // PointersManager::printDevContentOnDev<Nd4jLong>(zShapeInfo, 8);
 
-        // manager.printDevContentOnHost<int>(indices.getSpecialBuffer(), indices.lengthOf());
-        // manager.printDevContentOnHost<Nd4jLong>(indices.getSpecialShapeInfo(), shape::shapeInfoLength(indices.rankOf()));
-        // manager.printDevContentOnHost<float>(updates.getSpecialBuffer(), updates.lengthOf());
-        // manager.printDevContentOnHost<Nd4jLong>(updates.getSpecialShapeInfo(), shape::shapeInfoLength(updates.rankOf()));
-        // manager.printDevContentOnHost<Nd4jLong>(output.getSpecialShapeInfo(), shape::shapeInfoLength(output.rankOf()));
+        // manager.printDevContentOnHost<int>(indices.specialBuffer(), indices.lengthOf());
+        // manager.printDevContentOnHost<Nd4jLong>(indices.specialShapeInfo(), shape::shapeInfoLength(indices.rankOf()));
+        // manager.printDevContentOnHost<float>(updates.specialBuffer(), updates.lengthOf());
+        // manager.printDevContentOnHost<Nd4jLong>(updates.specialShapeInfo(), shape::shapeInfoLength(updates.rankOf()));
+        // manager.printDevContentOnHost<Nd4jLong>(output.specialShapeInfo(), shape::shapeInfoLength(output.rankOf()));
         // printf("!!!!!!!\n");
         // manager.printDevContentOnHost<Nd4jLong>(packX.specialShapeInfo(), 2*shape::rank(packX.primaryShapeInfo()) + 4);
         // manager.printDevContentOnHost<Nd4jLong>(packX.specialOffsets(), packX.numberOfTads());

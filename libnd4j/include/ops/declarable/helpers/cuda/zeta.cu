@@ -69,7 +69,7 @@ void zeta(sd::LaunchContext * context, const NDArray& x, const NDArray& q, NDArr
     int threadsPerBlock = MAX_NUM_THREADS / 2;
     int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
-    BUILD_SINGLE_SELECTOR(x.dataType(), zetaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), q.getSpecialBuffer(), q.getSpecialShapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo()), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(x.dataType(), zetaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), x.specialBuffer(), x.specialShapeInfo(), q.specialBuffer(), q.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()), FLOAT_TYPES);
 
     x.tickReadHost();
     q.tickReadHost();

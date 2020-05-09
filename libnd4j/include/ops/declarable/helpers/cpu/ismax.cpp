@@ -40,7 +40,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                 output->p<Z>(i, 1);
         }
         else {
-            int eleStride = shape::elementWiseStride(input->getShapeInfo());
+            int eleStride = shape::elementWiseStride(input->shapeInfo());
             if (eleStride == 1) {
                 int maxIdx = 0;
                 auto currMax = input->e<X>(0);
@@ -125,8 +125,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
         //moving all dimensions (in sorted order)
         //to the back.
         //permuted version of the input shape info for setting up the tad problem
-        auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
-        auto tadPackZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
+        auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
+        auto tadPackZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
 
 
         auto tadShapeShapeInfo = tadPack.primaryShapeInfo();
