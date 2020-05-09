@@ -33,7 +33,7 @@ namespace helpers {
 
                 const auto sizeofT = input.sizeOfT();
 
-                T* xBuff = input.bufferAsT<T>();
+                auto xBuff = input.bufferAsT<T>();
 
                 bool luckCase1 = ((axis == 0 && input.ordering() == 'c') || (axis == input.rankOf() - 1 && input.ordering() == 'f')) && input.ews() == 1;
 
@@ -77,7 +77,7 @@ namespace helpers {
 
                     for (Nd4jLong i = 0; i < input.lengthOf() / xDim; ++i) {
 
-                        T* x = xBuff + xDim * i;
+                        auto x = xBuff + xDim * i;
 
                         for (uint j = 0; j < numSplits; ++j) {
                             const auto zDim = outArrs[j]->sizeAt(axis);
@@ -100,8 +100,8 @@ namespace helpers {
 
                     for (auto i = start; i < stop; i += increment) {
 
-                        shape::index2coordsCPU(start, i, input.getShapeInfo(), coords);
-                        const auto xOffset = shape::getOffset(input.getShapeInfo(), coords);
+                        shape::index2coordsCPU(start, i, input.shapeInfo(), coords);
+                        const auto xOffset = shape::getOffset(input.shapeInfo(), coords);
 
                         uint outArrIdx = 0;
 
@@ -113,7 +113,7 @@ namespace helpers {
                         }
 
                         T* z = outArrs[outArrIdx]->bufferAsT<T>();
-                        const auto zOffset = shape::getOffset(outArrs[outArrIdx]->getShapeInfo(), coords);
+                        const auto zOffset = shape::getOffset(outArrs[outArrIdx]->shapeInfo(), coords);
                         z[zOffset] = xBuff[xOffset];
 
                         coords[axis] = temp;

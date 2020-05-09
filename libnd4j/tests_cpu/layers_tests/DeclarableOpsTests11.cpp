@@ -3677,7 +3677,7 @@ TEST_F(DeclarableOpsTests11, SafeDivideMixed_Test1) {
     NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});
     auto sumDiff = labels.reduceAlongDimension(reduce::Sum, {1}, true);
 
-    NDArray numOfNonZero(sumDiff.getShapeInfo(), sd::DataType::INT64, false);
+    NDArray numOfNonZero(sumDiff.shapeInfo(), sd::DataType::INT64, false);
     numOfNonZero.assign(1);
     sumDiff.applyPairwiseTransform(pairwise::SafeDivide, numOfNonZero, sumDiff);
 }

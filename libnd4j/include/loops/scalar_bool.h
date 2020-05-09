@@ -58,43 +58,106 @@ namespace functions {
                         
             template<typename OpType>
             __device__
-            static void transformCuda(void* scalar, void *vy, Nd4jLong *shapeInfo, void *vparams, void *vresult, Nd4jLong *resultShapeInfo, int *allocationBuffer);
+            static void transformCuda(const void* scalar,
+                                      const void *vy, const Nd4jLong *shapeInfo,
+                                      void *vparams,
+                                      void *vresult, const Nd4jLong *resultShapeInfo,
+                                      int *allocationBuffer);
             
             template<typename OpType>
             __device__
-            static void transformCuda(Nd4jLong n, void* vx, void *vy, Nd4jLong yEWS, void *vparams, void *vz, Nd4jLong zEWS, int *allocationBuffer);
+            static void transformCuda(Nd4jLong n,
+                                      const void* vx, const void *vy, Nd4jLong yEWS,
+                                      void *vparams,
+                                      void *vz, Nd4jLong zEWS,
+                                      int *allocationBuffer);
 
             template<typename OpType>
             __device__
-            static void transformCuda(void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, void *vscalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static void transformCuda(const void *vx, const Nd4jLong *xShapeInfo,
+                                      void *vextraParams,
+                                      void *vz, const Nd4jLong *zShapeInfo,
+                                      const void *vscalars,
+                                      int *dimension, int dimensionLength,
+                                      const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                      const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
             template <typename OpType>
             __host__
-            static void intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static void intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream,
+                                                   const void *x, const Nd4jLong *xShapeInfo,
+                                                   void *z, const Nd4jLong *zShapeInfo,
+                                                   const void *scalars,
+                                                   void *extraParams,
+                                                   int *dimension, int dimensionLength,
+                                                   const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                                   const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
             template <typename OpType>
             __host__
-            static void intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void* vscalar, void *vextraParams, int *allocPointer);            
+            static void intermediateShaped(dim3& launchDims, cudaStream_t *stream,
+                                           const void *vx, const Nd4jLong *xShapeInfo,
+                                           void *vz, const Nd4jLong *zShapeInfo,
+                                           const void* vscalar,
+                                           void *vextraParams,
+                                           int *allocPointer);
             
             __host__
-            static void executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void* scalar, void *extraParams);
+            static void executeCudaShaped(dim3& launchDims, cudaStream_t *stream,
+                                          int opNum,
+                                          const void *x, const Nd4jLong *xShapeInfo,
+                                          void *result, const Nd4jLong *resultShapeInfo,
+                                          const void* scalar,
+                                          const void *extraParams);
 
             __host__
-            static void executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *z, Nd4jLong *zShapeInfo, void *scalars, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
-
+            static void executeCudaAlongDimension(dim3& launchDims, cudaStream_t *stream,
+                                                  int opNum,
+                                                  const void *x, const Nd4jLong *xShapeInfo,
+                                                  void *z, const Nd4jLong *zShapeInfo,
+                                                  const void *scalars,
+                                                  void *extraParams,
+                                                  int *dimension, int dimensionLength,
+                                                  const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                                  const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
 /*
 #include "cuda/scalar_temp.cu"
 */
 #else
             template <typename OpType>
-            static void transform(void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ, const uint64_t start, const uint64_t stop);
+            static void transform(const void *x, const Nd4jLong *xShapeInfo,
+                                  void *extraParams,
+                                  void *z, const Nd4jLong *zShapeInfo,
+                                  const void *scalars,
+                                  int *dimension, int dimensionLength,
+                                  const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                  const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetsZ,
+                                  uint64_t start, uint64_t stop);
  
-           static void transform(int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, void *scalars, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ, const uint64_t start, const uint64_t stop);
+           static void transform(int opNum,
+                                 const void *x, const Nd4jLong *xShapeInfo,
+                                 void *extraParams,
+                                 void *z, const Nd4jLong *zShapeInfo,
+                                 const void *scalars,
+                                 int *dimension, int dimensionLength,
+                                 const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                 const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetsZ,
+                                 uint64_t start, uint64_t stop);
 
-            static void transform(const int opNum, void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo,  void *scalar,  void *extraParams, const uint64_t start, const uint64_t stop);
+            static void transform(int opNum,
+                                  const void *x, const Nd4jLong *xShapeInfo,
+                                  void *result, const Nd4jLong *resultShapeInfo,
+                                  const void *scalar,
+                                  void *extraParams,
+                                  uint64_t start, uint64_t stop);
 
-            static void transform(const int opNum, void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const uint64_t n, const uint64_t start, const uint64_t stop);
+            static void transform(int opNum,
+                                  const void *x, Nd4jLong xStride,
+                                  void *result, Nd4jLong resultStride,
+                                  const void *scalar,
+                                  void *extraParams,
+                                  uint64_t n, uint64_t start, uint64_t stop);
 
 
 
@@ -117,7 +180,11 @@ namespace functions {
          */
 
             template<typename OpType>
-            static  void transform(void *x, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *scalar, void *extraParams, const uint64_t start, const uint64_t stop);
+            static  void transform(const void *x, const Nd4jLong *xShapeInfo,
+                                   void *result, const Nd4jLong *resultShapeInfo,
+                                   const void *scalar,
+                                   void *extraParams,
+                                   uint64_t start, uint64_t stop);
 
 
             /**
@@ -133,7 +200,10 @@ namespace functions {
              */
 
             template<typename OpType>
-            static void transform(void *x, Nd4jLong xStride, void *result, Nd4jLong resultStride, void *scalar, void *extraParams, const uint64_t n, const uint64_t start, const uint64_t stop);
+            static void transform(const void *x, Nd4jLong xStride,
+                                  void *result, Nd4jLong resultStride,
+                                  const void *scalar, void *extraParams,
+                                  uint64_t n, uint64_t start, uint64_t stop);
 #endif
         };
     }

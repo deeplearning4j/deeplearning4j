@@ -30,6 +30,10 @@ import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
+import org.nd4j.linalg.api.ops.compression.DecodeBitmap;
+import org.nd4j.linalg.api.ops.compression.DecodeThreshold;
+import org.nd4j.linalg.api.ops.compression.EncodeBitmap;
+import org.nd4j.linalg.api.ops.compression.EncodeThreshold;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
@@ -685,38 +689,41 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return thresholdEncode(input, threshold, Integer.MAX_VALUE);
     }
 
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        val result = Nd4j.exec(new EncodeThreshold(input, (float) threshold, boundary))[1];
+
+        return result.getInt(0) > 0 ? result : null;
     }
 
     @Override
     public INDArray thresholdDecode(INDArray encoded, INDArray target) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Nd4j.exec(new DecodeThreshold(encoded, target));
+        return target;
     }
 
     @Override
     public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        val results = Nd4j.exec(new EncodeBitmap(indArray, target, Nd4j.scalar(0), (float) threshold));
+
+        // return number of elements taht were compressed
+        return results[2].getInt(0);
     }
 
     @Override
     public INDArray bitmapEncode(INDArray indArray, double threshold) {
-        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(indArray.length() / 16 + 5);
-
-        INDArray ret = Nd4j.createArrayFromShapeBuffer(buffer, indArray.shapeInfoDataBuffer());
-
-        bitmapEncode(indArray, ret, threshold);
-
-        return ret;
+        val array = Nd4j.create(DataType.INT32, indArray.length() / 16 + 5);
+        bitmapEncode(indArray, array, threshold);
+        return array;
     }
 
     @Override
     public INDArray bitmapDecode(INDArray encoded, INDArray target) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Nd4j.exec(new DecodeBitmap(encoded, target));
+        return target;
     }
 
 

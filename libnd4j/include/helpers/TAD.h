@@ -55,20 +55,20 @@ namespace shape {
         Nd4jLong tadIndex = 0;
         int dimensionLength;
         int* dimension = nullptr;
-        Nd4jLong *shapeInfo = nullptr;
-        Nd4jLong *tadOnlyShapeInfo = nullptr;
+        Nd4jLong const* shapeInfo = nullptr;
+        Nd4jLong* tadOnlyShapeInfo = nullptr;
         Nd4jLong numTads = 0;
         int tadRank = 0;
-        Nd4jLong *tadShape = nullptr;
-        Nd4jLong *tadStride = nullptr;
-        Nd4jLong *tadOffsets = nullptr;
+        Nd4jLong* tadShape = nullptr;
+        Nd4jLong* tadStride = nullptr;
+        Nd4jLong* tadOffsets = nullptr;
         Nd4jLong tadOffsetForBlock = 0;
         int rank = 0;
         int numOnes = 0;
         //pointers to original
         int originalDimensionLength;
-        int *originalDimension = nullptr;
-        Nd4jLong *originalShapeInfo = nullptr;
+        int const* originalDimension = nullptr;
+        Nd4jLong const* originalShapeInfo = nullptr;
         bool squeezed = false;
         bool newSqueezeDimensions = false;
         int numOnesInMiddle = 0;
@@ -81,7 +81,7 @@ namespace shape {
         void *ptrManager = nullptr;
         int *ptrOutput = nullptr;
 
-        INLINEDEF bool dimensionsDescending(int rank, int *dimensions, int length);
+        INLINEDEF bool dimensionsDescending(int rank, int const* dimensions, int length);
 
 #ifdef __CUDACC__
         __host__ __device__
@@ -114,12 +114,12 @@ namespace shape {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        INLINEDEF void init(Nd4jLong *shapeInfo,int *dimension,int dimensionLength);
+        INLINEDEF void init(Nd4jLong const* shapeInfo,int const* dimension,int dimensionLength);
 
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        INLINEDEF void init(int index, Nd4jLong *shapeInfo,int *dimension,int dimensionLength);
+        INLINEDEF void init(int index, Nd4jLong const* shapeInfo,int const* dimension,int dimensionLength);
 
 
 
@@ -134,12 +134,12 @@ namespace shape {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        INLINEDEF void permuteShapeBufferInPlace(Nd4jLong *shapeBuffer, int* rearrange, Nd4jLong *out);
+        INLINEDEF void permuteShapeBufferInPlace(Nd4jLong const* shapeBuffer, int const* rearrange, Nd4jLong *out);
 
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        INLINEDEF Nd4jLong* permuteShapeBuffer(Nd4jLong *shapeBuffer, int *rearrange);
+        INLINEDEF Nd4jLong* permuteShapeBuffer(Nd4jLong const* shapeBuffer, int *rearrange);
 
 
 
@@ -153,7 +153,7 @@ namespace shape {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        INLINEDEF Nd4jLong lengthPerSlice(Nd4jLong *shapeBuffer);
+        INLINEDEF Nd4jLong lengthPerSlice(Nd4jLong const* shapeBuffer);
 
 
 #ifdef __CUDACC__
@@ -253,7 +253,7 @@ namespace shape {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        INLINEDEF Nd4jLong tadLength(Nd4jLong *shapeInfo, int *dimension, int dimensionLength);
+        INLINEDEF Nd4jLong tadLength(Nd4jLong const* shapeInfo, int const* dimension, int dimensionLength);
 
 /**
  * Computes the number
@@ -263,7 +263,7 @@ namespace shape {
 #ifdef __CUDACC__
         __host__ __device__
 #endif
-        INLINEDEF Nd4jLong tensorsAlongDimension(Nd4jLong *shapeInfo, int *dimension, int dimensionLength);
+        INLINEDEF Nd4jLong tensorsAlongDimension(Nd4jLong const* shapeInfo, int const* dimension, int dimensionLength);
 
 
 #ifdef __CUDACC__
@@ -337,19 +337,19 @@ namespace shape {
         this->wholeThing = this->numTads == 1 || ((this->dimensionLength == this->rank || this->numTads == shape::length(this->shapeInfo)) && ews == 1);
     }
 
-    INLINEDEF void TAD::init(int tadIndex, Nd4jLong *shapeInfo,int *dimension,int dimensionLength) {
+    INLINEDEF void TAD::init(int tadIndex, Nd4jLong const* shapeInfo,int const* dimension,int dimensionLength) {
         this->tadIndex = tadIndex;
         this->init(shapeInfo, dimension, dimensionLength);
     }
 
-    INLINEDEF  void TAD::init(Nd4jLong *shapeInfo, int *dimension,int dimensionLength) {
+    INLINEDEF  void TAD::init(Nd4jLong const* shapeInfo, int const* dimension,int dimensionLength) {
         this->originalShapeInfo = shapeInfo;
         this->originalDimension = dimension;
         this->originalDimensionLength = dimensionLength;
         //start off as original references
         this->shapeInfo = shapeInfo;
         this->dimensionLength = dimensionLength;
-        this->dimension = dimension;
+        this->dimension = const_cast<int*>(dimension);
         this->rank = shape::rank(shapeInfo);
         this->numTads = dimensionLength == 0 ? 1 : this->tensorsAlongDimension(this->shapeInfo, this->dimension, this->dimensionLength);
 
@@ -420,19 +420,19 @@ namespace shape {
     }
 
 
-    INLINEDEF void TAD::permuteShapeBufferInPlace(Nd4jLong* shapeBuffer, int* rearrange, Nd4jLong* out) {
+    INLINEDEF void TAD::permuteShapeBufferInPlace(Nd4jLong const* shapeBuffer, int const* rearrange, Nd4jLong* out) {
         memcpy(out, shapeBuffer, sizeof(Nd4jLong) * shape::shapeInfoLength(this->rank));
         doPermuteShapeInfo(out, rearrange);
     }
 
-    INLINEDEF Nd4jLong* TAD::permuteShapeBuffer(Nd4jLong* shapeBuffer, int *rearrange) {
+    INLINEDEF Nd4jLong* TAD::permuteShapeBuffer(Nd4jLong const* shapeBuffer, int *rearrange) {
         int len = shape::shapeInfoLength(this->rank);
         Nd4jLong *copy = shape::copyOf(len,shapeBuffer);
         doPermuteShapeInfo(copy,rearrange);
         return copy;
     }
 
-    INLINEDEF bool TAD::dimensionsDescending(int rank, int *dimensions, int length) {
+    INLINEDEF bool TAD::dimensionsDescending(int rank, int const* dimensions, int length) {
         int desired = rank - 1;
         for (int e = length - 1; e >= 0; e--) {
             if (dimensions[e] != desired--)
@@ -465,7 +465,7 @@ namespace shape {
         this->tadStride = shape::stride(this->tadOnlyShapeInfo);
     }
 
-    INLINEDEF Nd4jLong TAD::lengthPerSlice(Nd4jLong* shapeBuffer) {
+    INLINEDEF Nd4jLong TAD::lengthPerSlice(Nd4jLong const* shapeBuffer) {
         int dimension = 0;
         Nd4jLong *remove = shape::removeIndex(shape::shapeOf(shapeBuffer),&dimension,shape::rank(shapeBuffer),1);
         Nd4jLong prod = shape::prodLong(remove, shape::rank(shapeBuffer) - 1);
@@ -635,7 +635,7 @@ namespace shape {
     }
 
 
-    INLINEDEF Nd4jLong* TAD::tensorShape() {
+    INLINEDEF Nd4jLong* TAD::tensorShape(){
         if(this->tadShape != nullptr)
             return this->tadShape;
 
@@ -902,7 +902,7 @@ namespace shape {
     }
 
 
-    INLINEDEF Nd4jLong TAD::tadLength(Nd4jLong *shapeInfo, int *dimension, int dimensionLength) {
+    INLINEDEF Nd4jLong TAD::tadLength(Nd4jLong const* shapeInfo, int const* dimension, int dimensionLength) {
         if(dimensionLength == 1) {
             return shape::shapeOf(shapeInfo)[dimension[0]];
         }
@@ -919,7 +919,7 @@ namespace shape {
     }
 
 
-    INLINEDEF Nd4jLong TAD::tensorsAlongDimension(Nd4jLong *shapeInfo, int *dimension, int dimensionLength) {
+    INLINEDEF Nd4jLong TAD::tensorsAlongDimension(Nd4jLong const* shapeInfo, int const* dimension, int dimensionLength) {
         return shape::length(shapeInfo) / this->tadLength(shapeInfo,dimension,dimensionLength);
     }
 

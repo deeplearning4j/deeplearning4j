@@ -425,6 +425,21 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         Files.delete(tmpFile);
     }
 
+
+    @Test
+    public void testMigrateToWorkspace(){
+        val src = Nd4j.createFromArray (1L,2L);
+        val wsConf = new WorkspaceConfiguration().builder().build();
+        Nd4j.getWorkspaceManager().createNewWorkspace(wsConf,"testWS");
+        val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("testWS");
+
+        val migrated = src.migrate();
+        assertEquals(src.dataType(), migrated.dataType());
+        assertEquals(1L, migrated.getLong(0));
+
+        ws.close();
+    }
+
     @Override
     public char ordering() {
         return 'c';

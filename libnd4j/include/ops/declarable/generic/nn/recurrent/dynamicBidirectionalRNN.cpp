@@ -214,10 +214,10 @@ DECLARE_SHAPE_FN(dynamic_bidirectional_rnn) {
     hFWFinalPrevShapeInfo[2] = numUnitsFW;
     hBWFinalPrevShapeInfo[2] = numUnitsBW;
 
-    ShapeUtils::updateStridesAndType(hFWShapeInfo, x->getShapeInfo(), x->ordering());
-    ShapeUtils::updateStridesAndType(hBWShapeInfo, x->getShapeInfo(), x->ordering());
-    ShapeUtils::updateStridesAndType(hFWFinalPrevShapeInfo, x->getShapeInfo(), x->ordering());
-    ShapeUtils::updateStridesAndType(hBWFinalPrevShapeInfo, x->getShapeInfo(), x->ordering());
+    ShapeUtils::updateStridesAndType(hFWShapeInfo, x->shapeInfo(), x->ordering());
+    ShapeUtils::updateStridesAndType(hBWShapeInfo, x->shapeInfo(), x->ordering());
+    ShapeUtils::updateStridesAndType(hFWFinalPrevShapeInfo, x->shapeInfo(), x->ordering());
+    ShapeUtils::updateStridesAndType(hBWFinalPrevShapeInfo, x->shapeInfo(), x->ordering());
 
     return SHAPELIST(CONSTANT(hFWShapeInfo), CONSTANT(hBWShapeInfo), CONSTANT(hFWFinalPrevShapeInfo), CONSTANT(hBWFinalPrevShapeInfo));
 }

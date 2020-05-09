@@ -28,18 +28,18 @@ namespace sd {
     private:
         ConstantDataBuffer _tadShape;
         ConstantDataBuffer _tadOffsets;
-        Nd4jLong _numTads;
-        int _shapeInfoLength;
+        Nd4jLong _numTads = 0 ;
+        int _shapeInfoLength = 0;
     public:
         explicit TadPack(ConstantDataBuffer &shapes, ConstantDataBuffer &offets, Nd4jLong numTads);
         TadPack() = default;
         ~TadPack() = default;
 
-        Nd4jLong* primaryShapeInfo() const;
-        Nd4jLong* primaryOffsets() const;
+        const Nd4jLong* primaryShapeInfo() const;
+        const Nd4jLong* primaryOffsets() const;
 
-        Nd4jLong* specialShapeInfo() const;
-        Nd4jLong* specialOffsets() const;
+        const Nd4jLong* specialShapeInfo() const;
+        const Nd4jLong* specialOffsets() const;
 
         Nd4jLong numberOfTads() const;
         int shapeInfoLength() const;
@@ -48,8 +48,8 @@ namespace sd {
          * These methods return either primary or special pointers depending on platform binaries were compiled for
          * @return
          */
-        Nd4jLong *platformShapeInfo() const;
-        Nd4jLong *platformOffsets() const;
+        const Nd4jLong *platformShapeInfo() const;
+        const Nd4jLong *platformOffsets() const;
     };
 }
 

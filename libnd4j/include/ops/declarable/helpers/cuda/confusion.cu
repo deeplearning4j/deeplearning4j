@@ -38,7 +38,7 @@ namespace helpers {
     }
 
     template <typename T>
-    __global__ static void confusionFunctorKernel(Nd4jLong* labelsBuffer, Nd4jLong* predictionBuffer, Nd4jLong bufferLength, void const* weightsBuffer, void* outputBuffer, Nd4jLong* tadShape, Nd4jLong* tadOffsets) {
+    __global__ static void confusionFunctorKernel(Nd4jLong* labelsBuffer, Nd4jLong* predictionBuffer, Nd4jLong bufferLength, void const* weightsBuffer, void* outputBuffer, const Nd4jLong* tadShape, const Nd4jLong* tadOffsets) {
         __shared__ int arrIdx, blocksPerArr;
         __shared__ T *z;
         __shared__ T const* w;
@@ -80,7 +80,7 @@ namespace helpers {
             if (err != 0)
                 throw sd::cuda_exception::build("Cannot allocate memory for labels long buffer", err);
             // copy with type conversion
-            copyBuffers<X><<<256, 512, 1024, *stream>>>(labelsLongBuffer, labels->getSpecialBuffer(), labels->lengthOf());
+            copyBuffers<X><<<256, 512, 1024, *stream>>>(labelsLongBuffer, labels->specialBuffer(), labels->lengthOf());
         }
 
         if (predictionLongBuffer == nullptr) {
@@ -88,22 +88,22 @@ namespace helpers {
             if (err != 0)
                 throw sd::cuda_exception::build("Cannot allocate memory for predictions long buffer", err);
             // copy with type conversion
-            copyBuffers<X><<<256, 512, 1024, *stream>>>(predictionLongBuffer, predictions->getSpecialBuffer(), predictions->lengthOf());
+            copyBuffers<X><<<256, 512, 1024, *stream>>>(predictionLongBuffer, predictions->specialBuffer(), predictions->lengthOf());
         }
 
         auto bufferLength = labels->lengthOf();
         dim3 launchDims(32, 32, 1024);
-        confusionFunctorKernel<Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(labelsLongBuffer, predictionLongBuffer, bufferLength, weights != nullptr? weights->getSpecialBuffer():nullptr, output->specialBuffer(), pack.specialShapeInfo(), pack.specialOffsets());
+        confusionFunctorKernel<Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(labelsLongBuffer, predictionLongBuffer, bufferLength, weights != nullptr? weights->specialBuffer():nullptr, output->specialBuffer(), pack.specialShapeInfo(), pack.specialOffsets());
 
         manager.synchronize();
 
-        if (predictionLongBuffer != predictions->getSpecialBuffer()) {
+        if (predictionLongBuffer != predictions->specialBuffer()) {
             cudaError_t err = cudaFree(predictionLongBuffer);
             if (err != 0)
                 throw sd::cuda_exception::build("Cannot deallocate memory for predictions long buffer", err);
         }
 
-        if (labelsLongBuffer != labels->getSpecialBuffer()) {
+        if (labelsLongBuffer != labels->specialBuffer()) {
             cudaError_t err = cudaFree(labelsLongBuffer);
             if (err != 0)
                 throw sd::cuda_exception::build("Cannot deallocate memory for labels long buffer", err);

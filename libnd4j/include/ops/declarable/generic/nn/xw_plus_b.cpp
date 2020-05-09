@@ -73,7 +73,7 @@ namespace sd {
             auto outputShape = ShapeUtils::matrixProductShape(inputShape->at(0), weightsShape, false, false,
                 ArrayOptions::dataType(inputShape->at(0)), block.getWorkspace());
 
-            return SHAPELIST(CONSTANT(outputShape));
+            return SHAPELIST(outputShape);
         }
 
         DECLARE_TYPES(xw_plus_b) {
@@ -121,7 +121,6 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(xw_plus_b_bp) {
-
             Nd4jLong* xShapeInfo;
             Nd4jLong* wShapeInfo;
             Nd4jLong* bShapeInfo;
@@ -129,7 +128,6 @@ namespace sd {
             COPY_SHAPE(inputShape->at(0), xShapeInfo);
             COPY_SHAPE(inputShape->at(1), wShapeInfo);
             COPY_SHAPE(inputShape->at(2), bShapeInfo);
-
             return SHAPELIST(CONSTANT(xShapeInfo), CONSTANT(wShapeInfo), CONSTANT(bShapeInfo));
         }
 

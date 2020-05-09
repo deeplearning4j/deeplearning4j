@@ -85,7 +85,7 @@ namespace sd {
 
             Nd4jLong offset;
 
-            shape::calcSubArrShapeInfoAndOffset(indices.data(), input->getShapeInfo(), subArrShapeInfo, offset, true);
+            shape::calcSubArrShapeInfoAndOffset(indices.data(), input->shapeInfo(), subArrShapeInfo, offset, true);
 
             auto subArrShapeInfoPack = ConstantShapeHelper::getInstance()->bufferForShapeInfo(subArrShapeInfo);
 

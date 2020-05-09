@@ -113,7 +113,7 @@ DECLARE_SHAPE_FN(lstmBlock) {
     }
     ShapeUtils::updateStridesAndType(s, x, 'c');
 
-    Nd4jLong *s1 = CONSTANT(s);
+    auto s1 = CONSTANT(s);
 
     //7 outputs, all same shape/type
     return SHAPELIST(s1, s1, s1, s1, s1, s1, s1);

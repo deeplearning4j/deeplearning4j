@@ -79,9 +79,11 @@ namespace helpers {
     }
 
     template <typename T>
-    static __global__ void fakeQuantWithMinMaxKernel(T* input, Nd4jLong* inputShape, T* min, T* max,
-            int lowIntBound, int upperIntBound, Nd4jLong channels,
-            T* output, Nd4jLong* outputShape, Nd4jLong length) {
+    static __global__ void fakeQuantWithMinMaxKernel(const T* input, const Nd4jLong* inputShape,
+                                                     T* min, T* max,
+                                                     int lowIntBound, int upperIntBound, Nd4jLong channels,
+                                                     T* output, const Nd4jLong* outputShape,
+                                                     Nd4jLong length) {
         __shared__ int block;
         if (threadIdx.x == 0) {
             block = length / channels; // to loop with last dimension as block
@@ -129,10 +131,6 @@ namespace helpers {
     void fakeQuantWithMinMaxVarsPerChannel(LaunchContext* context, NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), fakeQuantWithMinMaxVarsPerChannel_, (context, input, min, max, numBits, narrowed, output), FLOAT_TYPES);
     }
-
-    BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVars_, (NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output), FLOAT_TYPES);
-    BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVarsPerChannel_, (LaunchContext* context, NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output), FLOAT_TYPES);
-
 }
 }
 }

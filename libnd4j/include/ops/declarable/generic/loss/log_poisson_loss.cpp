@@ -50,10 +50,10 @@ namespace ops {
         // perform weights broadcasting/tile to labels if needed
         auto weightsBroad = weights;
         if(!weights->isScalar() && !weights->isSameShape(log_predictions))
-            weightsBroad = new NDArray(weights->tileToShape(log_predictions->getShapeInfo()));
+            weightsBroad = new NDArray(weights->tileToShape(log_predictions->shapeInfo()));
 
 
-        NDArray E(labels->getShapeInfo(), block.getWorkspace());
+        NDArray E(labels->shapeInfo(), block.getWorkspace());
         if (computeFullLoss)
             labels->applyPairwiseTransform(pairwise::LogPoissonLossFull, *log_predictions, E);
         else
@@ -130,7 +130,7 @@ namespace ops {
         REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || ShapeUtils::areShapesBroadcastable(weightsShapeInfo, labelsShapeInfo), 0, "LOG_POISSON_LOSS OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!", ShapeUtils::shapeAsString(weightsShapeInfo).c_str(), ShapeUtils::shapeAsString(labelsShapeInfo).c_str());
 
         DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
-        Nd4jLong* outShapeInfo = nullptr;
+        Nd4jLong const* outShapeInfo = nullptr;
 
         if(INT_ARG(0) != 0) 			// in this case output is scalar
             outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
@@ -172,14 +172,14 @@ namespace ops {
         // perform weights broadcasting/tile to labels if needed
         auto weightsBroad = weights;
         if(!weights->isScalar() && !weights->isSameShape(log_predictions))
-            weightsBroad = new NDArray(weights->tileToShape(log_predictions->getShapeInfo()));
+            weightsBroad = new NDArray(weights->tileToShape(log_predictions->shapeInfo()));
 
 
-        NDArray E(labels->getShapeInfo(), block.getWorkspace());
+        NDArray E(labels->shapeInfo(), block.getWorkspace());
         if (computeFullLoss) {
             labels->applyPairwiseTransform(pairwise::LogPoissonLossFull, *log_predictions, E);
 
-            NDArray rDiv(labels->getShapeInfo(), block.getWorkspace());
+            NDArray rDiv(labels->shapeInfo(), block.getWorkspace());
             labels->applyScalar(scalar::ReverseDivide, 0.5f, rDiv);
             dLdl->assign(rDiv  + labels->transform(transform::Log) + -(*log_predictions));
         } else {
@@ -200,7 +200,7 @@ namespace ops {
                 if(weights->isScalar())
                     dLdw->assign(E.reduceNumber(reduce::Sum));
                 else if(weights != weightsBroad) {
-                    std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+                    std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
                     E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                 }
                 else
@@ -229,7 +229,7 @@ namespace ops {
                     if(weights->isScalar())
                         *dLdw = 0.;
                     else if(weights != weightsBroad) {
-                        std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+                        std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
                         ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                     }
                     else
@@ -258,7 +258,7 @@ namespace ops {
                     if(weights->isScalar())
                         dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
                     else if(weights != weightsBroad) {
-                        std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+                        std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
                         E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                         *dLdw /= numOfNonZeroWeightsScalar;
                     }
@@ -299,9 +299,9 @@ namespace ops {
 
         DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
 
-        Nd4jLong *dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(predictionsShapeInfo, outType, false, block.getWorkspace());
-        Nd4jLong *dLdwShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, outType, false, block.getWorkspace());
-        Nd4jLong *dLdlShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
+        auto dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(predictionsShapeInfo, outType, false, block.getWorkspace());
+        auto dLdwShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, outType, false, block.getWorkspace());
+        auto dLdlShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
 
         return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
     }

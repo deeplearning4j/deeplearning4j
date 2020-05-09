@@ -131,11 +131,11 @@ namespace sd {
                 mkldnnUtils::loadDataToMklStream(weights, engine, stream, weights_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
                 // bias
-                auto bias_mkl_mem = dnnl::memory(bias_mkl_md, engine, bias->getBuffer());
+                auto bias_mkl_mem = dnnl::memory(bias_mkl_md, engine, const_cast<void*>(bias->buffer()));
                 args[DNNL_ARG_BIAS] = bias_mkl_mem;
 
                 // z
-                auto z_user_mem = dnnl::memory(z_user_md, engine, z->getBuffer());
+                auto z_user_mem = dnnl::memory(z_user_md, engine, z->buffer());
                 const bool zReorder = op_prim_desc.dst_desc() != z_user_mem.get_desc();
                 auto z_mkl_mem = zReorder ? dnnl::memory(op_prim_desc.dst_desc(), engine) : z_user_mem;
                 args[DNNL_ARG_DST] = z_mkl_mem;
@@ -266,19 +266,19 @@ namespace sd {
                 mkldnnUtils::loadDataToMklStream(weights, engine, stream, weights_user_md, op_bpdx_prim_desc.weights_desc(), argsDx[DNNL_ARG_WEIGHTS]);
 
                 // dLdw 
-                auto dLdw_user_mem = dnnl::memory(dLdw_user_md, engine, dLdw->getBuffer());
+                auto dLdw_user_mem = dnnl::memory(dLdw_user_md, engine, dLdw->buffer());
                 const bool dLdwReorder = op_bpdw_prim_desc.diff_weights_desc() != dLdw_user_mem.get_desc();
                 auto dLdw_mkl_mem = dLdwReorder ? dnnl::memory(op_bpdw_prim_desc.diff_weights_desc(), engine) : dLdw_user_mem;
                 argsDw[DNNL_ARG_DIFF_WEIGHTS] = dLdw_mkl_mem;
 
                 // dLdx 
-                auto dLdx_user_mem = dnnl::memory(dLdx_user_md, engine, dLdx->getBuffer());
+                auto dLdx_user_mem = dnnl::memory(dLdx_user_md, engine, dLdx->buffer());
                 const bool dLdxReorder = op_bpdx_prim_desc.diff_src_desc() != dLdx_user_mem.get_desc();
                 auto dLdx_mkl_mem = dLdxReorder ? dnnl::memory(op_bpdx_prim_desc.diff_src_desc(), engine) : dLdx_user_mem;
                 argsDx[DNNL_ARG_DIFF_SRC] = dLdx_mkl_mem;
 
                 // dLdb
-                auto dLdb_user_mem = dnnl::memory(dLdb_user_md, engine, dLdb->getBuffer());
+                auto dLdb_user_mem = dnnl::memory(dLdb_user_md, engine, dLdb->buffer());
                 const bool dLdbReorder = op_bpdw_prim_desc.diff_bias_desc() != dLdb_user_mem.get_desc();
                 auto dLdb_mkl_mem = dLdbReorder ? dnnl::memory(op_bpdw_prim_desc.diff_bias_desc(), engine) : dLdb_user_mem;
                 argsDw[DNNL_ARG_DIFF_BIAS] = dLdb_mkl_mem;

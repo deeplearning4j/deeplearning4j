@@ -115,7 +115,7 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     mkldnnUtils::loadDataToMklStream(x, engine, stream, x_user_md, op_ff_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // z
-    auto z_user_mem = dnnl::memory(z_user_md, engine, z->getBuffer());
+    auto z_user_mem = dnnl::memory(z_user_md, engine, z->buffer());
     const bool zReorder = op_ff_prim_desc.dst_desc() != z_user_mem.get_desc();
     auto z_mkl_mem = zReorder ? dnnl::memory(op_ff_prim_desc.dst_desc(), engine) : z_user_mem;
     if (zReorder)
@@ -123,17 +123,17 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     args[DNNL_ARG_DST] = z_mkl_mem;
 
     // mean
-    auto mean_mkl_mem = dnnl::memory(op_ff_prim_desc.mean_desc(), engine, mean->getBuffer());
+    auto mean_mkl_mem = dnnl::memory(op_ff_prim_desc.mean_desc(), engine, const_cast<void*>(mean->buffer()));
     args[DNNL_ARG_MEAN] = mean_mkl_mem;
 
     // variance
-    auto var_mkl_mem = dnnl::memory(op_ff_prim_desc.variance_desc(), engine, variance->getBuffer());
+    auto var_mkl_mem = dnnl::memory(op_ff_prim_desc.variance_desc(), engine, const_cast<void*>(variance->buffer()));
     args[DNNL_ARG_VARIANCE] = var_mkl_mem;
 
     // gamma and beta (and their gradients) if they are present
     if(weights != nullptr) {
 
-        auto w_mkl_mem = dnnl::memory(op_ff_prim_desc.weights_desc(), engine, weights->getBuffer());
+        auto w_mkl_mem = dnnl::memory(op_ff_prim_desc.weights_desc(), engine, const_cast<void*>(weights->buffer()));
         args[DNNL_ARG_WEIGHTS] = w_mkl_mem;
     }
 
@@ -245,15 +245,15 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     mkldnnUtils::loadDataToMklStream(&dLdO, engine, stream, dLdO_user_md, op_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
 
     // mean
-    auto mean_mkl_mem = dnnl::memory(op_bp_prim_desc.mean_desc(), engine, mean->getBuffer());
+    auto mean_mkl_mem = dnnl::memory(op_bp_prim_desc.mean_desc(), engine, const_cast<void*>(mean->buffer()));
     args[DNNL_ARG_MEAN] = mean_mkl_mem;
 
     // variance
-    auto var_mkl_mem = dnnl::memory(op_bp_prim_desc.variance_desc(), engine, variance->getBuffer());
+    auto var_mkl_mem = dnnl::memory(op_bp_prim_desc.variance_desc(), engine, const_cast<void*>(variance->buffer()));
     args[DNNL_ARG_VARIANCE] = var_mkl_mem;
 
     // dLdI
-    auto dLdI_user_mem = dnnl::memory(dLdI_user_md, engine, dLdI->getBuffer());
+    auto dLdI_user_mem = dnnl::memory(dLdI_user_md, engine, dLdI->buffer());
     const bool dLdIReorder = op_bp_prim_desc.diff_src_desc() != dLdI_user_mem.get_desc();
     auto dLdI_mkl_mem = dLdIReorder ? dnnl::memory(op_bp_prim_desc.diff_src_desc(), engine) : dLdI_user_mem;
     args[DNNL_ARG_DIFF_SRC] = dLdI_mkl_mem;
@@ -261,10 +261,10 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     // gamma and beta (and their gradients) if they are present
     if(weights != nullptr) {
 
-        auto w_mkl_mem = dnnl::memory(op_bp_prim_desc.weights_desc(), engine, weights->getBuffer());
+        auto w_mkl_mem = dnnl::memory(op_bp_prim_desc.weights_desc(), engine, const_cast<void*>(weights->buffer()));
         args[DNNL_ARG_WEIGHTS] = w_mkl_mem;
 
-        auto dLdW_mkl_mem = dnnl::memory(op_bp_prim_desc.weights_desc(), engine, dLdW->getBuffer());
+        auto dLdW_mkl_mem = dnnl::memory(op_bp_prim_desc.weights_desc(), engine, dLdW->buffer());
         args[DNNL_ARG_DIFF_WEIGHTS] = dLdW_mkl_mem;
     }
 

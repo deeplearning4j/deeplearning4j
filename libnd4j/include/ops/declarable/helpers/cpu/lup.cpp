@@ -40,7 +40,7 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray* matrix, int theFirst, int theSecond), FLOAT_TYPES);
 
     template <typename T>
-    static void swapRows(T* matrixBuf, Nd4jLong* matrixShape, Nd4jLong theFirst, Nd4jLong theSecond) {
+    static void swapRows(T* matrixBuf, Nd4jLong const* matrixShape, Nd4jLong theFirst, Nd4jLong theSecond) {
         if (theFirst != theSecond) {
             auto n = shape::sizeAt(matrixShape, -1);
 
@@ -208,7 +208,7 @@ namespace helpers {
      * lu decomposition with naive algorithm with partial pivoting
      * */
     template <typename T, typename I>
-    static I argmaxCol(I column, T* compoundBuffer, Nd4jLong* compoundShape) {
+    static I argmaxCol(I column, T* compoundBuffer, Nd4jLong const* compoundShape) {
         auto rowNum = shape::sizeAt(compoundShape, 0);
         Nd4jLong xInitial[] = {column, column};
         auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
@@ -230,7 +230,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void processColumns(int currentRow, int rowNum, T* compoundBuf, Nd4jLong* compoundShape) {
+    void processColumns(int currentRow, int rowNum, T* compoundBuf, Nd4jLong const* compoundShape) {
         Nd4jLong xDiag[] = {currentRow, currentRow};
         auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
         auto loop = PRAGMA_THREADS_FOR {

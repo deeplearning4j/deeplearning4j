@@ -779,8 +779,8 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
 
     std::vector<int> dims = {1};
 
-    auto xTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
-    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
+    auto xTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dims);
+    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dims);
 
     Nd4jPointer nativeStart[2];
 
@@ -789,8 +789,8 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
 #endif
     OpaqueDataBuffer xBuf(x.dataBuffer());
     OpaqueDataBuffer zBuf(z.dataBuffer());
-    pullRows(nativeStart, &xBuf, x.getShapeInfo(), x.getSpecialShapeInfo(),
-                         &zBuf, z.getShapeInfo(), z.specialShapeInfo(),
+    pullRows(nativeStart, &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                         &zBuf, z.shapeInfo(), z.specialShapeInfo(),
                          4, pidx,
                          xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),
                          zTadPack.platformShapeInfo(), zTadPack.platformOffsets());
@@ -815,8 +815,8 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
 
     std::vector<int> dims = {1};
 
-    auto xTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
-    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
+    auto xTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dims);
+    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dims);
 
     Nd4jPointer nativeStart[2];
 #ifdef __CUDABLAS__
@@ -824,8 +824,8 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
 #endif
     OpaqueDataBuffer xBuf(x.dataBuffer());
     OpaqueDataBuffer zBuf(z.dataBuffer());
-    pullRows(nativeStart, &xBuf, x.getShapeInfo(), x.specialShapeInfo(),
-                         &zBuf, z.getShapeInfo(), z.specialShapeInfo(),
+    pullRows(nativeStart, &xBuf, x.shapeInfo(), x.specialShapeInfo(),
+                         &zBuf, z.shapeInfo(), z.specialShapeInfo(),
                          4, pidx,
                          xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),
                          zTadPack.platformShapeInfo(), zTadPack.platformOffsets());

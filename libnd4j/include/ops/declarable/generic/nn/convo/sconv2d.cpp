@@ -106,8 +106,8 @@ DECLARE_SHAPE_FN(sconv2d) {
 
     auto inputShapeInfo    = inputShape->at(0);         // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     auto weightsDShapeInfo = inputShape->at(1);         // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
-    Nd4jLong* weightsPShapeInfo = nullptr;              // [1, 1, iC*mC, oC], [oC, iC*mC, 1, 1], [oC, 1, 1, iC*mC]
-    Nd4jLong* biasShapeInfo     = nullptr;              // [oC], oC = iC*mC if weightsPoint=nullptr
+    Nd4jLong const* weightsPShapeInfo = nullptr;              // [1, 1, iC*mC, oC], [oC, iC*mC, 1, 1], [oC, 1, 1, iC*mC]
+    Nd4jLong const* biasShapeInfo     = nullptr;              // [oC], oC = iC*mC if weightsPoint=nullptr
 
     if(block.width() == 3)
         if(inputShape->at(2)[0] == 4)
@@ -306,8 +306,8 @@ DECLARE_SHAPE_FN(sconv2d_bp) {
     auto inputShapeInfo    = inputShape->at(0);                 // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     auto gradOShapeInfo    = inputShape->at(1);                 // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     auto weightsDShapeInfo = inputShape->at(2);                 // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
-    Nd4jLong* weightsPShapeInfo = nullptr;                      // [1, 1, iC*mC, oC], [oC, iC*mC, 1, 1], [oC, 1, 1, iC*mC]
-    Nd4jLong* biasShapeInfo     = nullptr;                      // [oC], oC = iC*mC if weightsPoint=nullptr
+    Nd4jLong const* weightsPShapeInfo = nullptr;                      // [1, 1, iC*mC, oC], [oC, iC*mC, 1, 1], [oC, 1, 1, iC*mC]
+    Nd4jLong const* biasShapeInfo     = nullptr;                      // [oC], oC = iC*mC if weightsPoint=nullptr
 
     if(block.width() == 4) {
         if(inputShape->at(3)[0] == 4)

@@ -144,12 +144,12 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
 
     // bias
     if(bias != nullptr) {
-        auto b_mkl_mem = dnnl::memory(b_mkl_md, engine, bias->getBuffer());
+        auto b_mkl_mem = dnnl::memory(b_mkl_md, engine, const_cast<void*>(bias->buffer()));
         args[DNNL_ARG_BIAS] = b_mkl_mem;
     }
 
     // output
-    auto z_user_mem = dnnl::memory(z_user_md, engine, output->getBuffer());
+    auto z_user_mem = dnnl::memory(z_user_md, engine, output->buffer());
     const bool zReorder = op_prim_desc.dst_desc() != z_user_mem.get_desc();
     auto z_mkl_mem = zReorder ? dnnl::memory(op_prim_desc.dst_desc(), engine) : z_user_mem;
     args[DNNL_ARG_DST] = z_mkl_mem;
@@ -287,7 +287,7 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     mkldnnUtils::loadDataToMklStream(weights, engine, stream, w_user_md, op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // gradO
-    auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, gradO->getBuffer());
+    auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, const_cast<void*>(gradO->buffer()));
     const bool gradOReorderW = op_weights_bp_prim_desc.diff_dst_desc() != gradO_user_mem.get_desc();
     const bool gradOReorderD = op_data_bp_prim_desc.diff_dst_desc()    != gradO_user_mem.get_desc();
     auto gradO_mkl_memW = gradOReorderW ? dnnl::memory(op_weights_bp_prim_desc.diff_dst_desc(), engine) : gradO_user_mem;
@@ -299,20 +299,20 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     args[DNNL_ARG_DIFF_DST] = gradO_mkl_memD;
 
     // gradI
-    auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
+    auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->buffer());
     const bool gradIReorder = op_data_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc();
     auto gradI_mkl_mem = gradIReorder ? dnnl::memory(op_data_bp_prim_desc.diff_src_desc(), engine) : gradI_user_mem;
     args[DNNL_ARG_DIFF_SRC] = gradI_mkl_mem;
 
     // gradW
-    auto gradW_user_mem = dnnl::memory(gradW_user_md, engine, gradW->getBuffer());
+    auto gradW_user_mem = dnnl::memory(gradW_user_md, engine, gradW->buffer());
     const bool gradWReorder = op_weights_bp_prim_desc.diff_weights_desc() != gradW_user_mem.get_desc();
     auto gradW_mkl_mem = gradWReorder ? dnnl::memory(op_weights_bp_prim_desc.diff_weights_desc(), engine) : gradW_user_mem;
     args[DNNL_ARG_DIFF_WEIGHTS] = gradW_mkl_mem;
 
     // gradB
     if(gradB != nullptr) {
-        auto gradB_mkl_mem = dnnl::memory(gradB_mkl_md, engine, gradB->getBuffer());
+        auto gradB_mkl_mem = dnnl::memory(gradB_mkl_md, engine, gradB->buffer());
         args[DNNL_ARG_DIFF_BIAS] = gradB_mkl_mem;
     }
 

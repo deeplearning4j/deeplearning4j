@@ -121,7 +121,7 @@ void ConvolutionUtils::col2vol(sd::graph::Context& block, const NDArray& col, ND
     const int sharedMem = col.rankOf() * sizeof(uint) * threadsPerBlock  + 256;
 
     NDArray::prepareSpecialUse({&vol}, {&col});
-    BUILD_SINGLE_SELECTOR(vol.dataType(), col2volCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), col.getSpecialBuffer(), col.getSpecialShapeInfo(), vol.specialBuffer(), vol.specialShapeInfo(), sD, sH, sW, pD, pH, pW, dD, dH, dW), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(vol.dataType(), col2volCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), col.specialBuffer(), col.specialShapeInfo(), vol.specialBuffer(), vol.specialShapeInfo(), sD, sH, sW, pD, pH, pW, dD, dH, dW), FLOAT_TYPES);
     NDArray::registerSpecialUse({&vol}, {&col});
 
     manager.synchronize();

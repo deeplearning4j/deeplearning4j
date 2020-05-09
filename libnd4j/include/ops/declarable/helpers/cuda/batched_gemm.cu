@@ -87,9 +87,9 @@ void bgemm(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, std
 
     std::vector<void*> pAbuffs(bS), pBbuffs(bS), pCbuffs(bS);
     for(int i = 0; i < bS; ++i) {
-        pAbuffs[i] = pA[i]->getSpecialBuffer();
-        pBbuffs[i] = pB[i]->getSpecialBuffer();
-        pCbuffs[i] = pC[i]->getSpecialBuffer();
+        pAbuffs[i] = pA[i]->specialBuffer();
+        pBbuffs[i] = pB[i]->specialBuffer();
+        pCbuffs[i] = pC[i]->specialBuffer();
     }
 
     sd::LaunchContext* context = vA[0]->getContext();

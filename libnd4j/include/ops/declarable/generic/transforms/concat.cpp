@@ -132,7 +132,7 @@ DECLARE_SHAPE_FN(concat) {
 
     // first of all take into account possible presence of empty arrays
     // also if scalar is present -> use the shape of vector with length=1 instead
-    std::vector<Nd4jLong*> arrShapes;
+    ShapeList arrShapes;
     std::vector<int> shapesToDelete;
     int index = 0;
     for(int i = 0; i < numOfInArrs; ++i) {
@@ -151,7 +151,7 @@ DECLARE_SHAPE_FN(concat) {
 
     const int numOfNonEmptyArrs = arrShapes.size();
 
-    const int rank = arrShapes[0][0];
+    const int rank = shape::rank(arrShapes.at(0));
 
     int axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<int>(0) : INT_ARG(0);
     if(axis < 0){
@@ -162,33 +162,33 @@ DECLARE_SHAPE_FN(concat) {
     REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
     for(int i = 1; i < numOfNonEmptyArrs; ++i)
-        REQUIRE_TRUE(arrShapes[i][0] == rank, 0, "CONCAT op: all input arrays must have the same rank !");
+        REQUIRE_TRUE(shape::rank(arrShapes.at(i)) == rank, 0, "CONCAT op: all input arrays must have the same rank !");
 
     for(int i = 1; i < numOfNonEmptyArrs; ++i) {
         for(int dim = 0; dim < rank; ++dim)
             if(dim != axis)
-                REQUIRE_TRUE(arrShapes[i][dim+1] == arrShapes[0][dim+1], 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
+                REQUIRE_TRUE(arrShapes.at(i)[dim+1] == arrShapes.at(0)[dim+1], 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
     }
     // ******** end of input validation ******** //
 
 
     Nd4jLong* outShapeInfo(nullptr);
-    COPY_SHAPE(arrShapes[0], outShapeInfo);
+    COPY_SHAPE(arrShapes.at(0), outShapeInfo);
 
     // case when we have only one input array
     if(numOfNonEmptyArrs == 1) {
-        ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes[0], shape::order(arrShapes[0]));
+        ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
         return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
     for(int i = 1; i < numOfNonEmptyArrs; ++i)
-        outShapeInfo[axis + 1] += arrShapes[i][axis + 1];
+        outShapeInfo[axis + 1] += arrShapes.at(i)[axis + 1];
 
-    ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes[0], shape::order(arrShapes[0]));
+    ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
 
     // delete dynamically allocated vectors shapes with length=1
-    for(int index : shapesToDelete)
-        RELEASE(arrShapes[index], block.getWorkspace());
+//    for(int index : shapesToDelete)
+//        RELEASE(arrShapes[index], block.getWorkspace());
 
     auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo));
     RELEASE(outShapeInfo, block.getWorkspace());
@@ -237,8 +237,8 @@ DECLARE_SHAPE_FN(concat) {
         //     auto buffers = new Nd4jPointer[elements];
         //     auto shapes = new Nd4jPointer[elements];
 
-        //     buffers[0] = (Nd4jPointer) first->getBuffer();
-        //     shapes[0] = (Nd4jPointer) first->getShapeInfo();
+        //     buffers[0] = (Nd4jPointer) first->buffer();
+        //     shapes[0] = (Nd4jPointer) first->shapeInfo();
 
         //     if (_dimension < 0)
         //         _dimension += first->rankOf();
@@ -256,8 +256,8 @@ DECLARE_SHAPE_FN(concat) {
         //         if (array->isEmpty())
         //             continue;
 
-        //         buffers[er] = reinterpret_cast<Nd4jPointer>(array->getBuffer());
-        //         shapes[er++] = reinterpret_cast<Nd4jPointer>(array->getShapeInfo());
+        //         buffers[er] = reinterpret_cast<Nd4jPointer>(array->buffer());
+        //         shapes[er++] = reinterpret_cast<Nd4jPointer>(array->shapeInfo());
 
         //         oldScalars &= array->rankOf() == 2 && array->isScalar();
 
@@ -274,7 +274,7 @@ DECLARE_SHAPE_FN(concat) {
         //         _dimension = 1;
         //     }
 
-        //     sd::SpecialMethods<T>::concatCpuGeneric(_dimension, elements, buffers, shapes, output->getBuffer(), output->getShapeInfo());
+        //     sd::SpecialMethods<T>::concatCpuGeneric(_dimension, elements, buffers, shapes, output->buffer(), output->shapeInfo());
 
         //     STORE_RESULT(*output);
 

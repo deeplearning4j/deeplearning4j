@@ -38,8 +38,8 @@ inline void swap(T* arr, Nd4jLong from, Nd4jLong to) {
 // this legacy op is written by raver119@gmail.com
 
 template<typename T>
-static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *inShapeBuffer, void *voutArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse = 0) {
-            auto inArr = reinterpret_cast<T *>(vinArr);
+static void reverseArray(sd::LaunchContext * context, void const* vinArr, Nd4jLong const*inShapeBuffer, void *voutArr, Nd4jLong const*outShapeBuffer, int numOfElemsToReverse = 0) {
+            auto inArr = reinterpret_cast<T const*>(vinArr);
             auto outArr = reinterpret_cast<T *>(voutArr);
 
             Nd4jLong inLength  = shape::length(inShapeBuffer);
@@ -56,7 +56,7 @@ static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *in
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e++) {
                             auto idx = sLength - e;
-                            swap(inArr, e, idx);
+                            swap(const_cast<T*>(inArr), e, idx);
                         }
                     };
                     samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
@@ -66,7 +66,7 @@ static void reverseArray(sd::LaunchContext * context, void *vinArr, Nd4jLong *in
                         for (auto e = start; e < stop; e++) {
                             auto idx1 = (sLength - e) * inEWS;
                             Nd4jLong idx2 = e * inEWS;
-                            swap(inArr, idx1, idx2);
+                            swap(const_cast<T*>(inArr), idx1, idx2);
                         }
                     };
 
@@ -154,12 +154,12 @@ template <typename T>
 static void reverseSequence_(sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
 
     int posOfNonUnityDim = -1;
-    if(input->isVector() || shape::isLikeVector(input->getShapeInfo(), posOfNonUnityDim)) {
+    if(input->isVector() || shape::isLikeVector(input->shapeInfo(), posOfNonUnityDim)) {
 
         if((seqDim == 0 && input->sizeAt(0) == 1) || (batchDim == posOfNonUnityDim))
             output->assign(input);
         else
-            helpers::reverseArray<T>(context, const_cast<NDArray*>(input)->getBuffer(), const_cast<NDArray*>(input)->getShapeInfo(), output->getBuffer(), output->getShapeInfo(), seqLengths->e<int>(0));
+            helpers::reverseArray<T>(context, const_cast<NDArray*>(input)->buffer(), const_cast<NDArray*>(input)->shapeInfo(), output->buffer(), output->shapeInfo(), seqLengths->e<int>(0));
     }
     else {
 
@@ -182,7 +182,7 @@ static void reverseSequence_(sd::LaunchContext * context, const NDArray* input, 
                 auto inInnerSet  = inSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
                 auto outInnerSet = outSubArrsSet.at(i)->allTensorsAlongDimension({seqDim});
                 for(int j = 0; j < inInnerSet.size(); ++j)
-                    helpers::reverseArray<T>(context, inInnerSet.at(j)->getBuffer(), inInnerSet.at(j)->getShapeInfo(), outInnerSet.at(j)->getBuffer(), outInnerSet.at(j)->getShapeInfo(), numOfElemsToReverse);
+                    helpers::reverseArray<T>(context, inInnerSet.at(j)->buffer(), inInnerSet.at(j)->shapeInfo(), outInnerSet.at(j)->buffer(), outInnerSet.at(j)->shapeInfo(), numOfElemsToReverse);
             }
         }
     }
@@ -206,12 +206,12 @@ void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output,
     for(int i = 0; i < listIn.size(); ++i) {               // listIn.size() = listOut.size()
         subArrIn   = listIn.at(i);
         subArrOut  = listOut.at(i);
-        BUILD_SINGLE_SELECTOR(input->dataType(), helpers::reverseArray, (context, subArrIn->getBuffer(), subArrIn->getShapeInfo(), subArrOut->getBuffer(), subArrOut->getShapeInfo()), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), helpers::reverseArray, (context, subArrIn->buffer(), subArrIn->shapeInfo(), subArrOut->buffer(), subArrOut->shapeInfo()), LIBND4J_TYPES);
     }
 }
 
 BUILD_SINGLE_TEMPLATE(template void reverseSequence_, (sd::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim), LIBND4J_TYPES);
-BUILD_SINGLE_TEMPLATE(template void reverseArray, (sd::LaunchContext * context, void *inArr, Nd4jLong *inShapeBuffer, void *outArr, Nd4jLong *outShapeBuffer, int numOfElemsToReverse), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void reverseArray, (sd::LaunchContext * context, void const*inArr, Nd4jLong const*inShapeBuffer, void* outArr, Nd4jLong const* outShapeBuffer, int numOfElemsToReverse), LIBND4J_TYPES);
 
 
 }

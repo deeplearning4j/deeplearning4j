@@ -8315,6 +8315,85 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertArrayEquals(new long[]{bS, oH, oW, oC}, ret[0].shape());
     }
 
+    @Test
+    public void testMatmulMethod_8() {
+        val x = Nd4j.create(DataType.INT8, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.INT8, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.INT8, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_7() {
+        val x = Nd4j.create(DataType.INT16, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.INT16, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.INT16, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_1() {
+        val x = Nd4j.create(DataType.INT32, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.INT32, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.INT32, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_2() {
+        val x = Nd4j.create(DataType.INT64, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.INT64, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.INT64, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_6() {
+        val x = Nd4j.create(DataType.UINT8, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.UINT8, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.UINT8, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_5() {
+        val x = Nd4j.create(DataType.UINT16, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.UINT16, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.UINT16, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_3() {
+        val x = Nd4j.create(DataType.UINT32, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.UINT32, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.UINT32, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_4() {
+        val x = Nd4j.create(DataType.UINT64, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.UINT64, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.UINT64, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
 
     @Override
     public char ordering() {

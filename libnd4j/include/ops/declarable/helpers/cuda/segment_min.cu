@@ -36,11 +36,11 @@ namespace helpers {
 
     template<typename T, typename I>
     static __global__ void
-    segmentMinLinearKernel(void *input, Nd4jLong *inputShape, int *starts, int *lengths, Nd4jLong numOfClasses,
-                           void *output, Nd4jLong *outputShape) {
+    segmentMinLinearKernel(const void *input, const Nd4jLong *inputShape, int *starts, int *lengths, Nd4jLong numOfClasses,
+                           void *output, const Nd4jLong *outputShape) {
         __shared__        T *val;
         __shared__        Nd4jLong xLen, zLen, zIndex;
-        __shared__        T *x;
+        __shared__        const T *x;
         __shared__        T *z;
         __shared__ int threadsPerSegment, start, finish;
 
@@ -48,7 +48,7 @@ namespace helpers {
         if (threadIdx.x == 0) {
 //            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
 //            segment = blockIdx.x / threadsPerSegment;
-            x = reinterpret_cast<T *>(input);
+            x = reinterpret_cast<const T *>(input);
             z = reinterpret_cast<T *>(output);
             extern __shared__ unsigned char shmem[];
             val = reinterpret_cast<T *>(shmem);
@@ -76,25 +76,25 @@ namespace helpers {
 
     template<typename T, typename I>
     static __global__ void
-    unsortedSegmentMinLinearKernel(void *input, Nd4jLong *inputShape, void *indices, Nd4jLong *indicesShape,
+    unsortedSegmentMinLinearKernel(const void *input, const Nd4jLong *inputShape, const void *indices, const Nd4jLong *indicesShape,
                                    int *starts, int *lengths, Nd4jLong numOfClasses, void *output,
-                                   Nd4jLong *outputShape) {
+                                   const Nd4jLong *outputShape) {
         __shared__
         T *val;
         __shared__
         Nd4jLong xLen, zLen, segment, zIndex;
         __shared__
-        T *x;
+        const T *x;
         __shared__
         T *z;
         __shared__
-        I *y; //int threadsPerSegment, start, finish;
+        const I *y; //int threadsPerSegment, start, finish;
 
         if (threadIdx.x == 0) {
             segment = blockIdx.x;
-            x = reinterpret_cast<T *>(input);
+            x = reinterpret_cast<const T *>(input);
             z = reinterpret_cast<T *>(output);
-            y = reinterpret_cast<I *>(indices);
+            y = reinterpret_cast<const I *>(indices);
             xLen = shape::length(inputShape);
             zLen = shape::length(outputShape);
 
@@ -106,6 +106,7 @@ namespace helpers {
 
         }
         __syncthreads();
+
         if (lengths[segment] > 0)
             for (auto e = threadIdx.x + 1; e < xLen; e += blockDim.x) {
                 auto xIndex = shape::getIndexOffset(e, inputShape);
@@ -118,7 +119,7 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 // SegmentMin kernel
     template <typename T, typename I>
-    static __global__ void segmentMinTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+    static __global__ void segmentMinTadKernel(const void* inputBuf, const Nd4jLong* inputShape, const Nd4jLong* inputTads, const Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, const Nd4jLong* outputShape, const Nd4jLong* outputTads, const Nd4jLong* outputTadOffsets) {
         __shared__ T* val;
         __shared__ Nd4jLong len, zIndex, total;
         __shared__ T* z;
@@ -137,7 +138,7 @@ namespace helpers {
 
         auto idx = blockIdx.x;
         if (blockIdx.x <= total) {
-            auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
+            auto x = reinterpret_cast<const T *>(inputBuf) + inputTadOffsets[idx];
             if (blockIdx.x == start) {
                 for (auto e = threadIdx.x; e < len; e += blockDim.x) {
                     auto xIndex = shape::getIndexOffset(e, inputTads);
@@ -161,8 +162,8 @@ namespace helpers {
     static void segmentMinFunctor_(LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output) {
         auto stream = context->getCudaStream();
         Nd4jLong numClasses = indices->e<Nd4jLong>(indices->lengthOf() - 1) + 1;
-        NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
-        NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
+        auto classesRangesLens = NDArrayFactory::create<int>('c', {numClasses}, context);
+        auto classesRangesBegs = NDArrayFactory::create<int>('c', {numClasses}, context);
         output->assign(DataTypeUtils::infOrMax<T>());
         classesRangesBegs.assign(indices->lengthOf());
         classesRangesLens.assign(0);
@@ -176,12 +177,12 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
             segmentMinTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
 
         }
@@ -221,12 +222,12 @@ namespace helpers {
         else {
             output->assign(DataTypeUtils::max<T>());
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
             dims.x = input->sizeAt(0);
             segmentMinTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
@@ -243,20 +244,20 @@ namespace helpers {
     }
 
     template <typename T, typename I>
-    static __global__ void segmentMinBPLinearKernel(void* inputBuf, Nd4jLong* inputShape, void* forwardOutput,
-                                                    Nd4jLong* forwardShape, void* eps, Nd4jLong* epsShape, void* indicesBuf, Nd4jLong* indicesShape,
-                                                    void* outputBuf, Nd4jLong* outputShape) {
-        __shared__ T* x;
+    static __global__ void segmentMinBPLinearKernel(const void* inputBuf, const Nd4jLong* inputShape, void* forwardOutput,
+                                                    const Nd4jLong* forwardShape, void* eps, const Nd4jLong* epsShape, const void* indicesBuf, const Nd4jLong* indicesShape,
+                                                    void* outputBuf, const Nd4jLong* outputShape) {
+        __shared__ const T* x;
         __shared__ T* gradIn;
         __shared__ T* gradOut;
-        __shared__ I* y;
+        __shared__ const I* y;
         __shared__ T* z;
         __shared__ Nd4jLong xLen, gradLen;
 
         if (threadIdx.x == 0) {
             xLen = shape::length(inputShape);
-            x = reinterpret_cast<T*>(inputBuf);
-            y = reinterpret_cast<I*>(indicesBuf);
+            x = reinterpret_cast<const T*>(inputBuf);
+            y = reinterpret_cast<const I*>(indicesBuf);
             z = reinterpret_cast<T*>(outputBuf);
             gradIn = reinterpret_cast<T*>(forwardOutput);
             gradOut = reinterpret_cast<T*>(eps);
@@ -284,23 +285,25 @@ namespace helpers {
 
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    static __global__ void segmentMinBPTadKernel(void* inputBuf, Nd4jLong* inputShape, void* forwardOutput,
-                                                 Nd4jLong* forwardShape, void* eps, Nd4jLong* epsShape, void* indicesBuf, Nd4jLong* indicesShape,
-                                                 void* outputBuf, Nd4jLong* outputShape,Nd4jLong* inputTad,
-                                                 Nd4jLong* inputOffsets, Nd4jLong* gradInTad, Nd4jLong* gradInOffsets,
-                                                 Nd4jLong* gradOutTad, Nd4jLong* gradOutOffsets, Nd4jLong* outTad,
-                                                 Nd4jLong* outOffsets) {
-        __shared__ T* x;
+    static __global__ void segmentMinBPTadKernel(const void* inputBuf, const Nd4jLong* inputShape, void* forwardOutput,
+                                                 const Nd4jLong* forwardShape, void* eps, const Nd4jLong* epsShape,
+                                                 const void* indicesBuf, const Nd4jLong* indicesShape,
+                                                 void* outputBuf, const Nd4jLong* outputShape,
+                                                 const Nd4jLong* inputTad, const Nd4jLong* inputOffsets,
+                                                 const Nd4jLong* gradInTad, const Nd4jLong* gradInOffsets,
+                                                 const Nd4jLong* gradOutTad, const Nd4jLong* gradOutOffsets,
+                                                 const Nd4jLong* outTad, const Nd4jLong* outOffsets) {
+        __shared__ const T* x;
         __shared__ T* gradIn;
         __shared__ T* gradOut;
-        __shared__ I* y;
+        __shared__ const I* y;
         __shared__ T* z;
         __shared__ Nd4jLong xLen, yLen, gradLen, currentLen;
 
         if (threadIdx.x == 0) {
             xLen = shape::length(inputShape);
-            x = reinterpret_cast<T*>(inputBuf);
-            y = reinterpret_cast<I*>(indicesBuf);
+            x = reinterpret_cast<const T*>(inputBuf);
+            y = reinterpret_cast<const I*>(indicesBuf);
             z = reinterpret_cast<T*>(outputBuf);
             yLen = shape::length(indicesShape);
             gradOut = reinterpret_cast<T*>(eps);
@@ -313,10 +316,10 @@ namespace helpers {
         for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
             auto yIndex = shape::getIndexOffset(i, indicesShape);
             auto segment = y[yIndex];
-            T* current = x + inputOffsets[i];
-            T* currentOut = z + outOffsets[i];
-            T* in = gradIn + gradInOffsets[segment];
-            T* outGrad = gradOut + gradOutOffsets[segment];
+            auto current = x + inputOffsets[i];
+            auto currentOut = z + outOffsets[i];
+            auto in = gradIn + gradInOffsets[segment];
+            auto outGrad = gradOut + gradOutOffsets[segment];
 
             for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
                 if (sd::math::nd4j_abs(in[e] - current[e]) <= T(1.e-6))
@@ -344,18 +347,18 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
-            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
-            Nd4jLong* gradInTads = packGradIn.specialShapeInfo();
-            Nd4jLong* gradInTadOffsets = packGradIn.specialOffsets();
-            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
-            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.shapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
+            auto gradInTads = packGradIn.specialShapeInfo();
+            auto gradInTadOffsets = packGradIn.specialOffsets();
+            auto gradOutTads = packGradOut.specialShapeInfo();
+            auto gradOutTadOffsets = packGradOut.specialOffsets();
 
             segmentMinBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                     tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),
@@ -392,18 +395,18 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
-            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
-            Nd4jLong* gradInTads = packGradIn.specialShapeInfo();
-            Nd4jLong* gradInTadOffsets = packGradIn.specialOffsets();
-            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
-            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.shapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
+            auto gradInTads = packGradIn.specialShapeInfo();
+            auto gradInTadOffsets = packGradIn.specialOffsets();
+            auto gradOutTads = packGradOut.specialShapeInfo();
+            auto gradOutTadOffsets = packGradOut.specialOffsets();
 
             segmentMinBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                     tempRes.specialBuffer(), tempRes.specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(),

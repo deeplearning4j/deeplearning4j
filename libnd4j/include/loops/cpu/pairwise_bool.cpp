@@ -30,18 +30,13 @@ namespace functions {
     namespace pairwise_transforms {
 
         template <typename X, typename Y>
-        void PairWiseBoolTransform<X, Y>::exec(
-                const int opNum,
-                void *x,
-                Nd4jLong xEws,
-                void *y,
-                Nd4jLong yEws,
-                void *z,
-                Nd4jLong zEws,
-                void *extraParams,
-                Nd4jLong n,
-                const uint64_t start,
-                const uint64_t stop) {
+        void PairWiseBoolTransform<X, Y>::exec(const int opNum,
+                                               const void *x, Nd4jLong xEws,
+                                               const void *y, Nd4jLong yEws,
+                                               void *z, Nd4jLong zEws,
+                                               void *extraParams,
+                                               Nd4jLong n,
+                                               const uint64_t start, const uint64_t stop) {
             DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                                xEws,
                                                y,
@@ -56,19 +51,15 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-        void PairWiseBoolTransform<X, Z>::exec(void *vx,
-                                              Nd4jLong xEws,
-                                              void *vy,
-                                              Nd4jLong yEws,
-                                              void *vz,
-                                              Nd4jLong zEws,
-                                              void *vextraParams,
-                                              const Nd4jLong n,
-                                               const uint64_t start,
-                                               const uint64_t stop) {
+        void PairWiseBoolTransform<X, Z>::exec(const void *vx, Nd4jLong xEws,
+                                               const void *vy, Nd4jLong yEws,
+                                               void *vz, Nd4jLong zEws,
+                                               void *vextraParams,
+                                               const Nd4jLong n,
+                                               const uint64_t start, const uint64_t stop) {
 
-            auto x = reinterpret_cast<X *>(vx);
-            auto y = reinterpret_cast<X *>(vy);
+            auto x = reinterpret_cast<const X *>(vx);
+            auto y = reinterpret_cast<const X *>(vy);
             auto z = reinterpret_cast<Z *>(vz);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
 
@@ -85,17 +76,12 @@ namespace functions {
         }
 
         template <typename X, typename Y>
-        void PairWiseBoolTransform<X, Y>::exec(
-                const int opNum,
-                void *x,
-                Nd4jLong *xShapeInfo,
-                void *y,
-                Nd4jLong *yShapeInfo,
-                void *z,
-                Nd4jLong *zShapeInfo,
-                void *extraParams,
-                const uint64_t start,
-                const uint64_t stop) {
+        void PairWiseBoolTransform<X, Y>::exec(const int opNum,
+                                               const void *x, const Nd4jLong *xShapeInfo,
+                                               const void *y, const Nd4jLong *yShapeInfo,
+                                               void *z, const Nd4jLong *zShapeInfo,
+                                               void *extraParams,
+                                               const uint64_t start,const uint64_t stop) {
             DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                               xShapeInfo,
                                               y,
@@ -109,15 +95,14 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-        void PairWiseBoolTransform<X, Z>::exec(void *vx, Nd4jLong* xShapeInfo,
-                                            void *vy, Nd4jLong* yShapeInfo,
-                                            void *vz, Nd4jLong* zShapeInfo,
-                                            void *vextraParams,
-                                            const uint64_t start,
-                                            const uint64_t stop) {
+        void PairWiseBoolTransform<X, Z>::exec(const void *vx, const Nd4jLong* xShapeInfo,
+                                               const void *vy, const Nd4jLong* yShapeInfo,
+                                               void *vz, const Nd4jLong* zShapeInfo,
+                                               void *vextraParams,
+                                               const uint64_t start, const uint64_t stop) {
 
-            auto x = reinterpret_cast<X *>(vx);
-            auto y = reinterpret_cast<X *>(vy);
+            auto x = reinterpret_cast<const X *>(vx);
+            auto y = reinterpret_cast<const X *>(vy);
             auto z = reinterpret_cast<Z *>(vz);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
 

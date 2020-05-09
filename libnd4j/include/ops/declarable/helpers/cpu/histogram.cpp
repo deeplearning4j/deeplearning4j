@@ -24,8 +24,8 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename Z>
-            static void histogram_(void *xBuffer, Nd4jLong *xShapeInfo, void *zBuffer, Nd4jLong *zShapeInfo, Nd4jLong numBins, double min_val, double max_val) {
-                auto dx = reinterpret_cast<X*>(xBuffer);
+            static void histogram_(void const* xBuffer, Nd4jLong const* xShapeInfo, void *zBuffer, Nd4jLong const* zShapeInfo, Nd4jLong numBins, double min_val, double max_val) {
+                auto dx = reinterpret_cast<X const*>(xBuffer);
                 auto result = reinterpret_cast<Z*>(zBuffer);
 
                 int length = shape::length(xShapeInfo);
@@ -63,7 +63,7 @@ namespace sd {
                 double min_val = input.reduceNumber(reduce::SameOps::Min).e<double>(0);
                 double max_val = input.reduceNumber(reduce::SameOps::Max).e<double>(0);
 
-                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogram_, (input.buffer(), input.shapeInfo(), output.getBuffer(), output.getShapeInfo(), numBins, min_val, max_val), LIBND4J_TYPES, INDEXING_TYPES);
+                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogram_, (input.buffer(), input.shapeInfo(), output.buffer(), output.shapeInfo(), numBins, min_val, max_val), LIBND4J_TYPES, INDEXING_TYPES);
             }
         }
     }

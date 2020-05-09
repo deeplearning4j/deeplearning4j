@@ -44,7 +44,7 @@ namespace sd {
         DECLARE_SHAPE_FN(segment_min) {
             auto idxVector = INPUT_VARIABLE(1);
 
-            Nd4jLong* in = inputShape->at(0);
+            auto in = inputShape->at(0);
             int outRank = shape::rank(in);
             Nd4jLong* outputShape = nullptr;
             int val = (*idxVector).e<int>(idxVector->lengthOf() - 1);
@@ -72,14 +72,15 @@ namespace sd {
             return helpers::segmentMinFunctorBP(block.launchContext(), input, indices, gradOut, output);
         }
         DECLARE_SHAPE_FN(segment_min_bp){
-            Nd4jLong* in = inputShape->at(0);
-            Nd4jLong* inIdx = inputShape->at(1);
+            auto in = inputShape->at(0);
+            auto inIdx = inputShape->at(1);
 
             Nd4jLong* outShape;
             Nd4jLong* outIndex;
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
             return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
+//            return SHAPELIST(in, inIdx);
         }
 
         DECLARE_TYPES(segment_min) {

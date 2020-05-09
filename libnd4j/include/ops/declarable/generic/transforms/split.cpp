@@ -84,17 +84,14 @@ namespace ops {
 
     DECLARE_SHAPE_FN(split) {
         int num_splits = INT_ARG(0);
-        Nd4jLong *input = nullptr;
-        sd::DataType dataType;
+        auto input = inputShape->at(0);
+        sd::DataType dataType = ArrayOptions::dataType(input);
 
         // axis is 0 by default
         int axis = 0;
 
 		int inputVar = 0;
-        if (inputShape->size() == 1) {
-            input = inputShape->at(0);
-            dataType = ArrayOptions::dataType(input);
-        } else {
+        if (inputShape->size() != 1) {
             auto shape0 = inputShape->at(0);
             auto shape1 = inputShape->at(1);
 

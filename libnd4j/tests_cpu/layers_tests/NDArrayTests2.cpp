@@ -974,74 +974,74 @@ TEST_F(NDArrayTest2, subarray_1) {
 
     NDArray x0 = x(0, {1,2});
     for(int i = 0; i < shape::shapeInfoLength(x0.rankOf()); ++i)
-        ASSERT_TRUE(x0.getShapeInfo()[i] == shapeExpX0[i]);
+        ASSERT_TRUE(x0.shapeInfo()[i] == shapeExpX0[i]);
     for(int i = 0; i < x0.lengthOf(); ++i)
         ASSERT_TRUE(x0.e<float>(i) == buffExpX0[i]);
 
     NDArray x1 = x(1, {1,2});
     for(int i = 0; i < shape::shapeInfoLength(x1.rankOf()); ++i)
-        ASSERT_TRUE(x1.getShapeInfo()[i] == shapeExpX0[i]);
+        ASSERT_TRUE(x1.shapeInfo()[i] == shapeExpX0[i]);
     for(int i = 0; i < x1.lengthOf(); ++i)
         ASSERT_TRUE(x1.e<float>(i) == buffExpX1[i]);
 
     NDArray x2 = x(0, {1,2}, true);
     for(int i = 0; i < shape::shapeInfoLength(x2.rankOf()); ++i)
-        ASSERT_TRUE(x2.getShapeInfo()[i] == shapeExpX2[i]);
+        ASSERT_TRUE(x2.shapeInfo()[i] == shapeExpX2[i]);
     for(int i = 0; i < x2.lengthOf(); ++i)
         ASSERT_TRUE(x2.e<float>(i) == buffExpX2[i]);
 
     NDArray x3 = x(2, {1});
     for(int i = 0; i < shape::shapeInfoLength(x3.rankOf()); ++i)
-        ASSERT_TRUE(x3.getShapeInfo()[i] == shapeExpX3[i]);
+        ASSERT_TRUE(x3.shapeInfo()[i] == shapeExpX3[i]);
     for(int i = 0; i < x3.lengthOf(); ++i)
         ASSERT_TRUE(x3.e<float>(i) == buffExpX3[i]);
 
     NDArray x4 = x(2, {1}, true);
     for(int i = 0; i < shape::shapeInfoLength(x4.rankOf()); ++i)
-        ASSERT_TRUE(x4.getShapeInfo()[i] == shapeExpX4[i]);
+        ASSERT_TRUE(x4.shapeInfo()[i] == shapeExpX4[i]);
     for(int i = 0; i < x4.lengthOf(); ++i)
         ASSERT_TRUE(x4.e<float>(i) == buffExpX4[i]);
 
     NDArray x5 = x(3, {2});
     for(int i = 0; i < shape::shapeInfoLength(x5.rankOf()); ++i)
-        ASSERT_TRUE(x5.getShapeInfo()[i] == shapeExpX5[i]);
+        ASSERT_TRUE(x5.shapeInfo()[i] == shapeExpX5[i]);
     for(int i = 0; i < x5.lengthOf(); ++i)
         ASSERT_TRUE(x5.e<float>(i) == buffExpX5[i]);
 
     // ******************* //
     NDArray y0 = y(0, {1,2});
     for(int i = 0; i < shape::shapeInfoLength(y0.rankOf()); ++i)
-        ASSERT_TRUE(y0.getShapeInfo()[i] == shapeExpY0[i]);
+        ASSERT_TRUE(y0.shapeInfo()[i] == shapeExpY0[i]);
     for(int i = 0; i < y0.lengthOf(); ++i)
         ASSERT_TRUE(y0.e<float>(i) == buffExpY0[i]);
 
     NDArray y1 = y(1, {1,2});
     for(int i = 0; i < shape::shapeInfoLength(y1.rankOf()); ++i)
-        ASSERT_TRUE(y1.getShapeInfo()[i] == shapeExpY0[i]);
+        ASSERT_TRUE(y1.shapeInfo()[i] == shapeExpY0[i]);
     for(int i = 0; i < y1.lengthOf(); ++i)
         ASSERT_TRUE(y1.e<float>(i) == buffExpY1[i]);
 
     NDArray y2 = y(0, {1,2}, true);
     for(int i = 0; i < shape::shapeInfoLength(y2.rankOf()); ++i)
-        ASSERT_TRUE(y2.getShapeInfo()[i] == shapeExpY2[i]);
+        ASSERT_TRUE(y2.shapeInfo()[i] == shapeExpY2[i]);
     for(int i = 0; i < y2.lengthOf(); ++i)
         ASSERT_TRUE(y2.e<float>(i) == buffExpY2[i]);
 
     NDArray y3 = y(2, {1});
     for(int i = 0; i < shape::shapeInfoLength(y3.rankOf()); ++i)
-        ASSERT_TRUE(y3.getShapeInfo()[i] == shapeExpY3[i]);
+        ASSERT_TRUE(y3.shapeInfo()[i] == shapeExpY3[i]);
     for(int i = 0; i < y3.lengthOf(); ++i)
         ASSERT_TRUE(y3.e<float>(i) == buffExpY3[i]);
 
     NDArray y4 = y(2, {1}, true);
     for(int i = 0; i < shape::shapeInfoLength(y4.rankOf()); ++i)
-        ASSERT_TRUE(y4.getShapeInfo()[i] == shapeExpY4[i]);
+        ASSERT_TRUE(y4.shapeInfo()[i] == shapeExpY4[i]);
     for(int i = 0; i < y4.lengthOf(); ++i)
         ASSERT_TRUE(y4.e<float>(i) == buffExpY4[i]);
 
     NDArray y5 = y(3, {2});
     for(int i = 0; i < shape::shapeInfoLength(y5.rankOf()); ++i)
-        ASSERT_TRUE(y5.getShapeInfo()[i] == shapeExpY5[i]);
+        ASSERT_TRUE(y5.shapeInfo()[i] == shapeExpY5[i]);
     for(int i = 0; i < y5.lengthOf(); ++i)
         ASSERT_TRUE(y5.e<float>(i) == buffExpY5[i]);
 
@@ -1171,7 +1171,7 @@ TEST_F(NDArrayTest2, reshapei_1) {
     const bool canReshape = x.reshapei({4,7});
 
     ASSERT_FALSE(canReshape);
-    ASSERT_TRUE(shape::equalsStrict(x.getShapeInfo(), shapeInfo2));
+    ASSERT_TRUE(shape::equalsStrict(x.shapeInfo(), shapeInfo2));
 
     delete[] buffer;
 }
@@ -1188,7 +1188,7 @@ TEST_F(NDArrayTest2, reshapei_2) {
     const bool canReshape = x.reshapei({4,7});
 
     ASSERT_FALSE(canReshape);
-    ASSERT_TRUE(shape::equalsStrict(x.getShapeInfo(), shapeInfo2));
+    ASSERT_TRUE(shape::equalsStrict(x.shapeInfo(), shapeInfo2));
 
     delete[] buffer;
 }
@@ -1225,8 +1225,8 @@ TEST_F(NDArrayTest2, reduce_1) {
             for (int x = 0; x < 4; x++) {
                 for (int y = 0; y < 4; y++) {
                     Nd4jLong indices[] = {0, 0, x, y, i, j};
-                    Nd4jLong offset = shape::getOffset(arr6.getShapeInfo(), indices);
-                    sum += ((double*)arr6.getBuffer())[offset];
+                    Nd4jLong offset = shape::getOffset(arr6.shapeInfo(), indices);
+                    sum += ((double*)arr6.buffer())[offset];
                 }
             }
             exp.p<double>(0, 0, i, j, sum);

@@ -165,7 +165,7 @@ void pooling2dCUDNN(const LaunchContext* context,
     NDArray::prepareSpecialUse({output}, {input});
 
     // run calculation
-    err = cudnnPoolingForward(*handle, pooling, alpha, x, input->getSpecialBuffer(), beta, z, output->specialBuffer());
+    err = cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer());
     if (err != 0) throw sd::cuda_exception::build("pooling2dCUDNN: cudnnPoolingForward failed", err);
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
@@ -228,7 +228,7 @@ void pooling2dBpCUDNN(const LaunchContext* context,
     NDArray::prepareSpecialUse({gradI}, {input, gradO});
 
     // run calculation for gradI
-    err = cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->getSpecialBuffer(), dz, gradO->getSpecialBuffer(), x, input->getSpecialBuffer(), beta, x, gradI->getSpecialBuffer());
+    err = cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer());
     if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: cudnnPoolingBackward failed", err);
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
@@ -302,7 +302,7 @@ void pooling3dCUDNN(const LaunchContext* context,
     NDArray::prepareSpecialUse({output}, {input});
 
     // run calculation
-    err = cudnnPoolingForward(*handle, pooling, alpha, x, input->getSpecialBuffer(), beta, z, output->specialBuffer());
+    err = cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, z, output->specialBuffer());
     if (err != 0) throw sd::cuda_exception::build("pooling3dCUDNN: cudnnPoolingForward failed", err);
 
     auto cudaErr = cudaStreamSynchronize(*context->getCudaStream());
@@ -382,11 +382,11 @@ void pooling3dBpCUDNN(const LaunchContext* context,
         NDArray::prepareSpecialUse({gradI}, {input, gradO, &temp});
 
         // run ff calculation
-        err = cudnnPoolingForward(*handle, pooling, alpha, x, input->getSpecialBuffer(), beta, dz, temp.specialBuffer());
+        err = cudnnPoolingForward(*handle, pooling, alpha, x, input->specialBuffer(), beta, dz, temp.specialBuffer());
         if (err != 0) throw sd::cuda_exception::build("pooling3dCUDNN: cudnnPoolingForward failed", err);
 
         // run bp calculation for gradI
-        err = cudnnPoolingBackward(*handle, pooling, alpha, dz, temp.getSpecialBuffer(), dz, gradO->getSpecialBuffer(), x, input->getSpecialBuffer(), beta, x, gradI->getSpecialBuffer());
+        err = cudnnPoolingBackward(*handle, pooling, alpha, dz, temp.specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer());
         if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: cudnnPoolingBackward failed", err);
 
         NDArray::registerSpecialUse({gradI}, {input, gradO, &temp});
@@ -396,7 +396,7 @@ void pooling3dBpCUDNN(const LaunchContext* context,
         NDArray::prepareSpecialUse({gradI}, {input, gradO});
 
         // run bp calculation for gradI
-        err = cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->getSpecialBuffer(), dz, gradO->getSpecialBuffer(), x, input->getSpecialBuffer(), beta, x, gradI->getSpecialBuffer());
+        err = cudnnPoolingBackward(*handle, pooling, alpha, dz, gradO->specialBuffer(), dz, gradO->specialBuffer(), x, input->specialBuffer(), beta, x, gradI->specialBuffer());
         if (err != 0) throw sd::cuda_exception::build("pooling2dBpCUDNN: cudnnPoolingBackward failed", err);
 
         NDArray::registerSpecialUse({gradI}, {input, gradO});

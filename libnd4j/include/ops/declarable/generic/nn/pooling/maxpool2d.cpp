@@ -95,8 +95,8 @@ DECLARE_SYN(maxpool, maxpool2d);
 DECLARE_SHAPE_FN(maxpool2d) {
 
     //NDArray<T> *x = block.getVariables().at(0)->getNDArray();
-    Nd4jLong* inShape = inputShape->at(0);
-    Nd4jLong* shapeOf = shape::shapeOf(inShape);
+    auto inShape = inputShape->at(0);
+    auto shapeOf = shape::shapeOf(inShape);
     // 0 - number of dimensions; 1,2 - kernel Height/Width; 3,4 - stride Height/Width; 5,6 - pad Height/Width; 7,8 - dilation Height/Width; 9,10 - input Height/Width; 11 - batch size; 12 - input depth; 13 - same mode;
     int kH = INT_ARG(0);
     int kW = INT_ARG(1);

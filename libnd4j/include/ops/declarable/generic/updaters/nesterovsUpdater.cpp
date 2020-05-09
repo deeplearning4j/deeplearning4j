@@ -39,8 +39,8 @@ namespace sd {
                 return Status::OK();
 
             REQUIRE_TRUE(gradient->isSameShape(initState), 0, "NESTEROVS UPDATER OP: input state Msg must have the same shape as gradient,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->getShapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initState->getShapeInfo()).c_str());
+                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+                ShapeUtils::shapeAsString(initState->shapeInfo()).c_str());
 
             bool bParamsSupply = 4 == block.width() || 2 == block.getTArguments()->size();
 

@@ -114,7 +114,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
 
-    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistributionInv<double>>(rng, x.getBuffer(), x.getShapeInfo(), extraParams);
+    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistributionInv<double>>(rng, x.getBuffer(), x.shapeInfo(), extraParams);
     const double actualMean = x.meanNumber().e<double>(0);
     const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
 
@@ -145,7 +145,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test2: RNG initialization failed !");
 
-    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistributionInv<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
+    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistributionInv<double>>(rng, y.getBuffer(), y.shapeInfo(), x.getBuffer(), x.shapeInfo(), extraParams);
 
     const double actualMean = x.meanNumber().e<double>(0);
     const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
@@ -174,7 +174,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test1: RNG initialization failed !");
 
-    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, x.getBuffer(), x.getShapeInfo(), extraParams);
+    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, x.getBuffer(), x.shapeInfo(), extraParams);
     const double actualMean = x.meanNumber().e<double>(0);
     const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
 
@@ -207,7 +207,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
 
-    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
+    functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, y.getBuffer(), y.shapeInfo(), x.getBuffer(), x.shapeInfo(), extraParams);
 
     destroyRandom((Nd4jPointer) rng);
 #endif
@@ -539,7 +539,7 @@ TEST_F(DeclarableOpsTests9, concat_test14) {
 
     auto z = result.at(0);
 
-    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->shapeInfo(), {0});
     ASSERT_TRUE(2 == numOfTads);
 
     for (int e = 0; e < numOfTads; ++e) {
@@ -601,7 +601,7 @@ TEST_F(DeclarableOpsTests9, concat_test17) {
     // z->printShapeInfo();
     // z->printIndexedBuffer();
 
-    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->shapeInfo(), {0});
     ASSERT_TRUE(2 == numOfTads);
 
     for (int e = 0; e < numOfTads; ++e) {
@@ -680,7 +680,7 @@ TEST_F(DeclarableOpsTests9, concat_test20) {
 
     auto z = result.at(0);
 
-    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->shapeInfo(), {0});
     ASSERT_TRUE(4 == numOfTads);
 
     for (int e = 0; e < numOfTads; e++) {

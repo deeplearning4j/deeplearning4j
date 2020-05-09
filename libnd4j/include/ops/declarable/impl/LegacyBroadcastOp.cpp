@@ -47,7 +47,7 @@ namespace sd {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
             auto tadLen = shape::length(packX.primaryShapeInfo());
             REQUIRE_TRUE(tadLen == y->lengthOf(), 0, "Length of broadcast TAD should be equal to length of Y operand, but got [%i] vs [%i]",tadLen, (int) y->lengthOf());
@@ -62,7 +62,7 @@ namespace sd {
                         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), dims.size(), pTadShape, pTadOffsets, pTadShape, pTadOffsets);
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
-                auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
+                auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z->shapeInfo(), dims);
 
                 auto zTadShape = Environment::getInstance()->isCPU() ? packZ.primaryShapeInfo() : packZ.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo));
                 auto zTadOffsets = Environment::getInstance()->isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOffsets, tadZ.numTads * sizeof(Nd4jLong));

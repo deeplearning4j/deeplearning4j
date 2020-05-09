@@ -31,14 +31,14 @@ using namespace simdOps;
 
 template <typename X, typename Z>
 static __global__ void simpleIndexReduceGeneric(const int op,
-                                           void *dx,
-                                           Nd4jLong *xShapeInfo, int xRank,
+                                           void const* dx,
+                                           Nd4jLong const* xShapeInfo, int xRank,
                                            void *extraParams,
                                            void *result,
-                                           Nd4jLong *zShapeInfo, int zRank,
+                                           Nd4jLong const* zShapeInfo, int zRank,
                                            int *dimension,
                                            int dimensionLength,
-                                           int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+                                           int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets) {
 
      functions::indexreduce::IndexReduce<X, Z>::transform(op,dx,xShapeInfo,extraParams,result,zShapeInfo,dimension,dimensionLength,postProcessOrNot,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
 }
@@ -49,15 +49,15 @@ namespace functions {
         template <typename X, typename Z>
         _CUDA_H void IndexReduce<X,Z>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream,
                                                                 const int opNum,
-                                                                void *dx, Nd4jLong *xShapeInfo,
+                                                                void const* dx, Nd4jLong const* xShapeInfo,
                                                                 int xRank,
                                                                 void *extraParams,
-                                                                void *result, Nd4jLong *zShapeInfo,
+                                                                void *result, Nd4jLong const* zShapeInfo,
                                                                 int zRank,
                                                                 int *dimension, int dimensionLength,
                                                                 int postProcessOrNot,
                                                                 int *allocationBuffer, void *reductionBuffer,
-                                                                Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+                                                                Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets) {
 
             simpleIndexReduceGeneric<X, Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(opNum,
                                                                                             dx, xShapeInfo, xRank,
@@ -70,7 +70,7 @@ namespace functions {
         }
 
         template <typename X, typename Z>
-        _CUDA_H void IndexReduce<X, Z>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *zShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+        _CUDA_H void IndexReduce<X, Z>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, void const* dx, Nd4jLong const* xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong const* zShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets) {
             simpleIndexReduceGeneric<X, Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			 opNum,
 			 dx,
@@ -154,35 +154,35 @@ namespace functions {
         template <typename X, typename Y>
         __device__ void IndexReduce<X, Y>::transform(
                 const int opNum,
-                void *x,
-                Nd4jLong *xShapeInfo,
+                void const* x,
+                Nd4jLong const* xShapeInfo,
                 void *extraParams,
                 void *result,
-                Nd4jLong *zShapeInfo,
+                Nd4jLong const* zShapeInfo,
                 int *dimension,
                 int dimensionLength,
                 int postProcessOrNot,
                 int *allocationBuffer,
                 void *reductionBuffer,
-                Nd4jLong *tadShapeInfo,
-                Nd4jLong *tadOffset) {
+                Nd4jLong const* tadShapeInfo,
+                Nd4jLong const* tadOffset) {
              DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, extraParams, result, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
         }
 
 
         template <typename X, typename Z>
         template <typename OpType>
-        __device__ void IndexReduce<X, Z>::transform(void *vdx, Nd4jLong *xShapeInfo,
+        __device__ void IndexReduce<X, Z>::transform(void const* vdx, Nd4jLong const* xShapeInfo,
                                                 void *vextraParams,
-                                                void *vz, Nd4jLong *zShapeInfo,
+                                                void* vz, Nd4jLong const* zShapeInfo,
                                                 int *dimension, int dimensionLength,
                                                 int postProcessOrNot,
                                                 int *allocationBuffer, void *vreductionBuffer,
-                                                Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets){
+                                                Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets){
             /**int
              * Gpu information for the problem
              */
-            auto dx = reinterpret_cast<X*>(vdx);
+            auto dx = reinterpret_cast<X const*>(vdx);
             auto z = reinterpret_cast<Z*>(vz);
             auto extraParams = static_cast<X*>(vextraParams);
             auto reductionBuffer = static_cast<X*>(vreductionBuffer);

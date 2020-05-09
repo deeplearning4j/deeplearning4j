@@ -40,8 +40,8 @@ namespace sd {
             auto in = inputShape->at(0);
             auto source = INPUT_VARIABLE(0);
 //            auto shapeList = SHAPELIST(); 
-            Nd4jLong* valuesShape;
-            Nd4jLong* indicesShape;
+            const Nd4jLong* valuesShape;
+            const Nd4jLong* indicesShape;
 
             int uniqueCount = helpers::uniqueCount(block.launchContext(), source);
 

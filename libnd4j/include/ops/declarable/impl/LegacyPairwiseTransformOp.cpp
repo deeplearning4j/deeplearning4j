@@ -51,9 +51,9 @@ namespace sd {
             ExtraArguments extras(*block.getTArguments());
             PointersManager manager(block.launchContext(), "LegacyPairwiseTransformOp");
 
-            NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                    y->getBuffer(), y->getShapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
-                    z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+            NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                     extras.argumentsAsT(z->dataType()));
 
             manager.synchronize();

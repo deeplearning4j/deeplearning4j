@@ -96,15 +96,15 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(unsorted_segment_prod_bp){
-            Nd4jLong* in = inputShape->at(0);
-            Nd4jLong* inIdx = inputShape->at(1);
+            auto in = inputShape->at(0);
+            auto inIdx = inputShape->at(1);
 
             Nd4jLong* outShape;
             Nd4jLong* outIndex;
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
             return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
-
+//            return SHAPELIST(in, inIdx);
         }
 
     }

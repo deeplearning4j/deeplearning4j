@@ -114,15 +114,15 @@ namespace sd {
                 for (int e = 2; e < 2 + numOfDims; e++)
                     tadDimensions[e-2] = (*intArgs)[e];
 
-                auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), tadDimensions);
-                auto packY = ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), tadDimensions);
+                auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), tadDimensions);
+                auto packY = ConstantTadHelper::getInstance()->tadForDimensions(updates.shapeInfo(), tadDimensions);
 
                 NDArray indices(const_cast<int*>(intArgs->data()) + numOfDims + 3, 'c', {numOfInd}, sd::DataType::INT32, context);
 
                 PointersManager manager(context, "scatterUpdate");
 
                 NDArray::prepareSpecialUse({&input}, {&input, &updates, &indices});
-                BUILD_SINGLE_SELECTOR(input.dataType(), scatterUpdateCudaLauncher, (context->getCudaStream(), opCode, numOfInd, input.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), updates.specialBuffer(), packY.platformShapeInfo(), packY.platformOffsets(), reinterpret_cast<int*>(indices.getSpecialBuffer())), LIBND4J_TYPES);
+                BUILD_SINGLE_SELECTOR(input.dataType(), scatterUpdateCudaLauncher, (context->getCudaStream(), opCode, numOfInd, input.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), updates.specialBuffer(), packY.platformShapeInfo(), packY.platformOffsets(), reinterpret_cast<int*>(indices.specialBuffer())), LIBND4J_TYPES);
                 NDArray::registerSpecialUse({&input}, {&input, &updates, &indices});
 
                 manager.synchronize();

@@ -33,9 +33,9 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename X, typename Y>
-            static _CUDA_G void scatterSimpleKernel(void *vx, Nd4jLong *xTadShape, Nd4jLong *xTadOffsets, Nd4jLong xLength, Nd4jLong numTads, void *vi, Nd4jLong *iShapeInfo, Nd4jLong iLength, void *vu, Nd4jLong *uShapeInfo, Nd4jLong uLength) {
-                auto u = reinterpret_cast<X*>(vu);
-                auto indices = reinterpret_cast<Y*>(vi);
+            static _CUDA_G void scatterSimpleKernel(void *vx, const Nd4jLong *xTadShape, const Nd4jLong *xTadOffsets, Nd4jLong xLength, Nd4jLong numTads, const void *vi, const Nd4jLong *iShapeInfo, Nd4jLong iLength, const void *vu, const Nd4jLong *uShapeInfo, Nd4jLong uLength) {
+                auto u = reinterpret_cast<const X*>(vu);
+                auto indices = reinterpret_cast<const Y*>(vi);
 
                 auto tid = threadIdx.x + blockIdx.x * blockDim.x;
                 for (int i = tid; i < iLength; i += blockDim.x * gridDim.x) {
@@ -51,13 +51,13 @@ namespace sd {
             void scatterSimple_(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
 
                 auto dims = ShapeUtils::evalDimsToExclude(input.rankOf(), dimensions);
-                auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dims);
+                auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dims);
 
                 auto xLength = shape::length(packX.primaryShapeInfo());
                 auto iLength = indices.lengthOf();
                 auto uLength = updates.lengthOf();
 
-                scatterSimpleKernel<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input.getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), xLength, packX.numberOfTads(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), iLength, updates.getSpecialBuffer(), updates.getSpecialShapeInfo(), uLength);
+                scatterSimpleKernel<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), xLength, packX.numberOfTads(), indices.specialBuffer(), indices.specialShapeInfo(), iLength, updates.specialBuffer(), updates.specialShapeInfo(), uLength);
             }
 
 

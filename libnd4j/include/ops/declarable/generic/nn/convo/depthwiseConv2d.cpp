@@ -74,10 +74,9 @@ CUSTOM_OP_IMPL(depthwise_conv2d, 2, 1, false, 0, 9) {
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 DECLARE_SHAPE_FN(depthwise_conv2d) {
-
-    Nd4jLong* inputShapeInfo   = inputShape->at(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    Nd4jLong* weightsShapeInfo = inputShape->at(1);                                    // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
-    Nd4jLong* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;      // [oC] = iC*mC
+    auto inputShapeInfo   = inputShape->at(0);                                    // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto weightsShapeInfo = inputShape->at(1);                                    // [kH, kW, iC, mC], [mC, iC, kH, kW], [mC, kH, kW, iC]
+    auto biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;      // [oC] = iC*mC
 
     const int rank = 4;
     REQUIRE_TRUE(shape::rank(inputShapeInfo)   == rank, 0, "CUSTOM DEPTHWISECONV2D OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);
@@ -196,11 +195,10 @@ CUSTOM_OP_IMPL(depthwise_conv2d_bp, 3, 2, false, 0, 9) {
 
 //////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(depthwise_conv2d_bp) {
-
-    Nd4jLong* inputShapeInfo   = inputShape->at(0);
-    Nd4jLong* weightsShapeInfo = inputShape->at(1);
-    Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;
-    Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);
+    auto inputShapeInfo   = inputShape->at(0);
+    auto weightsShapeInfo = inputShape->at(1);
+    auto biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;
+    auto gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);
 
     const int rank = 4;
     REQUIRE_TRUE(shape::rank(inputShapeInfo)   == rank, 0, "CUSTOM DEPTHWISECONV2D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, shape::rank(inputShapeInfo));

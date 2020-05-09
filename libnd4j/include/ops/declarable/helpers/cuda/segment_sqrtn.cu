@@ -32,7 +32,7 @@ namespace ops {
 namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    static __global__ void unsortedSegmentSqrtNLinearKernel(T* input, Nd4jLong* inputShape, I* indices, Nd4jLong* indicesShape, int* starts, int* lengths, Nd4jLong numOfClasses, T* output, Nd4jLong* outputShape) {
+    static __global__ void unsortedSegmentSqrtNLinearKernel(T* input, Nd4jLong const* inputShape, I* indices, Nd4jLong const* indicesShape, int* starts, int* lengths, Nd4jLong numOfClasses, T* output, Nd4jLong const* outputShape) {
         __shared__ Nd4jLong xLen, zLen;
 
         if (threadIdx.x == 0) {
@@ -57,7 +57,7 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     // SegmentSqrtN kernel
     template <typename T, typename I>
-    static __global__ void segmentSqrtNTadKernel(T* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+    static __global__ void segmentSqrtNTadKernel(T* inputBuf, Nd4jLong const* inputShape, Nd4jLong const* inputTads, Nd4jLong const* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong const* outputShape, Nd4jLong const* outputTads, Nd4jLong const* outputTadOffsets) {
 
         __shared__ Nd4jLong len, total;
 
@@ -108,12 +108,12 @@ namespace helpers {
         else {
             output->nullify();
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
             dims.x = input->sizeAt(0);
             segmentSqrtNTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(
                     input->dataBuffer()->specialAsT<T>(), input->specialShapeInfo(), inputTads, inputTadOffsets, indices->dataBuffer()->specialAsT<I>(),
@@ -129,8 +129,8 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    static __global__ void segmentSqrtNBPLinearKernel(void* inputBuf, Nd4jLong* inputShape, void* eps, Nd4jLong* epsShape, void* indicesBuf, Nd4jLong* indicesShape,
-                                                      int* lengths, void* outputBuf, Nd4jLong* outputShape) {
+    static __global__ void segmentSqrtNBPLinearKernel(void* inputBuf, Nd4jLong const*  inputShape, void* eps, Nd4jLong const*  epsShape, void* indicesBuf, Nd4jLong const*  indicesShape,
+                                                      int* lengths, void* outputBuf, Nd4jLong const*  outputShape) {
         __shared__ T* x;
         __shared__ T* gradIn;
         __shared__ T* gradOut;
@@ -165,9 +165,9 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T, typename I>
-    static __global__ void segmentSqrtNBPTadKernel(void* inputBuf, Nd4jLong* inputShape, void* eps, Nd4jLong* epsShape,
-                                                   void* indicesBuf, Nd4jLong* indicesShape, int* lengths, void* outputBuf, Nd4jLong* outputShape,Nd4jLong* inputTad,
-                                                   Nd4jLong* inputOffsets, Nd4jLong* gradOutTad, Nd4jLong* gradOutOffsets, Nd4jLong* outTad, Nd4jLong* outOffsets) {
+    static __global__ void segmentSqrtNBPTadKernel(void* inputBuf, Nd4jLong const*  inputShape, void* eps, Nd4jLong const*  epsShape,
+                                                   void* indicesBuf, Nd4jLong const*  indicesShape, int* lengths, void* outputBuf, Nd4jLong const*  outputShape,Nd4jLong const*  inputTad,
+                                                   Nd4jLong const*  inputOffsets, Nd4jLong const*  gradOutTad, Nd4jLong const*  gradOutOffsets, Nd4jLong const*  outTad, Nd4jLong const*  outOffsets) {
         __shared__ T* x;
         __shared__ T* gradOut;
         __shared__ I* y;
@@ -226,16 +226,16 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-//            auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.getShapeInfo(), dimensions);
-            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
-            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
-            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+//            auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.shapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
+            auto gradOutTads = packGradOut.specialShapeInfo();
+            auto gradOutTadOffsets = packGradOut.specialOffsets();
 
             segmentSqrtNBPTadKernel<T,I><<<indices->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                     gradOut->specialBuffer(), gradOut->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), lengths,

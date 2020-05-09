@@ -79,7 +79,7 @@ void invertPermutation(sd::LaunchContext* context, const NDArray& input, NDArray
     PointersManager manager(context, "invertPermutation");
 
     NDArray::prepareSpecialUse({&output}, {&input});
-    BUILD_SINGLE_SELECTOR(input.dataType(), invertPermutationCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo()), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), invertPermutationCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()), LIBND4J_TYPES);
     NDArray::registerSpecialUse({&output}, {&input});
 
     manager.synchronize();
@@ -163,7 +163,7 @@ void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
     const int sharedMem = threadsPerBlock * (sizeof(int) * input.rankOf() + input.sizeOfT()) + 128;
 
     NDArray::prepareSpecialUse({&output}, {&input});
-    BUILD_SINGLE_SELECTOR(input.dataType(), traceCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), diagLen), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), traceCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), diagLen), LIBND4J_TYPES);
     NDArray::registerSpecialUse({&output}, {&input});
 
     manager.synchronize();
@@ -226,7 +226,7 @@ void triuBP(sd::LaunchContext* context, const NDArray& input, const NDArray& gra
     PointersManager manager(context, "triuBP");
 
     NDArray::prepareSpecialUse({&gradI}, {&gradO});
-    BUILD_SINGLE_SELECTOR(gradI.dataType(), triuBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), diagonal), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(gradI.dataType(), triuBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), gradO.specialBuffer(), gradO.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), diagonal), LIBND4J_TYPES);
     NDArray::registerSpecialUse({&gradI}, {&gradO});
 
     manager.synchronize();
@@ -294,7 +294,7 @@ void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray
     PointersManager manager(context, "tileBP");
 
     NDArray::prepareSpecialUse({&gradI}, {&gradO, &memBuff});
-    BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), reinterpret_cast<Nd4jLong*>(memBuff.specialBuffer())), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), gradO.specialBuffer(), gradO.specialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), reinterpret_cast<Nd4jLong*>(memBuff.specialBuffer())), FLOAT_TYPES);
     NDArray::registerSpecialUse({&gradI}, {&gradO, &memBuff});
 
     manager.synchronize();
@@ -546,16 +546,16 @@ void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArra
     if(dimensions.empty() || dimensions.size() == input.rankOf()) {  // means whole array
 
         const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-        BUILD_DOUBLE_SELECTOR(xType, zType, clipByNormBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), nullptr, gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), nullptr, gradI.getSpecialBuffer(), gradI.getSpecialShapeInfo(), nullptr, context->getReductionPointer(), clipNormVal), FLOAT_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_SELECTOR(xType, zType, clipByNormBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), nullptr, gradO.specialBuffer(), gradO.specialShapeInfo(), nullptr, gradI.specialBuffer(), gradI.specialShapeInfo(), nullptr, context->getReductionPointer(), clipNormVal), FLOAT_TYPES, FLOAT_TYPES);
     }
     else {  // means tads using
 
-        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
-        auto packY = ConstantTadHelper::getInstance()->tadForDimensions(gradO.getShapeInfo(), dimensions);
-        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), dimensions);
+        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+        auto packY = ConstantTadHelper::getInstance()->tadForDimensions(gradO.shapeInfo(), dimensions);
+        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(gradI.shapeInfo(), dimensions);
 
         const int blocksPerGrid = packX.numberOfTads();
-        BUILD_DOUBLE_SELECTOR(xType, zType, clipByNormBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), gradO.getSpecialBuffer(), packY.platformShapeInfo(), packY.platformOffsets(), gradI.getSpecialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), nullptr, clipNormVal), FLOAT_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_SELECTOR(xType, zType, clipByNormBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), gradO.specialBuffer(), packY.platformShapeInfo(), packY.platformOffsets(), gradI.specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), nullptr, clipNormVal), FLOAT_TYPES, FLOAT_TYPES);
     }
 
     NDArray::registerSpecialUse({&gradI}, {&input, &gradO});
@@ -564,7 +564,7 @@ void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArra
 }
 
     template <typename T>
-    static __global__ void swapShuffleKernel(T* input, Nd4jLong* shape, Nd4jLong firstDim, sd::graph::RandomGenerator* rng) {
+    static __global__ void swapShuffleKernel(T* input, Nd4jLong const* shape, Nd4jLong firstDim, sd::graph::RandomGenerator* rng) {
         auto tid = blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
 
@@ -582,7 +582,7 @@ void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArra
         }
     }
     template <typename T>
-    static __global__ void fillShuffleKernel(T* input, Nd4jLong* inputShape, T* output, Nd4jLong* outputShape, Nd4jLong firstDim, int* indices, sd::graph::RandomGenerator* rng) {
+    static __global__ void fillShuffleKernel(T* input, Nd4jLong const* inputShape, T* output, Nd4jLong const* outputShape, Nd4jLong firstDim, int* indices, sd::graph::RandomGenerator* rng) {
 
 //        PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
         auto tid = blockIdx.x * blockDim.x;
@@ -613,7 +613,7 @@ void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArra
             if(!isInplace)
                 output.assign(input);
         }
-        else if (input.isVector() || shape::isLikeVector(input.getShapeInfo(), temp)) {
+        else if (input.isVector() || shape::isLikeVector(input.shapeInfo(), temp)) {
 
             // apply Fisher-Yates shuffle
             sd::graph::RandomGenerator* dRandom = nullptr;
@@ -694,7 +694,7 @@ void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArra
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static __global__ void clipByNormInplaceKernel(Nd4jLong numOfSubArrs, T* inputBuffer, Nd4jLong* shape, Nd4jLong* inputOffsets, T* norm2Buf, Nd4jLong* norm2shape, T clipNorm) {
+    static __global__ void clipByNormInplaceKernel(Nd4jLong numOfSubArrs, T* inputBuffer, Nd4jLong const* shape, Nd4jLong const* inputOffsets, T* norm2Buf, Nd4jLong const* norm2shape, T clipNorm) {
         for (int arr = blockIdx.x; arr < numOfSubArrs; arr += gridDim.x) {
             __shared__ T* z;
             __shared__ Nd4jLong len;
@@ -713,7 +713,7 @@ void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArra
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
-    static __global__ void clipByNormKernel(Nd4jLong numOfSubArrs, T* inputBuffer, Nd4jLong* shape, Nd4jLong* inputOffsets, T* outputBuffer, Nd4jLong* outputShape, Nd4jLong* outputOffsets, T* norm2Buf, Nd4jLong* norm2shape, T clipNorm) {
+    static __global__ void clipByNormKernel(Nd4jLong numOfSubArrs, T* inputBuffer, Nd4jLong const* shape, Nd4jLong const* inputOffsets, T* outputBuffer, Nd4jLong const* outputShape, Nd4jLong const* outputOffsets, T* norm2Buf, Nd4jLong const* norm2shape, T clipNorm) {
 
         for (Nd4jLong arr = blockIdx.x; arr < numOfSubArrs; arr += gridDim.x) {
             __shared__ T* x, *z;
@@ -761,9 +761,9 @@ void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArra
             else {
 
                 std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
-                const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
-                //auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimsToExclude);
+                const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.shapeInfo(), dimsToExclude);
+                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+                //auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.shapeInfo(), dimsToExclude);
                 T* inputBuffer = reinterpret_cast<T*>(input.specialBuffer());
                 T* norm2buf = reinterpret_cast<T*>(norm2.specialBuffer());
 
@@ -784,9 +784,9 @@ void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArra
             else {
 
                 std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
-                const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
-                auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimensions);
+                const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.shapeInfo(), dimsToExclude);
+                auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+                auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.shapeInfo(), dimensions);
                 T* inputBuffer = reinterpret_cast<T*>(input.specialBuffer());
                 T* norm2buf = reinterpret_cast<T*>(norm2.specialBuffer());
                 T* outputBuffer = reinterpret_cast<T*>(output.specialBuffer());
@@ -891,7 +891,7 @@ void clipByNormBP(sd::LaunchContext* context, const NDArray& input, const NDArra
     else return d1;
 */
     template <typename T>
-    static void __global__ clipByValueKernel(void* input, Nd4jLong* inputShape, void* output, Nd4jLong* outputShape, double leftBound, double rightBound) {
+    static void __global__ clipByValueKernel(void* input, Nd4jLong const* inputShape, void* output, Nd4jLong const* outputShape, double leftBound, double rightBound) {
         __shared__ T* outputBuf;
         __shared__ T* inputBuf;
         __shared__ Nd4jLong length;

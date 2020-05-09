@@ -122,7 +122,7 @@ void dilation2d(sd::LaunchContext* context, NDArray *input, NDArray *weights, ND
     const int sharedMem = (weights->rankOf() + output->rankOf()) * sizeof(int) * threadsPerBlock  + 128;
 
     NDArray::prepareSpecialUse({output}, {input, weights});
-    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), dilation2dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), weights->getSpecialBuffer(), weights->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), sH, sW, pH, pW, dH, dW), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), dilation2dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), weights->specialBuffer(), weights->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), sH, sW, pH, pW, dH, dW), FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {input, weights});
 
     manager.synchronize();

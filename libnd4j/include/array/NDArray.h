@@ -125,7 +125,7 @@ namespace sd {
         void templatedDoubleAssign(void *xBuffer, const Nd4jLong xOffset, const void *yBuffer, const Nd4jLong yOffset) const;
 
         template <typename T, typename R>
-        FORCEINLINE R templatedGet(void *buffer, const Nd4jLong index) const;
+        FORCEINLINE R templatedGet(void const* buffer, const Nd4jLong index) const;
 /*
         template <typename T, typename R>
         R templatedGetIndex(void *buffer, Nd4jLong *indices) const;
@@ -193,7 +193,7 @@ namespace sd {
 #ifndef __JAVACPP_HACK__
         NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor& descriptor, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), const Nd4jLong offset = 0);
 
-        NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<Nd4jLong> &shape, sd::LaunchContext* context = sd::LaunchContext::defaultContext());
+        NDArray(std::shared_ptr<DataBuffer> buffer, char order, const std::vector<Nd4jLong> &shape, sd::LaunchContext* context = sd::LaunchContext::defaultContext());
 
         /**
          * This contructors create scalar array containing string utf8
@@ -250,13 +250,14 @@ namespace sd {
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        NDArray(void *buffer, Nd4jLong* shapeInfo, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
+        NDArray(void *buffer, Nd4jLong* shapeInfo, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), bool isBuffAlloc = false);
+        NDArray(void *buffer, const Nd4jLong* shapeInfo, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), bool isBuffAlloc = false);
 
         /**
         *  do not allocate memory, memory for array is passed from outside
         *  we suppose the content of both (device and host) buffers is identical
         */
-        NDArray(void *buffer, void *bufferD, Nd4jLong* shapeInfo, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isBuffDAlloc = false);
+        NDArray(void *buffer, void *bufferD, const Nd4jLong* shapeInfo, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), bool isBuffAlloc = false, bool isBuffDAlloc = false);
 
         /**
         *  copy constructor
@@ -277,28 +278,28 @@ namespace sd {
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         */
-		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), const bool nullify = true);
+		NDArray(const Nd4jLong* shapeInfo, bool copyStrides = false, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), bool nullify = true);
 
         /**
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         *  set dtype as array type
         */
-        NDArray(Nd4jLong* shapeInfo, const sd::DataType dtype, const bool copyStrides = false, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), const bool nullify = true);
+        NDArray(const Nd4jLong* shapeInfo, sd::DataType dtype, bool copyStrides = false, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), bool nullify = true);
 
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, sd::DataType dtype = DOUBLE, sd::LaunchContext* context = sd::LaunchContext::defaultContext());
+        NDArray(char order, const std::vector<Nd4jLong> &shape, sd::DataType dtype = DOUBLE, sd::LaunchContext* context = sd::LaunchContext::defaultContext());
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, sd::DataType dtype = DOUBLE, sd::LaunchContext* context = sd::LaunchContext::defaultContext());
+        NDArray(char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, sd::DataType dtype = DOUBLE, sd::LaunchContext* context = sd::LaunchContext::defaultContext());
 
         /**
         *  this constructor creates new array using given buffer (without memory allocation) and shape information stored in shape
         */
-        NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  sd::DataType dtype, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
+        NDArray(void *buffer, char order, const std::vector<Nd4jLong> &shape,  sd::DataType dtype, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
 
         /**
         * This method returns new array with the same shape & data type
@@ -317,12 +318,12 @@ namespace sd {
         *  this constructor creates new NDArray with shape matching "other" array,
         *  doesn't copy "other" elements into new array !!!
         */
-        explicit NDArray(const NDArray* other, const bool copyStrides = false, sd::LaunchContext* context = sd::LaunchContext ::defaultContext());
+        explicit NDArray(const NDArray* other, bool copyStrides = false, sd::LaunchContext* context = sd::LaunchContext ::defaultContext());
 
         /**
         *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
         */
-        NDArray(sd::DataType dtype, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), const bool isScalar = true);
+        NDArray(sd::DataType dtype, sd::LaunchContext* context = sd::LaunchContext::defaultContext(), bool isScalar = true);
 
         /**
          * This method blocks until asynchronous operation finishes
@@ -364,9 +365,11 @@ namespace sd {
          * @param offset
          * @return
          */
-        void *bufferWithOffset(Nd4jLong offset) const;
+        void const* bufferWithOffset(Nd4jLong offset) const;
+        void* bufferWithOffset(Nd4jLong offset);
 
-        void* specialBufferWithOffset(Nd4jLong offset) const;
+        void const* specialBufferWithOffset(Nd4jLong offset) const;
+        void* specialBufferWithOffset(Nd4jLong offset);
         /**
         *  copy assignment operator
         *  in particular, when _dataType != other._dataType and both shapes are the same, there will be allocation of new _buffer and _dataType acquires other._dataType
@@ -450,38 +453,39 @@ namespace sd {
         /**
         *   returns host buffer
         */
-        FORCEINLINE void* getBuffer() const;
         FORCEINLINE void* buffer();
+        FORCEINLINE const void* buffer() const;
 
 
         /**
         *   returns buffer offset (offset is the same for host and device buffers)
         */
-        FORCEINLINE Nd4jLong getBufferOffset() const;
-        FORCEINLINE Nd4jLong bufferOffset();
+        FORCEINLINE Nd4jLong bufferOffset() const;
 
         /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
         void* specialBuffer();
-        void* getSpecialBuffer() const;
+        const void* specialBuffer() const;
 
         /**
         *   returns device buffer if compilation is for cuda case, otherwise returns host buffer
         */
-        void* getPlatformBuffer() const;
         void* platformBuffer();
+        const void* platformBuffer() const;
 
 
 
         template <typename T>
-        T* bufferAsT() const;
+        T* bufferAsT();
+
+        template <typename T>
+        const T* bufferAsT() const;
 
         /**
         *   returns _shapeInfo
         */
-        FORCEINLINE Nd4jLong* shapeInfo();
-        FORCEINLINE Nd4jLong* getShapeInfo() const;
+        FORCEINLINE const Nd4jLong* shapeInfo() const;
 
 
         /**
@@ -493,12 +497,9 @@ namespace sd {
         /**
         *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
         */
-        FORCEINLINE Nd4jLong* specialShapeInfo();
-        FORCEINLINE Nd4jLong* getSpecialShapeInfo() const;
+        FORCEINLINE const Nd4jLong* specialShapeInfo() const;
 
-
-        Nd4jLong* platformShapeInfo();
-        Nd4jLong* getPlatformShapeInfo() const;
+        const Nd4jLong* platformShapeInfo() const;
 
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array
@@ -1509,8 +1510,8 @@ bool NDArray::isAttached() {
 }
 
 template <typename T, typename R>
-FORCEINLINE R NDArray::templatedGet(void *buffer, Nd4jLong index) const {
-        auto b = reinterpret_cast<T*>(buffer);
+FORCEINLINE R NDArray::templatedGet(void const* buffer, Nd4jLong index) const {
+        auto b = reinterpret_cast<T const*>(buffer);
         auto v = static_cast<R>(b[index]);
         return v;
 }
@@ -1625,9 +1626,9 @@ bool NDArray::nonNull() const {
         return true;
 
     if(!Environment::getInstance()->isCPU())
-        return getDataBuffer()->special() != nullptr && getSpecialShapeInfo() != nullptr;
+        return getDataBuffer()->special() != nullptr && specialShapeInfo() != nullptr;
 
-    return getDataBuffer()->primary() != nullptr && getShapeInfo() != nullptr;
+    return getDataBuffer()->primary() != nullptr && shapeInfo() != nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1744,7 +1745,7 @@ bool NDArray::isEmpty() const {
     if (this->_shapeInfo == nullptr)
         return false;
 
-    return ArrayOptions::arrayType(this->getShapeInfo()) == ArrayType::EMPTY;
+    return ArrayOptions::arrayType(this->shapeInfo()) == ArrayType::EMPTY;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1804,7 +1805,7 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
         syncToHost();
 
     Nd4jLong coords[2] = {i, j};
-    auto offset = shape::getOffset(getShapeInfo(), coords);
+    auto offset = shape::getOffset(shapeInfo(), coords);
     tickWriteHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
@@ -1821,7 +1822,7 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
         syncToHost();
 
     Nd4jLong coords[3] = {i, j, k};
-    auto offset = shape::getOffset(getShapeInfo(), coords);
+    auto offset = shape::getOffset(shapeInfo(), coords);
     tickWriteHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
@@ -1838,7 +1839,7 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLo
         syncToHost();
 
     Nd4jLong coords[4] = {i, j, k, w};
-    auto offset = shape::getOffset(getShapeInfo(), coords);
+    auto offset = shape::getOffset(shapeInfo(), coords);
     tickWriteHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
@@ -1856,7 +1857,7 @@ T NDArray::t(const Nd4jLong i) const {
         syncToHost();
 
     tickReadHost();
-    return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(i))));
+    return *(reinterpret_cast<const T*>(bufferWithOffset(getOffset(i))));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1872,9 +1873,9 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
         syncToHost();
 
     Nd4jLong coords[2] = {i, j};
-    auto offset = shape::getOffset(getShapeInfo(), coords);
+    auto offset = shape::getOffset(shapeInfo(), coords);
     tickReadHost();
-    return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+    return *(reinterpret_cast<const T*>(bufferWithOffset(offset)));
 }
 
     template <typename T>
@@ -1889,9 +1890,9 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
             syncToHost();
 
         Nd4jLong coords[3] = {i, j, k};
-        auto offset = shape::getOffset(getShapeInfo(), coords);
+        auto offset = shape::getOffset(shapeInfo(), coords);
         tickReadHost();
-        return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+        return *(reinterpret_cast<const T*>(bufferWithOffset(offset)));
     }
 
     template <typename T>
@@ -1906,9 +1907,9 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
             syncToHost();
 
         Nd4jLong coords[4] = {i, j, k, w};
-        auto offset = shape::getOffset(getShapeInfo(), coords);
+        auto offset = shape::getOffset(shapeInfo(), coords);
         tickReadHost();
-        return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+        return *(reinterpret_cast<const T*>(bufferWithOffset(offset)));
     }
 
 #ifndef __JAVACPP_HACK__
@@ -1924,8 +1925,7 @@ std::shared_ptr<DataBuffer> NDArray::dataBuffer() {
 #endif
 
 ////////////////////////////////////////////////////////////////////////
-void* NDArray::getBuffer() const {
-
+const void* NDArray::buffer() const {
     return _buffer->primary() != nullptr ? static_cast<int8_t*>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
 }
 
@@ -1934,18 +1934,13 @@ void* NDArray::buffer() {
     return _buffer->primary() != nullptr ? static_cast<int8_t*>(_buffer->primary()) + (_offset * sizeOfT()) : nullptr;
 }
 
-////////////////////////////////////////////////////////////////////////
-Nd4jLong* NDArray::getShapeInfo() const {
-    return _shapeInfo;
-}
-
 //////////////////////////////////////////////////////////////////////////
-Nd4jLong* NDArray::shapeInfo() {
+const Nd4jLong* NDArray::shapeInfo() const {
     return _shapeInfo;
 }
 
 ////////////////////////////////////////////////////////////////////////
-Nd4jLong* NDArray::specialShapeInfo() {
+const Nd4jLong* NDArray::specialShapeInfo() const {
     if (_shapeInfoD == nullptr)
         return _shapeInfo;
     // FIXME: this should be fixed once CUDA backend added
@@ -1953,21 +1948,8 @@ Nd4jLong* NDArray::specialShapeInfo() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-Nd4jLong NDArray::getBufferOffset() const {
+Nd4jLong NDArray::bufferOffset() const {
     return _offset;
-}
-
-////////////////////////////////////////////////////////////////////////
-Nd4jLong NDArray::bufferOffset() {
-    return _offset;
-}
-
-////////////////////////////////////////////////////////////////////////
-Nd4jLong* NDArray::getSpecialShapeInfo() const{
-    if (_shapeInfoD == nullptr)
-        return _shapeInfo;
-    // FIXME: this should be fixed once CUDA backend added
-    return _shapeInfoD;
 }
 
 

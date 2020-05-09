@@ -82,8 +82,8 @@ namespace sd {
             return helpers::segmentMaxFunctorBP(block.launchContext(), input, indices, gradOut, output);
         }
         DECLARE_SHAPE_FN(segment_max_bp){
-            Nd4jLong* in = inputShape->at(0);
-            Nd4jLong* inIdx = inputShape->at(1);
+            auto in = inputShape->at(0);
+            auto inIdx = inputShape->at(1);
 
             Nd4jLong* outShape;
             Nd4jLong* outIndex;

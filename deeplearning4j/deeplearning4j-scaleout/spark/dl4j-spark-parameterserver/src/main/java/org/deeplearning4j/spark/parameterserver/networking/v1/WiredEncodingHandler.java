@@ -45,7 +45,7 @@ public class WiredEncodingHandler extends EncodingHandler {
      * @param thresholdAlgorithm threshold algorithm to use
      * @param boundary
      */
-    public WiredEncodingHandler(ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor, Double boundary, boolean encodingDebugMode) {
+    public WiredEncodingHandler(ThresholdAlgorithm thresholdAlgorithm, ResidualPostProcessor residualPostProcessor, Integer boundary, boolean encodingDebugMode) {
         super(thresholdAlgorithm, residualPostProcessor, boundary, encodingDebugMode);
     }
 

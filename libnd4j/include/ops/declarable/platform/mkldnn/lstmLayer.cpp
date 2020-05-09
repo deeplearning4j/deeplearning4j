@@ -281,7 +281,7 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
     mkldnnUtils::loadDataToMklStream(Wr, engine, stream, wr_user_md, lstm_prim_desc.weights_iter_desc(), args[DNNL_ARG_WEIGHTS_ITER]);
 
     // h
-    auto h_user_mem = dnnl::memory(h_user_md, engine, h->getBuffer());
+    auto h_user_mem = dnnl::memory(h_user_md, engine, h->buffer());
     const bool hReorder = lstm_prim_desc.dst_layer_desc() != h_user_mem.get_desc();
     auto h_lstm_mem = hReorder ? dnnl::memory(lstm_prim_desc.dst_layer_desc(), engine) : h_user_mem;
     args[DNNL_ARG_DST_LAYER] = h_lstm_mem;
@@ -306,7 +306,7 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 
     // hL
     if(hL) {
-        hL_user_mem = dnnl::memory(hL_user_md, engine, hL->getBuffer());
+        hL_user_mem = dnnl::memory(hL_user_md, engine, hL->buffer());
         hLReorder = lstm_prim_desc.dst_iter_desc() != hL_user_mem.get_desc();
         hL_lstm_mem = hLReorder ? dnnl::memory(lstm_prim_desc.dst_iter_desc(), engine) : hL_user_mem;
         args[DNNL_ARG_DST_ITER] = hL_lstm_mem;
@@ -314,7 +314,7 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 
     // cL
     if(cL) {
-        cL_user_mem = dnnl::memory(cL_user_md, engine, cL->getBuffer());
+        cL_user_mem = dnnl::memory(cL_user_md, engine, cL->buffer());
         cLReorder = lstm_prim_desc.dst_iter_c_desc() != cL_user_mem.get_desc();
         cL_lstm_mem = cLReorder ? dnnl::memory(lstm_prim_desc.dst_iter_c_desc(), engine) : cL_user_mem;
         args[DNNL_ARG_DST_ITER_C] = cL_lstm_mem;

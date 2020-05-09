@@ -93,7 +93,7 @@ void im2col(sd::LaunchContext& context, const NDArray& image, NDArray& columns, 
     const int blocksPerGrid = (columns.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
     NDArray::prepareSpecialUse({&columns}, {&image});
-    BUILD_SINGLE_SELECTOR(columns.dataType(), im2colCudaLauncher, (blocksPerGrid, threadsPerBlock, context, image.getSpecialBuffer(), columns.getSpecialBuffer(), image.getSpecialShapeInfo(), columns.getSpecialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(columns.dataType(), im2colCudaLauncher, (blocksPerGrid, threadsPerBlock, context, image.specialBuffer(), columns.specialBuffer(), image.specialShapeInfo(), columns.specialShapeInfo(), sH, sW, pH, pW, dH, dW, arrZeroPadVal.e<double>(0)), FLOAT_TYPES);
     NDArray::registerSpecialUse({&columns}, {&image});
 
     manager.synchronize();

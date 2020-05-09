@@ -51,7 +51,7 @@ namespace sd {
                 NDArray::prepareSpecialUse({}, {&array});
 
                 PointersManager pm(&ctx, "print_device");
-                BUILD_SINGLE_SELECTOR(array.dataType(), exec_print_device, (ctx, array.getSpecialBuffer(), array.getSpecialShapeInfo()), LIBND4J_TYPES)
+                BUILD_SINGLE_SELECTOR(array.dataType(), exec_print_device, (ctx, array.specialBuffer(), array.specialShapeInfo()), LIBND4J_TYPES)
                 pm.synchronize();
 
                 NDArray::registerSpecialUse({}, {&array});

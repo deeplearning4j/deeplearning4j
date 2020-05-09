@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
 
 	// check whether shapes of all input array are the same
 	for (int i = 0; i < (int) block.width() - 1; ++i)
-		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "PARALLEL_STACK op: the shapes of all input arrays must be the same !");
+		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->shapeInfo(), (INPUT_VARIABLE(i+1))->shapeInfo()), 0, "PARALLEL_STACK op: the shapes of all input arrays must be the same !");
 
  	std::vector<const NDArray*> inArrs(block.width());
  	for(int i = 0; i < block.width(); ++i)

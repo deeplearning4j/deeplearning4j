@@ -33,7 +33,7 @@ namespace helpers {
 // inputLength - length for input tensor
 //
 template <typename T>
-static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputShape, void const* inputBuffer, Nd4jLong* inputShape, Nd4jLong inputLength) {
+static __global__ void diagFunctorKernel(void* outputBuffer, const Nd4jLong* outputShape, void const* inputBuffer, const Nd4jLong* inputShape, Nd4jLong inputLength) {
     __shared__ T *z;
     __shared__ T const* x;
     __shared__ Nd4jLong outputLength;
@@ -65,7 +65,7 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
 // inputLength - given length for input tensor
 //
     template <typename T>
-    static __global__ void diagPartFunctorKernel(void* outputBuffer, Nd4jLong* outputShape, void const* inputBuffer, Nd4jLong* inputShape, Nd4jLong outputLength, Nd4jLong inputLength) {
+    static __global__ void diagPartFunctorKernel(void* outputBuffer, const Nd4jLong* outputShape, void const* inputBuffer, const Nd4jLong* inputShape, Nd4jLong outputLength, Nd4jLong inputLength) {
         __shared__ T *z;
         __shared__ T const* x;
 
@@ -96,7 +96,7 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
         dim3 launchDims(256, 512, 8192);
         if (!input->isActualOnDeviceSide())
             input->syncToDevice();
-        diagFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), inputLength);
+        diagFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), inputLength);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,7 +121,7 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
         if (!input->isActualOnDeviceSide())
             input->syncToDevice();
 
-        diagPartFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), outLen, inLen);
+        diagPartFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), outLen, inLen);
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

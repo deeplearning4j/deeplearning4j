@@ -43,7 +43,7 @@ namespace sd {
             template <typename T>
             static __device__ void lowerTriangularSolve(T const* leftInput, Nd4jLong const* leftInputShape,
                                                         T const* rightInput, Nd4jLong const* rightInputShape,
-                                                        bool const adjoint, T* output, Nd4jLong* outputShape,
+                                                        bool const adjoint, T* output, Nd4jLong const* outputShape,
                                                         Nd4jLong rows, Nd4jLong cols) {
 
                 for (auto r = 0; r < rows; r++) {
@@ -84,7 +84,7 @@ namespace sd {
             template <typename T>
             static __device__ void upperTriangularSolve(T const* leftInput, Nd4jLong const* leftInputShape,
                     T const* rightInput, Nd4jLong const* rightInputShape, bool const adjoint, T* output,
-                    Nd4jLong* outputShape, Nd4jLong rows, Nd4jLong cols) {
+                    Nd4jLong const* outputShape, Nd4jLong rows, Nd4jLong cols) {
 
                 for (auto r = rows; r > 0; r--) {
                     for (auto j = 0; j < cols; j++) {
@@ -109,8 +109,8 @@ namespace sd {
             template <typename T>
             static __global__ void triangularSolveKernel(T const* leftInput, Nd4jLong const* leftPartShape,
                     T const* rightInput, Nd4jLong const* rightPartShape, bool const lower, bool const adjoint, T* output,
-                    Nd4jLong* outputShape, Nd4jLong* tadLeftShape, Nd4jLong* tadLeftOffset, Nd4jLong* tadRightShape,
-                    Nd4jLong* tadRightOffset, Nd4jLong* tadOutputShape, Nd4jLong* tadOutputOffset, Nd4jLong batchNum) {
+                    Nd4jLong const* outputShape, Nd4jLong const* tadLeftShape, Nd4jLong const* tadLeftOffset, Nd4jLong const* tadRightShape,
+                    Nd4jLong const* tadRightOffset, Nd4jLong const* tadOutputShape, Nd4jLong const* tadOutputOffset, Nd4jLong batchNum) {
 
                 __shared__ Nd4jLong rows;
                 __shared__ Nd4jLong cols;
@@ -141,16 +141,16 @@ namespace sd {
             static int triangularSolveFunctor_(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput,
                     bool lower, bool adjoint, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
-                auto leftTads = ConstantTadHelper::getInstance()->tadForDimensions(leftInput->getShapeInfo(), {-2, -1});
-                auto rightTads = ConstantTadHelper::getInstance()->tadForDimensions(rightInput->getShapeInfo(), {-2, -1});
+                auto leftTads = ConstantTadHelper::getInstance()->tadForDimensions(leftInput->shapeInfo(), {-2, -1});
+                auto rightTads = ConstantTadHelper::getInstance()->tadForDimensions(rightInput->shapeInfo(), {-2, -1});
                 auto outputTads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-2, -1});
 
                 auto stream = context->getCudaStream();
-                T const* leftBuf = reinterpret_cast<T const*>(leftInput->getSpecialBuffer());
-                T const* rightBuf = reinterpret_cast<T const*>(rightInput->getSpecialBuffer());
+                T const* leftBuf = reinterpret_cast<T const*>(leftInput->specialBuffer());
+                T const* rightBuf = reinterpret_cast<T const*>(rightInput->specialBuffer());
                 T* outputBuf = reinterpret_cast<T*>(output->specialBuffer());
-                triangularSolveKernel<T><<<128, 128, 256, *stream>>>(leftBuf, leftInput->getSpecialShapeInfo(),
-                        rightBuf, rightInput->getSpecialShapeInfo(), lower, adjoint, outputBuf, output->specialShapeInfo(),
+                triangularSolveKernel<T><<<128, 128, 256, *stream>>>(leftBuf, leftInput->specialShapeInfo(),
+                        rightBuf, rightInput->specialShapeInfo(), lower, adjoint, outputBuf, output->specialShapeInfo(),
                         leftTads.specialShapeInfo(), leftTads.specialOffsets(), rightTads.specialShapeInfo(),
                         rightTads.specialOffsets(), outputTads.specialShapeInfo(), outputTads.specialOffsets(),
                         leftTads.numberOfTads());
@@ -168,7 +168,7 @@ namespace sd {
             template <typename T>
             static __global__ void upperAdjointKernel(T const* input, T* output,
                     Nd4jLong batchSize, Nd4jLong rows, Nd4jLong columns,
-                    Nd4jLong* inputTads, Nd4jLong* inputOffsets, Nd4jLong* outputTads, Nd4jLong* outputOffsets) {
+                    Nd4jLong const* inputTads, Nd4jLong const* inputOffsets, Nd4jLong const* outputTads, Nd4jLong const* outputOffsets) {
 
                 for (auto b = blockIdx.x; b < batchSize; b += gridDim.x) {
                     auto inputPart = input + inputOffsets[b];
@@ -189,7 +189,7 @@ namespace sd {
             template <typename T>
             static __global__ void lowerAdjointKernel(T const* input, T* output,
                          Nd4jLong batchSize, Nd4jLong rows, Nd4jLong columns,
-                         Nd4jLong* inputTads, Nd4jLong* inputOffsets, Nd4jLong* outputTads, Nd4jLong* outputOffsets) {
+                         Nd4jLong const* inputTads, Nd4jLong const* inputOffsets, Nd4jLong const* outputTads, Nd4jLong const* outputOffsets) {
 
                 for (auto b = blockIdx.x; b < batchSize; b += gridDim.x) {
                     auto inputPart = input + inputOffsets[b];
@@ -210,10 +210,10 @@ namespace sd {
             static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* input, bool const lower,
                     NDArray* output) {
 
-                auto inputTads = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {-2, -1});
-                auto outputTads = ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {-2, -1});
+                auto inputTads = ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), {-2, -1});
+                auto outputTads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-2, -1});
                 auto stream = context->getCudaStream();
-                auto inputBuf = reinterpret_cast<T const*>(input->getSpecialBuffer());
+                auto inputBuf = reinterpret_cast<T const*>(input->specialBuffer());
                 auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
                 auto rows = input->sizeAt(-2);
                 auto columns = input->sizeAt(-1);

@@ -91,7 +91,7 @@ void matrixSetDiag(sd::LaunchContext* context, const NDArray& input, const NDArr
     PointersManager manager(context, "matrixSetDiag");
 
     NDArray::prepareSpecialUse({&output}, {&input, &diagonal});
-    BUILD_SINGLE_SELECTOR(input.dataType(), matrixSetDiagCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), diagonal.getSpecialBuffer(), diagonal.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), zeroPad), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), matrixSetDiagCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), diagonal.specialBuffer(), diagonal.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), zeroPad), LIBND4J_TYPES);
     NDArray::registerSpecialUse({&output}, {&input, &diagonal});
 
     manager.synchronize();

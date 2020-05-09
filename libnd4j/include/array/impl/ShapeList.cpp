@@ -26,7 +26,7 @@ namespace sd {
 //        _autoremovable = autoRemovable;
 //    }
 
-    ShapeList::ShapeList(Nd4jLong* shape) {
+    ShapeList::ShapeList(const Nd4jLong* shape) {
         if (shape != nullptr)
             _shapes.push_back(shape);
     }
@@ -36,21 +36,15 @@ namespace sd {
             destroy();
     }
 
-    ShapeList::ShapeList(std::initializer_list<Nd4jLong*> shapes) {
-        for (auto v:shapes)
-            _shapes.push_back(v);
-    }
-
-    ShapeList::ShapeList(std::initializer_list<Nd4jLong*> shapes, bool isWorkspace) : ShapeList(shapes){
+    ShapeList::ShapeList(const std::vector<const Nd4jLong*> &shapes, bool isWorkspace) : ShapeList(shapes){
         _workspace = isWorkspace;
     }
 
-    ShapeList::ShapeList(std::vector<Nd4jLong*>& shapes) {
-        for (auto v:shapes)
-            _shapes.push_back(v);
+    ShapeList::ShapeList(const std::vector<const Nd4jLong*>& shapes) {
+        _shapes = shapes;
     }
 
-    std::vector<Nd4jLong*>* ShapeList::asVector() {
+    std::vector<const Nd4jLong*>* ShapeList::asVector() {
         return &_shapes;
     }
 
@@ -66,31 +60,19 @@ namespace sd {
         _destroyed = true;
     }
 
-    int ShapeList::size() {
+    int ShapeList::size() const {
         return (int) _shapes.size();
     }
 
-    Nd4jLong* ShapeList::at(int idx) {
+    const Nd4jLong* ShapeList::at(int idx) {
         if (_shapes.size() <= idx)
             throw std::runtime_error("Can't find requested variable by index");
 
         return _shapes.at(idx);
     }
 
-    void ShapeList::push_back(Nd4jLong *shape) {
+    void ShapeList::push_back(const Nd4jLong *shape) {
         _shapes.push_back(shape);
-    }
-
-    void ShapeList::push_back(std::vector<Nd4jLong>& shape) {
-        int dLen = shape::shapeInfoLength(shape.at(0));
-
-        if (shape.size() != dLen)
-            throw std::runtime_error("Bad shape was passed in");
-
-        auto nShape = new Nd4jLong[dLen];
-        std::memcpy(nShape, shape.data(), shape::shapeInfoByteLength(shape.at(0)));
-
-        _shapes.push_back(nShape);
     }
 
     void ShapeList::detach() {

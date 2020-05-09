@@ -31,6 +31,7 @@ import org.nd4j.jita.allocator.tad.DeviceTADManager;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -1675,224 +1676,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
-    public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
-        DataBuffer buffer = input.data();
-
-        int numThreads = 1024;
-        int numBlocks = (int) (buffer.length() / numThreads + (buffer.length() % numThreads == 0 ? 0 : 1));
-
-        val context = AtomicAllocator.getInstance().getDeviceContext();
-
-        DataBuffer blocksBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks+1, true) : Nd4j.getDataBufferFactory().createInt(numBlocks+1, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-
-        if (extraz.get() == null)
-            extraz.set(new PointerPointer(32));
-
-        val extras = extraz.get().put(1, context.getOldStream());
-
-        ((BaseCudaDataBuffer) buffer).getOpaqueDataBuffer().syncToSpecial();
-
-
-        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1(extras,
-                AtomicAllocator.getInstance().getPointer(buffer),
-                (LongPointer) AtomicAllocator.getInstance().getHostPointer(input.shapeInfoDataBuffer()),
-                buffer.length(),
-                (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer),
-                (float) threshold);
-
-        AtomicAllocator.getInstance().getAllocationPoint(blocksBuffer).tickDeviceWrite();
-
-
-        int numMatches = blocksBuffer.getInt(0);
-
-        // special case here, nothing to update
-        if (numMatches < 2)
-            return null;
-
-        if (boundary != null && numMatches > boundary)  {
-            numMatches = boundary;
-            blocksBuffer.put(0, numMatches);
-        }
-
-        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(4+numMatches, false) : Nd4j.getDataBufferFactory().createInt(4+numMatches, false, Nd4j.getMemoryManager().getCurrentWorkspace());
-
-        encodedBuffer.put(0, numMatches);
-        encodedBuffer.put(1, (int) buffer.length());
-        encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
-
-        encodedBuffer.put(3, ThresholdCompression.FLEXIBLE_ENCODING);
-
-        ((BaseCudaDataBuffer) encodedBuffer).getOpaqueDataBuffer().syncToSpecial();
-
-
-        int prefixThreads = 512;
-        int numElts = numBlocks;
-        int level = 0;
-        List<DataBuffer> buffers = new ArrayList<>();
-
-        // here we just calculate number of sumBlock arrays
-        do {
-            int numPrefixBlocks = Math.max(1, (int)Math.ceil((float)numElts / (2.0f * prefixThreads)));
-            if (numBlocks > 1) {
-                level++;
-            }
-            numElts = numPrefixBlocks;
-        } while (numElts > 1);
-
-        long[] pointers = new long[level];
-
-        level = 0;
-        numElts = numBlocks;
-
-        //  allocating temp buffers for prefux sum
-        DataBuffer tempX = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createDouble(pointers.length, false) : Nd4j.getDataBufferFactory().createDouble(pointers.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
-
-        do {
-            int numPrefixBlocks = Math.max(1, (int)Math.ceil((float)numElts / (2.0f * prefixThreads)));
-            if (numPrefixBlocks > 1) {
-                DataBuffer bf = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numPrefixBlocks, false) : Nd4j.getDataBufferFactory().createInt(numPrefixBlocks, false, Nd4j.getMemoryManager().getCurrentWorkspace());
-
-                buffers.add(bf);
-
-                pointers[level++] = AtomicAllocator.getInstance().getPointer(bf).address();
-            }
-            numElts = numPrefixBlocks;
-        } while (numElts > 1);
-
-
-        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(pointers), pointers.length * 8, 0);
-
-        extras.put(2, AtomicAllocator.getInstance().getPointer(tempX));
-
-        DataBuffer offsetsBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks, true) : Nd4j.getDataBufferFactory().createInt(numBlocks, true, Nd4j.getMemoryManager().getCurrentWorkspace());
-
-        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP2Int(extras, (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), numBlocks, (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer) );
-        AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickDeviceWrite();
-
-
-        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3(extras, AtomicAllocator.getInstance().getPointer(buffer), (LongPointer) AtomicAllocator.getInstance().getHostPointer(input.shapeInfoDataBuffer()), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
-
-        AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickDeviceWrite();
-        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
-
-        return Nd4j.createArrayFromShapeBuffer(encodedBuffer, input.shapeInfoDataBuffer());
-    }
-
-
-    @Override
-    public INDArray thresholdEncode(INDArray input, double threshold) {
-        return thresholdEncode(input, threshold, null);
-    }
-
-    @Override
-    public INDArray thresholdDecode(INDArray encoded, INDArray target) {
-        DataBuffer buffer = encoded.data();
-
-        if (buffer.dataType() != DataType.INT)
-            throw new UnsupportedOperationException();
-
-        long compressedLength = buffer.getInt(0);
-        long originalLength = buffer.getInt(1);
-
-        if (target.length() != originalLength)
-            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.length()+"]");
-
-        DataBuffer result = target.data();
-
-        val context = AtomicAllocator.getInstance().getDeviceContext();
-
-        if (extraz.get() == null)
-            extraz.set(new PointerPointer(32));
-
-        PointerPointer extras = extraz.get().put(1, context.getOldStream());
-
-        nativeOps.decodeThreshold(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, AtomicAllocator.getInstance().getPointer(result), (LongPointer) AtomicAllocator.getInstance().getHostPointer(target.shapeInfoDataBuffer()));
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        AtomicAllocator.getInstance().getAllocationPoint(result).tickDeviceWrite();
-
-        return target;
-    }
-
-
-    @Override
-    public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
-        long length = indArray.length();
-        long tLen = target.data().length();
-
-        if (tLen != (length / 16 + 5))
-            throw new ND4JIllegalStateException("Length of target array should be " + (length / 16 + 5));
-
-        if (target.data().dataType() != DataType.INT)
-            throw new ND4JIllegalStateException("Target array should have INT dataType");
-
-        DataBuffer buffer = target.data();
-        buffer.put(0, (int) length);
-        buffer.put(1, (int) length);
-        buffer.put(2, Float.floatToIntBits((float) threshold));
-
-        // format id
-        buffer.put(3, ThresholdCompression.BITMAP_ENCODING);
-
-        val context = AtomicAllocator.getInstance().getDeviceContext();
-
-        if (extraz.get() == null)
-            extraz.set(new PointerPointer(32));
-
-
-        PointerPointer extras = extraz.get().put(
-                AtomicAllocator.getInstance().getHostPointer(indArray),
-                context.getOldStream(),
-                context.getBufferScalar(),
-                context.getBufferReduction()
-        );
-
-
-        val src = AtomicAllocator.getInstance().getPointer(indArray, context);
-        val dst = (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context);
-        ((BaseCudaDataBuffer) buffer).getOpaqueDataBuffer().syncToSpecial();
-
-        long val = nativeOps.encodeBitmap(extras,
-                    src, (LongPointer) AtomicAllocator.getInstance().getHostPointer(indArray.shapeInfoDataBuffer()),
-                    length,
-                    dst,
-                    (float) threshold);
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
-
-        return val;
-    }
-
-    @Override
-    public INDArray bitmapDecode(INDArray encoded, INDArray target) {
-
-        val context = AtomicAllocator.getInstance().getDeviceContext();
-
-        if (extraz.get() == null)
-            extraz.set(new PointerPointer(32));
-
-
-        PointerPointer extras = extraz.get().put(
-                AtomicAllocator.getInstance().getHostPointer(target),
-                context.getOldStream(),
-                context.getBufferScalar(),
-                context.getBufferReduction());
-
-        nativeOps.decodeBitmap(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.length(), AtomicAllocator.getInstance().getPointer(target, context), (LongPointer) AtomicAllocator.getInstance().getHostPointer(target.shapeInfoDataBuffer()));
-
-        if (nativeOps.lastErrorCode() != 0)
-            throw new RuntimeException(nativeOps.lastErrorMessage());
-
-        return target;
-    }
-
-
-    @Override
     public synchronized Map<String, CustomOpDescriptor> getCustomOperations() {
         if(customOps == null) {
             String list = nativeOps.getAllCustomOps();
@@ -1974,6 +1757,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val inputArgs = opContext != null ? opContext.getInputArrays() : op.inputArguments();
         int cnt= 0;
         for (val in: inputArgs) {
+            // TODO: once we implement Context-based shape function call this method should be removed
+            val loc = Nd4j.getAffinityManager().getActiveLocation(in);
+            if (loc != AffinityManager.Location.DEVICE && loc != AffinityManager.Location.EVERYWHERE)
+                Nd4j.getAffinityManager().ensureLocation(in, AffinityManager.Location.DEVICE);
+
             // NOT A TYPO: shape functions work on host side only
             if (!in.isEmpty()) {
                 inputBuffers.put(cnt, in.data().addressPointer());

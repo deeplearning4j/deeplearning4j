@@ -44,8 +44,8 @@ namespace sd {
         DECLARE_SHAPE_FN(qr) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong* shapeQ;
-            Nd4jLong* shapeR;
+            Nd4jLong const* shapeQ;
+            Nd4jLong const* shapeR;
             int targetRank = shape::rank(inShape); // last two dimensions will be reduced to scalar
 
             auto fullMatricies = false;

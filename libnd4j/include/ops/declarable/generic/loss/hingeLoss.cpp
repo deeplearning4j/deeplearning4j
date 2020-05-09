@@ -48,7 +48,7 @@ namespace sd {
             // perform weights broadcasting/tile to logits if needed
             auto weightsBroad = weights;
             if(!weights->isScalar() && !weights->isSameShape(logits))
-                weightsBroad = new NDArray(weights->tileToShape(logits->getShapeInfo()));
+                weightsBroad = new NDArray(weights->tileToShape(logits->shapeInfo()));
 
             // We first need to convert binary labels to -1/1 labels (as floats)
             NDArray E = 1.f - (*labels * 2.f - 1.f) * (*logits);
@@ -125,7 +125,7 @@ namespace sd {
             REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || ShapeUtils::areShapesBroadcastable(weightsShapeInfo, labelsShapeInfo), 0, "HINGE_LOSS OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!", ShapeUtils::shapeAsString(weightsShapeInfo).c_str(), ShapeUtils::shapeAsString(labelsShapeInfo).c_str());
 
             DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
-            Nd4jLong* outShapeInfo = nullptr;
+            Nd4jLong const* outShapeInfo = nullptr;
 
             if(INT_ARG(0) != 0) 			// in this case output is scalar
                 outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
@@ -167,7 +167,7 @@ namespace sd {
             // perform weights broadcasting/tile to labels if needed
             auto weightsBroad = weights;
             if(!weights->isScalar() && !weights->isSameShape(logits))
-                weightsBroad = new NDArray(weights->tileToShape(logits->getShapeInfo()));
+                weightsBroad = new NDArray(weights->tileToShape(logits->shapeInfo()));
 
             // We first need to convert binary labels to -1/1 labels (as floats)
             NDArray z = (*labels * 2.f - 1.f);
@@ -176,7 +176,7 @@ namespace sd {
             E.applyScalar(scalar::RELU, 0.0f, E);
             // turn E into gradient mask
 
-            NDArray gradientMask(E.getShapeInfo(), block.getWorkspace());
+            NDArray gradientMask(E.shapeInfo(), block.getWorkspace());
             E.applyTransform(sd::transform::Sign, gradientMask);
 
             dLdp->assign(-z * gradientMask);
@@ -192,7 +192,7 @@ namespace sd {
                     if(weights->isScalar())
                         dLdw->assign(E.reduceNumber(reduce::Sum));
                     else if(weights != weightsBroad) {
-                        std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+                        std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
                         E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                     }
                     else
@@ -221,7 +221,7 @@ namespace sd {
                         if(weights->isScalar())
                             *dLdw = 0.;
                         else if(weights != weightsBroad) {
-                            std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+                            std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
                             ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                         }
                         else
@@ -250,7 +250,7 @@ namespace sd {
                         if(weights->isScalar())
                             dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
                         else if(weights != weightsBroad) {
-                            std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+                            std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
                             E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
                             *dLdw /= numOfNonZeroWeightsScalar;
                         }

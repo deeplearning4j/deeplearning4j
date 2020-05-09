@@ -28,13 +28,13 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-__global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
-											void *vy, Nd4jLong *yShapeInfo,
-											void *vz, Nd4jLong *zShapeInfo,
+__global__ static void pairwiseSimpleShaped(void const* vx, Nd4jLong const* xShapeInfo,
+											void const* vy, Nd4jLong const* yShapeInfo,
+											void *vz, Nd4jLong const* zShapeInfo,
 											void *vextraParams) {
 
-	auto x = reinterpret_cast<X*>(vx);
-	auto y = reinterpret_cast<X*>(vy);
+	auto x = reinterpret_cast<X const*>(vx);
+	auto y = reinterpret_cast<X const*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
 	auto extraParams = reinterpret_cast<X*>(vextraParams);
 
@@ -92,9 +92,9 @@ namespace pairwise_transforms {
 template<typename X, typename Z>
 template<typename OpType>
 void _CUDA_H PairWiseBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream,
-														void *vx, Nd4jLong *xShapeInfo,
-														void *vy, Nd4jLong *yShapeInfo,
-														void *vz, Nd4jLong *zShapeInfo,
+														void const* vx, Nd4jLong const* xShapeInfo,
+														void const* vy, Nd4jLong const* yShapeInfo,
+														void *vz, Nd4jLong const* zShapeInfo,
 														void *vextraParams){
 
 	pairwiseSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams);
@@ -103,7 +103,7 @@ void _CUDA_H PairWiseBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cu
 
 ////////////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
-void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams) {
+void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void const* vx, Nd4jLong const* xShapeInfo, void const* vy, Nd4jLong const* yShapeInfo, void *vz, Nd4jLong const* zShapeInfo, void *vextraParams) {
     auto xType = sd::DataTypeUtils::fromT<X>();
     auto yType = sd::DataTypeUtils::fromT<Y>();
 

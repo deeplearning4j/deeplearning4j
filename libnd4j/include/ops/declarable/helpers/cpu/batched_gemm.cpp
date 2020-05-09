@@ -72,9 +72,9 @@ void bgemm_(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, st
         }
 
         if (std::is_same<T, double>::value) {
-            BlasHelper::getInstance()->dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *) alphas->getBuffer(), (double **) buffersA.data(), tldA, (double **) buffersB.data(), tldB, (double *) betas->getBuffer(),(double **)  buffersC.data(), tldC, vA.size(), tsize);
+            BlasHelper::getInstance()->dgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (double *) alphas->buffer(), (double **) buffersA.data(), tldA, (double **) buffersB.data(), tldB, (double *) betas->buffer(),(double **)  buffersC.data(), tldC, vA.size(), tsize);
         } else if (std::is_same<T, float >::value) {
-            BlasHelper::getInstance()->sgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (float *) alphas->getBuffer(), (float **) buffersA.data(), tldA, (float **) buffersB.data(), tldB, (float *) betas->getBuffer(), (float **) buffersC.data(), tldC, vA.size(), tsize);
+            BlasHelper::getInstance()->sgemmBatched()(CblasColMajor, tA, tB, tM, tN, tK, (float *) alphas->buffer(), (float **) buffersA.data(), tldA, (float **) buffersB.data(), tldB, (float *) betas->buffer(), (float **) buffersC.data(), tldC, vA.size(), tsize);
         }
 
         // release temporary arrays

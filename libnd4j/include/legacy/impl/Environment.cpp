@@ -207,7 +207,7 @@ namespace sd {
     }
 
     void Environment::setMaxSpecialyMemory(uint64_t maxBytes) {
-        _maxTotalSpecialMemory;
+        _maxTotalSpecialMemory = maxBytes;
     }
 
     void Environment::setMaxDeviceMemory(uint64_t maxBytes) {

@@ -36,8 +36,8 @@ Nd4jLong checkIndices_(const NDArray& indices, const NDArray& output, const int 
 
     const auto x = indices.bufferAsT<T>();
 
-    const auto xShapeInfo = indices.getShapeInfo();
-    const auto zShapeInfo = output.getShapeInfo();
+    const auto xShapeInfo = indices.shapeInfo();
+    const auto zShapeInfo = output.shapeInfo();
 
     const auto xRank = indices.rankOf();
 

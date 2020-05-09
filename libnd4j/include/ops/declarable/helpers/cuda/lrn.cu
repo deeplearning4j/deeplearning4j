@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static _CUDA_G void lrnKernel(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, void *vz, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets, Nd4jLong numTads, Nd4jLong tadLength, int depth, double bias, double alpha, double beta) {
+    static _CUDA_G void lrnKernel(void *vx, Nd4jLong  const*xTadShapeInfo, Nd4jLong  const*xTadOffsets, void *vz, Nd4jLong  const*zTadShapeInfo, Nd4jLong  const*zTadOffsets, Nd4jLong numTads, Nd4jLong tadLength, int depth, double bias, double alpha, double beta) {
         extern __shared__ char sharedChar[];
         T* shared = reinterpret_cast<T*>(sharedChar);
 
@@ -63,7 +63,7 @@ namespace helpers {
     }
 
     template <typename X, typename Z>
-    static _CUDA_G void lrnBPKernel(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, void *vz, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets, Nd4jLong numTads, Nd4jLong tadLength, int depth, double bias, double alpha, double beta) {
+    static _CUDA_G void lrnBPKernel(void const* vx, Nd4jLong const* xTadShapeInfo, Nd4jLong const* xTadOffsets, void *vz, Nd4jLong const* zTadShapeInfo, Nd4jLong const* zTadOffsets, Nd4jLong numTads, Nd4jLong tadLength, int depth, double bias, double alpha, double beta) {
         extern __shared__ char sharedChar[];
         X* sharedX = reinterpret_cast<X*>(sharedChar);
         Z* sharedY = reinterpret_cast<Z*>(sharedX + blockDim.x);
@@ -82,7 +82,7 @@ namespace helpers {
 
 
         for (uint i = blockIdx.x; i < numTads; i += gridDim.x) {
-            auto x = reinterpret_cast<X*>(vx) + xTadOffsets[i];
+            auto x = reinterpret_cast<X const*>(vx) + xTadOffsets[i];
             auto z = reinterpret_cast<Z*>(vz) + zTadOffsets[i];
 
             const uint begin = sd::math::nd4j_max<int>(0, threadIdx.x - depth);
@@ -116,8 +116,8 @@ namespace helpers {
     template <typename X, typename Z>
     static void lrnBP_(sd::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
         auto rank = input.rankOf();
-        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {rank - 1});
-        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), {rank - 1});
+        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), {rank - 1});
+        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(gradI.shapeInfo(), {rank - 1});
 
         const auto tadLength = shape::length(packX.primaryShapeInfo());
         const int numBlocks = sd::math::nd4j_min<Nd4jLong>(1024, packX.numberOfTads());
@@ -126,7 +126,7 @@ namespace helpers {
         if (tadLength > 1024 || tadLength < 1)
             throw std::runtime_error("LRN: tadLength > 1024 isn't implemented yet");
 
-        lrnBPKernel<X, Z><<<numBlocks, numThreads, numThreads * sizeof(X) + numThreads * sizeof(Z) + 1024, *block.launchContext()->getCudaStream()>>>(input.getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), gradI.specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), packX.numberOfTads(),  tadLength, depth, bias, alpha, beta);
+        lrnBPKernel<X, Z><<<numBlocks, numThreads, numThreads * sizeof(X) + numThreads * sizeof(Z) + 1024, *block.launchContext()->getCudaStream()>>>(input.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), gradI.specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), packX.numberOfTads(),  tadLength, depth, bias, alpha, beta);
 
         gradI.tickWriteDevice();
         gradI *= gradO;

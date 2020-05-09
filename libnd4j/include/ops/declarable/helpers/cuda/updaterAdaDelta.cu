@@ -101,7 +101,7 @@ linkage void adaDeltaUpdaterCudaLauncher(const int blocksPerGrid, const int thre
     const T rho = static_cast<T>(dRho);
     const T epsilon = static_cast<T>(dEpsilon);
 
-    adaDeltaUpdaterCuda<T> << <blocksPerGrid, threadsPerBlock, 256, * stream >> > (vx, xShapeInfo, vinMsg, inMsgShapeInfo, 
+    adaDeltaUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, * stream>>>(vx, xShapeInfo, vinMsg, inMsgShapeInfo,
         vinMsdx, inMsdxShapeInfo, vz, zShapeInfo, vstMsg, stMsgShapeInfo, vstMsdx, stMsdxShapeInfo, rho, epsilon);
 }
 
@@ -115,10 +115,10 @@ void updaterAdaDelta(sd::LaunchContext* context, const NDArray& gradient, const 
     const int blocksPerGrid = (gradient.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
     NDArray::prepareSpecialUse({ &update, &stateMsg, &stateMsdx }, { &gradient, &initStateMsg, &initStateMsdx });
-    BUILD_SINGLE_SELECTOR(gradient.dataType(), adaDeltaUpdaterCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.getSpecialBuffer(), gradient.getSpecialShapeInfo(),
-        initStateMsg.getSpecialBuffer(), initStateMsg.getSpecialShapeInfo(), initStateMsdx.getSpecialBuffer(), initStateMsdx.getSpecialShapeInfo(),
-        update.getSpecialBuffer(), update.getSpecialShapeInfo(),stateMsg.getSpecialBuffer(), stateMsg.getSpecialShapeInfo(), 
-        stateMsdx.getSpecialBuffer(), stateMsdx.getSpecialShapeInfo(), dRho, dEpsilon), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(gradient.dataType(), adaDeltaUpdaterCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
+        initStateMsg.specialBuffer(), initStateMsg.specialShapeInfo(), initStateMsdx.specialBuffer(), initStateMsdx.specialShapeInfo(),
+        update.specialBuffer(), update.specialShapeInfo(),stateMsg.specialBuffer(), stateMsg.specialShapeInfo(),
+        stateMsdx.specialBuffer(), stateMsdx.specialShapeInfo(), dRho, dEpsilon), FLOAT_TYPES);
     NDArray::registerSpecialUse({ &update, &stateMsg, &stateMsdx }, { &gradient, &initStateMsg, &initStateMsdx });
 
     manager.synchronize();

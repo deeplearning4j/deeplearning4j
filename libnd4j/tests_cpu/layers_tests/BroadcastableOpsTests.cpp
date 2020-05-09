@@ -195,8 +195,8 @@ TEST_F(BroadcastableOpsTests, Test_Shape_1) {
 TEST_F(BroadcastableOpsTests, Test_Shape_2) {
     sd::ops::minimum op;
 
-    Nd4jLong shapeX[] = {2, 1, 1, 1, 1, 8192, 1, 99};
-    Nd4jLong shapeY[] = {2, 2, 5, 5, 1, 8192, 1, 99};
+    const Nd4jLong shapeX[] = {2, 1, 1, 1, 1, 8192, 1, 99};
+    const Nd4jLong shapeY[] = {2, 2, 5, 5, 1, 8192, 1, 99};
     ShapeList inputShape({shapeX, shapeY});
     VariableSpace vs;
     Context ctx(1, &vs, false);
@@ -213,8 +213,8 @@ TEST_F(BroadcastableOpsTests, Test_Shape_2) {
 TEST_F(BroadcastableOpsTests, Test_Shape_3) {
     sd::ops::minimum op;
 
-    Nd4jLong shapeX[] = {2, 5, 3, 1, 1, 8192, 1, 99};
-    Nd4jLong shapeY[] = {2, 1, 3, 3, 1, 8192, 1, 99};
+    const Nd4jLong shapeX[] = {2, 5, 3, 1, 1, 8192, 1, 99};
+    const Nd4jLong shapeY[] = {2, 1, 3, 3, 1, 8192, 1, 99};
     ShapeList inputShape({shapeX, shapeY});
     VariableSpace vs;
     Context ctx(1, &vs, false);
@@ -231,8 +231,8 @@ TEST_F(BroadcastableOpsTests, Test_Shape_3) {
 TEST_F(BroadcastableOpsTests, Test_Shape_4) {
     sd::ops::minimum op;
 
-    Nd4jLong shapeX[] = {2, 5, 3, 1, 1, 8192, 1, 99};
-    Nd4jLong shapeY[] = {2, 5, 1, 1, 1, 8192, 1, 99};
+    const Nd4jLong shapeX[] = {2, 5, 3, 1, 1, 8192, 1, 99};
+    const Nd4jLong shapeY[] = {2, 5, 1, 1, 1, 8192, 1, 99};
     ShapeList inputShape({shapeX, shapeY});
     VariableSpace vs;
     Context ctx(1, &vs, false);
@@ -250,9 +250,9 @@ TEST_F(BroadcastableOpsTests, Test_Shape_4) {
 TEST_F(BroadcastableOpsTests, Test_Shape_5) {
     sd::ops::minimum op;
 
-    Nd4jLong shapeX[] = {3, 2, 1, 3, 3, 3, 1, 8192, 1, 99};
-    Nd4jLong shapeY[] = {2, 4, 3, 3, 1, 8192, 1, 99};
-    Nd4jLong shapeE[] = {3, 2, 4, 3, 12, 3, 1, 8192, 1, 99};
+    const Nd4jLong shapeX[] = {3, 2, 1, 3, 3, 3, 1, 8192, 1, 99};
+    const Nd4jLong shapeY[] = {2, 4, 3, 3, 1, 8192, 1, 99};
+    const Nd4jLong shapeE[] = {3, 2, 4, 3, 12, 3, 1, 8192, 1, 99};
     ShapeList inputShape({shapeX, shapeY});
     VariableSpace vs;
     Context ctx(1, &vs, false);

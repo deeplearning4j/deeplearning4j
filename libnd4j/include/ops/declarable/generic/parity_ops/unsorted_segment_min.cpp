@@ -43,7 +43,7 @@ namespace sd {
 
         DECLARE_SHAPE_FN(unsorted_segment_min) {
 
-            Nd4jLong* in = inputShape->at(0);
+            auto in = inputShape->at(0);
             int outRank = shape::rank(in);
             Nd4jLong* outputShape = nullptr;
             Nd4jLong numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : INT_ARG(0);
@@ -83,8 +83,8 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(unsorted_segment_min_bp){
-            Nd4jLong* in = inputShape->at(0);
-            Nd4jLong* inIdx = inputShape->at(1);
+            auto in = inputShape->at(0);
+            auto inIdx = inputShape->at(1);
 
             Nd4jLong* outShape;
             Nd4jLong* outIndex;

@@ -147,10 +147,10 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
     cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX2), x2.lengthOf() * x2.sizeOfT()); 		   		         	 ASSERT_EQ(0, cudaResult);    
     cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX3), x3.lengthOf() * x3.sizeOfT()); 		   		         	 ASSERT_EQ(0, cudaResult);    
 	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZ), scalar.lengthOf() * scalar.sizeOfT()); 				         ASSERT_EQ(0, cudaResult);
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX1ShapeInfo), shape::shapeInfoByteLength(x1.getShapeInfo()));    ASSERT_EQ(0, cudaResult);
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX2ShapeInfo), shape::shapeInfoByteLength(x2.getShapeInfo()));    ASSERT_EQ(0, cudaResult);
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX3ShapeInfo), shape::shapeInfoByteLength(x3.getShapeInfo()));    ASSERT_EQ(0, cudaResult);
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZShapeInfo), shape::shapeInfoByteLength(scalar.getShapeInfo())); ASSERT_EQ(0, cudaResult);	
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX1ShapeInfo), shape::shapeInfoByteLength(x1.shapeInfo()));    ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX2ShapeInfo), shape::shapeInfoByteLength(x2.shapeInfo()));    ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX3ShapeInfo), shape::shapeInfoByteLength(x3.shapeInfo()));    ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZShapeInfo), shape::shapeInfoByteLength(scalar.shapeInfo())); ASSERT_EQ(0, cudaResult);
 
     cudaStream_t stream;
 	cudaResult = cudaStreamCreate(&stream); 
@@ -164,10 +164,10 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
 	cudaMemcpyAsync(dX1, x1.buffer(), x1.lengthOf() * x1.sizeOfT(), cudaMemcpyHostToDevice, stream);
 	cudaMemcpyAsync(dX2, x2.buffer(), x2.lengthOf() * x2.sizeOfT(), cudaMemcpyHostToDevice, stream);
 	cudaMemcpyAsync(dX3, x3.buffer(), x3.lengthOf() * x3.sizeOfT(), cudaMemcpyHostToDevice, stream);
-	cudaMemcpyAsync(dX1ShapeInfo, x1.getShapeInfo(), shape::shapeInfoByteLength(x1.getShapeInfo()), cudaMemcpyHostToDevice, stream);
-	cudaMemcpyAsync(dX2ShapeInfo, x2.getShapeInfo(), shape::shapeInfoByteLength(x2.getShapeInfo()), cudaMemcpyHostToDevice, stream);
-	cudaMemcpyAsync(dX3ShapeInfo, x3.getShapeInfo(), shape::shapeInfoByteLength(x3.getShapeInfo()), cudaMemcpyHostToDevice, stream);
-	cudaMemcpyAsync(dZShapeInfo, scalar.getShapeInfo(), shape::shapeInfoByteLength(scalar.getShapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX1ShapeInfo, x1.shapeInfo(), shape::shapeInfoByteLength(x1.shapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX2ShapeInfo, x2.shapeInfo(), shape::shapeInfoByteLength(x2.shapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX3ShapeInfo, x3.shapeInfo(), shape::shapeInfoByteLength(x3.shapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dZShapeInfo, scalar.shapeInfo(), shape::shapeInfoByteLength(scalar.shapeInfo()), cudaMemcpyHostToDevice, stream);
 	
 	void* reductionPointer = nullptr;
 	cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer), 1024*1024);
@@ -181,10 +181,10 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
 	
     NativeOpExecutioner::execIndexReduceScalar(&lc,
     											sd::indexreduce::IndexAbsoluteMax,
-    											x1.buffer(), x1.getShapeInfo(),
+    											x1.buffer(), x1.shapeInfo(),
     	                                       	dX1, dX1ShapeInfo, 
     	                                       	nullptr, 
-    	                                       	scalar.buffer(), scalar.getShapeInfo(),
+    	                                       	scalar.buffer(), scalar.shapeInfo(),
     	                                       	dZ, dZShapeInfo);
 
     cudaResult = cudaStreamSynchronize(stream); 
@@ -203,10 +203,10 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
     
     NativeOpExecutioner::execIndexReduceScalar(&lc,
     											sd::indexreduce::IndexAbsoluteMax,
-    											nullptr, x2.getShapeInfo(),
+    											nullptr, x2.shapeInfo(),
     	                                       	dX2, dX2ShapeInfo, 
     	                                       	nullptr, 
-    	                                       	nullptr, scalar.getShapeInfo(),
+    	                                       	nullptr, scalar.shapeInfo(),
     	                                       	dZ, dZShapeInfo);
 
     cudaResult = cudaStreamSynchronize(stream); 
@@ -223,10 +223,10 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
 
     NativeOpExecutioner::execIndexReduceScalar(&lc, 
     											sd::indexreduce::IndexAbsoluteMax,
-    											nullptr, x3.getShapeInfo(),
+    											nullptr, x3.shapeInfo(),
     	                                       	dX3, dX3ShapeInfo, 
     	                                       	nullptr, 
-    	                                       	nullptr, scalar.getShapeInfo(),
+    	                                       	nullptr, scalar.shapeInfo(),
     	                                       	dZ, dZShapeInfo);
 
     cudaResult = cudaStreamSynchronize(stream); 
@@ -279,10 +279,10 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
     cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX4), x4.lengthOf() * x4.sizeOfT()); 		   		         	 	ASSERT_EQ(0, cudaResult);
 	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZ1), scalar1.lengthOf() * scalar1.sizeOfT());			         	ASSERT_EQ(0, cudaResult);
 	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZ2), scalar2.lengthOf() * scalar2.sizeOfT());			         	ASSERT_EQ(0, cudaResult);
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX1ShapeInfo), shape::shapeInfoByteLength(x1.getShapeInfo()));    	ASSERT_EQ(0, cudaResult);
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX3ShapeInfo), shape::shapeInfoByteLength(x3.getShapeInfo()));    	ASSERT_EQ(0, cudaResult);
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZ1ShapeInfo), shape::shapeInfoByteLength(scalar1.getShapeInfo())); 	ASSERT_EQ(0, cudaResult);
-	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZ2ShapeInfo), shape::shapeInfoByteLength(scalar2.getShapeInfo())); 	ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX1ShapeInfo), shape::shapeInfoByteLength(x1.shapeInfo()));    	ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dX3ShapeInfo), shape::shapeInfoByteLength(x3.shapeInfo()));    	ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZ1ShapeInfo), shape::shapeInfoByteLength(scalar1.shapeInfo())); 	ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaMalloc(reinterpret_cast<void **>(&dZ2ShapeInfo), shape::shapeInfoByteLength(scalar2.shapeInfo())); 	ASSERT_EQ(0, cudaResult);
 
     cudaStream_t stream;
 	cudaResult = cudaStreamCreate(&stream); 
@@ -299,10 +299,10 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
 	cudaMemcpyAsync(dX2, x2.buffer(), x2.lengthOf() * x2.sizeOfT(), cudaMemcpyHostToDevice, stream);
 	cudaMemcpyAsync(dX3, x3.buffer(), x3.lengthOf() * x3.sizeOfT(), cudaMemcpyHostToDevice, stream);
 	cudaMemcpyAsync(dX4, x4.buffer(), x4.lengthOf() * x4.sizeOfT(), cudaMemcpyHostToDevice, stream);
-	cudaMemcpyAsync(dX1ShapeInfo, x1.getShapeInfo(), shape::shapeInfoByteLength(x1.getShapeInfo()), cudaMemcpyHostToDevice, stream);	
-	cudaMemcpyAsync(dX3ShapeInfo, x3.getShapeInfo(), shape::shapeInfoByteLength(x3.getShapeInfo()), cudaMemcpyHostToDevice, stream);
-	cudaMemcpyAsync(dZ1ShapeInfo, scalar1.getShapeInfo(), shape::shapeInfoByteLength(scalar1.getShapeInfo()), cudaMemcpyHostToDevice, stream);
-	cudaMemcpyAsync(dZ2ShapeInfo, scalar2.getShapeInfo(), shape::shapeInfoByteLength(scalar2.getShapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX1ShapeInfo, x1.shapeInfo(), shape::shapeInfoByteLength(x1.shapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dX3ShapeInfo, x3.shapeInfo(), shape::shapeInfoByteLength(x3.shapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dZ1ShapeInfo, scalar1.shapeInfo(), shape::shapeInfoByteLength(scalar1.shapeInfo()), cudaMemcpyHostToDevice, stream);
+	cudaMemcpyAsync(dZ2ShapeInfo, scalar2.shapeInfo(), shape::shapeInfoByteLength(scalar2.shapeInfo()), cudaMemcpyHostToDevice, stream);
 
 	/***************************************/
 
@@ -316,7 +316,7 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
 
 	/***************************************/
 	
-    NativeOpExecutioner::execReduce3Scalar(&lc, sd::reduce3::Dot,nullptr, x1.getShapeInfo(),dX1, dX1ShapeInfo, nullptr, nullptr, x2.getShapeInfo(),dX2, dX1ShapeInfo,nullptr, scalar1.getShapeInfo(),dZ1, dZ1ShapeInfo);
+    NativeOpExecutioner::execReduce3Scalar(&lc, sd::reduce3::Dot,nullptr, x1.shapeInfo(),dX1, dX1ShapeInfo, nullptr, nullptr, x2.shapeInfo(),dX2, dX1ShapeInfo,nullptr, scalar1.shapeInfo(),dZ1, dZ1ShapeInfo);
 
     cudaResult = cudaStreamSynchronize(stream);     
     ASSERT_EQ(0, cudaResult);
@@ -333,7 +333,7 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
 
     /***************************************/
     
-    NativeOpExecutioner::execReduce3Scalar(&lc, sd::reduce3::Dot,nullptr, x3.getShapeInfo(),dX3, dX3ShapeInfo, nullptr, nullptr, x4.getShapeInfo(),dX4, dX3ShapeInfo,nullptr, scalar2.getShapeInfo(),dZ2, dZ2ShapeInfo);
+    NativeOpExecutioner::execReduce3Scalar(&lc, sd::reduce3::Dot,nullptr, x3.shapeInfo(),dX3, dX3ShapeInfo, nullptr, nullptr, x4.shapeInfo(),dX4, dX3ShapeInfo,nullptr, scalar2.shapeInfo(),dZ2, dZ2ShapeInfo);
 
     cudaResult = cudaStreamSynchronize(stream); 
     ASSERT_EQ(0, cudaResult);
@@ -387,10 +387,10 @@ TEST_F(CudaBasicsTests1, execReduce3_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 
-								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								nullptr, nullptr, nullptr, nullptr);
 
@@ -436,10 +436,10 @@ TEST_F(CudaBasicsTests1, execReduce3_2) {
 		
 	// call cuda kernel which calculates result	
 	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 
-								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								nullptr, nullptr, nullptr, nullptr);
 
@@ -471,13 +471,13 @@ TEST_F(CudaBasicsTests1, execReduce3_3) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
     shape::TAD yTad;
-    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
+    yTad.init(y.shapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -502,10 +502,10 @@ TEST_F(CudaBasicsTests1, execReduce3_3) {
 		
 	// call cuda kernel which calculates result	
 	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 
-								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 								(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
@@ -537,13 +537,13 @@ TEST_F(CudaBasicsTests1, execReduce3_4) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
     shape::TAD yTad;
-    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
+    yTad.init(y.shapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -568,10 +568,10 @@ TEST_F(CudaBasicsTests1, execReduce3_4) {
 		
 	// call cuda kernel which calculates result	
 	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 
-								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 								(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
@@ -603,13 +603,13 @@ TEST_F(CudaBasicsTests1, execReduce3_5) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
     shape::TAD yTad;
-    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
+    yTad.init(y.shapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -634,10 +634,10 @@ TEST_F(CudaBasicsTests1, execReduce3_5) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduce3(&lc, sd::reduce3::Dot,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 
-								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 								(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
@@ -669,13 +669,13 @@ TEST_F(CudaBasicsTests1, execReduce3All_1) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
     shape::TAD yTad;
-    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
+    yTad.init(y.shapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -700,10 +700,10 @@ TEST_F(CudaBasicsTests1, execReduce3All_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduce3All(&lc, sd::reduce3::Dot,
-										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+										nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 										nullptr, 
-										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+										nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+										nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 										(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
@@ -735,13 +735,13 @@ TEST_F(CudaBasicsTests1, execReduce3All_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
     // evaluate yTad data
     shape::TAD yTad;
-    yTad.init(y.getShapeInfo(), dimensions.data(), dimensions.size());
+    yTad.init(y.shapeInfo(), dimensions.data(), dimensions.size());
     yTad.createTadOnlyShapeInfo();
     yTad.createOffsets();
 
@@ -766,10 +766,10 @@ TEST_F(CudaBasicsTests1, execReduce3All_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduce3All(&lc, sd::reduce3::Dot,
-										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+										nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 										nullptr, 
-										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+										nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+										nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 										(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
@@ -800,7 +800,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_1) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -823,9 +823,9 @@ TEST_F(CudaBasicsTests1, execIndexReduce_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execIndexReduce(&lc, sd::indexreduce::IndexMax,
-										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+										nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 										nullptr, 
-										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+										nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -861,7 +861,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -885,9 +885,9 @@ TEST_F(CudaBasicsTests1, execIndexReduce_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execIndexReduce(&lc, sd::indexreduce::IndexMax,
-										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+										nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 										nullptr, 
-										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+										nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -923,7 +923,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_3) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -946,9 +946,9 @@ TEST_F(CudaBasicsTests1, execIndexReduce_3) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execIndexReduce(&lc, sd::indexreduce::IndexMax,
-										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+										nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 										nullptr, 
-										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+										nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -986,9 +986,9 @@ TEST_F(CudaBasicsTests1, execScalar_1) {
 	
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execScalar(&lc, sd::scalar::Divide,
-									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
-									nullptr, scalar.getShapeInfo(), scalar.specialBuffer(), scalar.specialShapeInfo(), 
+									nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+									nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+									nullptr, scalar.shapeInfo(), scalar.specialBuffer(), scalar.specialShapeInfo(),
 									nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1021,9 +1021,9 @@ TEST_F(CudaBasicsTests1, execScalar_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execScalar(&lc, sd::scalar::CopyPws,
-									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
-									nullptr, scalar.getShapeInfo(), scalar.specialBuffer(), scalar.specialShapeInfo(), 
+									nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+									nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+									nullptr, scalar.shapeInfo(), scalar.specialBuffer(), scalar.specialShapeInfo(),
 									nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1053,7 +1053,7 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1076,10 +1076,10 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execScalar(&lc, sd::scalar::Divide,
-									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+									nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 									nullptr,
-									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-									nullptr, scalars.getShapeInfo(), scalars.specialBuffer(), scalars.specialShapeInfo(),
+									nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+									nullptr, scalars.shapeInfo(), scalars.specialBuffer(), scalars.specialShapeInfo(),
 									(int*)devicePtrs[0], dimensions.size(), 
 									(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 									nullptr, nullptr);
@@ -1116,9 +1116,9 @@ TEST_F(CudaBasicsTests1, execScalarBool_1) {
 	// call cuda kernel which calculates result
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execScalarBool(&lc, sd::scalar::GreaterThan,
-									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
-									nullptr, scalar.getShapeInfo(), scalar.specialBuffer(), scalar.specialShapeInfo(), 
+									nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+									nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+									nullptr, scalar.shapeInfo(), scalar.specialBuffer(), scalar.specialShapeInfo(),
 									nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1144,7 +1144,7 @@ TEST_F(CudaBasicsTests1, execScalarBool_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1166,10 +1166,10 @@ TEST_F(CudaBasicsTests1, execScalarBool_2) {
 			
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execScalarBool(&lc, sd::scalar::GreaterThan,
-									nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+									nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 									nullptr,
-									nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-									nullptr, scalars.getShapeInfo(), scalars.specialBuffer(), scalars.specialShapeInfo(),
+									nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+									nullptr, scalars.shapeInfo(), scalars.specialBuffer(), scalars.specialShapeInfo(),
 									(int*)devicePtrs[0], dimensions.size(), 
 									(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 									nullptr, nullptr);
@@ -1205,7 +1205,7 @@ TEST_F(CudaBasicsTests1, execBroadcast_1) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1227,9 +1227,9 @@ TEST_F(CudaBasicsTests1, execBroadcast_1) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execBroadcast(&lc, sd::broadcast::Add,
-										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+										nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+										nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+										nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 										nullptr, nullptr);
@@ -1265,7 +1265,7 @@ TEST_F(CudaBasicsTests1, execBroadcast_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1287,9 +1287,9 @@ TEST_F(CudaBasicsTests1, execBroadcast_2) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execBroadcast(&lc, sd::broadcast::Add,
-										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+										nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+										nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+										nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 										nullptr, nullptr);
@@ -1322,7 +1322,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_1) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1344,9 +1344,9 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_1) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execBroadcastBool(&lc, sd::broadcast::EqualTo,
-										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+										nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+										nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+										nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                                         nullptr,
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
@@ -1380,7 +1380,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1403,9 +1403,9 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_2) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execBroadcastBool(&lc, sd::broadcast::EqualTo,
-										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+										nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+										nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+										nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 										nullptr,
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
@@ -1447,9 +1447,9 @@ TEST_F(CudaBasicsTests1, execPairwiseTransform_1) {
 	
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execPairwiseTransform(&lc, sd::pairwise::Subtract,
-												nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-												nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-												nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+												nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+												nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+												nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 												nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1481,9 +1481,9 @@ TEST_F(CudaBasicsTests1, execPairwiseBoolTransform_1) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execPairwiseBoolTransform(&lc, sd::pairwise::EqualTo,
-													nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-													nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-													nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+													nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+													nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+													nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 													nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1515,8 +1515,8 @@ TEST_F(CudaBasicsTests1, execTransformFloat_1) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformFloat(&lc, sd::transform::Sqrt,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1545,8 +1545,8 @@ TEST_F(CudaBasicsTests1, execTransformFloat_2) {
 	
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformFloat(&lc, sd::transform::Sqrt,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1576,8 +1576,8 @@ TEST_F(CudaBasicsTests1, execTransformAny_1) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformAny(&lc, sd::transform::Assign,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1606,8 +1606,8 @@ TEST_F(CudaBasicsTests1, execTransformAny_2) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformAny(&lc, sd::transform::Assign,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1637,8 +1637,8 @@ TEST_F(CudaBasicsTests1, execTransformStrict_1) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformStrict(&lc, sd::transform::CubeDerivative,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1667,8 +1667,8 @@ TEST_F(CudaBasicsTests1, execTransformStrict_2) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformStrict(&lc, sd::transform::CubeDerivative,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1698,8 +1698,8 @@ TEST_F(CudaBasicsTests1, execTransformSame_1) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformSame(&lc, sd::transform::Square,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1728,8 +1728,8 @@ TEST_F(CudaBasicsTests1, execTransformSame_2) {
 	
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformSame(&lc, sd::transform::Square,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1759,8 +1759,8 @@ TEST_F(CudaBasicsTests1, execTransformBool_1) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformBool(&lc, sd::transform::IsPositive,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1789,8 +1789,8 @@ TEST_F(CudaBasicsTests1, execTransformBool_2) {
 
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execTransformBool(&lc, sd::transform::IsPositive,
-		nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-		nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+		nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+		nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -1816,7 +1816,7 @@ TEST_F(CudaBasicsTests1, execReduceFloat_1) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1838,9 +1838,9 @@ TEST_F(CudaBasicsTests1, execReduceFloat_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceFloat(&lc, sd::reduce::Mean,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 					(int*)devicePtrs[0], dimensions.size(), 
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -1870,7 +1870,7 @@ TEST_F(CudaBasicsTests1, execReduceFloat_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1892,9 +1892,9 @@ TEST_F(CudaBasicsTests1, execReduceFloat_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceFloat(&lc, sd::reduce::Mean,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 					(int*)devicePtrs[0], dimensions.size(), 
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -1925,7 +1925,7 @@ TEST_F(CudaBasicsTests1, execReduceSame_1) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -1947,9 +1947,9 @@ TEST_F(CudaBasicsTests1, execReduceSame_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceSame(&lc, sd::reduce::Sum,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 					(int*)devicePtrs[0], dimensions.size(), 
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -1979,7 +1979,7 @@ TEST_F(CudaBasicsTests1, execReduceSame_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2001,9 +2001,9 @@ TEST_F(CudaBasicsTests1, execReduceSame_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceSame(&lc, sd::reduce::Sum,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 					(int*)devicePtrs[0], dimensions.size(), 
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -2035,7 +2035,7 @@ TEST_F(CudaBasicsTests1, execReduceBool_1) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2057,9 +2057,9 @@ TEST_F(CudaBasicsTests1, execReduceBool_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceBool(&lc, sd::reduce::IsPositive,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 					(int*)devicePtrs[0], dimensions.size(), 
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -2089,7 +2089,7 @@ TEST_F(CudaBasicsTests1, execReduceBool_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2111,9 +2111,9 @@ TEST_F(CudaBasicsTests1, execReduceBool_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceBool(&lc, sd::reduce::IsPositive,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 					(int*)devicePtrs[0], dimensions.size(), 
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -2144,7 +2144,7 @@ TEST_F(CudaBasicsTests1, execReduceLong_1) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2166,9 +2166,9 @@ TEST_F(CudaBasicsTests1, execReduceLong_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceLong(&lc, sd::reduce::CountNonZero,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 					(int*)devicePtrs[0], dimensions.size(), 
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -2198,7 +2198,7 @@ TEST_F(CudaBasicsTests1, execReduceLong_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2220,9 +2220,9 @@ TEST_F(CudaBasicsTests1, execReduceLong_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceLong(&lc, sd::reduce::CountNonZero,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 					(int*)devicePtrs[0], dimensions.size(), 
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -2263,9 +2263,9 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceFloatScalar(&lc, sd::reduce::Mean,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 	
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
@@ -2299,9 +2299,9 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceFloatScalar(&lc, sd::reduce::Mean,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
@@ -2336,9 +2336,9 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceSameScalar(&lc, sd::reduce::Sum,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 	
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
@@ -2372,9 +2372,9 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceSameScalar(&lc, sd::reduce::Sum,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
@@ -2410,9 +2410,9 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceBoolScalar(&lc, sd::reduce::IsPositive,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 	
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
@@ -2446,9 +2446,9 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceBoolScalar(&lc, sd::reduce::IsPositive,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
@@ -2484,9 +2484,9 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceLongScalar(&lc, sd::reduce::CountNonZero,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 	
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
@@ -2520,9 +2520,9 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduceLongScalar(&lc, sd::reduce::CountNonZero,
-					nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+					nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 					nullptr, 
-					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+					nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
@@ -2552,10 +2552,10 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_1) {
 	PointersManager pm(context, "execReduce3TAD_1");
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduce3TAD(context, sd::reduce3::Dot,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 
-								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								nullptr, dimensions.size(),
 								packX.specialShapeInfo(), packX.specialOffsets(), nullptr, nullptr);
     pm.synchronize();
@@ -2580,7 +2580,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2603,10 +2603,10 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduce3TAD(&lc, sd::reduce3::Dot,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 
-								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], nullptr, nullptr);
 
@@ -2636,7 +2636,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_3) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2659,10 +2659,10 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_3) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduce3TAD(&lc, sd::reduce3::Dot,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 
-								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -2692,7 +2692,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2714,10 +2714,10 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduce3TAD(&lc, sd::reduce3::Dot,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 
-								nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
@@ -2753,9 +2753,9 @@ TEST_F(CudaBasicsTests1, execSummaryStats_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execSummaryStats(&lc, sd::variance::SummaryStatsStandardDeviation,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 								
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								true);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -2780,7 +2780,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_2) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2802,9 +2802,9 @@ TEST_F(CudaBasicsTests1, execSummaryStats_2) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execSummaryStats(&lc, sd::variance::SummaryStatsStandardDeviation,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 								
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2],
 								true);
@@ -2834,7 +2834,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
 
     // evaluate xTad data 
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -2856,9 +2856,9 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execSummaryStats(&lc, sd::variance::SummaryStatsStandardDeviation,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 								
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2],
 								true);
@@ -2895,9 +2895,9 @@ TEST_F(CudaBasicsTests1, execSummaryStatsScalar_1) {
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execSummaryStatsScalar(&lc, sd::variance::SummaryStatsStandardDeviation,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 								
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								true);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -2944,9 +2944,9 @@ TEST_F(CudaBasicsTests1, execRandom_1) {
 //	// call cuda kernel which calculates result
 //	NativeOpExecutioner::execRandom(&lc, sd::random::GaussianDistribution,
 //								&gen,
-//								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-//								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-//								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+//								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+//								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+//								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 //								extraArguments.argumentsAsT(z.dataType()));
 //
 //	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -2992,8 +2992,8 @@ TEST_F(CudaBasicsTests1, execRandom_2) {
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execRandom(lc, sd::random::DropOut,
 								&gen,
-								nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 								
+								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								extraArguments.argumentsAsT(z.dataType()));
 
 	cudaResult = cudaStreamSynchronize(*lc->getCudaStream()); ASSERT_EQ(0, cudaResult);
@@ -3036,7 +3036,7 @@ TEST_F(CudaBasicsTests1, execRandom_3) {
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execRandom(&lc, sd::random::UniformDistribution,
 								&gen,
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 								
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								devicePtrs[0]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
@@ -3081,7 +3081,7 @@ TEST_F(CudaBasicsTests1, execRandom_4) {
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execRandom(context, sd::random::UniformDistribution,
 								&gen,
-								nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 								
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
 								extraArguments.argumentsAsT(z.dataType()));
 
 //	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);

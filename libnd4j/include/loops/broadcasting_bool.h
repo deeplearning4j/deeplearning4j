@@ -58,16 +58,13 @@ namespace functions {
 #ifdef __CUDACC__
 
             template<typename OpType>
-			static __device__ void transformCuda(
-			void *x,
-			Nd4jLong *xShapeInfo,
-			void *y,
-			Nd4jLong *yShapeInfo,
-			void *result,
-			Nd4jLong *resultShapeInfo,
-			void *extraParams,
-			int *dimension,
-			int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+			static __device__ void transformCuda(const void *x, const Nd4jLong *xShapeInfo,
+                                                 const void *y, const Nd4jLong *yShapeInfo,
+                                                 void *result, const Nd4jLong *resultShapeInfo,
+                                                 void *extraParams,
+                                                 int *dimension, int dimensionLength,
+                                                 const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                                 const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
             template<typename OpType>
             static __device__ void transformCuda(const void *x, const Nd4jLong *xShapeInfo,
@@ -76,7 +73,7 @@ namespace functions {
                                                        void *extraParams);
 
             template <typename OpClass>
-            static __host__ void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static __host__ void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void const* x, Nd4jLong const* xShapeInfo, void const* y, Nd4jLong const* yShapeInfo, void *result, Nd4jLong const* resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets, Nd4jLong const* tadOnlyShapeInfoZ, Nd4jLong const* tadOffsetsZ);
 
             template <typename OpClass>
             static __host__ void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream,
@@ -85,7 +82,7 @@ namespace functions {
                                                              void *z, const Nd4jLong *zShapeInfo,
                                                              void *extraParams);
 
-            static __host__ void execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static __host__ void execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void const* x, Nd4jLong const* xShapeInfo, void const* y, Nd4jLong const* yShapeInfo, void *result, Nd4jLong const* resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets, Nd4jLong const* tadOnlyShapeInfoZ, Nd4jLong const* tadOffsetsZ);
 
             static __host__ void execBroadcast(dim3 launchDims, cudaStream_t *stream, const int opNum,
                                                const void *x, const Nd4jLong *xShapeInfo,
@@ -94,63 +91,61 @@ namespace functions {
                                                      void *extraParams);
 
             template<typename OpType>
-			static __device__ void transformInverseCuda(
-			void *x,
-			Nd4jLong *xShapeInfo,
-			void *y,
-			Nd4jLong *yShapeInfo,
-			void *result,
-			Nd4jLong *resultShapeInfo,
-			void *extraParams,
-			int *dimension,
-			int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+			static __device__ void transformInverseCuda(const void *x, const Nd4jLong *xShapeInfo,
+                                                        const void *y, const Nd4jLong *yShapeInfo,
+                                                        void *result, const Nd4jLong *resultShapeInfo,
+                                                        void *extraParams,
+                                                        int *dimension, int dimensionLength,
+                                                        const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                                        const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
             template <typename OpClass>
-            static __host__ void intermediateInverseBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static __host__ void intermediateInverseBroadcast(dim3 launchDims, cudaStream_t *stream,
+                                                              const void *x, const Nd4jLong *xShapeInfo,
+                                                              const void *y, const Nd4jLong *yShapeInfo,
+                                                              void *result, const Nd4jLong *resultShapeInfo,
+                                                              void *extraParams,
+                                                              int *dimension, int dimensionLength,
+                                                              const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                                              const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
-            static __host__ void execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static __host__ void execInverseBroadcast(dim3 launchDims, cudaStream_t *stream,
+                                                      int opNum,
+                                                      const void *x, const Nd4jLong *xShapeInfo,
+                                                      const void *y, const Nd4jLong *yShapeInfo,
+                                                      void *result, const Nd4jLong *resultShapeInfo,
+                                                      void *extraParams,
+                                                      int *dimension, int dimensionLength,
+                                                      const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                                      const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
 #else
 
             static void exec(int opNum,
-                             void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *y,
-                             Nd4jLong *yShapeInfo,
-                             void *result,
-                             Nd4jLong *resultShapeInfo,
+                             const void *x, const Nd4jLong *xShapeInfo,
+                             const void *y, const Nd4jLong *yShapeInfo,
+                             void *result, const Nd4jLong *resultShapeInfo,
                              void *extraParams,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset,
-                             Nd4jLong *tadShapeInfoZ,
-                             Nd4jLong *tadOffsetZ,
-                             uint64_t start,
-                             uint64_t stop);
+                             int *dimension, int dimensionLength,
+                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                             const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetZ,
+                             uint64_t start, uint64_t stop);
 
-            static void exec(const int opNum,
+            static void exec(int opNum,
                              const void *x, const Nd4jLong *xShapeInfo,
                              const void *y, const Nd4jLong *yShapeInfo,
                                    void *z, const Nd4jLong *zShapeInfo,
                                    void *extraParams);
 
             static void execInverse(int opNum,
-                             void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *y,
-                             Nd4jLong *yShapeInfo,
-                             void *result,
-                             Nd4jLong *resultShapeInfo,
-                             void *extraParams,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset,
-                             Nd4jLong *tadShapeInfoZ,
-                             Nd4jLong *tadOffsetZ,
-                             uint64_t start,
-                             uint64_t stop);
+                                    const void *x, const Nd4jLong *xShapeInfo,
+                                    const void *y, const Nd4jLong *yShapeInfo,
+                                    void *result, const Nd4jLong *resultShapeInfo,
+                                    void *extraParams,
+                                    int *dimension, int dimensionLength,
+                                    const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                                    const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetZ,
+                                    uint64_t start, uint64_t stop);
 
             /**
              * CPU execution
@@ -164,21 +159,14 @@ namespace functions {
              * @param dimensionLength the length of the dimension buffer
              */
             template<typename OpType>
-            static void exec(void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *y,
-                             Nd4jLong *yShapeInfo,
-                             void *result,
-                             Nd4jLong *resultShapeInfo,
+            static void exec(const void *x, const Nd4jLong *xShapeInfo,
+                             const void *y, const Nd4jLong *yShapeInfo,
+                             void *result, const Nd4jLong *resultShapeInfo,
                              void *extraParams,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset,
-                             Nd4jLong *tadShapeInfoZ,
-                             Nd4jLong *tadOffsetZ,
-                             uint64_t start,
-                             uint64_t stop);
+                             int *dimension, int dimensionLength,
+                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                             const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetZ,
+                             uint64_t start, uint64_t stop);
 
             template<typename OpType>
             static void exec(const void *x, const Nd4jLong *xShapeInfo,
@@ -187,21 +175,14 @@ namespace functions {
                                    void *extraParams);
 
             template<typename OpType>
-            static void execInverse(void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *y,
-                             Nd4jLong *yShapeInfo,
-                             void *result,
-                             Nd4jLong *resultShapeInfo,
-                             void *extraParams,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset,
-                             Nd4jLong *tadShapeInfoZ,
-                             Nd4jLong *tadOffsetZ,
-                             uint64_t start,
-                             uint64_t stop);
+            static void execInverse(const void *x, const Nd4jLong *xShapeInfo,
+                                    const void *y, const Nd4jLong *yShapeInfo,
+                                    void *result, const Nd4jLong *resultShapeInfo,
+                                    void *extraParams,
+                                    int *dimension, int dimensionLength,
+                                    const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                                    const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetZ,
+                                    uint64_t start, uint64_t stop);
 #endif
         };
     }

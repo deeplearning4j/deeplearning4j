@@ -48,9 +48,9 @@ CUSTOM_OP_IMPL(mean_sqerr_loss, 3, 1, false, 0, 1) {
 	// perform weights broadcasting/tile to labels if needed
 	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(predictions))
-		weightsBroad = new NDArray(weights->tileToShape(predictions->getShapeInfo()));
+		weightsBroad = new NDArray(weights->tileToShape(predictions->shapeInfo()));
 
-	NDArray E(labels->getShapeInfo(), false, block.launchContext());
+	NDArray E(labels->shapeInfo(), false, block.launchContext());
 	predictions->applyPairwiseTransform(pairwise::SquaredSubtract, *labels, E);
 
     // multiply E on weights
@@ -126,7 +126,7 @@ DECLARE_SHAPE_FN(mean_sqerr_loss) {
     REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || ShapeUtils::areShapesBroadcastable(weightsShapeInfo, labelsShapeInfo), 0, "MEAN_SQERR_LOSS OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!", ShapeUtils::shapeAsString(weightsShapeInfo).c_str(), ShapeUtils::shapeAsString(labelsShapeInfo).c_str());
 
     DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
-    Nd4jLong* outShapeInfo = nullptr;
+    Nd4jLong const* outShapeInfo = nullptr;
 
     if(INT_ARG(0) != 0) 			// in this case output is scalar
     	outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
@@ -171,7 +171,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
 	// perform weights broadcasting/tile to labels if needed
 	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(predictions))
-		weightsBroad = new NDArray(weights->tileToShape(predictions->getShapeInfo()));
+		weightsBroad = new NDArray(weights->tileToShape(predictions->shapeInfo()));
 
 	NDArray diff = *predictions - *labels;
 
@@ -191,7 +191,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
 			if(weights->isScalar())
 				dLdw->assign(E.reduceNumber(reduce::Sum));
 			else if(weights != weightsBroad) {
-				std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+				std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 				E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 			}
 			else
@@ -218,7 +218,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
 				if(weights->isScalar())
 					*dLdw = 0.;
 				else if(weights != weightsBroad) {
-					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 					((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 				}
 				else
@@ -246,7 +246,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
 				if(weights->isScalar())
 					dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 				else if(weights != weightsBroad) {
-					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 					E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 					*dLdw /= numOfNonZeroWeightsScalar;
 				}

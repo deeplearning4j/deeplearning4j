@@ -72,10 +72,9 @@ CUSTOM_OP_IMPL(pointwise_conv2d, 2, 1, false, 0, 0) {
 
 
 DECLARE_SHAPE_FN(pointwise_conv2d) {
-
-    Nd4jLong* inputShapeInfo  = inputShape->at(0);                                   // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
-    Nd4jLong* weightsShapeInfo  = inputShape->at(1);                                 // [1, 1, iC, oC], [oC, iC, 1, 1], [oC, 1, 1, iC]
-    Nd4jLong* biasShapeInfo = block.width() > 2 ? inputShape->at(2) : nullptr;       // [oC]
+    auto inputShapeInfo  = inputShape->at(0);                                   // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
+    auto weightsShapeInfo  = inputShape->at(1);                                 // [1, 1, iC, oC], [oC, iC, 1, 1], [oC, 1, 1, iC]
+    auto biasShapeInfo = block.width() > 2 ? inputShape->at(2) : nullptr;       // [oC]
 
     const int rank = 4;
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM POINTWISECONV2D OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);

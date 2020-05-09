@@ -48,8 +48,8 @@ namespace sd {
             ExtraArguments extras(*block.getTArguments());
             PointersManager manager(block.launchContext(), "LegacyTransformSameOp");
 
-            NativeOpExecutioner::execTransformSame(block.launchContext(), opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
-                    z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), extras.argumentsAsT(z->dataType()), nullptr, nullptr);
+            NativeOpExecutioner::execTransformSame(block.launchContext(), opNum, input->buffer(), input->shapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
+                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), extras.argumentsAsT(z->dataType()), nullptr, nullptr);
 
             manager.synchronize();
             STORE_RESULT(*z);
