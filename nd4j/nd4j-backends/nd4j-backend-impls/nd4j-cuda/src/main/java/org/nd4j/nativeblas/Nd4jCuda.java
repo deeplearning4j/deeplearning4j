@@ -511,12 +511,12 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
         private native void allocate(DoubleBuffer values, int length);
         public ConstantDescriptor(double[] values, int length) { super((Pointer)null); allocate(values, length); }
         private native void allocate(double[] values, int length);
-        public ConstantDescriptor(@Cast("Nd4jLong*") LongPointer values, int length) { super((Pointer)null); allocate(values, length); }
-        private native void allocate(@Cast("Nd4jLong*") LongPointer values, int length);
-        public ConstantDescriptor(@Cast("Nd4jLong*") LongBuffer values, int length) { super((Pointer)null); allocate(values, length); }
-        private native void allocate(@Cast("Nd4jLong*") LongBuffer values, int length);
-        public ConstantDescriptor(@Cast("Nd4jLong*") long[] values, int length) { super((Pointer)null); allocate(values, length); }
-        private native void allocate(@Cast("Nd4jLong*") long[] values, int length);
+        public ConstantDescriptor(@Cast("const Nd4jLong*") LongPointer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(@Cast("const Nd4jLong*") LongPointer values, int length);
+        public ConstantDescriptor(@Cast("const Nd4jLong*") LongBuffer values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(@Cast("const Nd4jLong*") LongBuffer values, int length);
+        public ConstantDescriptor(@Cast("const Nd4jLong*") long[] values, int length) { super((Pointer)null); allocate(values, length); }
+        private native void allocate(@Cast("const Nd4jLong*") long[] values, int length);
 
         public ConstantDescriptor(@Cast("Nd4jLong*") @StdVector LongPointer values) { super((Pointer)null); allocate(values); }
         private native void allocate(@Cast("Nd4jLong*") @StdVector LongPointer values);
@@ -654,11 +654,11 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
         public TadPack() { super((Pointer)null); allocate(); }
         private native void allocate();
 
-        public native @Cast("Nd4jLong*") LongPointer primaryShapeInfo();
-        public native @Cast("Nd4jLong*") LongPointer primaryOffsets();
+        public native @Cast("const Nd4jLong*") LongPointer primaryShapeInfo();
+        public native @Cast("const Nd4jLong*") LongPointer primaryOffsets();
 
-        public native @Cast("Nd4jLong*") LongPointer specialShapeInfo();
-        public native @Cast("Nd4jLong*") LongPointer specialOffsets();
+        public native @Cast("const Nd4jLong*") LongPointer specialShapeInfo();
+        public native @Cast("const Nd4jLong*") LongPointer specialOffsets();
 
         public native @Cast("Nd4jLong") long numberOfTads();
         public native int shapeInfoLength();
@@ -667,8 +667,8 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
          * These methods return either primary or special pointers depending on platform binaries were compiled for
          * @return
          */
-        public native @Cast("Nd4jLong*") LongPointer platformShapeInfo();
-        public native @Cast("Nd4jLong*") LongPointer platformOffsets();
+        public native @Cast("const Nd4jLong*") LongPointer platformShapeInfo();
+        public native @Cast("const Nd4jLong*") LongPointer platformOffsets();
     }
 
 
@@ -1120,19 +1120,19 @@ public native void setTADThreshold(int num);
    */
 public native void execIndexReduceScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                      int opNum,
-                                     OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                                      Pointer extraParams,
-                                     OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo);
+                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execIndexReduceScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                      int opNum,
-                                     OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                                      Pointer extraParams,
-                                     OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo);
+                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execIndexReduceScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                      int opNum,
-                                     OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                                      Pointer extraParams,
-                                     OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo);
+                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 /**
  *
@@ -1147,22 +1147,22 @@ public native void execIndexReduceScalar(@Cast("Nd4jPointer*") PointerPointer ex
  */
 public native void execIndexReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
         Pointer extraParams,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape);
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execIndexReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
         Pointer extraParams,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape);
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execIndexReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
         Pointer extraParams,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape);
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 /**
  *
@@ -1179,50 +1179,50 @@ public native void execIndexReduce(@Cast("Nd4jPointer*") PointerPointer extraPoi
 public native void execBroadcast(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape);
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execBroadcast(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape);
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execBroadcast(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape);
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 
 public native void execBroadcastBool(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
         Pointer extraParams,
-        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape);
+        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execBroadcastBool(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
         Pointer extraParams,
-        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape);
+        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execBroadcastBool(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
         Pointer extraParams,
-        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape);
+        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 /**
  *
@@ -1239,45 +1239,45 @@ public native void execBroadcastBool(
 public native void execPairwiseTransform(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
         Pointer extraParams);
 public native void execPairwiseTransform(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
         Pointer extraParams);
 public native void execPairwiseTransform(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
         Pointer extraParams);
 
 public native void execPairwiseTransformBool(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
         Pointer extraParams);
 public native void execPairwiseTransformBool(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
         Pointer extraParams);
 public native void execPairwiseTransformBool(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
         int opNum,
-        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] dYShapeInfo,
-        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
         Pointer extraParams);
 
 /**
@@ -1291,68 +1291,68 @@ public native void execPairwiseTransformBool(
  */
 public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                         Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo);
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                         Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo);
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                         Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo);
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo);
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo);
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo);
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo);
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo);
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo);
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 
 public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo);
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo);
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo);
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 /**
  *
@@ -1365,82 +1365,82 @@ public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPoin
  */
 public native void execReduceFloat2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                         Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape);
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execReduceFloat2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                         Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape);
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execReduceFloat2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                         Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape);
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 
 public native void execReduceSame2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                   Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape);
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execReduceSame2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                   Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape);
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execReduceSame2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                   Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape);
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 
 public native void execReduceBool2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                   Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape);
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execReduceBool2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                   Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape);
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execReduceBool2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                   Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape);
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 
 public native void execReduceLong2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                   Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape);
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execReduceLong2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                   Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape);
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execReduceLong2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                   Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape);
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 /**
  *
@@ -1455,22 +1455,22 @@ public native void execReduceLong2(@Cast("Nd4jPointer*") PointerPointer extraPoi
  */
 public native void execReduce3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduce3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduce3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 /**
  *
@@ -1483,22 +1483,22 @@ public native void execReduce3(@Cast("Nd4jPointer*") PointerPointer extraPointer
  */
 public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 /**
  *
  * @param opNum
@@ -1514,60 +1514,60 @@ public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraP
  */
 public native void execReduce3Tad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape,
-                        @Cast("Nd4jLong*") LongPointer tadOnlyShapeInfo, @Cast("Nd4jLong*") LongPointer tadOffsets,
-                        @Cast("Nd4jLong*") LongPointer yTadOnlyShapeInfo, @Cast("Nd4jLong*") LongPointer yTadOffsets);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
+                        @Cast("const Nd4jLong*") LongPointer tadOnlyShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets,
+                        @Cast("const Nd4jLong*") LongPointer yTadOnlyShapeInfo, @Cast("const Nd4jLong*") LongPointer yTadOffsets);
 public native void execReduce3Tad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape,
-                        @Cast("Nd4jLong*") LongBuffer tadOnlyShapeInfo, @Cast("Nd4jLong*") LongBuffer tadOffsets,
-                        @Cast("Nd4jLong*") LongBuffer yTadOnlyShapeInfo, @Cast("Nd4jLong*") LongBuffer yTadOffsets);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
+                        @Cast("const Nd4jLong*") LongBuffer tadOnlyShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets,
+                        @Cast("const Nd4jLong*") LongBuffer yTadOnlyShapeInfo, @Cast("const Nd4jLong*") LongBuffer yTadOffsets);
 public native void execReduce3Tad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape,
-                        @Cast("Nd4jLong*") long[] tadOnlyShapeInfo, @Cast("Nd4jLong*") long[] tadOffsets,
-                        @Cast("Nd4jLong*") long[] yTadOnlyShapeInfo, @Cast("Nd4jLong*") long[] yTadOffsets);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
+                        @Cast("const Nd4jLong*") long[] tadOnlyShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets,
+                        @Cast("const Nd4jLong*") long[] yTadOnlyShapeInfo, @Cast("const Nd4jLong*") long[] yTadOffsets);
 
 
 public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape,
-                        @Cast("Nd4jLong*") LongPointer xTadShapeInfo, @Cast("Nd4jLong*") LongPointer xOffsets,
-                        @Cast("Nd4jLong*") LongPointer yTadShapeInfo, @Cast("Nd4jLong*") LongPointer yOffsets);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
+                        @Cast("const Nd4jLong*") LongPointer xTadShapeInfo, @Cast("const Nd4jLong*") LongPointer xOffsets,
+                        @Cast("const Nd4jLong*") LongPointer yTadShapeInfo, @Cast("const Nd4jLong*") LongPointer yOffsets);
 public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape,
-                        @Cast("Nd4jLong*") LongBuffer xTadShapeInfo, @Cast("Nd4jLong*") LongBuffer xOffsets,
-                        @Cast("Nd4jLong*") LongBuffer yTadShapeInfo, @Cast("Nd4jLong*") LongBuffer yOffsets);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
+                        @Cast("const Nd4jLong*") LongBuffer xTadShapeInfo, @Cast("const Nd4jLong*") LongBuffer xOffsets,
+                        @Cast("const Nd4jLong*") LongBuffer yTadShapeInfo, @Cast("const Nd4jLong*") LongBuffer yOffsets);
 public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                         int opNum,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                         Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape,
-                        @Cast("Nd4jLong*") long[] xTadShapeInfo, @Cast("Nd4jLong*") long[] xOffsets,
-                        @Cast("Nd4jLong*") long[] yTadShapeInfo, @Cast("Nd4jLong*") long[] yOffsets);
+                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
+                        @Cast("const Nd4jLong*") long[] xTadShapeInfo, @Cast("const Nd4jLong*") long[] xOffsets,
+                        @Cast("const Nd4jLong*") long[] yTadShapeInfo, @Cast("const Nd4jLong*") long[] yOffsets);
 
 /**
  *
@@ -1582,40 +1582,40 @@ public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPoin
  */
 public native void execScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                      OpaqueDataBuffer dbScalar, @Cast("Nd4jLong*") LongPointer hSscalarShapeInfo, @Cast("Nd4jLong*") LongPointer dSscalarShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                      OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongPointer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dSscalarShapeInfo,
                       Pointer extraParams);
 public native void execScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                      OpaqueDataBuffer dbScalar, @Cast("Nd4jLong*") LongBuffer hSscalarShapeInfo, @Cast("Nd4jLong*") LongBuffer dSscalarShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                      OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongBuffer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dSscalarShapeInfo,
                       Pointer extraParams);
 public native void execScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                      OpaqueDataBuffer dbScalar, @Cast("Nd4jLong*") long[] hSscalarShapeInfo, @Cast("Nd4jLong*") long[] dSscalarShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                      OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") long[] hSscalarShapeInfo, @Cast("const Nd4jLong*") long[] dSscalarShapeInfo,
                       Pointer extraParams);
 
 public native void execScalarBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
-                OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                OpaqueDataBuffer dbScalar, @Cast("Nd4jLong*") LongPointer hSscalarShapeInfo, @Cast("Nd4jLong*") LongPointer dSscalarShapeInfo,
+                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongPointer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dSscalarShapeInfo,
                 Pointer extraParams);
 public native void execScalarBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
-                OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                OpaqueDataBuffer dbScalar, @Cast("Nd4jLong*") LongBuffer hSscalarShapeInfo, @Cast("Nd4jLong*") LongBuffer dSscalarShapeInfo,
+                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongBuffer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dSscalarShapeInfo,
                 Pointer extraParams);
 public native void execScalarBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
-                OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                OpaqueDataBuffer dbScalar, @Cast("Nd4jLong*") long[] hSscalarShapeInfo, @Cast("Nd4jLong*") long[] dSscalarShapeInfo,
+                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") long[] hSscalarShapeInfo, @Cast("const Nd4jLong*") long[] dSscalarShapeInfo,
                 Pointer extraParams);
 
 /**
@@ -1627,21 +1627,21 @@ public native void execScalarBool(@Cast("Nd4jPointer*") PointerPointer extraPoin
  */
 public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int opNum,
-                                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                                       Pointer extraParams,
-                                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+                                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
                                       @Cast("bool") boolean biasCorrected);
 public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int opNum,
-                                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                                       Pointer extraParams,
-                                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+                                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
                                       @Cast("bool") boolean biasCorrected);
 public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                       int opNum,
-                                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                                       Pointer extraParams,
-                                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+                                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
                                       @Cast("bool") boolean biasCorrected);
 /**
  *
@@ -1654,21 +1654,21 @@ public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer e
  */
 public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                              OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo,  @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo,  @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                               Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
                               @Cast("bool") boolean biasCorrected);
 public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                              OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo,  @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo,  @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                               Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
                               @Cast("bool") boolean biasCorrected);
 public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                              OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo,  @Cast("Nd4jLong*") long[] dXShapeInfo,
+                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo,  @Cast("const Nd4jLong*") long[] dXShapeInfo,
                               Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
                               @Cast("bool") boolean biasCorrected);
 /**
  *
@@ -1683,28 +1683,28 @@ public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPo
  */
 public native void execSummaryStatsTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                              OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
+                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
                               Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                              OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape,
+                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                              OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
                               @Cast("bool") boolean biasCorrected,
-                              @Cast("Nd4jLong*") LongPointer tadShapeInfo, @Cast("Nd4jLong*") LongPointer tadOffsets);
+                              @Cast("const Nd4jLong*") LongPointer tadShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets);
 public native void execSummaryStatsTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                              OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
+                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
                               Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                              OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape,
+                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                              OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
                               @Cast("bool") boolean biasCorrected,
-                              @Cast("Nd4jLong*") LongBuffer tadShapeInfo, @Cast("Nd4jLong*") LongBuffer tadOffsets);
+                              @Cast("const Nd4jLong*") LongBuffer tadShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets);
 public native void execSummaryStatsTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                               int opNum,
-                              OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
+                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
                               Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                              OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape,
+                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                              OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
                               @Cast("bool") boolean biasCorrected,
-                              @Cast("Nd4jLong*") long[] tadShapeInfo, @Cast("Nd4jLong*") long[] tadOffsets);
+                              @Cast("const Nd4jLong*") long[] tadShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets);
 
 /**
  *
@@ -1718,82 +1718,82 @@ public native void execSummaryStatsTad(@Cast("Nd4jPointer*") PointerPointer extr
  */
 public native void execTransformFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
-                          OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-                          OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+                          OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                          OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
                           Pointer extraParams);
 public native void execTransformFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
-                          OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-                          OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+                          OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                          OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
                           Pointer extraParams);
 public native void execTransformFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                           int opNum,
-                          OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-                          OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+                          OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                          OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
                           Pointer extraParams);
 
 public native void execTransformSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
                   Pointer extraParams);
 public native void execTransformSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
                   Pointer extraParams);
 public native void execTransformSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
                   Pointer extraParams);
 
 public native void execTransformBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
                   Pointer extraParams);
 public native void execTransformBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
                   Pointer extraParams);
 public native void execTransformBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                   int opNum,
-                  OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
                   Pointer extraParams);
 
 public native void execTransformAny(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                        int opNum,
-                       OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-                       OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+                       OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                       OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
                        Pointer extraParams);
 public native void execTransformAny(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                        int opNum,
-                       OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-                       OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+                       OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                       OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
                        Pointer extraParams);
 public native void execTransformAny(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                        int opNum,
-                       OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-                       OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+                       OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                       OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
                        Pointer extraParams);
 
 public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
                       Pointer extraParams);
 public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
                       Pointer extraParams);
 public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
                       Pointer extraParams);
 
 /**
@@ -1811,59 +1811,59 @@ public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extr
  */
 public native void execScalarTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                      OpaqueDataBuffer dbScalars, @Cast("Nd4jLong*") LongPointer hScalarShapeInfo, @Cast("Nd4jLong*") LongPointer dScalarShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                      OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongPointer hScalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dScalarShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape,
-                      @Cast("Nd4jLong*") LongPointer tadShapeInfo, @Cast("Nd4jLong*") LongPointer tadOffsets,
-                      @Cast("Nd4jLong*") LongPointer tadShapeInfoZ, @Cast("Nd4jLong*") LongPointer tadOffsetsZ);
+                      OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
+                      @Cast("const Nd4jLong*") LongPointer tadShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets,
+                      @Cast("const Nd4jLong*") LongPointer tadShapeInfoZ, @Cast("const Nd4jLong*") LongPointer tadOffsetsZ);
 public native void execScalarTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                      OpaqueDataBuffer dbScalars, @Cast("Nd4jLong*") LongBuffer hScalarShapeInfo, @Cast("Nd4jLong*") LongBuffer dScalarShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                      OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongBuffer hScalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dScalarShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape,
-                      @Cast("Nd4jLong*") LongBuffer tadShapeInfo, @Cast("Nd4jLong*") LongBuffer tadOffsets,
-                      @Cast("Nd4jLong*") LongBuffer tadShapeInfoZ, @Cast("Nd4jLong*") LongBuffer tadOffsetsZ);
+                      OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
+                      @Cast("const Nd4jLong*") LongBuffer tadShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets,
+                      @Cast("const Nd4jLong*") LongBuffer tadShapeInfoZ, @Cast("const Nd4jLong*") LongBuffer tadOffsetsZ);
 public native void execScalarTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                      OpaqueDataBuffer dbScalars, @Cast("Nd4jLong*") long[] hScalarShapeInfo, @Cast("Nd4jLong*") long[] dScalarShapeInfo,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                      OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") long[] hScalarShapeInfo, @Cast("const Nd4jLong*") long[] dScalarShapeInfo,
                       Pointer extraParams,
-                      OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape,
-                      @Cast("Nd4jLong*") long[] tadShapeInfo, @Cast("Nd4jLong*") long[] tadOffsets,
-                      @Cast("Nd4jLong*") long[] tadShapeInfoZ, @Cast("Nd4jLong*") long[] tadOffsetsZ);
+                      OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
+                      @Cast("const Nd4jLong*") long[] tadShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets,
+                      @Cast("const Nd4jLong*") long[] tadShapeInfoZ, @Cast("const Nd4jLong*") long[] tadOffsetsZ);
 
 public native void execScalarBoolTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
-                OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
-                OpaqueDataBuffer dbScalars, @Cast("Nd4jLong*") LongPointer hScalarShapeInfo, @Cast("Nd4jLong*") LongPointer dScalarShapeInfo,
+                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongPointer hScalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dScalarShapeInfo,
                 Pointer extraParams,
-                OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape, @Cast("Nd4jLong*") LongPointer dDimensionShape,
-                @Cast("Nd4jLong*") LongPointer tadShapeInfo, @Cast("Nd4jLong*") LongPointer tadOffsets,
-                @Cast("Nd4jLong*") LongPointer tadShapeInfoZ, @Cast("Nd4jLong*") LongPointer tadOffsetsZ);
+                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
+                @Cast("const Nd4jLong*") LongPointer tadShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets,
+                @Cast("const Nd4jLong*") LongPointer tadShapeInfoZ, @Cast("const Nd4jLong*") LongPointer tadOffsetsZ);
 public native void execScalarBoolTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
-                OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
-                OpaqueDataBuffer dbScalars, @Cast("Nd4jLong*") LongBuffer hScalarShapeInfo, @Cast("Nd4jLong*") LongBuffer dScalarShapeInfo,
+                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongBuffer hScalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dScalarShapeInfo,
                 Pointer extraParams,
-                OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape, @Cast("Nd4jLong*") LongBuffer dDimensionShape,
-                @Cast("Nd4jLong*") LongBuffer tadShapeInfo, @Cast("Nd4jLong*") LongBuffer tadOffsets,
-                @Cast("Nd4jLong*") LongBuffer tadShapeInfoZ, @Cast("Nd4jLong*") LongBuffer tadOffsetsZ);
+                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
+                @Cast("const Nd4jLong*") LongBuffer tadShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets,
+                @Cast("const Nd4jLong*") LongBuffer tadShapeInfoZ, @Cast("const Nd4jLong*") LongBuffer tadOffsetsZ);
 public native void execScalarBoolTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                 int opNum,
-                OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeInfo, @Cast("Nd4jLong*") long[] dZShapeInfo,
-                OpaqueDataBuffer dbScalars, @Cast("Nd4jLong*") long[] hScalarShapeInfo, @Cast("Nd4jLong*") long[] dScalarShapeInfo,
+                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") long[] hScalarShapeInfo, @Cast("const Nd4jLong*") long[] dScalarShapeInfo,
                 Pointer extraParams,
-                OpaqueDataBuffer dbDimension, @Cast("Nd4jLong*") long[] hDimensionShape, @Cast("Nd4jLong*") long[] dDimensionShape,
-                @Cast("Nd4jLong*") long[] tadShapeInfo, @Cast("Nd4jLong*") long[] tadOffsets,
-                @Cast("Nd4jLong*") long[] tadShapeInfoZ, @Cast("Nd4jLong*") long[] tadOffsetsZ);
+                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
+                @Cast("const Nd4jLong*") long[] tadShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets,
+                @Cast("const Nd4jLong*") long[] tadShapeInfoZ, @Cast("const Nd4jLong*") long[] tadOffsetsZ);
 
 public native void specialConcat(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
@@ -1872,7 +1872,7 @@ public native void specialConcat(
         @Cast("Nd4jPointer*") PointerPointer data,
         @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
         Pointer result,
-        @Cast("Nd4jLong*") LongPointer resultShapeInfo,
+        @Cast("const Nd4jLong*") LongPointer resultShapeInfo,
         @Cast("Nd4jPointer*") PointerPointer tadPointers,
         @Cast("Nd4jPointer*") PointerPointer offsetPointers);
 public native void specialConcat(
@@ -1882,7 +1882,7 @@ public native void specialConcat(
         @Cast("Nd4jPointer*") PointerPointer data,
         @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
         Pointer result,
-        @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
+        @Cast("const Nd4jLong*") LongBuffer resultShapeInfo,
         @Cast("Nd4jPointer*") PointerPointer tadPointers,
         @Cast("Nd4jPointer*") PointerPointer offsetPointers);
 public native void specialConcat(
@@ -1892,7 +1892,7 @@ public native void specialConcat(
         @Cast("Nd4jPointer*") PointerPointer data,
         @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
         Pointer result,
-        @Cast("Nd4jLong*") long[] resultShapeInfo,
+        @Cast("const Nd4jLong*") long[] resultShapeInfo,
         @Cast("Nd4jPointer*") PointerPointer tadPointers,
         @Cast("Nd4jPointer*") PointerPointer offsetPointers);
 
@@ -2186,20 +2186,20 @@ public native void setGridLimit(int gridSize);
  * @param targetBuffer
  * @param offsetsBuffer
  */
-public native OpaqueTadPack tadOnlyShapeInfo(@Cast("Nd4jLong*") LongPointer xShapeInfo,
+public native OpaqueTadPack tadOnlyShapeInfo(@Cast("const Nd4jLong*") LongPointer xShapeInfo,
                       IntPointer dimension,
                       int dimensionLength);
-public native OpaqueTadPack tadOnlyShapeInfo(@Cast("Nd4jLong*") LongBuffer xShapeInfo,
+public native OpaqueTadPack tadOnlyShapeInfo(@Cast("const Nd4jLong*") LongBuffer xShapeInfo,
                       IntBuffer dimension,
                       int dimensionLength);
-public native OpaqueTadPack tadOnlyShapeInfo(@Cast("Nd4jLong*") long[] xShapeInfo,
+public native OpaqueTadPack tadOnlyShapeInfo(@Cast("const Nd4jLong*") long[] xShapeInfo,
                       int[] dimension,
                       int dimensionLength);
 
-public native @Cast("Nd4jLong*") LongPointer getPrimaryShapeInfo(OpaqueTadPack pack);
-public native @Cast("Nd4jLong*") LongPointer getPrimaryOffsets(OpaqueTadPack pack);
-public native @Cast("Nd4jLong*") LongPointer getSpecialShapeInfo(OpaqueTadPack pack);
-public native @Cast("Nd4jLong*") LongPointer getSpecialOffsets(OpaqueTadPack pack);
+public native @Cast("const Nd4jLong*") LongPointer getPrimaryShapeInfo(OpaqueTadPack pack);
+public native @Cast("const Nd4jLong*") LongPointer getPrimaryOffsets(OpaqueTadPack pack);
+public native @Cast("const Nd4jLong*") LongPointer getSpecialShapeInfo(OpaqueTadPack pack);
+public native @Cast("const Nd4jLong*") LongPointer getSpecialOffsets(OpaqueTadPack pack);
 public native @Cast("Nd4jLong") long getNumberOfTads(OpaqueTadPack pack);
 public native int getShapeInfoLength(OpaqueTadPack pack);
 
@@ -2224,32 +2224,32 @@ public native void deleteTadPack(OpaqueTadPack ptr);
  * @param zTadOffsets
  */
 public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                    OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
-                    OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer zShapeInfo, @Cast("Nd4jLong*") LongPointer dzShapeInfo,
+                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer xShapeInfo, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer zShapeInfo, @Cast("const Nd4jLong*") LongPointer dzShapeInfo,
                     @Cast("Nd4jLong") long n,
                     @Cast("Nd4jLong*") LongPointer indexes,
-                    @Cast("Nd4jLong*") LongPointer tadShapeInfo,
-                    @Cast("Nd4jLong*") LongPointer tadOffsets,
-                    @Cast("Nd4jLong*") LongPointer zTadShapeInfo,
-                    @Cast("Nd4jLong*") LongPointer zTadOffsets);
+                    @Cast("const Nd4jLong*") LongPointer tadShapeInfo,
+                    @Cast("const Nd4jLong*") LongPointer tadOffsets,
+                    @Cast("const Nd4jLong*") LongPointer zTadShapeInfo,
+                    @Cast("const Nd4jLong*") LongPointer zTadOffsets);
 public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                    OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer xShapeInfo, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
-                    OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer zShapeInfo, @Cast("Nd4jLong*") LongBuffer dzShapeInfo,
+                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer xShapeInfo, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer zShapeInfo, @Cast("const Nd4jLong*") LongBuffer dzShapeInfo,
                     @Cast("Nd4jLong") long n,
                     @Cast("Nd4jLong*") LongBuffer indexes,
-                    @Cast("Nd4jLong*") LongBuffer tadShapeInfo,
-                    @Cast("Nd4jLong*") LongBuffer tadOffsets,
-                    @Cast("Nd4jLong*") LongBuffer zTadShapeInfo,
-                    @Cast("Nd4jLong*") LongBuffer zTadOffsets);
+                    @Cast("const Nd4jLong*") LongBuffer tadShapeInfo,
+                    @Cast("const Nd4jLong*") LongBuffer tadOffsets,
+                    @Cast("const Nd4jLong*") LongBuffer zTadShapeInfo,
+                    @Cast("const Nd4jLong*") LongBuffer zTadOffsets);
 public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                    OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] xShapeInfo, @Cast("Nd4jLong*") long[] dxShapeInfo,
-                    OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] zShapeInfo, @Cast("Nd4jLong*") long[] dzShapeInfo,
+                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] xShapeInfo, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] zShapeInfo, @Cast("const Nd4jLong*") long[] dzShapeInfo,
                     @Cast("Nd4jLong") long n,
                     @Cast("Nd4jLong*") long[] indexes,
-                    @Cast("Nd4jLong*") long[] tadShapeInfo,
-                    @Cast("Nd4jLong*") long[] tadOffsets,
-                    @Cast("Nd4jLong*") long[] zTadShapeInfo,
-                    @Cast("Nd4jLong*") long[] zTadOffsets);
+                    @Cast("const Nd4jLong*") long[] tadShapeInfo,
+                    @Cast("const Nd4jLong*") long[] tadOffsets,
+                    @Cast("const Nd4jLong*") long[] zTadShapeInfo,
+                    @Cast("const Nd4jLong*") long[] zTadOffsets);
 
 /**
  *
@@ -2261,50 +2261,50 @@ public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
  * @param propagate
  */
 public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
-                   Pointer z, @Cast("Nd4jLong*") LongPointer zShapeInfo,
-                   Pointer dz, @Cast("Nd4jLong*") LongPointer dzShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                   Pointer z, @Cast("const Nd4jLong*") LongPointer zShapeInfo,
+                   Pointer dz, @Cast("const Nd4jLong*") LongPointer dzShapeInfo,
                    int n,
                    @Cast("Nd4jLong") long length,
                    @Cast("bool") boolean propagate);
 public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
-                   Pointer z, @Cast("Nd4jLong*") LongBuffer zShapeInfo,
-                   Pointer dz, @Cast("Nd4jLong*") LongBuffer dzShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                   Pointer z, @Cast("const Nd4jLong*") LongBuffer zShapeInfo,
+                   Pointer dz, @Cast("const Nd4jLong*") LongBuffer dzShapeInfo,
                    int n,
                    @Cast("Nd4jLong") long length,
                    @Cast("bool") boolean propagate);
 public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
-                   Pointer z, @Cast("Nd4jLong*") long[] zShapeInfo,
-                   Pointer dz, @Cast("Nd4jLong*") long[] dzShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                   Pointer z, @Cast("const Nd4jLong*") long[] zShapeInfo,
+                   Pointer dz, @Cast("const Nd4jLong*") long[] dzShapeInfo,
                    int n,
                    @Cast("Nd4jLong") long length,
                    @Cast("bool") boolean propagate);
 
 
 public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
-                   Pointer z, @Cast("Nd4jLong*") LongPointer zShapeInfo,
-                   Pointer dz, @Cast("Nd4jLong*") LongPointer dzShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                   Pointer z, @Cast("const Nd4jLong*") LongPointer zShapeInfo,
+                   Pointer dz, @Cast("const Nd4jLong*") LongPointer dzShapeInfo,
                    int n,
                    @Cast("Nd4jLong") long length);
 public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
-                   Pointer z, @Cast("Nd4jLong*") LongBuffer zShapeInfo,
-                   Pointer dz, @Cast("Nd4jLong*") LongBuffer dzShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                   Pointer z, @Cast("const Nd4jLong*") LongBuffer zShapeInfo,
+                   Pointer dz, @Cast("const Nd4jLong*") LongBuffer dzShapeInfo,
                    int n,
                    @Cast("Nd4jLong") long length);
 public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
-                   Pointer z, @Cast("Nd4jLong*") long[] zShapeInfo,
-                   Pointer dz, @Cast("Nd4jLong*") long[] dzShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                   Pointer z, @Cast("const Nd4jLong*") long[] zShapeInfo,
+                   Pointer dz, @Cast("const Nd4jLong*") long[] dzShapeInfo,
                    int n,
                    @Cast("Nd4jLong") long length);
 
@@ -2509,17 +2509,17 @@ public native void execAggregateBatch(@Cast("Nd4jPointer*") PointerPointer extra
 public native void execRandom(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
                       @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeBuffer, @Cast("Nd4jLong*") LongPointer dZShapeBuffer,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeBuffer, @Cast("const Nd4jLong*") LongPointer dZShapeBuffer,
                       Pointer extraArguments);
 public native void execRandom(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
                       @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("Nd4jLong*") LongBuffer dZShapeBuffer,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dZShapeBuffer,
                       Pointer extraArguments);
 public native void execRandom(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
                       @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeBuffer, @Cast("Nd4jLong*") long[] dZShapeBuffer,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeBuffer, @Cast("const Nd4jLong*") long[] dZShapeBuffer,
                       Pointer extraArguments);
 
 /**
@@ -2538,23 +2538,23 @@ public native void execRandom(@Cast("Nd4jPointer*") PointerPointer extraPointers
 public native void execRandom3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
                       @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeBuffer, @Cast("Nd4jLong*") LongPointer dXShapeBuffer,
-                      OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongPointer hYShapeBuffer, @Cast("Nd4jLong*") LongPointer dYShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeBuffer, @Cast("Nd4jLong*") LongPointer dZShapeBuffer,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeBuffer, @Cast("const Nd4jLong*") LongPointer dXShapeBuffer,
+                      OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeBuffer, @Cast("const Nd4jLong*") LongPointer dYShapeBuffer,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeBuffer, @Cast("const Nd4jLong*") LongPointer dZShapeBuffer,
                       Pointer extraArguments);
 public native void execRandom3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
                       @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeBuffer, @Cast("Nd4jLong*") LongBuffer dXShapeBuffer,
-                      OpaqueDataBuffer dbY, @Cast("Nd4jLong*") LongBuffer hYShapeBuffer, @Cast("Nd4jLong*") LongBuffer dYShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("Nd4jLong*") LongBuffer dZShapeBuffer,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dXShapeBuffer,
+                      OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dYShapeBuffer,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dZShapeBuffer,
                       Pointer extraArguments);
 public native void execRandom3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
                       @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeBuffer, @Cast("Nd4jLong*") long[] dXShapeBuffer,
-                      OpaqueDataBuffer dbY, @Cast("Nd4jLong*") long[] hYShapeBuffer, @Cast("Nd4jLong*") long[] dYShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeBuffer, @Cast("Nd4jLong*") long[] dZShapeBuffer,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeBuffer, @Cast("const Nd4jLong*") long[] dXShapeBuffer,
+                      OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeBuffer, @Cast("const Nd4jLong*") long[] dYShapeBuffer,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeBuffer, @Cast("const Nd4jLong*") long[] dZShapeBuffer,
                       Pointer extraArguments);
 
 /**
@@ -2571,20 +2571,20 @@ public native void execRandom3(@Cast("Nd4jPointer*") PointerPointer extraPointer
 public native void execRandom2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
                       @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer hXShapeBuffer, @Cast("Nd4jLong*") LongPointer dXShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongPointer hZShapeBuffer, @Cast("Nd4jLong*") LongPointer dZShapeBuffer,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeBuffer, @Cast("const Nd4jLong*") LongPointer dXShapeBuffer,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeBuffer, @Cast("const Nd4jLong*") LongPointer dZShapeBuffer,
                       Pointer extraArguments);
 public native void execRandom2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
                       @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer hXShapeBuffer, @Cast("Nd4jLong*") LongBuffer dXShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("Nd4jLong*") LongBuffer dZShapeBuffer,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dXShapeBuffer,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dZShapeBuffer,
                       Pointer extraArguments);
 public native void execRandom2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                       int opNum,
                       @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] hXShapeBuffer, @Cast("Nd4jLong*") long[] dXShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("Nd4jLong*") long[] hZShapeBuffer, @Cast("Nd4jLong*") long[] dZShapeBuffer,
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeBuffer, @Cast("const Nd4jLong*") long[] dXShapeBuffer,
+                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeBuffer, @Cast("const Nd4jLong*") long[] dZShapeBuffer,
                       Pointer extraArguments);
 
 
@@ -2789,143 +2789,143 @@ public native @Cast("Nd4jPointer") Pointer pointerForAddress(@Cast("Nd4jLong") l
  * @return
  */
 public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongPointer xShapeInfo, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
-                        @Cast("Nd4jPointer*") PointerPointer targets, @Cast("Nd4jLong*") LongPointer zShapeInfo,
-                        @Cast("Nd4jLong*") LongPointer tadShapeInfo,
-                        @Cast("Nd4jLong*") LongPointer tadOffsets);
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer xShapeInfo, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                        @Cast("Nd4jPointer*") PointerPointer targets, @Cast("const Nd4jLong*") LongPointer zShapeInfo,
+                        @Cast("const Nd4jLong*") LongPointer tadShapeInfo,
+                        @Cast("const Nd4jLong*") LongPointer tadOffsets);
 public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") LongBuffer xShapeInfo, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
-                        @Cast("Nd4jPointer*") PointerPointer targets, @Cast("Nd4jLong*") LongBuffer zShapeInfo,
-                        @Cast("Nd4jLong*") LongBuffer tadShapeInfo,
-                        @Cast("Nd4jLong*") LongBuffer tadOffsets);
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer xShapeInfo, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                        @Cast("Nd4jPointer*") PointerPointer targets, @Cast("const Nd4jLong*") LongBuffer zShapeInfo,
+                        @Cast("const Nd4jLong*") LongBuffer tadShapeInfo,
+                        @Cast("const Nd4jLong*") LongBuffer tadOffsets);
 public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        OpaqueDataBuffer dbX, @Cast("Nd4jLong*") long[] xShapeInfo, @Cast("Nd4jLong*") long[] dxShapeInfo,
-                        @Cast("Nd4jPointer*") PointerPointer targets, @Cast("Nd4jLong*") long[] zShapeInfo,
-                        @Cast("Nd4jLong*") long[] tadShapeInfo,
-                        @Cast("Nd4jLong*") long[] tadOffsets);
+                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] xShapeInfo, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                        @Cast("Nd4jPointer*") PointerPointer targets, @Cast("const Nd4jLong*") long[] zShapeInfo,
+                        @Cast("const Nd4jLong*") long[] tadShapeInfo,
+                        @Cast("const Nd4jLong*") long[] tadOffsets);
 
 public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
-        Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+        Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+        Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
         @Cast("bool") boolean descending);
 public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-        Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+        Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+        Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
         @Cast("bool") boolean descending);
 public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
-        Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+        Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+        Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
         @Cast("bool") boolean descending);
 
 public native void sortByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-               Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
-               Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
-               Pointer y, @Cast("Nd4jLong*") LongPointer yShapeInfo,
-               Pointer dy, @Cast("Nd4jLong*") LongPointer dyShapeInfo,
+               Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+               Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+               Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
+               Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
                @Cast("bool") boolean descending);
 public native void sortByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-               Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-               Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
-               Pointer y, @Cast("Nd4jLong*") LongBuffer yShapeInfo,
-               Pointer dy, @Cast("Nd4jLong*") LongBuffer dyShapeInfo,
+               Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+               Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+               Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
+               Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
                @Cast("bool") boolean descending);
 public native void sortByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-               Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
-               Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
-               Pointer y, @Cast("Nd4jLong*") long[] yShapeInfo,
-               Pointer dy, @Cast("Nd4jLong*") long[] dyShapeInfo,
+               Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+               Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+               Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
+               Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
                @Cast("bool") boolean descending);
 
 public native void sortByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                 Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
-                 Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
-                 Pointer y, @Cast("Nd4jLong*") LongPointer yShapeInfo,
-                 Pointer dy, @Cast("Nd4jLong*") LongPointer dyShapeInfo,
+                 Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                 Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                 Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
+                 Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
                  @Cast("bool") boolean descending);
 public native void sortByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                 Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-                 Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
-                 Pointer y, @Cast("Nd4jLong*") LongBuffer yShapeInfo,
-                 Pointer dy, @Cast("Nd4jLong*") LongBuffer dyShapeInfo,
+                 Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                 Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                 Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
+                 Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
                  @Cast("bool") boolean descending);
 public native void sortByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                 Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
-                 Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
-                 Pointer y, @Cast("Nd4jLong*") long[] yShapeInfo,
-                 Pointer dy, @Cast("Nd4jLong*") long[] dyShapeInfo,
+                 Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                 Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                 Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
+                 Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
                  @Cast("bool") boolean descending);
 
 public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
-        Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
+        Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+        Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
         IntPointer dimension,
         int dimensionLength,
-        @Cast("Nd4jLong*") LongPointer tadShapeInfo,
-        @Cast("Nd4jLong*") LongPointer tadOffsets,
+        @Cast("const Nd4jLong*") LongPointer tadShapeInfo,
+        @Cast("const Nd4jLong*") LongPointer tadOffsets,
         @Cast("bool") boolean descending);
 public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-        Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
+        Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+        Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
         IntBuffer dimension,
         int dimensionLength,
-        @Cast("Nd4jLong*") LongBuffer tadShapeInfo,
-        @Cast("Nd4jLong*") LongBuffer tadOffsets,
+        @Cast("const Nd4jLong*") LongBuffer tadShapeInfo,
+        @Cast("const Nd4jLong*") LongBuffer tadOffsets,
         @Cast("bool") boolean descending);
 public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
-        Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
+        Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+        Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
         int[] dimension,
         int dimensionLength,
-        @Cast("Nd4jLong*") long[] tadShapeInfo,
-        @Cast("Nd4jLong*") long[] tadOffsets,
+        @Cast("const Nd4jLong*") long[] tadShapeInfo,
+        @Cast("const Nd4jLong*") long[] tadOffsets,
         @Cast("bool") boolean descending);
 
 public native void sortTadByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
-             Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
-             Pointer y, @Cast("Nd4jLong*") LongPointer yShapeInfo,
-             Pointer dy, @Cast("Nd4jLong*") LongPointer dyShapeInfo,
+             Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+             Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+             Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
+             Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
              IntPointer dimension,
              int dimensionLength,
              @Cast("bool") boolean descending);
 public native void sortTadByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-             Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
-             Pointer y, @Cast("Nd4jLong*") LongBuffer yShapeInfo,
-             Pointer dy, @Cast("Nd4jLong*") LongBuffer dyShapeInfo,
+             Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+             Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+             Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
+             Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
              IntBuffer dimension,
              int dimensionLength,
              @Cast("bool") boolean descending);
 public native void sortTadByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
-             Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
-             Pointer y, @Cast("Nd4jLong*") long[] yShapeInfo,
-             Pointer dy, @Cast("Nd4jLong*") long[] dyShapeInfo,
+             Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+             Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+             Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
+             Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
              int[] dimension,
              int dimensionLength,
              @Cast("bool") boolean descending);
 
 public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo,
-             Pointer dx, @Cast("Nd4jLong*") LongPointer dxShapeInfo,
-             Pointer y, @Cast("Nd4jLong*") LongPointer yShapeInfo,
-             Pointer dy, @Cast("Nd4jLong*") LongPointer dyShapeInfo,
+             Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+             Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+             Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
+             Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
              IntPointer dimension,
              int dimensionLength,
              @Cast("bool") boolean descending);
 public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo,
-             Pointer dx, @Cast("Nd4jLong*") LongBuffer dxShapeInfo,
-             Pointer y, @Cast("Nd4jLong*") LongBuffer yShapeInfo,
-             Pointer dy, @Cast("Nd4jLong*") LongBuffer dyShapeInfo,
+             Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+             Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+             Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
+             Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
              IntBuffer dimension,
              int dimensionLength,
              @Cast("bool") boolean descending);
 public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo,
-             Pointer dx, @Cast("Nd4jLong*") long[] dxShapeInfo,
-             Pointer y, @Cast("Nd4jLong*") long[] yShapeInfo,
-             Pointer dy, @Cast("Nd4jLong*") long[] dyShapeInfo,
+             Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+             Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+             Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
+             Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
              int[] dimension,
              int dimensionLength,
              @Cast("bool") boolean descending);
@@ -2974,7 +2974,7 @@ public native OpaqueShapeList calculateOutputShapes2(@Cast("Nd4jPointer*") Point
 public native OpaqueShapeList calculateOutputShapes2(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long hash, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputShapes, double[] tArgs, int numTArgs, @Cast("Nd4jLong*") long[] iArgs, int numIArgs, @Cast("bool*") boolean[] bArgs, int numBArgs, int[] dArgs, int numDArgs);
 
 public native @Cast("Nd4jLong") long getShapeListSize(OpaqueShapeList list);
-public native @Cast("Nd4jLong*") LongPointer getShape(OpaqueShapeList list, @Cast("Nd4jLong") long i);
+public native @Cast("const Nd4jLong*") LongPointer getShape(OpaqueShapeList list, @Cast("Nd4jLong") long i);
 
 public native void deleteShapeList(@Cast("Nd4jPointer") Pointer shapeList);
 
@@ -2990,7 +2990,7 @@ public native OpaqueVariable getVariable(OpaqueVariablesSet set, @Cast("Nd4jLong
 public native int getVariableId(OpaqueVariable variable);
 public native int getVariableIndex(OpaqueVariable variable);
 public native @Cast("char*") String getVariableName(OpaqueVariable variable);
-public native @Cast("Nd4jLong*") LongPointer getVariableShape(OpaqueVariable variable);
+public native @Cast("const Nd4jLong*") LongPointer getVariableShape(OpaqueVariable variable);
 public native Pointer getVariableBuffer(OpaqueVariable variable);
 
 public native int unregisterGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId);
@@ -3009,9 +3009,9 @@ public native void deleteGraphState(@Cast("Nd4jPointer") Pointer state);
 
 public native void deleteResultWrapper(@Cast("Nd4jPointer") Pointer ptr);
 
-public native int estimateThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, @Cast("Nd4jLong*") LongPointer xShapeInfo, int N, float threshold);
-public native int estimateThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, @Cast("Nd4jLong*") LongBuffer xShapeInfo, int N, float threshold);
-public native int estimateThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, @Cast("Nd4jLong*") long[] xShapeInfo, int N, float threshold);
+public native int estimateThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo, int N, float threshold);
+public native int estimateThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo, int N, float threshold);
+public native int estimateThreshold(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo, int N, float threshold);
 
 // this method executes op that requires scope to be present: if/while/cond/whatever
 public native @Cast("Nd4jStatus") int execCustomOpWithScope(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer state, @Cast("Nd4jLong") long opHash, @Cast("Nd4jLong*") LongPointer scopes, int numScopes, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int numInputs, @Cast("Nd4jPointer*") PointerPointer outputBuffers, @Cast("Nd4jPointer*") PointerPointer outputShapes, int numOutputs);
@@ -3026,23 +3026,23 @@ public native @Cast("char*") BytePointer getUtf8StringBuffer(@Cast("Nd4jPointer*
 public native void deleteUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer ptr);
 
 public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
-                  Pointer hX, @Cast("Nd4jLong*") LongPointer hXShapeInfo, @Cast("Nd4jLong*") LongPointer hXOffsets,
-                  Pointer dX, @Cast("Nd4jLong*") LongPointer dXShapeInfo, @Cast("Nd4jLong*") LongPointer dXOffsets,
-                  Pointer hY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer hYOffsets,
-                  Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeInfo, @Cast("Nd4jLong*") LongPointer dYOffsets,
-                  Pointer hIindexes, @Cast("Nd4jLong*") LongPointer hIndicesShapeInfo, Pointer dIindexes, @Cast("Nd4jLong*") LongPointer dIndicesShapeInfo);
+                  Pointer hX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer hXOffsets,
+                  Pointer dX, @Cast("const Nd4jLong*") LongPointer dXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXOffsets,
+                  Pointer hY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer hYOffsets,
+                  Pointer dY, @Cast("const Nd4jLong*") LongPointer dYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYOffsets,
+                  Pointer hIindexes, @Cast("const Nd4jLong*") LongPointer hIndicesShapeInfo, Pointer dIindexes, @Cast("const Nd4jLong*") LongPointer dIndicesShapeInfo);
 public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
-                  Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer hXOffsets,
-                  Pointer dX, @Cast("Nd4jLong*") LongBuffer dXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXOffsets,
-                  Pointer hY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer hYOffsets,
-                  Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYOffsets,
-                  Pointer hIindexes, @Cast("Nd4jLong*") LongBuffer hIndicesShapeInfo, Pointer dIindexes, @Cast("Nd4jLong*") LongBuffer dIndicesShapeInfo);
+                  Pointer hX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer hXOffsets,
+                  Pointer dX, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXOffsets,
+                  Pointer hY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer hYOffsets,
+                  Pointer dY, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYOffsets,
+                  Pointer hIindexes, @Cast("const Nd4jLong*") LongBuffer hIndicesShapeInfo, Pointer dIindexes, @Cast("const Nd4jLong*") LongBuffer dIndicesShapeInfo);
 public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
-                  Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] hXOffsets,
-                  Pointer dX, @Cast("Nd4jLong*") long[] dXShapeInfo, @Cast("Nd4jLong*") long[] dXOffsets,
-                  Pointer hY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] hYOffsets,
-                  Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo, @Cast("Nd4jLong*") long[] dYOffsets,
-                  Pointer hIindexes, @Cast("Nd4jLong*") long[] hIndicesShapeInfo, Pointer dIindexes, @Cast("Nd4jLong*") long[] dIndicesShapeInfo);
+                  Pointer hX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] hXOffsets,
+                  Pointer dX, @Cast("const Nd4jLong*") long[] dXShapeInfo, @Cast("const Nd4jLong*") long[] dXOffsets,
+                  Pointer hY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] hYOffsets,
+                  Pointer dY, @Cast("const Nd4jLong*") long[] dYShapeInfo, @Cast("const Nd4jLong*") long[] dYOffsets,
+                  Pointer hIindexes, @Cast("const Nd4jLong*") long[] hIndicesShapeInfo, Pointer dIindexes, @Cast("const Nd4jLong*") long[] dIndicesShapeInfo);
 
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongPointer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongBuffer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
@@ -3052,9 +3052,9 @@ public native OpaqueConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") 
 public native OpaqueConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
 public native OpaqueConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
 
-public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongPointer data, int length);
-public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongBuffer data, int length);
-public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") long[] data, int length);
+public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer data, int length);
+public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer data, int length);
+public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] data, int length);
 public native OpaqueConstantDataBuffer constantBufferDouble(@Cast("sd::DataType") int dtype, DoublePointer data, int length);
 public native OpaqueConstantDataBuffer constantBufferDouble(@Cast("sd::DataType") int dtype, DoubleBuffer data, int length);
 public native OpaqueConstantDataBuffer constantBufferDouble(@Cast("sd::DataType") int dtype, double[] data, int length);
@@ -3661,16 +3661,16 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
-        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/);
         public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo);
-        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
-        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/);
         public NDArray(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo);
-        public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
-        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
+        public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, shapeInfo, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/);
         public NDArray(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(buffer, shapeInfo); }
         private native void allocate(Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo);
 
@@ -3678,18 +3678,18 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  do not allocate memory, memory for array is passed from outside
         *  we suppose the content of both (device and host) buffers is identical
         */
-        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
-        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/);
-        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo); }
-        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongPointer shapeInfo);
-        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
-        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/);
-        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo); }
-        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") LongBuffer shapeInfo);
-        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
-        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/, @Cast("const bool") boolean isBuffDAlloc/*=false*/);
-        public NDArray(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo); }
-        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("Nd4jLong*") long[] shapeInfo);
+        public NDArray(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/, @Cast("bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
+        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") LongPointer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/, @Cast("bool") boolean isBuffDAlloc/*=false*/);
+        public NDArray(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo); }
+        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") LongPointer shapeInfo);
+        public NDArray(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/, @Cast("bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
+        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") LongBuffer shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/, @Cast("bool") boolean isBuffDAlloc/*=false*/);
+        public NDArray(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo); }
+        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") LongBuffer shapeInfo);
+        public NDArray(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") long[] shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/, @Cast("bool") boolean isBuffDAlloc/*=false*/) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo, context, isBuffAlloc, isBuffDAlloc); }
+        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") long[] shapeInfo, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isBuffAlloc/*=false*/, @Cast("bool") boolean isBuffDAlloc/*=false*/);
+        public NDArray(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(buffer, bufferD, shapeInfo); }
+        private native void allocate(Pointer buffer, Pointer bufferD, @Cast("const Nd4jLong*") long[] shapeInfo);
 
         /**
         *  copy constructor
@@ -3711,83 +3711,83 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         */
-		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
-		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
-		public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
-		private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo);
-		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
-		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
-		public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
-		private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
-		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
-		public NDArray(@Cast("Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
-		private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo);
+		public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
+		private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/);
+		public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+		public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
+		private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/);
+		public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+		public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, copyStrides, context, nullify); }
+		private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/);
+		public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo) { super((Pointer)null); allocate(shapeInfo); }
+		private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo);
 
         /**
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         *  set dtype as array type
         */
-        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
-        private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
-        public NDArray(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
-        private native void allocate(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("const sd::DataType") int dtype);
-        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
-        private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
-        public NDArray(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
-        private native void allocate(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype);
-        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
-        private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean nullify/*=true*/);
-        public NDArray(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
-        private native void allocate(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype);
+        public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("sd::DataType") int dtype, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
+        private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("sd::DataType") int dtype, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/);
+        public NDArray(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        private native void allocate(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("sd::DataType") int dtype);
+        public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("sd::DataType") int dtype, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
+        private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("sd::DataType") int dtype, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/);
+        public NDArray(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        private native void allocate(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("sd::DataType") int dtype);
+        public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("sd::DataType") int dtype, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/) { super((Pointer)null); allocate(shapeInfo, dtype, copyStrides, context, nullify); }
+        private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("sd::DataType") int dtype, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean nullify/*=true*/);
+        public NDArray(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(shapeInfo, dtype); }
+        private native void allocate(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("sd::DataType") int dtype);
 
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape) { super((Pointer)null); allocate(order, shape); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape) { super((Pointer)null); allocate(order, shape); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape) { super((Pointer)null); allocate(order, shape); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, dtype, context); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape) { super((Pointer)null); allocate(order, shape); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape);
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
-        public NDArray(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
-        private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @StdVector DoublePointer data);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @StdVector DoubleBuffer data);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(order, shape, data, dtype, context); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data, @Cast("sd::DataType") int dtype/*=sd::DOUBLE*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data) { super((Pointer)null); allocate(order, shape, data); }
+        private native void allocate(char order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data);
 
         /**
         *  this constructor creates new array using given buffer (without memory allocation) and shape information stored in shape
         */
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("sd::DataType") int dtype);
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("sd::DataType") int dtype);
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("sd::DataType") int dtype);
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
+        private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("sd::DataType") int dtype);
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
+        private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("sd::DataType") int dtype);
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
+        public NDArray(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
+        private native void allocate(Pointer buffer, char order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("sd::DataType") int dtype);
 
         /**
         * This method returns new array with the same shape & data type
@@ -3806,14 +3806,14 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *  this constructor creates new NDArray with shape matching "other" array,
         *  doesn't copy "other" elements into new array !!!
         */
-        public NDArray(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(other, copyStrides, context); }
-        private native void allocate(@Const NDArray other, @Cast("const bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
+        public NDArray(@Const NDArray other, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(other, copyStrides, context); }
+        private native void allocate(@Const NDArray other, @Cast("bool") boolean copyStrides/*=false*/, LaunchContext context/*=sd::LaunchContext::defaultContext()*/);
 
         /**
         *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
         */
-        public NDArray(@Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isScalar/*=true*/) { super((Pointer)null); allocate(dtype, context, isScalar); }
-        private native void allocate(@Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isScalar/*=true*/);
+        public NDArray(@Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isScalar/*=true*/) { super((Pointer)null); allocate(dtype, context, isScalar); }
+        private native void allocate(@Cast("sd::DataType") int dtype, LaunchContext context/*=sd::LaunchContext::defaultContext()*/, @Cast("bool") boolean isScalar/*=true*/);
         public NDArray(@Cast("sd::DataType") int dtype) { super((Pointer)null); allocate(dtype); }
         private native void allocate(@Cast("sd::DataType") int dtype);
 
@@ -3861,7 +3861,6 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
          * @return
          */
         public native Pointer bufferWithOffset(@Cast("Nd4jLong") long offset);
-
         public native Pointer specialBufferWithOffset(@Cast("Nd4jLong") long offset);
         /**
         *  copy assignment operator
@@ -3943,33 +3942,28 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         /**
         *   returns host buffer
         */
-        public native Pointer getBuffer();
         public native Pointer buffer();
 
 
         /**
         *   returns buffer offset (offset is the same for host and device buffers)
         */
-        public native @Cast("Nd4jLong") long getBufferOffset();
         public native @Cast("Nd4jLong") long bufferOffset();
 
         /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
         public native Pointer specialBuffer();
-        public native Pointer getSpecialBuffer();
 
         /**
         *   returns device buffer if compilation is for cuda case, otherwise returns host buffer
         */
-        public native Pointer getPlatformBuffer();
         public native Pointer platformBuffer();
 
         /**
         *   returns _shapeInfo
         */
-        public native @Cast("Nd4jLong*") LongPointer shapeInfo();
-        public native @Cast("Nd4jLong*") LongPointer getShapeInfo();
+        public native @Cast("const Nd4jLong*") LongPointer shapeInfo();
 
 
         /**
@@ -3981,12 +3975,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         /**
         *  if _shapeInfoD==nullptr return _shapeInfo, else return _shapeInfoD
         */
-        public native @Cast("Nd4jLong*") LongPointer specialShapeInfo();
-        public native @Cast("Nd4jLong*") LongPointer getSpecialShapeInfo();
+        public native @Cast("const Nd4jLong*") LongPointer specialShapeInfo();
 
-
-        public native @Cast("Nd4jLong*") LongPointer platformShapeInfo();
-        public native @Cast("Nd4jLong*") LongPointer getPlatformShapeInfo();
+        public native @Cast("const Nd4jLong*") LongPointer platformShapeInfo();
 
         /**
         *  permutes (in-place) the dimensions in array according to "dimensions" array
@@ -4852,16 +4843,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 //////////////////////////////////////////////////////////////////////////
 
 
-////////////////////////////////////////////////////////////////////////
-
-
 //////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -6254,12 +6236,12 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             public native void setObjectsSize(@Cast("Nd4jLong") long bytes);
             public native void setTotalSize(@Cast("Nd4jLong") long bytes);
 
-            public native void addInputShape(@Cast("Nd4jLong*") LongPointer shapeInfo);
-            public native void addInputShape(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-            public native void addInputShape(@Cast("Nd4jLong*") long[] shapeInfo);
-            public native void addOutputShape(@Cast("Nd4jLong*") LongPointer shapeInfo);
-            public native void addOutputShape(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-            public native void addOutputShape(@Cast("Nd4jLong*") long[] shapeInfo);
+            public native void addInputShape(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+            public native void addInputShape(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+            public native void addInputShape(@Cast("const Nd4jLong*") long[] shapeInfo);
+            public native void addOutputShape(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+            public native void addOutputShape(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+            public native void addOutputShape(@Cast("const Nd4jLong*") long[] shapeInfo);
 
             public native @Cast("Nd4jLong") long getActivationsSize();
             public native @Cast("Nd4jLong") long getTemporarySize();
@@ -6456,13 +6438,13 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
             public native void setInputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
             public native void setInputArray(int index, NDArray array);
-            public native void setInputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
-            public native void setInputArray(int index, Pointer databuffer, Pointer shapeInfo, Pointer specialShapeInfo);
+            public native void setInputArray(int index, Pointer buffer, @Const Pointer shapeInfo, Pointer specialBuffer, @Const Pointer specialShapeInfo);
+            public native void setInputArray(int index, Pointer databuffer, @Const Pointer shapeInfo, @Const Pointer specialShapeInfo);
 
             public native void setOutputArray(int index, NDArray array, @Cast("bool") boolean removable/*=false*/);
             public native void setOutputArray(int index, NDArray array);
-            public native void setOutputArray(int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
-            public native void setOutputArray(int index, Pointer databuffer, Pointer shapeInfo, Pointer specialShapeInfo);
+            public native void setOutputArray(int index, Pointer buffer, @Const Pointer shapeInfo, Pointer specialBuffer, @Const Pointer specialShapeInfo);
+            public native void setOutputArray(int index, Pointer databuffer, @Const Pointer shapeInfo, @Const Pointer specialShapeInfo);
 
             public native void setTArguments(DoublePointer arguments, int numberOfArguments);
             public native void setTArguments(DoubleBuffer arguments, int numberOfArguments);
@@ -6804,13 +6786,13 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") LongBuffer shape1, int shape2Rank, @Cast("const Nd4jLong*") LongBuffer shape2);
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") long[] shape1, int shape2Rank, @Cast("const Nd4jLong*") long[] shape2);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer detachShape(@Cast("Nd4jLong*") LongPointer originalShape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer detachShape(@Cast("Nd4jLong*") LongBuffer originalShape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] detachShape(@Cast("Nd4jLong*") long[] originalShape);
+    @Namespace("shape") public static native @Cast("const Nd4jLong*") LongPointer detachShape(@Cast("const Nd4jLong*") LongPointer originalShape);
+    @Namespace("shape") public static native @Cast("const Nd4jLong*") LongBuffer detachShape(@Cast("const Nd4jLong*") LongBuffer originalShape);
+    @Namespace("shape") public static native @Cast("const Nd4jLong*") long[] detachShape(@Cast("const Nd4jLong*") long[] originalShape);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer copyShape(@Cast("Nd4jLong*") LongPointer originalShape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer copyShape(@Cast("Nd4jLong*") LongBuffer originalShape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] copyShape(@Cast("Nd4jLong*") long[] originalShape);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer copyShape(@Cast("const Nd4jLong*") LongPointer originalShape);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer copyShape(@Cast("const Nd4jLong*") LongBuffer originalShape);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] copyShape(@Cast("const Nd4jLong*") long[] originalShape);
 
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2);
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
@@ -6820,17 +6802,17 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2, @Cast("const Nd4jLong*") LongBuffer shapeInfo3);
     @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2, @Cast("const Nd4jLong*") long[] shapeInfo3);
 
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("Nd4jLong*") LongPointer shape1,int shape2Rank,@Cast("Nd4jLong*") LongPointer shape2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("Nd4jLong*") LongBuffer shape1,int shape2Rank,@Cast("Nd4jLong*") LongBuffer shape2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("Nd4jLong*") long[] shape1,int shape2Rank,@Cast("Nd4jLong*") long[] shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("const Nd4jLong*") LongPointer shape1,int shape2Rank, @Cast("const Nd4jLong*") LongPointer shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("const Nd4jLong*") LongBuffer shape1,int shape2Rank, @Cast("const Nd4jLong*") LongBuffer shape2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("const Nd4jLong*") long[] shape1,int shape2Rank, @Cast("const Nd4jLong*") long[] shape2);
 
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("Nd4jLong*") LongPointer shapeInfo1,@Cast("Nd4jLong*") LongPointer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("Nd4jLong*") LongBuffer shapeInfo1,@Cast("Nd4jLong*") LongBuffer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("Nd4jLong*") long[] shapeInfo1,@Cast("Nd4jLong*") long[] shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2);
 
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("Nd4jLong*") LongPointer stride1,int rank1,@Cast("Nd4jLong*") LongPointer stride2,int rank2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("Nd4jLong*") LongBuffer stride1,int rank1,@Cast("Nd4jLong*") LongBuffer stride2,int rank2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("Nd4jLong*") long[] stride1,int rank1,@Cast("Nd4jLong*") long[] stride2,int rank2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongPointer stride1,int rank1, @Cast("const Nd4jLong*") LongPointer stride2, int rank2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongBuffer stride1,int rank1, @Cast("const Nd4jLong*") LongBuffer stride2, int rank2);
+    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") long[] stride1,int rank1, @Cast("const Nd4jLong*") long[] stride2, int rank2);
 
     @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
     @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
@@ -6864,9 +6846,9 @@ public static final int PREALLOC_SIZE = 33554432;
 
     @Namespace("shape") public static native int tadIndexForLinear(int linearIndex, int tadLength);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("Nd4jLong*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("Nd4jLong*") long[] shapeInfo, int[] dimension, int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("const Nd4jLong*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("const Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("const Nd4jLong*") long[] shapeInfo, int[] dimension, int dimensionLength);
 
     @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") LongPointer oldShape, int newRank, @Cast("Nd4jLong*") LongPointer newShape, @Cast("bool") boolean isFOrder);
     @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") LongBuffer oldShape, int newRank, @Cast("Nd4jLong*") LongBuffer newShape, @Cast("bool") boolean isFOrder);
@@ -6886,25 +6868,25 @@ public static final int PREALLOC_SIZE = 33554432;
     * Get the shape info buffer
     * for the given rank and shape.
     */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongPointer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongBuffer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") long[] shape);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] buffer);
 
     /**
     * Get the shape info buffer
     * for the given rank and shape.
      */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongPointer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongBuffer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") long[] shape);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer output);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer output);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] output);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer output);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer output);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] output);
 
 // #ifdef __CUDACC__
 // #endif
@@ -6918,13 +6900,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("Nd4jLong*") LongPointer shape, int rank, @Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("Nd4jLong*") LongBuffer shape, int rank, @Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("Nd4jLong*") long[] shape, int rank, @Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank, @Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank, @Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank, @Cast("Nd4jLong*") long[] ret);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -6934,13 +6916,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @return the strides for a matrix of n dimensions
  */
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("Nd4jLong*") LongPointer shape, int rank, @Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("Nd4jLong*") LongBuffer shape, int rank, @Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("Nd4jLong*") long[] shape, int rank, @Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank, @Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank, @Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank, @Cast("Nd4jLong*") long[] ret);
 
     @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") LongPointer shape, byte order);
     @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") LongBuffer shape, byte order);
@@ -6959,13 +6941,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("Nd4jLong*") LongPointer shape, int rank, int startNum);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("Nd4jLong*") LongBuffer shape, int rank, int startNum);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("Nd4jLong*") long[] shape, int rank, int startNum);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("Nd4jLong*") LongPointer shape, int rank, int startNum, @Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("Nd4jLong*") LongBuffer shape, int rank, int startNum, @Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("Nd4jLong*") long[] shape, int rank, int startNum, @Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum, @Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum, @Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum, @Cast("Nd4jLong*") long[] ret);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -6974,13 +6956,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("Nd4jLong*") LongPointer shape, int rank, int startNum);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("Nd4jLong*") LongBuffer shape, int rank, int startNum);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("Nd4jLong*") long[] shape, int rank, int startNum);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("Nd4jLong*") LongPointer shape, int rank, int startNum, @Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("Nd4jLong*") LongBuffer shape, int rank, int startNum, @Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("Nd4jLong*") long[] shape, int rank, int startNum, @Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum, @Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum, @Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum, @Cast("Nd4jLong*") long[] ret);
 
 /**
  * @param toCopy the shape to copy
@@ -7018,9 +7000,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int isFOrder);
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int isFOrder);
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] stride, int isFOrder);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer stride, int isFOrder);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer stride, int isFOrder);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] stride, int isFOrder);
 
 /**
  * Compute the element wise stride
@@ -7033,17 +7015,17 @@ public static final int PREALLOC_SIZE = 33554432;
  * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int isFOrder, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength);
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int isFOrder, @Cast("Nd4jLong*") LongBuffer dimension, int dimensionLength);
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] stride, int isFOrder, @Cast("Nd4jLong*") long[] dimension, int dimensionLength);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer stride, int isFOrder, @Cast("const Nd4jLong*") LongPointer dimension, int dimensionLength);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer stride, int isFOrder, @Cast("const Nd4jLong*") LongBuffer dimension, int dimensionLength);
+    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] stride, int isFOrder, @Cast("const Nd4jLong*") long[] dimension, int dimensionLength);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeInfoOnlyShapeAndStride(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeInfoOnlyShapeAndStride(@Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") long[] buffer);
 /**
  *
  * @param length
@@ -7065,9 +7047,9 @@ public static final int PREALLOC_SIZE = 33554432;
  */
     @Namespace("shape") public static native void doPermuteSwap(int length, @Cast("Nd4jLong**") PointerPointer shape, IntPointer rearrange);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer permuteShapeBuffer(@Cast("Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer permuteShapeBuffer(@Cast("Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] permuteShapeBuffer(@Cast("Nd4jLong*") long[] shapeBuffer, int[] rearrange);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer permuteShapeBuffer(@Cast("const Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer permuteShapeBuffer(@Cast("const Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] permuteShapeBuffer(@Cast("const Nd4jLong*") long[] shapeBuffer, int[] rearrange);
 
     @Namespace("shape") public static native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange, @Cast("Nd4jLong*") LongPointer out);
     @Namespace("shape") public static native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange, @Cast("Nd4jLong*") LongBuffer out);
@@ -7099,9 +7081,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer createPermuteIndexes(int originalRank, IntBuffer dimension,int dimensionLength);
     @Namespace("shape") public static native @Cast("Nd4jLong*") long[] createPermuteIndexes(int originalRank, int[] dimension,int dimensionLength);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer computeResultShape(@Cast("Nd4jLong*") LongPointer originalShapeBuffer, IntPointer dimension,int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer computeResultShape(@Cast("Nd4jLong*") LongBuffer originalShapeBuffer, IntBuffer dimension,int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] computeResultShape(@Cast("Nd4jLong*") long[] originalShapeBuffer, int[] dimension,int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer computeResultShape(@Cast("const Nd4jLong*") LongPointer originalShapeBuffer, IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer computeResultShape(@Cast("const Nd4jLong*") LongBuffer originalShapeBuffer, IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] computeResultShape(@Cast("const Nd4jLong*") long[] originalShapeBuffer, int[] dimension,int dimensionLength);
 
     /**
      * This method does inplace transpose of given shapeBuffer
@@ -7152,9 +7134,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param shape the shape of the array
  * @param rank the rank of cthe shape
  */
-    @Namespace("shape") public static native int isVector(@Cast("Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native int isVector(@Cast("Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native int isVector(@Cast("Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") long[] shape, int rank);
 
 
     /**
@@ -7173,9 +7155,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
-    @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
-    @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("const Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
+    @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("const Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
     @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
     @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
@@ -7185,9 +7167,9 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
     @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
     /**
     * shape - input inShape is shape only, not shapeInfo
@@ -7235,9 +7217,9 @@ public static final int PREALLOC_SIZE = 33554432;
 * This buffer allocates memory
 * that must be freed elsewhere.
 */
-    @Namespace("shape") public static native void copyTo(int length, @Cast("Nd4jLong*") LongPointer from, @Cast("Nd4jLong*") LongPointer to, @Cast("Nd4jLong*") LongPointer indexes);
-    @Namespace("shape") public static native void copyTo(int length, @Cast("Nd4jLong*") LongBuffer from, @Cast("Nd4jLong*") LongBuffer to, @Cast("Nd4jLong*") LongBuffer indexes);
-    @Namespace("shape") public static native void copyTo(int length, @Cast("Nd4jLong*") long[] from, @Cast("Nd4jLong*") long[] to, @Cast("Nd4jLong*") long[] indexes);
+    @Namespace("shape") public static native void copyTo(int length, @Cast("const Nd4jLong*") LongPointer from, @Cast("Nd4jLong*") LongPointer to, @Cast("Nd4jLong*") LongPointer indexes);
+    @Namespace("shape") public static native void copyTo(int length, @Cast("const Nd4jLong*") LongBuffer from, @Cast("Nd4jLong*") LongBuffer to, @Cast("Nd4jLong*") LongBuffer indexes);
+    @Namespace("shape") public static native void copyTo(int length, @Cast("const Nd4jLong*") long[] from, @Cast("Nd4jLong*") long[] to, @Cast("Nd4jLong*") long[] indexes);
 
 /**
  * Permute the given strides
@@ -7435,9 +7417,9 @@ public static final int PREALLOC_SIZE = 33554432;
      * indexes should be the indexes to exclude
      * indexes length should be the length of indexes
      */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer everyIndexBut(@Cast("Nd4jLong*") LongPointer indexes,int indexesLength,int begin,int end);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer everyIndexBut(@Cast("Nd4jLong*") LongBuffer indexes,int indexesLength,int begin,int end);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] everyIndexBut(@Cast("Nd4jLong*") long[] indexes,int indexesLength,int begin,int end);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer everyIndexBut(@Cast("const Nd4jLong*") LongPointer indexes,int indexesLength,int begin,int end);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer everyIndexBut(@Cast("const Nd4jLong*") LongBuffer indexes,int indexesLength,int begin,int end);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] everyIndexBut(@Cast("const Nd4jLong*") long[] indexes,int indexesLength,int begin,int end);
 
 /**
  * Computes the offset for accessing
@@ -7483,9 +7465,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Keep the given indexes
  * in the data
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer keep(@Cast("Nd4jLong*") LongPointer data, IntPointer index, int indexLength, int dataLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer keep(@Cast("Nd4jLong*") LongBuffer data, IntBuffer index, int indexLength, int dataLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] keep(@Cast("Nd4jLong*") long[] data, int[] index, int indexLength, int dataLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer keep(@Cast("Nd4jLong*") LongPointer data, @Const IntPointer index, int indexLength, int dataLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer keep(@Cast("Nd4jLong*") LongBuffer data, @Const IntBuffer index, int indexLength, int dataLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] keep(@Cast("Nd4jLong*") long[] data, @Const int[] index, int indexLength, int dataLength);
 
 /**
  * Generate reverse copy of the data
@@ -7523,9 +7505,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @return the length per slice of the given shape
  * along the given dimension
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("Nd4jLong*") LongPointer shape, IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("Nd4jLong*") LongBuffer shape, IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("Nd4jLong*") long[] shape, int[] dimension, int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Const IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Const IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("const Nd4jLong*") long[] shape, @Const int[] dimension, int dimensionLength);
 
 /**
  * calculates the offset for a tensor
@@ -7536,24 +7518,24 @@ public static final int PREALLOC_SIZE = 33554432;
  */
     @Namespace("shape") public static native @Cast("Nd4jLong") long sliceOffsetForTensor(int rank,
                                            int index,
-                                           @Cast("Nd4jLong*") LongPointer shape,
-                                           @Cast("Nd4jLong*") LongPointer tensorShape,
+                                           @Cast("const Nd4jLong*") LongPointer shape,
+                                           @Cast("const Nd4jLong*") LongPointer tensorShape,
                                            int tensorShapeLength,
-                                           IntPointer dimension,
+                                           @Const IntPointer dimension,
                                            int dimensionLength);
     @Namespace("shape") public static native @Cast("Nd4jLong") long sliceOffsetForTensor(int rank,
                                            int index,
-                                           @Cast("Nd4jLong*") LongBuffer shape,
-                                           @Cast("Nd4jLong*") LongBuffer tensorShape,
+                                           @Cast("const Nd4jLong*") LongBuffer shape,
+                                           @Cast("const Nd4jLong*") LongBuffer tensorShape,
                                            int tensorShapeLength,
-                                           IntBuffer dimension,
+                                           @Const IntBuffer dimension,
                                            int dimensionLength);
     @Namespace("shape") public static native @Cast("Nd4jLong") long sliceOffsetForTensor(int rank,
                                            int index,
-                                           @Cast("Nd4jLong*") long[] shape,
-                                           @Cast("Nd4jLong*") long[] tensorShape,
+                                           @Cast("const Nd4jLong*") long[] shape,
+                                           @Cast("const Nd4jLong*") long[] tensorShape,
                                            int tensorShapeLength,
-                                           int[] dimension,
+                                           @Const int[] dimension,
                                            int dimensionLength);
 
 /**
@@ -9179,25 +9161,33 @@ public static final int PREALLOC_SIZE = 33554432;
             return (ShapeList)super.position(position);
         }
     
-        public ShapeList(@Cast("Nd4jLong*") LongPointer shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
-        private native void allocate(@Cast("Nd4jLong*") LongPointer shape/*=nullptr*/);
+        public ShapeList(@Cast("const Nd4jLong*") LongPointer shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
+        private native void allocate(@Cast("const Nd4jLong*") LongPointer shape/*=nullptr*/);
         public ShapeList() { super((Pointer)null); allocate(); }
         private native void allocate();
-        public ShapeList(@Cast("Nd4jLong*") LongBuffer shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
-        private native void allocate(@Cast("Nd4jLong*") LongBuffer shape/*=nullptr*/);
-        public ShapeList(@Cast("Nd4jLong*") long[] shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
-        private native void allocate(@Cast("Nd4jLong*") long[] shape/*=nullptr*/);
-        public ShapeList(@Cast("Nd4jLong**") @StdVector PointerPointer shapes) { super((Pointer)null); allocate(shapes); }
-        private native void allocate(@Cast("Nd4jLong**") @StdVector PointerPointer shapes);
+        public ShapeList(@Cast("const Nd4jLong*") LongBuffer shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
+        private native void allocate(@Cast("const Nd4jLong*") LongBuffer shape/*=nullptr*/);
+        public ShapeList(@Cast("const Nd4jLong*") long[] shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
+        private native void allocate(@Cast("const Nd4jLong*") long[] shape/*=nullptr*/);
+        public ShapeList(@Cast("const Nd4jLong**") @StdVector PointerPointer shapes, @Cast("bool") boolean isWorkspace) { super((Pointer)null); allocate(shapes, isWorkspace); }
+        private native void allocate(@Cast("const Nd4jLong**") @StdVector PointerPointer shapes, @Cast("bool") boolean isWorkspace);
+        public ShapeList(@Cast("const Nd4jLong**") @StdVector @ByPtrPtr LongPointer shapes, @Cast("bool") boolean isWorkspace) { super((Pointer)null); allocate(shapes, isWorkspace); }
+        private native void allocate(@Cast("const Nd4jLong**") @StdVector @ByPtrPtr LongPointer shapes, @Cast("bool") boolean isWorkspace);
+        public ShapeList(@Cast("const Nd4jLong**") @StdVector @ByPtrPtr LongBuffer shapes, @Cast("bool") boolean isWorkspace) { super((Pointer)null); allocate(shapes, isWorkspace); }
+        private native void allocate(@Cast("const Nd4jLong**") @StdVector @ByPtrPtr LongBuffer shapes, @Cast("bool") boolean isWorkspace);
+        public ShapeList(@Cast("const Nd4jLong**") @StdVector @ByPtrPtr long[] shapes, @Cast("bool") boolean isWorkspace) { super((Pointer)null); allocate(shapes, isWorkspace); }
+        private native void allocate(@Cast("const Nd4jLong**") @StdVector @ByPtrPtr long[] shapes, @Cast("bool") boolean isWorkspace);
+        public ShapeList(@Cast("const Nd4jLong**") @StdVector PointerPointer shapes) { super((Pointer)null); allocate(shapes); }
+        private native void allocate(@Cast("const Nd4jLong**") @StdVector PointerPointer shapes);
         //ShapeList(bool autoRemovable);
 
-        public native @Cast("Nd4jLong**") @StdVector PointerPointer asVector();
+        public native @Cast("const Nd4jLong**") @StdVector PointerPointer asVector();
         public native void destroy();
         public native int size();
-        public native @Cast("Nd4jLong*") LongPointer at(int idx);
-        public native void push_back(@Cast("Nd4jLong*") LongPointer shape);
-        public native void push_back(@Cast("Nd4jLong*") LongBuffer shape);
-        public native void push_back(@Cast("Nd4jLong*") long[] shape);
+        public native @Cast("const Nd4jLong*") LongPointer at(int idx);
+        public native void push_back(@Cast("const Nd4jLong*") LongPointer shape);
+        public native void push_back(@Cast("const Nd4jLong*") LongBuffer shape);
+        public native void push_back(@Cast("const Nd4jLong*") long[] shape);
 
         /**
          * PLEASE NOTE: This method should be called ONLY if shapes were generated at workspaces. Otherwise you'll get memory leak
