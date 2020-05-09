@@ -50,11 +50,11 @@ import java.util.regex.PatternSyntaxException;
  * <h4 id="Resources">Resources</h4>
  *
  * <p>Configurations are specified by resources. A resource contains a set of
- * name/value pairs as XML data. Each resource is named by either a 
- * <code>String</code>. If named by a <code>String</code>,
- * then the classpath is examined for a file with that name.  If named by a 
- * <code>Path</code>, then the local filesystem is examined directly, without 
- * referring to the classpath.
+ * name/value pairs as XML data. Each resource is named by either a
+ * <code>String</code> or a <code>Path</code>. If named by a
+ * <code>String</code>, then the classpath is examined for a file with that
+ * name. If named by a <code>Path</code>, then the local filesystem is
+ * examined directly, without referring to the classpath.
  *
  * <p>Unless explicitly turned off, Hadoop by default specifies two 
  * resources, loaded in-order from the classpath: <ol>
