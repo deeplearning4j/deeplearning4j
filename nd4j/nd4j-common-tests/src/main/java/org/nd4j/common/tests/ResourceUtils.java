@@ -61,11 +61,14 @@ public class ResourceUtils {
     private static List<String> listClassPathFilesHelper(String path, boolean recursive, boolean includeDirectories, String... extensions) throws IOException {
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(path).getClassLoader());
 
+        if(!path.endsWith("/"))
+            path = path + "/";
+
         StringBuilder sbPattern = new StringBuilder("classpath*:" + path);
         if (recursive) {
-            sbPattern.append("/**/*");
+            sbPattern.append("**/*");
         } else {
-            sbPattern.append("/*");
+            sbPattern.append("*");
         }
 
         //Normalize extensions so they are all like ".csv" etc - with leading "."

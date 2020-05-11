@@ -55,7 +55,7 @@ public class TFGraphTestList {
     public static final boolean printArraysDebugging = false;
 
     public static String[] modelNames = new String[]{
-            "resize_nearest_neighbor/int32"
+            "bitcast/from_int32_to_uint32"
     };
 
     @After

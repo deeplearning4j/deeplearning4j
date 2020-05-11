@@ -54,14 +54,15 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         //protected void succeeded(Description description) {
     };
 
-    private Map<String, INDArray> inputs;
-    private Map<String, INDArray> predictions;
+//    private Map<String, INDArray> inputs;
+//    private Map<String, INDArray> predictions;
     private String modelName;
     private File localTestDir;
+    private TestCase testCase;
 
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
     private static final String BASE_DIR = "tf_graphs/examples";
-    private static final String MODEL_FILENAME = "frozen_model.pb";
+    public static final String MODEL_FILENAME = "frozen_model.pb";
 
     public static final String[] IGNORE_REGEXES = new String[]{
             //Failing 2019/07/01 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
@@ -150,26 +151,47 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     public void tearDown() {
     }
 
-    @Parameterized.Parameters(name="{2}")
-    public static Collection<Object[]> data() throws IOException {
-        val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
+    @Parameterized.Parameters(name="{0}")
+    public static Collection<Object[]> data() throws Exception {
+//        long start = System.currentTimeMillis();
+//        val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
+//
+//        // if this variable isn't set - we're using dl4j-tests-resources
+//        if (localPath == null) {
+//            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+//            List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+//            long end = System.currentTimeMillis();
+//            System.out.println("TIME TO GET PARAMETERS: " + (end-start));
+//            return params;
+//        } else {
+//            File baseDir = new File(localPath);
+//            List<Object[]> l = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+//            long end = System.currentTimeMillis();
+//            System.out.println("TIME TO GET PARAMETERS: " + (end-start));
+//            return l;
+//        }
 
-        // if this variable isn't set - we're using dl4j-tests-resources
-        if (localPath == null) {
-            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
-            List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
-            return params;
-        } else {
-            File baseDir = new File(localPath);
-            return TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
+        Map<String,TestCase> m = TFGraphUtil.getTestCases(BASE_DIR);
+        List<String> l = new ArrayList<>(m.keySet());
+        Collections.sort(l);
+
+        List<Object[]> out = new ArrayList<>(l.size());
+        for(String s : l){
+            out.add(new Object[]{s, m.get(s)});
         }
+        return out;
     }
 
-    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
-        this.inputs = inputs;
-        this.predictions = predictions;
-        this.modelName = modelName;
-        this.localTestDir = localTestDir;
+//    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
+//        this.inputs = inputs;
+//        this.predictions = predictions;
+//        this.modelName = modelName;
+//        this.localTestDir = localTestDir;
+//    }
+
+    public TFGraphTestAllSameDiff(String name, TestCase tc){
+        this.modelName = name;
+        this.testCase = tc;
     }
 
     @Test//(timeout = 25000L)
@@ -205,6 +227,23 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
                     verboseDebugMode = true;
                     break;
                 }
+            }
+        }
+
+        Map<String,INDArray> inputs = new HashMap<>();
+        Map<String,INDArray> predictions = new HashMap<>();
+
+        if(testCase.inputs != null){
+            for(String s : testCase.inputs.keySet()){
+                INDArray arr = TFGraphUtil.loadCsv(s, testCase);
+                inputs.put(s, arr);
+            }
+        }
+
+        if(testCase.outputs != null){
+            for(String s : testCase.outputs.keySet()){
+                INDArray arr = TFGraphUtil.loadCsv(s, testCase);
+                predictions.put(s, arr);
             }
         }
 
