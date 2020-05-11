@@ -1054,6 +1054,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test8) {
     ASSERT_TRUE(testData.equalsTo(result));
 }
 
+/*
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test1) {
 
     NDArray input    = NDArrayFactory::create<double>('c', {1, 3, 3, 4});
@@ -1113,6 +1114,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 }
+
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test2) {
 
@@ -1530,6 +1532,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test15) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 }
+ */
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, summaryStatsData_test1) {

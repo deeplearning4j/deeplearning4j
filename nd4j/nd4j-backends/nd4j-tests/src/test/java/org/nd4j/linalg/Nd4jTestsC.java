@@ -8395,6 +8395,25 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(e, z);
     }
 
+    @Test
+    public void testCreateBufferFromByteBuffer(){
+
+        for(DataType dt : DataType.values()){
+            if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
+                continue;
+//            System.out.println(dt);
+
+            int lengthBytes = 256;
+            int lengthElements = lengthBytes / dt.width();
+            ByteBuffer bb = ByteBuffer.allocateDirect(lengthBytes);
+
+            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements, 0);
+            INDArray arr = Nd4j.create(db, new long[]{lengthElements});
+
+            arr.toStringFull();
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';

@@ -324,6 +324,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = FloatIndexer.create((FloatPointer) pointer);
                 break;
             case UINT32:
+                this.pointer = new CudaPointer(hostPointer, length, 0).asIntPointer();
+                indexer = UIntIndexer.create((IntPointer) pointer);
+                break;
             case INT:
                 this.pointer = new CudaPointer(hostPointer, length, 0).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
@@ -336,7 +339,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(hostPointer, length, 0).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
-            case UINT64:
+            case UINT64:    //Fall through
             case LONG:
                 this.pointer = new CudaPointer(hostPointer, length, 0).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);
@@ -501,6 +504,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = FloatIndexer.create((FloatPointer) pointer);
                 break;
             case UINT32:
+                this.pointer = new CudaPointer(hostPointer, originalBuffer.length()).asIntPointer();
+                indexer = UIntIndexer.create((IntPointer) pointer);
+                break;
             case INT:
                 this.pointer = new CudaPointer(hostPointer, originalBuffer.length()).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
@@ -513,7 +519,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(hostPointer, originalBuffer.length()).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
-            case UINT64:
+            case UINT64: //Fall through
             case LONG:
                 this.pointer = new CudaPointer(hostPointer, originalBuffer.length()).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);

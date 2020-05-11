@@ -56,8 +56,10 @@ import static org.junit.Assert.*;
  */
 public class RegressionTest050 extends BaseDL4JTest {
 
-    @Rule
-    public Timeout timeout = Timeout.seconds(300);
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
+    }
 
     @Override
     public DataType getDataType(){

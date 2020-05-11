@@ -763,7 +763,7 @@ public class ParagraphVectors extends Word2Vec {
 
 
         /**
-         * This method allows you to use pre-built WordVectors model (Word2Vec or GloVe) for ParagraphVectors.
+         * This method allows you to use pre-built WordVectors model (e.g. Word2Vec) for ParagraphVectors.
          * Existing model will be transferred into new model before training starts.
          *
          * PLEASE NOTE: Non-normalized model is recommended to use here.

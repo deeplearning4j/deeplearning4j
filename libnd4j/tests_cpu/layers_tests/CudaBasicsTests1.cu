@@ -119,7 +119,7 @@ TEST_F(CudaBasicsTests1, TestPairwise_1) {
     z.tickWriteHost();
 
 	for (int e = 0; e < z.lengthOf(); e++) {
-	    nd4j_printf("step %i\n", e);
+	    //nd4j_printf("step %i\n", e);
 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
 	}
 }
@@ -2822,7 +2822,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_2) {
 	// delete cuda stream
 	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
 }
-
+/*
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execSummaryStats_3) {
     	
@@ -2876,6 +2876,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
 	// delete cuda stream
 	cudaResult = cudaStreamDestroy(stream); ASSERT_EQ(0, cudaResult);
 }
+*/
 
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execSummaryStatsScalar_1) {

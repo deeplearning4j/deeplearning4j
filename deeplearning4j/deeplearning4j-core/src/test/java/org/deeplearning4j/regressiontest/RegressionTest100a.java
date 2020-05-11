@@ -56,7 +56,7 @@ public class RegressionTest100a extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 90000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
+        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
     }
 
     @Override

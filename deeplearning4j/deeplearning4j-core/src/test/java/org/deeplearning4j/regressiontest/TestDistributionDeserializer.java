@@ -30,6 +30,11 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestDistributionDeserializer extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
+    }
+
     @Test
     public void testDistributionDeserializer() throws Exception {
         //Test current format:

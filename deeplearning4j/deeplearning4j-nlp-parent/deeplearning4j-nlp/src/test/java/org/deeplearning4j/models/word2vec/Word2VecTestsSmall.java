@@ -49,8 +49,8 @@ import java.io.File;
 import java.util.Collection;
 import java.util.concurrent.Callable;
 
-import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 @Slf4j
@@ -206,12 +206,6 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
         final MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
 
         assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
-        await()
-            .until(new Callable<Boolean>() {
-                @Override
-                public Boolean call() {
-                    return net.params().equalsWithEps(restored.params(), 2e-3);
-                }
-            });
+        assertTrue(net.params().equalsWithEps(restored.params(), 2e-3));
     }
 }

@@ -121,6 +121,24 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBytePointer();
 
             setIndexer(ByteIndexer.create((BytePointer) pointer));
+        } else if(dataType() == DataType.FLOAT16){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
+            setIndexer(HalfIndexer.create((ShortPointer) pointer));
+        } else if(dataType() == DataType.BFLOAT16){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
+            setIndexer(Bfloat16Indexer.create((ShortPointer) pointer));
+        } else if(dataType() == DataType.BOOL){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBoolPointer();
+            setIndexer(BooleanIndexer.create((BooleanPointer) pointer));
+        } else if(dataType() == DataType.UINT16){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
+            setIndexer(UShortIndexer.create((ShortPointer) pointer));
+        } else if(dataType() == DataType.UINT32){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asIntPointer();
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
+        } else if (dataType() == DataType.UINT64) {
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer();
+            setIndexer(LongIndexer.create((LongPointer) pointer));
         }
 
         Nd4j.getDeallocatorService().pickObject(this);
@@ -336,15 +354,13 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         } else if (dataType() == DataType.UINT32) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asIntPointer();
 
-            // FIXME: we need unsigned indexer here
-            setIndexer(IntIndexer.create((IntPointer) pointer));
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.UINT64) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer();
 
-            // FIXME: we need unsigned indexer here
             setIndexer(LongIndexer.create((LongPointer) pointer));
 
             if (initialize)
@@ -500,7 +516,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
             // FIXME: need unsigned indexer here
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new IntPointer(length());
-            setIndexer(IntIndexer.create((IntPointer) pointer));
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
 
         } else if (dataType() == DataType.UINT64) {
             attached = true;

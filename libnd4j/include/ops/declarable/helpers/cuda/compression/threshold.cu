@@ -41,7 +41,11 @@ namespace sd {
                 else
                     numThreads = sd::floorPow2(numElements);
 
+                numThreads = sd::math::nd4j_max<int>(1, numThreads);
+
                 int numEltsPerBlock = numThreads * 2;
+
+
 
                 // if this is a non-power-of-2 array, the last block will be non-full
                 // compute the smallest power of 2 able to compute its scan.
@@ -102,8 +106,6 @@ namespace sd {
                 } else {
                     sd::prescanLauncher<false, true>(grid, threads, sharedMemSize, stream, dZ, dX, 0, numElements, 0, 0);
                 }
-
-                sd::DebugHelper::checkErrorCode(stream, "prescanArray(...) failed");
             }
 
             static void encodeThresholdP2Int_(void **prs, int *dx, Nd4jLong N, int *dz) {

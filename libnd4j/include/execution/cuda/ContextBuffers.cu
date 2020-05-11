@@ -88,7 +88,7 @@ namespace sd {
                 cudaFree(_allocationPointer);
 
             if (_scalarPointer != nullptr)
-                cudaFree(_scalarPointer);
+                cudaFreeHost(_scalarPointer);
 
             if (_allocationPointer != nullptr)
                 cudaFree(_reductionPointer);
