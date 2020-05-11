@@ -516,6 +516,7 @@ BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT cudaDecodeBitmapGeneric, (dim3 &
     template <bool storeSum, bool isNP2>
     __host__ void prescanLauncher(dim3 &blocks, dim3 &threads, int shmem, cudaStream_t *stream, int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
         //printf("Prescan grid: <%i/%i/%i>; threads: <%i/%i/%i>; shareMemSize: %i\n", blocks.x, blocks.y, blocks.z,   threads.x, threads.y, threads.z,    shmem);
+        shmem = sd::math::nd4j_max<int>(shmem, 16384);
         prescan<storeSum, isNP2><<<blocks, threads, shmem, *stream>>>(g_odata, g_idata, g_blockSums, n, blockIndex, baseIndex);
     };
 
