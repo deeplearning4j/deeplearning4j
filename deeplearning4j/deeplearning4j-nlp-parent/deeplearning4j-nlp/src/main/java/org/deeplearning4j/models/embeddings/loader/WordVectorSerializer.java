@@ -24,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.deeplearning4j.common.util.DL4JFileUtils;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -32,7 +33,6 @@ import org.deeplearning4j.models.embeddings.reader.impl.BasicModelUtils;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.deeplearning4j.models.fasttext.FastText;
-import org.deeplearning4j.models.glove.Glove;
 import org.deeplearning4j.models.paragraphvectors.ParagraphVectors;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.interfaces.SequenceElementFactory;
@@ -50,19 +50,18 @@ import org.deeplearning4j.text.documentiterator.LabelsSource;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.common.util.DL4JFileUtils;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.OneTimeLogger;
 import org.nd4j.compression.impl.NoOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.storage.CompressedRamStorage;
-import org.nd4j.common.util.OneTimeLogger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -108,10 +107,6 @@ import java.util.zip.*;
  * {@link #readParagraphVectors(String)}
  * {@link #readParagraphVectors(InputStream)}
  *
- * <li>Serializers for GloVe:</li>
- * {@link #writeWordVectors(Glove, File)}
- * {@link #writeWordVectors(Glove, String)}
- * {@link #writeWordVectors(Glove, OutputStream)}
  *
  * <li>Adapters</li>
  * {@link #fromTableAndVocab(WeightLookupTable, VocabCache)}
@@ -119,7 +114,6 @@ import java.util.zip.*;
  * {@link #loadTxt(File)}
  *
  * <li>Serializers to tSNE format</li>
- * {@link #writeTsneFormat(Glove, INDArray, File)}
  * {@link #writeTsneFormat(Word2Vec, INDArray, File)}
  *
  * <li>FastText serializer:</li>
@@ -1115,48 +1109,6 @@ public class WordVectorSerializer {
     }
 
     /**
-     * This method saves GloVe model to the given output stream.
-     *
-     * @param vectors GloVe model to be saved
-     * @param file    path where model should be saved to
-     */
-    public static void writeWordVectors(@NonNull Glove vectors, @NonNull File file) {
-        try (BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(file))) {
-            writeWordVectors(vectors, fos);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * This method saves GloVe model to the given output stream.
-     *
-     * @param vectors GloVe model to be saved
-     * @param path    path where model should be saved to
-     */
-    public static void writeWordVectors(@NonNull Glove vectors, @NonNull String path) {
-        try (BufferedOutputStream fos = new BufferedOutputStream(new FileOutputStream(path))) {
-            writeWordVectors(vectors, fos);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * This method saves GloVe model to the given OutputStream
-     *
-     * @param vectors GloVe model to be saved
-     * @param stream  OutputStream where model should be saved to
-     */
-    public static void writeWordVectors(@NonNull Glove vectors, @NonNull OutputStream stream) {
-        try {
-            writeWordVectors(vectors.lookupTable(), stream);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
      * This method saves paragraph vectors to the given output stream.
      *
      * @deprecated Use {@link #writeParagraphVectors(ParagraphVectors, OutputStream)}
@@ -1816,43 +1768,6 @@ public class WordVectorSerializer {
         lookupTable.setSyn0(syn);
 
         return fromPair(Pair.makePair((InMemoryLookupTable) lookupTable, (VocabCache) cache));
-    }
-
-    /**
-     * Write the tsne format
-     *
-     * @param vec  the word vectors to use for labeling
-     * @param tsne the tsne array to write
-     * @param csv  the file to use
-     * @throws Exception
-     */
-    public static void writeTsneFormat(Glove vec, INDArray tsne, File csv) throws Exception {
-        try (BufferedWriter write = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(csv), StandardCharsets.UTF_8))) {
-            int words = 0;
-            InMemoryLookupCache l = (InMemoryLookupCache) vec.vocab();
-            for (String word : vec.vocab().words()) {
-                if (word == null) {
-                    continue;
-                }
-                StringBuilder sb = new StringBuilder();
-                INDArray wordVector = tsne.getRow(l.wordFor(word).getIndex());
-                for (int j = 0; j < wordVector.length(); j++) {
-                    sb.append(wordVector.getDouble(j));
-                    if (j < wordVector.length() - 1) {
-                        sb.append(",");
-                    }
-                }
-                sb.append(",");
-                sb.append(word.replaceAll(" ", WHITESPACE_REPLACEMENT));
-                sb.append(" ");
-
-                sb.append("\n");
-                write.write(sb.toString());
-
-            }
-
-            log.info("Wrote " + words + " with size of " + vec.lookupTable().layerSize());
-        }
     }
 
     /**

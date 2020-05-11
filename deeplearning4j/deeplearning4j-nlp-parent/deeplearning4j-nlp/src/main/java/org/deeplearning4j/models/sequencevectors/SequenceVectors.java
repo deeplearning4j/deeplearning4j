@@ -520,7 +520,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         }
 
         /**
-         * This method allows you to use pre-built WordVectors model (SkipGram or GloVe) for DBOW sequence learning.
+         * This method allows you to use pre-built WordVectors model (e.g. SkipGram) for DBOW sequence learning.
          * Existing model will be transferred into new model before training starts.
          *
          * PLEASE NOTE: This model has no effect for elements learning algorithms. Only sequence learning is affected.
