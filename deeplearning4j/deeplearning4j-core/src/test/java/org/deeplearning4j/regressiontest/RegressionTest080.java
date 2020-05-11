@@ -64,6 +64,11 @@ public class RegressionTest080 extends BaseDL4JTest {
         return DataType.FLOAT;
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
+    }
+
     @Test
     public void regressionTestMLP1() throws Exception {
 

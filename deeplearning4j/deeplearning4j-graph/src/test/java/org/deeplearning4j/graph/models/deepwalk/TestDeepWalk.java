@@ -46,6 +46,11 @@ public class TestDeepWalk extends BaseDL4JTest {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120_000L;        //Increase timeout due to intermittently slow CI machines
+    }
+
     @Test(timeout = 60000L)
     public void testBasic() throws IOException {
         //Very basic test. Load graph, build tree, call fit, make sure it doesn't throw any exceptions

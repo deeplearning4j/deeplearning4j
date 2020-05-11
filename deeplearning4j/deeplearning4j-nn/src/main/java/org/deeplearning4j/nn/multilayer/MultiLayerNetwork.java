@@ -2220,14 +2220,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (d.size(0) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        int[] ret = new int[(int) d.size(0)];
-        if (d.isRowVectorOrScalar())
-            ret[0] = Nd4j.getBlasWrapper().iamax(output);
-        else {
-            for (int i = 0; i < ret.length; i++)
-                ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
-        }
-        return ret;
+        Preconditions.checkState(output.rank() == 2, "predict(INDArray) method can only be used on rank 2 output - got array with rank %s", output.rank());
+        return output.argMax(1).toIntVector();
     }
 
     /**
