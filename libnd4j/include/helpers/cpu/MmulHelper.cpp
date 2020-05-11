@@ -44,9 +44,9 @@ static  void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC,
 
     const bool betaPersent = beta;
 
-    const Nd4jLong* aShapeInfo = vA->getShapeInfo();
-    const Nd4jLong* bShapeInfo = vB->getShapeInfo();
-    const Nd4jLong* cShapeInfo = vC->getShapeInfo();
+    const Nd4jLong* aShapeInfo = vA->shapeInfo();
+    const Nd4jLong* bShapeInfo = vB->shapeInfo();
+    const Nd4jLong* cShapeInfo = vC->shapeInfo();
 
     const int aRank = vA->rankOf();
     const int bRank = vB->rankOf();
@@ -111,9 +111,9 @@ static  void usualGemv(const NDArray* vA, const NDArray* vX, NDArray* vY, const 
 
     const bool betaPersent = beta;
 
-    const Nd4jLong* aShapeInfo = vA->getShapeInfo();
-    const Nd4jLong* xShapeInfo = vX->getShapeInfo();
-    const Nd4jLong* yShapeInfo = vY->getShapeInfo();
+    const Nd4jLong* aShapeInfo = vA->shapeInfo();
+    const Nd4jLong* xShapeInfo = vX->shapeInfo();
+    const Nd4jLong* yShapeInfo = vY->shapeInfo();
 
     const int N = vX->lengthOf();
     const int M = vY->lengthOf();
@@ -294,13 +294,13 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 
     if(A->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
-    if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
+    if(!shape::isCommonVector(X->shapeInfo(), xLenDim))
         throw std::runtime_error("MmulHelper::mmulMxV: X array must be vector !");
 
     const auto M = A->sizeAt(0);
     const auto N = A->sizeAt(1);
 
-    if(Y != nullptr && !shape::isCommonVector(Y->getShapeInfo(), yLenDim))
+    if(Y != nullptr && !shape::isCommonVector(Y->shapeInfo(), yLenDim))
         throw std::runtime_error("MmulHelper::mmulMxV: Y array must be vector !");
     if(X->lengthOf() != N)
         throw std::runtime_error("MmulHelper::mmulMxV: X vector has wrong length !");
@@ -347,10 +347,10 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 
         // choose appropriate cuda gemm api depending on data types
         if(typeDouble) {
-            BlasHelper::getInstance()->dgemv()(blasOrder, CblasNoTrans, M, N, alpha, (double*)pA->getBuffer(), lda, (double*)X->getBuffer(), incx, beta, (double*)Y->getBuffer(), incy);
+            BlasHelper::getInstance()->dgemv()(blasOrder, CblasNoTrans, M, N, alpha, (double*)pA->buffer(), lda, (double*)X->buffer(), incx, beta, (double*)Y->buffer(), incy);
         }
         else if(typeFloat) {
-            BlasHelper::getInstance()->sgemv()(blasOrder, CblasNoTrans, M, N, (float)alpha, (float*)pA->getBuffer(), lda, (float*)X->getBuffer(), incx, (float)beta, (float*)Y->getBuffer(), incy);
+            BlasHelper::getInstance()->sgemv()(blasOrder, CblasNoTrans, M, N, (float)alpha, (float*)pA->buffer(), lda, (float*)X->buffer(), incx, (float)beta, (float*)Y->buffer(), incy);
         }
 
         if(pA != A)
@@ -371,9 +371,9 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 
     int xLenDim(0), yLenDim(0);
 
-    if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
+    if(!shape::isCommonVector(X->shapeInfo(), xLenDim))
         throw std::runtime_error("MmulHelper::dot: X array must be vector !");
-    if(!shape::isCommonVector(Y->getShapeInfo(), yLenDim))
+    if(!shape::isCommonVector(Y->shapeInfo(), yLenDim))
         throw std::runtime_error("MmulHelper::dot: Y array must be vector !");
     if(Z != nullptr && !Z->isScalar())
         throw std::runtime_error("MmulHelper::dot: Z array must be scalar !");
@@ -393,8 +393,8 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
     const auto yType = Y->dataType();
     const auto zType = Z->dataType();
 
-    BUILD_SINGLE_SELECTOR_THRICE(xType, usualDot, (length, alpha, X->getBuffer(), incx, Y->getBuffer(), incy, beta, Z->getBuffer()), NUMERIC_TYPES);
-        //BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (length, alpha, X->getBuffer(), incx, Y->getBuffer(), incy, beta, Z->getBuffer()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta, Z->buffer()), NUMERIC_TYPES);
+        //BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta, Z->buffer()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 
     return Z;
 }
@@ -419,9 +419,9 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB,  NDArray* vC,
 
     const bool betaPersent = beta;
 
-    const Nd4jLong* aShapeInfo = vA->getShapeInfo();
-    const Nd4jLong* bShapeInfo = vB->getShapeInfo();
-    const Nd4jLong* cShapeInfo = vC->getShapeInfo();
+    const Nd4jLong* aShapeInfo = vA->shapeInfo();
+    const Nd4jLong* bShapeInfo = vB->shapeInfo();
+    const Nd4jLong* cShapeInfo = vC->shapeInfo();
 
     const int aRank = vA->rankOf();
     const int bRank = vB->rankOf();
@@ -576,13 +576,13 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
 
     // multiplication
     const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(C->rankOf(), {-2, -1});
-    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(C->getShapeInfo(), dimsToExclude);
+    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(C->shapeInfo(), dimsToExclude);
     std::vector<Nd4jLong> idxRanges(2 * C->rankOf());
 
 // #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
-            ShapeUtils::evalIdxRangesForSubArr(i, C->getShapeInfo(), dimsToExclude, idxRanges.data());
+            ShapeUtils::evalIdxRangesForSubArr(i, C->shapeInfo(), dimsToExclude, idxRanges.data());
             NDArray cSubArr = (*C)(idxRanges);
 
             if(aRank > bRank) {

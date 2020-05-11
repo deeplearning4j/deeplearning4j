@@ -93,7 +93,7 @@ namespace sd {
         DECLARE_SHAPE_FN(squeeze) {
             auto shapeList = SHAPELIST();
 
-            Nd4jLong* newShape;
+//            Nd4jLong* newShape;
             auto in = inputShape->at(0);
             auto rank = shape::rank(in);
             auto length = shape::length(in);
@@ -148,7 +148,7 @@ namespace sd {
                 return shapeList;
             }
 
-            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), order, shape);
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), order, shape);
             shapeList->push_back(newShape);
             return shapeList;
         }

@@ -70,7 +70,7 @@ namespace ops {
             axes = *block.getIArguments();
         }
 
-        Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());
+        auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());
 
         return SHAPELIST(outShapeInfo);
     }

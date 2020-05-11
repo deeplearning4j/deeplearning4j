@@ -17,6 +17,7 @@
 package org.datavec.image.loader;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.io.labels.PatternPathLabelGenerator;
@@ -48,6 +49,7 @@ import java.util.Random;
  *      most images are in color, although a few are grayscale
  *
  */
+@Slf4j
 public class LFWLoader extends BaseImageLoader implements Serializable {
 
     public final static int NUM_IMAGES = 13233;
@@ -271,7 +273,17 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
     }
 
     @Override
+    public INDArray asMatrix(File f, boolean nchw) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public INDArray asMatrix(InputStream inputStream) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray asMatrix(InputStream inputStream, boolean nchw) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -281,7 +293,17 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
     }
 
     @Override
+    public Image asImageMatrix(File f, boolean nchw) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Image asImageMatrix(InputStream inputStream) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Image asImageMatrix(InputStream inputStream, boolean nchw) throws IOException {
         throw new UnsupportedOperationException();
     }
 

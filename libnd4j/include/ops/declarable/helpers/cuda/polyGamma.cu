@@ -90,7 +90,7 @@ void polyGamma(sd::LaunchContext * context, const NDArray& n, const NDArray& x, 
     int threadsPerBlock = MAX_NUM_THREADS / 2;
     int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
-    BUILD_SINGLE_SELECTOR(n.dataType(), polyGammaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), n.getSpecialBuffer(), n.getSpecialShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo()), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(n.dataType(), polyGammaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), n.specialBuffer(), n.specialShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), z.specialBuffer(), z.specialShapeInfo()), FLOAT_TYPES);
 
     NDArray::registerSpecialUse({&z}, {&n, &x});
 }

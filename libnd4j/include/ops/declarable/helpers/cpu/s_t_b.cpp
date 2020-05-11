@@ -45,8 +45,8 @@ static void batchToSpace_(const NDArray& input, NDArray& output, const uint crop
 
     const int rank = 4;
 
-    const Nd4jLong* xShapeInfo = input.getShapeInfo();
-    const Nd4jLong* zShapeInfo = output.getShapeInfo();
+    const Nd4jLong* xShapeInfo = input.shapeInfo();
+    const Nd4jLong* zShapeInfo = output.shapeInfo();
 
     const uint bS = xShapeInfo[1];
     const uint iH = xShapeInfo[2];
@@ -118,7 +118,7 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
 
         for (auto i = start; i < stop; i++) {
 
-            shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
+            shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
 
             memcpy(xCoords, zCoords, rank * sizeof(int));
 
@@ -126,8 +126,8 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
             for (uint j = 1; j <= numOfSpatialDims; ++j)
                 xCoords[j] += crop.e<uint>(j - 1, 0);       // add crop left
 
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
-            const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoords);
+            const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
+            const auto xOffset = shape::getOffset(input.shapeInfo(), xCoords);
 
             z[zOffset] = x[xOffset];
         }
@@ -211,8 +211,8 @@ static void spaceToBatch_(const NDArray& input, NDArray& output, const uint padB
 
     const int rank = 4;
 
-    const Nd4jLong* xShapeInfo = input.getShapeInfo();
-    const Nd4jLong* zShapeInfo = output.getShapeInfo();
+    const Nd4jLong* xShapeInfo = input.shapeInfo();
+    const Nd4jLong* zShapeInfo = output.shapeInfo();
 
     const uint bS = zShapeInfo[1];
     const uint oH = zShapeInfo[2];
@@ -259,7 +259,7 @@ void spaceToBatch(sd::LaunchContext* context, const NDArray& input, NDArray& out
         NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, output.sizeAt(3)}, false);
         BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatch_, (input, outputRearranged1, padBottom, padTop, padLeft, padRight), LIBND4J_TYPES);
 
-        if(output.getBuffer() != outputRearranged1.getBuffer())
+        if(output.buffer() != outputRearranged1.buffer())
             outputRearranged0.assign(outputRearranged1);
     }
 }
@@ -309,9 +309,9 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 
         for (auto i = start; i < stop; i++) {
 
-            shape::index2coordsCPU(start, i, output.getShapeInfo(), zCoords);
+            shape::index2coordsCPU(start, i, output.shapeInfo(), zCoords);
 
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoords);
+            const auto zOffset = shape::getOffset(output.shapeInfo(), zCoords);
 
             memcpy(xCoords, zCoords, rank * sizeof(int));
 
@@ -331,7 +331,7 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
             }
 
             if (within)
-                z[zOffset] = x[shape::getOffset(input.getShapeInfo(), xCoords)];
+                z[zOffset] = x[shape::getOffset(input.shapeInfo(), xCoords)];
             else
                 z[zOffset] = 0.f;
         }
@@ -396,7 +396,7 @@ void spaceToBatchND(sd::LaunchContext* context, const NDArray& input, const NDAr
 
         BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchND_, (input, padding, outputRearranged1, numOfSpatialDims), LIBND4J_TYPES);
 
-        if(output.getBuffer() != outputRearranged1.getBuffer())
+        if(output.buffer() != outputRearranged1.buffer())
             outputRearranged0.assign(outputRearranged1);
     }
 }

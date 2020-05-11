@@ -58,22 +58,22 @@ namespace functions {
             static __device__ void aggregatePartials(void *sPartials, Nd4jLong tid, Nd4jLong numItems, void *extraParams);
 
             template<typename OpType>
-            static __device__ void execScalarCuda( void *vx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
+            static __device__ void execScalarCuda( void const* vx, Nd4jLong const *xShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo);
 
-            static __device__ void execScalarCudaLegacy(int opNum, void *vx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
-
-            template<typename OpType>
-            static __device__ void transformCudaXD( void *vx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+            static __device__ void execScalarCudaLegacy(int opNum, void const* vx, Nd4jLong const* xShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo);
 
             template<typename OpType>
-            static __host__ void intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hXShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hZShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
+            static __device__ void transformCudaXD( void const* vx, Nd4jLong const* xShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets);
 
             template<typename OpType>
-            static __host__ void intermediateXD(dim3 launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hXShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hZShapeInfo, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+            static __host__ void intermediateScalar(dim3 launchDims, cudaStream_t *stream, void const* vx, Nd4jLong const* xShapeInfo, Nd4jLong const* hXShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hZShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo);
 
-            static __host__ void execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong* hXShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong* hZShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
+            template<typename OpType>
+            static __host__ void intermediateXD(dim3 launchDims, cudaStream_t *stream, void const* vx, Nd4jLong const* xShapeInfo, Nd4jLong const* hXShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hZShapeInfo, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets);
 
-            static __host__ void execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, void *vx, Nd4jLong *xShapeInfo, Nd4jLong* hXShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong* hZShapeInfo, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+            static __host__ void execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void const* vx, Nd4jLong const* xShapeInfo, Nd4jLong const*  hXShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hZShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo);
+
+            static __host__ void execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, void const* vx, Nd4jLong const* xShapeInfo, Nd4jLong const* hXShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hZShapeInfo, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets);
 #else
 
             /**
@@ -85,40 +85,31 @@ namespace functions {
              * @return
              */
             template<typename OpType>
-            static _CUDA_H X execScalar(void *x,
-                    Nd4jLong *xShapeInfo,
-                    void *extraParams);
+            static _CUDA_H X execScalar(const void *x, const Nd4jLong *xShapeInfo,
+                                        void *extraParams);
 
             template<typename OpType>
-            static _CUDA_H void execScalar(void *x,
-                                        Nd4jLong *xShapeInfo,
-                                        void *extraParams,
-                                        void *z,
-                                        Nd4jLong *zShapeInfo);
+            static _CUDA_H void execScalar(const void *x, const Nd4jLong *xShapeInfo,
+                                           void *extraParams,
+                                           void *z, const Nd4jLong *zShapeInfo);
 
 
             static X execScalar(int opNum,
-                    void *x,
-                    Nd4jLong *xShapeInfo,
-                    void *extraParams);
+                                const void *x, const Nd4jLong *xShapeInfo,
+                                void *extraParams);
 
             static void execScalar(int opNum,
-                                void *x,
-                                Nd4jLong *xShapeInfo,
-                                void *extraParams,
-                                void *z,
-                                Nd4jLong *zShapeInfo);
+                                   const void *x, const Nd4jLong *xShapeInfo,
+                                   void *extraParams,
+                                   void *z, const Nd4jLong *zShapeInfo);
 
             static void exec(int opNum,
-                             void *x,
-                             Nd4jLong *xShapeInfo,
+                             const void *x, const Nd4jLong *xShapeInfo,
                              void *extraParams,
-                             void *result,
-                             Nd4jLong *resultShapeInfoBuffer,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset, int64_t start, int64_t stop);
+                             void *result, const Nd4jLong *resultShapeInfoBuffer,
+                             int *dimension, int dimensionLength,
+                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                             int64_t start, int64_t stop);
 
             /**
              * Execute on the cpu
@@ -134,15 +125,12 @@ namespace functions {
 
 
             template<typename OpType>
-            static void _CUDA_H exec(void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *extraParams,
-                             void *result,
-                             Nd4jLong *resultShapeInfoBuffer,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset, int64_t start, int64_t stop);
+            static void _CUDA_H exec(const void *x, const Nd4jLong *xShapeInfo,
+                                     void *extraParams,
+                                     void *result, const Nd4jLong *resultShapeInfoBuffer,
+                                     int *dimension, int dimensionLength,
+                                     const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                                     int64_t start, int64_t stop);
 
             /**
             * CPU implementation
@@ -154,11 +142,9 @@ namespace functions {
             * @param resultShapeInfo the shape information
             */
             template<typename OpType>
-            static void _CUDA_H exec(void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *extraParams,
-                             void *result,
-                             Nd4jLong *resultShapeInfo);
+            static void _CUDA_H exec(const void *x, const Nd4jLong *xShapeInfo,
+                                     void *extraParams,
+                                     void *result, const Nd4jLong *resultShapeInfo);
 
 
 
@@ -171,10 +157,9 @@ namespace functions {
             * @return
             */
             template<typename OpType>
-            static X _CUDA_H execScalar(void *x,
-                    Nd4jLong xElementWiseStride,
-                    Nd4jLong length,
-                    void *extraParams);
+            static X _CUDA_H execScalar(const void *x, Nd4jLong xElementWiseStride,
+                                        Nd4jLong length,
+                                        void *extraParams);
 
 #endif
         };

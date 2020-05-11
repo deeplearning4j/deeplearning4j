@@ -88,12 +88,12 @@ namespace helpers {
         }
 
         PointersManager pm(context, "meshgrid");
-        std::vector<void *> hInBuffers(rank);
+        std::vector<const void *> hInBuffers(rank);
         std::vector<void *> hOutBuffers(rank);
-        std::vector<Nd4jLong *> hInShapes(rank);
+        std::vector<const Nd4jLong *> hInShapes(rank);
 
-        std::vector<Nd4jLong *> hOutTadShapes(rank);
-        std::vector<Nd4jLong *> hOutTadOffsets(rank);
+        std::vector<const Nd4jLong *> hOutTadShapes(rank);
+        std::vector<const Nd4jLong *> hOutTadOffsets(rank);
 
         std::vector<Nd4jLong> hNumTads(rank);
 

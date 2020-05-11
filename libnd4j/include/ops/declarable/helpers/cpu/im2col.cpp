@@ -32,10 +32,10 @@ static void im2col_(sd::LaunchContext & context, const NDArray& input,  NDArray&
 
     // input [bS, iC, iH, iW] is convoluted to output [bS, iC, kH, kW, oH, oW]
 
-	auto imBuff         = static_cast<T*>(input.getBuffer());
-	auto colBuff        = static_cast<T*>(output.getBuffer());
-	auto imShapeBuffer  = input.getShapeInfo();
-	auto colShapeBuffer = output.getShapeInfo();
+	auto imBuff         = static_cast<T const*>(input.buffer());
+	auto colBuff        = static_cast<T*>(output.buffer());
+	auto imShapeBuffer  = input.shapeInfo();
+	auto colShapeBuffer = output.shapeInfo();
     auto colShape       = shape::shapeOf(colShapeBuffer);
     auto colStride      = shape::stride(colShapeBuffer);
     auto imShape        = shape::shapeOf(imShapeBuffer);
@@ -95,7 +95,8 @@ static void im2col_(sd::LaunchContext & context, const NDArray& input,  NDArray&
     else {
 
         auto func = PRAGMA_THREADS_FOR_2D {
-            T *col, *im;
+            T *col;
+            T const* im;
             int imRow, imCol;
 
             for (auto b = start_x; b < stop_x; b += inc_x) {

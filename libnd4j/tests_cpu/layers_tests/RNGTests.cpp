@@ -1097,8 +1097,8 @@ TEST_F(RNGTests, Test_Uniform_4) {
 #endif
 
 TEST_F(RNGTests, test_choice_1) {
-    auto x = NDArrayFactory::linspace<double>(0, 10, 11);
-    auto prob = NDArrayFactory::valueOf<double>({11}, 1.0/11, 'c');
+    const auto x = NDArrayFactory::linspace<double>(0, 10, 11);
+    const auto prob = NDArrayFactory::valueOf<double>({11}, 1.0/11, 'c');
     auto z = NDArrayFactory::create<double>('c', {1000});
 
     RandomGenerator rng(119, 256);

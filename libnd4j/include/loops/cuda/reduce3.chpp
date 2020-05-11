@@ -32,28 +32,28 @@ namespace reduce3   {
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 __global__ void execScalarGeneric(const int opNum,
-								void *vx, Nd4jLong *xShapeInfo,
-								void *vy, Nd4jLong *yShapeInfo,
+								void const* vx, Nd4jLong const* xShapeInfo,
+								void const* vy, Nd4jLong const* yShapeInfo,
 								void *extraParams,
-								void *vz, Nd4jLong *zShapeInfo,
+								void *vz, Nd4jLong const* zShapeInfo,
 								int* allocationPointer,
 								void *reductionBuffer,
-								Nd4jLong *tadOnlyShapeInfo) {
+								Nd4jLong const* tadOnlyShapeInfo) {
 
     Reduce3<X,Z>::execScalarCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo);
 }
 
 template <typename X, typename Z>
 __global__ void execAllGeneric(const int opNum,
-                                      void *vx, Nd4jLong *xShapeInfo,
-                                      void *vy, Nd4jLong *yShapeInfo,
+                                      void const* vx, Nd4jLong const* xShapeInfo,
+                                      void const* vy, Nd4jLong const* yShapeInfo,
                                       void *extraParams,
-                                      void *vz, Nd4jLong *zShapeInfo,
+                                      void *vz, Nd4jLong const* zShapeInfo,
                                       int *dimension, int dimensionLength,
                                       int postProcessOrNot,
                                       int *allocationPointer,
-                                      Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                      Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+                                      Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets,
+                                      Nd4jLong const* yTadOnlyShapeInfo, Nd4jLong const* yTadOffsets) {
 
 	Reduce3<X,Z>::execAllCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
 }
@@ -62,15 +62,15 @@ __global__ void execAllGeneric(const int opNum,
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 __global__ void execGeneric(const int opNum,
-								void *vx, Nd4jLong *xShapeInfo,
-								void *vy, Nd4jLong *yShapeInfo,
+								void const* vx, Nd4jLong const* xShapeInfo,
+								void const* vy, Nd4jLong const* yShapeInfo,
 								void *extraParams,
-								void *vz, Nd4jLong *zShapeInfo,
+								void *vz, Nd4jLong const* zShapeInfo,
 								int *dimension, int dimensionLength,
 								int postProcessOrNot,
 								int *allocationPointer,
-								Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-								Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+								Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets,
+								Nd4jLong const* yTadOnlyShapeInfo, Nd4jLong const* yTadOffsets) {
 
     Reduce3<X,Z>::execCuda(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
 }
@@ -111,14 +111,14 @@ __device__ void Reduce3<X,Z>::aggregatePartials(void* vsPartials, Nd4jLong tid, 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-__device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
-								void *vy, Nd4jLong *yShapeInfo,
+__device__ void Reduce3<X,Z>::execScalarCuda( void const* vx, Nd4jLong const* xShapeInfo,
+								void const* vy, Nd4jLong const* yShapeInfo,
 								void *extraParams,
-								void *vz, Nd4jLong *zShapeInfo,
-								int *allocationPointer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
+								void* vz, Nd4jLong const* zShapeInfo,
+								int *allocationPointer, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo) {
 
-	auto x = reinterpret_cast<X*>(vx);
-	auto y = reinterpret_cast<X*>(vy);
+	auto x = reinterpret_cast<X const*>(vx);
+	auto y = reinterpret_cast<X const*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
 
 	__shared__ Z extraZ[3];
@@ -235,18 +235,18 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-__device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
-											void *vy, Nd4jLong *yShapeInfo,
+__device__ void Reduce3<X,Z>::transformAll( void const* vx, Nd4jLong const* xShapeInfo,
+											void const* vy, Nd4jLong const* yShapeInfo,
 											void *extraParams,
-											void *vz, Nd4jLong *zShapeInfo,
+											void *vz, Nd4jLong const* zShapeInfo,
 											int *dimension, int dimensionLength,
 											int postProcessOrNot,
 											int *allocationPointer,
-											Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
-											Nd4jLong *yTadShapeInfo,Nd4jLong *yOffsets) {
+											Nd4jLong const* xTadShapeInfo, Nd4jLong const* xOffsets,
+											Nd4jLong const* yTadShapeInfo, Nd4jLong const* yOffsets) {
 
-	auto dx = reinterpret_cast<X*>(vx);
-	auto dy = reinterpret_cast<X*>(vy);
+	auto dx = reinterpret_cast<X const*>(vx);
+	auto dy = reinterpret_cast<X const*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
 
     // initialize partials first
@@ -287,7 +287,7 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 
 	for (int r = blockIdx.x; r < xTads; r += blockDim.x * gridDim.x) {
 
-    	X *x = dx + xOffsets[r];
+    	auto x = dx + xOffsets[r];
 
         if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {
         	auto x0 = shape::getIndexOffset(threadIdx.x, xTadShapeInfo);
@@ -297,7 +297,7 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 
         for (int g = 0; g < yTads; g++) {
 
-        	X *y = dy + yOffsets[g];
+        	auto y = dy + yOffsets[g];
 			int ri = (r * yTads) + g;
 
             sPartials[threadIdx.x] = startingVal;
@@ -339,15 +339,15 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-__device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
-										void *vy, Nd4jLong *yShapeInfo,
+__device__ void Reduce3<X,Z>::transform(void const* vx, Nd4jLong const* xShapeInfo,
+										void const* vy, Nd4jLong const* yShapeInfo,
 										void *extraParams,
-										void *vz, Nd4jLong *zShapeInfo,
+										void *vz, Nd4jLong const* zShapeInfo,
 										int *dimension, int dimensionLength,
 										int postProcessOrNot,
 										int *allocationPointer,
-										Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-										Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+										Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets,
+										Nd4jLong const* yTadOnlyShapeInfo, Nd4jLong const* yTadOffsets) {
 
 	// FIXME
 	if(shape::isScalar(zShapeInfo))
@@ -357,8 +357,8 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 		yTadOnlyShapeInfo = yShapeInfo;		// execReduce3TAD case
 	}
 
-	auto x = reinterpret_cast<X*>(vx);
-	auto y = reinterpret_cast<X*>(vy);
+	auto x = reinterpret_cast<X const*>(vx);
+	auto y = reinterpret_cast<X const*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
 
 	Z startingVal = OpType::startingValue(x);
@@ -454,15 +454,15 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 __device__ void Reduce3<X,Y>::execCuda(const int opNum,
-									void *vx, Nd4jLong *xShapeInfo,
-									void *vy, Nd4jLong *yShapeInfo,
+									void const* vx, Nd4jLong const* xShapeInfo,
+									void const* vy, Nd4jLong const* yShapeInfo,
 									void *extraParams,
-									void *vz, Nd4jLong *zShapeInfo,
+									void *vz, Nd4jLong const* zShapeInfo,
 									int *dimension, int dimensionLength,
 									int postProcessOrNot,
 									int *allocationPointer,
-									Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-									Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+									Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets,
+									Nd4jLong const* yTadOnlyShapeInfo, Nd4jLong const* yTadOffsets) {
 
 	DISPATCH_BY_OPNUM_TT(transform, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 }
@@ -472,15 +472,15 @@ __device__ void Reduce3<X,Y>::execCuda(const int opNum,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 __device__ void Reduce3<X,Y>::execAllCuda( const int opNum,
-										void *vx, Nd4jLong *xShapeInfo,
-										void *vy, Nd4jLong *yShapeInfo,
+										void const* vx, Nd4jLong const* xShapeInfo,
+										void const* vy, Nd4jLong const* yShapeInfo,
 										void *extraParams,
-										void *vz, Nd4jLong *zShapeInfo,
+										void *vz, Nd4jLong const* zShapeInfo,
 										int *dimension, int dimensionLength,
 										int postProcessOrNot,
 										int *allocationPointer,
-										Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-										Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+										Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets,
+										Nd4jLong const* yTadOnlyShapeInfo, Nd4jLong const* yTadOffsets) {
 
 	DISPATCH_BY_OPNUM_TT(transformAll, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets), REDUCE3_OPS);
 }
@@ -489,12 +489,12 @@ __device__ void Reduce3<X,Y>::execAllCuda( const int opNum,
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 __device__ void Reduce3<X,Y>::execScalarCuda(const int opNum,
-										void *vx, Nd4jLong *xShapeInfo,
-										void *vy, Nd4jLong *yShapeInfo,
+										void const* vx, Nd4jLong const* xShapeInfo,
+										void const* vy, Nd4jLong const* yShapeInfo,
 										void *extraParams,
-										void *vz, Nd4jLong *zShapeInfo,
+										void *vz, Nd4jLong const* zShapeInfo,
 										int * allocationPointer, void *reductionBuffer,
-										Nd4jLong *tadOnlyShapeInfo) {
+										Nd4jLong const* tadOnlyShapeInfo) {
 
 	DISPATCH_BY_OPNUM_TT(execScalarCuda, PARAMS(vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo), REDUCE3_OPS);
 }
@@ -504,15 +504,15 @@ __device__ void Reduce3<X,Y>::execScalarCuda(const int opNum,
 template <typename X, typename Z>
 __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 									int opNum,
-									void *vx, Nd4jLong *xShapeInfo,
-									void *vy, Nd4jLong *yShapeInfo,
+									void const* vx, Nd4jLong const* xShapeInfo,
+									void const* vy, Nd4jLong const* yShapeInfo,
 									void *extraParams,
-									void *vz, Nd4jLong *zShapeInfo,
+									void *vz, Nd4jLong const* zShapeInfo,
 									int *dimension, int dimensionLength,
 									int postProcessOrNot,
 									int *allocationPointer,
-									Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-									Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+									Nd4jLong const* tadOnlyShapeInfo,  Nd4jLong const* tadOffsets,
+									Nd4jLong const* yTadOnlyShapeInfo, Nd4jLong const* yTadOffsets) {
 
     execGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
     sd::DebugHelper::checkErrorCode(stream, "reduce3exec(...) failed");
@@ -522,15 +522,15 @@ __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 	template <typename X, typename Z>
 	__host__ void Reduce3<X,Z>::execAll(dim3 launchDims, cudaStream_t *stream,
 									 int opNum,
-									 void *vx, Nd4jLong *xShapeInfo,
-									 void *vy, Nd4jLong *yShapeInfo,
+									 void const* vx, Nd4jLong const* xShapeInfo,
+									 void const* vy, Nd4jLong const* yShapeInfo,
 									 void *extraParams,
-									 void *vz, Nd4jLong *zShapeInfo,
+									 void *vz, Nd4jLong const* zShapeInfo,
 									 int *dimension, int dimensionLength,
 									 int postProcessOrNot,
 									 int *allocationPointer,
-									 Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-									 Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+									 Nd4jLong const* tadOnlyShapeInfo,  Nd4jLong const* tadOffsets,
+									 Nd4jLong const* yTadOnlyShapeInfo, Nd4jLong const* yTadOffsets) {
 
 		execAllGeneric<X, Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationPointer, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
         sd::DebugHelper::checkErrorCode(stream, "execAllGeneric(...) failed");
@@ -540,13 +540,13 @@ __host__ void Reduce3<X,Z>::exec(dim3 launchDims, cudaStream_t *stream,
 template <typename X, typename Z>
 __host__ void Reduce3<X,Z>::execScalar(dim3 launchDims, cudaStream_t *stream,
 										int opNum,
-										void *vx, Nd4jLong *xShapeInfo,
-										void *vy, Nd4jLong *yShapeInfo,
+										void const* vx, Nd4jLong const* xShapeInfo,
+										void const* vy, Nd4jLong const* yShapeInfo,
 										void *extraParams,
-										void *vz, Nd4jLong *zShapeInfo,
+										void *vz, Nd4jLong const* zShapeInfo,
 										int* allocationPointer,
 										void *reductionBuffer,
-										Nd4jLong *tadOnlyShapeInfo) {
+										Nd4jLong const* tadOnlyShapeInfo) {
 
     execScalarGeneric<X,Z><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(opNum, vx, xShapeInfo, vy, yShapeInfo, extraParams, vz, zShapeInfo, allocationPointer, reductionBuffer, tadOnlyShapeInfo);
     sd::DebugHelper::checkErrorCode(stream, "execScalarGeneric(...) failed");

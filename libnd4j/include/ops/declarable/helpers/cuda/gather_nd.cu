@@ -135,7 +135,7 @@ namespace sd {
                 PointersManager manager(context, "gatherND");
 
                 NDArray::prepareSpecialUse({&output}, {&input, &indices});
-                BUILD_DOUBLE_SELECTOR(xType, yType, gatherNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo()), LIBND4J_TYPES, INDEXING_TYPES);
+                BUILD_DOUBLE_SELECTOR(xType, yType, gatherNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), indices.specialBuffer(), indices.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo()), LIBND4J_TYPES, INDEXING_TYPES);
                 NDArray::registerSpecialUse({&output}, {&input, &indices});
 
                 manager.synchronize();

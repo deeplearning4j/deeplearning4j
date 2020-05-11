@@ -42,7 +42,7 @@ namespace helpers {
         for (size_t d = 0; d < dimsToExclude.size(); ++d)
             dimsToExclude[d] = d;
 
-        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude);
+        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input->shapeInfo(), dimsToExclude);
 
             if (k == 1) {
                 for (Nd4jLong e = 0; e < numOfSubArrs; ++e) {

@@ -37,7 +37,7 @@ public:
 #ifndef __CUDABLAS__
 
 TEST_F(BroadcastMultiDimTest,MultimDimTest) {
-    shape::TAD *tad = new shape::TAD();
+    auto tad = new shape::TAD();
     tad->init(inputShapeBuffer,dimensions,dimensionLength);
     tad->createTadOnlyShapeInfo();
     tad-> createOffsets();
@@ -55,6 +55,7 @@ TEST_F(BroadcastMultiDimTest,MultimDimTest) {
             tad->tadOffsets, //tadOffset
             tad->tadOnlyShapeInfo, //tadShapeInfoZ
             tad->tadOffsets, sd::LoopKind::COMMON, 0, tad->numTads); //tadOffsetZ
+
     for(int i = 0; i < 30; i++) {
         ASSERT_EQ(dataAssertion[i],result[i]);
     }

@@ -1718,17 +1718,17 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 //     auto inputBuffers = new Nd4jPointer[2];
 //     auto inputShapes = new Nd4jPointer[2];
 
-//     inputBuffers[0] = (Nd4jPointer) x->getBuffer();
-//     inputBuffers[1] = (Nd4jPointer) y->getBuffer();
+//     inputBuffers[0] = (Nd4jPointer) x->buffer();
+//     inputBuffers[1] = (Nd4jPointer) y->buffer();
 
-//     inputShapes[0] = (Nd4jPointer) x->getShapeInfo();
-//     inputShapes[1] = (Nd4jPointer) y->getShapeInfo();
+//     inputShapes[0] = (Nd4jPointer) x->shapeInfo();
+//     inputShapes[1] = (Nd4jPointer) y->shapeInfo();
 
 //     auto outputBuffers = new Nd4jPointer[1];
 //     auto outputShapes = new Nd4jPointer[1];
 
-//     outputBuffers[0] = (Nd4jPointer) z->getBuffer();
-//     outputShapes[0] = (Nd4jPointer) z->getShapeInfo();
+//     outputBuffers[0] = (Nd4jPointer) z->buffer();
+//     outputShapes[0] = (Nd4jPointer) z->shapeInfo();
 
 
 //     //auto status = execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
@@ -1768,11 +1768,11 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 //     auto inputBuffers = new Nd4jPointer[2];
 //     auto inputShapes = new Nd4jPointer[2];
 
-//     inputBuffers[0] = (Nd4jPointer) x->getBuffer();
-//     inputBuffers[1] = (Nd4jPointer) y->getBuffer();
+//     inputBuffers[0] = (Nd4jPointer) x->buffer();
+//     inputBuffers[1] = (Nd4jPointer) y->buffer();
 
-//     inputShapes[0] = (Nd4jPointer) x->getShapeInfo();
-//     inputShapes[1] = (Nd4jPointer) y->getShapeInfo();
+//     inputShapes[0] = (Nd4jPointer) x->shapeInfo();
+//     inputShapes[1] = (Nd4jPointer) y->shapeInfo();
 
 //     auto outputBuffers = new Nd4jPointer[1];
 //     auto outputShapes = new Nd4jPointer[1];
@@ -1811,9 +1811,9 @@ TEST_F(DeclarableOpsTests1, TestGemv1) {
     auto z = NDArrayFactory::create_<float>('f', {5, 1});
 
     auto expBuffer = new float[5]{28.00f,64.00f,100.00f,136.00f,172.00f};
-    auto exp = new NDArray(expBuffer, z->getShapeInfo());
+    auto exp = new NDArray(expBuffer, z->shapeInfo());
 
-     sd::blas::GEMV<float, float, float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
+     sd::blas::GEMV<float, float, float>::op('f',  x->rows(), x->columns(), 1.0f, x->buffer(), y->rows(), y->buffer(), 1, 0.0, z->buffer(), 1);
 
     ASSERT_TRUE(z->equalsTo(exp));
 
@@ -1930,8 +1930,8 @@ TEST_F(DeclarableOpsTests1, TestReductionShape1) {
 
     sd::ops::testreduction testop;
 
-    auto inP = new Nd4jLong[shape::shapeInfoLength(input->getShapeInfo())];
-    memcpy(inP, input->getShapeInfo(), shape::shapeInfoByteLength(input->rankOf()));
+    auto inP = new Nd4jLong[shape::shapeInfoLength(input->shapeInfo())];
+    memcpy(inP, input->shapeInfo(), shape::shapeInfoByteLength(input->rankOf()));
 
     auto inshape = new ShapeList(inP);
 
@@ -1969,7 +1969,7 @@ TEST_F(DeclarableOpsTests1, TestReductionShape2) {
 
     sd::ops::testreduction testop;
 
-    auto inshapes = new ShapeList(input->getShapeInfo());
+    auto inshapes = new ShapeList(input->shapeInfo());
     auto shapes = testop.calculateOutputShape(inshapes, *block);
     ASSERT_EQ(1, shapes->size());
     ASSERT_EQ(1, shapes->at(0)[0]);
@@ -1994,14 +1994,14 @@ TEST_F(DeclarableOpsTests1, TestCustomShape1) {
 
     sd::ops::testcustom test;
 
-    auto inshapes = new ShapeList(input->getShapeInfo());
+    auto inshapes = new ShapeList(input->shapeInfo());
     auto shapes = test.calculateOutputShape(inshapes, *block);
 
 
-    ASSERT_EQ(input->getShapeInfo()[0], shapes->at(0)[0]);
-    ASSERT_EQ(input->getShapeInfo()[1] * 2, shapes->at(0)[1]);
-    ASSERT_EQ(input->getShapeInfo()[2] * 2, shapes->at(0)[2]);
-    ASSERT_EQ(input->getShapeInfo()[3] * 2, shapes->at(0)[3]);
+    ASSERT_EQ(input->shapeInfo()[0], shapes->at(0)[0]);
+    ASSERT_EQ(input->shapeInfo()[1] * 2, shapes->at(0)[1]);
+    ASSERT_EQ(input->shapeInfo()[2] * 2, shapes->at(0)[2]);
+    ASSERT_EQ(input->shapeInfo()[3] * 2, shapes->at(0)[3]);
 
     delete variableSpace;
     delete block;

@@ -30,12 +30,12 @@ namespace helpers {
     template <typename T>
     static int _randomCropFunctor(graph::Context& context, NDArray* input, NDArray* shape, NDArray* output, int seed) {
         graph::RandomGenerator rngX(context.getRng());
-        //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->e(last)}).data());
+        //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->buffer(), output->shapeInfo(), std::vector<T>({T(0.), shape->e(last)}).data());
         //NativeOpExecutioner::execRandom(random::UniformDistribution, rng, output->buffer(), output->shapeInfo(), std::vector<T>({T(0.), shape->e<T>(last)}).data());
         Nd4jLong last = shape->lengthOf() - 1;
 
         rngX.setSeed(seed);
-        //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
+        //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->buffer(), output->shapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
         for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
             output->p(e, rngX.relativeT<T>(e, 0, shape->e<Nd4jLong>(last)));
         }

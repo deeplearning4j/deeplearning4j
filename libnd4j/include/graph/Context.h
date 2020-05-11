@@ -196,12 +196,14 @@ namespace sd {
 #endif
 
             void setInputArray(int index, NDArray *array, bool removable = false);
-            void setInputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
-            void setInputArray(int index, void *databuffer, void *shapeInfo, void *specialShapeInfo);
+            void setInputArray(int index, void *buffer, void const* shapeInfo, void *specialBuffer, void const* specialShapeInfo);
+            void setInputArray(int index, void *buffer, void * shapeInfo, void *specialBuffer, void * specialShapeInfo);
+            void setInputArray(int index, void *databuffer, void const* shapeInfo, void const* specialShapeInfo);
 
             void setOutputArray(int index, NDArray *array, bool removable = false);
-            void setOutputArray(int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
-            void setOutputArray(int index, void *databuffer, void *shapeInfo, void *specialShapeInfo);
+            void setOutputArray(int index, void *buffer, const void * shapeInfo, void *specialBuffer, const void * specialShapeInfo);
+            void setOutputArray(int index, void *buffer, void * shapeInfo, void *specialBuffer, void * specialShapeInfo);
+            void setOutputArray(int index, void *databuffer, void const* shapeInfo, void const* specialShapeInfo);
 
             void setTArguments(double *arguments, int numberOfArguments);
             void setIArguments(Nd4jLong *arguments, int numberOfArguments);

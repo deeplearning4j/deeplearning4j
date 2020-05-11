@@ -16,10 +16,16 @@
 
 package org.datavec.image.loader;
 
+import org.datavec.image.data.Image;
 import org.junit.Test;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
@@ -207,5 +213,58 @@ public class TestImageLoader {
      */
     private BufferedImage makeRandomBufferedImage(boolean alpha) {
         return makeRandomBufferedImage(alpha, rng.nextInt() % 100 + 100, rng.nextInt() % 100 + 100);
+    }
+
+
+    @Test
+    public void testNCHW_NHWC() throws Exception {
+        File f = Resources.asFile("datavec-data-image/voc/2007/JPEGImages/000005.jpg");
+
+        ImageLoader il = new ImageLoader(32, 32, 3);
+
+        //asMatrix(File, boolean)
+        INDArray a_nchw = il.asMatrix(f);
+        INDArray a_nchw2 = il.asMatrix(f, true);
+        INDArray a_nhwc = il.asMatrix(f, false);
+
+        assertEquals(a_nchw, a_nchw2);
+        assertEquals(a_nchw, a_nhwc.permute(0,3,1,2));
+
+
+        //asMatrix(InputStream, boolean)
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            a_nchw = il.asMatrix(is);
+        }
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            a_nchw2 = il.asMatrix(is, true);
+        }
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            a_nhwc = il.asMatrix(is, false);
+        }
+        assertEquals(a_nchw, a_nchw2);
+        assertEquals(a_nchw, a_nhwc.permute(0,3,1,2));
+
+
+        //asImageMatrix(File, boolean)
+        Image i_nchw = il.asImageMatrix(f);
+        Image i_nchw2 = il.asImageMatrix(f, true);
+        Image i_nhwc = il.asImageMatrix(f, false);
+
+        assertEquals(i_nchw.getImage(), i_nchw2.getImage());
+        assertEquals(i_nchw.getImage(), i_nhwc.getImage().permute(0,3,1,2));        //NHWC to NCHW
+
+
+        //asImageMatrix(InputStream, boolean)
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            i_nchw = il.asImageMatrix(is);
+        }
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            i_nchw2 = il.asImageMatrix(is, true);
+        }
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            i_nhwc = il.asImageMatrix(is, false);
+        }
+        assertEquals(i_nchw.getImage(), i_nchw2.getImage());
+        assertEquals(i_nchw.getImage(), i_nhwc.getImage().permute(0,3,1,2));        //NHWC to NCHW
     }
 }

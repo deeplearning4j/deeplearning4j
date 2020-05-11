@@ -81,8 +81,8 @@ static _CUDA_H void adjustHueCudaLauncher(const int blocksPerGrid, const int thr
 ////////////////////////////////////////////////////////////////////////
 void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC) {
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(),  {dimC});
+    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {dimC});
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -92,7 +92,7 @@ void adjustHue(sd::LaunchContext* context, const NDArray *input, const NDArray* 
     PointersManager manager(context, "adjustHue");
 
     NDArray::prepareSpecialUse({output}, {input, deltaScalarArr});
-    BUILD_SINGLE_SELECTOR(input->dataType(), adjustHueCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, deltaScalarArr, dimC), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(input->dataType(), adjustHueCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, deltaScalarArr, dimC), FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {input, deltaScalarArr});
 
     manager.synchronize();
@@ -173,8 +173,8 @@ static void _adjust_hue_single(sd::LaunchContext * context, NDArray *array, NDAr
         adjustHueSingleNHWCKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(), array->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), tuples, delta);
     } else {
         // TODO: check this one
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {1, 2});
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {1, 2});
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->shapeInfo(), {1, 2});
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {1, 2});
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 
@@ -195,8 +195,8 @@ static void _adjust_hue_batch(sd::LaunchContext * context, NDArray *array, NDArr
         BUILD_SINGLE_SELECTOR(xType, _adjust_hue_single, (context, array, output, delta, isNHWC);, FLOAT_TYPES);
     } else {
         // TODO: check this one
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->getShapeInfo(), {0, 2, 3});
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {0, 2, 3});
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->shapeInfo(), {0, 2, 3});
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {0, 2, 3});
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 

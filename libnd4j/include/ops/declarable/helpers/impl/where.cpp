@@ -33,9 +33,9 @@ namespace sd {
 
                 for (Nd4jLong e = 0; e < condition.lengthOf(); e++) {
 
-                    shape::index2coordsCPU(0, e, condition.getShapeInfo(), idx);
+                    shape::index2coordsCPU(0, e, condition.shapeInfo(), idx);
 
-                    auto offset = shape::getOffset(condition.getShapeInfo(), idx);
+                    auto offset = shape::getOffset(condition.shapeInfo(), idx);
 
                     if (condition.e<bool>(offset)) {
                         auto array = NDArrayFactory::create_('c', {1, condition.rankOf()}, output.dataType(), output.getContext());

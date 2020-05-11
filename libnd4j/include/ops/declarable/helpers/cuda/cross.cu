@@ -111,7 +111,7 @@ void crossBatched(sd::LaunchContext* context, NDArray *x, NDArray *y, NDArray *z
     PointersManager manager(context, "cross");
 
     NDArray::prepareSpecialUse({z}, {x, y});
-    BUILD_SINGLE_SELECTOR(x->dataType(), crossCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), x->getSpecialBuffer(), x->getSpecialShapeInfo(), y->getSpecialBuffer(), y->getSpecialShapeInfo(), z->specialBuffer(), z->specialShapeInfo()), NUMERIC_TYPES);
+    BUILD_SINGLE_SELECTOR(x->dataType(), crossCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), x->specialBuffer(), x->specialShapeInfo(), y->specialBuffer(), y->specialShapeInfo(), z->specialBuffer(), z->specialShapeInfo()), NUMERIC_TYPES);
     NDArray::registerSpecialUse({z}, {x, y});
 
     manager.synchronize();

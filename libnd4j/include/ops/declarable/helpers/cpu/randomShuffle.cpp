@@ -42,7 +42,7 @@ void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGenerator&
         if(!isInplace)
             output.assign(input);
     }
-    else if (input.isVector() || shape::isLikeVector(input.getShapeInfo(), temp)) {
+    else if (input.isVector() || shape::isLikeVector(input.shapeInfo(), temp)) {
 
         // apply Fisher-Yates shuffle
         if(isInplace) {

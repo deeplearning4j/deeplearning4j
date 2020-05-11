@@ -39,8 +39,8 @@ namespace sd {
                 return Status::OK();
 
             REQUIRE_TRUE(gradient->isSameShape(initState), 0, "RMS_PROB UPDATER OP: input state must have the same shape as gradient,"
-                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->getShapeInfo()).c_str(),
-                ShapeUtils::shapeAsString(initState->getShapeInfo()).c_str());
+                "  expected shape %s, but got %s!", ShapeUtils::shapeAsString(gradient->shapeInfo()).c_str(),
+                ShapeUtils::shapeAsString(initState->shapeInfo()).c_str());
 
             bool bParamsSupply = 5 == block.width() || 3 == block.getTArguments()->size();
 

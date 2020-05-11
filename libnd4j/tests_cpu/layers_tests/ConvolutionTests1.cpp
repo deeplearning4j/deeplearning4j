@@ -574,7 +574,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_BP_Bias_1) {
 
 
     TypeParam _expEpsB[] = {952.0, 1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0, 2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0, 8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
-    NDArray expEps(_expEpsB, input.getShapeInfo());
+    NDArray expEps(_expEpsB, input.shapeInfo());
 
     input.linspace(1);
     weights.linspace(1);
@@ -624,7 +624,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_BP_NoBias_1) {
 
 
     TypeParam _expEpsB[] = {952.0, 1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0, 2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0, 8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
-    NDArray expEps(_expEpsB, input.getShapeInfo());
+    NDArray expEps(_expEpsB, input.shapeInfo());
 
     input.linspace(1);
     weights.linspace(1);
@@ -2413,7 +2413,7 @@ TYPED_TEST(TypedConvolutionTests1, conv2D_input_BP_test1) {
 
 
     TypeParam _expEpsB[] = {952.0, 1540.0, 1636.0, 1180.0, 1791.0, 2886.0, 3057.0, 2193.0, 2223.0, 3570.0, 3741.0, 2673.0, 1900.0, 3028.0, 3160.0, 2240.0, 2872.0, 4612.0, 4708.0, 3356.0, 5247.0, 8358.0, 8529.0, 6033.0, 5679.0, 9042.0, 9213.0, 6513.0, 4588.0, 7252.0, 7384.0, 5184.0};
-    NDArray expEps(_expEpsB, shapeArr.getShapeInfo());
+    NDArray expEps(_expEpsB, shapeArr.shapeInfo());
 
     weights.linspace(1);
     epsilonNext.linspace(1);

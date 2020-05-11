@@ -32,10 +32,10 @@
 #define method_X  random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, sd::graph::RandomGenerator* rng, T *extraParams) { return -2.0f; }
 #define method_XY  random_def T op(T valueX, T valueY, Nd4jLong idx, Nd4jLong length, sd::graph::RandomGenerator* rng, T *extraParams) { return -3.0f; }
 
-#define no_exec_special static const bool requiresSpecial = false; static inline void specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) { }
+#define no_exec_special static const bool requiresSpecial = false; static inline void specialOp(Nd4jPointer state, const T *x, const Nd4jLong *xShapeBuffer, const T *y, const Nd4jLong *yShapeBuffer, T *z, const Nd4jLong *zShapeBuffer, T *extraArguments) { }
 
 #ifdef __CUDACC__
-#define no_exec_special_cuda __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) { }
+#define no_exec_special_cuda __device__ static inline void specialOpCuda(Nd4jPointer state, T const* x, Nd4jLong const* xShapeBuffer, T const* y, Nd4jLong const* yShapeBuffer, T *z, Nd4jLong const* zShapeBuffer, T *extraArguments) { }
 #else
 #define no_exec_special_cuda
 #endif

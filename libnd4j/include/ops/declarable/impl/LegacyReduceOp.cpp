@@ -54,7 +54,7 @@ namespace sd {
                 if ((block.getIArguments()->size() == 0) ||
                     (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     // scalar
-                    NativeOpExcutioner::execReduceFloatScalar(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
+                    NativeOpExcutioner::execReduceFloatScalar(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo());
                 } else {
                     // TAD
                     std::vector<int> dims(*block.getIArguments());
@@ -67,11 +67,11 @@ namespace sd {
 
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    shape::TAD tad(x->getShapeInfo(), dims.data(), dims.size());
+                    shape::TAD tad(x->shapeInfo(), dims.data(), dims.size());
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
-                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceFloat(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo(), dims.data(), (int) dims.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
                 }
 
                 STORE_RESULT(*z);
@@ -92,7 +92,7 @@ namespace sd {
                 if ((block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
                     auto z = OUTPUT_VARIABLE(0);
 
-                    auto b = x->getBuffer();
+                    auto b = x->buffer();
                     auto s = x->shapeInfo();
                     auto e = block.numT() > 0 ? block.getTArguments()->data() : nullptr;
 
@@ -107,14 +107,14 @@ namespace sd {
 
                     REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    shape::TAD tad(x->getShapeInfo(), axis.data(), axis.size());
+                    shape::TAD tad(x->shapeInfo(), axis.data(), axis.size());
                     tad.createTadOnlyShapeInfo();
                     tad.createOffsets();
 
                     auto newShape = ShapeUtils::evalReduceShapeInfo(x->ordering(), axis, *x);
                     auto z = new NDArray(newShape, x->getWorkspace());
 
-                    NativeOpExcutioner::execReduceFloat(opNum, x->getBuffer(), x->getShapeInfo(), block.getTArguments()->data(), z->getBuffer(), z->getShapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
+                    NativeOpExcutioner::execReduceFloat(opNum, x->buffer(), x->shapeInfo(), block.getTArguments()->data(), z->buffer(), z->shapeInfo(), axis.data(), (int) axis.size(), tad.tadOnlyShapeInfo, tad.tadOffsets);
 
 
                     // keepDims processing, for TF compatibility

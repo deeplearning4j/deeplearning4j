@@ -1440,7 +1440,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    auto outArr = NDArrayFactory::create<float>('c', {2,5});
 //
 //
-//    ops::helpers::reverseArray<float>(sd::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo());
+//    ops::helpers::reverseArray<float>(sd::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.shapeInfo(), outArr.getBuffer(), outArr.shapeInfo());
 //
 //    ASSERT_TRUE(outArr.equalsTo(&exp));
 //    ASSERT_TRUE(outArr.isSameShapeStrict(exp));
@@ -1454,7 +1454,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    auto exp = NDArrayFactory::create<float>('c', {2,5}, {10,9,8,7,6,5,4,3,2,1});
 //
 //
-//    ops::helpers::reverseArray<float>(sd::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), inArr.getBuffer(), inArr.getShapeInfo());
+//    ops::helpers::reverseArray<float>(sd::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.shapeInfo(), inArr.getBuffer(), inArr.shapeInfo());
 //
 //    ASSERT_TRUE(inArr.equalsTo(&exp));
 //    ASSERT_TRUE(inArr.isSameShapeStrict(exp));
@@ -1468,7 +1468,7 @@ TEST_F(HelpersTests1, SVD_test17) {
 //    auto exp = NDArrayFactory::create<float>('c', {2,5}, {5,4,3,2,1,6,7,8,9,10});
 //    auto outArr = NDArrayFactory::create<float>('c', {2,5});
 //
-//    ops::helpers::reverseArray<float>(sd::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.getShapeInfo(), outArr.getBuffer(), outArr.getShapeInfo(), 5);
+//    ops::helpers::reverseArray<float>(sd::LaunchContext ::defaultContext(), inArr.getBuffer(), inArr.shapeInfo(), outArr.getBuffer(), outArr.shapeInfo(), 5);
 //
 //    ASSERT_TRUE(outArr.equalsTo(&exp));
 //    ASSERT_TRUE(outArr.isSameShapeStrict(exp));

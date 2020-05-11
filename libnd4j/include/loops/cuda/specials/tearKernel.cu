@@ -26,8 +26,8 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
     __device__ void
-    tearKernel(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
-               Nd4jLong *tadOffsets) {
+    tearKernel(void *vx, Nd4jLong const* xShapeInfo, Nd4jPointer *targets, Nd4jLong const* zShapeInfo, Nd4jLong const* tadShapeInfo,
+               Nd4jLong const* tadOffsets) {
 
 
 
@@ -39,8 +39,8 @@ namespace sd {
 //        __shared__ int zRank;
 //        __shared__        Nd4jLong *tadShape;
 //        __shared__        Nd4jLong *tadStride;
-//        __shared__        Nd4jLong *zShape;
-//        __shared__        Nd4jLong *zStride;
+//        __shared__        Nd4jLong const* zShape;
+//        __shared__        Nd4jLong const* zStride;
         __shared__ T* x;
         if (threadIdx.x == 0) {
             tadLength = shape::length(tadShapeInfo);
@@ -74,8 +74,8 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
     __global__ void
-    execTearKernel(void *vx, Nd4jLong *xShapeInfo, Nd4jPointer *targets, Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
-                   Nd4jLong *tadOffsets) {
+    execTearKernel(void *vx, Nd4jLong const* xShapeInfo, Nd4jPointer *targets, Nd4jLong const* zShapeInfo, Nd4jLong const* tadShapeInfo,
+                   Nd4jLong const* tadOffsets) {
 
         tearKernel<T>(vx, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
     }
@@ -83,13 +83,13 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
     __host__ void tearKernelGeneric(dim3 &launchDims, cudaStream_t *stream,
-                                    void *vx, Nd4jLong *xShapeInfo,
-                                    Nd4jPointer *targets, Nd4jLong *zShapeInfo,
-                                    Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                    void *vx, Nd4jLong const* xShapeInfo,
+                                    Nd4jPointer *targets, Nd4jLong const* zShapeInfo,
+                                    Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
         execTearKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
         sd::DebugHelper::checkErrorCode(stream, "tear(...) failed");
     }
 
-    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT tearKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * vx, Nd4jLong * xShapeInfo, Nd4jPointer *targets, Nd4jLong * zShapeInfo, Nd4jLong * tadShapeInfo, Nd4jLong * tadOffsets), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT tearKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * vx, Nd4jLong const* xShapeInfo, Nd4jPointer *targets, Nd4jLong const* zShapeInfo, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets), LIBND4J_TYPES);
 }

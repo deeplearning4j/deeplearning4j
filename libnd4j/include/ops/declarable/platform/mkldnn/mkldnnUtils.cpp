@@ -71,7 +71,7 @@ void setBlockStrides(const NDArray* array, dnnl::memory::desc& mklMd){
 void loadDataToMklStream(const NDArray* array, const dnnl::engine& engine, const dnnl::stream& stream, const dnnl::memory::desc& user_md, const dnnl::memory::desc& primitive_md,
                          dnnl::memory& arg) {
 
-    auto user_mem = dnnl::memory(user_md, engine, array->getBuffer());
+    auto user_mem = dnnl::memory(user_md, engine,const_cast<void*>(array->buffer()));
     const bool bReorder = primitive_md != user_mem.get_desc();
     auto mkl_mem = bReorder ? dnnl::memory(primitive_md, engine) : user_mem;
     if (bReorder)
@@ -167,7 +167,7 @@ void poolingMKLDNN(const NDArray *input, NDArray *output,
     mkldnnUtils::loadDataToMklStream(input, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // output
-    auto z_user_mem = dnnl::memory(z_user_md, engine, output->getBuffer());
+    auto z_user_mem = dnnl::memory(z_user_md, engine, output->buffer());
     const bool zReorder = op_prim_desc.dst_desc() != z_user_mem.get_desc();
     auto z_mkl_mem = zReorder ? dnnl::memory(op_prim_desc.dst_desc(), engine) : z_user_mem;
     args[DNNL_ARG_DST] = z_mkl_mem;
@@ -285,7 +285,7 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
     mkldnnUtils::loadDataToMklStream(gradO, engine, stream, gradO_user_md, op_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
 
     // gradI
-    auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
+    auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->buffer());
     const bool gradIReorder = op_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc();
     auto gradI_mkl_mem = gradIReorder ? dnnl::memory(op_bp_prim_desc.diff_src_desc(), engine) : gradI_user_mem;
     args[DNNL_ARG_DIFF_SRC] = gradI_mkl_mem;
@@ -322,7 +322,7 @@ void poolingBpMKLDNN(const NDArray *input, const NDArray *gradO, NDArray *gradI,
 void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
                             dnnl::memory::desc* lrn_src_md, dnnl::memory::desc* lrn_diff_src_md, dnnl::memory::desc* lrn_dst_md,
                             dnnl::memory::desc* user_src_md, dnnl::memory::desc* user_diff_src_md, dnnl::memory::desc* user_dst_md, int axis) {
-    const Nd4jLong* shape = src->getShapeInfo();
+    const Nd4jLong* shape = src->shapeInfo();
     long rank = shape[0];
     long dim1 = axis; // MKL-DNN supports only 1 axis, which has to be the "channel" one
     long dim2 = axis >= 2 ? 1 : 2;
@@ -333,7 +333,7 @@ void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const N
     auto format = axis == 1 ? dnnl::memory::format_tag::nchw : dnnl::memory::format_tag::nhwc;
     auto supposed_to_be_any_format = format; // doesn't work with "any"
 
-    if (src != nullptr && src->getBuffer() != nullptr && lrn_src_md != nullptr) {
+    if (src != nullptr && src->buffer() != nullptr && lrn_src_md != nullptr) {
         *lrn_src_md = dnnl::memory::desc({ lrn_src_tz }, type, supposed_to_be_any_format);
         *user_src_md = dnnl::memory::desc({ lrn_src_tz }, type, format);
         user_src_md->data.format_kind = dnnl_blocked;
@@ -343,7 +343,7 @@ void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const N
         user_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? src->stridesOf()[dim3] : 1;
     }
 
-    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && lrn_diff_src_md != nullptr) {
+    if (diff_src != nullptr && diff_src->buffer() != nullptr && lrn_diff_src_md != nullptr) {
         *lrn_diff_src_md = dnnl::memory::desc({ lrn_src_tz }, type, supposed_to_be_any_format);
         *user_diff_src_md = dnnl::memory::desc({ lrn_src_tz }, type, format);
         user_diff_src_md->data.format_kind = dnnl_blocked;
@@ -353,7 +353,7 @@ void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const N
         user_diff_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
     }
 
-    if (dst != nullptr && dst->getBuffer() != nullptr && lrn_dst_md != nullptr) {
+    if (dst != nullptr && dst->buffer() != nullptr && lrn_dst_md != nullptr) {
         *lrn_dst_md = dnnl::memory::desc({ lrn_src_tz }, type, supposed_to_be_any_format);
         *user_dst_md = dnnl::memory::desc({ lrn_src_tz }, type, format);
         user_dst_md->data.format_kind = dnnl_blocked;
@@ -396,7 +396,7 @@ void getMKLDNNMemoryDescPool2d(
     auto format = isNCHW ? dnnl::memory::format_tag::nchw : dnnl::memory::format_tag::nhwc;
     auto supposed_to_be_any_format = dnnl::memory::format_tag::nChw8c; // doesn't work with "any"
 
-    if (src != nullptr && src->getBuffer() != nullptr && pool_src_md != nullptr) {
+    if (src != nullptr && src->buffer() != nullptr && pool_src_md != nullptr) {
         *pool_src_md = dnnl::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
         *user_src_md = dnnl::memory::desc({ pool_src_tz }, type, format);
         user_src_md->data.format_kind = dnnl_blocked; // overrides "format = isNCHW ? nchw : nhwc"
@@ -406,7 +406,7 @@ void getMKLDNNMemoryDescPool2d(
         user_src_md->data.format_desc.blocking.strides[3] = src->stridesOf()[isNCHW ? 3 : 2];
     }
 
-    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && pool_diff_src_md != nullptr) {
+    if (diff_src != nullptr && diff_src->buffer() != nullptr && pool_diff_src_md != nullptr) {
         *pool_diff_src_md = dnnl::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
         *user_diff_src_md = dnnl::memory::desc({ pool_src_tz }, type, format);
         user_diff_src_md->data.format_kind = dnnl_blocked; // overrides "format = isNCHW ? nchw : nhwc"
@@ -416,7 +416,7 @@ void getMKLDNNMemoryDescPool2d(
         user_diff_src_md->data.format_desc.blocking.strides[3] = diff_src->stridesOf()[isNCHW ? 3 : 2];
     }
 
-    if (dst != nullptr && dst->getBuffer() != nullptr && pool_dst_md != nullptr) {
+    if (dst != nullptr && dst->buffer() != nullptr && pool_dst_md != nullptr) {
         *pool_dst_md = dnnl::memory::desc({ pool_dst_tz }, type, supposed_to_be_any_format);
         *user_dst_md = dnnl::memory::desc({ pool_dst_tz }, type, format);
         user_dst_md->data.format_kind = dnnl_blocked; // overrides "format = isNCHW ? nchw : nhwc"
@@ -452,7 +452,7 @@ void getMKLDNNMemoryDescPool3d(
     auto format = isNCDHW ? dnnl::memory::format_tag::ncdhw : dnnl::memory::format_tag::ndhwc;
     auto supposed_to_be_any_format = dnnl::memory::format_tag::nCdhw8c; // doesn't work with "any"
 
-    if (src != nullptr && src->getBuffer() != nullptr && pool_src_md != nullptr) {
+    if (src != nullptr && src->buffer() != nullptr && pool_src_md != nullptr) {
         *pool_src_md = dnnl::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
         *user_src_md = dnnl::memory::desc({ pool_src_tz }, type, format);
         user_src_md->data.format_kind = dnnl_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
@@ -463,7 +463,7 @@ void getMKLDNNMemoryDescPool3d(
         user_src_md->data.format_desc.blocking.strides[4] = src->stridesOf()[isNCDHW ? 4 : 3];
     }
 
-    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && pool_diff_src_md != nullptr) {
+    if (diff_src != nullptr && diff_src->buffer() != nullptr && pool_diff_src_md != nullptr) {
         *pool_diff_src_md = dnnl::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
         *user_diff_src_md = dnnl::memory::desc({ pool_src_tz }, type, format);
         user_diff_src_md->data.format_kind = dnnl_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
@@ -474,7 +474,7 @@ void getMKLDNNMemoryDescPool3d(
         user_diff_src_md->data.format_desc.blocking.strides[4] = diff_src->stridesOf()[isNCDHW ? 4 : 3];
     }
 
-    if (dst != nullptr && dst->getBuffer() != nullptr && pool_dst_md != nullptr) {
+    if (dst != nullptr && dst->buffer() != nullptr && pool_dst_md != nullptr) {
         *pool_dst_md = dnnl::memory::desc({ pool_dst_tz }, type, supposed_to_be_any_format);
         *user_dst_md = dnnl::memory::desc({ pool_dst_tz }, type, format);
         user_dst_md->data.format_kind = dnnl_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
@@ -656,7 +656,7 @@ void getMKLDNNMemoryDescConv3d(
 void getMKLDNNMemoryDescBatchNorm(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
                                   dnnl::memory::desc* batchnorm_src_md, dnnl::memory::desc* batchnorm_diff_src_md, dnnl::memory::desc* batchnorm_dst_md,
                                   dnnl::memory::desc* user_src_md, dnnl::memory::desc* user_diff_src_md, dnnl::memory::desc* user_dst_md, int axis) {
-    const Nd4jLong* shape = src->getShapeInfo();
+    const Nd4jLong* shape = src->shapeInfo();
     Nd4jLong rank = shape[0];
     Nd4jLong dim1 = axis; // MKL-DNN supports only 1 axis, which has to be the "channel" one
     Nd4jLong dim2 = axis >= 2 ? 1 : 2;
@@ -667,7 +667,7 @@ void getMKLDNNMemoryDescBatchNorm(const NDArray* src, const NDArray* diff_src, c
     auto format = dnnl::memory::format_tag::nchw;
     auto supposed_to_be_any_format = dnnl::memory::format_tag::nChw8c; // doesn't work with "any"
 
-    if (src != nullptr && src->getBuffer() != nullptr && batchnorm_src_md != nullptr) {
+    if (src != nullptr && src->buffer() != nullptr && batchnorm_src_md != nullptr) {
         *batchnorm_src_md = dnnl::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
         *user_src_md = dnnl::memory::desc({ batchnorm_src_tz }, type, format);
         user_src_md->data.format_kind = dnnl_blocked; // overrides format
@@ -677,7 +677,7 @@ void getMKLDNNMemoryDescBatchNorm(const NDArray* src, const NDArray* diff_src, c
         user_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? src->stridesOf()[dim3] : 1;
     }
 
-    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && batchnorm_diff_src_md != nullptr) {
+    if (diff_src != nullptr && diff_src->buffer() != nullptr && batchnorm_diff_src_md != nullptr) {
         *batchnorm_diff_src_md = dnnl::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
         *user_diff_src_md = dnnl::memory::desc({ batchnorm_src_tz }, type, format);
         user_diff_src_md->data.format_kind = dnnl_blocked; // overrides format
@@ -687,7 +687,7 @@ void getMKLDNNMemoryDescBatchNorm(const NDArray* src, const NDArray* diff_src, c
         user_diff_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
     }
 
-    if (dst != nullptr && dst->getBuffer() != nullptr && batchnorm_dst_md != nullptr) {
+    if (dst != nullptr && dst->buffer() != nullptr && batchnorm_dst_md != nullptr) {
         *batchnorm_dst_md = dnnl::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
         *user_dst_md = dnnl::memory::desc({ batchnorm_src_tz }, type, format);
         user_dst_md->data.format_kind = dnnl_blocked; // overrides format

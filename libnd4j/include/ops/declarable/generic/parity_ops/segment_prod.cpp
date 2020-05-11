@@ -85,8 +85,8 @@ namespace sd {
 
 
         DECLARE_SHAPE_FN(segment_prod_bp){
-            Nd4jLong* in = inputShape->at(0);
-            Nd4jLong* inIdx = inputShape->at(1);
+            auto in = inputShape->at(0);
+            auto inIdx = inputShape->at(1);
 
             Nd4jLong* outShape;
             Nd4jLong* outIndex;

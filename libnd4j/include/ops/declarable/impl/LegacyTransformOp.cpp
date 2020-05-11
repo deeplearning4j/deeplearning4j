@@ -43,7 +43,7 @@ namespace sd {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            NativeOpExcutioner::execTransformSame(opNum, input->getBuffer(), input->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
+            NativeOpExcutioner::execTransformSame(opNum, input->buffer(), input->shapeInfo(), z->buffer(), z->shapeInfo(), block.getTArguments()->data(), nullptr, nullptr);
 
             STORE_RESULT(*z);
 

@@ -52,7 +52,7 @@ namespace helpers {
         if (fast) { // Cholesky decomposition approach
             // Equation for solve A^T * Ax = A^T * b, so
             // 1. Computing A2:
-            auto tAtShape = ShapeUtils::evalShapeForMatmul(leftInput->getShapeInfo(), leftInput->getShapeInfo(), true, false);
+            auto tAtShape = ShapeUtils::evalShapeForMatmul(leftInput->shapeInfo(), leftInput->shapeInfo(), true, false);
             //tAtShape[tAtShape.size() - 2] = output->sizeAt(-2);
             NDArray leftOutput('c', tAtShape, output->dataType(), context);
             MmulHelper::matmul(leftInput, leftInput, &leftOutput, true, false); // Computing A2 = A^T * A

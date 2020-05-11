@@ -56,7 +56,7 @@ namespace sd {
                 }
 
 
-                Nd4jLong *newshape = nullptr;
+                const Nd4jLong *newshape = nullptr;
                 ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
                 shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape, dtype)));
 			} else if (shape::isScalar(x) && shape::isScalar(y)) {
@@ -72,7 +72,7 @@ namespace sd {
             } else if (!shape::isScalar(x) && shape::isScalar(y)) {
                 shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));
             } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
-                Nd4jLong *newshape = nullptr;
+                const Nd4jLong *newshape = nullptr;
                 ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
                 shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape, dtype)));
             } else {

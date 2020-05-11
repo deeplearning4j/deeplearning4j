@@ -51,7 +51,7 @@ TEST_F(TadTests, Test4DTad1) {
 
     int dim = 1;
     shape::TAD tad;
-    tad.init(arrayBad->getShapeInfo(), &dim, 1);
+    tad.init(arrayBad->shapeInfo(), &dim, 1);
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
@@ -70,10 +70,10 @@ TEST_F(TadTests, TestNumTads1) {
 
     std::vector<int> dim({0});
 
-    Nd4jLong tadLengthX = shape::tadLength(x.getShapeInfo(), dim.data(), dim.size());
+    Nd4jLong tadLengthX = shape::tadLength(x.shapeInfo(), dim.data(), dim.size());
     Nd4jLong numTadsX = x.lengthOf() / tadLengthX;
 
-    Nd4jLong tadLengthY = shape::tadLength(y.getShapeInfo(), dim.data(), dim.size());
+    Nd4jLong tadLengthY = shape::tadLength(y.shapeInfo(), dim.data(), dim.size());
     Nd4jLong numTadsY = y.lengthOf() / tadLengthY;
 
     ASSERT_EQ(2, tadLengthX);
@@ -91,18 +91,18 @@ TEST_F(TadTests, TestShapeTad_1) {
     NDArray input(buff, shapeInfo);
 
     std::vector<int> dimensions = {0,1,2};
-    Nd4jLong tadLength = shape::tadLength(input.getShapeInfo(), dimensions.data(), dimensions.size());
+    Nd4jLong tadLength = shape::tadLength(input.shapeInfo(), dimensions.data(), dimensions.size());
     Nd4jLong numTads = input.lengthOf() / tadLength;
 
     shape::TAD tad;
-    tad.init(input.getShapeInfo(), dimensions.data(), dimensions.size());
+    tad.init(input.shapeInfo(), dimensions.data(), dimensions.size());
     tad.createTadOnlyShapeInfo();
     tad.createOffsets();
 
     auto tadShapeInfo = new Nd4jLong[shape::shapeInfoLength(tad.tadOnlyShapeInfo[0])];
     std::memcpy(tadShapeInfo, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
 
-    float* tadBuff = reinterpret_cast<float*>(input.getBuffer()) + tad.tadOffsets[0];
+    float* tadBuff = reinterpret_cast<float*>(input.buffer()) + tad.tadOffsets[0];
     NDArray tadArr(tadBuff, tadShapeInfo);
 
     ASSERT_TRUE(numTads==1);
@@ -296,7 +296,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n1[] = {20,25,30,35,  80,85,90,95};
     int minIdx = 5;
 
-    int N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y1.getShapeInfo(), dimsToExclude1.data());
+    int N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y1.shapeInfo(), dimsToExclude1.data());
     ASSERT_TRUE(N == x.lengthOf()/y1.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n1[i] == maxIdxs[i]);
@@ -306,7 +306,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n2[] = {12,32,52,  72,92,112};
     minIdx = 12;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y2.getShapeInfo(), dimsToExclude2.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y2.shapeInfo(), dimsToExclude2.data());
     ASSERT_TRUE(N == x.lengthOf()/y2.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n2[i] == maxIdxs[i]);
@@ -316,7 +316,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n3[] = {64,69,74,79,84,89,94,99,104,109,114,119};
     minIdx = 9;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y3.getShapeInfo(), dimsToExclude3.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y3.shapeInfo(), dimsToExclude3.data());
     ASSERT_TRUE(N == x.lengthOf()/y3.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n3[i] == maxIdxs[i]);
@@ -326,7 +326,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n4[] = {20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39};
     minIdx = 1;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y4.getShapeInfo(), dimsToExclude4.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y4.shapeInfo(), dimsToExclude4.data());
     ASSERT_TRUE(N == x.lengthOf()/y4.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n4[i] == maxIdxs[i]);
@@ -336,7 +336,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n5[] = {65,66,67,68,69, 85,86,87,88,89, 105,106,107,108,109};
     minIdx = 5;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y5.getShapeInfo(), dimsToExclude5.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y5.shapeInfo(), dimsToExclude5.data());
     ASSERT_TRUE(N == x.lengthOf()/y5.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n5[i] == maxIdxs[i]);
@@ -346,7 +346,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n6[] = {65,66,67,68,69};
     minIdx = 13;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y6.getShapeInfo(), dimsToExclude6.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y6.shapeInfo(), dimsToExclude6.data());
     ASSERT_TRUE(N == x.lengthOf()/y6.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n6[i] == maxIdxs[i]);
@@ -356,7 +356,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n7[] = {15,16,17,18,19, 35,36,37,38,39, 55,56,57,58,59, 75,76,77,78,79, 95,96,97,98,99, 115,116,117,118,119};
     minIdx = 3;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y7.getShapeInfo(), dimsToExclude7.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y7.shapeInfo(), dimsToExclude7.data());
     ASSERT_TRUE(N == x.lengthOf()/y7.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n7[i] == maxIdxs[i]);
@@ -366,7 +366,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n8[] = {0,5,10,15,  20,25,30,35, 40,45,50,55, 60,65,70,75, 80,85,90,95, 100,105,110,115};
     minIdx = 0;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y8.getShapeInfo(), dimsToExclude8.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y8.shapeInfo(), dimsToExclude8.data());
     ASSERT_TRUE(N == x.lengthOf()/y8.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n8[i] == maxIdxs[i]);
@@ -376,7 +376,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n9[] = {60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119};
     minIdx = 1;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y9.getShapeInfo(), dimsToExclude9.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y9.shapeInfo(), dimsToExclude9.data());
     ASSERT_TRUE(N == x.lengthOf()/y9.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n9[i] == maxIdxs[i]);
@@ -386,7 +386,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n10[] = {11, 71};
     minIdx = 11;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y10.getShapeInfo(), dimsToExclude10.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y10.shapeInfo(), dimsToExclude10.data());
     ASSERT_TRUE(N == x.lengthOf()/y10.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n10[i] == maxIdxs[i]);
@@ -396,7 +396,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n11[] = {66, 86, 106};
     minIdx = 26;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y11.getShapeInfo(), dimsToExclude11.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y11.shapeInfo(), dimsToExclude11.data());
     ASSERT_TRUE(N == x.lengthOf()/y11.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n11[i] == maxIdxs[i]);
@@ -406,7 +406,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n12[] = {0,2,4,5,7,9,10,12,14,15,17,19,60,62,64,65,67,69,70,72,74,75,77,79};
     minIdx = 0;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y12.getShapeInfo(), dimsToExclude12.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y12.shapeInfo(), dimsToExclude12.data());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n12[i] == maxIdxs[i]);
 
@@ -415,7 +415,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n13[] = {1,3,6,8,11,13,16,18,61,63,66,68,71,73,76,78};
     minIdx = 1;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y13.getShapeInfo(), dimsToExclude13.data());
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y13.shapeInfo(), dimsToExclude13.data());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n13[i] == maxIdxs[i]);
 
@@ -423,7 +423,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n14[] = {12,32,52,  72,92,112};
     minIdx = 12;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y14.getShapeInfo(), nullptr);
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y14.shapeInfo(), nullptr);
     ASSERT_TRUE(N == x.lengthOf()/y14.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n14[i] == maxIdxs[i]);
@@ -432,7 +432,7 @@ TEST_F(TadTests, outerArrayIndexes_1) {
     const int n15[] = {11, 71};
     minIdx = 11;
 
-    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.getShapeInfo(), y15.getShapeInfo(), nullptr);
+    N = shape::outerArrayIndexes(maxIdxs, minIdx, x.shapeInfo(), y15.shapeInfo(), nullptr);
     ASSERT_TRUE(N == x.lengthOf()/y15.lengthOf());
     for(int i = 0; i < N; ++i)
         ASSERT_TRUE(n15[i] == maxIdxs[i]);

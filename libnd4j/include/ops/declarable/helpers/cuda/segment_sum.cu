@@ -35,14 +35,16 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     template<typename T, typename I>
     static __global__ void
-    segmentSumLinearKernel(void *input, Nd4jLong *inputShape, int *starts, int *lengths, Nd4jLong numOfClasses,
-                           void *output, Nd4jLong *outputShape) {
+    segmentSumLinearKernel(
+            const void *input, const Nd4jLong *inputShape,
+            int *starts, int *lengths, Nd4jLong numOfClasses,
+            void *output, const Nd4jLong *outputShape) {
         __shared__
         T *val;
         __shared__
         Nd4jLong xLen, zLen, segment, zIndex;
         __shared__
-        T *x;
+        const T *x;
         __shared__
         T *z;
         __shared__ int threadsPerSegment, start, finish;
@@ -50,7 +52,7 @@ namespace helpers {
         if (threadIdx.x == 0) {
             threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
             segment = blockIdx.x / threadsPerSegment;
-            x = reinterpret_cast<T *>(input);
+            x = reinterpret_cast<const T *>(input);
             z = reinterpret_cast<T *>(output);
 
             xLen = shape::length(inputShape);
@@ -77,25 +79,27 @@ namespace helpers {
 
     template<typename T, typename I>
     static __global__ void
-    unsortedSegmentSumLinearKernel(void *input, Nd4jLong *inputShape, void *indices, Nd4jLong *indicesShape,
-                                   int *starts, int *lengths, Nd4jLong numOfClasses, void *output,
-                                   Nd4jLong *outputShape) {
+    unsortedSegmentSumLinearKernel(
+            const void *input, const Nd4jLong *inputShape,
+            const void *indices, const Nd4jLong *indicesShape,
+            int *starts, int *lengths, Nd4jLong numOfClasses,
+            void *output, const Nd4jLong *outputShape) {
         __shared__
         T *val;
         __shared__
         Nd4jLong xLen, zLen, segment, zIndex;
         __shared__
-        T *x;
+        const T *x;
         __shared__
         T *z;
         __shared__
-        I *y; //int threadsPerSegment, start, finish;
+        const I *y; //int threadsPerSegment, start, finish;
 
         if (threadIdx.x == 0) {
             segment = blockIdx.x;
-            x = reinterpret_cast<T *>(input);
+            x = reinterpret_cast<const T *>(input);
             z = reinterpret_cast<T *>(output);
-            y = reinterpret_cast<I *>(indices);
+            y = reinterpret_cast<const I *>(indices);
             xLen = shape::length(inputShape);
             zLen = shape::length(outputShape);
 
@@ -119,7 +123,11 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     // SegmentSum kernel
     template <typename T, typename I>
-    static __global__ void segmentSumTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
+    static __global__ void segmentSumTadKernel(
+            const void* inputBuf, const Nd4jLong* inputShape, const Nd4jLong* inputTads, const Nd4jLong* inputTadOffsets,
+            const I* indices,
+            int* starts, int* lengths, Nd4jLong numOfClasses,
+            void* outputBuf, const Nd4jLong* outputShape, const Nd4jLong* outputTads, const Nd4jLong* outputTadOffsets) {
         __shared__ T* val;
         __shared__ Nd4jLong len, zIndex, total;
         __shared__ T* z;
@@ -138,7 +146,7 @@ namespace helpers {
 
         auto idx = blockIdx.x;
         if (blockIdx.x <= total) {
-            auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
+            auto x = reinterpret_cast<const T *>(inputBuf) + inputTadOffsets[idx];
             if (blockIdx.x == start) {
                 for (auto e = threadIdx.x; e < len; e += blockDim.x) {
                     auto xIndex = shape::getIndexOffset(e, inputTads);
@@ -178,12 +186,12 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
             segmentSumTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
 
@@ -219,12 +227,12 @@ namespace helpers {
         else {
             output->assign(0);
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
             dims.x = input->sizeAt(0);
             segmentSumTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
@@ -245,21 +253,19 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     // Sorted sum backpropagate
     template <typename T, typename I>
-    static __global__ void segmentSumBPLinearKernel(void* inputBuf, Nd4jLong* inputShape, void* eps, Nd4jLong* epsShape,
-                                                    void* indicesBuf, Nd4jLong* indicesShape, void* outputBuf, Nd4jLong* outputShape) {
-        __shared__ T* x;
-        __shared__ T* gradIn;
-        __shared__ T* gradOut;
-        __shared__ I* y;
-        __shared__ T* z;
+    static __global__ void segmentSumBPLinearKernel(
+            const void* inputBuf, const Nd4jLong* inputShape,
+            const void* eps, const Nd4jLong* epsShape,
+            const void* indicesBuf, const Nd4jLong* indicesShape,
+            void* outputBuf, const Nd4jLong* outputShape) {
+        auto x = reinterpret_cast<const T*>(inputBuf);
+        auto y = reinterpret_cast<const I*>(indicesBuf);
+        auto z = reinterpret_cast<T*>(outputBuf);
+        auto gradOut = reinterpret_cast<const T*>(eps);
         __shared__ Nd4jLong xLen, gradLen;
 
         if (threadIdx.x == 0) {
             xLen = shape::length(inputShape);
-            x = reinterpret_cast<T*>(inputBuf);
-            y = reinterpret_cast<I*>(indicesBuf);
-            z = reinterpret_cast<T*>(outputBuf);
-            gradOut = reinterpret_cast<T*>(eps);
             gradLen = shape::length(epsShape);
         }
         __syncthreads();
@@ -280,22 +286,27 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
-    static __global__ void segmentSumBPTadKernel(void* inputBuf, Nd4jLong* inputShape, void* eps, Nd4jLong* epsShape,
-                                                 void* indicesBuf, Nd4jLong* indicesShape, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* inputTad,
-                                                 Nd4jLong* inputOffsets, Nd4jLong* gradOutTad, Nd4jLong* gradOutOffsets, Nd4jLong* outTad, Nd4jLong* outOffsets) {
-        __shared__ T* x;
-        __shared__ T* gradOut;
-        __shared__ I* y;
+    static __global__ void segmentSumBPTadKernel(
+            const void* inputBuf, const Nd4jLong* inputShape,
+            const void* eps, const Nd4jLong* epsShape,
+            const void* indicesBuf, const Nd4jLong* indicesShape,
+            void* outputBuf, const Nd4jLong* outputShape,
+            const Nd4jLong* inputTad, const Nd4jLong* inputOffsets,
+            const Nd4jLong* gradOutTad, const Nd4jLong* gradOutOffsets,
+            const Nd4jLong* outTad, const Nd4jLong* outOffsets) {
+        __shared__ const T* x;
+        __shared__ const T* gradOut;
+        __shared__ const I* y;
         __shared__ T* z;
         __shared__ Nd4jLong xLen, yLen, gradLen, currentLen;
 
         if (threadIdx.x == 0) {
             xLen = shape::length(inputShape);
-            x = reinterpret_cast<T*>(inputBuf);
-            y = reinterpret_cast<I*>(indicesBuf);
+            x = reinterpret_cast<const T*>(inputBuf);
+            y = reinterpret_cast<const I*>(indicesBuf);
             z = reinterpret_cast<T*>(outputBuf);
             yLen = shape::length(indicesShape);
-            gradOut = reinterpret_cast<T*>(eps);
+            gradOut = reinterpret_cast<const T*>(eps);
             gradLen = shape::length(epsShape);
             currentLen = shape::length(outTad);
         }
@@ -304,8 +315,8 @@ namespace helpers {
         for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
             auto yIndex = shape::getIndexOffset(i, indicesShape);
             auto segment = y[yIndex];
-            T* currentOut = z + outOffsets[i];
-            T* outGrad = gradOut + gradOutOffsets[segment];
+            auto currentOut = z + outOffsets[i];
+            auto outGrad = gradOut + gradOutOffsets[segment];
 
             for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
                 currentOut[e] = outGrad[e];
@@ -327,15 +338,15 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
-            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
-            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
+            auto gradOutTads = packGradOut.specialShapeInfo();
+            auto gradOutTadOffsets = packGradOut.specialOffsets();
 
             segmentSumBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                     gradOut->specialBuffer(), gradOut->specialShapeInfo(),
@@ -368,15 +379,15 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimensions);
-            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->getShapeInfo(), dimensions);
-            Nd4jLong* inputTads = packX.specialShapeInfo();
-            Nd4jLong* inputTadOffsets = packX.specialOffsets();
-            Nd4jLong* outputTads = packZ.specialShapeInfo();
-            Nd4jLong* outputTadOffsets = packZ.specialOffsets();
-            Nd4jLong* gradOutTads = packGradOut.specialShapeInfo();
-            Nd4jLong* gradOutTadOffsets = packGradOut.specialOffsets();
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->shapeInfo(), dimensions);
+            auto inputTads = packX.specialShapeInfo();
+            auto inputTadOffsets = packX.specialOffsets();
+            auto outputTads = packZ.specialShapeInfo();
+            auto outputTadOffsets = packZ.specialOffsets();
+            auto gradOutTads = packGradOut.specialShapeInfo();
+            auto gradOutTadOffsets = packGradOut.specialOffsets();
 
             segmentSumBPTadKernel<T,I><<<gradOut->lengthOf(), input->lengthOf(), 256, *stream>>>(input->specialBuffer(), input->specialShapeInfo(),
                     gradOut->specialBuffer(), gradOut->specialShapeInfo(),

@@ -88,7 +88,7 @@ linkage void nesterovsUpdaterCudaLauncher(const int blocksPerGrid, const int thr
     
      const T lr = static_cast<T>(dLr);
      const T momentum = static_cast<T>(dMomentum);
-     nesterovsUpdaterCuda<T> << <blocksPerGrid, threadsPerBlock, 256, * stream >> > (vx, xShapeInfo, vin, inShapeInfo, 
+     nesterovsUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, * stream>>>(vx, xShapeInfo, vin, inShapeInfo,
                                              vz, zShapeInfo, vst, stShapeInfo, lr, momentum);
 }
 
@@ -103,10 +103,10 @@ void updaterNesterovs(sd::LaunchContext* context, const NDArray& gradient, const
 
     NDArray::prepareSpecialUse({ &update, &stateV }, { &gradient, &initState });
     BUILD_SINGLE_SELECTOR(gradient.dataType(), nesterovsUpdaterCudaLauncher, (blocksPerGrid, threadsPerBlock, 
-        context->getCudaStream(), gradient.getSpecialBuffer(), gradient.getSpecialShapeInfo(), 
-        initState.getSpecialBuffer(), initState.getSpecialShapeInfo(), 
-        update.getSpecialBuffer(), update.getSpecialShapeInfo(), 
-        stateV.getSpecialBuffer(), stateV.getSpecialShapeInfo(), dLr, dMomentum), FLOAT_TYPES);
+        context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
+        initState.specialBuffer(), initState.specialShapeInfo(),
+        update.specialBuffer(), update.specialShapeInfo(),
+        stateV.specialBuffer(), stateV.specialShapeInfo(), dLr, dMomentum), FLOAT_TYPES);
     NDArray::registerSpecialUse({ &update, &stateV }, { &gradient, &initState });
 
     manager.synchronize();

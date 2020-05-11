@@ -50,7 +50,7 @@ namespace sd {
 
 
     template <typename X, typename Y>
-    void quickSort_parallel_internal_key(X* key, Nd4jLong *xShapeInfo, Y* values, Nd4jLong *yShapeInfo, int left, int right, int cutoff, bool descending) {
+    void quickSort_parallel_internal_key(X* key, Nd4jLong const* xShapeInfo, Y* values, Nd4jLong const* yShapeInfo, int left, int right, int cutoff, bool descending) {
         int i = left, j = right;
         X ktmp;
         X pivot = key[shape::getIndexOffset((left + right) / 2, xShapeInfo)];
@@ -115,7 +115,7 @@ PRAGMA_OMP_TASK
 
 
     template <typename X, typename Y>
-    void quickSort_parallel_internal_value(X* key, Nd4jLong *xShapeInfo, Y* value, Nd4jLong *yShapeInfo, int left, int right, int cutoff, bool descending) {
+    void quickSort_parallel_internal_value(X* key, Nd4jLong const* xShapeInfo, Y* value, Nd4jLong const* yShapeInfo, int left, int right, int cutoff, bool descending) {
         int i = left, j = right;
         X ktmp;
         Y pivot = value[shape::getIndexOffset((left + right) / 2, yShapeInfo)];
@@ -180,7 +180,7 @@ PRAGMA_OMP_TASK
 
 
     template <typename X, typename Y>
-    static void quickSort_parallel_key(void *varray, Nd4jLong *xShapeInfo, void *yarray, Nd4jLong *yShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
+    static void quickSort_parallel_key(void *varray, Nd4jLong const* xShapeInfo, void *yarray, Nd4jLong const* yShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
         auto array = reinterpret_cast<X *>(varray);
         auto values = reinterpret_cast<Y *>(yarray);
         int cutoff = 1000;
@@ -195,7 +195,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
     }
 
     template <typename X, typename Y>
-    static void quickSort_parallel_value(void *varray, Nd4jLong *xShapeInfo, void *yarray, Nd4jLong *yShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
+    static void quickSort_parallel_value(void *varray, Nd4jLong const* xShapeInfo, void *yarray, Nd4jLong const* yShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
         auto array = reinterpret_cast<X *>(varray);
         auto values = reinterpret_cast<Y *>(yarray);
         int cutoff = 1000;
@@ -210,17 +210,17 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
     }
 
     template <typename X, typename Y>
-    void DoubleMethods<X,Y>::sortByKey(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, bool descending) {
+    void DoubleMethods<X,Y>::sortByKey(void *vx, Nd4jLong const* xShapeInfo, void *vy, Nd4jLong const* yShapeInfo, bool descending) {
         quickSort_parallel_key<X,Y>(vx, xShapeInfo, vy, yShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
     }
 
     template <typename X, typename Y>
-    void DoubleMethods<X,Y>::sortByValue(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, bool descending) {
+    void DoubleMethods<X,Y>::sortByValue(void *vx, Nd4jLong const* xShapeInfo, void *vy, Nd4jLong const* yShapeInfo, bool descending) {
         quickSort_parallel_value<X,Y>(vx, xShapeInfo, vy, yShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
     }
 
     template <typename X, typename Y>
-    void DoubleMethods<X,Y>::sortTadByKey(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int *dimension, int dimensionLength, bool descending) {
+    void DoubleMethods<X,Y>::sortTadByKey(void *vx, Nd4jLong const* xShapeInfo, void *vy, Nd4jLong const* yShapeInfo, int *dimension, int dimensionLength, bool descending) {
         auto x = reinterpret_cast<X*>(vx);
         auto y = reinterpret_cast<Y*>(vy);
 
@@ -244,7 +244,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
     }
 
     template <typename X, typename Y>
-    void DoubleMethods<X,Y>::sortTadByValue(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int *dimension, int dimensionLength, bool descending) {
+    void DoubleMethods<X,Y>::sortTadByValue(void *vx, Nd4jLong const* xShapeInfo, void *vy, Nd4jLong const* yShapeInfo, int *dimension, int dimensionLength, bool descending) {
         auto x = reinterpret_cast<X*>(vx);
         auto y = reinterpret_cast<Y*>(vy);
 

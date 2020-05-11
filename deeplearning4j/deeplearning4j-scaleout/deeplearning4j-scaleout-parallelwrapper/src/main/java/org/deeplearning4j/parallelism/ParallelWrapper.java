@@ -910,7 +910,7 @@ public class ParallelWrapper implements AutoCloseable {
                     Preconditions.checkState(thresholdAlgorithm != null, "Cannot use SHARED_GRADIENTS training mode without setting a threshold algorithm");
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
-                        log.info("Creating new GradientsAccumulator instance with threshold of [5e-4");
+                        log.info("Creating new GradientsAccumulator instance with default threshold of [5e-4]");
                         this.accumulator = new EncodedGradientsAccumulator(workers, thresholdAlgorithm, residualPostProcessor,  false);
                     }
                 }

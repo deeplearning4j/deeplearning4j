@@ -88,7 +88,7 @@ void ConvolutionUtils::upsampling3d(sd::graph::Context& block, const NDArray& in
     const int sharedMem = output.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 
     NDArray::prepareSpecialUse({&output}, {&input});
-    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), factorD, factorH, factorW, isNCDHW), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), factorD, factorH, factorW, isNCDHW), FLOAT_TYPES);
     NDArray::registerSpecialUse({&output}, {&input});
 
     manager.synchronize();

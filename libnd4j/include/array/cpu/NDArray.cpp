@@ -52,10 +52,9 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////
 
 void* NDArray::platformBuffer()             { return buffer();    }
-void* NDArray::getPlatformBuffer() const    { return getBuffer(); }
+void const* NDArray::platformBuffer() const    { return buffer(); }
 
-Nd4jLong* NDArray::getPlatformShapeInfo() const { return getShapeInfo(); }
-Nd4jLong* NDArray::platformShapeInfo()          { return shapeInfo(); }
+Nd4jLong const* NDArray::platformShapeInfo() const { return shapeInfo(); }
 
 void NDArray::syncToDevice() const          { }
 void NDArray::syncToHost() const            { }
@@ -85,15 +84,15 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
         upper = target.sizeAt(-1);
 
     const T value = static_cast<T>(val);
-    const auto x = reinterpret_cast<const T*>(getBuffer());
-          auto z = reinterpret_cast<T*>(target.getBuffer());
+    const auto x = reinterpret_cast<const T*>(buffer());
+          auto z = reinterpret_cast<T*>(target.buffer());
 
     const int xRank = rankOf();
     const int zRank = target.rankOf();
 
     const auto zLen = target.lengthOf();
 
-    const bool areSameOffsets = shape::haveSameShapeAndStrides(getShapeInfo(), target.getShapeInfo());
+    const bool areSameOffsets = shape::haveSameShapeAndStrides(shapeInfo(), target.shapeInfo());
 
     auto func = PRAGMA_THREADS_FOR {
 
@@ -101,8 +100,8 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
 
         for (auto i = start; i < stop; i++) {
 
-            shape::index2coordsCPU(start, i, target.getShapeInfo(), coords);
-            const auto zOffset = shape::getOffset(target.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, target.shapeInfo(), coords);
+            const auto zOffset = shape::getOffset(target.shapeInfo(), coords);
 
             // if( (row + upper < col) || (row + lower > col) )
             if ((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
@@ -113,7 +112,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
                     coords[0] = coords[1];
                 }
 
-                const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(getShapeInfo(), coords);
+                const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(shapeInfo(), coords);
                 z[zOffset] = x[xOffset];
 
                 if (xRank != zRank)     // restore first coordinate
@@ -140,7 +139,7 @@ void NDArray::setIdentity() {
     for(int j = 0; j < rank; ++j)
         indices[j] = 1;
 
-    Nd4jLong offset = shape::getOffset(getShapeInfo(), indices);
+    Nd4jLong offset = shape::getOffset(shapeInfo(), indices);
 
     for(int i = 0; i < rank; ++i)
         if(minDim > shape[i])
@@ -214,23 +213,28 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
 
 }
 
+    ////////////////////////////////////////////////////////////////////////
+    void* NDArray::specialBufferWithOffset(Nd4jLong offset) {
+        return nullptr;
+    }
+
 ////////////////////////////////////////////////////////////////////////
-void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
+const void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
     return nullptr;
 }
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
     if (_buffer->special() == nullptr)
-        return getBuffer();
+        return buffer();
     // FIXME: this should be fixed once CUDA backend added
     return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
 ////////////////////////////////////////////////////////////////////////
-void* NDArray::getSpecialBuffer() const {
+void const* NDArray::specialBuffer() const {
     if (_buffer->special() == nullptr)
-        return getBuffer();
+        return buffer();
     // FIXME: this should be fixed once CUDA backend added
     return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
@@ -253,7 +257,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
         NDArray result(*this);
         if(diff < 0) {      // reshape to higher dimension
             std::vector<Nd4jLong> shapeNew = reps;               // there is requirement to have unities at first "diff" positions of new shape
-            memcpy(&shapeNew[-diff], result.getShapeInfo()+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
+            memcpy(&shapeNew[-diff], result.shapeInfo()+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
             result.reshapei(ordering(), shapeNew);
         }
         return result;             // nothing to do, if diff >= 0 -> identity tile
@@ -274,8 +278,8 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
 
         auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i++) {
-                auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
-                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,(result.getBuffer(), i, this->getBuffer(), yOffset), LIBND4J_TYPES);
+                auto yOffset = shape::subArrayOffset(i, newShapeInfo, shapeInfo());
+                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,(result.buffer(), i, this->buffer(), yOffset), LIBND4J_TYPES);
             }
         };
 
@@ -286,8 +290,8 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
         auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i++) {
                 auto xOffset = result.getOffset(i);
-                auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
-                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,(result.getBuffer(), xOffset, this->getBuffer(), yOffset), LIBND4J_TYPES);
+                auto yOffset = shape::subArrayOffset(i, newShapeInfo, shapeInfo());
+                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,(result.buffer(), xOffset, this->buffer(), yOffset), LIBND4J_TYPES);
             }
         };
 
@@ -307,7 +311,7 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
 
     // evaluate true tile shapeInfo for comparison with target shapeInfo
     auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
-    if(!shape::equalsSoft(newShapeInfo, target.getShapeInfo()))  {
+    if(!shape::equalsSoft(newShapeInfo, target.shapeInfo()))  {
         delete []newShapeInfo;
         throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
     }
@@ -319,14 +323,14 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
     if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
 //#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
         for(Nd4jLong i=0;  i<targetLen; ++i) {
-            auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
-            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
+            auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.buffer(), i, buffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
     else if(target.ordering() == 'c' && ews > 1) {
         for(Nd4jLong i=0;  i<targetLen; ++i) {
-            auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
-            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i*ews, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
+            auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.buffer(), i*ews, buffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
     else {
@@ -334,8 +338,8 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
         for(Nd4jLong i=0;  i<targetLen; ++i) {
 
             auto xOffset = target.getOffset(i);
-            auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
-            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), xOffset, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
+            auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.buffer(), xOffset, buffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
 }
@@ -355,8 +359,8 @@ void NDArray::tile(NDArray& target) const {
     if(target.ordering() == 'c' && ews >= 1) {
 
         for(Nd4jLong i=0;  i<targetLen; ++i) {
-            auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
-            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i*ews, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
+            auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.buffer(), i*ews, buffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
     else {
@@ -364,8 +368,8 @@ void NDArray::tile(NDArray& target) const {
         for(Nd4jLong i=0;  i<targetLen; ++i) {
 
             auto xOffset = target.getOffset(i);
-            auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
-            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), xOffset, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
+            auto yOffset = shape::subArrayOffset(i, target.shapeInfo(), shapeInfo());
+            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.buffer(), xOffset, buffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
 }
@@ -388,8 +392,8 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
 
         for (auto i = start; i < stop; i++) {
 
-            shape::index2coordsCPU(start, i, output.getShapeInfo(), coords);
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
+            const auto zOffset = shape::getOffset(output.shapeInfo(), coords);
 
             temp = coords[axis];
 
@@ -404,7 +408,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
             } else
                 coords[axis] /= repeats[0];
 
-            z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords)];
+            z[zOffset] = x[shape::getOffset(input.shapeInfo(), coords)];
 
             coords[axis] = temp;
         }

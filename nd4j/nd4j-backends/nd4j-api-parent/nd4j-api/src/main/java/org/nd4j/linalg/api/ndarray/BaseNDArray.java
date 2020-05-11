@@ -5341,7 +5341,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
-            DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
+            DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());

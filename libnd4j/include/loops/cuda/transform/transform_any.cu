@@ -30,12 +30,12 @@ using namespace simdOps;
 
 
 template <typename X, typename Z, typename OpType>
-__global__ void transformAnySimple(void *x, Nd4jLong *xShapeInfo, int xRank,
-								void *params,
-								void *z, Nd4jLong *zShapeInfo, int zRank,
-								int *allocationPointer,
-								void *reductionPointer,
-								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+__global__ void transformAnySimple(
+        const void *x, const Nd4jLong *xShapeInfo, int xRank,
+        void *params,
+        void *z, const Nd4jLong *zShapeInfo, int zRank,
+        int *allocationPointer, void *reductionPointer,
+        const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
 	functions::transform::TransformAny<X,Z>::template transformCuda<OpType>(x,xShapeInfo,params,z,zShapeInfo,allocationPointer,reductionPointer,tadShapeInfo, tadOffsets);
 }
@@ -45,7 +45,14 @@ namespace functions {
     namespace transform {
 
         template<typename X, typename Y>
-        _CUDA_H void TransformAny<X,Y>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+        _CUDA_H void TransformAny<X,Y>::executeTransformShaped(
+                dim3 launchDims, cudaStream_t *stream,
+                const int opNum,
+                const void *x, const Nd4jLong *xShape, int xRank,
+                void *extraParams,
+                void *z, const Nd4jLong *zShape, int zRank,
+                int *allocationPointer, void *reductionPointer,
+                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 			DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), TRANSFORM_ANY_OPS);
 
             DEBUG_KERNEL(stream, opNum);
@@ -54,13 +61,14 @@ namespace functions {
 
         template<typename X, typename Z>
         template <typename OpType>
-        __device__ void TransformAny<X,Z>::transformCuda(void *vx, Nd4jLong *xShapeInfo,
-        												void *vparams,
-        												void *vz, Nd4jLong *zShapeInfo,
-        												int *allocationPointer, void *vreductionPointer,
-        												Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+        __device__ void TransformAny<X,Z>::transformCuda(
+                const void *vx, const Nd4jLong *xShapeInfo,
+                void *vparams,
+                void *vz, const Nd4jLong *zShapeInfo,
+                int *allocationPointer, void *vreductionPointer,
+                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
-        	auto x = reinterpret_cast<X*>(vx);
+        	auto x = reinterpret_cast<const X*>(vx);
 		    auto z = reinterpret_cast<Z*>(vz);
 		    auto params = reinterpret_cast<X*>(vparams);
 		    auto reductionPointer = reinterpret_cast<Z*>(vreductionPointer);
@@ -109,9 +117,17 @@ namespace functions {
 
 		template<typename X, typename Z>
 		template <typename OpType>
-		_CUDA_H void TransformAny<X,Z>::intermediateShaped(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+		_CUDA_H void TransformAny<X,Z>::intermediateShaped(
+		        dim3 launchDims, cudaStream_t *stream,
+                const void *x, const Nd4jLong *xShape, int xRank,
+                void *extraParams,
+                void *z, const Nd4jLong *zShape, int zRank,
+                int *allocationPointer, void *reductionPointer,
+                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
+
 			transformAnySimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
-            sd::DebugHelper::checkErrorCode(stream, "transformAny(...) failed");
+
+			sd::DebugHelper::checkErrorCode(stream, "transformAny(...) failed");
 		}
 
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);

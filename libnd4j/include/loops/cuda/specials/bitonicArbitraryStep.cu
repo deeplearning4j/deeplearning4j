@@ -23,7 +23,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-__global__ void bitonicArbitraryStepKernelKey(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int window, int length,  int reverse, bool descending) {
+__global__ void bitonicArbitraryStepKernelKey(void *vx, Nd4jLong const* xShapeInfo, void *vy, Nd4jLong const* yShapeInfo, int window, int length,  int reverse, bool descending) {
     auto x = static_cast<X*>(vx);
     auto y = static_cast<Y*>(vy);
 
@@ -101,7 +101,7 @@ __global__ void bitonicArbitraryStepKernelKey(void *vx, Nd4jLong *xShapeInfo, vo
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ void execBitonicArbitraryStepKernel(void *vx, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending) {
+__global__ void execBitonicArbitraryStepKernel(void *vx, Nd4jLong const* xShapeInfo, int window, int length,  int reverse, bool descending) {
     auto x = static_cast<T*>(vx);
 
     int tid = threadIdx.x + blockDim.x * blockIdx.x;
@@ -177,14 +177,14 @@ __global__ void execBitonicArbitraryStepKernel(void *vx, Nd4jLong *xShapeInfo, i
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-__host__ void bitonicArbitraryStepGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending) {
+__host__ void bitonicArbitraryStepGeneric(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong const* xShapeInfo, int window, int length,  int reverse, bool descending) {
     execBitonicArbitraryStepKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, window, length, reverse, descending);
 }
 
 template <typename X, typename Y>
-__host__ void bitonicArbitraryStepGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int window, int length,  int reverse, bool descending) {
+__host__ void bitonicArbitraryStepGenericKey(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong const* xShapeInfo, void *vy, Nd4jLong const* yShapeInfo, int window, int length,  int reverse, bool descending) {
     bitonicArbitraryStepKernelKey<X,Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, window, length, reverse, descending);
 }
 
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT bitonicArbitraryStepGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int window, int length,  int reverse, bool descending), LIBND4J_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void ND4J_EXPORT bitonicArbitraryStepGenericKey, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int window, int length,  int reverse, bool descending), LIBND4J_TYPES, LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT bitonicArbitraryStepGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong const* xShapeInfo, int window, int length,  int reverse, bool descending), LIBND4J_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void ND4J_EXPORT bitonicArbitraryStepGenericKey, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong const* xShapeInfo, void *vy, Nd4jLong const* yShapeInfo, int window, int length,  int reverse, bool descending), LIBND4J_TYPES, LIBND4J_TYPES);

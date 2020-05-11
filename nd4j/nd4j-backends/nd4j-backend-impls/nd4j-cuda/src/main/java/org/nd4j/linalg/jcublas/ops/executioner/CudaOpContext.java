@@ -106,7 +106,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        val ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(null, array);
+        //val ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(null, array);
         nativeOps.setGraphContextInputBuffer(context, index, array.isEmpty() ? null : ((BaseCudaDataBuffer) array.data()).getOpaqueDataBuffer(), array.shapeInfoDataBuffer().addressPointer(), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
         super.setInputArray(index, array);
@@ -114,7 +114,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext, Deallocat
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
-        val ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(array, null);
+        //val ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(array, null);
         nativeOps.setGraphContextOutputBuffer(context, index, array.isEmpty() ? null : ((BaseCudaDataBuffer) array.data()).getOpaqueDataBuffer(), array.shapeInfoDataBuffer().addressPointer(), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
         super.setOutputArray(index, array);

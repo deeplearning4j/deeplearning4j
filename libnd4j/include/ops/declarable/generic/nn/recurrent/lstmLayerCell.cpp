@@ -154,7 +154,7 @@ DECLARE_SHAPE_FN(lstmLayerCell) {
     const auto hI = INPUT_VARIABLE(count++);        // initial output
     const auto cI = INPUT_VARIABLE(count);          // initial cell state
 
-    return new ShapeList({hI->getShapeInfo(), cI->getShapeInfo()});
+    return new ShapeList({hI->shapeInfo(), cI->shapeInfo()});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -319,18 +319,18 @@ DECLARE_SHAPE_FN(lstmLayerCellBp) {
     const auto cI = INPUT_VARIABLE(count++);                        // initial cell state
     const auto Wp = hasPH ? INPUT_VARIABLE(count) : nullptr;        // peephole weights
 
-    std::vector<Nd4jLong*> shapes = {x->getShapeInfo(), Wx->getShapeInfo(), Wr->getShapeInfo()};
+    auto shapes = SHAPELIST(x->shapeInfo(), Wx->shapeInfo(), Wr->shapeInfo());
 
     if(b != nullptr)
-        shapes.push_back(b->getShapeInfo());
+        shapes->push_back(b->shapeInfo());
 
-    shapes.push_back(hI->getShapeInfo());
-    shapes.push_back(cI->getShapeInfo());
+    shapes->push_back(hI->shapeInfo());
+    shapes->push_back(cI->shapeInfo());
 
     if(Wp != nullptr)
-        shapes.push_back(Wp->getShapeInfo());
+        shapes->push_back(Wp->shapeInfo());
 
-    return new ShapeList(shapes);
+    return shapes;
 }
 
 }

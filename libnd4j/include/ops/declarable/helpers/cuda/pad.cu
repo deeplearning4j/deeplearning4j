@@ -139,7 +139,7 @@ namespace sd {
                 const auto xType = input.dataType();
                 const auto yType = paddings.dataType();
 
-                BUILD_DOUBLE_SELECTOR(xType, yType, padCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), mode, input.getSpecialBuffer(), input.getSpecialShapeInfo(), paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), padValue.getSpecialBuffer()), LIBND4J_TYPES, INDEXING_TYPES);
+                BUILD_DOUBLE_SELECTOR(xType, yType, padCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), mode, input.specialBuffer(), input.specialShapeInfo(), paddings.specialBuffer(), paddings.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), padValue.specialBuffer()), LIBND4J_TYPES, INDEXING_TYPES);
 
                 NDArray::registerSpecialUse({&output}, {&input, &paddings, &padValue});
                 manager.synchronize();
@@ -148,7 +148,7 @@ namespace sd {
 
             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             template <typename T>
-            static __global__ void mirrorPadLinearKernel(void const* vx, Nd4jLong* xShape, void* vz, Nd4jLong* zShape, Nd4jLong leftSide, Nd4jLong leftSideCorrected, Nd4jLong xLen, Nd4jLong len, Nd4jLong zLen) {
+            static __global__ void mirrorPadLinearKernel(void const* vx, const Nd4jLong* xShape, void* vz, const Nd4jLong* zShape, Nd4jLong leftSide, Nd4jLong leftSideCorrected, Nd4jLong xLen, Nd4jLong len, Nd4jLong zLen) {
 
                 __shared__ T const* x;
                 __shared__ T* z;
@@ -178,7 +178,7 @@ namespace sd {
             }
 
             template <typename F, typename I>
-            static __global__ void mirrorPadKernel(void const* vx, Nd4jLong* xShape, void* vz, Nd4jLong* zShape, Nd4jLong outLen, void const* paddings, Nd4jLong* paddingShape, int reflBorder) {
+            static __global__ void mirrorPadKernel(void const* vx, const Nd4jLong* xShape, void* vz, const Nd4jLong* zShape, Nd4jLong outLen, void const* paddings, const Nd4jLong* paddingShape, int reflBorder) {
 
                 __shared__ F const* x;
                 __shared__ I const* pads;
@@ -247,11 +247,11 @@ namespace sd {
                     const auto leftSideCorrected = leftSide - reflBorder;
                     const Nd4jLong len           = 2*(inLen-1) + leftSide + reflBorder;
 
-                    mirrorPadLinearKernel<F><<<256, 512, 256, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftSide, leftSideCorrected, inLen, len, outLen);
+                    mirrorPadLinearKernel<F><<<256, 512, 256, *stream>>>(input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftSide, leftSideCorrected, inLen, len, outLen);
                     sd::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernel(...) failed");
                 }
                 else {
-                    mirrorPadKernel<F, I><<<256, 256, 8192, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen, paddings.getSpecialBuffer(), paddings.getSpecialShapeInfo(), reflBorder);
+                    mirrorPadKernel<F, I><<<256, 256, 8192, *stream>>>(input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen, paddings.specialBuffer(), paddings.specialShapeInfo(), reflBorder);
                     sd::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadKernel(...) failed");
                 }
                 NDArray::registerSpecialUse({&output}, {&input, &paddings});

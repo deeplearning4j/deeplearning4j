@@ -27,8 +27,8 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static void _CUDA_D rollKernelLinearStage1Dev(void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong fullLength, int actualShift) {
-        auto x = reinterpret_cast<T*>(vx);
+    static void _CUDA_D rollKernelLinearStage1Dev(const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo, Nd4jLong fullLength, int actualShift) {
+        auto x = reinterpret_cast<const T*>(vx);
         auto z = reinterpret_cast<T*>(vz);
 
         auto xEws = shape::elementWiseStride(xShapeInfo);
@@ -69,13 +69,13 @@ namespace helpers {
     }
 
     template <typename T>
-    static void _CUDA_G rollKernelLinearStage1(void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong fullLength, int actualShift) {
+    static void _CUDA_G rollKernelLinearStage1(const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo, Nd4jLong fullLength, int actualShift) {
         rollKernelLinearStage1Dev<T>(vx, xShapeInfo, vz, zShapeInfo, fullLength, actualShift);
     }
 
     template <typename T>
-    static void _CUDA_G rollKernelLinearStage2(void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong fullLength, int actualShift, int shiftCount) {
-        auto x = reinterpret_cast<T*>(vx);
+    static void _CUDA_G rollKernelLinearStage2(const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo, Nd4jLong fullLength, int actualShift, int shiftCount) {
+        auto x = reinterpret_cast<const T*>(vx);
         auto z = reinterpret_cast<T*>(vz);
 
         auto xEws = shape::elementWiseStride(xShapeInfo);
@@ -126,8 +126,8 @@ namespace helpers {
     }
 
     template <typename T>
-    static void _CUDA_G rollKernelLinearStage3(void *vx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong fullLength, int actualShift, int remainShift) {
-        auto x = reinterpret_cast<T*>(vx);
+    static void _CUDA_G rollKernelLinearStage3(const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo, Nd4jLong fullLength, int actualShift, int remainShift) {
+        auto x = reinterpret_cast<const T*>(vx);
         auto z = reinterpret_cast<T*>(vz);
 
         auto xEws = shape::elementWiseStride(xShapeInfo);
@@ -170,7 +170,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static void _CUDA_D swapTadsKernel(void *vx, void *vz, Nd4jLong *zShapeInfo, Nd4jLong tadLength) {
+    static void _CUDA_D swapTadsKernel(void *vx, void *vz, const Nd4jLong *zShapeInfo, Nd4jLong tadLength) {
         auto x = reinterpret_cast<T*>(vx);
         auto z = reinterpret_cast<T*>(vz);
 
@@ -202,8 +202,8 @@ namespace helpers {
     }
 
     template <typename T>
-    static void _CUDA_G rollKernelFullAnyDimensionStage1(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, void *vz, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets, int numTads, Nd4jLong tadLength, int dim, Nd4jLong sizeAt, int theShift) {
-        auto x = reinterpret_cast<T *>(vx);
+    static void _CUDA_G rollKernelFullAnyDimensionStage1(const void *vx, const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffsets, void *vz, const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffsets, int numTads, Nd4jLong tadLength, int dim, Nd4jLong sizeAt, int theShift) {
+        auto x = reinterpret_cast<const T *>(vx);
         auto z = reinterpret_cast<T *>(vz);
 
         for (int e = blockIdx.x + theShift; e < sizeAt - theShift; e += gridDim.x) {
@@ -215,8 +215,8 @@ namespace helpers {
     }
 
     template <typename T>
-    static void _CUDA_G rollKernelFullAnyDimensionStage2(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, void *vz, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets, int numTads, Nd4jLong tadLength, int dim, Nd4jLong sizeAt, int theShift) {
-        auto x = reinterpret_cast<T *>(vx);
+    static void _CUDA_G rollKernelFullAnyDimensionStage2(void *vx, const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffsets, void *vz, const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffsets, int numTads, Nd4jLong tadLength, int dim, Nd4jLong sizeAt, int theShift) {
+        auto x = reinterpret_cast<const T *>(vx);
         auto z = reinterpret_cast<T *>(vz);
 
         for (int e = blockIdx.x; e < theShift; e += gridDim.x) {

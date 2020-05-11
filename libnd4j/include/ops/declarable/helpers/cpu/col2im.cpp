@@ -31,8 +31,8 @@ void col2im_(sd::LaunchContext & context, const NDArray& input,  NDArray& output
 
     auto imBuff         = output.bufferAsT<T>();
 	auto colBuff        = input.bufferAsT<T>();
-	auto imShapeBuffer  = output.getShapeInfo();
-	auto colShapeBuffer = input.getShapeInfo();
+	auto imShapeBuffer  = output.shapeInfo();
+	auto colShapeBuffer = input.shapeInfo();
     auto colShape  		= shape::shapeOf(colShapeBuffer);
     auto colStride 		= shape::stride(colShapeBuffer);
     auto imShape  	    = shape::shapeOf(imShapeBuffer);
@@ -60,7 +60,9 @@ void col2im_(sd::LaunchContext & context, const NDArray& input,  NDArray& output
     if (false) {
 
         auto func = PRAGMA_THREADS_FOR_2D {
-            T *col, *im;
+            T const* col;
+            T* im;
+
             int imRow, imCol;
 
             for (auto b = start_x; b < stop_x; b += inc_x) {
@@ -96,20 +98,20 @@ void col2im_(sd::LaunchContext & context, const NDArray& input,  NDArray& output
 
             for (auto b = start; b < stop; b++) {
                 T *im0 = imBuff + b * imStride0;
-                T *col4 = colBuff + b * colStride0;
+                T const* col4 = colBuff + b * colStride0;
                 for (int colH = 0; colH < oH; ++colH, col4 += colStride4) {
-                    T *col5 = col4;
+                    T const* col5 = col4;
                     for (int colW = 0; colW < oW; ++colW, col5 += colStride5) {
-                        T *col1 = col5;
+                        T const* col1 = col5;
                         T *im1 = im0;
                         for (int c = 0; c < iC; ++c, col1 += colStride1, im1 += imStride1) {
                             int imRow = (-pH + colH * sH);
-                            T *col2 = col1;
+                            T const* col2 = col1;
                             T *im2 = im1 + imRow * imStride2;
                             for (int kRow = 0;
                                  kRow < kH; ++kRow, col2 += colStride2, imRow += dH, im2 += dH * imStride2) {
                                 int imCol = -pW + colW * sW;
-                                T *col3 = col2;
+                                T const* col3 = col2;
                                 T *im3 = im2 + imCol * imStride3;
                                 for (int kCol = 0;
                                      kCol < kW; ++kCol, col3 += colStride3, imCol += dW, im3 += dW * imStride3) {

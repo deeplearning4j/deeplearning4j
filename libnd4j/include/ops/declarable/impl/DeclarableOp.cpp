@@ -234,7 +234,7 @@ namespace sd {
                 // we build list of input shapes
                 if (fp) {
                     for (const auto p:ctx.fastpath_in()) {
-                        inSha.push_back(p == nullptr ? nullptr : p->getShapeInfo());
+                        inSha.push_back(p == nullptr ? nullptr : p->shapeInfo());
                     }
                 } else {
                     int arrCnt = 0;
@@ -245,7 +245,7 @@ namespace sd {
                             if (array == nullptr)
                                 throw unresolved_input_exception::build("Variable wasn't resolved prior shape calculation", p);
 
-                            inSha.push_back(array->getShapeInfo());
+                            inSha.push_back(array->shapeInfo());
 
                             // we're also filling ctx with arrays
                             if (canUseFastPath)
@@ -1095,7 +1095,7 @@ namespace sd {
             NDArray *a0 = block.array(0);
             for (int e = 0; e < block.width(); e++) {
                 auto aV = block.array(e);
-                if (!shape::equalsSoft(a0->getShapeInfo(), aV->getShapeInfo()))
+                if (!shape::equalsSoft(a0->shapeInfo(), aV->shapeInfo()))
                     return ND4J_STATUS_BAD_DIMENSIONS;
             }
 

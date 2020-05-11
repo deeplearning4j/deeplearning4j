@@ -153,7 +153,7 @@ namespace sd {
             inputs[e] = _chunks[e];
         }
 
-        auto inShapeInfo = inputs[0]->getShapeInfo();
+        auto inShapeInfo = inputs[0]->shapeInfo();
         int rank = shape::rank(inShapeInfo);
 	    NDArray* array = nullptr;
 

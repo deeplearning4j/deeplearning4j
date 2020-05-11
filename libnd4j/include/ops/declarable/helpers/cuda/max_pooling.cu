@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
     template <typename Z>
-    static _CUDA_G void indicesFiller(void *vz, Nd4jLong *zShapeInfo, Nd4jLong part, Nd4jLong bSize) {
+    static _CUDA_G void indicesFiller(void *vz, Nd4jLong const* zShapeInfo, Nd4jLong part, Nd4jLong bSize) {
         auto z = reinterpret_cast<Z*>(vz);
 
         for (int b = blockIdx.x; b < bSize; b += gridDim.x) {

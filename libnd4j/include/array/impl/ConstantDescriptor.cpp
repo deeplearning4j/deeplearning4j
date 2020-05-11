@@ -28,7 +28,7 @@ namespace sd {
             _floatValues.emplace_back(values[e]);
     }
 
-    ConstantDescriptor::ConstantDescriptor(Nd4jLong * values, int length) {
+    ConstantDescriptor::ConstantDescriptor(Nd4jLong const* values, int length) {
         for (int e = 0; e < length; e++)
             _integerValues.emplace_back(values[e]);
     }

@@ -38,9 +38,9 @@ static void dilation2d_(NDArray *input, NDArray *weights, NDArray *output, const
     const X* y = weights->bufferAsT<X>();
           Z* z = output->bufferAsT<Z>();
 
-    const Nd4jLong* xShapeInfo = input->getShapeInfo();
-    const Nd4jLong* yShapeInfo = weights->getShapeInfo();
-    const Nd4jLong* zShapeInfo = output->getShapeInfo();
+    const Nd4jLong* xShapeInfo = input->shapeInfo();
+    const Nd4jLong* yShapeInfo = weights->shapeInfo();
+    const Nd4jLong* zShapeInfo = output->shapeInfo();
 
     const uint bS = input->sizeAt(0);
     const uint iH = input->sizeAt(1);

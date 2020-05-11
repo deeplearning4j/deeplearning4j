@@ -68,7 +68,7 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
 
 DECLARE_SHAPE_FN(tile) {
     
-    Nd4jLong* inShape = inputShape->at(0);
+    auto inShape = inputShape->at(0);
     const int inRank = inShape[0];
     std::vector<Nd4jLong> reps;
 
@@ -145,8 +145,8 @@ CUSTOM_OP_IMPL(tile_bp, 2, 1, false, 0, -2) {
 
 DECLARE_SHAPE_FN(tile_bp) {
     
-    Nd4jLong* inShape    = inputShape->at(0);
-    Nd4jLong* gradOShape = inputShape->at(1);
+    auto inShape    = inputShape->at(0);
+    auto gradOShape = inputShape->at(1);
     const int inRank = inShape[0];
 
     std::vector<Nd4jLong> reps;

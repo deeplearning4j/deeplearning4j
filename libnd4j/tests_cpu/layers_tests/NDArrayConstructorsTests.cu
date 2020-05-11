@@ -198,9 +198,9 @@ TEST_F(NDArrayConstructorsTests, test_constructor_10) {
     ASSERT_TRUE(scalar2.isActualOnDeviceSide());
     ASSERT_TRUE(scalar2.isActualOnHostSide());
 
-    ASSERT_TRUE(scalar1.getBuffer() == nullptr);
-    ASSERT_TRUE(scalar1.getSpecialBuffer() != nullptr);
-    ASSERT_TRUE(scalar1.getShapeInfo() != nullptr);
-    ASSERT_TRUE(scalar1.getSpecialShapeInfo() != nullptr);
+    ASSERT_TRUE(scalar1.buffer() == nullptr);
+    ASSERT_TRUE(scalar1.specialBuffer() != nullptr);
+    ASSERT_TRUE(scalar1.shapeInfo() != nullptr);
+    ASSERT_TRUE(scalar1.specialShapeInfo() != nullptr);
     ASSERT_TRUE(scalar1.lengthOf() == 1);
 }

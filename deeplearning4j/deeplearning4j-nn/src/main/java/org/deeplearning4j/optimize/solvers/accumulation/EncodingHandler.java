@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.optimize.solvers.accumulation;
 
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,6 @@ import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgori
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -54,9 +54,8 @@ public class EncodingHandler implements MessageHandler {
     protected ThresholdAlgorithm initialThresholdAlgorithm;
     protected ResidualPostProcessor initialResidualPostProcessor;
 
-    protected Double boundary;
+    protected Integer boundary;
     protected boolean encodingDebugMode;
-    protected NDArrayCompressor compressor;
     protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
 
     protected ThreadLocal<ThresholdAlgorithm> thresholdAlgorithm = new ThreadLocal<>();
@@ -73,20 +72,16 @@ public class EncodingHandler implements MessageHandler {
     protected final AtomicLong lastThresholdLogTime = new AtomicLong();
 
     public EncodingHandler(final ThresholdAlgorithm thresholdAlgorithm, final ResidualPostProcessor residualPostProcessor,
-                           Double boundary, boolean encodingDebugMode){
+                           Integer boundary, boolean encodingDebugMode){
         this.initialThresholdAlgorithm = thresholdAlgorithm;
         this.initialResidualPostProcessor = residualPostProcessor;
-        this.boundary = boundary;
+        this.boundary = boundary == null ? Integer.MAX_VALUE : boundary;
         this.encodingDebugMode = encodingDebugMode;
     }
 
     @Override
     public void initialize(@NonNull GradientsAccumulator accumulator) {
         this.accumulator = accumulator;
-
-        compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
-        if (compressor == null)
-            throw new ND4JIllegalStateException("Can't find Threshold compressor implementation!");
     }
 
     public INDArray encodeUpdates(int iteration, int epoch, INDArray updates) {
@@ -135,14 +130,13 @@ public class EncodingHandler implements MessageHandler {
         iterations.get().incrementAndGet();
 
         if (boundary != null && atomicBoundary.get() < 0)
-            atomicBoundary.compareAndSet(-1, (int) (updates.length() * boundary));
+            atomicBoundary.compareAndSet(-1, (int) (updates.length() / 16) );
 
         INDArray encoded;
 
         if (!bitmapMode.get().get()) {
             //Sparse updates
-            encoded = Nd4j.getExecutioner().thresholdEncode(updates, currentThreshold.get().get(),
-                    boundary == null ? null : atomicBoundary.get());
+            encoded = Nd4j.getExecutioner().thresholdEncode(updates, currentThreshold.get().get(), boundary == null ? null : atomicBoundary.get());
 
             // updates were TOO sparse, nothing to share here
             if (encoded == null) {
@@ -157,17 +151,14 @@ public class EncodingHandler implements MessageHandler {
             }
 
 
-            double encLen = encoded.data().getInt(0);
+            double encLen = encoded.length();
 
             // if updates are too dense - we fallback to bitmap encoding
             if (encLen >= (updates.length() / 16)) {
                 log.debug("Switching back to bitmapEncoding: iteration {}, epoch {}, threshold {}, encoded length {}", iteration, epoch, currThreshold, encLen);
                 bitmapMode.get().set(true);
 
-                DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.length() / 16 + 5);
-                encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
-
-                Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
+                encoded = Nd4j.getExecutioner().bitmapEncode(updates, currentThreshold.get().get());
 
                 applyPostProcessor(iteration, epoch, currThreshold, updates);
                 lastSparsityRatio.set(null);
@@ -186,8 +177,7 @@ public class EncodingHandler implements MessageHandler {
             }
         } else {
             //Dense bitmap updates
-            DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.length() / 16 + 5);
-            encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
+            encoded = Nd4j.create(DataType.INT32, updates.length() / 16 + 5);
 
             long values = Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
 

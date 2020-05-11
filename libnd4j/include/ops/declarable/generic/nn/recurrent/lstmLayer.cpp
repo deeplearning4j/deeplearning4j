@@ -334,7 +334,7 @@ DECLARE_SHAPE_FN(lstmLayer) {
     else
         type = sd::DataType::FLOAT32;
 
-    std::vector<Nd4jLong*> shapes;
+    auto shapes = SHAPELIST();
 
     // evaluate h shape (output)
     if(retFullSeq) {
@@ -362,7 +362,7 @@ DECLARE_SHAPE_FN(lstmLayer) {
             hShape = {sL, 2, bS, nOut};
         }
 
-        shapes.push_back(ConstantShapeHelper::getInstance()->createShapeInfo(type, x->ordering(), hShape));
+        shapes->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(type, x->ordering(), hShape));
     }
 
     // evaluate hL shape (output at last step)
@@ -375,10 +375,10 @@ DECLARE_SHAPE_FN(lstmLayer) {
         else
             hLShape = {2, bS, nOut};
 
-        shapes.push_back(ConstantShapeHelper::getInstance()->createShapeInfo(type, x->ordering(), hLShape));
+        shapes->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(type, x->ordering(), hLShape));
 
         if(retLastC)                                // cL and hL have same shapes
-            shapes.push_back(shapes.back());
+            shapes->push_back(shapes->at(shapes->size() - 1));
     }
 
     // evaluate cL shape (cell state at last step)
@@ -391,10 +391,10 @@ DECLARE_SHAPE_FN(lstmLayer) {
         else
             cLShape = {2, bS, nOut};
 
-        shapes.push_back(ConstantShapeHelper::getInstance()->createShapeInfo(type, x->ordering(), cLShape));
+        shapes->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(type, x->ordering(), cLShape));
     }
 
-    return new ShapeList(shapes);
+    return shapes;
 }
 
 
@@ -785,20 +785,20 @@ DECLARE_SHAPE_FN(lstmLayer_bp) {
     const auto cI     = hasInitC   ? INPUT_VARIABLE(count++) : nullptr;  // initial cell state
     const auto Wp     = hasPH      ? INPUT_VARIABLE(count++) : nullptr;  // peephole weights
 
-    std::vector<Nd4jLong*> outShapes = {x->getShapeInfo(), Wx->getShapeInfo(), Wr->getShapeInfo()};
+    auto outShapes = SHAPELIST(x->shapeInfo(), Wx->shapeInfo(), Wr->shapeInfo());
 
     if(b != nullptr)
-        outShapes.push_back(b->getShapeInfo());
+        outShapes->push_back(b->shapeInfo());
     if(seqLen != nullptr)
-        outShapes.push_back(seqLen->getShapeInfo());
+        outShapes->push_back(seqLen->shapeInfo());
     if(hI != nullptr)
-        outShapes.push_back(hI->getShapeInfo());
+        outShapes->push_back(hI->shapeInfo());
     if(cI != nullptr)
-        outShapes.push_back(cI->getShapeInfo());
+        outShapes->push_back(cI->shapeInfo());
     if(Wp != nullptr)
-        outShapes.push_back(Wp->getShapeInfo());
+        outShapes->push_back(Wp->shapeInfo());
 
-    return new ShapeList(outShapes);
+    return outShapes;
 }
 
 }

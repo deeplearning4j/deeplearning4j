@@ -75,10 +75,23 @@ class Reduce3 {
 		static __device__ void aggregatePartials(void* sPartials, Nd4jLong tid, Nd4jLong numItems, void *extraParams);
 		
 		template<typename OpType>
-		static __device__ void execScalarCuda(void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, int *allocationPointer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
+		static __device__ void execScalarCuda(const void *x, const Nd4jLong *xShapeInfo,
+                                              const void *y, const Nd4jLong *yShapeInfo,
+                                              void *extraParams,
+                                              void *z, const Nd4jLong *zShapeInfo,
+                                              int *allocationPointer, void *reductionBuffer,
+                                              const Nd4jLong *tadOnlyShapeInfo);
 
 		template<typename OpType>
-		static __device__ void transformAll(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationPointer, Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets, Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets);
+		static __device__ void transformAll(const void *vx, const Nd4jLong *xShapeInfo,
+                                            const void *vy, const Nd4jLong *yShapeInfo,
+                                            void *extraParams,
+                                            void *vz, const Nd4jLong *zShapeInfo,
+                                            int *dimension, int dimensionLength,
+                                            int postProcessOrNot,
+                                            int *allocationPointer,
+                                            const Nd4jLong *xTadShapeInfo, const Nd4jLong *xOffsets,
+                                            const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets);
 		
 		/**
          Perform a reduction
@@ -90,54 +103,157 @@ class Reduce3 {
          @param result where to store the result of the reduction
         */
 		template<typename OpType>
-		static __device__ void transform(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
+		static __device__ void transform(const void *vx, const Nd4jLong *xShapeInfo,
+                                         const void *vy, const Nd4jLong *yShapeInfo,
+                                         void *extraParams,
+                                         void *vz, const Nd4jLong *zShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         int postProcessOrNot,
+                                         int *allocationPointer,
+                                         const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                         const Nd4jLong *yTadOnlyShapeInfo, const Nd4jLong *yTadOffsets);
 		
 
-		static __device__ void execCuda(const int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
+		static __device__ void execCuda(int opNum,
+                                        const void *vx, const Nd4jLong *xShapeInfo,
+                                        const void *vy, const Nd4jLong *yShapeInfo,
+                                        void *extraParams,
+                                        void *vz, const Nd4jLong *zShapeInfo,
+                                        int *dimension, int dimensionLength,
+                                        int postProcessOrNot,
+                                        int *allocationPointer,
+                                        const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                        const Nd4jLong *yTadOnlyShapeInfo, const Nd4jLong *yTadOffsets);
 
 
-		static __device__ void execAllCuda( const int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
+		static __device__ void execAllCuda(int opNum,
+                                           const void *vx, const Nd4jLong *xShapeInfo,
+                                           const void *vy, const Nd4jLong *yShapeInfo,
+                                           void *extraParams,
+                                           void *vz, const Nd4jLong *zShapeInfo,
+                                           int *dimension, int dimensionLength,
+                                           int postProcessOrNot,
+                                           int *allocationPointer,
+                                           const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                           const Nd4jLong *yTadOnlyShapeInfo, const Nd4jLong *yTadOffsets);
 
 
-		static __device__ void execScalarCuda(const int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int * allocationPointer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
+		static __device__ void execScalarCuda(int opNum,
+                                              const void *vx, const Nd4jLong *xShapeInfo,
+                                              const void *vy, const Nd4jLong *yShapeInfo,
+                                              void *extraParams,
+                                              void *vz, const Nd4jLong *zShapeInfo,
+                                              int * allocationPointer, void *reductionBuffer,
+                                              const Nd4jLong *tadOnlyShapeInfo);
 
 
-		static __host__ void exec(dim3 launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
+		static __host__ void exec(dim3 launchDims, cudaStream_t *stream,
+                                  int opNum,
+                                  const void *vx, const Nd4jLong *xShapeInfo,
+                                  const void *vy, const Nd4jLong *yShapeInfo,
+                                  void *extraParams,
+                                  void *vz, const Nd4jLong *zShapeInfo,
+                                  int *dimension, int dimensionLength,
+                                  int postProcessOrNot,
+                                  int *allocationPointer,
+                                  const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                  const Nd4jLong *yTadOnlyShapeInfo, const Nd4jLong *yTadOffsets);
 
-		static __host__ void execAll(dim3 launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationPointer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
+		static __host__ void execAll(dim3 launchDims, cudaStream_t *stream,
+                                     int opNum,
+                                     const void *vx, const Nd4jLong *xShapeInfo,
+                                     const void *vy, const Nd4jLong *yShapeInfo,
+                                     void *extraParams,
+                                     void *vz, const Nd4jLong *zShapeInfo,
+                                     int *dimension, int dimensionLength,
+                                     int postProcessOrNot,
+                                     int *allocationPointer,
+                                     const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                     const Nd4jLong *yTadOnlyShapeInfo, const Nd4jLong *yTadOffsets);
 
-		static __host__ void execScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int* allocationPointer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo);
-
-
+		static __host__ void execScalar(dim3 launchDims, cudaStream_t *stream,
+                                        int opNum,
+                                        const void *vx, const Nd4jLong *xShapeInfo,
+                                        const void *vy, const Nd4jLong *yShapeInfo,
+                                        void *extraParams,
+                                        void *vz, const Nd4jLong *zShapeInfo,
+                                        int* allocationPointer, void *reductionBuffer,
+                                        const Nd4jLong *tadOnlyShapeInfo);
 
 #else
 
 		template<typename OpType>
-		static void execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo);
+		static void execScalar(const void *vx, const Nd4jLong *xShapeInfo,
+		                       void *vextraParams,
+                               const void *vy, const Nd4jLong *yShapeInfo,
+                               void *vz, const Nd4jLong *zShapeInfo);
 
 		
-		static void execScalar(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParamsVals, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo);
+		static void execScalar(int opNum,
+                               const void *x, const Nd4jLong *xShapeInfo,
+                               void *extraParamsVals,
+                               const void *y, const Nd4jLong *yShapeInfo,
+                               void *z, const Nd4jLong *zShapeInfo);
 
 		
 		template<typename OpType>
-		static void exec(void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int64_t start, int64_t stop);
+		static void exec(const void *vx, const Nd4jLong *xShapeInfo,
+		                 void *vextraParams,
+                         const void *vy, const Nd4jLong *yShapeInfo,
+                         void *vz, const Nd4jLong *zShapeInfo,
+                         int *dimension, int dimensionLength,
+                         int64_t start, int64_t stop);
 
 		
 		template<typename OpType>
-		static void exec(void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, int64_t start, int64_t stop);
+		static void exec(const void *vx, const Nd4jLong *xShapeInfo,
+		                 void *vextraParams,
+                         const void *vy, const Nd4jLong *yShapeInfo,
+                         void *vz, const Nd4jLong *zShapeInfo,
+                         int *dimension, int dimensionLength,
+                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                         int64_t start, int64_t stop);
 
 
 		template<typename OpType>
-		static void execAll(void *vx, Nd4jLong *xShapeInfo, void *vextraParams, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength,  Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets, Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets, int64_t start, int64_t stop);
+		static void execAll(const void *vx, const Nd4jLong *xShapeInfo,
+		                    void *vextraParams,
+                            const void *vy, const Nd4jLong *yShapeInfo,
+                            void *vz, const Nd4jLong *zShapeInfo,
+                            int *dimension, int dimensionLength,
+                            const Nd4jLong *xTadShapeInfo, const Nd4jLong *xOffsets,
+                            const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets,
+                            int64_t start, int64_t stop);
 		
 		
-		static void exec(const int opNum, void *vx, Nd4jLong *xShapeInfo, void *extraParamsVals, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int64_t start, int64_t stop);
+		static void exec(int opNum,
+                         const void *vx, const Nd4jLong *xShapeInfo,
+                         void *extraParamsVals,
+                         const void *vy, const Nd4jLong *yShapeInfo,
+                         void *vz, const Nd4jLong *zShapeInfo,
+                         int *dimension, int dimensionLength,
+                         int64_t start, int64_t stop);
 
 
-		static void exec(const int opNum, void *vx, Nd4jLong *xShapeInfo, void *extraParamsVals, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, int64_t start, int64_t stop);
+		static void exec(int opNum,
+                         const void *vx, const Nd4jLong *xShapeInfo,
+                         void *extraParamsVals,
+                         const void *vy, const Nd4jLong *yShapeInfo,
+                         void *vz, const Nd4jLong *zShapeInfo,
+                         int *dimension, int dimensionLength,
+                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                         int64_t start, int64_t stop);
 
 		
-		static void execAll(const int opNum, void *vx, Nd4jLong *xShapeInfo, void *extraParamsVals, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets, Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets, int64_t start, int64_t stop);
+		static void execAll(int opNum,
+                            const void *vx, const Nd4jLong *xShapeInfo,
+                            void *extraParamsVals,
+                            const void *vy, const Nd4jLong *yShapeInfo,
+                            void *vz, const Nd4jLong *zShapeInfo,
+                            int *dimension, int dimensionLength,
+                            const Nd4jLong *xTadShapeInfo, const Nd4jLong *xOffsets,
+                            const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets,
+                            int64_t start, int64_t stop);
 #endif
 };
 

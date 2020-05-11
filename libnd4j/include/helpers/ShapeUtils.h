@@ -35,28 +35,28 @@ namespace sd {
         static std::vector<Nd4jLong> evalShapeForTensorDot(const NDArray* a,   const NDArray* b,   const std::vector<int>& axesA, const std::vector<int>& axesB, std::vector<int>& permutAt, std::vector<int>& permutBt, std::vector<Nd4jLong>& shapeAt, std::vector<Nd4jLong>& shapeBt);
 
         // evaluate resulting shape after reduce operation
-        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const sd::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const sd::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
-        static Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
+        static const Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const sd::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
+        static const Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const sd::DataType dataType, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
+        static const Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
+        static const Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
 
         /**
          * evaluate output shape for reduce operation when input shape is empty
          * behavior is analogous to tf
          */
-        static Nd4jLong* evalReduceShapeInfoEmpty(const char order, std::vector<int>& dimensions, const Nd4jLong *shapeInfo, const sd::DataType dataType, const bool keepDims, sd::memory::Workspace* workspace);
+        static const Nd4jLong* evalReduceShapeInfoEmpty(const char order, std::vector<int>& dimensions, const Nd4jLong *shapeInfo, const sd::DataType dataType, const bool keepDims, sd::memory::Workspace* workspace);
 
 		// evaluate shape for array which is result of repeat operation applied to arr
     	static std::vector<Nd4jLong> evalRepeatShape(int axis, const std::vector<int>& repeats, const NDArray& arr);
 
         // evaluate shapeInfo of permuted array
         // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-        static Nd4jLong* evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, sd::memory::Workspace* workspace, const bool setContigStrides = false);
-        static Nd4jLong* evalPermShapeInfo(const Nd4jLong* dimensions, const int rank, const NDArray& arr, sd::memory::Workspace* workspace);
+        static const Nd4jLong* evalPermShapeInfo(const int* dimensions, const int rank, const NDArray& arr, sd::memory::Workspace* workspace, const bool setContigStrides = false);
+        static const Nd4jLong* evalPermShapeInfo(const Nd4jLong* dimensions, const int rank, const NDArray& arr, sd::memory::Workspace* workspace);
 
         // evaluate shapeInfo of transposed array
         // if setContigStrides = true, then set contiguous strides in output shapeInfo in accordance with arr order
-        static Nd4jLong* evalTranspShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace, const bool setContigStrides = false);
+        static const Nd4jLong* evalTranspShapeInfo(const NDArray& arr, sd::memory::Workspace* workspace, const bool setContigStrides = false);
 
         static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
 
@@ -67,13 +67,13 @@ namespace sd {
         // check whether 2 arrays have mutually broadcastable shapes
         // shape comparison starts from the end
         static bool areShapesBroadcastable(const NDArray &arr1, const NDArray &arr2);
-        static bool areShapesBroadcastable(Nd4jLong* shapeX, Nd4jLong* shapeY);
+        static bool areShapesBroadcastable(const Nd4jLong* shapeX, const Nd4jLong* shapeY);
         static bool areShapesBroadcastable(const std::vector<Nd4jLong>& shape1, const std::vector<Nd4jLong>& shape2);
 
         // check the possibility of broadcast operation, if true then return shapeInfo of resulting array
         // if evalMinMax == false then array with larger rank has to be passed as first argument
-        static bool evalBroadcastShapeInfo(const NDArray& max, const NDArray& min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, sd::memory::Workspace* workspace);
-        static bool evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool evalMinMax, Nd4jLong*& resultShapeInfo, sd::memory::Workspace* workspace);
+        static bool evalBroadcastShapeInfo(const NDArray& max, const NDArray& min, const bool evalMinMax, const Nd4jLong*& resultShapeInfo, sd::memory::Workspace* workspace);
+        static bool evalBroadcastShapeInfo(const Nd4jLong *max, const Nd4jLong *min, const bool evalMinMax, const Nd4jLong*& resultShapeInfo, sd::memory::Workspace* workspace);
 
         // evaluate sorted vector of max axes to create tads along in case of simple broadcast operation
         // if simple broadcast is not possible then empty vector is returned
@@ -88,10 +88,10 @@ namespace sd {
         static std::vector<int> getDimsWithSameShape(const NDArray& max, const NDArray& min);
 
         // evaluate shapeInfo for resulting array of tile operation
-        static Nd4jLong* evalTileShapeInfo(const NDArray& arr, const std::vector<Nd4jLong>& reps, sd::memory::Workspace* workspace);
+        static const Nd4jLong* evalTileShapeInfo(const NDArray& arr, const std::vector<Nd4jLong>& reps, sd::memory::Workspace* workspace);
 
         // returns shape part of shapeInfo as std::vector
-        static std::vector<Nd4jLong> pullShapeFromShapeInfo(Nd4jLong *shapeInfo);
+        static std::vector<Nd4jLong> pullShapeFromShapeInfo(const Nd4jLong *shapeInfo);
 
         static std::string shapeAsString(const NDArray* array);
         static std::string shapeAsString(const std::vector<Nd4jLong>& shape);
@@ -104,13 +104,13 @@ namespace sd {
         static std::vector<Nd4jLong> shapeAsVector(const Nd4jLong* shapeInfo);
 
         // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
-        static Nd4jLong* evalDiagShapeInfo(const Nd4jLong* shapeInfo, sd::memory::Workspace* workspace);
+        static const Nd4jLong* evalDiagShapeInfo(const Nd4jLong* shapeInfo, sd::memory::Workspace* workspace);
 
         static std::vector<int> evalBroadcastBackwardAxis(const Nd4jLong *operand, const Nd4jLong *result);
 
         // utility to calculate matrix product shape with give source shapes and additional params
         // returns ShapeList pointer with result shape
-        static Nd4jLong* matrixProductShape(Nd4jLong* theFirstShape, Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, sd::DataType dtype, sd::memory::Workspace* workspace);
+        static const Nd4jLong* matrixProductShape(const Nd4jLong* theFirstShape, const Nd4jLong* theSecondShape, bool shouldTranspondFirst, bool shouldTranspondSecond, sd::DataType dtype, sd::memory::Workspace* workspace);
 
         /**
         *  This method evaluates permutation vector necessary for reducing of shapeFrom to shapeTo

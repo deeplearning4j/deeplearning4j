@@ -47,11 +47,11 @@ public:
      */
     static void execIndexReduceScalar(sd::LaunchContext  *lc,
                                     int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
+                                    const void *hX, const Nd4jLong *hXShapeInfo,
+                                    const void *dX, const Nd4jLong *dXShapeInfo,
                                     void *extraParams,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo);
+                                    void *hZ, const Nd4jLong *hZShapeInfo,
+                                    void *dZ, const Nd4jLong *dZShapeInfo);
 
     /**
      *
@@ -68,13 +68,13 @@ public:
      */
     static void execReduce3Scalar(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            const void *hX, const Nd4jLong *hXShapeInfo,
+                            const void *dX, const Nd4jLong *dXShapeInfo,
                             void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo);
+                            const void *hY, const Nd4jLong *hYShapeInfo,
+                            const void *dY, const Nd4jLong *dYShapeInfo,
+                            void *hZ, const Nd4jLong *hZShapeInfo,
+                            void *dZ, const Nd4jLong *dZShapeInfo);
 
 
     /**
@@ -90,13 +90,13 @@ public:
      */
     static void execReduce3(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            const void *hX, const Nd4jLong *hXShapeInfo,
+                            const void *dX, const Nd4jLong *dXShapeInfo,
                             void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo);
+                            const void *hY, const Nd4jLong *hYShapeInfo,
+                            const void *dY, const Nd4jLong *dYShapeInfo,
+                            void *hZ, const Nd4jLong *hZShapeInfo,
+                            void *dZ, const Nd4jLong *dZShapeInfo);
 
     /**
      *
@@ -113,29 +113,29 @@ public:
      */
     static void execReduce3(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            const void *hX, const Nd4jLong *hXShapeInfo,
+                            const void *dX, const Nd4jLong *dXShapeInfo,
                             void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
+                            const void *hY, const Nd4jLong *hYShapeInfo,
+                            const void *dY, const Nd4jLong *dYShapeInfo,
+                            void *hZ, const Nd4jLong *hZShapeInfo,
+                            void *dZ, const Nd4jLong *dZShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *xTadOnlyShapeInfo, Nd4jLong *xTadOffsets,
-                            Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets);
+                            const Nd4jLong *xTadOnlyShapeInfo, const Nd4jLong *xTadOffsets,
+                            const Nd4jLong *yTadOnlyShapeInfo, const Nd4jLong *yTadOffsets);
 
     static void execReduce3All(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            const void *hX, const Nd4jLong *hXShapeInfo,
+                            const void *dX, const Nd4jLong *dXShapeInfo,
                             void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
+                            const void *hY, const Nd4jLong *hYShapeInfo,
+                            const void *dY, const Nd4jLong *dYShapeInfo,
+                            void *hZ, const Nd4jLong *hZShapeInfo,
+                            void *dZ, const Nd4jLong *dZShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
-                            Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets);
+                            const Nd4jLong *xTadShapeInfo, const Nd4jLong *xOffsets,
+                            const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets);
 
     /**
      *
@@ -150,13 +150,13 @@ public:
      */
     static void execIndexReduce(sd::LaunchContext  *lc,
                                 int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
+                                const void *hX, const Nd4jLong *hXShapeInfo,
+                                const void *dX, const Nd4jLong *dXShapeInfo,
                                 void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
+                                void *hZ, const Nd4jLong *hZShapeInfo,
+                                void *dZ, const Nd4jLong *dZShapeInfo,
                                 int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
     /**
      *
@@ -170,73 +170,76 @@ public:
      * @param n
      */
     static void execScalar(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalar, Nd4jLong *hSscalarShapeInfo,
-                            void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                            void *extraParams, bool allowParallelism = true);
+                           int opNum,
+                           const void *hX, const Nd4jLong *hXShapeInfo,
+                           const void *dX, const Nd4jLong *dXShapeInfo,
+                           void *hZ, const Nd4jLong *hZShapeInfo,
+                           void *dZ, const Nd4jLong *dZShapeInfo,
+                           const void *hScalar, const Nd4jLong *hSscalarShapeInfo,
+                           const void *dScalar, const Nd4jLong *dSscalarShapeInfo,
+                           void *extraParams,
+                           bool allowParallelism = true);
 
 static void execScalarBool(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalar, Nd4jLong *hSscalarShapeInfo,
-                            void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                            void *extraParams, bool allowParallelism = true);
+                            const void *hX, const Nd4jLong *hXShapeInfo,
+                            const void *dX, const Nd4jLong *dXShapeInfo,
+                            void *hZ, const Nd4jLong *hZShapeInfo,
+                            void *dZ, const Nd4jLong *dZShapeInfo,
+                            const void *hScalar, const Nd4jLong *hSscalarShapeInfo,
+                            const void *dScalar, const Nd4jLong *dSscalarShapeInfo,
+                            void *extraParams,
+                            bool allowParallelism = true);
 
 static void execScalarInt(sd::LaunchContext  *lc,
                                int opNum,
-                               void *hX, Nd4jLong *hXShapeInfo,
-                               void *dX, Nd4jLong *dXShapeInfo,
-                               void *hZ, Nd4jLong *hZShapeInfo,
-                               void *dZ, Nd4jLong *dZShapeInfo,
-                               void *hScalar, Nd4jLong *hSscalarShapeInfo,
-                               void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                               void *extraParams, bool allowParallelism = true);
+                               const void *hX, const Nd4jLong *hXShapeInfo,
+                               const void *dX, const Nd4jLong *dXShapeInfo,
+                               void *hZ, const Nd4jLong *hZShapeInfo,
+                               void *dZ, const Nd4jLong *dZShapeInfo,
+                               const void *hScalar, const Nd4jLong *hSscalarShapeInfo,
+                               const void *dScalar, const Nd4jLong *dSscalarShapeInfo,
+                               void *extraParams,
+                               bool allowParallelism = true);
 
  static void execScalar(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            void const* hX, Nd4jLong const* hXShapeInfo,
+                            void const* dX, Nd4jLong const* dXShapeInfo,
                             void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalars, Nd4jLong *hScalarShapeInfo,
-                            void *dScalars, Nd4jLong *dScalarShapeInfo,
+                            void *hZ, Nd4jLong const* hZShapeInfo,
+                            void *dZ, Nd4jLong const* dZShapeInfo,
+                            void const* hScalars, Nd4jLong const* hScalarShapeInfo,
+                            void const* dScalars, Nd4jLong const* dScalarShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+                            Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
+                            Nd4jLong const* tadShapeInfoZ, Nd4jLong const* tadOffsetsZ);
 
  static void execScalarBool(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            const void *hX, const Nd4jLong *hXShapeInfo,
+                            const void *dX, const Nd4jLong *dXShapeInfo,
                             void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalars, Nd4jLong *hScalarShapeInfo,
-                            void *dScalars, Nd4jLong *dScalarShapeInfo,
+                            void *hZ, const Nd4jLong *hZShapeInfo,
+                            void *dZ, const Nd4jLong *dZShapeInfo,
+                            const void *hScalars, const Nd4jLong *hScalarShapeInfo,
+                            const void *dScalars, const Nd4jLong *dScalarShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+                            const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                            const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
  static void execScalarInt(sd::LaunchContext  *lc,
-                               int opNum,
-                               void *hX, Nd4jLong *hXShapeInfo,
-                               void *dX, Nd4jLong *dXShapeInfo,
-                               void *extraParams,
-                               void *hZ, Nd4jLong *hZShapeInfo,
-                               void *dZ, Nd4jLong *dZShapeInfo,
-                               void *hScalars, Nd4jLong *hScalarShapeInfo,
-                               void *dScalars, Nd4jLong *dScalarShapeInfo,
-                               int *dimension, int dimensionLength,
-                               Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                               Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+                           int opNum,
+                           const void *hX, const Nd4jLong *hXShapeInfo,
+                           const void *dX, const Nd4jLong *dXShapeInfo,
+                           void *extraParams,
+                           void *hZ, const Nd4jLong *hZShapeInfo,
+                           void *dZ, const Nd4jLong *dZShapeInfo,
+                           const void *hScalars, const Nd4jLong *hScalarShapeInfo,
+                           const void *dScalars, const Nd4jLong *dScalarShapeInfo,
+                           int *dimension, int dimensionLength,
+                           const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                           const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
 
 /**
@@ -252,105 +255,107 @@ static void execScalarInt(sd::LaunchContext  *lc,
      * @param dimensionLength
      */
     static void execBroadcast(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
+                              int opNum,
+                              const void *hX, const Nd4jLong *hXShapeInfo,
+                              const void *dX, const Nd4jLong *dXShapeInfo,
+                              const void *hY, const Nd4jLong *hYShapeInfo,
+                              const void *dY, const Nd4jLong *dYShapeInfo,
+                              void *hZ, const Nd4jLong *hZShapeInfo,
+                              void *dZ, const Nd4jLong *dZShapeInfo,
+                              int *dimension, int dimensionLength,
+                              const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                              const Nd4jLong *tadOnlyShapeInfoZ,const Nd4jLong *tadOffsetsZ);
 
     static void execBroadcast(sd::LaunchContext* lc,
-                            const int opNum,
-                            const void *hX, const Nd4jLong *hXShapeInfo,
-                            const void *dX, const Nd4jLong *dXShapeInfo,
-                            const void *hY, const Nd4jLong *hYShapeInfo,
-                            const void *dY, const Nd4jLong *dYShapeInfo,
-                                  void *hZ, const Nd4jLong *hZShapeInfo,
-                                  void *dZ, const Nd4jLong *dZShapeInfo);
+                              int opNum,
+                              const void *hX, const Nd4jLong *hXShapeInfo,
+                              const void *dX, const Nd4jLong *dXShapeInfo,
+                              const void *hY, const Nd4jLong *hYShapeInfo,
+                              const void *dY, const Nd4jLong *dYShapeInfo,
+                              void *hZ, const Nd4jLong *hZShapeInfo,
+                              void *dZ, const Nd4jLong *dZShapeInfo);
 
     static void execInverseBroadcast(sd::LaunchContext  *lc,
                                      int opNum,
-                                     void *x, Nd4jLong *xShapeInfo,
-                                     void *dX, Nd4jLong *dXShapeInfo,
-                                     void *y, Nd4jLong *yShapeInfo,
-                                     void *dY, Nd4jLong *dYShapeInfo,
-                                     void *result, Nd4jLong *resultShapeInfo,
-                                     void *dZ, Nd4jLong *dZShapeInfo,
+                                     const void *x, const Nd4jLong *xShapeInfo,
+                                     const void *dX, const Nd4jLong *dXShapeInfo,
+                                     const void *y, const Nd4jLong *yShapeInfo,
+                                     const void *dY, const Nd4jLong *dYShapeInfo,
+                                     void *result, const Nd4jLong *resultShapeInfo,
+                                     void *dZ, const Nd4jLong *dZShapeInfo,
                                      int *dimension, int dimensionLength,
-                                     Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                     Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+                                     const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                     const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
 
     static void execBroadcastBool(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *extraParams,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
+                                  int opNum,
+                                  const void *hX, const Nd4jLong *hXShapeInfo,
+                                  const void *dX, const Nd4jLong *dXShapeInfo,
+                                  const void *hY, const Nd4jLong *hYShapeInfo,
+                                  const void *dY, const Nd4jLong *dYShapeInfo,
+                                  void *hZ, const Nd4jLong *hZShapeInfo,
+                                  void *dZ, const Nd4jLong *dZShapeInfo,
+                                  void *extraParams,
+                                  int *dimension, int dimensionLength,
+                                  const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                  const Nd4jLong *tadOnlyShapeInfoZ,const Nd4jLong *tadOffsetsZ);
 
-    static void execBroadcastBool(sd::LaunchContext* lc, const int opNum,
-                            const void *hX, const Nd4jLong *hXShapeInfo,
-                            const void *dX, const Nd4jLong *dXShapeInfo,
-                            const void *hY, const Nd4jLong *hYShapeInfo,
-                            const void *dY, const Nd4jLong *dYShapeInfo,
+    static void execBroadcastBool(sd::LaunchContext* lc,
+                                  int opNum,
+                                  const void *hX, const Nd4jLong *hXShapeInfo,
+                                  const void *dX, const Nd4jLong *dXShapeInfo,
+                                  const void *hY, const Nd4jLong *hYShapeInfo,
+                                  const void *dY, const Nd4jLong *dYShapeInfo,
                                   void *hZ, const Nd4jLong *hZShapeInfo,
                                   void *dZ, const Nd4jLong *dZShapeInfo,
                                   void *extraParams);
 
     static void execInverseBroadcastBool(sd::LaunchContext  *lc,
-                                     int opNum,
-                                     void *x, Nd4jLong *xShapeInfo,
-                                     void *dX, Nd4jLong *dXShapeInfo,
-                                     void *y, Nd4jLong *yShapeInfo,
-                                     void *dY, Nd4jLong *dYShapeInfo,
-                                     void *result, Nd4jLong *resultShapeInfo,
-                                     void *dZ, Nd4jLong *dZShapeInfo,
-                                     void *extraParams,
-                                     int *dimension, int dimensionLength,
-                                     Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                     Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+                                         int opNum,
+                                         const void *x, const Nd4jLong *xShapeInfo,
+                                         const void *dX, const Nd4jLong *dXShapeInfo,
+                                         const void *y, const Nd4jLong *yShapeInfo,
+                                         const void *dY, const Nd4jLong *dYShapeInfo,
+                                         void *result, const Nd4jLong *resultShapeInfo,
+                                         void *dZ, const Nd4jLong *dZShapeInfo,
+                                         void *extraParams,
+                                         int *dimension, int dimensionLength,
+                                         const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                         const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
     static void execBroadcastInt(sd::LaunchContext  *lc,
-                                  int opNum,
-                                  void *hX, Nd4jLong *hXShapeInfo,
-                                  void *dX, Nd4jLong *dXShapeInfo,
-                                  void *hY, Nd4jLong *hYShapeInfo,
-                                  void *dY, Nd4jLong *dYShapeInfo,
-                                  void *hZ, Nd4jLong *hZShapeInfo,
-                                  void *dZ, Nd4jLong *dZShapeInfo,
-                                  int *dimension, int dimensionLength,
-                                  Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                  Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
+                                 int opNum,
+                                 const void *hX, const Nd4jLong *hXShapeInfo,
+                                 const void *dX, const Nd4jLong *dXShapeInfo,
+                                 const void *hY, const Nd4jLong *hYShapeInfo,
+                                 const void *dY, const Nd4jLong *dYShapeInfo,
+                                 void *hZ, const Nd4jLong *hZShapeInfo,
+                                 void *dZ, const Nd4jLong *dZShapeInfo,
+                                 int *dimension, int dimensionLength,
+                                 const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                 const Nd4jLong *tadOnlyShapeInfoZ,const Nd4jLong *tadOffsetsZ);
 
-    static void execBroadcastInt(sd::LaunchContext* lc, const int opNum,
-                                  const void *hX, const Nd4jLong *hXShapeInfo,
-                                  const void *dX, const Nd4jLong *dXShapeInfo,
-                                  const void *hY, const Nd4jLong *hYShapeInfo,
-                                  const void *dY, const Nd4jLong *dYShapeInfo,
-                                        void *hZ, const Nd4jLong *hZShapeInfo,
-                                        void *dZ, const Nd4jLong *dZShapeInfo);
+    static void execBroadcastInt(sd::LaunchContext* lc,
+                                 int opNum,
+                                 const void *hX, const Nd4jLong *hXShapeInfo,
+                                 const void *dX, const Nd4jLong *dXShapeInfo,
+                                 const void *hY, const Nd4jLong *hYShapeInfo,
+                                 const void *dY, const Nd4jLong *dYShapeInfo,
+                                 void *hZ, const Nd4jLong *hZShapeInfo,
+                                 void *dZ, const Nd4jLong *dZShapeInfo);
 
     static void execInverseBroadcastInt(sd::LaunchContext  *lc,
-                                         int opNum,
-                                         void *x, Nd4jLong *xShapeInfo,
-                                         void *dX, Nd4jLong *dXShapeInfo,
-                                         void *y, Nd4jLong *yShapeInfo,
-                                         void *dY, Nd4jLong *dYShapeInfo,
-                                         void *result, Nd4jLong *resultShapeInfo,
-                                         void *dZ, Nd4jLong *dZShapeInfo,
-                                         int *dimension, int dimensionLength,
-                                         Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                         Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+                                        int opNum,
+                                        const void *x, const Nd4jLong *xShapeInfo,
+                                        const void *dX, const Nd4jLong *dXShapeInfo,
+                                        const void *y, const Nd4jLong *yShapeInfo,
+                                        const void *dY, const Nd4jLong *dYShapeInfo,
+                                        void *result, const Nd4jLong *resultShapeInfo,
+                                        void *dZ, const Nd4jLong *dZShapeInfo,
+                                        int *dimension, int dimensionLength,
+                                        const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                        const Nd4jLong *tadOnlyShapeInfoZ, const Nd4jLong *tadOffsetsZ);
 
 /**
   *
@@ -365,34 +370,34 @@ static void execScalarInt(sd::LaunchContext  *lc,
   * @param n
   */
     static void execPairwiseTransform(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hY, Nd4jLong *hYShapeInfo,
-                                    void *dY, Nd4jLong *dYShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    void *extraParams);
+                                      int opNum,
+                                      const void *hX, const Nd4jLong *hXShapeInfo,
+                                      const void *dX, const Nd4jLong *dXShapeInfo,
+                                      const void *hY, const Nd4jLong *hYShapeInfo,
+                                      const void *dY, const Nd4jLong *dYShapeInfo,
+                                      void *hZ, const Nd4jLong *hZShapeInfo,
+                                      void *dZ, const Nd4jLong *dZShapeInfo,
+                                      void *extraParams);
 
     static void execPairwiseBoolTransform(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hY, Nd4jLong *hYShapeInfo,
-                                    void *dY, Nd4jLong *dYShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    void *extraParams);
+                                          int opNum,
+                                          const void *hX, const Nd4jLong *hXShapeInfo,
+                                          const void *dX, const Nd4jLong *dXShapeInfo,
+                                          const void *hY, const Nd4jLong *hYShapeInfo,
+                                          const void *dY, const Nd4jLong *dYShapeInfo,
+                                          void *hZ, const Nd4jLong *hZShapeInfo,
+                                          void *dZ, const Nd4jLong *dZShapeInfo,
+                                          void *extraParams);
 
     static void execPairwiseIntTransform(sd::LaunchContext  *lc,
-                                          int opNum,
-                                          void *hX, Nd4jLong *hXShapeInfo,
-                                          void *dX, Nd4jLong *dXShapeInfo,
-                                          void *hY, Nd4jLong *hYShapeInfo,
-                                          void *dY, Nd4jLong *dYShapeInfo,
-                                          void *hZ, Nd4jLong *hZShapeInfo,
-                                          void *dZ, Nd4jLong *dZShapeInfo,
-                                          void *extraParams);
+                                         int opNum,
+                                         const void *hX, const Nd4jLong *hXShapeInfo,
+                                         const void *dX, const Nd4jLong *dXShapeInfo,
+                                         const void *hY, const Nd4jLong *hYShapeInfo,
+                                         const void *dY, const Nd4jLong *dYShapeInfo,
+                                         void *hZ, const Nd4jLong *hZShapeInfo,
+                                         void *dZ, const Nd4jLong *dZShapeInfo,
+                                         void *extraParams);
 
 /**
  *
@@ -405,49 +410,50 @@ static void execScalarInt(sd::LaunchContext  *lc,
  * @param n
  */
     static void execTransformFloat(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                                   int opNum,
+                                   const void *hX, const Nd4jLong *hXShapeInfo,
+                                   const void *dX, const Nd4jLong *dXShapeInfo,
+                                   void *hZ, const Nd4jLong *hZShapeInfo,
+                                   void *dZ, const Nd4jLong *dZShapeInfo,
+                                   void *extraParams,
+                                   const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
 static void execTransformAny(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism = true);
+                             int opNum,
+                             const void *hX, const Nd4jLong *hXShapeInfo,
+                             const void *dX, const Nd4jLong *dXShapeInfo,
+                             void *hZ, const Nd4jLong *hZShapeInfo,
+                             void *dZ, const Nd4jLong *dZShapeInfo,
+                             void *extraParams,
+                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                             bool allowParallelism = true);
 
 static void execTransformStrict(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    void *extraParams,
-                                    Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                                int opNum,
+                                const void *hX, const Nd4jLong *hXShapeInfo,
+                                const void *dX, const Nd4jLong *dXShapeInfo,
+                                void *hZ, const Nd4jLong *hZShapeInfo,
+                                void *dZ, const Nd4jLong *dZShapeInfo,
+                                void *extraParams,
+                                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
 static void execTransformSame(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                              int opNum,
+                              const void *hX, const Nd4jLong *hXShapeInfo,
+                              const void *dX, const Nd4jLong *dXShapeInfo,
+                              void *hZ, const Nd4jLong *hZShapeInfo,
+                              void *dZ, const Nd4jLong *dZShapeInfo,
+                              void *extraParams,
+                              const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
 static void execTransformBool(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                              int opNum,
+                              const void *hX, const Nd4jLong *hXShapeInfo,
+                              const void *dX, const Nd4jLong *dXShapeInfo,
+                              void *hZ, const Nd4jLong *hZShapeInfo,
+                              void *dZ, const Nd4jLong *dZShapeInfo,
+                              void *extraParams,
+                              const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
     /**
      *
      * @param opNum
@@ -458,44 +464,44 @@ static void execTransformBool(sd::LaunchContext  *lc,
      * @param resultShapeInfo
      */
     static void execReduceFloat(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                                int opNum,
+                                const void *hX, const Nd4jLong *hXShapeInfo,
+                                const void *dX, const Nd4jLong *dXShapeInfo,
+                                void *extraParams,
+                                void *hZ, const Nd4jLong *hZShapeInfo,
+                                void *dZ, const Nd4jLong *dZShapeInfo,
+                                int *dimension, int dimensionLength,
+                                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
     static void execReduceSame(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                               int opNum,
+                               const void *hX, const Nd4jLong *hXShapeInfo,
+                               const void *dX, const Nd4jLong *dXShapeInfo,
+                               void *extraParams,
+                               void *hZ, const Nd4jLong *hZShapeInfo,
+                               void *dZ, const Nd4jLong *dZShapeInfo,
+                               int *dimension, int dimensionLength,
+                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
     static void execReduceBool(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                               int opNum,
+                               const void *hX, const Nd4jLong *hXShapeInfo,
+                               const void *dX, const Nd4jLong *dXShapeInfo,
+                               void *extraParams,
+                               void *hZ, const Nd4jLong *hZShapeInfo,
+                               void *dZ, const Nd4jLong *dZShapeInfo,
+                               int *dimension, int dimensionLength,
+                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
     static void execReduceLong(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                               int opNum,
+                               const void *hX, const Nd4jLong *hXShapeInfo,
+                               const void *dX, const Nd4jLong *dXShapeInfo,
+                               void *extraParams,
+                               void *hZ, const Nd4jLong *hZShapeInfo,
+                               void *dZ, const Nd4jLong *dZShapeInfo,
+                               int *dimension, int dimensionLength,
+                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
 
     /**
      *
@@ -506,49 +512,49 @@ static void execTransformBool(sd::LaunchContext  *lc,
      * @return
      */
     static void execReduceFloatScalar(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *extraParams,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo);
+                                      int opNum,
+                                      const void *hX, const Nd4jLong *hXShapeInfo,
+                                      const void *dX, const Nd4jLong *dXShapeInfo,
+                                      void *extraParams,
+                                      void *hZ, const Nd4jLong *hZShapeInfo,
+                                      void *dZ, const Nd4jLong *dZShapeInfo);
 
     static void execReduceBoolScalar(sd::LaunchContext  *lc,
-                                        int opNum,
-                                        void *hX, Nd4jLong *hXShapeInfo,
-                                        void *dX, Nd4jLong *dXShapeInfo,
-                                        void *extraParams,
-                                        void *hZ, Nd4jLong *hZShapeInfo,
-                                        void *dZ, Nd4jLong *dZShapeInfo);
+                                     int opNum,
+                                     const void *hX, const Nd4jLong *hXShapeInfo,
+                                     const void *dX, const Nd4jLong *dXShapeInfo,
+                                     void *extraParams,
+                                     void *hZ, const Nd4jLong *hZShapeInfo,
+                                     void *dZ, const Nd4jLong *dZShapeInfo);
 
     static void execReduceSameScalar(sd::LaunchContext  *lc,
-                                        int opNum,
-                                        void *hX, Nd4jLong *hXShapeInfo,
-                                        void *dX, Nd4jLong *dXShapeInfo,
-                                        void *extraParams,
-                                        void *hZ, Nd4jLong *hZShapeInfo,
-                                        void *dZ, Nd4jLong *dZShapeInfo);
+                                     int opNum,
+                                     const void *hX, const Nd4jLong *hXShapeInfo,
+                                     const void *dX, const Nd4jLong *dXShapeInfo,
+                                     void *extraParams,
+                                     void *hZ, const Nd4jLong *hZShapeInfo,
+                                     void *dZ, const Nd4jLong *dZShapeInfo);
 
     static void execReduceLongScalar(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *extraParams,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo);
+                                     int opNum,
+                                     const void *hX, const Nd4jLong *hXShapeInfo,
+                                     const void *dX, const Nd4jLong *dXShapeInfo,
+                                     void *extraParams,
+                                     void *hZ, const Nd4jLong *hZShapeInfo,
+                                     void *dZ, const Nd4jLong *dZShapeInfo);
 
     static void execReduce3TAD(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *yTadShapeInfo, Nd4jLong *yTadOffsets);
+                               int opNum,
+                               const void *hX, const Nd4jLong *hXShapeInfo,
+                               const void *dX, const Nd4jLong *dXShapeInfo,
+                               void *extraParamsVals,
+                               const void *hY, const Nd4jLong *hYShapeInfo,
+                               const void *dY, const Nd4jLong *dYShapeInfo,
+                               void *hZ, const Nd4jLong *hZShapeInfo,
+                               void *dZ, const Nd4jLong *dZShapeInfo,
+                               int *dimension, int dimensionLength,
+                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                               const Nd4jLong *yTadShapeInfo, const Nd4jLong *yTadOffsets);
 
  /**
      *
@@ -562,15 +568,15 @@ static void execTransformBool(sd::LaunchContext  *lc,
      * @param dimensionLength
      */
     static void execSummaryStats(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                bool biasCorrected);
+                                 int opNum,
+                                 const void *hX, const Nd4jLong *hXShapeInfo,
+                                 const void *dX, const Nd4jLong *dXShapeInfo,
+                                 void *extraParams,
+                                 void *hZ, const Nd4jLong *hZShapeInfo,
+                                 void *dZ, const Nd4jLong *dZShapeInfo,
+                                 int *dimension, int dimensionLength,
+                                 const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                 bool biasCorrected);
 
     /**
      *
@@ -582,13 +588,13 @@ static void execTransformBool(sd::LaunchContext  *lc,
      * @param resultShapeInfo
      */
     static void execSummaryStats(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                bool biasCorrected);
+                                 int opNum,
+                                 const void *hX, const Nd4jLong *hXShapeInfo,
+                                 const void *dX, const Nd4jLong *dXShapeInfo,
+                                 void *extraParams,
+                                 void *hZ, const Nd4jLong *hZShapeInfo,
+                                 void *dZ, const Nd4jLong *dZShapeInfo,
+                                 bool biasCorrected);
 
     /**
     *
@@ -600,68 +606,51 @@ static void execTransformBool(sd::LaunchContext  *lc,
     * @param resultShapeInfo
     */
     static void execSummaryStatsScalar(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *extraParams,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    bool biasCorrected);
+                                       int opNum,
+                                       const void *hX, const Nd4jLong *hXShapeInfo,
+                                       const void *dX, const Nd4jLong *dXShapeInfo,
+                                       void *extraParams,
+                                       void *hZ, const Nd4jLong *hZShapeInfo,
+                                       void *dZ, const Nd4jLong *dZShapeInfo,
+                                       bool biasCorrected);
 
 
     static void execRandom(sd::LaunchContext  *lc,
-                            int opNum,
-                            Nd4jPointer state,
-                            void *hZ, Nd4jLong *hZShapeBuffer,
-                            void *dZ, Nd4jLong *dZShapeBuffer,
-                            void *extraArguments);
+                           int opNum,
+                           Nd4jPointer state,
+                           void *hZ, const Nd4jLong *hZShapeBuffer,
+                           void *dZ, const Nd4jLong *dZShapeBuffer,
+                           void *extraArguments);
 
     static void execRandom(sd::LaunchContext  *lc,
-                            int opNum,
-                            Nd4jPointer state,
-                            void *hX, Nd4jLong *hXShapeBuffer,
-                            void *dX, Nd4jLong *dXShapeBuffer,
-                            void *hZ, Nd4jLong *hZShapeBuffer,
-                            void *dZ, Nd4jLong *dZShapeBuffer,
-                            void *extraArguments);
+                           int opNum,
+                           Nd4jPointer state,
+                           const void *hX, const Nd4jLong *hXShapeBuffer,
+                           const void *dX, const Nd4jLong *dXShapeBuffer,
+                           void *hZ, const Nd4jLong *hZShapeBuffer,
+                           void *dZ, const Nd4jLong *dZShapeBuffer,
+                           void *extraArguments);
 
     static void execRandom(sd::LaunchContext  *lc,
-                          int opNum,
-                          Nd4jPointer state,
-                          void *hX, Nd4jLong *hXShapeBuffer,
-                          void *dX, Nd4jLong *dXShapeBuffer,
-                          void *hY, Nd4jLong *hYShapeBuffer,
-                          void *dY, Nd4jLong *dYShapeBuffer,
-                          void *hZ, Nd4jLong *hZShapeBuffer,
-                          void *dZ, Nd4jLong *dZShapeBuffer,
-                          void *extraArguments);
+                           int opNum,
+                           Nd4jPointer state,
+                           const void *hX, const Nd4jLong *hXShapeBuffer,
+                           const void *dX, const Nd4jLong *dXShapeBuffer,
+                           const void *hY, const Nd4jLong *hYShapeBuffer,
+                           const void *dY, const Nd4jLong *dYShapeBuffer,
+                           void *hZ, const Nd4jLong *hZShapeBuffer,
+                           void *dZ, const Nd4jLong *dZShapeBuffer,
+                           void *extraArguments);
 
 
 
-    template <typename X>
-    static FORCEINLINE void execAggregate(sd::LaunchContext  *lc,
-                              int opNum,
-                              void **varguments,
-                              int numArguments,
-                              Nd4jLong **shapeArguments,
-                              int numShapeArguments,
-                              int *indexArguments,
-                              int numIndexArguments,
-                              int **intArrays,
-                              int numIntArrays,
-                              void *vrealArguments,
-                              int numRealArguments) {
-
-    }
-
-
-    inline static void execSort(void *x, Nd4jLong *xShapeInfo, bool descending) {
+    inline static void execSort(void *x, const Nd4jLong *xShapeInfo, bool descending) {
         auto xType = sd::ArrayOptions::dataType(xShapeInfo);
 
         BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortGeneric(x, xShapeInfo, descending), LIBND4J_TYPES);
     }
 
-    static void execSort(void *x, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending) {
+    static void execSort(void *x, const Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets, bool descending) {
         auto xType = sd::ArrayOptions::dataType(xShapeInfo);
 
         BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortTadGeneric(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);
@@ -672,13 +661,13 @@ static void execTransformBool(sd::LaunchContext  *lc,
     }
 
 
-    inline static Nd4jLong encodeBitmap(void *dx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
+    inline static Nd4jLong encodeBitmap(void *dx, const Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
         auto xType = sd::ArrayOptions::dataType(xShapeInfo);
 
         BUILD_SINGLE_SELECTOR(xType, return sd::SpecialMethods, ::encodeBitmapGeneric(dx, xShapeInfo, N, dz, threshold), FLOAT_TYPES);
     }
 
-    inline static void decodeBitmap(void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo) {
+    inline static void decodeBitmap(const void *dx, Nd4jLong N, void *dz, const Nd4jLong *zShapeInfo) {
         auto zType = sd::ArrayOptions::dataType(zShapeInfo);
 
         BUILD_SINGLE_SELECTOR(zType, sd::SpecialMethods, ::decodeBitmapGeneric(dx, N, dz, zShapeInfo), FLOAT_TYPES);

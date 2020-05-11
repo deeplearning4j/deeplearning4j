@@ -27,8 +27,8 @@ namespace helpers {
 
 
     template <typename T>
-    static __device__ void adjustWeightsKernelD(void* inputBuffer,   Nd4jLong* inputShape,
-                                               void* weightsBuffer, Nd4jLong* weightsShape,
+    static __device__ void adjustWeightsKernelD(void* inputBuffer,   Nd4jLong const*  inputShape,
+                                               void* weightsBuffer, Nd4jLong const*  weightsShape,
                                                void* outputBuffer,  Nd4jLong inputLength,
                                                Nd4jLong outputLength, int val) {
     //    typedef Nd4jLong T;
@@ -66,9 +66,9 @@ namespace helpers {
     }
 
         template <typename T>
-    static __global__ void adjustWeightsKernel(void* inputBuffer,   Nd4jLong* inputShape,
-                                               void* weightsBuffer, Nd4jLong* weightsShape,
-                                               void* outputBuffer,  Nd4jLong* outputShape,
+    static __global__ void adjustWeightsKernel(void* inputBuffer,   Nd4jLong const*  inputShape,
+                                               void* weightsBuffer, Nd4jLong const*  weightsShape,
+                                               void* outputBuffer,  Nd4jLong const*  outputShape,
                                                int minLength, int maxLength) {
 
         //auto tid = blockIdx.x * blockDim.x + threadIdx.x; // * blockDim.x; // + threadIdx.x;
@@ -105,7 +105,7 @@ namespace helpers {
         dim3 launchDims(256, 512, 8192);
         auto stream = context->getCudaStream();
         adjustWeightsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->specialBuffer(),
-                input->getSpecialShapeInfo(), weights?weights->specialBuffer():nullptr, weights?weights->getSpecialShapeInfo():nullptr,
+                input->specialShapeInfo(), weights?weights->specialBuffer():nullptr, weights?weights->specialShapeInfo():nullptr,
                 output->specialBuffer(), output->specialShapeInfo(), minLength, maxLength);
     }
 

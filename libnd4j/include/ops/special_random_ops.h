@@ -42,7 +42,7 @@ namespace randomOps {
 
 
 #ifdef __CUDACC__
-        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T const* x, Nd4jLong const* xShapeBuffer, T const* y, Nd4jLong const* yShapeBuffer, T *z, Nd4jLong const* zShapeBuffer, T *extraArguments) {
             /**
              * X holds data,
              * Y holds probabilities
@@ -141,7 +141,7 @@ namespace randomOps {
         }
 #endif
 
-        static inline void specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        static inline void specialOp(Nd4jPointer state, const T *x, const Nd4jLong *xShapeBuffer, const T *y, const Nd4jLong *yShapeBuffer, T *z, const Nd4jLong *zShapeBuffer, T *extraArguments) {
             /**
              * X holds data,
              * Y holds probabilities
@@ -230,7 +230,7 @@ namespace randomOps {
         static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
-        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T const* x, Nd4jLong const* xShapeBuffer, T const* y, Nd4jLong const *yShapeBuffer, T *z, Nd4jLong const* zShapeBuffer, T *extraArguments) {
 
             __shared__ T epsilon;
             __shared__ T two_pi;
@@ -304,7 +304,7 @@ namespace randomOps {
 
 
         static inline void
-        specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        specialOp(Nd4jPointer state, const T *x, const Nd4jLong *xShapeBuffer, const T *y, const Nd4jLong *yShapeBuffer, T *z, const Nd4jLong *zShapeBuffer, T *extraArguments) {
             const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
             auto zLength = shape::length(zShapeBuffer);
@@ -373,7 +373,7 @@ namespace randomOps {
         static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
-        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T const* x, Nd4jLong const* xShapeBuffer, T const* y, Nd4jLong const* yShapeBuffer, T *z, Nd4jLong const* zShapeBuffer, T *extraArguments) {
             int trials = (int) extraArguments[0];
             T prob = extraArguments[1];
 
@@ -424,7 +424,7 @@ namespace randomOps {
         }
 #endif
 
-        static inline void specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        static inline void specialOp(Nd4jPointer state, const T *x, const Nd4jLong *xShapeBuffer, const T *y, const Nd4jLong *yShapeBuffer, T *z, const Nd4jLong *zShapeBuffer, T *extraArguments) {
             int trials = (int) extraArguments[0];
 
             Nd4jLong zLength = shape::length(zShapeBuffer);
@@ -480,7 +480,7 @@ namespace randomOps {
         static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
-        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T const* x, Nd4jLong const* xShapeBuffer, T const* y, Nd4jLong const* yShapeBuffer, T *z, Nd4jLong const* zShapeBuffer, T *extraArguments) {
             int trials = (int) extraArguments[0];
             T prob = extraArguments[1];
 
@@ -532,7 +532,7 @@ namespace randomOps {
         }
 #endif
 
-        static inline void specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        static inline void specialOp(Nd4jPointer state, const T *x, const Nd4jLong *xShapeBuffer, const T *y, const Nd4jLong *yShapeBuffer, T *z, const Nd4jLong *zShapeBuffer, T *extraArguments) {
             int trials = (int) extraArguments[0];
 
             Nd4jLong zLength = shape::length(zShapeBuffer);
@@ -546,8 +546,7 @@ namespace randomOps {
 
             T prob = extraArguments[1];
 
-            //sd::random::RandomBuffer *buffer = reinterpret_cast<sd::random::RandomBuffer *> (state);
-            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
+            auto rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
             auto func = PRAGMA_THREADS_FOR {
                 for (auto e = start; e < stop; e++) {
 
@@ -606,7 +605,7 @@ namespace randomOps {
         static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
-        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T const* x, Nd4jLong const* xShapeBuffer, T const* y, Nd4jLong const* yShapeBuffer, T *z, Nd4jLong const* zShapeBuffer, T *extraArguments) {
             __shared__ T epsilon;
             __shared__ T two_pi;
 
@@ -673,12 +672,12 @@ namespace randomOps {
 #endif
 
         static inline void
-        specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        specialOp(Nd4jPointer state, const T *x, const Nd4jLong *xShapeBuffer, const T *y, const Nd4jLong *yShapeBuffer, T *z, const Nd4jLong *zShapeBuffer, T *extraArguments) {
             GaussianDistribution<T>::specialOp(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
             Nd4jLong zLength = shape::length(zShapeBuffer);
             //auto yEWS = shape::elementWiseStride(yShapeBuffer);
             //auto zEWS = shape::elementWiseStride(zShapeBuffer);
-            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
+            auto rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
             T mean = extraArguments[0];
             T stddev = extraArguments[1];
             T ds = sd::math::nd4j_abs<T>(stddev) * (T) 2.0f;
@@ -718,7 +717,7 @@ namespace randomOps {
 
 
 #ifdef __CUDACC__
-        __device__ static inline void specialOpCuda(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        __device__ static inline void specialOpCuda(Nd4jPointer state, T const* x, Nd4jLong const* xShapeBuffer, T const* y, Nd4jLong const* yShapeBuffer, T *z, Nd4jLong const* zShapeBuffer, T *extraArguments) {
             __shared__ T epsilon;
             __shared__ T two_pi;
 
@@ -791,7 +790,7 @@ namespace randomOps {
 #endif
 
         static inline void
-        specialOp(Nd4jPointer state, T *x, Nd4jLong *xShapeBuffer, T *y, Nd4jLong *yShapeBuffer, T *z, Nd4jLong *zShapeBuffer, T *extraArguments) {
+        specialOp(Nd4jPointer state, const T *x, const Nd4jLong *xShapeBuffer, const T *y, const Nd4jLong *yShapeBuffer, T *z, const Nd4jLong *zShapeBuffer, T *extraArguments) {
             const T two_pi = static_cast<T>(2.0f) * static_cast<T>(3.14159265358979323846);
 
             Nd4jLong zLength = shape::length(zShapeBuffer);
@@ -809,8 +808,7 @@ namespace randomOps {
             // we're enforcing even chunks, since it's mandatory for this algorithm
             span -= span % 2;
 
-//            auto buffer = reinterpret_cast<sd::random::RandomBuffer *> (state);
-            sd::graph::RandomGenerator* rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
+            auto rng = reinterpret_cast<sd::graph::RandomGenerator*>(state);
 
             const T mean = extraArguments[0];
             const T stddev = extraArguments[1];

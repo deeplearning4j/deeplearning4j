@@ -31,8 +31,8 @@ namespace helpers {
 template <typename T>
 static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
 
-    T* gradIBuff      = reinterpret_cast<T*>(gradI.getBuffer());
-    const T* gradOBuff      = reinterpret_cast<T*>(gradO.getBuffer());
+    T* gradIBuff      = reinterpret_cast<T*>(gradI.buffer());
+    auto gradOBuff      = reinterpret_cast<T const*>(gradO.buffer());
     const Nd4jLong gradILen = gradI.lengthOf();
     const Nd4jLong gradOLen = gradO.lengthOf();  // gradOLen >= gradILen
     const Nd4jLong gradIEWS = sd::math::nd4j_abs<Nd4jLong>(gradI.ews());
@@ -52,7 +52,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
 
         //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
-            auto idx = shape::subArrayIndex(i, gradO.getShapeInfo(), gradI.getShapeInfo());
+            auto idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
             gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i]);
         }
     }
@@ -60,7 +60,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
 
         //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
-            auto idx = shape::subArrayIndex(i, gradO.getShapeInfo(), gradI.getShapeInfo());
+            auto idx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
             gradI.p(idx, gradI.e<T>(idx) + gradOBuff[i * gradOEWS]);
         }
     }
@@ -69,8 +69,8 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
         //PRAGMA_OMP_PARALLEL_FOR_SIMD
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
 
-            auto fidx = shape::subArrayIndex(i, gradO.getShapeInfo(), gradI.getShapeInfo());
-            gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getIndexOffset(i, gradO.getShapeInfo())]);
+            auto fidx = shape::subArrayIndex(i, gradO.shapeInfo(), gradI.shapeInfo());
+            gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getIndexOffset(i, gradO.shapeInfo())]);
         }
     }
 }

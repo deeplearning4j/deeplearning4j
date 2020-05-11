@@ -29,7 +29,7 @@ import org.deeplearning4j.text.sentenceiterator.PrefetchingSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SynchronizedSentenceIterator;
 import org.deeplearning4j.common.util.DL4JFileUtils;
-import org.deeplearning4j.core.util.ThreadUtils;
+import org.nd4j.common.util.ThreadUtils;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 import org.slf4j.Logger;

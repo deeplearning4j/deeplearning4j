@@ -270,7 +270,7 @@ namespace functions {
 
 #ifdef __CUDACC__
 
-            static inline _CUDA_D Z startingValue(X *input) {
+            static inline _CUDA_D Z startingValue(X const* input) {
                 return static_cast<Z>(0);
             }
 
@@ -279,62 +279,51 @@ namespace functions {
 
 
             template<typename OpType>
-	        static _CUDA_D void transform(void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+	        static _CUDA_D void transform(void const* dx, Nd4jLong const* xShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets);
 
-            static _CUDA_D void transform(const int opNum, void *dx, Nd4jLong *xShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets);
+            static _CUDA_D void transform(const int opNum, void const* dx, Nd4jLong const* xShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets);
 
-            static _CUDA_H void execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
-            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
-            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer);
+            static _CUDA_H void execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t *stream, int opNum, void const* x, Nd4jLong const* xShapeInfo, Nd4jLong const* hxShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hzShapeInfo, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool biasCorrected, void *reductionBuffer);
+            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void const* x, Nd4jLong const* xShapeInfo, Nd4jLong const* hxShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hzShapeInfo, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool biasCorrected, void *reductionBuffer);
+            static _CUDA_H void execSummaryStatsReduce(dim3& launchDims, cudaStream_t *stream, int opNum, void const* x, Nd4jLong const* xShapeInfo, Nd4jLong const* hxShapeInfo, void *extraParams, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hzShapeInfo, int *dimension, int dimensionLength, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool biasCorrected, void *reductionBuffer);
 #else
 
             static Z execScalar(int opNum,
-                    bool biasCorrected,
-                    void *x,
-                    Nd4jLong *xShapeInfo,
-                    void *extraParams);
+                                bool biasCorrected,
+                                const void *x, const Nd4jLong *xShapeInfo,
+                                void *extraParams);
 
             static void execScalar(int opNum,
-                                bool biasCorrected,
-                                void *x,
-                                Nd4jLong *xShapeInfo,
-                                void *extraParams,
-                                void *vz,
-                                Nd4jLong *resultShapeInfoBuffer);
+                                   bool biasCorrected,
+                                   const void *x, const Nd4jLong *xShapeInfo,
+                                   void *extraParams,
+                                   void *vz, const Nd4jLong *resultShapeInfoBuffer);
 
             static void exec(int opNum,
-                    bool biasCorrected,
-                    void *x,
-                    Nd4jLong *xShapeInfo,
-                    void *extraParams,
-                    void *vz,
-                    Nd4jLong *resultShapeInfoBuffer,
-                    int *dimension, int dimensionLength);
+                             bool biasCorrected,
+                             const void *x, const Nd4jLong *xShapeInfo,
+                             void *extraParams,
+                             void *vz, const Nd4jLong *resultShapeInfoBuffer,
+                             int *dimension, int dimensionLength);
 
             template<typename OpType>
             static Z execScalar(bool biasCorrected,
-                    void *x,
-                    Nd4jLong *xShapeInfo,
-                    void *extraParams);
+                                const void *x, const Nd4jLong *xShapeInfo,
+                                void *extraParams);
 
             template<typename OpType>
             static void execScalar(bool biasCorrected,
-                                void *x,
-                                Nd4jLong *xShapeInfo,
-                                void *extraParams,
-                                void *vz,
-                                Nd4jLong *resultShapeInfoBuffer);
+                                   const void *x, const Nd4jLong *xShapeInfo,
+                                   void *extraParams,
+                                   void *vz, const Nd4jLong *resultShapeInfoBuffer);
 
 
             template<typename OpType>
             static void exec(bool biasCorrected,
-                    void *x,
-                    Nd4jLong *xShapeInfo,
-                    void *extraParams,
-                    void *vz,
-                    Nd4jLong *resultShapeInfoBuffer,
-                    int *dimension,
-                    int dimensionLength);
+                             const void *x, const Nd4jLong *xShapeInfo,
+                             void *extraParams,
+                             void *vz, const Nd4jLong *resultShapeInfoBuffer,
+                             int *dimension, int dimensionLength);
 #endif
         };
     }

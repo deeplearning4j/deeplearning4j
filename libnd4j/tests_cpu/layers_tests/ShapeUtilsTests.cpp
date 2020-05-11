@@ -60,7 +60,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_1)
     NDArray x(xShapeInfo);
     NDArray y(yShapeInfo);
 
-    Nd4jLong *newShapeInfo = nullptr;
+    const Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
 
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
@@ -77,7 +77,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_2)
     NDArray x(xShapeInfo);
     NDArray y(yShapeInfo);
 
-    Nd4jLong *newShapeInfo = nullptr;
+    const Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
 
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
@@ -94,7 +94,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_3)
     NDArray x(xShapeInfo);
     NDArray y(yShapeInfo);
 
-    Nd4jLong *newShapeInfo = nullptr;
+    const Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
 
     ASSERT_TRUE(shape::equalsStrict(expShapeInfo, newShapeInfo));
@@ -111,7 +111,7 @@ TEST_F(ShapeUtilsTests, EvalBroadcastShapeInfo_4)
     NDArray x(xShapeInfo);
     NDArray y(yShapeInfo);
 
-    Nd4jLong *newShapeInfo = nullptr;
+    const Nd4jLong *newShapeInfo = nullptr;
     ShapeUtils::evalBroadcastShapeInfo(x, y, false, newShapeInfo, nullptr);
     //for(int i=0; i<2*newShapeInfo[0]+4; ++i)
     //        std::cout<<newShapeInfo[i]<<" ";
@@ -128,9 +128,9 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test1)
     auto expected = NDArrayFactory::create<float>('c', {2,4,5});
     std::vector<int> dimensions = {1};
 
-    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo());
+    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.shapeInfo());
 
-    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+    ASSERT_TRUE(shape::shapeEquals(expected.shapeInfo(), newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
@@ -141,9 +141,9 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test2)
     auto expected = NDArrayFactory::create<float>('c', {2,1,4,5});
     std::vector<int> dimensions = {1};
 
-    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);
+    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.shapeInfo(), true);
 
-    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+    ASSERT_TRUE(shape::shapeEquals(expected.shapeInfo(), newShapeInfo));
 }
 
 //////////////////////////////////////////////////////////////////
@@ -154,9 +154,9 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test3)
     auto expected = NDArrayFactory::create<float>('c', {1,1,1,5});
     std::vector<int> dimensions = {0,1,2};
 
-    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);
+    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.shapeInfo(), true);
 
-    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+    ASSERT_TRUE(shape::shapeEquals(expected.shapeInfo(), newShapeInfo));
 
 }
 
@@ -168,9 +168,9 @@ TEST_F(ShapeUtilsTests, evalReduceShapeInfo_test4)
     auto expected = NDArrayFactory::create<float>('c', {1,1,1,1});
     std::vector<int> dimensions = {0,1,2,3};
 
-    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.getShapeInfo(), true);
+    auto newShapeInfo = ShapeUtils::evalReduceShapeInfo('c', dimensions, x.shapeInfo(), true);
 
-    ASSERT_TRUE(shape::shapeEquals(expected.getShapeInfo(), newShapeInfo));
+    ASSERT_TRUE(shape::shapeEquals(expected.shapeInfo(), newShapeInfo));
 }
 
 TEST_F(ShapeUtilsTests, Test_Strings_1) {

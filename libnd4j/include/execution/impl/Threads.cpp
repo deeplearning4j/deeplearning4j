@@ -571,7 +571,7 @@ namespace samediff {
 
         // create temporary array
         int64_t intermediatery[256];
-        auto span = delta / numThreads;
+        auto span = (numElements / numThreads) - (numElements % numThreads);
 
         // execute threads in parallel
         for (uint32_t e = 0; e < numThreads; e++) {
@@ -615,7 +615,7 @@ namespace samediff {
 
         // create temporary array
         double intermediatery[256];
-        auto span = delta / numThreads;
+        auto span = (numElements / numThreads) - (numElements % numThreads);
 
         // execute threads in parallel
         for (uint32_t e = 0; e < numThreads; e++) {

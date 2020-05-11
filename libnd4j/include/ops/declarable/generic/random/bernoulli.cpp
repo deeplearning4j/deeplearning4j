@@ -38,7 +38,7 @@ namespace sd {
 
             T f = T_ARG(0);
 
-            functions::random::RandomFunction<T>::template execTransform<randomOps::BernoulliDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), &f);
+            functions::random::RandomFunction<T>::template execTransform<randomOps::BernoulliDistribution<T>>(block.getRNG(), z->buffer(), z->shapeInfo(), &f);
 */
 
             auto z = OUTPUT_VARIABLE(0);

@@ -41,7 +41,7 @@ namespace sd {
 
             int opNum = block.opNum() < 0 ? this->_opNum : block.opNum();
 
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->getShapeInfo(), dims);
+            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
 
             PointersManager manager(block.launchContext(), "LegacyBroadcastBoolOp");
             auto pTadShape = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
@@ -57,7 +57,7 @@ namespace sd {
             else {
                 // this is rare, but possible use case - X and Z might have different shapes/strides/orders. In this case we prepare and pass separate TAD info
 
-                auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z->getShapeInfo(), dims);
+                auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(z->shapeInfo(), dims);
 
                 auto zTadShape =  Environment::getInstance()->isCPU() ? packZ.primaryShapeInfo() : packZ.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOnlyShapeInfo, shape::shapeInfoByteLength(tadZ.tadOnlyShapeInfo));
                 auto zTadOffsets = Environment::getInstance()->isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tadZ.tadOffsets, tadZ.numTads * sizeof(Nd4jLong));

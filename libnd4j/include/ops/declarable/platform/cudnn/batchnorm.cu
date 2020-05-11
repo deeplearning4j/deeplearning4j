@@ -108,11 +108,11 @@ static void batchnormCUDNN(const LaunchContext* context,
     // calculations
     err = cudnnBatchNormalizationForwardInference(*handle, isSpatialMode ? CUDNN_BATCHNORM_SPATIAL : CUDNN_BATCHNORM_PER_ACTIVATION,
                                                  ptrAlpha, ptrBeta,
-                                                 x, input->getSpecialBuffer(),
-                                                 z, output->getSpecialBuffer(),
+                                                 x, input->specialBuffer(),
+                                                 z, output->specialBuffer(),
                                                  params,
-                                                 gamma->getSpecialBuffer(), beta->getSpecialBuffer(),
-                                                 mean->getSpecialBuffer(), variance->getSpecialBuffer(), epsilon);
+                                                 gamma->specialBuffer(), beta->specialBuffer(),
+                                                 mean->specialBuffer(), variance->specialBuffer(), epsilon);
 
     if (err != 0) throw sd::cuda_exception::build("batchnormCUDNN: cudnnBatchNormalizationForwardInference failed", err);
 
@@ -215,13 +215,13 @@ static void batchnormBpCUDNN(const LaunchContext* context,
     // TODO: we can use cache here
     err = cudnnBatchNormalizationBackward(*handle, isSpatialMode ? CUDNN_BATCHNORM_SPATIAL : CUDNN_BATCHNORM_PER_ACTIVATION,
                                             ptrAlpha, ptrBeta, ptrAlpha, ptrBeta,
-                                            x, input->getSpecialBuffer(),
-                                            dz, gradO->getSpecialBuffer(),
-                                            dx, gradI->getSpecialBuffer(),
+                                            x, input->specialBuffer(),
+                                            dz, gradO->specialBuffer(),
+                                            dx, gradI->specialBuffer(),
                                             params,
-                                            gamma->getSpecialBuffer(), gradG->getSpecialBuffer(), gradB->getSpecialBuffer(),
+                                            gamma->specialBuffer(), gradG->specialBuffer(), gradB->specialBuffer(),
                                             epsilon,
-                                            nullptr/*mean->getSpecialBuffer()*/, nullptr/*variance->getSpecialBuffer()*/);
+                                            nullptr/*mean->specialBuffer()*/, nullptr/*variance->specialBuffer()*/);
 
     if (err != 0) throw sd::cuda_exception::build("batchnormBpCUDNN: cudnnBatchNormalizationBackward failed", err);
 
@@ -362,11 +362,11 @@ PLATFORM_CHECK(batchnorm, ENGINE_CUDA) {
         return false;
 
     // *********************************** //
-    bool allParamsHaveSameShapeAndStrides = shape::haveSameShapeAndStrides(mean->getShapeInfo(), variance->getShapeInfo());
+    bool allParamsHaveSameShapeAndStrides = shape::haveSameShapeAndStrides(mean->shapeInfo(), variance->shapeInfo());
     if(gamma)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), gamma->getShapeInfo());
+        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gamma->shapeInfo());
     if(beta)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), beta->getShapeInfo());
+        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), beta->shapeInfo());
 
     if(!allParamsHaveSameShapeAndStrides)
         return false;
@@ -536,13 +536,13 @@ PLATFORM_CHECK(batchnorm_bp, ENGINE_CUDA) {
         return false;
 
     // *********************************** //
-    bool allParamsHaveSameShapeAndStrides = shape::haveSameShapeAndStrides(mean->getShapeInfo(), variance->getShapeInfo());
+    bool allParamsHaveSameShapeAndStrides = shape::haveSameShapeAndStrides(mean->shapeInfo(), variance->shapeInfo());
     if(gamma)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), gamma->getShapeInfo());
+        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gamma->shapeInfo());
     if(gradG)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), gradG->getShapeInfo());
+        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gradG->shapeInfo());
     if(gradB)
-        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), gradB->getShapeInfo());
+        allParamsHaveSameShapeAndStrides &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gradB->shapeInfo());
 
     if(!allParamsHaveSameShapeAndStrides)
         return false;

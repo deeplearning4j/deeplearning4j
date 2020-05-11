@@ -216,7 +216,7 @@ TEST_F(EmptyTests, test_shaped_empty_3) {
 }
 
 TEST_F(EmptyTests, test_shaped_empty_4) {
-    auto shape = ConstantShapeHelper::getInstance()->vectorShapeInfo(0, sd::DataType::FLOAT32);
+    const auto shape = ConstantShapeHelper::getInstance()->vectorShapeInfo(0, sd::DataType::FLOAT32);
     NDArray array(shape, true, sd::LaunchContext::defaultContext());
     std::vector<Nd4jLong> shapeOf({0});
 

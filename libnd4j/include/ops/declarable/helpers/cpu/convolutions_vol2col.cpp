@@ -59,7 +59,7 @@ static void vol2col_(const NDArray& volume, NDArray& columns, const int sD, cons
             T* volBuff = const_cast<NDArray&>(volume).bufferAsT<T>();
 
 
-            if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo())) {
+            if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.shapeInfo()) && shape::strideDescendingCAscendingF(columns.shapeInfo())) {
 
                 auto func = PRAGMA_THREADS_FOR_3D {
                     T *col, *vol;
