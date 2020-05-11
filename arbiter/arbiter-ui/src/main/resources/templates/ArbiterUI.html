@@ -197,110 +197,167 @@
     var resultsTableContent;
 
     var selectedCandidateIdx = null;
+    
+    //Multi-session mode
+    var multiSession = null;
+    //Session selection
+    var currSession = "";
+    
+    function getSessionIdFromUrl() {
+        // path is like /arbiter/:sessionId/overview
+        var sessionIdRegexp = /\/arbiter\/([^\/]+)/g;
+        var match = sessionIdRegexp.exec(window.location.pathname)
+        return match[1];
+    }
 
+    function getCurrSession(callback) {
+        if (multiSession) {
+            if (currSession == "") {
+                // get only once
+                currSession = getSessionIdFromUrl();
+            }
+            //we don't show session selector in multi-session mode (one can list sessions at /arbiter)
+            callback();
+        } else {
+            $.ajax({
+                url: "/arbiter/sessions/current",
+                async: true,
+                error: function (query, status, error) {
+                    console.log("Error getting data: " + error);
+                },
+                success: function (data) {
+                    currSession = data;
+                    console.log("Current session: " + currSession);
+                    
+                    //Update available sessions in session selector
+                    $.get("/arbiter/sessions/all", function(data){
+                        var keys = data;    // JSON.stringify(data);
+
+                        if(keys.length > 1){
+                            $("#sessionSelectDiv").show();
+
+                            var elem = $("#sessionSelect");
+                            elem.empty();
+
+                            var currSelectedIdx = 0;
+                            for (var i = 0; i < keys.length; i++) {
+                                if(keys[i] == currSession){
+                                    currSelectedIdx = i;
+                                }
+                                elem.append("<option value='" + keys[i] + "'>" + keys[i] + "</option>");
+                            }
+
+                            $("#sessionSelect option[value='" + keys[currSelectedIdx] +"']").attr("selected", "selected");
+                            $("#sessionSelectDiv").show();
+                        }
+        //                console.log("Got sessions: " + keys + ", current: " + currSession);
+                        callback();
+                    });
+                    
+                }
+            });
+        }
+    }
+    
+    function getSessionSettings(callback) {
+        // load only once
+        if (multiSession != null) {
+            getCurrSession(callback);
+        } else {
+            $.ajax({
+                url: "/arbiter/multisession",
+                async: true,
+                error: function (query, status, error) {
+                    console.log("Error getting data: " + error);
+                },
+                success: function (data) {
+                    multiSession = data == "true";
+                    getCurrSession(callback);
+                }
+            });
+        }
+    }
+    
+    //Initial update
+    doUpdate();
     //Set basic interval function to do updates
     setInterval(doUpdate,5000);    //Loop every 5 seconds
-
-
+    
     function doUpdate(){
         //Get the update status, and do something with it:
-        $.get("/arbiter/lastUpdate",function(data){
-            //Encoding: matches names in UpdateStatus class
-            var jsonObj = JSON.parse(JSON.stringify(data));
-            var statusTime = jsonObj['statusUpdateTime'];
-            var settingsTime = jsonObj['settingsUpdateTime'];
-            var resultsTime = jsonObj['resultsUpdateTime'];
-            //console.log("Last update times: " + statusTime + ", " + settingsTime + ", " + resultsTime);
+        getSessionSettings(function(){
+            var sessionUpdateUrl = multiSession ? "/arbiter/" + currSession + "/lastUpdate" : "/arbiter/lastUpdate";
+            $.get(sessionUpdateUrl,function(data){
+                //Encoding: matches names in UpdateStatus class
+                var jsonObj = JSON.parse(JSON.stringify(data));
+                var statusTime = jsonObj['statusUpdateTime'];
+                var settingsTime = jsonObj['settingsUpdateTime'];
+                var resultsTime = jsonObj['resultsUpdateTime'];
+                //console.log("Last update times: " + statusTime + ", " + settingsTime + ", " + resultsTime);
 
-            //Update available sessions:
-            var currSession;
-            $.get("/arbiter/sessions/current", function(data){
-                currSession = data; //JSON.stringify(data);
-                console.log("Current: " + currSession);
-            });
+                //Check last update times for each part of document, and update as necessary
+                //First section: summary status
+                if(lastStatusUpdateTime != statusTime){
+                    var summaryStatusUrl = multiSession ? "/arbiter/" + currSession + "/summary" : "/arbiter/summary";
+                    $.get(summaryStatusUrl,function(data){
+                        var summaryStatusDiv = $('#statusdiv');
+                        summaryStatusDiv.html('');
 
-            $.get("/arbiter/sessions/all", function(data){
-                var keys = data;    // JSON.stringify(data);
+                        var str = JSON.stringify(data);
+                        var component = Component.getComponent(str);
+                        component.render(summaryStatusDiv);
+                    });
 
-                if(keys.length > 1){
-                    $("#sessionSelectDiv").show();
-
-                    var elem = $("#sessionSelect");
-                    elem.empty();
-
-                    var currSelectedIdx = 0;
-                    for (var i = 0; i < keys.length; i++) {
-                        if(keys[i] == currSession){
-                            currSelectedIdx = i;
-                        }
-                        elem.append("<option value='" + keys[i] + "'>" + keys[i] + "</option>");
-                    }
-
-                    $("#sessionSelect option[value='" + keys[currSelectedIdx] +"']").attr("selected", "selected");
-                    $("#sessionSelectDiv").show();
+                    lastStatusUpdateTime = statusTime;
                 }
-//                console.log("Got sessions: " + keys + ", current: " + currSession);
-            });
 
+                //Second section: Optimization settings
+                if(lastSettingsUpdateTime != settingsTime){
+                    //Get JSON for components
+                    var settingsUrl = multiSession ? "/arbiter/" + currSession + "/config" : "/arbiter/config";
+                    $.get(settingsUrl,function(data){
+                        var str = JSON.stringify(data);
 
-            //Check last update times for each part of document, and update as necessary
-            //First section: summary status
-            if(lastStatusUpdateTime != statusTime){
-                //Get JSON: address set by SummaryStatusResource
-                $.get("/arbiter/summary",function(data){
-                    var summaryStatusDiv = $('#statusdiv');
-                    summaryStatusDiv.html('');
+                        var configDiv = $('#settingsdiv');
+                        configDiv.html('');
 
-                    var str = JSON.stringify(data);
-                    var component = Component.getComponent(str);
-                    component.render(summaryStatusDiv);
-                });
+                        var component = Component.getComponent(str);
+                        component.render(configDiv);
+                    });
 
-                lastStatusUpdateTime = statusTime;
-            }
+                    lastSettingsUpdateTime = settingsTime;
+                }
 
-            //Second section: Optimization settings
-            if(lastSettingsUpdateTime != settingsTime){
-                //Get JSON for components
-                $.get("/arbiter/config",function(data){
-                    var str = JSON.stringify(data);
+                //Third section: Summary results table (summary info for each candidate)
+                if(lastResultsUpdateTime != resultsTime){
+                    //Get JSON for results table
+                    var resultsUrl = multiSession ? "/arbiter/" + currSession + "/results" : "/arbiter/results";
+                    $.get(resultsUrl,function(data){
+                        //Expect an array of CandidateInfo type objects here
+                        resultsTableContent = data;
+                        drawResultTable();
+                    });
 
-                    var configDiv = $('#settingsdiv');
-                    configDiv.html('');
+                    lastResultsUpdateTime = resultsTime;
+                }
 
-                    var component = Component.getComponent(str);
-                    component.render(configDiv);
-                });
+                //Finally: Currently selected result
+                if(selectedCandidateIdx != null){
+                    //Get JSON for components
+                    var candidateInfoUrl = multiSession 
+                        ? "/arbiter/" + currSession + "/candidateInfo/" + selectedCandidateIdx
+                        : "/arbiter/candidateInfo/" + selectedCandidateIdx;
+                    $.get(candidateInfoUrl,function(data){
+                        var str = JSON.stringify(data);
 
-                lastSettingsUpdateTime = settingsTime;
-            }
+                        var resultsViewDiv = $('#resultsviewdiv');
+                        resultsViewDiv.html('');
 
-            //Third section: Summary results table (summary info for each candidate)
-            if(lastResultsUpdateTime != resultsTime){
-
-                //Get JSON; address set by SummaryResultsResource
-                $.get("/arbiter/results",function(data){
-                    //Expect an array of CandidateInfo type objects here
-                    resultsTableContent = data;
-                    drawResultTable();
-                });
-
-                lastResultsUpdateTime = resultsTime;
-            }
-
-            //Finally: Currently selected result
-            if(selectedCandidateIdx != null){
-                //Get JSON for components
-                $.get("/arbiter/candidateInfo/"+selectedCandidateIdx,function(data){
-                    var str = JSON.stringify(data);
-
-                    var resultsViewDiv = $('#resultsviewdiv');
-                    resultsViewDiv.html('');
-
-                    var component = Component.getComponent(str);
-                    component.render(resultsViewDiv);
-                });
-            }
+                        var component = Component.getComponent(str);
+                        component.render(resultsViewDiv);
+                    });
+                }
+            })
         })
     }
 
