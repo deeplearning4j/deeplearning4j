@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
 public class TestVertxUIManual extends BaseDL4JTest {
 
     @Override
-        public long getTimeoutMilliseconds() {
+    public long getTimeoutMilliseconds() {
         return 3600_000L;
     }
 
@@ -259,7 +259,7 @@ public class TestVertxUIManual extends BaseDL4JTest {
                         log.info("Auto-detaching StatsStorage (session ID: {}) after {} ms.",
                                 sessionId, autoDetachTimeoutMillis);
                         uIServer.detach(statsStorage);
-                        log.info(" To re-attach StatsStorage of training session, visit {}}/train/{}",
+                        log.info(" To re-attach StatsStorage of training session, visit {}/train/{}",
                                 uIServer.getAddress(), sessionId);
                     }
                 }).start();

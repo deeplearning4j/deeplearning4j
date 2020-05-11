@@ -157,8 +157,9 @@ public interface UIServer {
 
     /**
      * Stop/shut down the UI server. This synchronous function should wait until the server is stopped.
+     * @throws InterruptedException if the current thread is interrupted while waiting
      */
-    void stop() throws Exception;
+    void stop() throws InterruptedException;
 
     /**
      * Stop/shut down the UI server.
