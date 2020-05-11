@@ -856,15 +856,26 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
 
     @Test
     public void testFastText() {
-
-        File[] files = {fastTextRaw, fastTextZip, fastTextGzip};
+        File[] files = { fastTextRaw, fastTextZip, fastTextGzip };
         for (File file : files) {
             try {
                 Word2Vec word2Vec = WordVectorSerializer.readAsCsv(file);
-                assertEquals(99,  word2Vec.getVocab().numWords());
+                assertEquals(99, word2Vec.getVocab().numWords());
+            } catch (Exception readCsvException) {
+                fail("Failure for input file " + file.getAbsolutePath() + " " + readCsvException.getMessage());
+            }
+        }
+    }
 
-            } catch (Exception e) {
-                fail("Failure for input file " + file.getAbsolutePath() + " " + e.getMessage());
+    @Test
+    public void testFastText_readWord2VecModel() {
+        File[] files = { fastTextRaw, fastTextZip, fastTextGzip };
+        for (File file : files) {
+            try {
+                Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel(file);
+                assertEquals(99, word2Vec.getVocab().numWords());
+            } catch (Exception readCsvException) {
+                fail("Failure for input file " + file.getAbsolutePath() + " " + readCsvException.getMessage());
             }
         }
     }
