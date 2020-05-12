@@ -52,7 +52,7 @@ public class TFGraphTestList {
     public static final boolean printArraysDebugging = false;
 
     public static String[] modelNames = new String[]{
-            "arg_max/rank2_dim1"
+            "emptyArrayTests/identity_n/rank1"
     };
 
     @After

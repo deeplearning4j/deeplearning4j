@@ -40,6 +40,7 @@ import org.nd4j.autodiff.samediff.internal.memory.CloseValidationMemoryMgr;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.imports.TFGraphs.listener.OpExecOrderListener;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.listeners.ExecPrintListener;
@@ -392,7 +393,8 @@ public class TFGraphTestAllHelper {
                                              ExecuteWith executeWith, BiFunction<File,String,SameDiff> graphLoaderFunction, List<Listener> listeners,
                                                                          Set<String> requiredOutputs, boolean printArraysDebugging) throws IOException {
         log.info("RUNNING TEST {}...", modelName);
-        SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
+        File f = Resources.asFile(baseDir + "/" + modelName + "/" + modelFilename);
+        SameDiff graph = graphLoaderFunction.apply(f, modelName);
         if(listeners != null){
             graph.setListeners(listeners);
         }

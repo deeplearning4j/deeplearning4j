@@ -138,9 +138,9 @@ public class TFGraphUtil {
                         if (!tc.datatypes.containsKey(nkey)) {
                             tc.datatypes.put(nkey, value);
                         }
+                    } else {
+                        tc.datatypes.put(split[0], value);
                     }
-
-                    tc.datatypes.put(line, null);
                 }
             }
 //                System.out.println(sub);
@@ -185,14 +185,14 @@ public class TFGraphUtil {
         return Boolean.parseBoolean(line);
     }
 
-    public static INDArray loadCsv(String path, @NonNull TestCase tc) throws IOException {
+    public static INDArray loadCsv(String path, String varName, @NonNull TestCase tc) throws IOException {
 
         DataType type;
         if(tc.datatypes == null){
             log.warn("No datatype available for: {}", path);
             type = DataType.FLOAT;
         } else {
-            type = tc.datatypes.get(path);
+            type = tc.datatypes.get(varName);
         }
 
         String shapeFile = path.substring(0, path.length() - 4) + ".shape";
@@ -203,12 +203,6 @@ public class TFGraphUtil {
             if (!trimmed.isEmpty()) {
                 filteredShape.add(trimmed);
             }
-        }
-
-        if (type == null) {
-            log.warn("DATATYPE NOT AVAILABLE FOR: {} - {}", tc.modelName, path);
-            //Soon: this will be an exception
-            type = DataType.FLOAT;
         }
 
         INDArray varValue = null;
@@ -349,7 +343,7 @@ public class TFGraphUtil {
             inputs = new HashMap<>();
             for(String s : testCase.inputs.keySet()){
                 String path = testCase.inputs.get(s);
-                INDArray arr = TFGraphUtil.loadCsv(path, testCase);
+                INDArray arr = TFGraphUtil.loadCsv(path, s, testCase);
                 inputs.put(s, arr);
             }
         }
@@ -362,7 +356,7 @@ public class TFGraphUtil {
             predictions = new HashMap<>();
             for(String s : testCase.outputs.keySet()){
                 String path = testCase.outputs.get(s);
-                INDArray arr = TFGraphUtil.loadCsv(path, testCase);
+                INDArray arr = TFGraphUtil.loadCsv(path, s, testCase);
                 predictions.put(s, arr);
             }
         }
