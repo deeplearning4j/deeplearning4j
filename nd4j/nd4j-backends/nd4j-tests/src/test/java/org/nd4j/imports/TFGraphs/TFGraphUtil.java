@@ -1,3 +1,18 @@
+/* ******************************************************************************
+ * Copyright (c) 2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
 package org.nd4j.imports.TFGraphs;
 
 import lombok.NonNull;
@@ -107,13 +122,11 @@ public class TFGraphUtil {
                 if (tc.outputs == null)
                     tc.outputs = new HashMap<>();
                 String varName = s.substring(modelDir.length()).replaceAll("____", "/");
-//                    String varName = sub.substring(idx+1).replaceAll("____", "/");
                 varName = varName.substring(0, varName.length() - "prediction.csv".length() - 1);
                 tc.outputs.put(varName, s);
             } else if (s.endsWith("placeholder.csv")) {
                 if (tc.inputs == null)
                     tc.inputs = new HashMap<>();
-//                    String varName = sub.substring(idx+1).replaceAll("____", "/");
                 String varName = s.substring(modelDir.length()).replaceAll("____", "/");
                 varName = varName.substring(0, varName.length() - "placeholder.csv".length() - 1);
                 tc.inputs.put(varName, s);
@@ -244,24 +257,6 @@ public class TFGraphUtil {
             }
 
             try {
-//                String content;
-//                Pair<Resource,Resource> p = resources.get(i);
-//                boolean isRef = p.getSecond().isFile() && !p.getSecond().exists();
-//
-//                InputStream stream;
-//                if(isRef){
-//                    //Slight hack for loading strumpf reference files
-//                    File r = new StrumpfResolver().localCacheRoot();
-//                    String path = p.getSecond().getFile() + StrumpfResolver.REF;
-//                    File f = ResourceFile.fromFile(path).localFile(r);
-//                    stream = new BufferedInputStream(new FileInputStream(f));
-//                } else {
-//                    stream = new BufferedInputStream(resources.get(i).getSecond().getInputStream());
-//                }
-//
-//                try(InputStream is = stream){
-//                    content = String.join("\n", IOUtils.readLines(is, StandardCharsets.UTF_8));
-//                }
                 String content = FileUtils.readFileToString(Resources.asFile(path), StandardCharsets.UTF_8);
 
                 if (content.isEmpty()) {
