@@ -110,7 +110,7 @@ public class NativeOpsHolder {
             }
         } catch (Exception | Error e) {
             throw new RuntimeException(
-                            "ND4J is probably missing dependencies. For more information, please refer to: http://nd4j.org/getstarted.html",
+                            "ND4J is probably missing dependencies. For more information, please refer to: https://deeplearning4j.konduit.ai/nd4j/backend",
                             e);
         }
     }
