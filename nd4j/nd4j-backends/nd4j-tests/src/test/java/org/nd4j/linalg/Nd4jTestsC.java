@@ -8414,6 +8414,26 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testShape0Casts(){
+        for(DataType dt : DataType.values()){
+            if(!dt.isNumerical())
+                continue;
+
+            INDArray a1 = Nd4j.create(dt, 1,0,2);
+
+            for(DataType dt2 : DataType.values()){
+                if(!dt2.isNumerical())
+                    continue;
+                INDArray a2 = a1.castTo(dt2);
+
+                assertArrayEquals(a1.shape(), a2.shape());
+                assertEquals(dt2, a2.dataType());
+            }
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';
