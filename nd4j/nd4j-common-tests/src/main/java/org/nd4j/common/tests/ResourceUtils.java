@@ -61,6 +61,9 @@ public class ResourceUtils {
     private static List<String> listClassPathFilesHelper(String path, boolean recursive, boolean includeDirectories, String... extensions) throws IOException {
         ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(path).getClassLoader());
 
+        if(path.contains("\\"))
+            path = path.replaceAll("\\\\", "/");
+
         if(!path.endsWith("/"))
             path = path + "/";
 

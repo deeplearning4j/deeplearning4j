@@ -1,8 +1,10 @@
 package org.nd4j.imports.TFGraphs;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.resources.Resources;
 import org.nd4j.common.tests.ResourceUtils;
@@ -20,9 +22,21 @@ import java.util.*;
 @Slf4j
 public class TFGraphUtil {
 
-    private TFGraphUtil(){ }
+    private TFGraphUtil() {
+    }
 
-    public static Map<String,TestCase> getTestCases(String baseDir) throws Exception {
+    public static TestCase getTestCase(String baseDir, String testName) throws Exception {
+        String newBase = FilenameUtils.concat(baseDir, testName + "/");
+        Map<String, TestCase> cases = getTestCases(newBase, true);
+        Preconditions.checkState(cases.size() == 1, "Expected 1 test case, got %s", cases.size());
+        return cases.get(cases.keySet().iterator().next());
+    }
+
+    public static Map<String, TestCase> getTestCases(String baseDir, boolean singleTest) throws Exception {
+
+        baseDir = baseDir.replaceAll("\\\\", "/");
+        if (!baseDir.endsWith("/"))
+            baseDir += "/";
 
         long start = System.currentTimeMillis();
 //        String baseDir = "tf_graphs/examples/";
@@ -33,105 +47,114 @@ public class TFGraphUtil {
 
 
         Set<String> modelSet = new HashSet<>();
-        List<String> modelFileNames = new ArrayList<>();
 
 
         Map<String, TestCase> map = new HashMap<>();
 
         long start2 = System.currentTimeMillis();
-        for(String s : l){
-            String sub = s.substring(baseDir.length()+1);
-//            int idx = sub.indexOf('/');
-//            if(idx > 0){
-//                String model
-//            }
+        for (String s : l) {
+            String sub = s.substring(baseDir.length());
 
-            int idx = sub.lastIndexOf('/');
+            int idx = singleTest ? 0 : sub.lastIndexOf('/');
 
-
-            if(idx > 0) {
-                String name = sub.substring(0, idx);
-                String modelDir = baseDir + sub.substring(0,idx+1);
+            boolean badTest = false;
+            String name = null;
+            String modelDir = null;
+            if (singleTest) {
+                name = "";
+                modelDir = baseDir;
+            } else if (idx > 0) {
+                name = sub.substring(0, idx);
+                modelDir = baseDir + sub.substring(0, idx + 1);
                 String expModel = modelDir + TFGraphTestAllSameDiff.MODEL_FILENAME;
 //                while(!Resources.exists(expModel) && idx > 0){
-                while(!listAsSet.contains(expModel) && idx > 0){
+                while (!listAsSet.contains(expModel) && idx > 0) {
                     //Due to a mixing of directories and variable names - we
                     //For example we might have "X/frozen_model.pb"
                     //And then also "X/something/or/other.csv
                     //When this occurs - we should look up the path to determine which part is the model name
                     // and which part is the variable name
                     idx = sub.lastIndexOf('/', idx);
-                    if(idx < 0){
+                    if (idx < 0) {
                         System.out.println("***** BAD TEST DIRECTORY: " + s + " ******");
-                        continue;
+                        badTest = true;
+                        break;
                     }
 
                     sub = sub.substring(0, idx);
-                    expModel = baseDir + "/" + sub + "/" + TFGraphTestAllSameDiff.MODEL_FILENAME;
+                    expModel = baseDir + sub + "/" + TFGraphTestAllSameDiff.MODEL_FILENAME;
+                    modelDir = baseDir + sub + "/";
+                    name = sub;
                 }
-
-
-                modelSet.add(name);
-
-                TestCase tc = map.get(name);
-                if(tc == null){
-                    tc = new TestCase(name, null, null, null);
-                    map.put(name, tc);
-                }
-
-                if(s.endsWith("prediction.csv")){
-                    if(tc.outputs == null)
-                        tc.outputs = new HashMap<>();
-                    String varName = s.substring(modelDir.length()).replaceAll("____", "/");
-//                    String varName = sub.substring(idx+1).replaceAll("____", "/");
-                    varName = varName.substring(0, varName.length() - "prediction.csv".length() - 1);
-                    tc.outputs.put(varName, s);
-                } else if(s.endsWith("placeholder.shape")){
-                    if(tc.inputs == null)
-                        tc.inputs = new HashMap<>();
-//                    String varName = sub.substring(idx+1).replaceAll("____", "/");
-                    String varName = s.substring(modelDir.length()).replaceAll("____", "/");
-                    varName = varName.substring(0, varName.length() - "placeholder.shape".length() - 1);
-                    tc.inputs.put(varName, s);
-                } else if(s.endsWith("/dtypes")){
-                    File f = Resources.asFile(s);
-                    List<String> lines = FileUtils.readLines(f, StandardCharsets.UTF_8);
-                    tc.datatypes = new HashMap<>();
-                    for(String line : lines){
-                        String[] split = line.split(" ");
-                        Preconditions.checkState(split.length == 2, "Expected 2 entries in dtypes file, got %s", split.length);
-                        String key = split[0].replaceAll("____", "/");
-                        DataType value = ArrayOptionsHelper.dataType(split[1]);
-
-                        // adding zero output duplicate (if it doesn't exist)
-                        if (key.endsWith(".0")) {
-                            val nkey = key.replaceAll("\\.0$","");
-                            if (!tc.datatypes.containsKey(nkey)) {
-                                tc.datatypes.put(nkey, value);
-                            }
-                        } else if (key.endsWith(":0")) {
-                            val nkey = key.replaceAll(":0$","");
-                            if (!tc.datatypes.containsKey(nkey)) {
-                                tc.datatypes.put(nkey, value);
-                            }
-                        }
-
-                        tc.datatypes.put(line, null);
-                    }
-                }
-//                System.out.println(sub);
+//                name = n;
             }
+
+//            if(modelDir == null)
+//                continue;
+            if(badTest || modelDir == null)
+                continue;
+
+
+            modelSet.add(name);
+
+            TestCase tc = map.get(name);
+            if (tc == null) {
+                tc = new TestCase(name, null, null, null);
+                map.put(name, tc);
+            }
+
+            if (s.endsWith("prediction.csv")) {
+                if (tc.outputs == null)
+                    tc.outputs = new HashMap<>();
+                String varName = s.substring(modelDir.length()).replaceAll("____", "/");
+//                    String varName = sub.substring(idx+1).replaceAll("____", "/");
+                varName = varName.substring(0, varName.length() - "prediction.csv".length() - 1);
+                tc.outputs.put(varName, s);
+            } else if (s.endsWith("placeholder.csv")) {
+                if (tc.inputs == null)
+                    tc.inputs = new HashMap<>();
+//                    String varName = sub.substring(idx+1).replaceAll("____", "/");
+                String varName = s.substring(modelDir.length()).replaceAll("____", "/");
+                varName = varName.substring(0, varName.length() - "placeholder.csv".length() - 1);
+                tc.inputs.put(varName, s);
+            } else if (s.endsWith("/dtypes")) {
+                File f = Resources.asFile(s);
+                List<String> lines = FileUtils.readLines(f, StandardCharsets.UTF_8);
+                tc.datatypes = new HashMap<>();
+                for (String line : lines) {
+                    String[] split = line.split(" ");
+                    Preconditions.checkState(split.length == 2, "Expected 2 entries in dtypes file, got %s", split.length);
+                    String key = split[0].replaceAll("____", "/");
+                    DataType value = ArrayOptionsHelper.dataType(split[1]);
+
+                    // adding zero output duplicate (if it doesn't exist)
+                    if (key.endsWith(".0")) {
+                        val nkey = key.replaceAll("\\.0$", "");
+                        if (!tc.datatypes.containsKey(nkey)) {
+                            tc.datatypes.put(nkey, value);
+                        }
+                    } else if (key.endsWith(":0")) {
+                        val nkey = key.replaceAll(":0$", "");
+                        if (!tc.datatypes.containsKey(nkey)) {
+                            tc.datatypes.put(nkey, value);
+                        }
+                    }
+
+                    tc.datatypes.put(line, null);
+                }
+            }
+//                System.out.println(sub);
         }
         long end2 = System.currentTimeMillis();
 
-        System.out.println("List duration: " + (end-start));
-        System.out.println("Process duration: " + (end2-start2));
+        System.out.println("List duration: " + (end - start));
+        System.out.println("Process duration: " + (end2 - start2));
         return map;
     }
 
-    private static long parseLong(String line){
+    private static long parseLong(String line) {
         line = line.trim();       //Handle whitespace
-        if(line.matches("-?\\d+\\.0+")){
+        if (line.matches("-?\\d+\\.0+")) {
             //Annoyingly, some integer data is stored with redundant/unnecessary zeros - like "-7.0000000"
             return Long.parseLong(line.substring(0, line.indexOf('.')));
         } else {
@@ -139,54 +162,60 @@ public class TFGraphUtil {
         }
     }
 
-    private static double parseDouble(String line){
+    private static double parseDouble(String line) {
         line = line.trim();   //Handle whitespace - some lines are like "      -inf"
-        if("nan".equalsIgnoreCase(line)){
+        if ("nan".equalsIgnoreCase(line)) {
             return Double.NaN;
-        } else if("inf".equalsIgnoreCase(line)) {
+        } else if ("inf".equalsIgnoreCase(line)) {
             return Double.POSITIVE_INFINITY;
-        } else if("-inf".equalsIgnoreCase(line)){
+        } else if ("-inf".equalsIgnoreCase(line)) {
             return Double.NEGATIVE_INFINITY;
         } else {
             return Double.parseDouble(line);
         }
     }
 
-    private static boolean parseBoolean(String line){
+    private static boolean parseBoolean(String line) {
         line = line.trim();
-        if(line.matches("1(\\.0*)?")){          //Booleans are ocassionally represented like 1.000000 or 0.000000
+        if (line.matches("1(\\.0*)?")) {          //Booleans are ocassionally represented like 1.000000 or 0.000000
             return true;
-        } else if(line.matches("0(\\.0*)?")){
+        } else if (line.matches("0(\\.0*)?")) {
             return false;
         }
         return Boolean.parseBoolean(line);
     }
 
-    public static INDArray loadCsv(String path, TestCase tc) throws IOException {
+    public static INDArray loadCsv(String path, @NonNull TestCase tc) throws IOException {
 
-        DataType type = tc.datatypes.get(path);
+        DataType type;
+        if(tc.datatypes == null){
+            log.warn("No datatype available for: {}", path);
+            type = DataType.FLOAT;
+        } else {
+            type = tc.datatypes.get(path);
+        }
 
-        String shapeFile = path.substring(0, path.length()-4) + ".shape";
+        String shapeFile = path.substring(0, path.length() - 4) + ".shape";
         List<String> shapeLines = FileUtils.readLines(Resources.asFile(shapeFile), StandardCharsets.UTF_8);
         List<String> filteredShape = new ArrayList<>(shapeLines.size());
-        for(String s : shapeLines){
+        for (String s : shapeLines) {
             String trimmed = s.trim();
-            if(!trimmed.isEmpty()){
+            if (!trimmed.isEmpty()) {
                 filteredShape.add(trimmed);
             }
         }
 
-        if(type == null){
+        if (type == null) {
             log.warn("DATATYPE NOT AVAILABLE FOR: {} - {}", tc.modelName, path);
             //Soon: this will be an exception
             type = DataType.FLOAT;
         }
 
         INDArray varValue = null;
-        if(filteredShape.size() == 0){
+        if (filteredShape.size() == 0) {
             //Scalar
             String content = FileUtils.readFileToString(Resources.asFile(path), StandardCharsets.UTF_8);    //IOUtils.toString(resources.get(i).getSecond().getInputStream(), StandardCharsets.UTF_8);
-            switch (type){
+            switch (type) {
                 case DOUBLE:
                 case FLOAT:
                 case HALF:
@@ -216,7 +245,7 @@ public class TFGraphUtil {
             }
         } else {
             int[] varShape = new int[filteredShape.size()];
-            for( int j=0; j<filteredShape.size(); j++ ){
+            for (int j = 0; j < filteredShape.size(); j++) {
                 varShape[j] = Integer.parseInt(filteredShape.get(j));
             }
 
@@ -244,27 +273,27 @@ public class TFGraphUtil {
                 if (content.isEmpty()) {
                     //Should be zeros in shape
                     boolean foundZero = false;
-                    for( int s : varShape){
+                    for (int s : varShape) {
                         foundZero |= (s == 0);
                     }
-                    if(foundZero){
+                    if (foundZero) {
                         varValue = Nd4j.create(type, ArrayUtil.toLongArray(varShape));
                     } else {
                         throw new IllegalStateException("Empty data but non-empty shape: " + shapeFile);
                     }
                 } else {
-                    if(varShape.length == 1 && varShape[0] == 0)        //Annoyingly, some scalars have shape [0] instead of []
+                    if (varShape.length == 1 && varShape[0] == 0)        //Annoyingly, some scalars have shape [0] instead of []
                         varShape = new int[0];
 
                     String[] cLines = content.split("\n");
-                    switch (type){
+                    switch (type) {
                         case DOUBLE:
                         case FLOAT:
                         case HALF:
                         case BFLOAT16:
                             double[] dArr = new double[cLines.length];
-                            int x=0;
-                            while(x < dArr.length){
+                            int x = 0;
+                            while (x < dArr.length) {
                                 dArr[x] = parseDouble(cLines[x]);
                                 x++;
                             }
@@ -279,8 +308,8 @@ public class TFGraphUtil {
                         case UINT32:
                         case UINT64:
                             long[] lArr = new long[cLines.length];
-                            int y=0;
-                            while(y < lArr.length){
+                            int y = 0;
+                            while (y < lArr.length) {
                                 lArr[y] = parseLong(cLines[y]);
                                 y++;
                             }
@@ -288,8 +317,8 @@ public class TFGraphUtil {
                             break;
                         case BOOL:
                             boolean[] bArr = new boolean[cLines.length];
-                            int z=0;
-                            while(z < bArr.length){
+                            int z = 0;
+                            while (z < bArr.length) {
                                 bArr[z] = parseBoolean(cLines[z]);
                                 z++;
                             }
@@ -313,4 +342,30 @@ public class TFGraphUtil {
         return varValue;
     }
 
+
+    public static Map<String,INDArray> loadInputs(TestCase testCase) throws IOException {
+        Map<String,INDArray> inputs = null;
+        if(testCase.inputs != null){
+            inputs = new HashMap<>();
+            for(String s : testCase.inputs.keySet()){
+                String path = testCase.inputs.get(s);
+                INDArray arr = TFGraphUtil.loadCsv(path, testCase);
+                inputs.put(s, arr);
+            }
+        }
+        return inputs;
+    }
+
+    public static Map<String,INDArray> loadPredictions(TestCase testCase) throws IOException {
+        Map<String,INDArray> predictions = null;
+        if(testCase.outputs != null){
+            predictions = new HashMap<>();
+            for(String s : testCase.outputs.keySet()){
+                String path = testCase.outputs.get(s);
+                INDArray arr = TFGraphUtil.loadCsv(path, testCase);
+                predictions.put(s, arr);
+            }
+        }
+        return predictions;
+    }
 }

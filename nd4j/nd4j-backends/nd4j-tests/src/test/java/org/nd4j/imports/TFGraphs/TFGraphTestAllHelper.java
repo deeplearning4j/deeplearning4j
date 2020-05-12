@@ -183,7 +183,7 @@ public class TFGraphTestAllHelper {
                 try {
                     tfPred = predictions.get(outputNode);
                 } catch (NullPointerException e) {
-                    throw new NullPointerException("Can't find predicted variable with name [" + outputNode + "]");
+                    throw new NullPointerException("Can't find TF predicted variable with name [" + outputNode + "]");
                 }
 
                 assertNotNull(nd4jPred);
@@ -225,11 +225,11 @@ public class TFGraphTestAllHelper {
 
                         if(!eq) {
                             NDArrayStrings s = new NDArrayStrings();
-                            String s1 = s.format(tfPred, false);
-                            String s2 = s.format(nd4jPred, false);
                             System.out.print("TF: ");
+                            System.out.println(tfPred.shapeInfoToString());
                             System.out.println(tfPred.toStringFull());
                             System.out.print("SD: ");
+                            System.out.println(nd4jPred.shapeInfoToString());
                             System.out.println(nd4jPred.toStringFull());
                         }
                     }

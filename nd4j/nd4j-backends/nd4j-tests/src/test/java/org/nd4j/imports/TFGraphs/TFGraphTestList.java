@@ -29,10 +29,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * TFGraphTestAll* will run all the checked in TF graphs and
@@ -55,7 +52,7 @@ public class TFGraphTestList {
     public static final boolean printArraysDebugging = false;
 
     public static String[] modelNames = new String[]{
-            "bitcast/from_int32_to_uint32"
+            "arg_max/rank2_dim1"
     };
 
     @After
@@ -78,27 +75,32 @@ public class TFGraphTestList {
     }
 
     private String modelName;
+    private TestCase testCase;
 
-    @Parameterized.Parameters
-    public static Collection<Object[]> data() {
-        List<Object[]> modelNamesParams = new ArrayList<>();
-        for (int i = 0; i < modelNames.length; i++) {
-            Object[] currentParams = new String[]{modelNames[i]};
-            modelNamesParams.add(currentParams);
+    @Parameterized.Parameters(name="{0}")
+    public static Collection<Object[]> data() throws Exception {
+
+        List<Object[]> out = new ArrayList<>(modelNames.length);
+        for(int i=0; i<modelNames.length; i++ ) {
+            String s = modelNames[i];
+            TestCase t = TFGraphUtil.getTestCase(TFGraphTestAllSameDiff.BASE_DIR, s);
+
+
+            out.add(new Object[]{s, t});
         }
-        return modelNamesParams;
+        return out;
     }
 
-    public TFGraphTestList(String modelName) {
+    public TFGraphTestList(String modelName, TestCase tc) {
         this.modelName = modelName;
+        this.testCase = tc;
     }
 
     @Test
     public void testOutputOnly() throws IOException {
-        //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
-        File dir = testDir.newFolder();
-        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
-        Map<String, INDArray> predictions = TFGraphTestAllHelper.outputVars(modelName, MODEL_DIR, dir);
+        Map<String,INDArray> inputs = TFGraphUtil.loadInputs(testCase);
+        Map<String,INDArray> predictions = TFGraphUtil.loadPredictions(testCase);
+
         Pair<Double,Double> precisionOverride = TFGraphTestAllHelper.testPrecisionOverride(modelName);
         Double maxRE = (precisionOverride == null ? null : precisionOverride.getFirst());
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());

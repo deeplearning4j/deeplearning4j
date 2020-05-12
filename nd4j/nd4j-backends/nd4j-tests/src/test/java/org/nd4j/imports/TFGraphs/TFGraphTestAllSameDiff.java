@@ -61,7 +61,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     private TestCase testCase;
 
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
-    private static final String BASE_DIR = "tf_graphs/examples";
+    public static final String BASE_DIR = "tf_graphs/examples";
     public static final String MODEL_FILENAME = "frozen_model.pb";
 
     public static final String[] IGNORE_REGEXES = new String[]{
@@ -153,25 +153,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     @Parameterized.Parameters(name="{0}")
     public static Collection<Object[]> data() throws Exception {
-//        long start = System.currentTimeMillis();
-//        val localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
-//
-//        // if this variable isn't set - we're using dl4j-tests-resources
-//        if (localPath == null) {
-//            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
-//            List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
-//            long end = System.currentTimeMillis();
-//            System.out.println("TIME TO GET PARAMETERS: " + (end-start));
-//            return params;
-//        } else {
-//            File baseDir = new File(localPath);
-//            List<Object[]> l = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, baseDir);
-//            long end = System.currentTimeMillis();
-//            System.out.println("TIME TO GET PARAMETERS: " + (end-start));
-//            return l;
-//        }
-
-        Map<String,TestCase> m = TFGraphUtil.getTestCases(BASE_DIR);
+        Map<String,TestCase> m = TFGraphUtil.getTestCases(BASE_DIR, false);
         List<String> l = new ArrayList<>(m.keySet());
         Collections.sort(l);
 
@@ -181,13 +163,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         }
         return out;
     }
-
-//    public TFGraphTestAllSameDiff(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
-//        this.inputs = inputs;
-//        this.predictions = predictions;
-//        this.modelName = modelName;
-//        this.localTestDir = localTestDir;
-//    }
 
     public TFGraphTestAllSameDiff(String name, TestCase tc){
         this.modelName = name;
@@ -230,22 +205,9 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             }
         }
 
-        Map<String,INDArray> inputs = new HashMap<>();
-        Map<String,INDArray> predictions = new HashMap<>();
+        Map<String,INDArray> inputs = TFGraphUtil.loadInputs(testCase);
+        Map<String,INDArray> predictions = TFGraphUtil.loadPredictions(testCase);
 
-        if(testCase.inputs != null){
-            for(String s : testCase.inputs.keySet()){
-                INDArray arr = TFGraphUtil.loadCsv(s, testCase);
-                inputs.put(s, arr);
-            }
-        }
-
-        if(testCase.outputs != null){
-            for(String s : testCase.outputs.keySet()){
-                INDArray arr = TFGraphUtil.loadCsv(s, testCase);
-                predictions.put(s, arr);
-            }
-        }
 
         try {
             TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, verboseDebugMode);
