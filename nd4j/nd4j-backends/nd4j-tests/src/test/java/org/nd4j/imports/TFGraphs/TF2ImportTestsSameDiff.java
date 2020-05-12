@@ -18,36 +18,31 @@
 package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.junit.*;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.primitives.Pair;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.*;
 
-/**
- * Created by susaneraly on 11/29/17.
- */
 @Slf4j
 @RunWith(Parameterized.class)
-public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
+@Ignore //AB 2020/05/12 - Disabled until TF 2.x import test resources are available
+public class TF2ImportTestsSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     @Rule
     public TestWatcher testWatcher = new TestWatcher() {
 
         @Override
         protected void starting(Description description){
-            log.info("TFGraphTestAllSameDiff: Starting parameterized test: " + description.getDisplayName());
+            log.info("TF2ImportTestsSameDiff: Starting parameterized test: " + description.getDisplayName());
         }
 
         //protected void failed(Throwable e, Description description) {
@@ -56,72 +51,14 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     private String modelName;
     private TestCase testCase;
+    private String baseDir;
 
     private static final TFGraphTestAllHelper.ExecuteWith EXECUTE_WITH = TFGraphTestAllHelper.ExecuteWith.SAMEDIFF;
-    public static final String BASE_DIR = "tf_graphs/examples";
+    public static final String[] BASE_DIRS = new String[]{"tf_graphs/examples2.1"};        //Add directories for any other TensorFlow versions here
     public static final String MODEL_FILENAME = "frozen_model.pb";
 
     public static final String[] IGNORE_REGEXES = new String[]{
-            //Failing 2019/07/01 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
-            //Still failing 2019/09/11
-            "slogdet/.*",
 
-            //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
-            "bincount/.*",
-            // Failing 2019/11/14 https://github.com/eclipse/deeplearning4j/issues/8393
-            "is_strictly_increasing/emptyArrayTest/.*",
-
-            //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
-            "truncatemod/.*",
-
-            //Still failing as of 2019/09/11 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
-            "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
-
-            //2019/09/11 - No tensorflow op found for SparseTensorDenseAdd
-            "confusion/.*",
-
-            //2019/09/11 - Couple of tests failing (InferenceSession issues)
-            "rnn/bstack/d_.*",
-
-            //2019/05/21 - Failing on AVX2/512 intermittently (Linux, OSX), passing elsewhere
-            //"unsorted_segment/.*",
-
-            //2019/05/21 - Failing on windows-x86_64-cuda-9.2 only -
-            "conv_4",
-            "g_09",
-            //"unsorted_segment/unsorted_segment_mean_rank2",
-
-            //2019/05/28 - JVM crash on ppc64le only - See issue 7657
-            "g_11",
-
-            //2019/07/09 - Need "Multinomial" op - https://github.com/eclipse/deeplearning4j/issues/7913
-            "multinomial/.*",
-
-            //2019/11/04 AB - disabled, pending libnd4j deconv3d_tf implementation
-            "conv3d_transpose.*",
-
-            //2019/11/15 - mapping is not present yet https://github.com/eclipse/deeplearning4j/issues/8397
-            "ragged/reduce_mean/.*",
-
-            // 2019/11/15 - missing dtype argument in nd4j, tests are useless https://github.com/eclipse/deeplearning4j/issues/8398
-            "zeros_like/rank2_float32_dtype_int.*",
-
-            // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8453
-            "roll/.*",
-
-            // 11.26.2019 failing https://github.com/eclipse/deeplearning4j/issues/8455
-            "matrix_band_part/.*",
-
-            // 12.20.2019 - https://github.com/eclipse/deeplearning4j/issues/8559
-            "fused_batch_norm/.*",
-
-            // AB 2020/01/04 - https://github.com/eclipse/deeplearning4j/issues/8592
-            "emptyArrayTests/reshape/rank2_shape2-0_2-0--1",
-
-            //AB 2020/01/07 - Known issues
-            "bitcast/from_float64_to_int64",
-            "bitcast/from_rank2_float64_to_int64",
-            "bitcast/from_float64_to_uint64"
     };
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have
@@ -144,29 +81,29 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         Nd4j.getExecutioner().enableVerboseMode(false);
     }
 
-    @After
-    public void tearDown() {
-    }
-
-    @Parameterized.Parameters(name="{0}")
+    @Parameterized.Parameters(name="{3}")
     public static Collection<Object[]> data() throws Exception {
-        Map<String,TestCase> m = TFGraphUtil.getTestCases(BASE_DIR, false);
-        List<String> l = new ArrayList<>(m.keySet());
-        Collections.sort(l);
+        List<Object[]> out = new ArrayList<>();
 
-        List<Object[]> out = new ArrayList<>(l.size());
-        for(String s : l){
-            out.add(new Object[]{s, m.get(s)});
+        for(String dir : BASE_DIRS) {
+            String version = dir.replaceAll("tf_graphs/examples", "tf");
+            Map<String, TestCase> m = TFGraphUtil.getTestCases(dir, false);
+            List<String> l = new ArrayList<>(m.keySet());
+            Collections.sort(l);
+            for (String s : l) {
+                out.add(new Object[]{s, m.get(s), dir, version + "/" + s});
+            }
         }
         return out;
     }
 
-    public TFGraphTestAllSameDiff(String name, TestCase tc){
+    public TF2ImportTestsSameDiff(String name, TestCase tc, String baseDir, String displayName){
         this.modelName = name;
         this.testCase = tc;
+        this.baseDir = baseDir;
     }
 
-    @Test//(timeout = 25000L)
+    @Test
     public void testOutputOnly() throws Exception {
         if(TFGraphTestZooModels.isPPC()){
             /*
@@ -207,7 +144,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
 
         try {
-            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, verboseDebugMode);
+            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, baseDir, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, verboseDebugMode);
             //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, localTestDir);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);
