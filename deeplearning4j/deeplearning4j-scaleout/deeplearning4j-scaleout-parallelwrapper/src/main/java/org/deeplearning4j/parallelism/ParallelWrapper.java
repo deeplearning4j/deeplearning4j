@@ -826,7 +826,7 @@ public class ParallelWrapper implements AutoCloseable {
         /**
          *  This method allows you to specify training mode for this instance of PW.<br>
          *  1) AVERAGING - stands for parameters averaging. Each X epochs weights and updaters state will be averaged across all models<br>
-         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-intro">https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-intro</a><br>
+         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: <a href="https://deeplearning4j.konduit.ai/distributed-deep-learning/intro">https://deeplearning4j.konduit.ai/distributed-deep-learning/intro</a><br>
          *  3) CUSTOM - this method allows you to specify custom gradients accumulator, this giving you better control of configuration params for training.<br>
          *
          * @param mode

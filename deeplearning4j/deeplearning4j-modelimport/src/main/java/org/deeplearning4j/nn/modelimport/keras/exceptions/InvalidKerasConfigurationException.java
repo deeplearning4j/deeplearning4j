@@ -21,7 +21,7 @@ package org.deeplearning4j.nn.modelimport.keras.exceptions;
  * Indicates that user is attempting to import a Keras model configuration that
  * is malformed or invalid in some other way.
  *
- * See <a href="https://deeplearning4j.org/docs/latest/keras-import-overview">https://deeplearning4j.org/docs/latest/keras-import-overview</a> for more information.
+ * See <a href="https://deeplearning4j.konduit.ai/keras-import/overview">https://deeplearning4j.konduit.ai/keras-import/overview</a> for more information.
  *
  * @author dave@skymind.io
  */
@@ -40,6 +40,6 @@ public class InvalidKerasConfigurationException extends Exception {
     }
 
     private static String appendDocumentationURL(String message) {
-        return message + ". For more information, see http://deeplearning4j.org/docs/latest/keras-import-overview";
+        return message + ". For more information, see https://deeplearning4j.konduit.ai/keras-import/overview";
     }
 }

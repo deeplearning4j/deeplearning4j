@@ -32,7 +32,7 @@ import java.util.Map;
 
 /**
  *
- * RNN tutorial: https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent
+ * RNN tutorial: https://deeplearning4j.konduit.ai/models/recurrent
  * READ THIS FIRST
  *
  * Bdirectional LSTM layer implementation.

@@ -1540,8 +1540,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * (not) clearing the layer input arrays.<br>
      * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
      * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
-     * workspaces in which they were defined - potentially causing a crash. See <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-config-workspaces">
-     *     https://deeplearning4j.org/docs/latest/deeplearning4j-config-workspaces</a>
+     * workspaces in which they were defined - potentially causing a crash. See <a href="https://deeplearning4j.konduit.ai/config/config-memory/config-workspaces">
+     *     https://deeplearning4j.konduit.ai/config/config-memory/config-workspaces</a>
      * for more details
      *
      * @param input An array of ComputationGraph inputs

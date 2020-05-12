@@ -71,7 +71,7 @@ public class SparkUtils {
                     + "for ND4J INDArrays.\nWhen using Kryo, An appropriate Kryo registrator must be used to avoid"
                     + " serialization issues (NullPointerException) with off-heap data in INDArrays.\n"
                     + "Use nd4j-kryo_2.10 or _2.11 artifact, with sparkConf.set(\"spark.kryo.registrator\", \"org.nd4j.kryo.Nd4jRegistrator\");\n"
-                    + "See https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-howto#kryo for more details";
+                    + "See https://deeplearning4j.konduit.ai/distributed-deep-learning/howto#how-to-use-kryo-serialization-with-dl-4-j-and-nd-4-j for more details";
 
     private static String sparkExecutorId;
 
