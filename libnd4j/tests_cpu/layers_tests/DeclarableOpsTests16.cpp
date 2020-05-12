@@ -184,7 +184,7 @@ TEST_F(DeclarableOpsTests16, test_range_2) {
     double tArgs[] = { -1.0, 1.0, 0.01 };
 
     auto shapes = ::calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 3, nullptr, 0, nullptr, 0, nullptr, 0);
-    shape::printShapeInfoLinear("Result", shapes->at(0));
+    // shape::printShapeInfoLinear("Result", shapes->at(0));
     ASSERT_TRUE(shape::shapeEquals(z.shapeInfo(), shapes->at(0)));
 
     delete shapes;
@@ -426,7 +426,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_hsv_6) {
          0.928968489f, 0.684074104f
         });
 
-    //get subarray 
+    //get subarray
     //get subarray
     NDArray subArrRgbs = rgbs.subarray({ NDIndex::all(), NDIndex::point(0) });
     NDArray expected = hsvs.subarray({ NDIndex::all(), NDIndex::point(0) });
@@ -627,7 +627,7 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_6) {
         });
 
     auto actual = NDArrayFactory::create<float>('c', { 3 });
-    //get subarray 
+    //get subarray
     NDArray subArrHsvs = hsvs.subarray({ NDIndex::all(), NDIndex::point(0) });
     subArrHsvs.reshapei({ 3 });
     NDArray expected = rgbs.subarray({ NDIndex::all(), NDIndex::point(0) });
@@ -635,7 +635,7 @@ TEST_F(DeclarableOpsTests16, test_hsv_to_rgb_6) {
 #if 0
     //[RANK][SHAPE][STRIDES][OPTIONS][EWS][ORDER]
     subArrHsvs.printShapeInfo("subArrHsvs");
-#endif 
+#endif
 
     Context ctx(1);
     ctx.setInputArray(0, &subArrHsvs);
@@ -855,7 +855,7 @@ TEST_F(DeclarableOpsTests16, test_rgb_to_yiq_6) {
        -0.04447775f, -0.44518381f
       });
 
-    //get subarray 
+    //get subarray
     NDArray subArrRgbs = rgbs.subarray({ NDIndex::all(), NDIndex::point(0) });
     NDArray expected = yiqs.subarray({ NDIndex::all(), NDIndex::point(0) });
     subArrRgbs.reshapei({ 3 });
@@ -1054,7 +1054,7 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_6) {
      0.280231822f, 1.91936605f
         });
 
-    //get subarray 
+    //get subarray
     NDArray subArrYiqs = yiqs.subarray({ NDIndex::all(), NDIndex::point(0) });
     NDArray  expected = rgbs.subarray({ NDIndex::all(), NDIndex::point(0) });
     subArrYiqs.reshapei({ 3 });
@@ -1074,3 +1074,422 @@ TEST_F(DeclarableOpsTests16, test_yiq_to_rgb_6) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
     ASSERT_TRUE(expected.equalsTo(actual));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_1) {
+    auto x= NDArrayFactory::create<double>('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
+    auto exp= NDArrayFactory::create<double>('c', {2, 3}, {-2.4, 0.0, 0.0, 3.2, 0.0, 0.0});
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {4.0}, {});
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+}
+
+TEST_F(DeclarableOpsTests16, clipbynorm_2) {
+    auto x= NDArrayFactory::create<double>('c', {2, 3}, {-3.0f, 0.0f, 0.0f, 4.0f, 0.0f, 0.0f});
+    auto exp= NDArrayFactory::create<double>('c', {2, 3}, {-3.0f, 0.0f, 0.0f, 4.0f, 0.0f, 0.0f});
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {6.0}, {});
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_3) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 5});
+    auto unities = NDArrayFactory::create<double>('c', {3, 1}, {1., 1., 1.});
+    auto scale = NDArrayFactory::create<double>('c', {3, 1}, {1.1, 1., 0.9});
+
+    x.linspace(100.);
+
+    auto xNorm1 = x.reduceAlongDimension(reduce::Norm2, {1}, true);
+    x /= xNorm1;
+    xNorm1 = x.reduceAlongDimension(reduce::Norm2,{1}, true);
+
+    ASSERT_TRUE(unities.isSameShape(xNorm1));
+    ASSERT_TRUE(unities.equalsTo(xNorm1));
+
+    x *= scale;
+    xNorm1 = x.reduceAlongDimension(reduce::Norm2, {1}, true);
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {1.0}, {1});
+    auto z = result.at(0);
+
+    auto zNorm1 = z->reduceAlongDimension(reduce::Norm2, {1}, true);
+    auto exp = NDArrayFactory::create<double>('c', {3, 1}, {1., 1., xNorm1.e<double>(2)});
+
+    ASSERT_TRUE(exp.isSameShape(&zNorm1));
+    ASSERT_TRUE(exp.equalsTo(&zNorm1));
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_4) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 5}, {0.7044955, 0.55606544, 0.15833677, 0.001874401, 0.61595726, 0.3924779, 0.7414847, 0.4127324, 0.24026828, 0.26093036, 0.46741188, 0.01863421, 0.08528871, 0.529365, 0.5510694});
+    auto exp = NDArrayFactory::create<double>('c', {3, 5}, {0.405392, 0.319980, 0.091113, 0.001079, 0.354444, 0.225846, 0.426676, 0.237501, 0.138259, 0.150149, 0.268965, 0.010723, 0.049078, 0.304615, 0.317105});
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {1.f}, {});
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_5) {
+
+    // auto x = NDArrayFactory::create<double>('c', {3, 5}, {1,2,3,4,5,  1,2,3,4,5,  1,2,3,4,5});
+    auto x = NDArrayFactory::create<double>('c', {3, 5});
+    auto exp = NDArrayFactory::create<double>('c', {3, 5}, {1.,  2.,  2.89271,  3.50524,  4.00892, 6.,  7.,  7.71389,  7.88678,  8.01784, 11., 12., 12.53507, 12.26833, 12.02676});
+    // auto exp = NDArrayFactory::create<double>('c', {3, 5}, {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1});
+
+    x.linspace(1);
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {15.f}, {0});
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_6) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 5});
+    auto exp = NDArrayFactory::create<double>('c', {3, 5}, {1., 2., 3., 4., 5., 4.95434, 5.78006, 6.60578, 7.43151, 8.25723, 5.64288, 6.15587, 6.66886, 7.18185, 7.69484});
+
+    x.linspace(1);
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {15.f}, {1});
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_7) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 5});
+    auto exp = NDArrayFactory::create<double>('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
+
+    x.linspace(1);
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {15.f}, {0,1});
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_8) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 5});
+    auto exp = NDArrayFactory::create<double>('c', {3, 5}, {0.42597, 0.85194, 1.27791, 1.70389, 2.12986, 2.55583, 2.9818 , 3.40777, 3.83374, 4.25971, 4.68569, 5.11166, 5.53763, 5.9636 , 6.38957});
+
+    x.linspace(1);
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {15.}, {});
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_9) {
+
+    auto x = NDArrayFactory::create<double>('c', {2}, {3., 4.});
+    auto exp = NDArrayFactory::create<double>('c', {2}, {2.4, 3.2});
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {4.}, {});
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_10) {
+
+    auto x = NDArrayFactory::create<double>(6.);
+    auto exp = NDArrayFactory::create<double>(5.);
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {5.}, {});
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_11) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
+    auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {1.,  2.,  3.,  4.,  4.44787,  5.33745,  6.22702,  7.1166 , 6.33046,  7.03384,  7.73723,  8.44061,
+                                        13., 14., 15., 16., 15.12277, 16.01235, 16.90192, 17.7915 ,14.77107, 15.47446, 16.17784, 16.88123});
+
+    x.linspace(1);
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {35.}, {0, 2});
+    auto output = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_12) {
+    auto x = NDArrayFactory::create<double>('c', {3, 3}, {1, 2, 3, 4, 5,6, 7, 8, 9});
+    auto e = NDArrayFactory::create<double>('c', {3, 3}, {0.03198684, 0.06397368, 0.09596053, 0.12794736, 0.15993419, 0.19192106, 0.22390789, 0.25589472, 0.28788155});
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&x}, {0.54}, {});
+
+    ASSERT_EQ(e, *result.at(0));
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_13) {
+
+    const int bS   = 5;
+    const int nOut = 4;
+    const int axis = 0;
+    const double clip = 2.;
+
+    auto x = NDArrayFactory::create<double>('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.897 ,0.173 ,0.931 ,0.736 ,0.540 ,0.953 ,0.278 ,0.573 ,0.787 ,0.320 ,0.776 ,0.338 ,0.311 ,0.835 ,0.909 ,0.890 ,0.290});    // uniform random in range [0,1]
+    auto colVect = NDArrayFactory::create<double>('c', {bS, 1}, {0.9, 0.95, 1.00, 1.05, 1.1});
+    auto expect = NDArrayFactory::create<double>('c', {bS, nOut});
+
+    auto norm2 = x.reduceAlongDimension(reduce::Norm2, {axis}, true); // norm2 has shape [1, nOut]
+
+    auto y = ( (x / norm2) * clip) * colVect ;
+    auto temp = (x / norm2) * clip;
+
+    for (int j = 0; j < nOut; ++j) {
+        auto yCol = y({0,0, j,j+1});
+        const double norm2Col = yCol.reduceNumber(reduce::Norm2).e<double>(0);
+        if (norm2Col <= clip)
+            expect({0,0, j,j+1}).assign(yCol);
+        else
+            expect({0,0, j,j+1}).assign ( yCol * (clip / norm2Col) );
+    }
+
+    sd::ops::clipbynorm op;
+    auto result = op.evaluate({&y}, {clip}, {axis});
+    auto outFF = result.at(0);
+
+    ASSERT_TRUE(expect.isSameShape(outFF));
+    ASSERT_TRUE(expect.equalsTo(outFF));
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_bp_1) {
+
+    const int bS   = 2;
+    const int nOut = 3;
+    const double clip = 0.7;
+
+    auto x = NDArrayFactory::create<double>('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    auto gradO = NDArrayFactory::create<double>('c', {bS, nOut});
+
+    const OpArgsHolder argsHolderFF({&x}, {clip}, {});
+    const OpArgsHolder argsHolderBP({&x, &gradO}, {clip}, {});
+
+    sd::ops::clipbynorm opFF;
+    sd::ops::clipbynorm_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_bp_2) {
+
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 0;
+    const double clip = 0.7;
+
+    auto x = NDArrayFactory::create<double>('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    auto gradO = NDArrayFactory::create<double>('c', {bS, nOut});
+
+    const OpArgsHolder argsHolderFF({&x}, {clip}, {axis});
+    const OpArgsHolder argsHolderBP({&x, &gradO}, {clip}, {axis});
+
+    sd::ops::clipbynorm opFF;
+    sd::ops::clipbynorm_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbynorm_bp_3) {
+
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 1;
+    const double clip = 1.;
+
+    auto x = NDArrayFactory::create<double>('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    auto gradO = NDArrayFactory::create<double>('c', {bS, nOut});
+
+    const OpArgsHolder argsHolderFF({&x}, {clip}, {axis});
+    const OpArgsHolder argsHolderBP({&x, &gradO}, {clip}, {axis});
+
+    sd::ops::clipbynorm opFF;
+    sd::ops::clipbynorm_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbyavgnorm_1) {
+    auto x = NDArrayFactory::create<double>('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
+    auto exp = NDArrayFactory::create<double>('c', {2, 3}, {-2.88, 0.0, 0.0, 3.84, 0.0, 0.0});
+
+    sd::ops::clipbyavgnorm op;
+    auto result = op.evaluate({&x}, {0.8}, {});
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbyavgnorm_2) {
+    auto x= NDArrayFactory::create<float>('c', {2, 3}, {-3.0f, 0.0f, 0.0f, 4.0f, 0.0f, 0.0f});
+    auto exp= NDArrayFactory::create<float>('c', {2, 3}, {-3.f, 0.0f, 0.0f, 4.f, 0.0f, 0.0f});
+
+    sd::ops::clipbyavgnorm op;
+    auto result = op.evaluate({&x}, {0.9}, {});
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbyavgnorm_bp_1) {
+
+    const int bS   = 2;
+    const int nOut = 3;
+    const double clip = 0.7;
+
+    auto x = NDArrayFactory::create<double>('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    auto gradO = NDArrayFactory::create<double>('c', {bS, nOut});
+
+    const OpArgsHolder argsHolderFF({&x}, {clip}, {});
+    const OpArgsHolder argsHolderBP({&x, &gradO}, {clip}, {});
+
+    sd::ops::clipbyavgnorm opFF;
+    sd::ops::clipbyavgnorm_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbyavgnorm_bp_2) {
+
+    const int bS   = 2;
+    const int nOut = 3;
+    const int axis = 1;
+    const double clip = 1.;
+
+    auto x = NDArrayFactory::create<double>('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
+    auto gradO = NDArrayFactory::create<double>('c', {bS, nOut});
+
+    const OpArgsHolder argsHolderFF({&x}, {clip}, {axis});
+    const OpArgsHolder argsHolderBP({&x, &gradO}, {clip}, {axis});
+
+    sd::ops::clipbyavgnorm opFF;
+    sd::ops::clipbyavgnorm_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests16, clipbyavgnorm_bp_3) {
+
+    NDArray x('c', {2, 3, 4}, {-0.14 ,0.96 ,0.47 ,-0.98 ,0.03 ,0.95 ,0.33 ,-0.97 ,0.59 ,-0.92 ,-0.12 ,-0.33 ,0.82 ,-0.76 ,-0.69 ,-0.95 ,-0.77 ,0.25 ,-0.35 ,0.94 ,0.50 ,0.04 ,0.61 ,0.99}, sd::DataType::DOUBLE);
+    NDArray gradO('c', {2, 3, 4}, sd::DataType::DOUBLE);
+
+    const OpArgsHolder argsHolderFF({&x}, {0.7}, {0,2});
+    const OpArgsHolder argsHolderBP({&x, &gradO}, {0.7}, {0,2});
+
+    sd::ops::clipbyavgnorm opFF;
+    sd::ops::clipbyavgnorm_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+

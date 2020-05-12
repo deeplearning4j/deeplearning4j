@@ -982,16 +982,16 @@ std::string NDArray::asString(Nd4jLong limit) {
 
 ////////////////////////////////////////////////////////////////////////
 template<typename T>
-std::vector<T> NDArray::getBufferAsVector() {
+std::vector<T> NDArray::getBufferAsVector() const {
     std::vector<T> vector(lengthOf());
     for (Nd4jLong e = 0; e < lengthOf(); e++)
         vector[e] = this->e<T>(e);
     return vector;
 }
-BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT std::vector, NDArray::getBufferAsVector(), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template ND4J_EXPORT std::vector, NDArray::getBufferAsVector() const, LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
-std::vector<int64_t> NDArray::getShapeAsFlatVector() {
+std::vector<int64_t> NDArray::getShapeAsFlatVector() const {
     std::vector<int64_t> vector(this->rankOf());
     for (int e = 0; e < this->rankOf(); e++)
         vector[e] = static_cast<int64_t>(this->sizeAt(e));
@@ -1019,7 +1019,7 @@ std::vector<int> NDArray::getShapeAsVectorInt() const {
 }
 
 ////////////////////////////////////////////////////////////////////////
-std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
+std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() const {
     int magicNumber = shape::shapeInfoLength(this->rankOf());
     std::vector<int64_t> vector(magicNumber);
 
@@ -1030,7 +1030,7 @@ std::vector<int64_t> NDArray::getShapeInfoAsFlatVector() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-std::vector<Nd4jLong> NDArray::getShapeInfoAsVector() {
+std::vector<Nd4jLong> NDArray::getShapeInfoAsVector() const {
     int magicNumber = shape::shapeInfoLength(this->rankOf());
     std::vector<Nd4jLong> vector(magicNumber);
     for (int e = 0; e < magicNumber; e++)

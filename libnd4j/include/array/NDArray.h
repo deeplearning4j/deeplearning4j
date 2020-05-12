@@ -981,12 +981,12 @@ namespace sd {
         *  these methods suited for FlatBuffers use
         */
         template <typename T>
-        std::vector<T> getBufferAsVector();
+        std::vector<T> getBufferAsVector() const;
         std::vector<Nd4jLong> getShapeAsVector() const;
         std::vector<int> getShapeAsVectorInt() const;
-        std::vector<Nd4jLong> getShapeInfoAsVector();
-        std::vector<int64_t> getShapeInfoAsFlatVector();
-        std::vector<int64_t> getShapeAsFlatVector();
+        std::vector<Nd4jLong> getShapeInfoAsVector() const;
+        std::vector<int64_t> getShapeInfoAsFlatVector() const;
+        std::vector<int64_t> getShapeAsFlatVector() const;
 
         /**
         *  set new order and shape in case of suitable array length (in-place operation)

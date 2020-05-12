@@ -28,7 +28,7 @@
 
 using namespace dnnl;
 
-namespace sd      {
+namespace sd        {
 namespace ops       {
 namespace platforms {
 
@@ -109,7 +109,7 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(input, x_user_md);
+    mkldnnUtils::setBlockStrides(*input, x_user_md);
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -129,7 +129,7 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     // output
     dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zDims, zType, dnnl::memory::format_tag::any);
     dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, zType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(output, z_user_md);
+    mkldnnUtils::setBlockStrides(*output, z_user_md);
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -146,10 +146,10 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(input, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    mkldnnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // weights
-    mkldnnUtils::loadDataToMklStream(weights, engine, stream, w_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    mkldnnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // bias
     if(bias != nullptr) {
@@ -158,24 +158,21 @@ static void depthwiseConv2dMKLDNN(const NDArray* input, const NDArray* weights, 
     }
 
     // output
-    auto z_user_mem = dnnl::memory(z_user_md, engine, output->buffer());
-    const bool zReorder = op_prim_desc.dst_desc() != z_user_mem.get_desc();
-    auto z_mkl_mem = zReorder ? dnnl::memory(op_prim_desc.dst_desc(), engine) : z_user_mem;
-    args[DNNL_ARG_DST] = z_mkl_mem;
+    auto z_user_mem = mkldnnUtils::loadDataToMklStream(*output, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
     // run calculations
     dnnl::convolution_forward(op_prim_desc).execute(stream, args);
 
     // reorder outputs if necessary
-    if (zReorder)
-        dnnl::reorder(z_mkl_mem, z_user_mem).execute(stream, z_mkl_mem, z_user_mem);
+    if (op_prim_desc.dst_desc() != z_user_mem.get_desc())
+        dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
 
     stream.wait();
     // shape::printArray(z_mkl_mem.map_data<float>(),8);
 }
 
 //////////////////////////////////////////////////////////////////////////
-static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB,
+static void depthwiseConv2dBpMKLDNN(const NDArray* input, const NDArray* weights, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB,
                                     const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
                                     const int paddingMode, const bool isNCHW, const int wFormat) {
 
@@ -235,7 +232,7 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
     // input
     dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
     dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(input, x_user_md);
+    mkldnnUtils::setBlockStrides(*input, x_user_md);
 
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
@@ -250,12 +247,12 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(gradO, gradO_user_md);
+    mkldnnUtils::setBlockStrides(*gradO, gradO_user_md);
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xzFormatMkl);
-    mkldnnUtils::setBlockStrides(gradI, gradI_user_md);
+    mkldnnUtils::setBlockStrides(*gradI, gradI_user_md);
 
     // gradW
     dnnl::memory::desc gradW_mkl_md  = dnnl::memory::desc(wDims, gradWType, dnnl::memory::format_tag::any);
@@ -294,10 +291,10 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(input, engine, stream, x_user_md, op_weights_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+    mkldnnUtils::loadDataToMklStream(*input, engine, stream, x_user_md, op_weights_bp_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
     // weights
-    mkldnnUtils::loadDataToMklStream(weights, engine, stream, w_user_md, op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    mkldnnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md, op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // gradO
     auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, const_cast<void*>(gradO->buffer()));
@@ -312,16 +309,10 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
     args[DNNL_ARG_DIFF_DST] = gradO_mkl_memD;
 
     // gradI
-    auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->buffer());
-    const bool gradIReorder = op_data_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc();
-    auto gradI_mkl_mem = gradIReorder ? dnnl::memory(op_data_bp_prim_desc.diff_src_desc(), engine) : gradI_user_mem;
-    args[DNNL_ARG_DIFF_SRC] = gradI_mkl_mem;
+    auto gradI_user_mem = mkldnnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md, op_data_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
 
     // gradW
-    auto gradW_user_mem = dnnl::memory(gradW_user_md, engine, gradW->buffer());
-    const bool gradWReorder = op_weights_bp_prim_desc.diff_weights_desc() != gradW_user_mem.get_desc();
-    auto gradW_mkl_mem = gradWReorder ? dnnl::memory(op_weights_bp_prim_desc.diff_weights_desc(), engine) : gradW_user_mem;
-    args[DNNL_ARG_DIFF_WEIGHTS] = gradW_mkl_mem;
+    auto gradW_user_mem = mkldnnUtils::loadDataToMklStream(*gradW, engine, stream, gradW_user_md, op_weights_bp_prim_desc.diff_weights_desc(), args[DNNL_ARG_DIFF_WEIGHTS]);
 
     // gradB
     if(gradB != nullptr) {
@@ -339,10 +330,10 @@ static void depthwiseConv2dNackPropMKLDNN(const NDArray* input, const NDArray* w
     dnnl::convolution_backward_weights(op_weights_bp_prim_desc).execute(stream, args);
 
     // reorder gradI if necessary
-    if (gradIReorder)
-        dnnl::reorder(gradI_mkl_mem, gradI_user_mem).execute(stream, gradI_mkl_mem, gradI_user_mem);
-    if (gradWReorder)
-        dnnl::reorder(gradW_mkl_mem, gradW_user_mem).execute(stream, gradW_mkl_mem, gradW_user_mem);
+    if (op_data_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc())
+        dnnl::reorder(args[DNNL_ARG_DIFF_SRC], gradI_user_mem).execute(stream, args[DNNL_ARG_DIFF_SRC], gradI_user_mem);
+    if (op_weights_bp_prim_desc.diff_weights_desc() != gradW_user_mem.get_desc())
+        dnnl::reorder(args[DNNL_ARG_DIFF_WEIGHTS], gradW_user_mem).execute(stream, args[DNNL_ARG_DIFF_WEIGHTS], gradW_user_mem);
 
     stream.wait();
 
@@ -458,7 +449,7 @@ PLATFORM_IMPL(depthwise_conv2d_bp, ENGINE_CPU) {
     if(bias)
         REQUIRE_TRUE(bias->rankOf() <= 2 && oC == bias->lengthOf(), 0, "CUSTOM DEPTHWISECONV2D_BP MKL OP: wrong shape of array with biases, expected rank, length: <=2, %i, but got %i, %i instead !", oC, bias->rankOf(), bias->lengthOf());
 
-    depthwiseConv2dNackPropMKLDNN(input, weights, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW, wFormat);
+    depthwiseConv2dBpMKLDNN(input, weights, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, paddingMode, isNCHW, wFormat);
 
     return Status::OK();
 }

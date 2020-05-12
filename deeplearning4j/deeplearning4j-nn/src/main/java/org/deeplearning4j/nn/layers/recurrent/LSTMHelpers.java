@@ -52,8 +52,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
  *
- * RNN tutorial: <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent">https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent</a>
- * READ THIS FIRST if you want to understand what the heck is happening here.
+ * RNN tutorial: <a href="https://deeplearning4j.konduit.ai/models/recurrent">https://deeplearning4j.konduit.ai/models/recurrent</a>
+ * READ THIS FIRST if you want to understand this code.
  *
  * Shared code for the standard "forwards" LSTM RNN and the bidirectional LSTM RNN
  * This was extracted from GravesLSTM and refactored into static helper functions.  The general reasoning for this was

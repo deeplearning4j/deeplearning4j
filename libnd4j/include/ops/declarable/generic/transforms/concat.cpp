@@ -23,8 +23,8 @@
 #include<ops/declarable/helpers/transforms.h>
 #include<array>
 
-namespace sd {
-namespace ops  {
+namespace sd  {
+namespace ops {
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -85,6 +85,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
     // ******** input validation ******** //
     REQUIRE_TRUE(allOfSameType, 0, "CONCAT op: all of input arrays must have same type !");
+    REQUIRE_TRUE(nonEmptyArrs[0]->dataType() == OUTPUT_VARIABLE(0)->dataType(), 0, "CONCAT op: output array should have the same type as inputs arrays !");
     REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
     for(int i = 1; i < numOfNonEmptyArrs; ++i)

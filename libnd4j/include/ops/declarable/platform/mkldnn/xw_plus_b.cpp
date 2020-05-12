@@ -82,33 +82,23 @@ namespace sd {
                 // memory descriptors for arrays
                 // x
                 dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xShape, xType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, xType, format);
-                mkldnnUtils::setBlockStrides(x, x_user_md);
+                dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, xType, mkldnnUtils::getFormat(*x));
+                mkldnnUtils::setBlockStrides(*x, x_user_md);
 
                 // weights
                 dnnl::memory::desc weights_mkl_md = dnnl::memory::desc(wShape, wType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc weights_user_md = dnnl::memory::desc(wShape, wType, format);
-                if (weights->ews() != 1 || weights->ordering() != 'c' || bShouldTransp) {
+                dnnl::memory::desc weights_user_md = dnnl::memory::desc(wShape, wType, mkldnnUtils::getFormat(*weights));
+                mkldnnUtils::setBlockStrides(*weights, weights_user_md, bShouldTransp ? std::vector<int>({1,0}) : std::vector<int>());
 
-                    weights_user_md.data.format_kind = dnnl_blocked;    // overrides format
-                    if (bShouldTransp) {
-                        weights_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(1);
-                        weights_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(0);
-                    }
-                    else {
-                        weights_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(0);
-                        weights_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(1);
-                    }
-                }
                 // bias
-                dnnl::memory::desc bias_mkl_md = dnnl::memory::desc(bShape, bType, dnnl::memory::format_tag::x);
-                dnnl::memory::desc bias_user_md = dnnl::memory::desc(bShape, bType, dnnl::memory::format_tag::x);
-                mkldnnUtils::setBlockStrides(bias, bias_user_md);
+                dnnl::memory::desc bias_mkl_md = dnnl::memory::desc(bShape, bType, dnnl::memory::format_tag::a);
+                dnnl::memory::desc bias_user_md = dnnl::memory::desc(bShape, bType, dnnl::memory::format_tag::a);
+                mkldnnUtils::setBlockStrides(*bias, bias_user_md);
 
                 // z
                 dnnl::memory::desc z_mkl_md = dnnl::memory::desc(zShape, zType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, zType, format);
-                mkldnnUtils::setBlockStrides(z, z_user_md);
+                dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, zType, mkldnnUtils::getFormat(*z));
+                mkldnnUtils::setBlockStrides(*z, z_user_md);
 
                 auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -125,27 +115,24 @@ namespace sd {
                 // provide memory buffers and check whether reorder is required
 
                 // input
-                mkldnnUtils::loadDataToMklStream(x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+                mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
 
                 // weights
-                mkldnnUtils::loadDataToMklStream(weights, engine, stream, weights_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+                mkldnnUtils::loadDataToMklStream(*weights, engine, stream, weights_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
                 // bias
                 auto bias_mkl_mem = dnnl::memory(bias_mkl_md, engine, const_cast<void*>(bias->buffer()));
                 args[DNNL_ARG_BIAS] = bias_mkl_mem;
 
                 // z
-                auto z_user_mem = dnnl::memory(z_user_md, engine, z->buffer());
-                const bool zReorder = op_prim_desc.dst_desc() != z_user_mem.get_desc();
-                auto z_mkl_mem = zReorder ? dnnl::memory(op_prim_desc.dst_desc(), engine) : z_user_mem;
-                args[DNNL_ARG_DST] = z_mkl_mem;
+                auto z_user_mem = mkldnnUtils::loadDataToMklStream(*z, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
                 // run calculations
                 dnnl::inner_product_forward(op_prim_desc).execute(stream, args);
 
                 // reorder outputs if necessary
-                if (zReorder)
-                    dnnl::reorder(z_mkl_mem, z_user_mem).execute(stream, z_mkl_mem, z_user_mem);
+                if (op_prim_desc.dst_desc() != z_user_mem.get_desc())
+                    dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
 
                 stream.wait();
             }
@@ -160,7 +147,7 @@ namespace sd {
 
                 // [M,K] x [K,N] = [M,N]
                 const int M = x->sizeAt(0);
-                const int K = x->sizeAt(1); // K == wK               
+                const int K = x->sizeAt(1); // K == wK
                 const int N = dLdz->sizeAt(1);
                 // input dims
                 dnnl::memory::dims xShape = dnnl::memory::dims({ M, K });
@@ -168,71 +155,53 @@ namespace sd {
                 dnnl::memory::dims dLdzShape = dnnl::memory::dims({ M, N });
 
                 dnnl::memory::dims bShape = dnnl::memory::dims({ N });
+
                 // output dims
                 dnnl::memory::dims dLdxShape = xShape;
                 dnnl::memory::dims dLdwShape = wShape;
 
-                dnnl::memory::format_tag format = dnnl::memory::format_tag::ab;
                 dnnl::memory::data_type dataType = dnnl::memory::data_type::f32;
 
                 // memory descriptors for arrays
                 // x
                 dnnl::memory::desc x_mkl_md = dnnl::memory::desc(xShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, dataType, format);
-                mkldnnUtils::setBlockStrides(x, x_user_md);
+                dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, dataType, mkldnnUtils::getFormat(*x));
+                mkldnnUtils::setBlockStrides(*x, x_user_md);
 
                 // weights
                 dnnl::memory::desc weights_mkl_md = dnnl::memory::desc(wShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc weights_user_md = dnnl::memory::desc(wShape, dataType, format);
-                if (weights->ews() != 1 || weights->ordering() != 'c' || bShouldTransp) {
+                dnnl::memory::desc weights_user_md = dnnl::memory::desc(wShape, dataType, mkldnnUtils::getFormat(*weights));
+                mkldnnUtils::setBlockStrides(*weights, weights_user_md, bShouldTransp ? std::vector<int>({1,0}) : std::vector<int>());
 
-                    weights_user_md.data.format_kind = dnnl_blocked;    // overrides format
-                    if (bShouldTransp) {
-                        weights_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(1);
-                        weights_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(0);
-                    }
-                    else {
-                        weights_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(0);
-                        weights_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(1);
-                    }
-                }
                 // bias
-                dnnl::memory::desc bias_mkl_md = dnnl::memory::desc(bShape, dataType, dnnl::memory::format_tag::x);
-                dnnl::memory::desc bias_user_md = dnnl::memory::desc(bShape, dataType, dnnl::memory::format_tag::x);
-                mkldnnUtils::setBlockStrides(bias, bias_user_md);
+                dnnl::memory::desc bias_mkl_md = dnnl::memory::desc(bShape, dataType, dnnl::memory::format_tag::any);
+                dnnl::memory::desc bias_user_md = dnnl::memory::desc(bShape, dataType, mkldnnUtils::getFormat(*bias));
+                mkldnnUtils::setBlockStrides(*bias, bias_user_md);
 
                 // dLdz
                 dnnl::memory::desc dLdz_mkl_md = dnnl::memory::desc(dLdzShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc dLdz_user_md = dnnl::memory::desc(dLdzShape, dataType, format);
-                mkldnnUtils::setBlockStrides(dLdz, dLdz_user_md);
+                dnnl::memory::desc dLdz_user_md = dnnl::memory::desc(dLdzShape, dataType, mkldnnUtils::getFormat(*dLdz));
+                mkldnnUtils::setBlockStrides(*dLdz, dLdz_user_md);
+
 
                 // dLdw
-                dnnl::memory::desc dLdw_mkl_md = dnnl::memory::desc(wShape, dataType, format);
-                dnnl::memory::desc dLdw_user_md = dnnl::memory::desc(wShape, dataType, format);
-                if (dLdw->ews() != 1 || dLdw->ordering() != 'c' || bShouldTransp) {
-
-                    dLdw_user_md.data.format_kind = dnnl_blocked;    // overrides format
-                    if (bShouldTransp) {
-                        dLdw_user_md.data.format_desc.blocking.strides[0] = dLdw->strideAt(1);
-                        dLdw_user_md.data.format_desc.blocking.strides[1] = dLdw->strideAt(0);
-                    }
-                    else {
-                        dLdw_user_md.data.format_desc.blocking.strides[0] = dLdw->strideAt(0);
-                        dLdw_user_md.data.format_desc.blocking.strides[1] = dLdw->strideAt(1);
-                    }
-                }
+                dnnl::memory::desc dLdw_mkl_md = dnnl::memory::desc(wShape, dataType, dnnl::memory::format_tag::any);
+                dnnl::memory::desc dLdw_user_md = dnnl::memory::desc(wShape, dataType, mkldnnUtils::getFormat(*dLdw));
+                mkldnnUtils::setBlockStrides(*dLdw, dLdw_user_md, bShouldTransp ? std::vector<int>({1,0}) : std::vector<int>());
 
                 // dLdb
-                dnnl::memory::desc dLdb_mkl_md = dnnl::memory::desc(bShape, dataType, dnnl::memory::format_tag::x);
-                dnnl::memory::desc dLdb_user_md = dnnl::memory::desc(bShape, dataType, dnnl::memory::format_tag::x);
-                mkldnnUtils::setBlockStrides(dLdb, dLdb_user_md);
+                dnnl::memory::desc dLdb_mkl_md = dnnl::memory::desc(bShape, dataType, dnnl::memory::format_tag::any);
+                dnnl::memory::desc dLdb_user_md = dnnl::memory::desc(bShape, dataType, mkldnnUtils::getFormat(*dLdb));
+                mkldnnUtils::setBlockStrides(*dLdb, dLdb_user_md);
 
                 // dLdx
                 dnnl::memory::desc dLdx_mkl_md = dnnl::memory::desc(xShape, dataType, dnnl::memory::format_tag::any);
-                dnnl::memory::desc dLdx_user_md = dnnl::memory::desc(xShape, dataType, format);
-                mkldnnUtils::setBlockStrides(dLdx, dLdx_user_md);
+                dnnl::memory::desc dLdx_user_md = dnnl::memory::desc(xShape, dataType, mkldnnUtils::getFormat(*dLdx));
+                mkldnnUtils::setBlockStrides(*dLdx, dLdx_user_md);
 
+                // create engine
                 auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+
                 // forward
                 // operation primitive description
                 dnnl::inner_product_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, weights_mkl_md, bias_mkl_md, dLdz_mkl_md);
@@ -254,34 +223,25 @@ namespace sd {
                 dnnl::stream stream(engine);
 
                 // dLdz dw
-                mkldnnUtils::loadDataToMklStream(dLdz, engine, stream, dLdz_user_md, op_bpdw_prim_desc.diff_dst_desc(), argsDw[DNNL_ARG_DIFF_DST]);
+                mkldnnUtils::loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_bpdw_prim_desc.diff_dst_desc(), argsDw[DNNL_ARG_DIFF_DST]);
 
                 // dLdz - dx
-                mkldnnUtils::loadDataToMklStream(dLdz, engine, stream, dLdz_user_md, op_bpdx_prim_desc.diff_dst_desc(), argsDx[DNNL_ARG_DIFF_DST]);
+                mkldnnUtils::loadDataToMklStream(*dLdz, engine, stream, dLdz_user_md, op_bpdx_prim_desc.diff_dst_desc(), argsDx[DNNL_ARG_DIFF_DST]);
 
                 // input x for dw
-                mkldnnUtils::loadDataToMklStream(x, engine, stream, x_user_md, op_bpdw_prim_desc.src_desc(), argsDw[DNNL_ARG_SRC]);
+                mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, op_bpdw_prim_desc.src_desc(), argsDw[DNNL_ARG_SRC]);
 
                 // weights - dx
-                mkldnnUtils::loadDataToMklStream(weights, engine, stream, weights_user_md, op_bpdx_prim_desc.weights_desc(), argsDx[DNNL_ARG_WEIGHTS]);
+                mkldnnUtils::loadDataToMklStream(*weights, engine, stream, weights_user_md, op_bpdx_prim_desc.weights_desc(), argsDx[DNNL_ARG_WEIGHTS]);
 
-                // dLdw 
-                auto dLdw_user_mem = dnnl::memory(dLdw_user_md, engine, dLdw->buffer());
-                const bool dLdwReorder = op_bpdw_prim_desc.diff_weights_desc() != dLdw_user_mem.get_desc();
-                auto dLdw_mkl_mem = dLdwReorder ? dnnl::memory(op_bpdw_prim_desc.diff_weights_desc(), engine) : dLdw_user_mem;
-                argsDw[DNNL_ARG_DIFF_WEIGHTS] = dLdw_mkl_mem;
+                // dLdw
+                auto dLdw_user_mem = mkldnnUtils::loadDataToMklStream(*dLdw, engine, stream, dLdw_user_md, op_bpdw_prim_desc.diff_weights_desc(), argsDw[DNNL_ARG_DIFF_WEIGHTS]);
 
-                // dLdx 
-                auto dLdx_user_mem = dnnl::memory(dLdx_user_md, engine, dLdx->buffer());
-                const bool dLdxReorder = op_bpdx_prim_desc.diff_src_desc() != dLdx_user_mem.get_desc();
-                auto dLdx_mkl_mem = dLdxReorder ? dnnl::memory(op_bpdx_prim_desc.diff_src_desc(), engine) : dLdx_user_mem;
-                argsDx[DNNL_ARG_DIFF_SRC] = dLdx_mkl_mem;
+                // dLdx
+                auto dLdx_user_mem = mkldnnUtils::loadDataToMklStream(*dLdx, engine, stream, dLdx_user_md, op_bpdx_prim_desc.diff_src_desc(), argsDx[DNNL_ARG_DIFF_SRC]);
 
                 // dLdb
-                auto dLdb_user_mem = dnnl::memory(dLdb_user_md, engine, dLdb->buffer());
-                const bool dLdbReorder = op_bpdw_prim_desc.diff_bias_desc() != dLdb_user_mem.get_desc();
-                auto dLdb_mkl_mem = dLdbReorder ? dnnl::memory(op_bpdw_prim_desc.diff_bias_desc(), engine) : dLdb_user_mem;
-                argsDw[DNNL_ARG_DIFF_BIAS] = dLdb_mkl_mem;
+                auto dLdb_user_mem = mkldnnUtils::loadDataToMklStream(*dLdb, engine, stream, dLdb_user_md, op_bpdw_prim_desc.diff_bias_desc(), argsDw[DNNL_ARG_DIFF_BIAS]);
 
                 // run calculations dw
                 dnnl::inner_product_backward_weights(op_bpdw_prim_desc).execute(stream, argsDw);
@@ -289,14 +249,14 @@ namespace sd {
                 dnnl::inner_product_backward_data(op_bpdx_prim_desc).execute(stream, argsDx);
 
                 // reorder outputs if necessary
-                if (dLdxReorder)
-                    dnnl::reorder(dLdx_mkl_mem, dLdx_user_mem).execute(stream, dLdx_mkl_mem, dLdx_user_mem);
+                if (op_bpdx_prim_desc.diff_src_desc() != dLdx_user_mem.get_desc())
+                    dnnl::reorder(argsDx[DNNL_ARG_DIFF_SRC], dLdx_user_mem).execute(stream, argsDx[DNNL_ARG_DIFF_SRC], dLdx_user_mem);
 
-                if (dLdwReorder)
-                    dnnl::reorder(dLdw_mkl_mem, dLdw_user_mem).execute(stream, dLdw_mkl_mem, dLdw_user_mem);
+                if (op_bpdw_prim_desc.diff_weights_desc() != dLdw_user_mem.get_desc())
+                    dnnl::reorder(argsDw[DNNL_ARG_DIFF_WEIGHTS], dLdw_user_mem).execute(stream, argsDw[DNNL_ARG_DIFF_WEIGHTS], dLdw_user_mem);
 
-                if (dLdbReorder)
-                    dnnl::reorder(dLdb_mkl_mem, dLdb_user_mem).execute(stream, dLdb_mkl_mem, dLdb_user_mem);
+                if (op_bpdw_prim_desc.diff_bias_desc() != dLdb_user_mem.get_desc())
+                    dnnl::reorder(argsDw[DNNL_ARG_DIFF_BIAS], dLdb_user_mem).execute(stream, argsDw[DNNL_ARG_DIFF_BIAS], dLdb_user_mem);
 
                 stream.wait();
             }
@@ -315,7 +275,7 @@ namespace sd {
                 const int wRank = w->rankOf();
                 const int zRank = z->rankOf();
 
-                const bool bShouldTransp = block.getIArguments()->size() > 0 ? (1 != INT_ARG(0)) : true; // [M,K] * [K,N] -> [M, N], mkl -> [M,K] * [N, K]^T -> [M, N] 
+                const bool bShouldTransp = block.getIArguments()->size() > 0 ? (1 != INT_ARG(0)) : true; // [M,K] * [K,N] -> [M, N], mkl -> [M,K] * [N, K]^T -> [M, N]
 
                 REQUIRE_TRUE(xRank == 2, 0, "xw_plus_b MKL: Input x array should have rank equal 2, but got instead %i!", xRank);
                 REQUIRE_TRUE(wRank == 2, 0, "xw_plus_b MKL: Input weights array should have rank equal 2, but got instead %i!", wRank);
@@ -378,7 +338,7 @@ namespace sd {
                 const int wRank = w->rankOf();
                 const int dLdzRank = dLdz->rankOf();
 
-                const bool bShouldTransp = block.getIArguments()->size() > 0 ? (1 != INT_ARG(0)) : true; // [M,K] * [K,N] -> [M, N], mkl -> [M,K] * [N, K]^T -> [M, N] 
+                const bool bShouldTransp = block.getIArguments()->size() > 0 ? (1 != INT_ARG(0)) : true; // [M,K] * [K,N] -> [M, N], mkl -> [M,K] * [N, K]^T -> [M, N]
 
                 REQUIRE_TRUE(x->rankOf() == 2, 0, "xw_plus_b BP MKL: Input x array should have rank equal 2, but got instead %i!", x->rankOf());
                 REQUIRE_TRUE(w->rankOf() == 2, 0, "xw_plus_b BP MKL: Input weights array should have rank equal 2, but got instead %i!", w->rankOf());

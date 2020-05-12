@@ -31,10 +31,10 @@ namespace ops  {
         auto input = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
 
-        const auto clipNorm = NDArrayFactory::create(input->dataType(), T_ARG(0), block.launchContext());
+        const auto clipNorm = NDArrayFactory::create(output->dataType(), T_ARG(0), block.launchContext());
         const bool isInplace = block.isInplace();
 
-        helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace);
+        helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace, false);
 
         return Status::OK();
     }
@@ -45,15 +45,15 @@ namespace ops  {
         auto gradO = INPUT_VARIABLE(1);
 
         auto gradI = OUTPUT_VARIABLE(0);
-        const auto clipNorm = NDArrayFactory::create(T_ARG(0));
+        const auto clipNorm = NDArrayFactory::create(gradI->dataType(), T_ARG(0), block.launchContext());
 
-        helpers::clipByNormBP(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm);
+        helpers::clipByNormBp(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm, false);
 
         return Status::OK();
     }
 
     DECLARE_SHAPE_FN(clipbynorm_bp) {
-        auto inShapeInfo = inputShape->at(0);
+        auto inShapeInfo = inputShape->at(1);
 
         Nd4jLong *newShape = nullptr;
         COPY_SHAPE(inShapeInfo, newShape);

@@ -1093,7 +1093,7 @@ namespace sd {
                 return ND4J_STATUS_OK;
 
             NDArray *a0 = block.array(0);
-            for (int e = 0; e < block.width(); e++) {
+            for (int e = 1; e < block.width(); e++) {
                 auto aV = block.array(e);
                 if (!shape::equalsSoft(a0->shapeInfo(), aV->shapeInfo()))
                     return ND4J_STATUS_BAD_DIMENSIONS;
