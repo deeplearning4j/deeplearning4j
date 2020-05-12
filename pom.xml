@@ -132,6 +132,7 @@
         <module>deeplearning4j</module>
         <module>arbiter</module>
         <module>nd4s</module>
+        <module>nd4k</module>
         <module>rl4j</module>
         <module>scalnet</module>
         <module>jumpy</module>
