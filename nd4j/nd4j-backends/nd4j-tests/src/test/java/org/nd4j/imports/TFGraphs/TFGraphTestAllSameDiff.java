@@ -150,7 +150,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
     @Parameterized.Parameters(name="{0}")
     public static Collection<Object[]> data() throws Exception {
-        Map<String,TestCase> m = TFGraphUtil.getTestCases(BASE_DIR, false);
+        Map<String,TestCase> m = TFGraphUtil.getTestCases(BASE_DIR, false, MODEL_FILENAME);
         List<String> l = new ArrayList<>(m.keySet());
         Collections.sort(l);
 

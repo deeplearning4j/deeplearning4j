@@ -18,7 +18,7 @@ package org.nd4j;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.tests.AbstractAssertTestsClass;
 import org.nd4j.common.tests.BaseND4JTest;
-import org.nd4j.imports.TFGraphs.TFGraphTestAllLibnd4j;
+import org.nd4j.imports.TFGraphs.TF2ImportTestsSameDiff;
 import org.nd4j.imports.TFGraphs.TFGraphTestAllSameDiff;
 import org.nd4j.imports.TFGraphs.TFGraphTestList;
 import org.nd4j.imports.TFGraphs.TFGraphTestZooModels;
@@ -41,7 +41,7 @@ public class AssertTestsExtendBaseClass extends AbstractAssertTestsClass {
 	    //Set of classes that are exclusions to the rule (either run manually or have their own logging + timeouts)
 	    return new HashSet<>(Arrays.asList(
 	            TFGraphTestAllSameDiff.class,
-        	    TFGraphTestAllLibnd4j.class,
+				TF2ImportTestsSameDiff.class,
 	            TFGraphTestList.class,
         	    TFGraphTestZooModels.class,
 	            ImportModelDebugger.class  //Run manually only, otherwise ignored

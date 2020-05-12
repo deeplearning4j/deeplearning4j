@@ -40,28 +40,24 @@ public class TFGraphUtil {
     private TFGraphUtil() {
     }
 
-    public static TestCase getTestCase(String baseDir, String testName) throws Exception {
+    public static TestCase getTestCase(String baseDir, String testName, String modelFilename) throws Exception {
         String newBase = FilenameUtils.concat(baseDir, testName + "/");
-        Map<String, TestCase> cases = getTestCases(newBase, true);
+        Map<String, TestCase> cases = getTestCases(newBase, true, modelFilename);
         Preconditions.checkState(cases.size() == 1, "Expected 1 test case, got %s", cases.size());
         return cases.get(cases.keySet().iterator().next());
     }
 
-    public static Map<String, TestCase> getTestCases(String baseDir, boolean singleTest) throws Exception {
+    public static Map<String, TestCase> getTestCases(String baseDir, boolean singleTest, String modelFilename) throws Exception {
 
         baseDir = baseDir.replaceAll("\\\\", "/");
         if (!baseDir.endsWith("/"))
             baseDir += "/";
 
         long start = System.currentTimeMillis();
-//        String baseDir = "tf_graphs/examples/";
         List<String> l = ResourceUtils.listClassPathFiles(baseDir, true, false);
         long end = System.currentTimeMillis();
 
-        Set<String> listAsSet = new HashSet<>(l);
-
-
-        Set<String> modelSet = new HashSet<>();
+        Set<String> set = new HashSet<>(l);
 
 
         Map<String, TestCase> map = new HashMap<>();
@@ -81,9 +77,8 @@ public class TFGraphUtil {
             } else if (idx > 0) {
                 name = sub.substring(0, idx);
                 modelDir = baseDir + sub.substring(0, idx + 1);
-                String expModel = modelDir + TFGraphTestAllSameDiff.MODEL_FILENAME;
-//                while(!Resources.exists(expModel) && idx > 0){
-                while (!listAsSet.contains(expModel) && idx > 0) {
+                String expModel = modelDir + modelFilename;
+                while (!set.contains(expModel) && idx > 0) {
                     //Due to a mixing of directories and variable names - we
                     //For example we might have "X/frozen_model.pb"
                     //And then also "X/something/or/other.csv
@@ -97,20 +92,14 @@ public class TFGraphUtil {
                     }
 
                     sub = sub.substring(0, idx);
-                    expModel = baseDir + sub + "/" + TFGraphTestAllSameDiff.MODEL_FILENAME;
+                    expModel = baseDir + sub + "/" + modelFilename;
                     modelDir = baseDir + sub + "/";
                     name = sub;
                 }
-//                name = n;
             }
 
-//            if(modelDir == null)
-//                continue;
             if(badTest || modelDir == null)
                 continue;
-
-
-            modelSet.add(name);
 
             TestCase tc = map.get(name);
             if (tc == null) {
@@ -156,7 +145,6 @@ public class TFGraphUtil {
                     }
                 }
             }
-//                System.out.println(sub);
         }
         long end2 = System.currentTimeMillis();
 

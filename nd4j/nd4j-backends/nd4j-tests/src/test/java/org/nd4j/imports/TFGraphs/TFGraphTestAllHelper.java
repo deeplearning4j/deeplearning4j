@@ -19,29 +19,25 @@ package org.nd4j.imports.TFGraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
-
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
-import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
-import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCloseMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.CloseValidationMemoryMgr;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.function.BiFunction;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.resources.Resources;
-import org.nd4j.imports.TFGraphs.listener.OpExecOrderListener;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.listeners.ExecPrintListener;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -49,33 +45,22 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
-import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.function.BiFunction;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
-import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.common.resources.strumpf.ResourceFile;
-import org.nd4j.common.resources.strumpf.StrumpfResolver;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternResolver;
 
 import java.io.*;
-import java.net.URI;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.*;
-import static org.nd4j.imports.TFGraphs.TFGraphsSkipNodes.skipNode;
 
 /**
  * Created by susaneraly on 11/6/17.
@@ -124,20 +109,6 @@ public class TFGraphTestAllHelper {
             .gatherTimings(true)
             .outputMode(OutputMode.VARIABLE_SPACE)
             .build();
-
-    protected static List<Object[]> fetchTestParams(String baseDir, String modelFileName, ExecuteWith executeWith, File localTestDir) throws IOException {
-        String[] modelNames = modelDirNames(baseDir, executeWith, modelFileName);
-        List<Object[]> modelParams = new ArrayList<>();
-        for (int i = 0; i < modelNames.length; i++) {
-            Object[] currentParams = new Object[4];
-            currentParams[0] = inputVars(modelNames[i], baseDir, localTestDir); //input variable map - could be null
-            currentParams[1] = outputVars(modelNames[i], baseDir, localTestDir); //saved off predictions
-            currentParams[2] = modelNames[i];
-            currentParams[3] = localTestDir;
-            modelParams.add(currentParams);
-        }
-        return modelParams;
-    }
 
     protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName,
                                           String baseDir, String modelFilename, ExecuteWith execType, BiFunction<File,String,SameDiff> loader,
@@ -298,97 +269,6 @@ public class TFGraphTestAllHelper {
         Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
-    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName,
-                                         ExecuteWith execType, File localTestDir, boolean printArraysDebugging) throws IOException {
-        checkIntermediate(inputs, modelName, baseDir, modelFileName, execType, LOADER, null, null, localTestDir, printArraysDebugging);
-    }
-
-    public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName,
-                                         ExecuteWith execType, BiFunction<File,String,SameDiff> loader,
-                                         Double maxRelErrorOverride, Double minAbsErrorOverride, File localTestDir, boolean printArraysDebugging) throws IOException {
-        Preconditions.checkArgument((maxRelErrorOverride == null) == (minAbsErrorOverride == null), "Both maxRelErrorOverride and minAbsErrorOverride" +
-                " must be null or both must be provided");
-        Nd4j.EPS_THRESHOLD = 1e-3;
-        OpExecOrderListener listener = new OpExecOrderListener();       //Used to collect exec order
-        Pair<SameDiff, Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader, Collections.singletonList(listener), null, printArraysDebugging);
-        SameDiff graph = p.getFirst();
-        Map<String,INDArray> sdPredictions = p.getSecond();
-
-        //Collect coverage info about ops
-        OpValidation.collectTensorflowImportCoverage(graph);
-
-        if (!execType.equals(ExecuteWith.JUST_PRINT)) {
-            int count = 0;
-            //Evaluate the nodes in their execution order - this is useful for debugging (as we want the *first* failure
-            // to be detected before later failures)
-            List<String> varNames = new ArrayList<>();
-            Map<String,SameDiffOp> fns = graph.getOps();
-            List<String> execOrder = listener.getOpNamesList();
-            for(String opName : execOrder){
-                String[] outputs = graph.getOutputsForOp(fns.get(opName).getOp());
-                Collections.addAll(varNames, outputs);
-            }
-
-            for (String varName : varNames) {
-                if (!inputs.containsKey(varName)) { //avoiding placeholders
-                    INDArray tfValue = intermediateVars(modelName, baseDir, varName, localTestDir);
-                    if (tfValue == null) {
-                        continue;
-                    }
-                    log.info("Starting check: variable {}", varName);
-                    if (skipNode(modelName, varName)) {
-                        log.info("\n\tFORCING no check on " + varName);
-                    } else {
-                        assertArrayEquals("Shape not equal on node " + varName, tfValue.shape(), graph.getVariable(varName).getShape());
-                        INDArray sdVal = sdPredictions.get(varName);
-                        if(maxRelErrorOverride != null){
-                            INDArray diff = Transforms.abs(tfValue.sub(sdVal), false);
-                            INDArray absErrorMask = diff.gte(minAbsErrorOverride);   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
-                            INDArray sumAbs = Transforms.abs(tfValue, true).addi(Transforms.abs(sdVal, true));
-                            BooleanIndexing.replaceWhere(sumAbs, 1.0, Conditions.equals(0.0));  //Can only get 0.0 if both are zeros - need to avoid 0/0=NaN
-                            INDArray relError = diff.divi(sumAbs);
-                            relError.muli(absErrorMask);
-
-                            int countExceeds = Nd4j.getExecutioner().exec(new MatchCondition(relError, Conditions.greaterThan(maxRelErrorOverride))).getInt(0);
-
-                            double maxRE = -1;
-                            //Mainly used for analysis in debugger:
-                            DifferentialFunction op = null;
-                            String[] opInputs = null;
-                            if(countExceeds > 0){
-                                maxRE = relError.maxNumber().doubleValue();
-                                //Find the op that this variable is produced by
-                                op = graph.getVariableOutputOp(varName);
-                                opInputs = graph.getInputsForOp(op);
-                            }
-
-
-                            assertEquals( varName + ": " + countExceeds + " values exceed maxRelError=" + maxRelErrorOverride
-                                    + " with minAbsError=" + minAbsErrorOverride + "; largest observed relError=" + maxRE, 0, countExceeds);
-                        } else {
-//                            assertEquals("Value not equal on node " + varName, tfValue, sdVal);
-                            if(tfValue.equals(sdVal)){
-                                System.out.println("Pass: " + varName);
-                            } else {
-                                System.out.println("FAIL: " + varName);
-                                System.out.println("TF:\n" + tfValue);
-                                System.out.println("SD:\n" + sdVal);
-                            }
-
-                        }
-                        log.info("Values and shapes equal for {}", varName);
-                        count++;
-                    }
-
-                }
-            }
-
-            assertTrue("No intermediate variables were checked", count > 0);
-        }
-
-        Nd4j.EPS_THRESHOLD = 1e-5;
-    }
-
     public static Pair<SameDiff, Map<String,INDArray>> getGraphAfterExec(String baseDir, String modelFilename, String modelName, Map<String, INDArray> inputs,
                                              ExecuteWith executeWith, BiFunction<File,String,SameDiff> graphLoaderFunction, List<Listener> listeners,
                                                                          Set<String> requiredOutputs, boolean printArraysDebugging) throws IOException {
@@ -454,353 +334,7 @@ public class TFGraphTestAllHelper {
         return exampleNames;
     }
 
-    protected static Map<String, INDArray> inputVars(String modelName, String base_dir, File localTestDir) throws IOException {
-        return readVars(modelName, base_dir, "**.placeholder", true, localTestDir);
-    }
 
-
-    protected static Map<String, INDArray> outputVars(String modelName, String base_dir, File localTestDir) throws IOException {
-        return readVars(modelName, base_dir, "**.prediction", true, localTestDir);
-    }
-
-    protected static Map<String, INDArray> inbetweenVars(String modelName, String base_dir, File localTestDir) throws IOException {
-        return readVars(modelName, base_dir, "**.prediction_inbw", true, localTestDir);
-    }
-
-
-    //return readVars(modelName, base_dir, "**.prediction_inbw", true);
-
-    /**
-     * Possible for a single node to give multiple outputs
-     *
-     * How is a node that has a list of outputs like in the case of "node_multiple_out" work
-     * Below is hardcoded for a single node
-     */
-    protected static INDArray intermediateVars(String modelName, String base_dir, String varName, File localTestDir) throws IOException {
-        //convert varName to convention used in naming files
-        // "/" replaced by "____"; followed by a digit indicating the output number followed by prediction_inbw.(shape|csv)
-        if (varName.contains(":")) {
-            varName = varName.replace(':', '.');
-        } else {
-            varName = varName + ".0";
-        }
-        String name = varName.replaceAll("/", "____") + ".prediction_inbw";
-        Map<String, INDArray> nodeSepOutput = readVars(modelName, base_dir, name, true, localTestDir);
-
-        boolean importNameWorkaround = false;
-        if(nodeSepOutput.isEmpty()){
-            //Edge case: intermediates were generated with help of import_graph_def method, which by default adds "import/" to names
-            // for some reason. https://www.tensorflow.org/api_docs/python/tf/graph_util/import_graph_def
-            //So many of earlier intermediate nodes test data were generated with filenames like "import___X..." instead of "X..."
-            name = "import____" + name;
-            nodeSepOutput = readVars(modelName, base_dir, name, true, localTestDir);
-            importNameWorkaround = true;
-        }
-
-        //required check for pattern matching as there are scopes and "*" above is a greedy match
-        Set<String> removeList = confirmPatternMatch(nodeSepOutput.keySet(), importNameWorkaround ? "import/" + varName : varName);
-        for (String toRemove : removeList) {
-            nodeSepOutput.remove(toRemove);
-        }
-        if(importNameWorkaround){
-            return nodeSepOutput.get("import/" + varName); //this *should* return a list of the indarrays for each node
-        } else {
-            return nodeSepOutput.get(varName); //this *should* return a list of the indarrays for each node
-        }
-    }
-
-    public static Set<String> confirmPatternMatch(Set<String> setOfNames, String varName) {
-        Set<String> removeList = new HashSet<>();
-        for (String name : setOfNames) {
-            if (name.equals(varName)) continue;
-            String[] splitByPeriod = name.split("\\.");
-            //not a number - maybe another variable deeper in the same scope
-            if (!NumberUtils.isNumber(splitByPeriod[splitByPeriod.length - 1])) {
-                removeList.add(name);
-            } else if (!String.join(".", Arrays.copyOfRange(splitByPeriod, 0, splitByPeriod.length - 1)).equals(varName)) {
-                removeList.add(name);
-            }
-        }
-        return removeList;
-    }
-
-
-    protected static Map<String, INDArray> readVars(String modelName, String base_dir, String pattern, boolean recursive, File localTestDir) throws IOException {
-        Map<String, INDArray> varMap = new HashMap<>();
-        String modelDir = base_dir + "/" + modelName;
-
-        // key is variable name, value is data type
-        val dtypes = new HashMap<String, DataType>();
-
-        List<Pair<Resource,Resource>> resources = new ArrayList<>();
-        if(recursive){
-            String nameRegex = pattern.replace("**.",".*\\.") + "\\.shape";
-//            File baseDir = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + "/" + modelName);
-//            baseDir.mkdirs();
-//            baseDir.deleteOnExit();
-//            new ClassPathResource(modelDir).copyDirectory(baseDir);
-
-            // checking out, if local folder declared
-            String localPath = System.getenv(TFGraphTestAllHelper.resourceFolderVar);
-            if(localPath != null && (!localPath.contains("src/main/resources") && !localPath.contains("src\\main\\resources"))){
-                localPath = FilenameUtils.concat(localPath, "src/main/resources");
-            }
-
-            // baseDir will differ, depending on run mode
-            File baseDir = localPath == null ? new File(localTestDir, "extracted/" + modelName) : new File(localPath, base_dir + "/" + modelName);
-            String[] arr = baseDir.list();
-
-            if(!baseDir.exists() || arr == null || arr.length == 0){
-                // we're skipping extraction if we're using local copy of dl4j-tests-resources
-                if (localPath == null) {
-                    baseDir.mkdirs();
-                    baseDir.deleteOnExit();
-                    String md = modelDir;
-                    if(!md.endsWith("/") && !md.endsWith("\\")){
-                        md = md + "/";
-                    }
-                    new ClassPathResource(md).copyDirectory(baseDir);
-                } else{
-                    throw new IllegalStateException("local directory declared but could not find files: " + baseDir.getAbsolutePath());
-                }
-
-            }
-
-            LinkedList<File> queue = new LinkedList<>();
-            queue.add(baseDir);
-
-            while(!queue.isEmpty()){
-                File subdir = queue.remove();
-                File[] files = subdir.listFiles();
-                if (files != null) {
-                    for (File f : files) {
-                        if (f.isDirectory()) {
-                            queue.add(f);
-                        } else {
-                            String filename = f.getName();
-                            if(filename.matches(nameRegex)){
-                                File csvFile = new File(f.getAbsolutePath().replace(".shape",".csv"));
-                                resources.add(new Pair<>(new FileSystemResource(f), new FileSystemResource(csvFile)));
-                            } else if (filename.equals("dtypes")) {
-                                List<String> stringList;
-
-                                try (val is = new BufferedInputStream(new FileInputStream(f))) {
-                                    stringList = IOUtils.readLines(is, StandardCharsets.UTF_8);
-
-                                    for (val s:stringList) {
-                                        val split = s.split("\\ ");
-
-                                        val okey = split[0].replaceAll("____", "/");
-                                        // adopt / in names
-                                        val key = modelDir + "/" + okey;
-
-                                        // parse type directly
-                                        DataType value = ArrayOptionsHelper.dataType(split[1]);
-
-                                        // adding key directly
-                                        //if (dtypes.containsKey(key))
-                                        //    throw new ND4JIllegalStateException("Specified key already exist: [" + key + "]");
-                                        //else
-
-                                        dtypes.put(key, value);
-
-                                        // adding zero output duplicate (if it doesn't exist)
-                                        if (key.endsWith(".0")) {
-                                            val nkey = key.replaceAll("\\.0$","");
-                                            if (!dtypes.containsKey(nkey)) {
-                                                dtypes.put(nkey, value);
-                                            }
-                                        } else if (key.endsWith(":0")) {
-                                            val nkey = key.replaceAll(":0$","");
-                                            if (!dtypes.containsKey(nkey)) {
-                                                dtypes.put(nkey, value);
-                                            }
-                                        }
-                                    }
-                                } catch (FileNotFoundException e) {
-                                    stringList = new ArrayList<>();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
-            ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver(new ClassPathResource(modelDir).getClassLoader());
-            Resource[] r = resolver.getResources("classpath*:" + modelDir + "/" + pattern + ".shape");
-            for(Resource res : r){
-                String fileName = res.getFilename();
-                String varPath = modelDir + "/" + fileName;
-                Resource r2 = new org.springframework.core.io.ClassPathResource(varPath.replace(".shape", ".csv"));
-                resources.add(new Pair<>(res, r2));
-            }
-
-        }
-
-//        Preconditions.checkState(!dtypes.isEmpty(), "No datatypes file was found");
-
-        val dtype = Nd4j.dataType();
-        for (int i = 0; i < resources.size(); i++) {
-            URI u = resources.get(i).getFirst().getURI();
-            String varName = u.toString();
-            int idx = varName.indexOf(modelName);
-            varName = varName.substring(idx + modelName.length()+1);    //+1 for "/"
-            varName = varName.replaceAll("____","/");
-            varName = varName.replaceAll(".placeholder.shape","");
-            varName = varName.replaceAll(".prediction.shape","");
-            varName = varName.replaceAll(".prediction_inbw.shape","");
-
-            DataType type = dtypes.get(modelDir + "/" + varName);
-
-            List<String> lines; //= FileUtils.readLines(new ClassPathResource(varPath).getFile(), Charset.forName("UTF-8"));
-            try(InputStream is = new BufferedInputStream(resources.get(i).getFirst().getInputStream())){
-                lines = IOUtils.readLines(is, StandardCharsets.UTF_8);
-            }
-            List<String> filtered = new ArrayList<>(lines.size());
-            for(String s : lines){
-                String trimmed = s.trim();
-                if(!trimmed.isEmpty()){
-                    filtered.add(trimmed);
-                }
-            }
-
-            if(type == null){
-                log.warn("DATATYPE NOT AVAILABLE FOR: {} - {}", modelName, varName);
-                //Soon: this will be an exception
-                type = DataType.FLOAT;
-            }
-
-            INDArray varValue;
-            if(filtered.size() == 0){
-                //Scalar
-                String content = IOUtils.toString(resources.get(i).getSecond().getInputStream(), StandardCharsets.UTF_8);
-                switch (type){
-                    case DOUBLE:
-                    case FLOAT:
-                    case HALF:
-                    case BFLOAT16:
-                        varValue = Nd4j.scalar(type, parseDouble(content));
-                        break;
-                    case LONG:
-                    case INT:
-                    case SHORT:
-                    case UBYTE:
-                    case BYTE:
-                    case UINT16:
-                    case UINT32:
-                    case UINT64:
-                        varValue = Nd4j.scalar(type, parseLong(content));
-                        break;
-                    case BOOL:
-                        varValue = Nd4j.scalar(parseBoolean(content));
-                        break;
-                    case UTF8:
-                        varValue = Nd4j.scalar(content);
-                        break;
-                    case COMPRESSED:
-                    case UNKNOWN:
-                    default:
-                        throw new UnsupportedOperationException("Unknown / not implemented datatype: " + type);
-                }
-            } else {
-                int[] varShape = new int[filtered.size()];
-                for( int j=0; j<filtered.size(); j++ ){
-                    varShape[j] = Integer.parseInt(filtered.get(j));
-                }
-
-                try {
-                    String content;
-                    Pair<Resource,Resource> p = resources.get(i);
-                    boolean isRef = p.getSecond().isFile() && !p.getSecond().exists();
-
-                    InputStream stream;
-                    if(isRef){
-                        //Slight hack for loading strumpf reference files
-                        File r = new StrumpfResolver().localCacheRoot();
-                        String path = p.getSecond().getFile() + StrumpfResolver.REF;
-                        File f = ResourceFile.fromFile(path).localFile(r);
-                        stream = new BufferedInputStream(new FileInputStream(f));
-                    } else {
-                        stream = new BufferedInputStream(resources.get(i).getSecond().getInputStream());
-                    }
-
-                    try(InputStream is = stream){
-                        content = String.join("\n", IOUtils.readLines(is, StandardCharsets.UTF_8));
-                    }
-
-                    if (content.isEmpty()) {
-                        //Should be zeros in shape
-                        boolean foundZero = false;
-                        for( int s : varShape){
-                            foundZero |= (s == 0);
-                        }
-                        if(foundZero){
-                            varValue = Nd4j.create(type, ArrayUtil.toLongArray(varShape));
-                        } else {
-                            throw new IllegalStateException("Empty data but non-empty shape: " + resources.get(i).getSecond());
-                        }
-                    } else {
-                        if(varShape.length == 1 && varShape[0] == 0)        //Annoyingly, some scalars have shape [0] instead of []
-                            varShape = new int[0];
-
-                        String[] cLines = content.split("\n");
-                        switch (type){
-                            case DOUBLE:
-                            case FLOAT:
-                            case HALF:
-                            case BFLOAT16:
-                                double[] dArr = new double[cLines.length];
-                                int x=0;
-                                while(x < dArr.length){
-                                    dArr[x] = parseDouble(cLines[x]);
-                                    x++;
-                                }
-                                varValue = Nd4j.createFromArray(dArr).castTo(type).reshape('c', varShape);
-                                break;
-                            case LONG:
-                            case INT:
-                            case SHORT:
-                            case UBYTE:
-                            case BYTE:
-                            case UINT16:
-                            case UINT32:
-                            case UINT64:
-                                long[] lArr = new long[cLines.length];
-                                int y=0;
-                                while(y < lArr.length){
-                                    lArr[y] = parseLong(cLines[y]);
-                                    y++;
-                                }
-                                varValue = Nd4j.createFromArray(lArr).castTo(type).reshape('c', varShape);
-                                break;
-                            case BOOL:
-                                boolean[] bArr = new boolean[cLines.length];
-                                int z=0;
-                                while(z < bArr.length){
-                                    bArr[z] = parseBoolean(cLines[z]);
-                                    z++;
-                                }
-                                varValue = Nd4j.createFromArray(bArr).reshape('c', varShape);
-                                break;
-                            case UTF8:
-                                varValue = Nd4j.create(cLines).reshape('c', varShape);
-                                break;
-                            case COMPRESSED:
-                            case UNKNOWN:
-                            default:
-                                throw new UnsupportedOperationException("Unknown / not implemented datatype: " + type);
-                        }
-                    }
-                } catch (NumberFormatException e) {
-                    log.warn("Error parsing number", e);
-                    continue;
-                }
-            }
-
-            varMap.put(varName, varValue);
-        }
-        return varMap;
-    }
 
     private static long parseLong(String line){
         line = line.trim();       //Handle whitespace

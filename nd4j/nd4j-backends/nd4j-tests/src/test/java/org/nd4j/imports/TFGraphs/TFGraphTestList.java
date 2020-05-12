@@ -83,7 +83,7 @@ public class TFGraphTestList {
         List<Object[]> out = new ArrayList<>(modelNames.length);
         for(int i=0; i<modelNames.length; i++ ) {
             String s = modelNames[i];
-            TestCase t = TFGraphUtil.getTestCase(TFGraphTestAllSameDiff.BASE_DIR, s);
+            TestCase t = TFGraphUtil.getTestCase(TFGraphTestAllSameDiff.BASE_DIR, s, MODEL_FILENAME);
 
 
             out.add(new Object[]{s, t});
@@ -107,13 +107,5 @@ public class TFGraphTestList {
 
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, MODEL_DIR, MODEL_FILENAME, executeWith,
                 TFGraphTestAllHelper.LOADER, maxRE, minAbs, printArraysDebugging);
-    }
-
-    @Test @Ignore
-    public void testAlsoIntermediate() throws IOException {
-        //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
-        File dir = testDir.newFolder();
-        Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
-        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, dir, printArraysDebugging);
     }
 }

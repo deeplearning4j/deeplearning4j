@@ -87,7 +87,7 @@ public class TF2ImportTestsSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
         for(String dir : BASE_DIRS) {
             String version = dir.replaceAll("tf_graphs/examples", "tf");
-            Map<String, TestCase> m = TFGraphUtil.getTestCases(dir, false);
+            Map<String, TestCase> m = TFGraphUtil.getTestCases(dir, false, MODEL_FILENAME);
             List<String> l = new ArrayList<>(m.keySet());
             Collections.sort(l);
             for (String s : l) {

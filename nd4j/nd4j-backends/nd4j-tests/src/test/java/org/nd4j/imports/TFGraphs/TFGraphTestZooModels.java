@@ -43,10 +43,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RunWith(Parameterized.class)
 @Slf4j
@@ -103,9 +100,8 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
     private static final String BASE_DIR = "tf_graphs/zoo_models";
     private static final String MODEL_FILENAME = "tf_model.txt";
 
-    private Map<String, INDArray> inputs;
-    private Map<String, INDArray> predictions;
     private String modelName;
+    private TestCase testCase;
     private File localTestDir;
 
     public static String getBaseModelDir(){
@@ -206,18 +202,26 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
     }
 
-    @Parameterized.Parameters(name="{2}")
-    public static Collection<Object[]> data() throws IOException {
+    @Parameterized.Parameters(name="{0}")
+    public static Collection<Object[]> data() throws Exception {
+        Map<String,TestCase> m = TFGraphUtil.getTestCases(BASE_DIR, false, MODEL_FILENAME);
+
         classTestDir.create();
         File baseDir = classTestDir.newFolder();    // new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
-        List<Object[]> params = TFGraphTestAllHelper.fetchTestParams(BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF, baseDir);
-        return params;
+
+        List<Object[]> out = new ArrayList<>();
+        List<String> l = new ArrayList<>(m.keySet());
+        Collections.sort(l);
+        for (String s : l) {
+            out.add(new Object[]{s, m.get(s), baseDir});
+        }
+
+        return out;
     }
 
-    public TFGraphTestZooModels(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName, File localTestDir) {
-        this.inputs = inputs;
-        this.predictions = predictions;
+    public TFGraphTestZooModels(String modelName, TestCase tc, File localTestDir) {
         this.modelName = modelName;
+        this.testCase = tc;
         this.localTestDir = localTestDir;
     }
 
@@ -266,6 +270,10 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         Double maxRE = 1e-3;
         Double minAbs = 1e-4;
         currentTestDir = testDir.newFolder();
+
+        Map<String,INDArray> inputs = TFGraphUtil.loadInputs(testCase);
+        Map<String,INDArray> predictions = TFGraphUtil.loadPredictions(testCase);
+
         log.info("----- SameDiff Exec: {} -----", modelName);
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.SAMEDIFF,
                 LOADER, maxRE, minAbs, false);
