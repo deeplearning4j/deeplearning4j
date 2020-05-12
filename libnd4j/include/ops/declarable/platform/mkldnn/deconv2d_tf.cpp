@@ -31,7 +31,7 @@ namespace ops       {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* gradO, NDArray* gradI,
+static void deconv2TFdBpMKLDNN(const NDArray* weights, const NDArray* gradO, NDArray* gradI,
                                     const int bS, const int iC, const int iH, const int iW, const int oC, const int oH, const int oW,
                                     const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW,
                                     const bool isNCHW, const int wFormat) {
@@ -67,21 +67,17 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
     // weights
     dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
     dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormatMkl);
-    w_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    w_user_md.data.format_desc.blocking.strides[0] = weights->strideAt(3);   // permute [kH, kW, iC, oC] -> [oC, iC, kH, kW]
-    w_user_md.data.format_desc.blocking.strides[1] = weights->strideAt(2);
-    w_user_md.data.format_desc.blocking.strides[2] = weights->strideAt(0);
-    w_user_md.data.format_desc.blocking.strides[3] = weights->strideAt(1);
+    mkldnnUtils::setBlockStrides(*weights, w_user_md, {3,2,0,1});               // permute [kH, kW, iC, oC] -> [oC, iC, kH, kW]
 
     // gradO
     dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xFormatMkl);
-    mkldnnUtils::setBlockStrides(gradO, gradO_user_md);
+    mkldnnUtils::setBlockStrides(*gradO, gradO_user_md);
 
     // gradI
     dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
     dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xFormatMkl);
-    mkldnnUtils::setBlockStrides(gradI, gradI_user_md);
+    mkldnnUtils::setBlockStrides(*gradI, gradI_user_md);
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
@@ -101,23 +97,20 @@ static void deconv2TFdBackPropMKLDNN(const NDArray* weights, const NDArray* grad
     // provide memory buffers and check whether reorder is required
 
     // weights
-    mkldnnUtils::loadDataToMklStream(weights, engine, stream, w_user_md,  op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+    mkldnnUtils::loadDataToMklStream(*weights, engine, stream, w_user_md,  op_data_bp_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
 
     // gradO
-    mkldnnUtils::loadDataToMklStream(gradO, engine, stream, gradO_user_md, op_data_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
+    mkldnnUtils::loadDataToMklStream(*gradO, engine, stream, gradO_user_md, op_data_bp_prim_desc.diff_dst_desc(), args[DNNL_ARG_DIFF_DST]);
 
     // gradI
-    auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->buffer());
-    const bool gradIReorder = op_data_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc();
-    auto gradI_mkl_mem = gradIReorder ? dnnl::memory(op_data_bp_prim_desc.diff_src_desc(), engine) : gradI_user_mem;
-    args[DNNL_ARG_DIFF_SRC] = gradI_mkl_mem;
+    auto gradI_user_mem = mkldnnUtils::loadDataToMklStream(*gradI, engine, stream, gradI_user_md, op_data_bp_prim_desc.diff_src_desc(), args[DNNL_ARG_DIFF_SRC]);
 
     // run backward data calculations
     dnnl::convolution_backward_data(op_data_bp_prim_desc).execute(stream, args);
 
     // reorder gradI if necessary
-    if (gradIReorder)
-        dnnl::reorder(gradI_mkl_mem, gradI_user_mem).execute(stream, gradI_mkl_mem, gradI_user_mem);
+    if (op_data_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc())
+        dnnl::reorder(args[DNNL_ARG_DIFF_SRC], gradI_user_mem).execute(stream, args[DNNL_ARG_DIFF_SRC], gradI_user_mem);
 
     stream.wait();
 
@@ -189,7 +182,7 @@ PLATFORM_IMPL(deconv2d_tf, ENGINE_CPU) {
     //     gradO = new NDArray(gradO->permute({0,3,1,2}));    // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
     // }
 
-    deconv2TFdBackPropMKLDNN(weights, gradO,  gradI, bS, iC, iH, iW, oC, oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, isNCHW, wFormat);
+    deconv2TFdBpMKLDNN(weights, gradO,  gradI, bS, iC, iH, iW, oC, oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, isNCHW, wFormat);
 
     // delete weights;
 

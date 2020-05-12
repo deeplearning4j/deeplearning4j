@@ -100,6 +100,8 @@ namespace sd {
 
             DECLARE_PLATFORM(xw_plus_b_bp, ENGINE_CPU);
 
+            DECLARE_PLATFORM(concat, ENGINE_CPU);
+
         }
     }
 
@@ -123,19 +125,13 @@ namespace sd {
         */
         void getDims(const NDArray* array, const int rank, dnnl::memory::dims& mklDims);
         /**
-         * This function generate memory format tag based on rank
-         * @param const array rank
+         * This function evaluate memory format tag based on array shapeInfo
+         * @param const array
          * @return memory format
          */
-        dnnl::memory::format_tag   getFormat(const int rank);
-        /**
-         * This function generate memory format tag based on rank
-         * @param const pointer to dataset
-         * @param const dataset rank
-         * @param reference to memory descriptor
-         * @return memory format
-         */
-        void setBlockStrides(const NDArray* array, dnnl::memory::desc& mklMd);
+        dnnl::memory::format_tag getFormat(const NDArray& arr);
+
+        void setBlockStrides(const NDArray& array, dnnl::memory::desc& mklMd, const std::vector<int>& permut = {});
         //////////////////////////////////////////////////////////////////////
         /**
         * This function load and reorder user memory to mkl
@@ -147,7 +143,7 @@ namespace sd {
         * @param primitive memory descriptor
         * @param dnnl arg activation enumerator
         */
-        void loadDataToMklStream(const NDArray* array, const dnnl::engine& engine, const dnnl::stream& stream, const dnnl::memory::desc& user_md, const dnnl::memory::desc& primitive_md,
+        dnnl::memory loadDataToMklStream(const NDArray& array, const dnnl::engine& engine, const dnnl::stream& stream, const dnnl::memory::desc& user_md, const dnnl::memory::desc& primitive_md,
                                 dnnl::memory& arg);
 
         /**

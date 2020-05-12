@@ -169,71 +169,43 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
     x_lstm_md = dnnl::memory::desc({sL, bS, nIn}, xType, dnnl::memory::format_tag::any);
     // x_user_md = dataFormat == 0 ? dnnl::memory::desc({sL, bS, nIn}, type, dnnl::memory::format_tag::tnc) : dnnl::memory::desc({bS, sL, nIn}, type, dnnl::memory::format_tag::ntc);
     x_user_md = dnnl::memory::desc({sL, bS, nIn}, xType, dnnl::memory::format_tag::tnc);
-    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    x_user_md.data.format_desc.blocking.strides[0] = x->stridesOf()[0];
-    x_user_md.data.format_desc.blocking.strides[1] = x->stridesOf()[1];
-    x_user_md.data.format_desc.blocking.strides[2] = x->stridesOf()[2];
+    mkldnnUtils::setBlockStrides(*x, x_user_md);
 
     // wx
     wx_lstm_md = dnnl::memory::desc({1,dirDim,nIn,4,nOut}, wType, dnnl::memory::format_tag::any);
     wx_user_md = dnnl::memory::desc({1,dirDim,nIn,4,nOut}, wType, dnnl::memory::format_tag::ldigo);
-    wx_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    wx_user_md.data.format_desc.blocking.strides[0] = Wx->stridesOf()[0];
-    wx_user_md.data.format_desc.blocking.strides[1] = Wx->stridesOf()[1];
-    wx_user_md.data.format_desc.blocking.strides[2] = Wx->stridesOf()[2];
-    wx_user_md.data.format_desc.blocking.strides[3] = Wx->stridesOf()[3];
-    wx_user_md.data.format_desc.blocking.strides[4] = Wx->stridesOf()[4];
+    mkldnnUtils::setBlockStrides(*Wx, wx_user_md);
 
     // wr
     wr_lstm_md = dnnl::memory::desc({1,dirDim,nOut,4,nOut}, wType, dnnl::memory::format_tag::any);
     wr_user_md = dnnl::memory::desc({1,dirDim,nOut,4,nOut}, wType, dnnl::memory::format_tag::ldigo);
-    wr_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    wr_user_md.data.format_desc.blocking.strides[0] = Wr->stridesOf()[0];
-    wr_user_md.data.format_desc.blocking.strides[1] = Wr->stridesOf()[1];
-    wr_user_md.data.format_desc.blocking.strides[2] = Wr->stridesOf()[2];
-    wr_user_md.data.format_desc.blocking.strides[3] = Wr->stridesOf()[3];
-    wr_user_md.data.format_desc.blocking.strides[4] = Wr->stridesOf()[4];
+    mkldnnUtils::setBlockStrides(*Wr, wr_user_md);
 
     // h
     h_lstm_md = dnnl::memory::desc({sL, bS, hDirDim*nOut}, hType, dnnl::memory::format_tag::any);
     // h_user_md = dataFormat == 0 ? dnnl::memory::desc({sL, bS, hDirDim*nOut}, type, dnnl::memory::format_tag::tnc) : dnnl::memory::desc({bS, sL, hDirDim*nOut}, type, dnnl::memory::format_tag::ntc);
     h_user_md = dnnl::memory::desc({sL, bS, hDirDim*nOut}, hType, dnnl::memory::format_tag::tnc);
-    h_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    h_user_md.data.format_desc.blocking.strides[0] = h->stridesOf()[0];
-    h_user_md.data.format_desc.blocking.strides[1] = h->stridesOf()[1];
-    h_user_md.data.format_desc.blocking.strides[2] = h->stridesOf()[2];
+    mkldnnUtils::setBlockStrides(*h, h_user_md);
 
     // b
     if(b) {
         b_lstm_md = dnnl::memory::desc({1,dirDim,4,nOut}, bType, dnnl::memory::format_tag::any);
         b_user_md = dnnl::memory::desc({1,dirDim,4,nOut}, bType, dnnl::memory::format_tag::ldgo);
-        b_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        b_user_md.data.format_desc.blocking.strides[0] = b->stridesOf()[0];
-        b_user_md.data.format_desc.blocking.strides[1] = b->stridesOf()[1];
-        b_user_md.data.format_desc.blocking.strides[2] = b->stridesOf()[2];
-        b_user_md.data.format_desc.blocking.strides[3] = b->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*b, b_user_md);
     }
 
     // hI
     if(hI) {
         hI_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::any);
         hI_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::ldnc);
-        hI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        hI_user_md.data.format_desc.blocking.strides[0] = hI->stridesOf()[0];
-        hI_user_md.data.format_desc.blocking.strides[1] = hI->stridesOf()[1];
-        hI_user_md.data.format_desc.blocking.strides[2] = hI->stridesOf()[2];
-        hI_user_md.data.format_desc.blocking.strides[3] = hI->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*hI, hI_user_md);
     }
 
     // cI
     if(cI) {
         cI_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::any);
         cI_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::ldnc);
-        cI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        cI_user_md.data.format_desc.blocking.strides[0] = cI->stridesOf()[0];
-        cI_user_md.data.format_desc.blocking.strides[1] = cI->stridesOf()[1];
-        cI_user_md.data.format_desc.blocking.strides[2] = cI->stridesOf()[2];
-        cI_user_md.data.format_desc.blocking.strides[2] = cI->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*cI, cI_user_md);
     }
 
     // hL
@@ -241,20 +213,13 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
         hL_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::any);
         hL_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
         hL_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        hL_user_md.data.format_desc.blocking.strides[0] = hL->stridesOf()[0];
-        hL_user_md.data.format_desc.blocking.strides[1] = hL->stridesOf()[1];
-        hL_user_md.data.format_desc.blocking.strides[2] = hL->stridesOf()[2];
-        hL_user_md.data.format_desc.blocking.strides[3] = hL->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*hL, hL_user_md);
     }
 
     if(cL) {
         cL_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
         cL_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
-        cL_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        cL_user_md.data.format_desc.blocking.strides[0] = cL->stridesOf()[0];
-        cL_user_md.data.format_desc.blocking.strides[1] = cL->stridesOf()[1];
-        cL_user_md.data.format_desc.blocking.strides[2] = cL->stridesOf()[2];
-        cL_user_md.data.format_desc.blocking.strides[3] = cL->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*cL, cL_user_md);
     }
 
     // lstm memory description
@@ -272,64 +237,49 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 
     // provide memory and check whether reorder is required
     // x
-    mkldnnUtils::loadDataToMklStream(x, engine, stream, x_user_md, lstm_prim_desc.src_layer_desc(), args[DNNL_ARG_SRC_LAYER]);
+    mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, lstm_prim_desc.src_layer_desc(), args[DNNL_ARG_SRC_LAYER]);
 
     // wx
-    mkldnnUtils::loadDataToMklStream(Wx, engine, stream, wx_user_md, lstm_prim_desc.weights_layer_desc(), args[DNNL_ARG_WEIGHTS_LAYER]);
+    mkldnnUtils::loadDataToMklStream(*Wx, engine, stream, wx_user_md, lstm_prim_desc.weights_layer_desc(), args[DNNL_ARG_WEIGHTS_LAYER]);
 
     // wr
-    mkldnnUtils::loadDataToMklStream(Wr, engine, stream, wr_user_md, lstm_prim_desc.weights_iter_desc(), args[DNNL_ARG_WEIGHTS_ITER]);
+    mkldnnUtils::loadDataToMklStream(*Wr, engine, stream, wr_user_md, lstm_prim_desc.weights_iter_desc(), args[DNNL_ARG_WEIGHTS_ITER]);
 
     // h
-    auto h_user_mem = dnnl::memory(h_user_md, engine, h->buffer());
-    const bool hReorder = lstm_prim_desc.dst_layer_desc() != h_user_mem.get_desc();
-    auto h_lstm_mem = hReorder ? dnnl::memory(lstm_prim_desc.dst_layer_desc(), engine) : h_user_mem;
-    args[DNNL_ARG_DST_LAYER] = h_lstm_mem;
+    auto h_user_mem = mkldnnUtils::loadDataToMklStream(*h, engine, stream, h_user_md, lstm_prim_desc.dst_layer_desc(), args[DNNL_ARG_DST_LAYER]);
 
     // b
-    if(b) {
-        mkldnnUtils::loadDataToMklStream(b, engine, stream, b_user_md, lstm_prim_desc.bias_desc(), args[DNNL_ARG_BIAS]);
-    }
+    if(b)
+        mkldnnUtils::loadDataToMklStream(*b, engine, stream, b_user_md, lstm_prim_desc.bias_desc(), args[DNNL_ARG_BIAS]);
 
     // hI
-    if(hI) {
-        mkldnnUtils::loadDataToMklStream(hI, engine, stream, hI_user_md, lstm_prim_desc.src_iter_desc(), args[DNNL_ARG_SRC_ITER]);
-    }
+    if(hI)
+        mkldnnUtils::loadDataToMklStream(*hI, engine, stream, hI_user_md, lstm_prim_desc.src_iter_desc(), args[DNNL_ARG_SRC_ITER]);
 
     // cI
-    if(cI) {
-        mkldnnUtils::loadDataToMklStream(cI, engine, stream, cI_user_md, lstm_prim_desc.src_iter_c_desc(), args[DNNL_ARG_SRC_ITER_C]);
-    }
+    if(cI)
+        mkldnnUtils::loadDataToMklStream(*cI, engine, stream, cI_user_md, lstm_prim_desc.src_iter_c_desc(), args[DNNL_ARG_SRC_ITER_C]);
 
-    bool hLReorder(false), cLReorder(false);
     dnnl::memory hL_user_mem, cL_user_mem, hL_lstm_mem, cL_lstm_mem;
 
     // hL
-    if(hL) {
-        hL_user_mem = dnnl::memory(hL_user_md, engine, hL->buffer());
-        hLReorder = lstm_prim_desc.dst_iter_desc() != hL_user_mem.get_desc();
-        hL_lstm_mem = hLReorder ? dnnl::memory(lstm_prim_desc.dst_iter_desc(), engine) : hL_user_mem;
-        args[DNNL_ARG_DST_ITER] = hL_lstm_mem;
-    }
+    if(hL)
+        hL_user_mem = mkldnnUtils::loadDataToMklStream(*hL, engine, stream, hL_user_md, lstm_prim_desc.dst_iter_desc(), args[DNNL_ARG_DST_ITER]);
 
     // cL
-    if(cL) {
-        cL_user_mem = dnnl::memory(cL_user_md, engine, cL->buffer());
-        cLReorder = lstm_prim_desc.dst_iter_c_desc() != cL_user_mem.get_desc();
-        cL_lstm_mem = cLReorder ? dnnl::memory(lstm_prim_desc.dst_iter_c_desc(), engine) : cL_user_mem;
-        args[DNNL_ARG_DST_ITER_C] = cL_lstm_mem;
-    }
+    if(cL)
+        cL_user_mem = mkldnnUtils::loadDataToMklStream(*cL, engine, stream, cL_user_md, lstm_prim_desc.dst_iter_c_desc(), args[DNNL_ARG_DST_ITER_C]);
 
     // run calculations
     lstm_forward(lstm_prim_desc).execute(stream, args);
 
     // reorder outputs if necessary
-    if (hReorder)
-        reorder(h_lstm_mem, h_user_mem).execute(stream, h_lstm_mem, h_user_mem);
-    if(hLReorder)
-        reorder(hL_lstm_mem, hL_user_mem).execute(stream, hL_lstm_mem, hL_user_mem);
-    if(cLReorder)
-        reorder(cL_lstm_mem, cL_user_mem).execute(stream, cL_lstm_mem, cL_user_mem);
+    if (lstm_prim_desc.dst_layer_desc() != h_user_mem.get_desc())
+        reorder(args[DNNL_ARG_DST_LAYER], h_user_mem).execute(stream, args[DNNL_ARG_DST_LAYER], h_user_mem);
+    if(lstm_prim_desc.dst_iter_desc() != hL_user_mem.get_desc())
+        reorder(args[DNNL_ARG_DST_ITER], hL_user_mem).execute(stream, args[DNNL_ARG_DST_ITER], hL_user_mem);
+    if(lstm_prim_desc.dst_iter_c_desc() != cL_user_mem.get_desc())
+        reorder(args[DNNL_ARG_DST_ITER_C], cL_user_mem).execute(stream, args[DNNL_ARG_DST_ITER_C], cL_user_mem);
 
     stream.wait();
 }
@@ -377,9 +327,9 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
     auto cL = retLastC   ? OUTPUT_VARIABLE(count++) : nullptr;           // cell state at last step
 
     // evaluate dimensions
-    const Nd4jLong sL   = dataFormat == 3 ?  x->sizeAt(0) : x->sizeAt(dataFormat);
-    const Nd4jLong bS   = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(-2);
-    const Nd4jLong nIn  = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(-1);
+    const Nd4jLong sL   = x->sizeAt(dataFormat);
+    const Nd4jLong bS   = dataFormat == 0 ? x->sizeAt(1) : x->sizeAt(0);
+    const Nd4jLong nIn  = x->sizeAt(2);
     const Nd4jLong nOut = Wx->sizeAt(-1) / 4;
 
     // inputs validations
@@ -435,14 +385,21 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
 
     WxR = new NDArray(Wx->reshape(Wx->ordering(), {1,dirDim,nIn,4,nOut}));
     WrR = new NDArray(Wr->reshape(Wr->ordering(), {1,dirDim,nOut,4,nOut}));
+
     if(b)
-        bR  = new NDArray(b->reshape(b->ordering(),  {1,dirDim,4,nOut}));
+        bR = new NDArray(b->reshape(b->ordering(),  {1,dirDim,4,nOut}));
+    else
+        bR = new NDArray(x->ordering(), {1,dirDim,4,nOut}, x->dataType(), x->getContext());     // already nullified
+
     if(hI)
         hIR = new NDArray(hI->reshape(hI->ordering(), {1,dirDim,bS,nOut}));
+
     if(cI)
         cIR = new NDArray(cI->reshape(cI->ordering(), {1,dirDim,bS,nOut}));
+
     if(hL)
         hLR = new NDArray(hL->reshape(hL->ordering(), {1,dirDim,bS,nOut}, false));
+
     if(cL)
         cLR = new NDArray(cL->reshape(cL->ordering(), {1,dirDim,bS,nOut}, false));
 

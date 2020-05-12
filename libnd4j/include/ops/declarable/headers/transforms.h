@@ -36,6 +36,7 @@ namespace sd {
 
         #if NOT_EXCLUDED(OP_clipbyavgnorm)
         DECLARE_CONFIGURABLE_OP(clipbyavgnorm, 1, 1, true, 1, 0);
+        DECLARE_CUSTOM_OP(clipbyavgnorm_bp, 2, 1, false, 1, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_cumsum)

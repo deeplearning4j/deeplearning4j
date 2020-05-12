@@ -54,7 +54,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_PermuteEquality_0) {
@@ -75,7 +75,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_0) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -97,7 +97,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_PermuteEquality_3) {
@@ -118,7 +118,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_PermuteEquality_4) {
@@ -139,7 +139,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_4) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_PermuteEquality_5) {
@@ -160,7 +160,7 @@ TEST_F(DeclarableOpsTests5, Test_PermuteEquality_5) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
@@ -183,7 +183,7 @@ TEST_F(DeclarableOpsTests5, Test_TTS_bp_1) {
     ASSERT_TRUE(x.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -217,7 +217,7 @@ TEST_F(DeclarableOpsTests5, Test_Boolean_diff_1) {
     auto result = op.evaluate({&x, &y});
     ASSERT_EQ(Status::OK(), result.status());
     ASSERT_EQ(result.at(0)->t<bool>(0), true);
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_SetSeed_1) {
@@ -229,7 +229,7 @@ TEST_F(DeclarableOpsTests5, Test_SetSeed_1) {
 
     ASSERT_EQ(Status::OK(), result.status());
 //    result->at(0)->printIndexedBuffer("RES SEED");
-    
+
     sd::ops::get_seed getOp;
     auto getRes = getOp.evaluate({});
     ASSERT_EQ(Status::OK(), getRes.status());
@@ -252,7 +252,7 @@ TEST_F(DeclarableOpsTests5, scatterMul_test1) {
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -270,7 +270,7 @@ TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
 //    z->printIndexedBuffer("Scatter Div");
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -288,7 +288,7 @@ TEST_F(DeclarableOpsTests5, scatterSub_test1) {
 //    z->printIndexedBuffer("Scatter Sub");
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -303,7 +303,7 @@ TEST_F(DeclarableOpsTests5, hardsigmoid_test1) {
     auto z = result.at(0);
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -319,7 +319,7 @@ TEST_F(DeclarableOpsTests5, hardsigmoid_test2) {
     auto z = result.at(0);
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -335,7 +335,7 @@ TEST_F(DeclarableOpsTests5, hardtanh_test1) {
 //    z->printIndexedBuffer("Hardtanh 2x2");
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, hardtanh_test2) {
@@ -351,7 +351,7 @@ TEST_F(DeclarableOpsTests5, hardtanh_test2) {
 //    z->printIndexedBuffer("Hardtanh_bp 2x2");
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -367,7 +367,7 @@ TEST_F(DeclarableOpsTests5, histogram_test1) {
 //    z->printIndexedBuffer("Histogram3");
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, histogram_test2) {
@@ -381,7 +381,7 @@ TEST_F(DeclarableOpsTests5, histogram_test2) {
     auto z = result.at(0);
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -396,7 +396,7 @@ TEST_F(DeclarableOpsTests5, Identity_test1) {
     auto z = result.at(0);
     ASSERT_TRUE(matrix.equalsTo(z));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -411,7 +411,7 @@ TEST_F(DeclarableOpsTests5, Identity_test2) {
     auto z = result.at(0);
     ASSERT_TRUE(z->equalsTo(eps));
 
-    
+
 }
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, Log1p_test1) {
@@ -427,7 +427,7 @@ TEST_F(DeclarableOpsTests5, Log1p_test1) {
     auto z = result.at(0);
     ASSERT_TRUE(z->equalsTo(y));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
@@ -445,7 +445,7 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -463,7 +463,7 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -483,7 +483,7 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -512,7 +512,7 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_4) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_BatchToSpace_1) {
@@ -530,7 +530,7 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_BatchToSpace_2) {
@@ -547,7 +547,7 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -568,7 +568,7 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -590,7 +590,7 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_4) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -607,7 +607,7 @@ TEST_F(DeclarableOpsTests5, eye_test1) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -623,7 +623,7 @@ TEST_F(DeclarableOpsTests5, eye_test2) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -640,7 +640,7 @@ TEST_F(DeclarableOpsTests5, eye_test3) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -656,7 +656,7 @@ TEST_F(DeclarableOpsTests5, eye_test4) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -668,7 +668,7 @@ TEST_F(DeclarableOpsTests5, eye_test5) {
     auto z = result.at(0);
     ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -688,7 +688,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test1) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -708,7 +708,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test2) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -727,7 +727,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test3) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -746,7 +746,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test4) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -764,7 +764,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test5) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -783,7 +783,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test6) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -802,7 +802,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test7) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -819,7 +819,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test8) {
 
     ASSERT_EQ(e, *z);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, gatherNd_test9) {
@@ -840,7 +840,7 @@ TEST_F(DeclarableOpsTests5, gatherNd_test9) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -885,7 +885,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test1) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -904,7 +904,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test2) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -923,7 +923,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test3) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -942,7 +942,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test4) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -961,7 +961,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test5) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-	
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -980,7 +980,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test6) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1000,7 +1000,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test7) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1020,7 +1020,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test8) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1040,7 +1040,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test9) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-	
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1060,7 +1060,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test10) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1080,7 +1080,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test11) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1100,7 +1100,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test12) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1120,7 +1120,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test13) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1137,7 +1137,7 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test14) {
 
     ASSERT_EQ(e, *z);
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1176,7 +1176,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_0) {
     for (int cases = 0; cases < 100; ++cases) {
         op.execute({&x}, std::vector<NDArray*>{v, i}, {}, {1, 0}, {}); // without sorting
     }
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1215,7 +1215,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_1) {
     for (int cases = 0; cases < 100; ++cases) {
         op.execute({&x}, std::vector<NDArray*>{v, i}, {}, {1, 0}, {}); // without sorting
     }
-    
+
 }
 
 ///////////////////////////////////////////////////////////
@@ -1264,7 +1264,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_2) {
     ASSERT_TRUE(expI.isSameShape(i));
     ASSERT_TRUE(expI.equalsTo(i));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_TopK_3) {
@@ -1314,7 +1314,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3) {
     ASSERT_TRUE(expI.isSameShape(i));
     ASSERT_TRUE(expI.equalsTo(i));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_TopK_3_unsorted) {
@@ -1353,7 +1353,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3_unsorted) {
     ASSERT_TRUE(expI.isSameShape(i));
     ASSERT_TRUE(expI.equalsTo(i));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1377,7 +1377,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_4) {
     ASSERT_TRUE(expI.isSameShape(i));
     ASSERT_TRUE(expI.equalsTo(i));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1401,7 +1401,7 @@ TEST_F(DeclarableOpsTests5, Test_TopK_5) {
     ASSERT_TRUE(expI.isSameShape(i));
     ASSERT_TRUE(expI.equalsTo(i));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////
@@ -1440,7 +1440,7 @@ TEST_F(DeclarableOpsTests5, Test_Moments_1) {
     ASSERT_NEAR(expMean, v->e<double>(0), inf);
     ASSERT_NEAR(expDeviation, d->e<double>(0), inf);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_Moments_2) {
@@ -1470,7 +1470,7 @@ TEST_F(DeclarableOpsTests5, Test_Moments_2) {
     ASSERT_TRUE(v->equalsTo(&expV));
     ASSERT_TRUE(d->equalsTo(&expD));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_Moments_3) {
@@ -1504,7 +1504,7 @@ TEST_F(DeclarableOpsTests5, Test_Moments_3) {
     ASSERT_TRUE(v->equalsTo(&expV));
     ASSERT_TRUE(d->equalsTo(&expD));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, Test_Moments_4) {
@@ -1537,7 +1537,7 @@ TEST_F(DeclarableOpsTests5, Test_Moments_4) {
     ASSERT_TRUE(v->equalsTo(&expV));
     ASSERT_TRUE(d->equalsTo(&expD));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1558,7 +1558,7 @@ TEST_F(DeclarableOpsTests5, trace_test1) {
     // output->printIndexedBuffer("OUT TRACE");
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1576,7 +1576,7 @@ TEST_F(DeclarableOpsTests5, trace_test2) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1594,7 +1594,7 @@ TEST_F(DeclarableOpsTests5, trace_test3) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1612,7 +1612,7 @@ TEST_F(DeclarableOpsTests5, trace_test4) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1630,7 +1630,7 @@ TEST_F(DeclarableOpsTests5, trace_test5) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1653,7 +1653,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test1) {
     ASSERT_TRUE(!input.equalsTo(output));
     ASSERT_TRUE(!haveZeros);
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1670,7 +1670,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test2) {
     ASSERT_TRUE(input.isSameShape(output));
     ASSERT_TRUE(input.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1693,7 +1693,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test3) {
     ASSERT_TRUE(!input.equalsTo(output));
     ASSERT_TRUE(!haveZeros);
 
-    
+
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, random_shuffle_test04) {
@@ -1714,7 +1714,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test04) {
     //ASSERT_TRUE(!input.equalsTo(output));
     ASSERT_TRUE(!haveZeros);
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1736,7 +1736,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
     //ASSERT_TRUE(!input.equalsTo(output));
     ASSERT_TRUE(!haveZeros);
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1759,7 +1759,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test5) {
     ASSERT_TRUE(!input.equalsTo(output));
     ASSERT_TRUE(!haveZeros);
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1782,7 +1782,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test6) {
     ASSERT_TRUE(!input.equalsTo(output));
     ASSERT_TRUE(!haveZeros);
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1800,7 +1800,7 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test7) {
     ASSERT_TRUE(input.isSameShape(output));
     ASSERT_TRUE(input.equalsTo(output));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -1835,7 +1835,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_1) {
 
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, EmbeddingLookup_2) {
@@ -1871,7 +1871,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_2) {
 
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
@@ -1912,7 +1912,7 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
 
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 /* @Test
     public void testDynamicPartition(){
@@ -1956,7 +1956,7 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_01) {
         ASSERT_TRUE(exp[e].equalsTo(output));
     }
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
@@ -1995,7 +1995,7 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
         ASSERT_TRUE(exp[e].equalsTo(output));
     }
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2024,7 +2024,7 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
         ASSERT_TRUE(exp[e].equalsTo(output));
     }
 
-    
+
 }
 
 
@@ -2062,7 +2062,7 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_3) {
         }
     }
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, DynamicStitch_empty_1) {
@@ -2078,7 +2078,7 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_empty_1) {
     auto result = op.evaluate({&i0, &i1, &i2, &d0, &d1, &d2}, {}, {});
     ASSERT_EQ(Status::OK(), result.status());
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, DynamicStitch_empty_2) {
@@ -2094,7 +2094,7 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_empty_2) {
     auto result = op.evaluate({&i0, &i1, &i2, &d0, &d1, &d2}, {}, {});
     ASSERT_EQ(Status::OK(), result.status());
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2119,7 +2119,7 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_1) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2148,7 +2148,7 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_2) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2177,7 +2177,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test1) {
     ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
     ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2206,7 +2206,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test2) {
     ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
     ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2235,7 +2235,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test3) {
     ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
     ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2270,7 +2270,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test4) {
     ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
     ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2305,7 +2305,7 @@ TEST_F(DeclarableOpsTests5, fusedBatchNorm_test5) {
     ASSERT_TRUE(expBatchMean.isSameShape(batchMean));
     ASSERT_TRUE(expBatchVar.isSameShape(batchVar));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2324,7 +2324,7 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test1) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2343,7 +2343,7 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test2) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2362,7 +2362,7 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test3) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2382,7 +2382,7 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test4) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -2400,7 +2400,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_1) {
     ASSERT_TRUE(res.at(0)->isScalar());
     ASSERT_EQ(res.at(0)->e<double>(0), 0.25);
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2415,7 +2415,7 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_2) {
     ASSERT_TRUE(res.at(0)->isScalar());
     ASSERT_EQ(res.at(0)->e<double>(0), 0.375);
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2430,8 +2430,9 @@ TEST_F(DeclarableOpsTests5, ZeroFraction_3) {
     ASSERT_TRUE(res.at(0)->isScalar());
     ASSERT_EQ(res.at(0)->e<double>(0), 0.375);
 
-    
+
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, XWPlusB_1) {
 
@@ -2451,6 +2452,7 @@ TEST_F(DeclarableOpsTests5, XWPlusB_1) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 }
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, XWPlusB_2) {
 
@@ -2591,7 +2593,7 @@ TEST_F(DeclarableOpsTests5, StopGradient_1) {
     ASSERT_TRUE(x.isSameShape(output));
     ASSERT_TRUE(x.equalsTo(output));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2614,7 +2616,7 @@ TEST_F(DeclarableOpsTests5, StopGradient_2) {
     ASSERT_TRUE(x.isSameShape(output));
     ASSERT_TRUE(x.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2631,7 +2633,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test1) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2648,7 +2650,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test2) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2665,7 +2667,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test3) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 
 }
 
@@ -2683,7 +2685,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test5) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2700,7 +2702,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test6) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2717,7 +2719,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test7) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2734,7 +2736,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test8) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2751,7 +2753,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test9) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2768,7 +2770,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test10) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2785,7 +2787,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test11) {
     ASSERT_TRUE(expOutput.isSameShape(z));
     ASSERT_TRUE(expOutput.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2804,7 +2806,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_test12) {
         ASSERT_TRUE(expOutput.isSameShape(z));
         ASSERT_TRUE(expOutput.equalsTo(z, 1e-4));
 
-        
+
     }
 }
 
@@ -2823,7 +2825,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_bp_test1) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2841,7 +2843,7 @@ TEST_F(DeclarableOpsTests5, log_softmax_bp_test2) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2871,7 +2873,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_1) {
 
     ASSERT_EQ(output->e<double>(0), exp);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, L2_Loss_2) {
@@ -2886,7 +2888,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_2) {
 
     ASSERT_EQ(e, *z);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests5, L2_Loss_3) {
@@ -2918,7 +2920,7 @@ TEST_F(DeclarableOpsTests5, LogPoissonLoss_1) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2939,7 +2941,7 @@ TEST_F(DeclarableOpsTests5, LogPoissonLoss_2) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2991,7 +2993,7 @@ TEST_F(DeclarableOpsTests5, NormalizeMoments_1) {
     ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
     ASSERT_TRUE(expDeviance.equalsTo(outputDeviance));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3042,7 +3044,7 @@ TEST_F(DeclarableOpsTests5, NormalizeMoments_2) {
     ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
     ASSERT_TRUE(expDeviance.equalsTo(outputDeviance));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3093,6 +3095,6 @@ TEST_F(DeclarableOpsTests5, NormalizeMoments_3) {
     ASSERT_TRUE(expMeans.isSameShape(outputDeviance));
     ASSERT_TRUE(expDeviance.equalsTo(outputDeviance));
 
-    
+
 }
 

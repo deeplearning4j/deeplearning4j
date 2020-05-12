@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(mergemaxindex, -1, 1, false, 0, 0) {
     auto output = OUTPUT_VARIABLE(0);
 
     std::vector<const NDArray*> inArrs(block.width());
-    
+
     for(int i = 0; i < block.width(); ++i)
         inArrs[i] = INPUT_VARIABLE(i);
 
@@ -46,7 +46,8 @@ DECLARE_SYN(MergeMaxIndex, mergemaxindex);
 
     DECLARE_TYPES(mergemaxindex) {
         getOpDescriptor()
-                ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS});
+                ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
+                ->setAllowedOutputTypes({ALL_INDICES});
     }
 }
 DECLARE_SHAPE_FN(mergemaxindex) {

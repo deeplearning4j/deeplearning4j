@@ -210,14 +210,10 @@ namespace helpers {
     }
 
     //////////////////////////////////////////////////////////////////////////
-    void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp) {
-        // we need to reverse axis only if that's new op
-        std::vector<int> dimensions = isBackProp ? ShapeUtils::evalDimsToExclude(input->rankOf(), *intArgs) : *intArgs;
-        std::vector<int> axis = ShapeUtils::evalDimsToExclude(input->rankOf(), dimensions);
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+    void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs) {
 
-
+        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), *intArgs);
+        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), *intArgs);
 
         NDArray::prepareSpecialUse({output}, {input});
 

@@ -193,13 +193,10 @@ static void reverseSequence_(sd::LaunchContext * context, const NDArray* input, 
     }
 
 //////////////////////////////////////////////////////////////////////////
-void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs, bool isBackProp) {
+void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs) {
 
-    // we need to reverse axis only if that's new op
-    std::vector<int> dimensions = isBackProp ? ShapeUtils::evalDimsToExclude(input->rankOf(), *intArgs) : *intArgs;
-
-    auto listOut = output->allTensorsAlongDimension(dimensions);
-    auto listIn  = input->allTensorsAlongDimension(dimensions);
+    auto listOut = output->allTensorsAlongDimension(*intArgs);
+    auto listIn  = input->allTensorsAlongDimension(*intArgs);
 
     NDArray *subArrIn, *subArrOut;
 
