@@ -231,30 +231,34 @@ if(SD_CUDA)
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
         endif()
 
-		add_library(nd4jobj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES}
+		add_library(samediff_obj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES}
                 ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                 ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES})
-
-        # Don't output dynamic linked lib when  a static lib build is specified unless the tests are built
-        if(NOT SD_STATIC_LIB OR SD_BUILD_TESTS)
-            add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:nd4jobj>)
-        endif()
-
 
         if (WIN32)
             message("MSVC runtime for library: ${MSVC_RT_LIB}")
         endif()
 
-        # static library is built only if we're going to build tests, skip otherwise
-        if (SD_BUILD_TESTS OR SD_STATIC_LIB)
-            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
+        # build shared library by default or when it's explicitly requested
+        if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
+            add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
+        endif()
+
+        if (SD_STATIC_LIB AND SD_SHARED_LIB)
+            # if both static and shared library are going to be built - static library will have special suffix
+            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:samediff_obj>)
             set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
             install(TARGETS ${SD_LIBRARY_NAME}static  DESTINATION .)
+        elseif(SD_STATIC_LIB)
+            # if we only build static library - use this name
+            add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
+            set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME}  DESTINATION .)
         endif()
 
         # on windows we want to make sure we use MT or MD, but since we use it in one lib, we must use it everywhere to avoid conflicts
-        set_property(TARGET nd4jobj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+        set_property(TARGET samediff_obj PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
         set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
         if(WIN32)
@@ -324,20 +328,28 @@ elseif(SD_CPU)
 
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
-    add_library(nd4jobj OBJECT ${LEGACY_SOURCES}
+    add_library(samediff_obj OBJECT ${LEGACY_SOURCES}
             ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
             ${OPS_SOURCES} ${PERF_SOURCES})
     if(IOS)
-        add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:nd4jobj>)
+        add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
     else()
-        # static library is built only if we're going to build tests, skip otherwise
-        if (SD_BUILD_TESTS OR SD_STATIC_LIB)
-            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:nd4jobj>)
+        # build shared library by default or when it's explicitly requested
+        if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
+            add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
         endif()
 
-       if(SD_BUILD_TESTS OR NOT SD_STATIC_LIB)
-                add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:nd4jobj>)
+        if (SD_STATIC_LIB AND SD_SHARED_LIB)
+            # if both static and shared library are going to be built - static library will have special suffix
+            add_library(${SD_LIBRARY_NAME}static STATIC $<TARGET_OBJECTS:samediff_obj>)
+            set_property(TARGET ${SD_LIBRARY_NAME}static PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME}static  DESTINATION .)
+        elseif(SD_STATIC_LIB)
+            # if we only build static library - use this name
+            add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
+            set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
+            install(TARGETS ${SD_LIBRARY_NAME}  DESTINATION .)
         endif()
     endif()
 
@@ -350,7 +362,7 @@ elseif(SD_CPU)
     if ("${SD_ALL_OPS}" AND "${SD_BUILD_MINIFIER}")
         message(STATUS "Building minifier...")
         add_executable(minifier ../minifier/minifier.cpp ../minifier/graphopt.cpp)
-        target_link_libraries(minifier ${SD_LIBRARY_NAME}static ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${MKLDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+        target_link_libraries(minifier samediff_obj ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${MKLDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES})
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
