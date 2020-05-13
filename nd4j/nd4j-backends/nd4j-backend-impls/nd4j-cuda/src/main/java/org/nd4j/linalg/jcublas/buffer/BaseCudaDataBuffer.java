@@ -1630,7 +1630,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             setIndexer(ShortIndexer.create((ShortPointer) pointer));
         } else if (t == DataType.UINT32) {
             pointer = new PagedPointer(cptr, length).asIntPointer();
-            setIndexer(IntIndexer.create((IntPointer) pointer));
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
         } else if (t == DataType.INT) {
             pointer = new PagedPointer(cptr, length).asIntPointer();
             setIndexer(IntIndexer.create((IntPointer) pointer));
@@ -1699,6 +1699,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         indexer = ShortIndexer.create((ShortPointer) pointer);
                         break;
                     case UINT32:
+                        pointer = nPtr.asIntPointer();
+                        indexer = UIntIndexer.create((IntPointer) pointer);
+                        break;
                     case INT:
                         pointer = nPtr.asIntPointer();
                         indexer = IntIndexer.create((IntPointer) pointer);
@@ -1750,6 +1753,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     indexer = ShortIndexer.create((ShortPointer) pointer);
                     break;
                 case UINT32:
+                    pointer = nPtr.asIntPointer();
+                    indexer = UIntIndexer.create((IntPointer) pointer);
+                    break;
                 case INT:
                     pointer = nPtr.asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);

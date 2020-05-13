@@ -411,7 +411,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             setIndexer(ShortIndexer.create((ShortPointer) pointer));
         } else if (t == DataType.UINT32) {
             pointer = new PagedPointer(cptr, length).asIntPointer();
-            setIndexer(IntIndexer.create((IntPointer) pointer));
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
         } else if (t == DataType.INT) {
             pointer = new PagedPointer(cptr, length).asIntPointer();
             setIndexer(IntIndexer.create((IntPointer) pointer));
@@ -514,7 +514,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             attached = true;
             parentWorkspace = workspace;
 
-            // FIXME: need unsigned indexer here
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new IntPointer(length());
             setIndexer(UIntIndexer.create((IntPointer) pointer));
 
@@ -882,6 +881,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                     indexer = ShortIndexer.create((ShortPointer) pointer);
                     break;
                 case UINT32:
+                    pointer = nPtr.asIntPointer();
+                    indexer = UIntIndexer.create((IntPointer) pointer);
+                    break;
                 case INT:
                     pointer = nPtr.asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
@@ -932,6 +934,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                     indexer = ShortIndexer.create((ShortPointer) pointer);
                     break;
                 case UINT32:
+                    pointer = nPtr.asIntPointer();
+                    indexer = UIntIndexer.create((IntPointer) pointer);
+                    break;
                 case INT:
                     pointer = nPtr.asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
