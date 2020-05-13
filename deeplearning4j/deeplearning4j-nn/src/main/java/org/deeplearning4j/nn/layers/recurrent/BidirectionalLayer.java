@@ -599,4 +599,9 @@ public class BidirectionalLayer implements RecurrentLayer {
             return ret;
         }
     }
+
+    @Override
+    public void close(){
+        //No-op for individual layers
+    }
 }

@@ -58,7 +58,7 @@ public class ParallelWrapperTest extends BaseDL4JTest {
 
         // for GPU you usually want to have higher batchSize
         int batchSize = 128;
-        int nEpochs = 2;
+        int nEpochs = 5;
         int seed = 123;
 
         log.info("Load data....");

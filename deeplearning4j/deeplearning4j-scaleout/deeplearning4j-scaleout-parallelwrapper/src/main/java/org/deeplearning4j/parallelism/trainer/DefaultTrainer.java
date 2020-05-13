@@ -450,6 +450,14 @@ public class DefaultTrainer extends Thread implements Trainer {
         } finally {
             log.debug("Terminating all workspaces for trainer_{}", threadId);
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+
+            if (!onRootModel) {
+                replicatedModel.close();
+            }
+
+            // let's try to enforce GC to actually clean all references now
+            replicatedModel.clear();
+            System.gc();
             isStopped.set(true);
         }
     }

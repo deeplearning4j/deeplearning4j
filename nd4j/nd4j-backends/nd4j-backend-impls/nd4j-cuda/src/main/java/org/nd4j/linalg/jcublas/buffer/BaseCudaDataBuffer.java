@@ -85,6 +85,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public OpaqueDataBuffer getOpaqueDataBuffer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return ptrDataBuffer;
     }
 
@@ -104,7 +107,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, this.type,  pointer, specialPointer);
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, this.type.width() * length);
 
-        Nd4j.getDeallocatorService().pickObject(this);
+        Nd4j.getDeallocatorService().pickObject(this);if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
     }
 
     /**
@@ -473,6 +477,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(@NonNull DataBuffer underlyingBuffer, long length, long offset) {
+        if (underlyingBuffer.wasClosed())
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         //this(length, underlyingBuffer.getElementSize(), offset);
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
         initTypeAndSize();

@@ -1957,6 +1957,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean wasClosed() {
+        if (wrappedDataBuffer != null && wrappedDataBuffer != this)
+            return wrappedDataBuffer.wasClosed();
+
         return released;
     }
 

@@ -61,6 +61,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
     public OpaqueDataBuffer getOpaqueDataBuffer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return ptrDataBuffer;
     }
 

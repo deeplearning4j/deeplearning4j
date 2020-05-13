@@ -1055,4 +1055,9 @@ public class BarnesHutTsne implements Model {
 
     }
 
+
+    @Override
+    public void close(){
+        //No-op
+    }
 }

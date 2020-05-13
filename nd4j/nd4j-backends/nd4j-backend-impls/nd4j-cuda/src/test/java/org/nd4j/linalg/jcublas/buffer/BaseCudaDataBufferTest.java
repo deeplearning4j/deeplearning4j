@@ -198,4 +198,27 @@ public class BaseCudaDataBufferTest extends BaseND4JTest {
         // there shoul dbe no exceptions during execution
         assertEquals(Nd4j.getAffinityManager().getNumberOfDevices(), cnt.get());
     }
+
+    @Test
+    public void testClose_1() {
+        val x = Nd4j.createFromArray(1, 2, 3);
+
+        x.close();
+
+        assertTrue(x.wasClosed());
+        assertTrue(x.data().wasClosed());
+    }
+
+    @Test
+    public void testClose_2() {
+        val x = Nd4j.create(DataType.FLOAT, 5, 6);
+        val row = x.getRow(1);
+        x.close();
+
+        assertTrue(x.wasClosed());
+        assertTrue(x.data().wasClosed());
+
+        assertTrue(row.wasClosed());
+        assertTrue(row.data().wasClosed());
+    }
 }

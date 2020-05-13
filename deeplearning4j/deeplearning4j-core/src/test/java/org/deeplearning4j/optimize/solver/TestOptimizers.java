@@ -1035,5 +1035,9 @@ public class TestOptimizers extends BaseDL4JTest {
         public boolean updaterDivideByMinibatch(String paramName) {
             return true;
         }
+
+        @Override
+        public void close(){
+        }
     }
 }

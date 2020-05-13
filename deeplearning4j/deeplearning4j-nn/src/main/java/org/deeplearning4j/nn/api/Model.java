@@ -233,4 +233,7 @@ public interface Model {
      * Apply any constraints to the model
      */
     void applyConstraints(int iteration, int epoch);
+
+
+    void close();
 }

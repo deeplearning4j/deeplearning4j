@@ -329,4 +329,9 @@ public abstract class BaseWrapperLayer implements Layer {
     public boolean updaterDivideByMinibatch(String paramName) {
         return underlying.updaterDivideByMinibatch(paramName);
     }
+
+    @Override
+    public void close(){
+        //No-op for individual layers
+    }
 }
