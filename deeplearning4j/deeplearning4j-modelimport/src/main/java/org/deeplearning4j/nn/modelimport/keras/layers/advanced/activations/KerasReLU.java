@@ -63,10 +63,10 @@ public class KerasReLU extends KerasLayer {
         double negativeSlope = 0.0;
         double threshold = 0.0;
         if (innerConfig.containsKey("negative_slope")) {
-            negativeSlope = (double) innerConfig.get("negative_slope");
+            negativeSlope = ((Number)innerConfig.get("negative_slope")).doubleValue();
         }
         if (innerConfig.containsKey("threshold")) {
-            threshold = (double) innerConfig.get("threshold");
+            threshold = ((Number)innerConfig.get("threshold")).doubleValue();
         }
 
         this.layer = new ActivationLayer.Builder().name(this.layerName)
