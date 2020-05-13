@@ -128,8 +128,6 @@ public class KerasInput extends KerasLayer {
                 break;
             case 2:
                 if(this.dimOrder != null) {
-                    System.out.println("Dim order: " + this.dimOrder);
-                    System.out.println("Input shape: " + ArrayUtils.toString(this.inputShape));
                     switch (this.dimOrder) {
                         case TENSORFLOW:    //NWC == channels_last
                             myInputType = new InputType.InputTypeRecurrent(this.inputShape[1], this.inputShape[0], RNNFormat.NWC);
