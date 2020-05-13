@@ -103,7 +103,7 @@ public class TFOpLayerImpl extends AbstractLayer<TFOpLayer> {
                 String dtype = inputDataTypes.get(inpName);
                 graph = "node{\nname: \"" + inpName + "\"\nop: \"Placeholder\"\nattr{\nkey: \"dtype\"\n value {\n type: " + dtype + "}\n}\n}\n" + graph;
             }
-            log.info(graph);
+            //log.info(graph);
             GraphDef.Builder graphDefBuilder = GraphDef.newBuilder();
             TextFormat.getParser().merge(graph, graphDefBuilder);
             GraphDef graphDef = graphDefBuilder.build();
