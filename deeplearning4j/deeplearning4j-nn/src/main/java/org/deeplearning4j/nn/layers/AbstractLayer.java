@@ -428,4 +428,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         //Majority of params's gradients should be... Exception: batch norm mean/variance estimate
         return true;
     }
+
+    @Override
+    public void close(){
+        //No-op for individual layers
+    }
 }

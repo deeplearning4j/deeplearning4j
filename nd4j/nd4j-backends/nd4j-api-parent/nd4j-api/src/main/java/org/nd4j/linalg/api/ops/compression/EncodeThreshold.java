@@ -41,6 +41,12 @@ public class EncodeThreshold extends DynamicCustomOp {
         this(updates, threshold, Integer.MAX_VALUE);
     }
 
+    public EncodeThreshold(@NonNull INDArray updates, @NonNull INDArray encoded, float threshold, @NonNull Integer boundary) {
+        this(updates, threshold, boundary);
+
+        addOutputArgument(updates, encoded);
+    }
+
     public EncodeThreshold(@NonNull INDArray updates, float threshold, @NonNull Integer boundary) {
         addInputArgument(updates);
 

@@ -20,6 +20,8 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.DummyBlockDataSetIterator;
@@ -688,6 +690,7 @@ public class ParallelWrapper implements AutoCloseable {
         protected Supplier<INDArray> updaterParamsSupplier;
         protected ThresholdAlgorithm thresholdAlgorithm;
         protected ResidualPostProcessor residualPostProcessor;
+        protected Long encoderMemory = -1L;
 
         protected GradientsAccumulator accumulator;
 
@@ -873,6 +876,19 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         /**
+         * This method allows to define amount of temporary memory that will be used for gradients sharing.
+         * Typically it's safe to keep default value.
+         *
+         * Default value: -1, amount of temporary memory will be calculated automatically
+         * @param numBytes number of bytes to be used
+         * @return
+         */
+        public Builder temporaryMemory(@NonNull Long numBytes) {
+            this.encoderMemory = numBytes;
+            return this;
+        }
+
+        /**
          * Set the residual post processor algorithm. Not used for single machine training (only for PW used in a
          * distributed setting), and should not be set by users in most cases.
          * @param residualPostProcessor Residual post processor to use
@@ -907,11 +923,23 @@ public class ParallelWrapper implements AutoCloseable {
                 }
                     break;
                 case SHARED_GRADIENTS: {
-                    Preconditions.checkState(thresholdAlgorithm != null, "Cannot use SHARED_GRADIENTS training mode without setting a threshold algorithm");
+                    if (thresholdAlgorithm == null)
+                        thresholdAlgorithm = new AdaptiveThresholdAlgorithm();
+
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
                         log.info("Creating new GradientsAccumulator instance with default threshold of [5e-4]");
-                        this.accumulator = new EncodedGradientsAccumulator(workers, thresholdAlgorithm, residualPostProcessor,  false);
+                        val numParams = model.numParams();
+
+                        // we're limiting max size of updates for Sparse encoding to the size of bitmap encoded message
+                        val maxUpdate = (int) (numParams / 16 + 5);
+
+                        // memory sie in number of bytes
+                        long memorySize = encoderMemory == null || encoderMemory < 0
+                                            ? maxUpdate * 4 * (workers + 3)
+                                            : encoderMemory;
+
+                        this.accumulator = new EncodedGradientsAccumulator(workers, new EncodingHandler(thresholdAlgorithm, residualPostProcessor, maxUpdate, false), memorySize, workers + 2, Integer.MAX_VALUE, false);
                     }
                 }
                     break;

@@ -71,7 +71,13 @@ public class CudaMemoryManager extends BasicMemoryManager {
             return ptr;//allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
         } else if (kind == MemoryKind.DEVICE) {
             val ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, 0, 0);
-            //log.info("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            log.trace("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+            val ec = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
+            if (ec != 0) {
+                val em = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage();
+                throw new RuntimeException(em + "; Bytes: [" + bytes + "]; Error code [" + ec + "]; DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "]");
+            }
 
             if (ptr == null)
                 throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "] memory");

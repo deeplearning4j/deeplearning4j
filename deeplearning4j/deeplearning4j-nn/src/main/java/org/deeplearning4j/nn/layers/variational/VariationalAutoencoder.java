@@ -1144,4 +1144,9 @@ public class VariationalAutoencoder implements Layer {
             }
         }
     }
+
+    @Override
+    public void close(){
+        //No-op for individual layers
+    }
 }

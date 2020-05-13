@@ -163,12 +163,11 @@ namespace sd {
                 // here we just calculate number of sumBlock arrays
                 do {
                     int numPrefixBlocks = sd::math::nd4j_max<int>(1, sd::math::nd4j_ceil<float, int>((float) numElts / (2.0f * prefixThreads)));
-                    if (numBlocks > 1) {
+                    if (numPrefixBlocks > 1) {
                         level++;
                     }
                     numElts = numPrefixBlocks;
                 } while (numElts > 1);
-
 
 
                 std::vector<NDArray> tempArrays(level);
@@ -181,13 +180,13 @@ namespace sd {
                     int numPrefixBlocks = sd::math::nd4j_max<int>(1, sd::math::nd4j_ceil<float, int>((float) numElts / (2.0f * prefixThreads)));
                     if (numPrefixBlocks > 1) {
                         tempArrays[level] = std::move(NDArrayFactory::create<int>('c', {numPrefixBlocks}));
-                        pointers[level] = tempArrays[level++].specialBuffer();
+                        pointers[level] = tempArrays[level].specialBuffer();;
+                        level++;
                     }
                     numElts = numPrefixBlocks;
                 } while (numElts > 1);
 
                 PointersManager pm(LaunchContext::defaultContext(), "thresholdEncode");
-                auto dptr = pm.replicatePointer(pointers.data(), pointers.size() * 8);
                 auto offsets = NDArrayFactory::create<int>('c', {numBlocks});
 
                 // we want to check, if we're hiting external limit on number of encoded elements
@@ -200,7 +199,7 @@ namespace sd {
                 NDArray::prepareSpecialUse({}, {&encoded, &updates});
 
                 // filling offsets
-                encodeThresholdP2Int_(reinterpret_cast<void **>(dptr),
+                encodeThresholdP2Int_(reinterpret_cast<void **>(pointers.data()),
                                       reinterpret_cast<int*>(blocks.specialBuffer()),
                                       numBlocks,
                                       reinterpret_cast<int*>(offsets.specialBuffer()));

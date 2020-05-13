@@ -4824,4 +4824,28 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (cg.getUpdater() != null && cg.getUpdater(false).getStateViewArray() != null)
             this.getUpdater(true).getStateViewArray().assign(cg.getUpdater(false).getStateViewArray());
     }
+
+    /**
+     * Close the network and deallocate all native memory, including: parameters, gradients, updater memory and workspaces
+     * Note that the network should not be used again for any purpose after it has been closed
+     */
+    @Override
+    public void close(){
+        //Close the INDArray and dealloc
+        if(flattenedParams.closeable())
+            flattenedParams.close();
+
+        if(flattenedGradients != null && flattenedGradients.closeable())
+            flattenedGradients.close();
+
+        Updater u = getUpdater(false);
+        if(u != null && u.getStateViewArray() != null) {
+            INDArray state = u.getStateViewArray();
+            if(state.closeable())
+                state.close();
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+    }
 }

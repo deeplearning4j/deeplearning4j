@@ -8411,6 +8411,76 @@ public class Nd4jTestsC extends BaseNd4jTest {
             INDArray arr = Nd4j.create(db, new long[]{lengthElements});
 
             arr.toStringFull();
+            arr.toString();
+
+            for(DataType dt2 : DataType.values()) {
+                if (dt2 == DataType.COMPRESSED || dt2 == DataType.UTF8 || dt2 == DataType.UNKNOWN)
+                    continue;
+                INDArray a2 = arr.castTo(dt2);
+                a2.toStringFull();
+            }
+        }
+    }
+
+    @Test
+    public void testCreateBufferFromByteBufferViews(){
+
+        for(DataType dt : DataType.values()){
+            if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
+                continue;
+//            System.out.println(dt);
+
+            int lengthBytes = 256;
+            int lengthElements = lengthBytes / dt.width();
+            ByteBuffer bb = ByteBuffer.allocateDirect(lengthBytes);
+
+            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements, 0);
+            INDArray arr = Nd4j.create(db, new long[]{lengthElements/2, 2});
+
+            arr.toStringFull();
+
+            INDArray view = arr.get(NDArrayIndex.all(), NDArrayIndex.point(0));
+            INDArray view2 = arr.get(NDArrayIndex.point(1), NDArrayIndex.all());
+
+            view.toStringFull();
+            view2.toStringFull();
+        }
+    }
+
+    @Test
+    public void testTypeCastingToString(){
+
+        for(DataType dt : DataType.values()) {
+            if (dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
+                continue;
+            INDArray a1 = Nd4j.create(dt, 10);
+            for(DataType dt2 : DataType.values()) {
+                if (dt2 == DataType.COMPRESSED || dt2 == DataType.UTF8 || dt2 == DataType.UNKNOWN)
+                    continue;
+
+                INDArray a2 = a1.castTo(dt2);
+                a2.toStringFull();
+            }
+        }
+    }
+
+
+    @Test
+    public void testShape0Casts(){
+        for(DataType dt : DataType.values()){
+            if(!dt.isNumerical())
+                continue;
+
+            INDArray a1 = Nd4j.create(dt, 1,0,2);
+
+            for(DataType dt2 : DataType.values()){
+                if(!dt2.isNumerical())
+                    continue;
+                INDArray a2 = a1.castTo(dt2);
+
+                assertArrayEquals(a1.shape(), a2.shape());
+                assertEquals(dt2, a2.dataType());
+            }
         }
     }
 

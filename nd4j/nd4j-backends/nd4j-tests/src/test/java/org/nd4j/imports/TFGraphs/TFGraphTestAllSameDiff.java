@@ -123,8 +123,61 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //AB 2020/01/07 - Known issues
             "bitcast/from_float64_to_int64",
             "bitcast/from_rank2_float64_to_int64",
-            "bitcast/from_float64_to_uint64"
-    };
+            "bitcast/from_float64_to_uint64",
+
+
+            //NEWLY ADDED TESTCASES from 27/04/2020
+            "non_max_suppression_v2/.*", "non_max_suppression/.*",
+            "random_gamma/.*",
+            "non_max_suppression_v5/.*",
+            "non_max_suppression_v4/.*",
+            "non_max_suppression_v3/.*",
+            "dropout/.*",
+            "max_pool_with_argmax/.*",
+            "conv2d_transpose/.*",
+            "Conv3DBackpropInputV2/.*",
+            "Conv3DBackpropInput/.*",
+            "mod/.*",
+            "leaky_relu/.*",
+            "DeepCopy/.*",
+            "empty/.*",
+            "ones_like/.*",
+            "is_non_decreasing/.*",
+            "div/.*",
+            "lgamma/.*",
+            "random_uniform/.*",
+            "random_uniform_int/.*",
+            "resize_area/.*",
+            "zeros_like_tf1/.*",
+            "Conv2DTranspose/.*",
+            "rgb_to_yuv/.*",
+            "rgb_to_grayscale/.*",
+            "rgb_to_yiq/.*",
+            "losses/.*",
+            "yiq_to_rgb/.*",
+            "yuv_to_rgb/.*",
+            "emptyArrayTests/.*",
+            "random_normal/.*",
+            "random_shuffle/.*",
+            "random_poisson_v2/.*",
+            "random_poisson/.*",
+            "random_crop/.*",
+            "compare_and_bitpack/.*",
+            "adjust_contrast/.*",
+            "confusion/.*",
+            "bitcast/.*",
+            "roll/.*",
+            "matrix_band_part/.*",
+            "conv3d_transpose_layers/.*",
+            "multinomial/.*",
+            "unsorted_segment/.*",
+            "cnn2d_nn/.*",
+            "truncatemod/.*",
+            "bincount/.*",
+            "slogdet/.*",
+            "adjust_contrast_v2/.*"
+
+};
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have
        all arrays printed during execution.
