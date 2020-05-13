@@ -123,7 +123,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //AB 2020/01/07 - Known issues
             "bitcast/from_float64_to_int64",
             "bitcast/from_rank2_float64_to_int64",
-            "bitcast/from_float64_to_uint64"
+            "bitcast/from_float64_to_uint64",
 
 
             //NEWLY ADDED TESTCASES from 27/04/2020
