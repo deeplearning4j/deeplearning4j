@@ -16619,6 +16619,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
+        @Namespace("sd::ops") public static class clipbyavgnorm_bp extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public clipbyavgnorm_bp(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public clipbyavgnorm_bp(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public clipbyavgnorm_bp position(long position) {
+                return (clipbyavgnorm_bp)super.position(position);
+            }
+        
+                                                                                    public clipbyavgnorm_bp() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
 //         #if NOT_EXCLUDED(OP_cumsum)

@@ -228,6 +228,53 @@ TEST_F(DeclarableOpsTests19, test_threshold_encode_decode) {
     ASSERT_EQ(exp, initial);
 }
 
+TEST_F(DeclarableOpsTests19, test_threshold_encode_decode_2) {
+  // [2,1,135079944,1,1,8192,1,99]
+  auto initial = NDArrayFactory::create<float>('c', {1, 135079944});
+  initial = 1.0f;
+  auto exp = initial.dup();
+  auto neg = initial.like();
+  neg = 0.5f;
+
+  sd::ops::encode_threshold enc;
+  auto enc_result = enc.evaluate({&initial}, {0.5f});
+  auto encoded = enc_result.at(1);
+
+  ASSERT_EQ(135079944 + 4, encoded->lengthOf());
+  ASSERT_NE(exp, initial);
+/*
+  for (int e = 0; e < initial.lengthOf(); e++) {
+    auto f = initial.e<float>(e);
+    if (f != 0.5f) {
+      nd4j_printf("initial[%i] = %f\n", e, f);
+      throw std::runtime_error("");
+    }
+  }
+  */
+  ASSERT_EQ(neg, initial);
+
+  // checking equality of all encoded bits
+  //for (int e = 5; e < encoded->lengthOf() - 1; e++) {
+  //if (encoded->e<int>(e) != encoded->e<int>(e - 1) + 1)
+  //nd4j_printf("Non equal encoded values at E[%i]: %i;\n", e, encoded->e<int>(e));
+  //}
+
+  sd::ops::decode_threshold dec;
+  auto status = dec.execute({&initial, encoded}, {&initial});
+  ASSERT_EQ(Status::OK(), status);
+
+  // checking equality of all dedoded bits
+  /*
+  for (int e = 0; e < initial.lengthOf(); e++) {
+    auto f = initial.e<float>(e);
+    if (f != 1.0f)
+      nd4j_printf("initial[%i] = %f\n", e, f);
+  }
+   */
+
+  ASSERT_EQ(exp, initial);
+}
+
 
 TEST_F(DeclarableOpsTests19, test_matmul_ccc) {
     auto x = NDArrayFactory::create<float>('c', {10, 10});

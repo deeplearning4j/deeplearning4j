@@ -692,9 +692,33 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         return thresholdEncode(input, threshold, Integer.MAX_VALUE);
     }
 
+    private long _length(long[] shape) {
+        // scalar case
+        if (shape.length == 0)
+            return 1;
+        else if (shape.length == 1)
+            return shape[0];
+        else {
+            long length = 1;
+            for (int e = 0; e < shape.length; e++)
+                length *= shape[e];
+
+            return length;
+        }
+    }
+
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
-        val result = Nd4j.exec(new EncodeThreshold(input, (float) threshold, boundary))[1];
+        val op_shape = new EncodeThreshold(input, (float) threshold, boundary);
+        val shapes = Nd4j.getExecutioner().calculateOutputShape(op_shape);
+
+        if (_length(shapes.get(1).getShape()) < 2)
+            return null;
+
+        val result = Nd4j.create(DataType.INT32, shapes.get(1).getShape());
+
+        op_shape.addOutputArgument(input, result);
+        Nd4j.exec(op_shape);
 
         return result.getInt(0) > 0 ? result : null;
     }
