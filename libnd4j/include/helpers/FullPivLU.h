@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) Konduit K.K.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -15,22 +15,38 @@
  ******************************************************************************/
 
 //
-//  @author GS <sgazeos@gmail.com>
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
-#ifndef __TRIANGULAR_SOLVE__H_HELPERS__
-#define __TRIANGULAR_SOLVE__H_HELPERS__
-#include <system/op_boilerplate.h>
+
+#ifndef LIBND4J_FULLPIVLU_H
+#define LIBND4J_FULLPIVLU_H
+
 #include <array/NDArray.h>
 
 namespace sd {
 namespace ops {
 namespace helpers {
 
-    int triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool lower, bool unitsOnDiag, NDArray* output);
-    template <typename T>
-    void triangularSolve2D(sd::LaunchContext* context, const NDArray& leftInput, const NDArray& rightInput, const bool lower, const bool unitsOnDiag, NDArray& output);
-    void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output);
+// class solves equation A*x = b for x, by procedure of LU decomposition of input matrix A with complete pivoting
+// LU decomposition of a matrix is:
+// A = P^-1 * L * U * Q^-1
+// L is unit-lower-triangular,
+// U is upper-triangular,
+// and P and Q are permutation matrices for rows and columns correspondingly
+
+template <typename T>
+class FullPivLU {
+
+    public:
+
+        // A{M,K} * x{K,N} = b{M,N}
+        static void solve(const NDArray& A, const NDArray& b, NDArray& x);
+};
+
+
 }
 }
 }
-#endif
+
+
+#endif //LIBND4J_FULLPIVLU_H

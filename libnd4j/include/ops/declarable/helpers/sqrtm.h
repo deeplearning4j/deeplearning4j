@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) Konduit K.K.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -15,22 +15,25 @@
  ******************************************************************************/
 
 //
-//  @author GS <sgazeos@gmail.com>
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
-#ifndef __TRIANGULAR_SOLVE__H_HELPERS__
-#define __TRIANGULAR_SOLVE__H_HELPERS__
-#include <system/op_boilerplate.h>
-#include <array/NDArray.h>
 
-namespace sd {
-namespace ops {
+#ifndef LIBND4J_SQRTM_HELPER_H
+#define LIBND4J_SQRTM_HELPER_H
+
+#include <ops/declarable/helpers/helpers.h>
+#include "array/NDArray.h"
+
+namespace sd      {
+namespace ops     {
 namespace helpers {
 
-    int triangularSolveFunctor(sd::LaunchContext* context, NDArray* leftInput, NDArray* rightInput, bool lower, bool unitsOnDiag, NDArray* output);
-    template <typename T>
-    void triangularSolve2D(sd::LaunchContext* context, const NDArray& leftInput, const NDArray& rightInput, const bool lower, const bool unitsOnDiag, NDArray& output);
-    void adjointMatrix(sd::LaunchContext* context, NDArray const* input, bool const lower, NDArray* output);
+//////////////////////////////////////////////////////////////////////////
+void sqrtm(sd::LaunchContext* context, const NDArray* x, NDArray* z);
+
+
 }
 }
 }
-#endif
+
+#endif //LIBND4J_SQRTM_HELPER_H

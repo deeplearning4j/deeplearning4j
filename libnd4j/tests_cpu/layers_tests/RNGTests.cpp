@@ -100,7 +100,7 @@ TEST_F(RNGTests, TestGenerator_SGA_1) {
     for (auto idx = 0; idx < array.lengthOf(); idx++) {
         float x = generator.relativeT(idx, -sd::DataTypeUtils::template max<float>() / 10,
                                       sd::DataTypeUtils::template max<float>() / 10);
-        array.t<float>(idx) = x;
+        array.r<float>(idx) = x;
     }
     auto minimum = array.reduceNumber(reduce::AMin);
     minimum.printBuffer("Randomly float min on 1M array");
@@ -285,7 +285,7 @@ TEST_F(RNGTests, Test_Gaussian_21) {
     ASSERT_NEAR(sd::math::nd4j_abs(mean->e<float>(0)), 0.f, 0.2f);
     ASSERT_NEAR(variance->e<float>(0), 1.0f, 0.2f);
 
-    
+
 }
 
 #ifdef DEBUG_BUILD
@@ -315,7 +315,7 @@ TEST_F(RNGTests, Test_Gaussian_22) {
     //variance0->printIndexedBuffer("Variance");
     ASSERT_NEAR(sd::math::nd4j_abs(mean0->e<float>(0)), 0.f, 1.0e-3f);
     ASSERT_NEAR(variance0->e<float>(0), 1.0f, 1.e-3f);
-    
+
 }
 
 TEST_F(RNGTests, Test_Gaussian_3) {
@@ -431,7 +431,7 @@ TEST_F(RNGTests, Test_Truncated_21) {
 
     // result.at(0)->printBuffer("MEAN");
     // result.at(1)->printBuffer("VARIANCE");
-    
+
     sd::ops::reduce_min minOp;
     sd::ops::reduce_max maxOp;
 
@@ -585,7 +585,7 @@ TEST_F(RNGTests, Test_Uniform_2) {
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    
+
 }
 
 TEST_F(RNGTests, Test_Uniform_SGA_3) {
@@ -614,7 +614,7 @@ TEST_F(RNGTests, Test_Gaussian_2) {
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    
+
 }
 
 TEST_F(RNGTests, Test_LogNorm_2) {
@@ -634,7 +634,7 @@ TEST_F(RNGTests, Test_LogNorm_2) {
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    
+
 }
 
 TEST_F(RNGTests, Test_TruncatedNorm_2) {
@@ -653,7 +653,7 @@ TEST_F(RNGTests, Test_TruncatedNorm_2) {
     ASSERT_TRUE(x1.isSameShape(z));
     ASSERT_TRUE(x1.equalsTo(z));
     delete op;
-    
+
 }
 
 
@@ -674,7 +674,7 @@ TEST_F(RNGTests, Test_Binomial_2) {
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    
+
 }
 
 
@@ -695,7 +695,7 @@ TEST_F(RNGTests, Test_Bernoulli_2) {
     ASSERT_TRUE(x1.equalsTo(z));
 
     delete op;
-    
+
 }
 
 TEST_F(RNGTests, Test_GaussianDistribution_1) {
@@ -716,7 +716,7 @@ TEST_F(RNGTests, Test_GaussianDistribution_1) {
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
 
-    
+
 }
 
 TEST_F(RNGTests, Test_BernoulliDistribution_1) {
@@ -736,7 +736,7 @@ TEST_F(RNGTests, Test_BernoulliDistribution_1) {
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
 
-    
+
 }
 
 
@@ -787,7 +787,7 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1_SGA) {
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
 
-    
+
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_2_SGA) {
@@ -880,7 +880,7 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2) {
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
 
-    
+
 }
 
 TEST_F(RNGTests, Test_PoissonDistribution_1) {
@@ -900,7 +900,7 @@ TEST_F(RNGTests, Test_PoissonDistribution_1) {
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    
+
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_1) {
@@ -920,7 +920,7 @@ TEST_F(RNGTests, Test_GammaDistribution_1) {
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    
+
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_2) {
@@ -941,7 +941,7 @@ TEST_F(RNGTests, Test_GammaDistribution_2) {
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    
+
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_3) {
@@ -962,7 +962,7 @@ TEST_F(RNGTests, Test_GammaDistribution_3) {
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    
+
 }
 
 TEST_F(RNGTests, Test_UniformDistribution_04) {
@@ -980,7 +980,7 @@ TEST_F(RNGTests, Test_UniformDistribution_04) {
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
-    
+
 }
 
 namespace sd {
@@ -1142,7 +1142,7 @@ TEST_F(RNGTests, test_multinomial_1) {
     ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(expectedZ.isSameShape(outputZ));
     ASSERT_TRUE(expectedZ.equalsTo(outputZ));
-    
+
 }
 
 TEST_F(RNGTests, test_multinomial_2) {
@@ -1219,7 +1219,7 @@ TEST_F(RNGTests, test_multinomial_5) {
     RandomGenerator rng(1234, 1234);
 
     ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 1 }, {}, {}, false));
-    
+
     auto deviation = output.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     auto mean = output.meanNumber();
     // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
@@ -1290,7 +1290,7 @@ TEST_F(RNGTests, test_multinomial_6) {
     ASSERT_NEAR(1.2175, deviation.e<double>(0), 45e-3); // 1000000 35e-3);
     ASSERT_NEAR(2.906, mean.e<double>(0), 45e-3); // 1000000 35e-3);
 
-    
+
 
     RandomGenerator rng(1234, 1234);
     NDArray probs('c', { batchValue, ClassValue }, { 1., 1.5, 2., 2.5, 3. }, sd::DataType::FLOAT32);

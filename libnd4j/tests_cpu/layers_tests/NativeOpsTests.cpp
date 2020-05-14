@@ -251,7 +251,7 @@ TEST_F(NativeOpsTests, ExecPairwise_2) {
     auto exp = NDArrayFactory::create<bool>('c', {5, 5});
     x.assign(true);
     y.assign(false);
-    y.t<bool>(5) = true;
+    y.r<bool>(5) = true;
 #ifdef __CUDABLAS__
     printf("Unsupported for cuda now.\n");
 #else

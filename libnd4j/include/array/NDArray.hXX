@@ -2170,7 +2170,7 @@ const std::string* ND4J_EXPORT NDArray::bufferAsT() const {
 template <typename T>
 const T* NDArray::bufferAsT() const {
     // FIXME: do we REALLY want sync here?
-    syncToHost();
+    // syncToHost();
 
     return reinterpret_cast<const T*>(buffer());
 }
@@ -2597,11 +2597,9 @@ void NDArray::operator+=(const T value) {
 
     auto other = NDArrayFactory::create(this->dataType(), value, getContext());
 
-    NDArray::prepareSpecialUse({this}, {&other});
-
+    NDArray::prepareSpecialUse({this}, {this, &other});
     NativeOpExecutioner::execScalar(getContext(), sd::scalar::Add, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.buffer(), other.shapeInfo(), other.specialBuffer(), other.specialShapeInfo(), nullptr);
-
-    NDArray::registerSpecialUse({this}, {});
+    NDArray::registerSpecialUse({this}, {this, &other});
 }
 template ND4J_EXPORT void NDArray::operator+=(const double value);
 template ND4J_EXPORT void NDArray::operator+=(const float value);
@@ -2619,11 +2617,9 @@ void NDArray::operator-=(const T value) {
 
     auto other = NDArrayFactory::create(dataType(), value, getContext());
 
-    NDArray::prepareSpecialUse({this}, {&other});
-
+    NDArray::prepareSpecialUse({this}, {this, &other});
     NativeOpExecutioner::execScalar(getContext(), sd::scalar::Subtract, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.buffer(), other.shapeInfo(), other.specialBuffer(), other.specialShapeInfo(), nullptr);
-
-    NDArray::registerSpecialUse({this}, {});
+    NDArray::registerSpecialUse({this}, {this, &other});
 }
 template ND4J_EXPORT void NDArray::operator-=(const double value);
 template ND4J_EXPORT void NDArray::operator-=(const float value);
@@ -2640,10 +2636,9 @@ void NDArray::operator*=(const T scalar) {
         throw std::runtime_error("NDArray::operator*=: you can't use this method on String array!");
 
     auto other = NDArrayFactory::create(this->dataType(), scalar, getContext());
-    NDArray::prepareSpecialUse({this}, {&other});
+    NDArray::prepareSpecialUse({this}, {this, &other});
     NativeOpExecutioner::execScalar(getContext(), sd::scalar::Multiply, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.buffer(), other.shapeInfo(), other.specialBuffer(), other.specialShapeInfo(), nullptr);
-
-    NDArray::registerSpecialUse({this}, {});
+    NDArray::registerSpecialUse({this}, {this, &other});
 }
 template ND4J_EXPORT void NDArray::operator*=(const double scalar);
 template ND4J_EXPORT void NDArray::operator*=(const float scalar);
@@ -2663,9 +2658,9 @@ void NDArray::operator/=(const T scalar) {
         throw std::runtime_error("NDArray::operator/=: you can't use this method on String array!");
 
     auto other = NDArrayFactory::create(this->dataType(), scalar, getContext());
-    NDArray::prepareSpecialUse({this}, {&other});
+    NDArray::prepareSpecialUse({this}, {this, &other});
     NativeOpExecutioner::execScalar(getContext(), sd::scalar::Divide, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other.buffer(), other.shapeInfo(), other.specialBuffer(), other.specialShapeInfo(), nullptr);
-    NDArray::registerSpecialUse({this}, {});
+    NDArray::registerSpecialUse({this}, {this, &other});
 }
 template ND4J_EXPORT void NDArray::operator/=(const double scalar);
 template ND4J_EXPORT void NDArray::operator/=(const float scalar);
@@ -3758,8 +3753,7 @@ T NDArray::e(const Nd4jLong i, const Nd4jLong j) const {
     if (rankOf() != 2 || i >= shapeOf()[0] || j >= shapeOf()[1])
         throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
 
-    const Nd4jLong coords[2] = {i, j};
-    const auto xOffset = shape::getOffset(shapeInfo(), coords);
+    const auto xOffset = i * strideAt(0) + j * strideAt(1);
 
     NDArray::preparePrimaryUse({}, {this});
     NDArray::registerPrimaryUse({}, {this});
@@ -3778,8 +3772,7 @@ T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
         throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
-    const Nd4jLong coords[3] = {i, j, k};
-    const auto xOffset = shape::getOffset(shapeInfo(), coords);
+    const auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2);
 
     NDArray::preparePrimaryUse({}, {this});
     NDArray::registerPrimaryUse({}, {this});
@@ -3798,8 +3791,7 @@ T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLon
     if (rankOf() != 4 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2] || l >= shapeOf()[3])
         throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
-    const Nd4jLong coords[4] = {i, j, k, l};
-    const auto xOffset = shape::getOffset(shapeInfo(), coords);
+    const auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + l * strideAt(3);
 
     NDArray::preparePrimaryUse({}, {this});
     NDArray::registerPrimaryUse({}, {this});
@@ -4411,8 +4403,7 @@ void NDArray::p(const Nd4jLong i, const Nd4jLong j, const T value) {
         throw std::invalid_argument("NDArray:pe(i,j, value): one of input indexes is out of array length or rank!=2 !");
 
     void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
-    Nd4jLong coords[2] = {i, j};
-    auto xOffset = shape::getOffset(shapeInfo(), coords);
+    auto xOffset = i * strideAt(0) + j * strideAt(1);
 
     NDArray::preparePrimaryUse({this}, {}, true);
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), LIBND4J_TYPES);
@@ -4440,11 +4431,10 @@ void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T va
     if (rankOf() != 3 || i >= shapeOf()[0] || j >= shapeOf()[1] || k >= shapeOf()[2])
         throw std::invalid_argument("NDArray:pe(i,j,k, value): one of input indexes is out of array length or rank!=3 !");
 
-    NDArray::preparePrimaryUse({this}, {}, true);
-
     void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
-    Nd4jLong coords[3] = {i, j, k};
-    auto xOffset = shape::getOffset(shapeInfo(), coords);
+    auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2);
+
+    NDArray::preparePrimaryUse({this}, {}, true);
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), LIBND4J_TYPES);
     NDArray::registerPrimaryUse({this}, {});
 }
@@ -4470,8 +4460,7 @@ void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4j
         throw std::invalid_argument("NDArray::p(i,j,k,l, value): one of input indexes is out of array length or rank!=4 !");
 
     void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
-    Nd4jLong coords[4] = {i, j, k, l};
-    auto xOffset = shape::getOffset(shapeInfo(), coords);
+    auto xOffset = i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + l * strideAt(3);
 
     NDArray::preparePrimaryUse({this}, {}, true);
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->buffer(), xOffset, p), LIBND4J_TYPES);

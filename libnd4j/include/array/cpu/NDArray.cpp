@@ -153,21 +153,38 @@ void NDArray::setIdentity() {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-static void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
+static void templatedSwap(void *xBuffer, void *yBuffer, const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, Nd4jLong length) {
     auto x = reinterpret_cast<T *>(xBuffer);
     auto y = reinterpret_cast<T *>(yBuffer);
 
+    const bool isSameOrders = shape::order(xShapeInfo) == shape::order(xShapeInfo);
+
+    const auto xEws = shape::elementWiseStride(xShapeInfo);
+    const auto yEws = shape::elementWiseStride(yShapeInfo);
+
     auto func = PRAGMA_THREADS_FOR {
-        for (auto i = start; i < stop; i++) {
-            auto temp = x[i];
-            x[i] = y[i];
-            y[i] = temp;
+        if(isSameOrders && xEws > 0 && yEws > 0) {
+            for(auto i = start; i < stop; i++)
+                sd::math::nd4j_swap(x[i*xEws], y[i*yEws]);
+        }
+        else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
+            for(auto i = start; i < stop; i++) {
+                const auto ind = shape::getIndexOffset(i, xShapeInfo);
+                sd::math::nd4j_swap(x[ind], y[ind]);
+            }
+        }
+        else {
+            for(auto i = start; i < stop; i++) {
+                const auto xInd = shape::getIndexOffset(i, xShapeInfo);
+                const auto yInd = shape::getIndexOffset(i, yShapeInfo);
+                sd::math::nd4j_swap(x[xInd], y[yInd]);
+            }
         }
     };
 
     samediff::Threads::parallel_for(func, 0, length);
 }
-BUILD_SINGLE_TEMPLATE(template void templatedSwap, (void *xBuffer, void *yBuffer, Nd4jLong length), LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void templatedSwap, (void *xBuffer, void *yBuffer, const Nd4jLong* xShapeInfo, const Nd4jLong* yShapeInfo, Nd4jLong length), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void NDArray::swapUnsafe(NDArray& other) {
@@ -182,7 +199,7 @@ void NDArray::swapUnsafe(NDArray& other) {
     if(lengthOf() != other.lengthOf())
         throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
 
-    BUILD_SINGLE_SELECTOR(xType, templatedSwap, (buffer(), other.buffer(), this->lengthOf()), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, templatedSwap, (buffer(), other.buffer(), shapeInfo(), other.shapeInfo(), this->lengthOf()), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

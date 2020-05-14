@@ -115,7 +115,7 @@ elseif(WIN32)
 		set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -Wa,-mbig-obj")
 	endif()
 else()
-    set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -DLINUX_BUILD=true")
+    set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -ffast-math -DFFAST_MATH=true -DLINUX_BUILD=true")
 
     if ("${_RELEASE}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
         message("Release build for tests")
@@ -224,6 +224,17 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(MINGW) AND NOT(APPLE))
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic")
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
 endif()
+
+file(GLOB_RECURSE COMPILATION_UNITS false ../../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in)
+foreach(FL_ITEM ${COMPILATION_UNITS})
+    string(REGEX MATCH "^(.*)\\.cpp\.in$" dummy ${FL_ITEM})
+    set(FL_ITEM_WLE ${CMAKE_MATCH_1})
+    foreach(FL_TYPE_INDEX RANGE 0 9)
+        #message( "${FL_ITEM_WLE}_${FL_TYPE_INDEX}.cpp")
+        configure_file(  "${FL_ITEM}" "${FL_ITEM_WLE}_${FL_TYPE_INDEX}.cpp" @ONLY)
+        LIST(APPEND CUSTOMOPS_GENERIC_SOURCES ${FL_ITEM_WLE}_${FL_TYPE_INDEX}.cpp )
+    endforeach()
+endforeach()
 
 
 # this function strips path from file name, basically making up short file name, i.e. file.cpp

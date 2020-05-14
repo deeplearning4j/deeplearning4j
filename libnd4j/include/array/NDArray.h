@@ -1163,7 +1163,7 @@ namespace sd {
 
         /**
         * fill target matrix with given value in one or two directions from main diagonal:
-        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
+        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'l' (down) or 'b' (both)
         *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
         * direction - in what direction to fill matrix. There are 3 possible directions:
         *   'u' - fill up, mathematically this corresponds to lower triangular matrix, subdiagonal "lower" unaffected
@@ -1230,14 +1230,13 @@ namespace sd {
         *  returns reference on array element with given index
         */
         template<typename T>
-        FORCEINLINE T& t(const Nd4jLong index);
-
+        FORCEINLINE T& r(const Nd4jLong index);
         template<typename T>
-        FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j);
+        FORCEINLINE T& r(const Nd4jLong i, const Nd4jLong j);
         template<typename T>
-        FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
+        FORCEINLINE T& r(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
         template<typename T>
-        FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong w);
+        FORCEINLINE T& r(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong w);
 
 
         /**
@@ -1246,7 +1245,6 @@ namespace sd {
         */
         template<typename T>
         FORCEINLINE T t(const Nd4jLong i) const;
-
         template<typename T>
         FORCEINLINE T t(const Nd4jLong i, const Nd4jLong j) const;
         template<typename T>
@@ -1778,70 +1776,60 @@ DataType NDArray::dataType() const {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-T& NDArray::t(const Nd4jLong i) {
+T& NDArray::r(const Nd4jLong i) {
 
     // if (i >= _length)
     //     throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
 
-    if(!isActualOnHostSide())
-        syncToHost();
-
+    syncToHost();
     tickWriteHost();
+
     return *(reinterpret_cast<T*>(bufferWithOffset(getOffset(i))));
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
+T& NDArray::r(const Nd4jLong i, const Nd4jLong j) {
 
     if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
             throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
 
-    if(!isActualOnHostSide())
-        syncToHost();
-
-    Nd4jLong coords[2] = {i, j};
-    auto offset = shape::getOffset(shapeInfo(), coords);
+    syncToHost();
     tickWriteHost();
-    return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+
+    return *(reinterpret_cast<T*>(bufferWithOffset(i * strideAt(0) + j * strideAt(1))));
 }
 
 template <typename T>
-T& NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
+T& NDArray::r(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
 
     if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
         throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
 
-    if(!isActualOnHostSide())
-        syncToHost();
-
-    Nd4jLong coords[3] = {i, j, k};
-    auto offset = shape::getOffset(shapeInfo(), coords);
+    syncToHost();
     tickWriteHost();
-    return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+
+    return *(reinterpret_cast<T*>(bufferWithOffset(i * strideAt(0) + j * strideAt(1) + k * strideAt(2))));
 }
 
 template <typename T>
-T& NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong w) {
+T& NDArray::r(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong w) {
 
     if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
         throw std::invalid_argument("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4 !");
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
 
-    if(!isActualOnHostSide())
-        syncToHost();
-
-    Nd4jLong coords[4] = {i, j, k, w};
-    auto offset = shape::getOffset(shapeInfo(), coords);
+    syncToHost();
     tickWriteHost();
-    return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+
+    return *(reinterpret_cast<T*>(bufferWithOffset(i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + w * strideAt(3))));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1853,10 +1841,8 @@ T NDArray::t(const Nd4jLong i) const {
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
 
-    if(!isActualOnHostSide())
-        syncToHost();
+    syncToHost();
 
-    tickReadHost();
     return *(reinterpret_cast<const T*>(bufferWithOffset(getOffset(i))));
 }
 
@@ -1869,48 +1855,38 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
     if (DataTypeUtils::fromT<T>() != _dataType)
         throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
 
-    if(!isActualOnHostSide())
-        syncToHost();
+    syncToHost();
 
-    Nd4jLong coords[2] = {i, j};
-    auto offset = shape::getOffset(shapeInfo(), coords);
-    tickReadHost();
-    return *(reinterpret_cast<const T*>(bufferWithOffset(offset)));
+    return *(reinterpret_cast<const T*>(bufferWithOffset(i * strideAt(0) + j * strideAt(1))));
 }
 
-    template <typename T>
-    T NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+T NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
 
-        if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
-            throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
-        if (DataTypeUtils::fromT<T>() != _dataType)
-            throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+    if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
+        throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
+    if (DataTypeUtils::fromT<T>() != _dataType)
+        throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
 
-        if(!isActualOnHostSide())
-            syncToHost();
+    syncToHost();
 
-        Nd4jLong coords[3] = {i, j, k};
-        auto offset = shape::getOffset(shapeInfo(), coords);
-        tickReadHost();
-        return *(reinterpret_cast<const T*>(bufferWithOffset(offset)));
-    }
+    return *(reinterpret_cast<const T*>(bufferWithOffset(i * strideAt(0) + j * strideAt(1) + k * strideAt(2))));
+}
 
-    template <typename T>
-    T NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong w) const {
+////////////////////////////////////////////////////////////////////////
+template <typename T>
+T NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong w) const {
 
-        if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
-            throw std::invalid_argument("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4!");
-        if (DataTypeUtils::fromT<T>() != _dataType)
-            throw std::invalid_argument("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
+    if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
+        throw std::invalid_argument("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4!");
+    if (DataTypeUtils::fromT<T>() != _dataType)
+        throw std::invalid_argument("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
 
-        if(!isActualOnHostSide())
-            syncToHost();
+    syncToHost();
 
-        Nd4jLong coords[4] = {i, j, k, w};
-        auto offset = shape::getOffset(shapeInfo(), coords);
-        tickReadHost();
-        return *(reinterpret_cast<const T*>(bufferWithOffset(offset)));
-    }
+    return *(reinterpret_cast<const T*>(bufferWithOffset(i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + w * strideAt(3))));
+}
 
 #ifndef __JAVACPP_HACK__
 ////////////////////////////////////////////////////////////////////////

@@ -318,7 +318,7 @@ namespace helpers {
                         }
                         // copy pixel over all channels
                         for (Nd4jLong e = 0; e < channels; e++)
-                            output->t<T>(b, y, x, e) = images->t<T>(b, inY, inX, e);
+                            output->r<T>(b, y, x, e) = images->t<T>(b, inY, inX, e);
                     }
                 }
             }

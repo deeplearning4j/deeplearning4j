@@ -47,7 +47,7 @@ TEST_F(DeclarableOpsTests11, test_listdiff_1) {
     auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result.status());
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -392,10 +392,10 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test12) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
-    weights.t<double>(3) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
+    weights.r<double>(3) = 0.;
 
 
     sd::ops::log_loss_grad op;
@@ -431,9 +431,9 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test13) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
 
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
@@ -1608,7 +1608,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_2) {
 //    z->printIndexedBuffer("Solve 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_3) {
@@ -1645,7 +1645,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_3) {
 //    z->printIndexedBuffer("Solve 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1678,7 +1678,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4) {
 //    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_4_1) {
@@ -1707,7 +1707,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_1) {
 //    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_4_2) {
@@ -1740,7 +1740,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_2) {
 //    exp.printBuffer("4_2 Triangular_Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1774,7 +1774,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_3) {
 //    exp.printBuffer("4_3 Triangular_Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1808,7 +1808,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_4) {
 //    exp.printBuffer("4_4 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1842,7 +1842,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_5) {
 //    exp.printBuffer("4_5 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1876,7 +1876,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_6) {
 //    exp.printBuffer("4_6 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_4_7) {
@@ -1913,7 +1913,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_7) {
 //    exp.printBuffer("4_7 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1947,7 +1947,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_5) {
 //    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, SolveLS_Test_1) {
@@ -2399,10 +2399,10 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test12) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
-    weights.t<double>(3) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
+    weights.r<double>(3) = 0.;
 
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
@@ -2436,9 +2436,9 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test13) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
 
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
@@ -2467,7 +2467,7 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test1) {
     ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(exp.equalsTo(result.at(0)));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test2) {
@@ -2478,7 +2478,7 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test2) {
     auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(exp.equalsTo(result.at(0)));
-    
+
 }
 
 TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test3) {
@@ -2490,7 +2490,7 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test3) {
     auto result = op.evaluate({&x, &y, &eps}, {}, {});
     ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(exp.equalsTo(result.at(0)));
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2830,10 +2830,10 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test12) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
-    weights.t<double>(3) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
+    weights.r<double>(3) = 0.;
 
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
@@ -2867,9 +2867,9 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test13) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
 
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
@@ -3305,10 +3305,10 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test12) {
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
-    weights.t<double>(3) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
+    weights.r<double>(3) = 0.;
 
 
     sd::ops::sigm_cross_entropy_loss_grad op;
@@ -3344,9 +3344,9 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test13) {
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
 
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});

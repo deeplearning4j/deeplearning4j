@@ -225,7 +225,13 @@ void NDArray::swapUnsafe(NDArray& other) {
     if(lengthOf() != other.lengthOf())
         throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
 
+    PointersManager manager(getContext(), "NDArray::swapUnsafe");
+
+    prepareSpecialUse({&other, this}, {&other, this});
     BUILD_SINGLE_SELECTOR(xType, templatedSwapUnsafe, (specialBuffer(), specialShapeInfo(), other.specialBuffer(), other.specialShapeInfo(), getContext()->getCudaStream()), LIBND4J_TYPES);
+    registerSpecialUse({&other, this}, {&other, this});
+
+    manager.synchronize();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -546,21 +552,18 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
         if(specialBuffer() == nullptr || _length == 0)
             { printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n"); return; }
 
-        void* pHost = operator new(sizeof(T) * _length);
+        const auto sizeOfBuffer = sizeOfT() * (getOffset(_length - 1) + 1);
 
-        if (ews() != 1) {
-            for (uint i = 0; i < _length; i++)
-                cudaMemcpyAsync(reinterpret_cast<T*>(pHost) + i, specialBufferWithOffset(i), sizeof(T), cudaMemcpyDeviceToHost, *(getContext()->getCudaStream()));
-        }
-        else
-            cudaMemcpyAsync(pHost, specialBuffer(), sizeOfT() * _length, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
+        void* pHost = operator new(sizeOfBuffer);
+
+        cudaMemcpyAsync(pHost, specialBuffer(), sizeOfBuffer, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
 
         cudaError_t cudaResult = cudaStreamSynchronize(*getContext()->getCudaStream());
         if(cudaResult != 0)
             throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");
 
         for (uint i = 0; i < _length; i++)
-            printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[i]);
+            printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[getOffset(i)]);
         printf("\n");
 
         operator delete(pHost);

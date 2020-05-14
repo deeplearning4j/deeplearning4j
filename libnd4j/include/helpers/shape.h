@@ -528,7 +528,7 @@ namespace shape {
  * Returns the element wise stride for this information
  * buffer
  */
-   ND4J_EXPORT _CUDA_HD Nd4jLong elementWiseStride(const Nd4jLong *buffer);
+   ND4J_EXPORT _CUDA_HD Nd4jLong elementWiseStride(const Nd4jLong *shapeInfo);
 
 
     /**

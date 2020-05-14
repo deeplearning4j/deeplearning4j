@@ -32,74 +32,74 @@ template <typename T>
 class Householder {
 
     public:
-        
+
     /**
     *  this method calculates Householder matrix P = identity_matrix - coeff * w * w^T
     *  P * x = [normX, 0, 0 , 0, ...]
-    *  coeff - scalar    
+    *  coeff - scalar
     *  w = [1, w1, w2, w3, ...]
     *  w = u / u0
     *  u = x - |x|*e0
-    *  u0 = x0 - |x| 
+    *  u0 = x0 - |x|
     *  e0 = [1, 0, 0 , 0, ...]
-    * 
+    *
     *  x - input vector, remains unaffected
-    */                       
-    static NDArray evalHHmatrix(const NDArray& x);
+    */
+    // static NDArray evalHHmatrix(const NDArray& x);
 
     /**
     *  this method evaluates data required for calculation of Householder matrix P = identity_matrix - coeff * w * w^T
     *  P * x = [normX, 0, 0 , 0, ...]
-    *  coeff - scalar    
+    *  coeff - scalar
     *  w = [1, w1, w2, w3, ...]
     *  w = u / u0
     *  u = x - |x|*e0
-    *  u0 = x0 - |x| 
+    *  u0 = x0 - |x|
     *  e0 = [1, 0, 0 , 0, ...]
-    * 
+    *
     *  x - input vector, remains unaffected
     *  tail - the essential part of the vector w: [w1, w2, w3, ...]
     *  normX - this scalar is the first non-zero element in vector resulting from Householder transformation -> (P*x)
-    *  coeff - scalar, scaling factor in Householder matrix formula  
+    *  coeff - scalar, scaling factor in Householder matrix formula
     */
     static void evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff, T& normX);
 
-    static void evalHHmatrixDataI(const NDArray& x, T& coeff, T& normX);
+    static void evalHHmatrixDataI(NDArray& x, T& coeff, T& normX);  // in-place, x to be affected
 
     /**
     *  this method mathematically multiplies input matrix on Householder from the left P * matrix
-    * 
+    *
     *  matrix - input matrix
     *  tail - the essential part of the Householder vector w: [w1, w2, w3, ...]
-    *  coeff - scalar, scaling factor in Householder matrix formula  
+    *  coeff - scalar, scaling factor in Householder matrix formula
     */
     static void mulLeft(NDArray& matrix, const NDArray& tail, const T coeff);
 
     /**
     *  this method mathematically multiplies input matrix on Householder from the right matrix * P
-    * 
+    *
     *  matrix - input matrix
     *  tail - the essential part of the Householder vector w: [w1, w2, w3, ...]
-    *  coeff - scalar, scaling factor in Householder matrix formula  
-    */                       
+    *  coeff - scalar, scaling factor in Householder matrix formula
+    */
     static void mulRight(NDArray& matrix, const NDArray& tail, const T coeff);
-        
+
 
 
 };
 
-    
+
     // /**
     // *  this function reduce given matrix to  upper bidiagonal form (in-place operation), matrix must satisfy following condition rows >= cols
-    // * 
-    // *  matrix - input 2D matrix to be reduced to upper bidiagonal from    
+    // *
+    // *  matrix - input 2D matrix to be reduced to upper bidiagonal from
     // */
     // template <typename T>
     // void biDiagonalizeUp(NDArray& matrix);
 
-    // /** 
+    // /**
     // *  given a matrix [m,n], this function computes its singular value decomposition matrix = u * s * v^T
-    // *   
+    // *
     // *  matrix - input 2D matrix to decompose, [m, n]
     // *  u - unitary matrix containing left singular vectors of input matrix, [m, m]
     // *  s - diagonal matrix with singular values of input matrix (non-negative) on the diagonal sorted in decreasing order,
@@ -109,7 +109,7 @@ class Householder {
     // *  fullUV - if false then only p (p is smaller among m and n) first columns of u and v will be calculated and their dimensions in this case are [m, p] and [n, p]
     // *
     // */
-    // void svd(const NDArray& matrix, NDArray& u, NDArray& s, NDArray& v, const bool calcUV = false, const bool fullUV = false)    
+    // void svd(const NDArray& matrix, NDArray& u, NDArray& s, NDArray& v, const bool calcUV = false, const bool fullUV = false)
 
 
 

@@ -31,23 +31,37 @@ namespace sd {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         int totalThreads = gridDim.x * blockDim.x;
 
-        __shared__ Nd4jLong resultLength;
+        __shared__ Nd4jLong resultLength, xEws, yEws;
+        __shared__ bool sameOffsets, sameOrders;
         __shared__ T* input;
         __shared__ T* output;
+
         if (0 == threadIdx.x) {
            resultLength = shape::length(theFirstShape);
            input = reinterpret_cast<T*>(theSecondBuffer);
            output = reinterpret_cast<T*>(theFirstBuffer);
+
+           sameOffsets = shape::haveSameShapeAndStrides(theFirstShape, theSecondShape);
+           sameOrders  = shape::order(theFirstShape) == shape::order(theSecondShape);
+
+           xEws = shape::elementWiseStride(theFirstShape);
+           yEws = shape::elementWiseStride(theSecondShape);
         }
         __syncthreads();
 
         for (int i = tid; i < resultLength; i += totalThreads) {
-            auto xEws = shape::order(theFirstShape)  == 'c'? shape::elementWiseStride(theFirstShape) :1;
-            auto yEws = shape::order(theSecondShape) == 'c'? shape::elementWiseStride(theSecondShape):1;
-
-            auto xOffset = shape::getIndexOffset(i * xEws, theFirstShape);
-            auto yOffset = shape::getIndexOffset(i * yEws, theSecondShape);
-            sd::math::nd4j_swap(output[xOffset], input[yOffset]);
+            if(sameOrders && xEws > 0 && yEws > 0) {
+                sd::math::nd4j_swap(output[i*xEws], input[i*yEws]);
+            }
+            else if(sameOffsets) {
+                const auto offset = shape::getIndexOffset(i, theFirstShape);
+                sd::math::nd4j_swap(output[offset], input[offset]);
+            }
+            else{
+                const auto xOffset = shape::getIndexOffset(i, theFirstShape);
+                const auto yOffset = shape::getIndexOffset(i, theSecondShape);
+                sd::math::nd4j_swap(output[xOffset], input[yOffset]);
+            }
         }
     }
 

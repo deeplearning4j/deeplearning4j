@@ -31,7 +31,7 @@ namespace helpers {
             for (auto i = start_x; i < stop_x; i += inc_x)
                 for (auto k = start_y; k < stop_y; k += inc_y)
                     if (i < input->t<I>(k))
-                        output->t<B>(k * maxIndex + i) = B(true); //,  T(1.0f));
+                        output->r<B>(k * maxIndex + i) = B(true); //,  T(1.0f));
         };
 
         samediff::Threads::parallel_for(func, 0, maxIndex, 1, 0, input->lengthOf(), 1);

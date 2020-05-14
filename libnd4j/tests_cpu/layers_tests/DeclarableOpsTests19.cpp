@@ -241,6 +241,7 @@ TEST_F(DeclarableOpsTests19, test_threshold_encode_decode) {
     ASSERT_EQ(exp, initial);
 }
 
+#ifdef _RELEASE
 TEST_F(DeclarableOpsTests19, test_threshold_encode_decode_2) {
   // [2,1,135079944,1,1,8192,1,99]
   auto initial = NDArrayFactory::create<float>('c', {1, 135079944});
@@ -287,6 +288,7 @@ TEST_F(DeclarableOpsTests19, test_threshold_encode_decode_2) {
 
   ASSERT_EQ(exp, initial);
 }
+#endif
 
 
 
