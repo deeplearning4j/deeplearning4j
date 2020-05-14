@@ -1055,10 +1055,6 @@ public class OpValidation {
                 IsNumericTensor.class,
                 //Exclude index accumulations (index out, not real-valued)
                 FirstIndex.class,
-                IAMax.class,
-                IAMin.class,
-                IMax.class,
-                IMin.class,
                 LastIndex.class,
                 ArgMax.class,
                 ArgMin.class,

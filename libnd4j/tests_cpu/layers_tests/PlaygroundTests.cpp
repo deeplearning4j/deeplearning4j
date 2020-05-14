@@ -43,9 +43,12 @@
 #include <array>
 #include <performance/benchmarking/FullBenchmarkSuit.h>
 #include <performance/benchmarking/LightBenchmarkSuit.h>
-
+#include <random>
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <ops/declarable/helpers/addBias.h>
+#include <ops/declarable/helpers/axis.h>
+#include <ops/declarable/helpers/reductions.h>
+#include <helpers/LoopsCoordsHelper.h>
 
 using namespace sd;
 using namespace sd::graph;
@@ -275,6 +278,256 @@ TEST_F(PlaygroundTests, test_one_off_ops_1) {
     op.execute({&x, &y}, {&z});
 }
 
+#if defined(INDEX_REDUCTIONS_BENCH_TESTS)
+//temporarly, testing against the original one
+void original_argmax(const NDArray& input, std::vector<int>& axis, NDArray& output) {
+    sd::ops::helpers::adjustAxis(input.rankOf(), axis);
+    input.applyIndexReduce(sd::indexreduce::IndexMax, output, axis);
+}
+
+template<typename T>
+void fill_random(sd::NDArray& arr) {
+    Nd4jLong coords[MAX_RANK] = {};
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    //for floats
+    std::uniform_real_distribution<T> dis((T)-10.0, (T)22.9);
+    T* x = arr.bufferAsT<T>();
+    Nd4jLong* shapeInfo = arr.getShapeInfo();
+    Nd4jLong* strides = arr.stridesOf();
+    Nd4jLong rank = shapeInfo[0];
+    Nd4jLong* bases = &(shapeInfo[1]);
+    size_t t = 1;
+    for (size_t i = 0; i < rank ; i++) {
+        t *= bases[i];
+    }
+    size_t offset = 0;
+    if (arr.ordering() == 'c') {
+
+        for (size_t i = 0; i < t; i++) {
+            x[offset] = dis(gen) ;
+            offset = sd::inc_coords(bases, strides, coords, offset, rank);
+        }
+
+    }
+    else {
+
+        for (size_t i = 0; i < t; i++) {
+            x[offset] = dis(gen) ;
+            offset = sd::inc_coords<false>(bases, strides, coords, offset, rank);
+        }
+
+    }
+}
+ 
+void testLegacy(bool random) {
+#if 0
+    int bases[] = { 3, 2, 4, 5, 7 };
+    constexpr int Loop = 1;
+#else
+    int bases[] = { 8, 32, 64, 32, 64 };
+    constexpr int Loop = 10;
+#endif
+    constexpr int N = 5;
+
+    auto x = NDArrayFactory::create<float>('c', { bases[0], bases[1], bases[2], bases[3], bases[4] });
+    if (!random) {
+        x.linspace(1);
+    }
+    else{
+        fill_random<float>(x);
+     }
+
+#define COMBINATIONS 1
+#if COMBINATIONS
+//https://www.rosettacode.org/wiki/Combinations#C.2B.2B
+for (int k = N; k >= 1; k--) {
+
+    std::string bitmask(k, 1); // K leading 1's
+    bitmask.resize(N, 0); // N-K trailing 0's
+
+    do {
+
+
+        std::vector<int> dimension;
+
+        std::vector<Nd4jLong> output_bases;
+
+        for (int i = 0; i < N; ++i) // [0..N-1] integers
+        {
+            if (bitmask[i])  dimension.push_back(i);
+            else {
+                output_bases.push_back(bases[i]);
+            }
+        }
+#else
+std::vector<int> dimension = { 0,1,2,3 };
+int k = 4;
+#endif
+auto dim = NDArrayFactory::create<int>(dimension);
+
+#if 1 
+nd4j_printf("C(N:%d K:%d) \n", N, k);
+dim.printIndexedBuffer("Dimension");
+for (int xind : dimension) {
+    nd4j_printf(" %d ,", bases[xind]);
+}
+nd4j_printf("%s", "\n");
+#endif
+
+
+
+std::vector<Nd4jLong> values;
+sd::ResultSet result;
+for (int e = 0; e < Loop; e++) {
+    auto timeStart = std::chrono::system_clock::now();
+    NDArray exp = output_bases.size() > 0 ? NDArrayFactory::create<Nd4jLong>('c', output_bases) : NDArrayFactory::create<Nd4jLong>(0);
+    original_argmax(x, dimension, exp);
+    auto timeEnd = std::chrono::system_clock::now();
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+    values.emplace_back(outerTime);
+}
+ 
+std::sort(values.begin(), values.end());
+
+nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+#if COMBINATIONS
+
+    } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+
+}
+#endif
+}
+
+#define DEBUG 1
+
+void testNewReduction(bool random, bool checkCorrectness = false , char order ='c') {
+    std::vector<Nd4jLong> arr_dimensions;
+#if defined(DEBUG)
+    int bases[] = { 3, 2, 3, 3, 5 ,4,7,4,7,7 };
+    constexpr int Loop = 1;
+    constexpr int N = 10;
+#else
+    int bases[] = { 8, 32, 64, 32, 64 };
+    constexpr int Loop = 10;
+    constexpr int N = 5;
+
+#endif
+    
+    for (int i = 0; i < N; i++) {
+        arr_dimensions.push_back(bases[i]);
+    }
+    auto x = NDArrayFactory::create<float>(order,arr_dimensions);
+    if (!random) {
+        x.linspace(1);
+    }
+    else {
+        fill_random<float>(x);
+    }
+
+#define COMBINATIONS 1
+#if COMBINATIONS
+    //https://www.rosettacode.org/wiki/Combinations#C.2B.2B
+    for (int k = N; k >= 1; k--) {
+
+        std::string bitmask(k, 1); // K leading 1's
+        bitmask.resize(N, 0); // N-K trailing 0's
+
+        do {
+
+
+            std::vector<int> dimension;
+
+            std::vector<Nd4jLong> output_bases;
+
+            for (int i = 0; i < N; ++i) // [0..N-1] integers
+            {
+                if (bitmask[i])  dimension.push_back(i);
+                else {
+                    output_bases.push_back(bases[i]);
+                }
+            }
+#else
+    std::vector<int> dimension = { 0,1,2,3 };
+    int k = 4;
+#endif
+    auto dim = NDArrayFactory::create<int>(dimension);
+
+#if 1 
+    nd4j_printf("C(N:%d K:%d) \n", N, k);
+    dim.printIndexedBuffer("Dimension");
+    for (int xind : dimension) {
+        nd4j_printf(" %d ,", bases[xind]);
+    }
+    nd4j_printf("%s", "\n");
+#endif
+
+
+    sd::ops::argmax op;
+    std::vector<Nd4jLong> values;
+    sd::ResultSet result;
+    for (int e = 0; e < Loop; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+        result = op.evaluate({ &x, &dim }, {}, {});
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+    auto z = result.at(0);
+
+    if (checkCorrectness) {
+        //check for the correctness
+        NDArray exp = output_bases.size() > 0 ? NDArrayFactory::create<Nd4jLong>('c', output_bases) : NDArrayFactory::create<Nd4jLong>(0);
+        original_argmax(x, dimension, exp);
+   
+
+#if  0// defined(DEBUG)
+     x.printIndexedBuffer("X");
+    exp.printIndexedBuffer("Expected");
+    z->printIndexedBuffer("Z");
+#endif
+ 
+        ASSERT_TRUE(exp.isSameShape(z));
+        ASSERT_TRUE(exp.equalsTo(z));
+    }
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+#if COMBINATIONS
+
+        } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+
+    }
+#endif
+}
+
+constexpr bool test_corr = true;
+#if !defined(DEBUG)
+TEST_F(PlaygroundTests, ArgMaxPerfLinspace) {
+    testNewReduction(false, test_corr);
+}
+#endif
+ 
+TEST_F(PlaygroundTests, ArgMaxPerfRandom) {
+    testNewReduction(true, test_corr);
+}
+
+TEST_F(PlaygroundTests, ArgMaxPerfRandomOrderF) {
+    testNewReduction(true, test_corr, 'f');
+}
+ 
+#if !defined(DEBUG)
+TEST_F(PlaygroundTests, ArgMaxPerfLegacyLinspace) {
+    testLegacy(false);
+}
+
+TEST_F(PlaygroundTests, ArgMaxPerfLegacyRandom) {
+    testLegacy(true);
+}
+
+#endif
+
+#endif
 
 /*
 

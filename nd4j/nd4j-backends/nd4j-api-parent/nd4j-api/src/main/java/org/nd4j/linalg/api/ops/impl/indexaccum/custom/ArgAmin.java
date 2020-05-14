@@ -20,6 +20,7 @@ import lombok.Data;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,13 +34,13 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-public class ArgMax extends DynamicCustomOp {
+public class ArgAmin extends DynamicCustomOp {
     protected boolean keepDims = false;
     private int[] dimensions;
 
     protected DataType outputType = DataType.INT64;
 
-    public ArgMax(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+    public ArgAmin(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v);
 
         this.keepDims = keepDims;
@@ -53,10 +54,10 @@ public class ArgMax extends DynamicCustomOp {
         addDArgument(outputType);
     }
 
-    public ArgMax() {
+    public ArgAmin() {
     }
 
-    public ArgMax(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
+    public ArgAmin(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
         super(new INDArray[]{x}, z != null ? new INDArray[] {z} : new INDArray[0]);
 
         this.keepDims = keepDims;
@@ -70,26 +71,26 @@ public class ArgMax extends DynamicCustomOp {
         addDArgument(outputType);
     }
 
-    public ArgMax(INDArray x, INDArray z, int... dimensions) {
+    public ArgAmin(INDArray x, INDArray z, int... dimensions) {
         this(x, z, false, dimensions);
     }
 
-    public ArgMax(INDArray x, int... dimensions) {
+    public ArgAmin(INDArray x, int... dimensions) {
         this(x, null, dimensions);
     }
 
-    public ArgMax(INDArray x, boolean keepDims, int... dimensions) {
+    public ArgAmin(INDArray x, boolean keepDims, int... dimensions) {
         this(x, null, keepDims, dimensions);
     }
 
     @Override
     public String opName() {
-        return "argmax";
+        return "argamin";
     }
 
     @Override
     public String tensorflowName() {
-        return "ArgMax";
+        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
     @Override
@@ -104,7 +105,7 @@ public class ArgMax extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 1 || inputDataTypes.size() == 2),
-                "Expected 1 or 2 input datatype to argmax, got %s", inputDataTypes);    //2nd input: axis
+                "Expected 1 or 2 input datatype to argamin, got %s", inputDataTypes);    //2nd input: axis
         return Collections.singletonList(outputType == null ? DataType.LONG : outputType);
     }
 }

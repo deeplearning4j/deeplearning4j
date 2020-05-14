@@ -19,12 +19,12 @@
 //
 
 #include <ops/declarable/helpers/crop_and_resize.h>
-#include "../crop_and_resize.hpp"
+#include "ops/declarable/helpers/cpu/crop_and_resize.hpp"
 
 namespace sd {
     namespace ops {
         namespace helpers {
-            BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_, (NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops), NUMERIC_TYPES_5, FLOAT_TYPES, INTEGER_TYPES);
+            BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_, (NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops), NUMERIC_TYPES_0, FLOAT_TYPES, INTEGER_TYPES);
         }
     }
 }

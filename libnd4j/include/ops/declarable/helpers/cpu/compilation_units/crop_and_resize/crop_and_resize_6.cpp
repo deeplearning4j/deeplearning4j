@@ -19,7 +19,7 @@
 //
 
 #include <ops/declarable/helpers/crop_and_resize.h>
-#include "../crop_and_resize.hpp"
+#include "ops/declarable/helpers/cpu/crop_and_resize.hpp"
 
 namespace sd {
     namespace ops {

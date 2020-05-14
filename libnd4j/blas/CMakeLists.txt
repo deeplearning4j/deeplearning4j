@@ -294,11 +294,25 @@ elseif(SD_CPU)
     file(GLOB_RECURSE LEGACY_SOURCES false ../include/legacy/impl/*.cpp  ../include/legacy/cpu/*.cpp ../include/legacy/*.h)
     file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/*.cpp ../include/loops/*.h)
 
+
+    file(GLOB_RECURSE COMPILATION_UNITS false ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in)
+    foreach(FL_ITEM ${COMPILATION_UNITS})  
+                string(REGEX MATCH "^(.*)\\.cpp\.in$" dummy ${FL_ITEM})
+                set(FL_ITEM_WLE ${CMAKE_MATCH_1})
+                foreach(FL_TYPE_INDEX RANGE 0 9)
+                message( "${FL_ITEM_WLE}_${FL_TYPE_INDEX}.cpp")
+                    configure_file(  "${FL_ITEM}" "${FL_ITEM_WLE}_${FL_TYPE_INDEX}.cpp" @ONLY)
+                    LIST(APPEND CUSTOMOPS_GENERIC_SOURCES ${FL_ITEM_WLE}_${FL_TYPE_INDEX}.cpp )
+                endforeach() 
+    endforeach() 
+
     if (SD_X86_BUILD)
         # we disable platform optimizations for certains files for linux/macos
         set_source_files_properties(cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
         set_source_files_properties(../include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
     endif()
+
+
 
     if(SD_CHECK_VECTORIZATION)
        set(VECT_FILES cpu/NativeOps.cpp ${OPS_SOURCES} ${HELPERS_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${LOOPS_SOURCES})

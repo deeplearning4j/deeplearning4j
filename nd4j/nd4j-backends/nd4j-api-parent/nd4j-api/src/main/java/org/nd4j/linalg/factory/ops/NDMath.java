@@ -896,7 +896,7 @@ public class NDMath {
   public INDArray iamax(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("iamax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.IAMax(in, false, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, false, dimensions))[0];
   }
 
   /**
@@ -911,7 +911,7 @@ public class NDMath {
   public INDArray iamax(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("iamax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.IAMax(in, keepDims, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -925,7 +925,7 @@ public class NDMath {
   public INDArray iamin(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("iamin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.IAMin(in, false, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, false, dimensions))[0];
   }
 
   /**
@@ -940,7 +940,7 @@ public class NDMath {
   public INDArray iamin(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("iamin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.IAMin(in, keepDims, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, keepDims, dimensions))[0];
   }
 
   /**

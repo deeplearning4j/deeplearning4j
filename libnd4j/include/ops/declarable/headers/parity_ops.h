@@ -53,6 +53,32 @@ namespace sd {
         #endif
 
         /**
+         * This operation returns index of absolute max element in a given NDArray (optionally: along given dimension(s))
+         * Expected input:
+         * 0: N-dimensional array
+         * 1: optional axis vector
+         *
+         * Int args:
+         * 0: optional axis
+         */
+        #if NOT_EXCLUDED(OP_argamax)
+        DECLARE_CUSTOM_OP(argamax, 1, 1, false, 0, -2);
+        #endif
+
+        /**
+         * This operation returns index of absolute min element in a given NDArray (optionally: along given dimension(s))
+         * Expected input:
+         * 0: N-dimensional array
+         * 1: optional axis vector
+         *
+         * Int args:
+         * 0: optional axis
+         */
+        #if NOT_EXCLUDED(OP_argamin)
+        DECLARE_CUSTOM_OP(argamin, 1, 1, false, 0, -2);
+        #endif
+
+        /**
          * This operation provides various normalization modes:
          * 0: frobenius
          * 1: euclidean (norm2)

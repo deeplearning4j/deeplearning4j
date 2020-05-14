@@ -23,6 +23,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
@@ -31,7 +32,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.SerializationUtils;
@@ -111,7 +111,7 @@ public class BagOfWordsVectorizerTest extends BaseDL4JTest {
         INDArray labelz = dataSet.getLabels();
         log.info("Labels array: " + labelz);
 
-        int idx2 = Nd4j.getExecutioner().exec(new IMax(labelz)).getInt(0);
+        int idx2 = Nd4j.getExecutioner().exec(new ArgMax(labelz))[0].getInt(0);
         //int idx2 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(labelz))).getFinalResult().intValue();
 
         //        assertEquals(1.0, dataSet.getLabels().getDouble(0), 0.1);
@@ -125,7 +125,7 @@ public class BagOfWordsVectorizerTest extends BaseDL4JTest {
         assertEquals(1, dataSet.getFeatures().getDouble(vocabCache.tokenFor("1").getIndex()), 0.1);
         assertEquals(0, dataSet.getFeatures().getDouble(vocabCache.tokenFor("2").getIndex()), 0.1);
 
-        int idx1 = Nd4j.getExecutioner().exec(new IMax(dataSet.getLabels())).getInt(0);
+        int idx1 = Nd4j.getExecutioner().exec(new ArgMax(dataSet.getLabels()))[0].getInt(0);
         //int idx1 = ((IndexAccumulation) Nd4j.getExecutioner().exec(new IMax(dataSet.getLabels()))).getFinalResult().intValue();
 
         //assertEquals(0.0, dataSet.getLabels().getDouble(0), 0.1);

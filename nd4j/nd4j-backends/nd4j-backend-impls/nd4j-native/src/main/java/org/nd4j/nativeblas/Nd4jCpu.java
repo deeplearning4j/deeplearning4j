@@ -17470,6 +17470,60 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * This operation returns index of absolute max element in a given NDArray (optionally: along given dimension(s))
+         * Expected input:
+         * 0: N-dimensional array
+         * 1: optional axis vector
+         *
+         * Int args:
+         * 0: optional axis
+         */
+//         #if NOT_EXCLUDED(OP_argamax)
+        @Namespace("sd::ops") public static class argamax extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public argamax(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public argamax(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public argamax position(long position) {
+                return (argamax)super.position(position);
+            }
+        
+                                                                                    public argamax() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+         * This operation returns index of absolute min element in a given NDArray (optionally: along given dimension(s))
+         * Expected input:
+         * 0: N-dimensional array
+         * 1: optional axis vector
+         *
+         * Int args:
+         * 0: optional axis
+         */
+//         #if NOT_EXCLUDED(OP_argamin)
+        @Namespace("sd::ops") public static class argamin extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public argamin(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public argamin(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public argamin position(long position) {
+                return (argamin)super.position(position);
+            }
+        
+                                                                                    public argamin() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
          * This operation provides various normalization modes:
          * 0: frobenius
          * 1: euclidean (norm2)

@@ -25,7 +25,7 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
@@ -122,7 +122,7 @@ public class CrashTest extends BaseNd4jTest {
         float sum = x.sumNumber().floatValue();
 
         // index reduction
-        Nd4j.getExecutioner().exec(new IMax(x));
+        Nd4j.getExecutioner().exec(new ArgMax(x));
 
         // casual transform
         Nd4j.getExecutioner().exec(new Sqrt(x, x));

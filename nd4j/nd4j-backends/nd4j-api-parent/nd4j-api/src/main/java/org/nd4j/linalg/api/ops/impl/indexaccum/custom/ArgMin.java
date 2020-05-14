@@ -17,10 +17,12 @@
 package org.nd4j.linalg.api.ops.impl.indexaccum.custom;
 
 import lombok.Data;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -37,8 +39,53 @@ import java.util.Map;
  */
 @Data
 public class ArgMin extends DynamicCustomOp {
+    protected boolean keepDims = false;
+    private int[] dimensions;
 
-    protected DataType outputType = DataType.LONG;
+    protected DataType outputType = DataType.INT64;
+
+    public ArgMin(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
+        super(sameDiff, i_v);
+
+        this.keepDims = keepDims;
+        this.dimensions = dimensions;
+
+        if (dimensions != null && dimensions.length > 0)
+            addIArgument(dimensions);
+
+        addBArgument(keepDims);
+
+        addDArgument(outputType);
+    }
+
+    public ArgMin() {
+    }
+
+    public ArgMin(INDArray x, INDArray z, boolean keepDims, int... dimensions) {
+        super(new INDArray[]{x}, z != null ? new INDArray[] {z} : new INDArray[0]);
+
+        this.keepDims = keepDims;
+        this.dimensions = dimensions;
+
+        if (dimensions != null && dimensions.length > 0)
+            addIArgument(dimensions);
+
+        addBArgument(keepDims);
+
+        addDArgument(outputType);
+    }
+
+    public ArgMin(INDArray x, INDArray z, int... dimensions) {
+        this(x, z, false, dimensions);
+    }
+
+    public ArgMin(INDArray x, int... dimensions) {
+        this(x, null, dimensions);
+    }
+
+    public ArgMin(INDArray x, boolean keepDims, int... dimensions) {
+        this(x, null, keepDims, dimensions);
+    }
 
     @Override
     public String opName() {
