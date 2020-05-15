@@ -75,7 +75,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 90000L;
+        return 180000L;
     }
 
     @Test

@@ -70,6 +70,11 @@ public class TestListeners extends BaseDL4JTest {
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testSettingListenersUnsupervised() {
         //Pretrain layers should get copies of the listeners, in addition to the

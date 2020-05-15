@@ -767,6 +767,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (!isInitCalled())
             init();
 
+        if (solver == null) {
+            try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
+                        .build();
+            }
+        }
+
         solver.getOptimizer().setGradientsAccumulator(accumulator);
     }
 

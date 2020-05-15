@@ -183,11 +183,11 @@ public class TestCheckpointListener extends BaseDL4JTest {
 
         CheckpointListener l = new CheckpointListener.Builder(f)
                 .keepLast(3)
-                .saveEvery(4, TimeUnit.SECONDS)
+                .saveEvery(4900, TimeUnit.MILLISECONDS)
                 .build();
         net.setListeners(l);
 
-        for(int i=0; i<5; i++ ){   //10 iterations total
+        for(int i=0; i<3; i++ ){   //10 iterations total
             net.fit(iter);
             Thread.sleep(5000);
         }
@@ -211,9 +211,10 @@ public class TestCheckpointListener extends BaseDL4JTest {
             ns.add(n.getIterationCount());
         }
 
-        assertEquals(3, l.availableCheckpoints().size());
-        assertEquals(ns.toString(), 3, ns.size());
-        assertTrue(ns.containsAll(Arrays.asList(4,6,8)));
+        assertEquals(2, l.availableCheckpoints().size());
+        assertEquals(ns.toString(), 2, ns.size());
+        System.out.println(ns);
+        assertTrue(ns.containsAll(Arrays.asList(2,4)));
     }
 
     @Test
