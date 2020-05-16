@@ -59,8 +59,6 @@ public:
     int poolSize = 10;
 
     PlaygroundTests() {
-        printf("\n");
-        fflush(stdout);
     }
 };
 
