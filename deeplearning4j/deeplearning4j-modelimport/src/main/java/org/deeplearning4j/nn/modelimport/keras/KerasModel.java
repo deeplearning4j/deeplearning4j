@@ -171,7 +171,7 @@ public class KerasModel {
                 importTrainingConfiguration(trainingJson);
             else log.warn("If enforceTrainingConfig is true, a training " +
                     "configuration object has to be provided. Usually the only practical way to do this is to store" +
-                    " your keras model with `model.save('model_path.h5'. If you store model config and weights" +
+                    " your keras model with `model.save('model_path.h5')`. If you store model config and weights" +
                     " separately no training configuration is attached.");
         }
 
