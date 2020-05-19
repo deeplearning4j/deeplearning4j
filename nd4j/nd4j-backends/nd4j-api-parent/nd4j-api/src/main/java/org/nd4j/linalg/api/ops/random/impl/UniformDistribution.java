@@ -101,12 +101,6 @@ public class UniformDistribution extends BaseRandomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "RandomUniformGG";
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.emptyList();
     }

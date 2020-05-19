@@ -85,12 +85,6 @@ public class DropOutInverted extends BaseRandomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "Dropout";
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }

@@ -66,23 +66,29 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     public static final String[] IGNORE_REGEXES = new String[]{
             //Failing 2019/07/01 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
             //Still failing 2019/09/11
+            //Still failing 2020/04/27
+            //java.lang.IllegalStateException: Requested output variable LogMatrixDeterminant:1 does not exist in SameDiff instance
             "slogdet/.*",
 
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
+            // Still failing 2020/04/27 java.lang.IllegalStateException: Requested output variable Bincount does not exist in SameDiff instance
             "bincount/.*",
             // Failing 2019/11/14 https://github.com/eclipse/deeplearning4j/issues/8393
             "is_strictly_increasing/emptyArrayTest/.*",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
+            // Still failing 2020/04/27 java.lang.IllegalStateException: Could not find class for TF Ops: TruncateMod
             "truncatemod/.*",
 
             //Still failing as of 2019/09/11 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
 
             //2019/09/11 - No tensorflow op found for SparseTensorDenseAdd
+            // 2020/04/27 java.lang.IllegalStateException: Could not find class for TF Ops: SparseTensorDenseAdd
             "confusion/.*",
 
             //2019/09/11 - Couple of tests failing (InferenceSession issues)
+            // Still failing 2020/04/27 Requested output variable concat does not exist in SameDiff instance
             "rnn/bstack/d_.*",
 
             //2019/05/21 - Failing on AVX2/512 intermittently (Linux, OSX), passing elsewhere
@@ -97,87 +103,68 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "g_11",
 
             //2019/07/09 - Need "Multinomial" op - https://github.com/eclipse/deeplearning4j/issues/7913
+            // Still failing 2020/04/27 java.lang.IllegalStateException: Could not find class for TF Ops: Multinomial
             "multinomial/.*",
 
             //2019/11/04 AB - disabled, pending libnd4j deconv3d_tf implementation
+            // Still failing 2020/04/27 java.lang.IllegalStateException: Could not find descriptor for op: deconv3d_tf - class: org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DTF
             "conv3d_transpose.*",
 
             //2019/11/15 - mapping is not present yet https://github.com/eclipse/deeplearning4j/issues/8397
+            // Still failing 2020/04/27 java.lang.AssertionError: Predictions do not match on ragged/reduce_mean/2d_a1, node RaggedReduceMean/truediv
             "ragged/reduce_mean/.*",
 
             // 2019/11/15 - missing dtype argument in nd4j, tests are useless https://github.com/eclipse/deeplearning4j/issues/8398
-            "zeros_like/rank2_float32_dtype_int.*",
+            // Still failing 2020/04/27 java.lang.IndexOutOfBoundsException: 1
+           "zeros_like/rank2_float32_dtype_int.*",
 
             // 11.26.2019 failing - https://github.com/eclipse/deeplearning4j/issues/8453
+            // Still failing 2020/04/27 java.lang.AssertionError: Predictions do not match on roll/rank2_float32_zeroshift, node Roll
             "roll/.*",
 
             // 11.26.2019 failing https://github.com/eclipse/deeplearning4j/issues/8455
+            // still failing 2020/04/27
+            // java.lang.IllegalStateException: Failed to calculate output shapes for op matrix_band_part (MatrixBandPart) - no shapes were returned by calculateOutputShape()
             "matrix_band_part/.*",
 
             // 12.20.2019 - https://github.com/eclipse/deeplearning4j/issues/8559
+            // Still failing 2020/27/04 java.lang.AssertionError: Predictions do not match on fused_batch_norm/float32_nhcw, node FusedBatchNormV3
             "fused_batch_norm/.*",
 
-            // AB 2020/01/04 - https://github.com/eclipse/deeplearning4j/issues/8592
-            "emptyArrayTests/reshape/rank2_shape2-0_2-0--1",
+            // 01.05.2020 -  https://github.com/eclipse/deeplearning4j/issues/8898
+             "primitive_gru",
 
-            //AB 2020/01/07 - Known issues
-            "bitcast/from_float64_to_int64",
-            "bitcast/from_rank2_float64_to_int64",
-            "bitcast/from_float64_to_uint64",
+            // 05.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8921
+            "random_poisson/rank1_float16", "random_poisson/rank1_float32", "random_poisson/rank1_float16", "random_poisson/rank1_half",
+            "random_poisson_v2/rank1_float64", "random_poisson_v2/rank1_float16", "random_poisson_v2/rank1_half",
 
-
-            //NEWLY ADDED TESTCASES from 27/04/2020
-            "non_max_suppression_v2/.*", "non_max_suppression/.*",
+            //08.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8927
             "random_gamma/.*",
-            "non_max_suppression_v5/.*",
-            "non_max_suppression_v4/.*",
-            "non_max_suppression_v3/.*",
-            "dropout/.*",
-            "max_pool_with_argmax/.*",
-            "conv2d_transpose/.*",
+
+            //08.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8928
             "Conv3DBackpropInputV2/.*",
-            "Conv3DBackpropInput/.*",
-            "mod/.*",
-            "leaky_relu/.*",
-            "DeepCopy/.*",
-            "empty/.*",
-            "ones_like/.*",
-            "is_non_decreasing/.*",
-            "div/.*",
-            "lgamma/.*",
+
+            //12.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8940
+            "compare_and_bitpack/.*",
+
+            //12.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8943
+            "max_pool_with_argmax/int64_int64_padding_SAME", "max_pool_with_argmax/int32_int64_padding_SAME",
+
+            //12.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8946
+            "non_max_suppression_v4/.*","non_max_suppression_v5/.*",
+
+            // 18.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8960
+            "random_shuffle/.*",
+            // 18.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8963
             "random_uniform/.*",
             "random_uniform_int/.*",
-            "resize_area/.*",
-            "zeros_like_tf1/.*",
-            "Conv2DTranspose/.*",
-            "rgb_to_yuv/.*",
-            "rgb_to_grayscale/.*",
-            "rgb_to_yiq/.*",
-            "losses/.*",
-            "yiq_to_rgb/.*",
-            "yuv_to_rgb/.*",
-            "emptyArrayTests/.*",
             "random_normal/.*",
-            "random_shuffle/.*",
-            "random_poisson_v2/.*",
+            "random_gamma/.*",
             "random_poisson/.*",
-            "random_crop/.*",
-            "compare_and_bitpack/.*",
-            "adjust_contrast/.*",
-            "confusion/.*",
-            "bitcast/.*",
-            "roll/.*",
-            "matrix_band_part/.*",
-            "conv3d_transpose_layers/.*",
-            "multinomial/.*",
-            "unsorted_segment/.*",
-            "cnn2d_nn/.*",
-            "truncatemod/.*",
-            "bincount/.*",
-            "slogdet/.*",
-            "adjust_contrast_v2/.*"
+            "random_poisson/.*",
+            "random_poisson_v2/.*",
 
-};
+  };
 
     /* As per TFGraphTestList.printArraysDebugging - this field defines a set of regexes for test cases that should have
        all arrays printed during execution.

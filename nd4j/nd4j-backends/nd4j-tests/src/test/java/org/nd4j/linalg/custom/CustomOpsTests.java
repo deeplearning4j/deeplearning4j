@@ -847,22 +847,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertArrayEquals(new long[]{256, 256, 3}, lsd.get(0).getShape());
     }
 
-    @Test
-    public void testAdjustContrastV2() {
-        INDArray in = Nd4j.linspace(DataType.DOUBLE,1.0,1.0, 4*4*3).reshape(4,4,3);
-        INDArray out = Nd4j.createUninitialized(4,4,3);
-
-        INDArray expected = Nd4j.createFromArray(new double[]{-21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
-                2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
-                26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
-                50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
-        }).reshape(4,4,3);
-
-        Nd4j.exec(new AdjustContrastV2(in, 2.0, out));
-
-        assertArrayEquals(out.shape(), in.shape());
-        assertEquals(expected, out);
-    }
 
     @Ignore("AS 11/13/2019 https://github.com/eclipse/deeplearning4j/issues/8374")
     @Test

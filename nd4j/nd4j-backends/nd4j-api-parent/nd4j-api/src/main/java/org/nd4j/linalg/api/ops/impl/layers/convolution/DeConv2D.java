@@ -306,11 +306,6 @@ public class DeConv2D extends DynamicCustomOp {
         return "ConvTranspose";
     }
 
-    @Override
-    public String tensorflowName() {
-        return "Conv2DTranspose";
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

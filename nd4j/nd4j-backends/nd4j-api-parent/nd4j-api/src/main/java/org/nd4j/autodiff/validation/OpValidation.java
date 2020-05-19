@@ -1220,7 +1220,12 @@ public class OpValidation {
                 "absargmax",
                 "absargmin",
                 "entropy_shannon",   //This is a thing, but quite different from our op: https://www.tensorflow.org/versions/r1.2/api_docs/python/tf/contrib/bayesflow/entropy/entropy_shannon
-                "count_zero"
+                "count_zero",
+
+                "SaveV2",
+                "LoadV2",
+                "RestoreV2",
+                "RandomCrop" // NotImplementedError: Op RandomCrop is not available in GraphDef version 134. It has been removed in version 8. Random crop is now pure Python.
         );
 
         return new HashSet<>(list);

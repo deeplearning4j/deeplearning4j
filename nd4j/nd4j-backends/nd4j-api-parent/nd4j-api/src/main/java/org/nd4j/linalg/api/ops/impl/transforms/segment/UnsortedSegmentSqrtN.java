@@ -56,11 +56,6 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "UnsortedSegmentSqrtN";
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
         return new UnsortedSegmentSqrtNBp(sameDiff, arg(0), arg(1), gradients.get(0), numSegments).outputs();
     }

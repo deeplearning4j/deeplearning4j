@@ -55,10 +55,6 @@ public class UnsortedSegmentMean extends DynamicCustomOp {
         return "unsorted_segment_mean";
     }
 
-    @Override
-    public String tensorflowName() {
-        return "UnsortedSegmentMean";
-    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
