@@ -137,6 +137,7 @@
         <module>jumpy</module>
         <module>pydatavec</module>
         <module>pydl4j</module>
+        <module>python4j</module>
     </modules>
 
     <scm>
