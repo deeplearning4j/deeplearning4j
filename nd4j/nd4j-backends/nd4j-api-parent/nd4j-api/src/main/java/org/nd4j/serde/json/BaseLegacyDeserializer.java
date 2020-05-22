@@ -17,6 +17,7 @@
 package org.nd4j.serde.json;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
 import org.nd4j.shade.jackson.databind.JsonDeserializer;
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * A base deserialization class used to handle deserializing of a specific class given changes from subtype wrapper
@@ -79,13 +81,9 @@ public abstract class BaseLegacyDeserializer<T> extends JsonDeserializer<T> {
                     + "\": legacy class mapping with this name is unknown");
         }
 
-        Class<? extends T> lClass;
-        try {
-            lClass = (Class<? extends T>) Class.forName(layerClass);
-        } catch (Exception e){
-            throw new RuntimeException("Could not find class for deserialization of \"" + name + "\" of type " +
-                    getDeserializedType() + ": class " + layerClass + " is not on the classpath?", e);
-        }
+        Class<? extends T> lClass = ND4JClassLoading.loadClassByName(layerClass);
+        Objects.requireNonNull(lClass, "Could not find class for deserialization of \"" + name + "\" of type " +
+                getDeserializedType() + ": class " + layerClass + " is not on the classpath?");
 
         ObjectMapper m = getLegacyJsonMapper();
 

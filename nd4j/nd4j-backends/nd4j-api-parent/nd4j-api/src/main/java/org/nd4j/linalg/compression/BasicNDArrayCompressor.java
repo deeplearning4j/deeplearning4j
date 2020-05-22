@@ -19,6 +19,7 @@ package org.nd4j.linalg.compression;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -50,7 +51,7 @@ public class BasicNDArrayCompressor {
          */
         codecs = new ConcurrentHashMap<>();
 
-        ServiceLoader<NDArrayCompressor> loader = ServiceLoader.load(NDArrayCompressor.class);
+        ServiceLoader<NDArrayCompressor> loader = ND4JClassLoading.loadService(NDArrayCompressor.class);
         for (NDArrayCompressor compressor : loader) {
             codecs.put(compressor.getDescriptor().toUpperCase(), compressor);
         }
