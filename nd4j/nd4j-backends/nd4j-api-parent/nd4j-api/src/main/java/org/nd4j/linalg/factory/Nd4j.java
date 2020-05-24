@@ -1131,6 +1131,7 @@ public class Nd4j {
             case LONG:
                 return LongIndexer.create((LongPointer) pointer);
             case UINT32:
+                return UIntIndexer.create((IntPointer) pointer);
             case INT:
                 return IntIndexer.create((IntPointer) pointer);
             case UINT16:
