@@ -1,10 +1,7 @@
 package org.deeplearning4j.rl4j.agent;
 
 import org.deeplearning4j.rl4j.agent.listener.AgentListener;
-import org.deeplearning4j.rl4j.environment.ActionSchema;
-import org.deeplearning4j.rl4j.environment.Environment;
-import org.deeplearning4j.rl4j.environment.Schema;
-import org.deeplearning4j.rl4j.environment.StepResult;
+import org.deeplearning4j.rl4j.environment.*;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.IPolicy;
@@ -12,6 +9,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.junit.runner.RunWith;
 import org.mockito.*;
 import org.mockito.junit.*;
 import org.nd4j.linalg.factory.Nd4j;
@@ -23,8 +21,8 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@RunWith(MockitoJUnitRunner.class)
 public class AgentTest {
-
     @Mock Environment environmentMock;
     @Mock TransformProcess transformProcessMock;
     @Mock IPolicy policyMock;
@@ -102,7 +100,7 @@ public class AgentTest {
     public void when_runIsCalled_expect_agentIsReset() {
         // Arrange
         Map<String, Object> envResetResult = new HashMap<>();
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(envResetResult);
         when(environmentMock.getSchema()).thenReturn(schema);
 
@@ -119,7 +117,7 @@ public class AgentTest {
         sut.run();
 
         // Assert
-        assertEquals(0, sut.getEpisodeStepNumber());
+        assertEquals(0, sut.getEpisodeStepCount());
         verify(transformProcessMock).transform(envResetResult, 0, false);
         verify(policyMock, times(1)).reset();
         assertEquals(0.0, sut.getReward(), 0.00001);
@@ -130,7 +128,7 @@ public class AgentTest {
     public void when_runIsCalled_expect_onBeforeAndAfterEpisodeCalled() {
         // Arrange
         Map<String, Object> envResetResult = new HashMap<>();
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(envResetResult);
         when(environmentMock.getSchema()).thenReturn(schema);
 
@@ -152,7 +150,7 @@ public class AgentTest {
     public void when_onBeforeEpisodeReturnsStop_expect_performStepAndOnAfterEpisodeNotCalled() {
         // Arrange
         Map<String, Object> envResetResult = new HashMap<>();
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(envResetResult);
         when(environmentMock.getSchema()).thenReturn(schema);
 
@@ -179,7 +177,7 @@ public class AgentTest {
     public void when_runIsCalledWithoutMaxStep_expect_agentRunUntilEpisodeIsFinished() {
         // Arrange
         Map<String, Object> envResetResult = new HashMap<>();
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(envResetResult);
         when(environmentMock.getSchema()).thenReturn(schema);
 
@@ -191,10 +189,10 @@ public class AgentTest {
         final Agent spy = Mockito.spy(sut);
 
         doAnswer(invocation -> {
-            ((Agent)invocation.getMock()).incrementEpisodeStepNumber();
+            ((Agent)invocation.getMock()).incrementEpisodeStepCount();
             return null;
         }).when(spy).performStep();
-        when(environmentMock.isEpisodeFinished()).thenAnswer(invocation -> spy.getEpisodeStepNumber() >= 5 );
+        when(environmentMock.isEpisodeFinished()).thenAnswer(invocation -> spy.getEpisodeStepCount() >= 5 );
 
         // Act
         spy.run();
@@ -209,7 +207,7 @@ public class AgentTest {
     public void when_maxStepsIsReachedBeforeEposideEnds_expect_runTerminated() {
         // Arrange
         Map<String, Object> envResetResult = new HashMap<>();
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(envResetResult);
         when(environmentMock.getSchema()).thenReturn(schema);
 
@@ -222,7 +220,7 @@ public class AgentTest {
         final Agent spy = Mockito.spy(sut);
 
         doAnswer(invocation -> {
-            ((Agent)invocation.getMock()).incrementEpisodeStepNumber();
+            ((Agent)invocation.getMock()).incrementEpisodeStepCount();
             return null;
         }).when(spy).performStep();
 
@@ -239,7 +237,7 @@ public class AgentTest {
     public void when_initialObservationsAreSkipped_expect_performNoOpAction() {
         // Arrange
         Map<String, Object> envResetResult = new HashMap<>();
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(envResetResult);
         when(environmentMock.getSchema()).thenReturn(schema);
 
@@ -264,7 +262,7 @@ public class AgentTest {
     public void when_initialObservationsAreSkipped_expect_performNoOpActionAnd() {
         // Arrange
         Map<String, Object> envResetResult = new HashMap<>();
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(envResetResult);
         when(environmentMock.getSchema()).thenReturn(schema);
 
@@ -289,7 +287,7 @@ public class AgentTest {
     public void when_observationsIsSkipped_expect_performLastAction() {
         // Arrange
         Map<String, Object> envResetResult = new HashMap<>();
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(envResetResult);
         when(environmentMock.step(any(Integer.class))).thenReturn(new StepResult(envResetResult, 0.0, false));
         when(environmentMock.getSchema()).thenReturn(schema);
@@ -331,7 +329,7 @@ public class AgentTest {
     @Test
     public void when_onBeforeStepReturnsStop_expect_performStepAndOnAfterEpisodeNotCalled() {
         // Arrange
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(new HashMap<>());
         when(environmentMock.getSchema()).thenReturn(schema);
 
@@ -358,7 +356,7 @@ public class AgentTest {
     @Test
     public void when_observationIsNotSkipped_expect_policyActionIsSentToEnvironment() {
         // Arrange
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(new HashMap<>());
         when(environmentMock.getSchema()).thenReturn(schema);
         when(environmentMock.step(any(Integer.class))).thenReturn(new StepResult(new HashMap<>(), 0.0, false));
@@ -381,7 +379,7 @@ public class AgentTest {
     @Test
     public void when_stepResultIsReceived_expect_observationAndRewardUpdated() {
         // Arrange
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(new HashMap<>());
         when(environmentMock.getSchema()).thenReturn(schema);
         when(environmentMock.step(any(Integer.class))).thenReturn(new StepResult(new HashMap<>(), 234.0, false));
@@ -405,7 +403,7 @@ public class AgentTest {
     @Test
     public void when_stepIsDone_expect_onAfterStepAndWithStepResult() {
         // Arrange
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(new HashMap<>());
         when(environmentMock.getSchema()).thenReturn(schema);
         StepResult stepResult = new StepResult(new HashMap<>(), 234.0, false);
@@ -430,7 +428,7 @@ public class AgentTest {
     @Test
     public void when_onAfterStepReturnsStop_expect_onAfterEpisodeNotCalled() {
         // Arrange
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(new HashMap<>());
         when(environmentMock.getSchema()).thenReturn(schema);
         StepResult stepResult = new StepResult(new HashMap<>(), 234.0, false);
@@ -458,7 +456,7 @@ public class AgentTest {
     @Test
     public void when_runIsCalled_expect_onAfterEpisodeIsCalled() {
         // Arrange
-        Schema schema = new Schema(new ActionSchema<>(-1));
+        Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(new HashMap<>());
         when(environmentMock.getSchema()).thenReturn(schema);
         StepResult stepResult = new StepResult(new HashMap<>(), 234.0, false);

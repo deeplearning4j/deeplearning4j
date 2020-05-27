@@ -30,10 +30,18 @@ import java.util.List;
  */
 public class StateActionExperienceHandler<A> implements ExperienceHandler<A, StateActionPair<A>> {
 
+    private final int batchSize;
+
+    private boolean isFinalObservationSet;
+
+    public StateActionExperienceHandler(int batchSize) {
+        this.batchSize = batchSize;
+    }
+
     private List<StateActionPair<A>> stateActionPairs = new ArrayList<>();
 
     public void setFinalObservation(Observation observation) {
-        // Do nothing
+        isFinalObservationSet = true;
     }
 
     public void addExperience(Observation observation, A action, double reward, boolean isTerminal) {
@@ -43,6 +51,12 @@ public class StateActionExperienceHandler<A> implements ExperienceHandler<A, Sta
     @Override
     public int getTrainingBatchSize() {
         return stateActionPairs.size();
+    }
+
+    @Override
+    public boolean isTrainingBatchReady() {
+        return stateActionPairs.size() >= batchSize
+                || (isFinalObservationSet && stateActionPairs.size() > 0);
     }
 
     /**
@@ -62,6 +76,7 @@ public class StateActionExperienceHandler<A> implements ExperienceHandler<A, Sta
     @Override
     public void reset() {
         stateActionPairs = new ArrayList<>();
+        isFinalObservationSet = false;
     }
 
 }

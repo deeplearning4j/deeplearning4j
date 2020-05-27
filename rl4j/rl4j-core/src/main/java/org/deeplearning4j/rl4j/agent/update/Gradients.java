@@ -13,15 +13,14 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.environment;
+package org.deeplearning4j.rl4j.agent.update;
 
 import lombok.Value;
+import org.deeplearning4j.nn.gradient.Gradient;
 
-import java.util.Map;
-
+// Work in progress
 @Value
-public class StepResult {
-    private Map<String, Object> channelsData;
-    private double reward;
-    private boolean terminal;
+public class Gradients {
+    private Gradient[] gradients; // Temporary: we'll need something better than a Gradient[]
+    private int batchSize;
 }

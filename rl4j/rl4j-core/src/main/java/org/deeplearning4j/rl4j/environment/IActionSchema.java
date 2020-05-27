@@ -17,11 +17,10 @@ package org.deeplearning4j.rl4j.environment;
 
 import lombok.Value;
 
-import java.util.Map;
+// Work in progress
+public interface IActionSchema<ACTION> {
+    ACTION getNoOp();
 
-@Value
-public class StepResult {
-    private Map<String, Object> channelsData;
-    private double reward;
-    private boolean terminal;
+    // Review: A schema should be data-only and not have behavior
+    ACTION getRandomAction();
 }

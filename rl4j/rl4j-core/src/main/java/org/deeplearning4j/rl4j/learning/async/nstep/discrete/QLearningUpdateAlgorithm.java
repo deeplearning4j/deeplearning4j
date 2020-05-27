@@ -17,7 +17,7 @@ package org.deeplearning4j.rl4j.learning.async.nstep.discrete;
 
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
-import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.deeplearning4j.rl4j.learning.async.UpdateAlgorithm;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,15 +27,12 @@ import java.util.List;
 
 public class QLearningUpdateAlgorithm implements UpdateAlgorithm<IDQN> {
 
-    private final int[] shape;
     private final int actionSpaceSize;
     private final double gamma;
 
-    public QLearningUpdateAlgorithm(int[] shape,
-                                    int actionSpaceSize,
+    public QLearningUpdateAlgorithm(int actionSpaceSize,
                                     double gamma) {
 
-        this.shape = shape;
         this.actionSpaceSize = actionSpaceSize;
         this.gamma = gamma;
     }
@@ -44,33 +41,34 @@ public class QLearningUpdateAlgorithm implements UpdateAlgorithm<IDQN> {
     public Gradient[] computeGradients(IDQN current, List<StateActionPair<Integer>> experience) {
         int size = experience.size();
 
-        int[] nshape = Learning.makeShape(size, shape);
-        INDArray input = Nd4j.create(nshape);
-        INDArray targets = Nd4j.create(size, actionSpaceSize);
-
         StateActionPair<Integer> stateActionPair = experience.get(size - 1);
+
+        INDArray data = stateActionPair.getObservation().getData();
+        INDArray features = INDArrayHelper.createBatchForShape(size, data.shape());
+        INDArray targets = Nd4j.create(size, actionSpaceSize);
 
         double r;
         if (stateActionPair.isTerminal()) {
             r = 0;
         } else {
             INDArray[] output = null;
-            output = current.outputAll(stateActionPair.getObservation().getData());
+            output = current.outputAll(data);
             r = Nd4j.max(output[0]).getDouble(0);
         }
 
         for (int i = size - 1; i >= 0; i--) {
             stateActionPair = experience.get(i);
+            data = stateActionPair.getObservation().getData();
 
-            input.putRow(i, stateActionPair.getObservation().getData());
+            features.putRow(i, data);
 
             r = stateActionPair.getReward() + gamma * r;
-            INDArray[] output = current.outputAll(stateActionPair.getObservation().getData());
+            INDArray[] output = current.outputAll(data);
             INDArray row = output[0];
             row = row.putScalar(stateActionPair.getAction(), r);
             targets.putRow(i, row);
         }
 
-        return current.gradient(input, targets);
+        return current.gradient(features, targets);
     }
 }

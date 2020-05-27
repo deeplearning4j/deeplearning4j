@@ -25,6 +25,7 @@ import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.experience.StateActionExperienceHandler;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
+import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -49,7 +50,7 @@ public abstract class AsyncThreadDiscrete<OBSERVATION extends Encodable, NN exte
 
     // TODO: Make it configurable with a builder
     @Setter(AccessLevel.PROTECTED) @Getter
-    private ExperienceHandler experienceHandler = new StateActionExperienceHandler();
+    private ExperienceHandler experienceHandler;
 
     public AsyncThreadDiscrete(IAsyncGlobal<NN> asyncGlobal,
                                MDP<OBSERVATION, Integer, DiscreteSpace> mdp,
@@ -60,6 +61,17 @@ public abstract class AsyncThreadDiscrete<OBSERVATION extends Encodable, NN exte
         synchronized (asyncGlobal) {
             current = (NN) asyncGlobal.getTarget().clone();
         }
+
+        experienceHandler = new StateActionExperienceHandler(getNStep());
+    }
+
+    private int getNStep() {
+        IAsyncLearningConfiguration configuration = getConfiguration();
+        if(configuration == null) {
+            return Integer.MAX_VALUE;
+        }
+
+        return configuration.getNStep();
     }
 
     // TODO: Add an actor-learner class and be able to inject the update algorithm

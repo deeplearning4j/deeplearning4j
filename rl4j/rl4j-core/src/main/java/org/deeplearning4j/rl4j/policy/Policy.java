@@ -34,7 +34,7 @@ import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
  *
  * A Policy responsability is to choose the next action given a state
  */
-public abstract class Policy<A> implements IPolicy<A> {
+public abstract class Policy<A> implements INeuralNetPolicy<A> {
 
     public abstract NeuralNet getNeuralNet();
 

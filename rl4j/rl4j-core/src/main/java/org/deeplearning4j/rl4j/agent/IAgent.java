@@ -13,42 +13,43 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.environment;
+package org.deeplearning4j.rl4j.agent;
 
-import java.util.Map;
+import org.deeplearning4j.rl4j.environment.Environment;
+import org.deeplearning4j.rl4j.policy.IPolicy;
 
 /**
- * An interface for environments used by the {@link org.deeplearning4j.rl4j.agent.Agent Agents}.
- * @param <ACTION> The type of actions
+ * The interface of {@link Agent}
+ * @param <ACTION>
  */
-public interface Environment<ACTION> {
+public interface IAgent<ACTION> {
+    /**
+     * Will play a single episode
+     */
+    void run();
 
     /**
-     * @return The {@link Schema} of the environment
+     * @return A user-supplied id to identify the IAgent instance.
      */
-    Schema<ACTION> getSchema();
+    String getId();
 
     /**
-     * Reset the environment's state to start a new episode.
-     * @return
+     * @return The {@link Environment} instance being used by the agent.
      */
-    Map<String, Object> reset();
+    Environment<ACTION> getEnvironment();
 
     /**
-     * Perform a single step.
-     *
-     * @param action The action taken
-     * @return A {@link StepResult} describing the result of the step.
+     * @return The {@link IPolicy} instance being used by the agent.
      */
-    StepResult step(ACTION action);
+    IPolicy<ACTION> getPolicy();
 
     /**
-     * @return True if the episode is finished
+     * @return The step count taken in the current episode.
      */
-    boolean isEpisodeFinished();
+    int getEpisodeStepCount();
 
     /**
-     * Called when the agent is finished using this environment instance.
+     * @return The cumulative reward received in the current episode.
      */
-    void close();
+    double getReward();
 }

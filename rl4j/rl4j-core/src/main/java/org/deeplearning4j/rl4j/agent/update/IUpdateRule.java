@@ -13,15 +13,25 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.environment;
+package org.deeplearning4j.rl4j.agent.update;
 
-import lombok.Value;
+import java.util.List;
 
-import java.util.Map;
+/**
+ * The role of IUpdateRule implementations is to use an experience batch to improve the accuracy of the policy.
+ * Used by {@link org.deeplearning4j.rl4j.agent.AgentLearner AgentLearner}
+ * @param <EXPERIENCE_TYPE> The type of the experience
+ */
+public interface IUpdateRule<EXPERIENCE_TYPE> {
+    /**
+     * Perform the update
+     * @param trainingBatch A batch of experience
+     */
+    void update(List<EXPERIENCE_TYPE> trainingBatch);
 
-@Value
-public class StepResult {
-    private Map<String, Object> channelsData;
-    private double reward;
-    private boolean terminal;
+    /**
+     * @return The total number of times the policy has been updated. In a multi-agent learning context, this total is
+     * for all the agents.
+     */
+    int getUpdateCount();
 }

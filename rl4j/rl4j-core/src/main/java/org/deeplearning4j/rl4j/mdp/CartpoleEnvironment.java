@@ -2,21 +2,19 @@ package org.deeplearning4j.rl4j.mdp;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.deeplearning4j.rl4j.environment.ActionSchema;
-import org.deeplearning4j.rl4j.environment.Environment;
-import org.deeplearning4j.rl4j.environment.Schema;
-import org.deeplearning4j.rl4j.environment.StepResult;
+import org.deeplearning4j.rl4j.environment.*;
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 
 public class CartpoleEnvironment implements Environment<Integer> {
     private static final int NUM_ACTIONS = 2;
     private static final int ACTION_LEFT = 0;
     private static final int ACTION_RIGHT = 1;
 
-    private static final Schema<Integer> schema = new Schema<>(new ActionSchema<>(ACTION_LEFT));
+    private final Schema<Integer> schema;
 
     public enum KinematicsIntegrators { Euler, SemiImplicitEuler };
 
@@ -48,11 +46,12 @@ public class CartpoleEnvironment implements Environment<Integer> {
     private Integer stepsBeyondDone;
 
     public CartpoleEnvironment() {
-        rnd = new Random();
+        this(Nd4j.getRandom());
     }
 
-    public CartpoleEnvironment(int seed) {
-        rnd = new Random(seed);
+    public CartpoleEnvironment(Random rnd) {
+        this.rnd = rnd;
+        this.schema = new Schema<Integer>(new IntegerActionSchema(NUM_ACTIONS, ACTION_LEFT, rnd));
     }
 
     @Override

@@ -15,13 +15,33 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.environment;
 
-import lombok.Value;
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Map;
+// Work in progress
+public class IntegerActionSchema implements IActionSchema<Integer> {
 
-@Value
-public class StepResult {
-    private Map<String, Object> channelsData;
-    private double reward;
-    private boolean terminal;
+    private final int numActions;
+    private final int noOpAction;
+    private final Random rnd;
+
+    public IntegerActionSchema(int numActions, int noOpAction) {
+        this(numActions, noOpAction, Nd4j.getRandom());
+    }
+
+    public IntegerActionSchema(int numActions, int noOpAction, Random rnd) {
+        this.numActions = numActions;
+        this.noOpAction = noOpAction;
+        this.rnd = rnd;
+    }
+
+    @Override
+    public Integer getNoOp() {
+        return noOpAction;
+    }
+
+    @Override
+    public Integer getRandomAction() {
+        return rnd.nextInt(numActions);
+    }
 }

@@ -13,15 +13,12 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.environment;
+package org.deeplearning4j.rl4j.agent;
 
-import lombok.Value;
+public interface IAgentLearner<ACTION> extends IAgent<ACTION> {
 
-import java.util.Map;
-
-@Value
-public class StepResult {
-    private Map<String, Object> channelsData;
-    private double reward;
-    private boolean terminal;
+    /**
+     * @return The total count of steps taken by this AgentLearner, for all episodes.
+     */
+    int getTotalStepCount();
 }

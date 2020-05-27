@@ -47,4 +47,9 @@ public interface IExpReplay<A> {
      * @param transition a new transition to store
      */
     void store(Transition<A> transition);
+
+    /**
+     * @return The desired size of batches
+     */
+    int getDesignatedBatchSize();
 }

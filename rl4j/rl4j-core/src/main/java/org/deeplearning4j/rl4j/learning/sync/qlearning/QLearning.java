@@ -51,24 +51,15 @@ import java.util.List;
 @Slf4j
 public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
                 extends SyncLearning<O, A, AS, IDQN>
-                implements TargetQNetworkSource, IEpochTrainer {
+                implements IEpochTrainer {
 
     protected abstract LegacyMDPWrapper<O, A, AS> getLegacyMDPWrapper();
 
-    protected abstract EpsGreedy<O, A, AS> getEgPolicy();
+    protected abstract EpsGreedy<A> getEgPolicy();
 
     public abstract MDP<O, A, AS> getMdp();
 
     public abstract IDQN getQNetwork();
-
-    public abstract IDQN getTargetQNetwork();
-
-    protected abstract void setTargetQNetwork(IDQN dqn);
-
-    protected void updateTargetNetwork() {
-        log.info("Update target network");
-        setTargetQNetwork(getQNetwork().clone());
-    }
 
     public IDQN getNeuralNet() {
         return getQNetwork();
@@ -101,11 +92,6 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
         int numQ = 0;
         List<Double> scores = new ArrayList<>();
         while (currentEpisodeStepCount < getConfiguration().getMaxEpochStep() && !getMdp().isDone()) {
-
-            if (this.getStepCount() % getConfiguration().getTargetDqnUpdateFreq() == 0) {
-                updateTargetNetwork();
-            }
-
             QLStepReturn<Observation> stepR = trainStep(obs);
 
             if (!stepR.getMaxQ().isNaN()) {
@@ -146,7 +132,6 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     protected void resetNetworks() {
         getQNetwork().reset();
-        getTargetQNetwork().reset();
     }
 
     private InitMdp<Observation> refacInitMdp() {

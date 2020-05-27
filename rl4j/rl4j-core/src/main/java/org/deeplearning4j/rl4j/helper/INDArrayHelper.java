@@ -24,17 +24,38 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alexandre Boulanger
  */
 public class INDArrayHelper {
-
     /**
-     * MultiLayerNetwork and ComputationGraph expects input data to be in NCHW in the case of pixels and NS in case of other data types.
-     *
-     * We must have either shape 2 (NK) or shape 4 (NCHW)
+     * Force the input source to have the correct shape:
+     *  <p><ul>
+     *      <li>DL4J requires it to be at least 2D</li>
+     *      <li>RL4J has a convention to have the batch size on dimension 0 to all INDArrays</li>
+     *  </ul></p>
+     * @param source The {@link INDArray} to be corrected.
+     * @return The corrected INDArray
      */
     public static INDArray forceCorrectShape(INDArray source) {
 
-        return source.shape()[0] == 1 && source.shape().length > 1
+        return source.shape()[0] == 1 && source.rank() > 1
                 ? source
                 : Nd4j.expandDims(source, 0);
 
+    }
+
+    /**
+     * This will create a INDArray with <i>batchSize</i> as dimension 0 and <i>shape</i> as other dimensions.
+     * For example, if <i>batchSize</i> is 10 and shape is { 1, 3, 4 }, the resulting INDArray shape will be { 10, 3, 4}
+     * @param batchSize The size of the batch to create
+     * @param shape The shape of individual elements.
+     *              Note: all shapes in RL4J should have a batch size as dimension 0; in this case the batch size should be 1.
+     * @return A INDArray
+     */
+    public static INDArray createBatchForShape(long batchSize, long... shape) {
+        long[] batchShape;
+
+        batchShape = new long[shape.length];
+        System.arraycopy(shape, 0, batchShape, 0, shape.length);
+
+        batchShape[0] = batchSize;
+        return Nd4j.create(batchShape);
     }
 }
