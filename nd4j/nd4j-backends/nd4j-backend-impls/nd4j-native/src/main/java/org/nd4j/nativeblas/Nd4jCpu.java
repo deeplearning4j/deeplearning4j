@@ -4421,7 +4421,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
         /**
         * fill target matrix with given value in one or two directions from main diagonal:
-        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
+        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'l' (down) or 'b' (both)
         *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
         * direction - in what direction to fill matrix. There are 3 possible directions:
         *   'u' - fill up, mathematically this corresponds to lower triangular matrix, subdiagonal "lower" unaffected
@@ -4834,9 +4834,11 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 ////////////////////////////////////////////////////////////////////////
 
 
-    
+////////////////////////////////////////////////////////////////////////
 
-    
+
+////////////////////////////////////////////////////////////////////////
+
 
 // #ifndef __JAVACPP_HACK__
 // #endif
@@ -7353,9 +7355,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the element wise stride for this information
  * buffer
  */
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongPointer buffer);
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongBuffer buffer);
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") long[] buffer);
+   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 
     /**
@@ -21174,214 +21176,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
        /**
-        * This op make bilinear or nearest neighbor interpolated resize for given tensor
-        *
-        * input array:
-        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels) numeric type
-        *    1 - 2D-Tensor with shape (num_boxes, 4) float type
-        *    2 - 1D-Tensor with shape (num_boxes) int type
-        *    3 - 1D-Tensor with 2 values (newWidth, newHeight) (optional) int type
-        *
-        * float arguments (optional)
-        *   0 - exprapolation_value (optional) default 0.f
-        *
-        * int arguments: (optional)
-        *   0 - mode (default 0 - bilinear interpolation)
-        *
-        * output array:
-        *   the 4D-Tensor with resized to crop_size images given - float type
-        */
-//         #if NOT_EXCLUDED(OP_crop_and_resize)
-        @Namespace("sd::ops") public static class crop_and_resize extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public crop_and_resize(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public crop_and_resize(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public crop_and_resize position(long position) {
-                return (crop_and_resize)super.position(position);
-            }
-        
-                                                                                    public crop_and_resize() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
-       /**
-        * This op make bilinear interpolated resize for given tensor
-        *
-        * input array:
-        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
-        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
-        *
-        * int arguments: (optional)
-        *   0 - new width
-        *   1 - new height
-        *
-        * output array:
-        *   the 4D-Tensor with calculated backproped dots
-        *
-        * CAUTION: either size tensor or a pair of int params should be provided.
-        */
-
-//         #if NOT_EXCLUDED(OP_resize_bilinear)
-        @Namespace("sd::ops") public static class resize_bilinear extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public resize_bilinear(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public resize_bilinear(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public resize_bilinear position(long position) {
-                return (resize_bilinear)super.position(position);
-            }
-        
-                                                                                    public resize_bilinear() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
-       /**
-        * This op make nearest neighbor interpolated resize for given tensor
-        *
-        * input array:
-        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
-        *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
-        *
-        * int arguments: (optional)
-        *   0 - new width
-        *   1 - new height
-        *
-        * output array:
-        *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
-        *
-        * CAUTION: either size tensor or a pair of int params should be provided.
-        */
-
-//         #if NOT_EXCLUDED(OP_resize_nearest_neighbor)
-        @Namespace("sd::ops") public static class resize_nearest_neighbor extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public resize_nearest_neighbor(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public resize_nearest_neighbor(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public resize_nearest_neighbor position(long position) {
-                return (resize_nearest_neighbor)super.position(position);
-            }
-        
-                                                                                    public resize_nearest_neighbor() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
-       /**
-        * This op make bicubic interpolated resize for given tensor
-        *
-        * input array:
-        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
-        *    1 - 1D-Tensor with 2 values (newWidth, newHeight)
-        *
-        * output array:
-        *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
-        *
-        */
-//         #if NOT_EXCLUDED(OP_resize_bicubic)
-        @Namespace("sd::ops") public static class resize_bicubic extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public resize_bicubic(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public resize_bicubic(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public resize_bicubic position(long position) {
-                return (resize_bicubic)super.position(position);
-            }
-        
-                                                                                    public resize_bicubic() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
-       /**
-        * This op make area interpolated resize (as OpenCV INTER_AREA algorithm) for given tensor
-        *
-        * input array:
-        *    0 - images - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
-        *    1 - size -   1D-Tensor with 2 values (newWidth, newHeight) (if missing a pair of integer args should be provided).
-        *
-        * int args: - proveded only when size tensor is missing
-        *    0 - new height
-        *    1 - new width
-        * boolean args:
-        *    0 - align_corners - optional (default is false)
-        *
-        * output array:
-        *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
-        *
-        */
-//         #if NOT_EXCLUDED(OP_resize_area)
-        @Namespace("sd::ops") public static class resize_area extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public resize_area(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public resize_area(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public resize_area position(long position) {
-                return (resize_area)super.position(position);
-            }
-        
-                                                                                    public resize_area() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
-       /**
-        * This op make interpolated resize for given tensor with given algorithm.
-        * Supported algorithms are bilinear, bicubic, nearest_neighbor.
-        * Need to implement to full compatibility with TF: lanczos5, gaussian, area and mitchellcubic
-        *
-        * input array:
-        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
-        *    1 - 1D-Tensor with 2 values (newWidth, newHeight)
-        *
-        * optional int args:
-        *    0 - algorithm - bilinear by default
-        * optional bool args:
-        *    0 - preserve_aspect_ratio - default False
-        *    1 - antialias - default False
-        *
-        * output array:
-        *   the 4D-Tensor with resized by given algorithm image (shape is {batch, newWidth, newHeight, channels})
-        *
-        */
-
-//         #if NOT_EXCLUDED(OP_image_resize)
-        @Namespace("sd::ops") public static class image_resize extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public image_resize(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public image_resize(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public image_resize position(long position) {
-                return (image_resize)super.position(position);
-            }
-        
-                                                                                    public image_resize() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
-       /**
         * Copy a tensor setting everything outside a central band in each innermost matrix
         *
         * input array:
@@ -22783,7 +22577,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define LIBND4J_HEADERS_BLAS_H
 
 // #include <ops/declarable/headers/common.h>
-        
+
         /**
          * This op is general matmum implementation. Depending on inputs dimensionality output result might be different.
          * matrix x matrix = BLAS gemm
@@ -22904,11 +22698,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * alpha: vector of T
          * beta: vector of T
          * ...: A, B matrices sequentially. i.e: AAAAABBBBB
-         * 
+         *
          * Integer arguments:
          * transA, transB, M, N, K, ldA, ldB, ldC - usual BLAS gemm arguments
          * batchCount - number of operations in this batch
-         * 
+         *
          * PLEASE NOTE: M, N, K, ldA, ldB, ldC should be equal for all matrices within batch.
          */
 //         #if NOT_EXCLUDED(OP_batched_gemm)
@@ -22931,22 +22725,22 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * performs singular value decomposition (SVD) of one or more matrices, evaluates the SVD of each inner-most 2D matrix in input array:
-         * x[..., :, :] = u[..., :, :] * s[...,:] * transpose(v[..., :, :]) 
+         * x[..., :, :] = u[..., :, :] * s[...,:] * transpose(v[..., :, :])
          *
          * Input array:
          * x[..., Rows, Cols], the necessary condition is: rank of x >= 2
-         * 
+         *
          * Outputs arrays:
          * s[..., diagSize] - array with singular values which are stored in decreasing order, diagSize is smaller among Rows and Cols
          * u[..., Rows, Rows] if IArgs[1] is true, else u[..., Rows, diagSize] - array with right singular vectors
          * v[..., Cols, Cols] if IArgs[1] is true, else v[..., Cols, diagSize] - array with left singular vectors
-         * 
+         *
          * Integer arguments:
          * IArgs[0] - bool, whether to calculate u and v, s is calculated in any case
          * IArgs[1] - bool, whether to calculate full-sized u and v
          * IArgs[2] - the number of cols or rows which determines what algorithm to use. More precisely:
          *            if diagSize < IArgs[2] then Jacobi algorithm is used, in opposite case the Divide-And-Conquer is applied
-         *            Recommended value is 16. 
+         *            Recommended value is 16.
          */
 //         #if NOT_EXCLUDED(OP_svd)
         @Namespace("sd::ops") public static class svd extends DeclarableCustomOp {
@@ -22963,7 +22757,35 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public svd() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }   
+                                                                                }
+//         #endif
+
+        /**
+         * calculates square root of matrix such that
+         * x[..., M, M] = z[..., M, M] x z[..., M, M]
+         *
+         * Input array:
+         * x[..., M, M],  the necessary condition is: rank of x >= 2 and equality of last two dimensions
+         *
+         * Outputs arrays:
+         * z - same shape as x
+         */
+//         #if NOT_EXCLUDED(OP_sqrtm)
+        @Namespace("sd::ops") public static class sqrtm extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public sqrtm(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public sqrtm(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public sqrtm position(long position) {
+                return (sqrtm)super.position(position);
+            }
+        
+                                                                                    public sqrtm() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
     
 

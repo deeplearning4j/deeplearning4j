@@ -85,6 +85,7 @@ namespace ops {
      */
 #if NOT_EXCLUDED(OP_rgb_to_yuv)
     DECLARE_CONFIGURABLE_OP(yuv_to_rgb, 1, 1, true, 0, 0);
+#endif
 
 /**
 * Rgb To Yiq
@@ -108,8 +109,156 @@ namespace ops {
     DECLARE_CONFIGURABLE_OP(yiq_to_rgb, 1, 1, true, 0, 0);
 #endif
 
-}
-}
-
+/**
+ * resize_images - resize image with given size and method
+ *    there are 4 methods allowed: RESIZE_BILINEAR(0), RESIZE_NEIGHBOR(1), RESIZE_AREA(2) and RESIZE_BICUBIC(3)
+ * inputs:
+ *      0 - 4D tensor with shape {batch, height, width, channels}
+ *      1 - 1D integer tensor with {new_height, new_width} (optional)
+ *      2 - 0D integer tensor with method (0 to 3) (optional)
+ *
+ * int args:
+ *      0 - new_height
+ *      1 - new_width
+ *      2 - method
+ *
+ * bool args:
+ *      0 - align corners (default false) - optional
+ *      1 - preserve_aspect_ratio (default false) - optional
+ *
+ * CAUTION: one of methods can be used to give size and method - as tensors or as int args only
+ *
+ * output:
+ *      0 - 4D float32 tensor with shape {batch, new_height, new_width, channels}
+ *
+ */
+#if NOT_EXCLUDED(OP_resize_images)
+    DECLARE_CUSTOM_OP(resize_images, 1,1,false, 0, 0);
 #endif
+
+   /**
+    * This op make bilinear or nearest neighbor interpolated resize for given tensor
+    *
+    * input array:
+    *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels) numeric type
+    *    1 - 2D-Tensor with shape (num_boxes, 4) float type
+    *    2 - 1D-Tensor with shape (num_boxes) int type
+    *    3 - 1D-Tensor with 2 values (newWidth, newHeight) (optional) int type
+    *
+    * float arguments (optional)
+    *   0 - exprapolation_value (optional) default 0.f
+    *
+    * int arguments: (optional)
+    *   0 - mode (default 0 - bilinear interpolation)
+    *
+    * output array:
+    *   the 4D-Tensor with resized to crop_size images given - float type
+    */
+    #if NOT_EXCLUDED(OP_crop_and_resize)
+    DECLARE_CUSTOM_OP(crop_and_resize, 4, 1, false, -1, -1);
+    #endif
+
+   /**
+    * This op make bilinear interpolated resize for given tensor
+    *
+    * input array:
+    *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+    *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+    *
+    * int arguments: (optional)
+    *   0 - new width
+    *   1 - new height
+    *
+    * output array:
+    *   the 4D-Tensor with calculated backproped dots
+    *
+    * CAUTION: either size tensor or a pair of int params should be provided.
+    */
+
+    #if NOT_EXCLUDED(OP_resize_bilinear)
+    DECLARE_CUSTOM_OP(resize_bilinear, 1, 1, false, 0, -2);
+    #endif
+
+   /**
+    * This op make nearest neighbor interpolated resize for given tensor
+    *
+    * input array:
+    *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+    *    1 - 1D-Tensor with 2 values (newWidth, newHeight) (optional)
+    *
+    * int arguments: (optional)
+    *   0 - new width
+    *   1 - new height
+    *
+    * output array:
+    *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
+    *
+    * CAUTION: either size tensor or a pair of int params should be provided.
+    */
+
+    #if NOT_EXCLUDED(OP_resize_nearest_neighbor)
+    DECLARE_CUSTOM_OP(resize_nearest_neighbor, 1, 1, false, 0, -2);
+    #endif
+
+   /**
+    * This op make bicubic interpolated resize for given tensor
+    *
+    * input array:
+    *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+    *    1 - 1D-Tensor with 2 values (newWidth, newHeight)
+    *
+    * output array:
+    *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
+    *
+    */
+    #if NOT_EXCLUDED(OP_resize_bicubic)
+    DECLARE_CUSTOM_OP(resize_bicubic, 1, 1, false, 0, -2);
+    #endif
+
+   /**
+    * This op make area interpolated resize (as OpenCV INTER_AREA algorithm) for given tensor
+    *
+    * input array:
+    *    0 - images - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+    *    1 - size -   1D-Tensor with 2 values (newWidth, newHeight) (if missing a pair of integer args should be provided).
+    *
+    * int args: - proveded only when size tensor is missing
+    *    0 - new height
+    *    1 - new width
+    * boolean args:
+    *    0 - align_corners - optional (default is false)
+    *
+    * output array:
+    *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
+    *
+    */
+    #if NOT_EXCLUDED(OP_resize_area)
+    DECLARE_CUSTOM_OP(resize_area, 1, 1, false, 0, -2);
+    #endif
+
+   /**
+    * This op make interpolated resize for given tensor with given algorithm.
+    * Supported algorithms are bilinear, bicubic, nearest_neighbor, lanczos5, gaussian, area and mitchellcubic.
+    *
+    * input array:
+    *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+    *    1 - 1D-Tensor with 2 values (newWidth, newHeight)
+    *
+    * optional int args:
+    *    0 - algorithm - bilinear by default
+    * optional bool args:
+    *    0 - preserve_aspect_ratio - default False
+    *    1 - antialias - default False
+    *
+    * output array:
+    *   the 4D-Tensor with resized by given algorithm image (shape is {batch, newWidth, newHeight, channels})
+    *
+    */
+
+    #if NOT_EXCLUDED(OP_image_resize)
+    DECLARE_CUSTOM_OP(image_resize, 2, 1, false, 0, 0);
+    #endif
+
+}
+}
 #endif

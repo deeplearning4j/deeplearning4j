@@ -2107,14 +2107,16 @@ public class TransformOpValidation extends BaseOpValidation {
         //TODO: Methods failed ResizeLanczos5, ResizeMitchelcubic, ResizeArea
 
         for (ImageResizeMethod method : ImageResizeMethod.values()) {
-                if (method==ImageResizeMethod.ResizeLanczos5 || method==ImageResizeMethod.ResizeArea || method==ImageResizeMethod.ResizeMitchelcubic)
+                if (method==ImageResizeMethod.ResizeLanczos5 || method==ImageResizeMethod.ResizeArea || method==ImageResizeMethod.ResizeMitchellcubic)
                 {continue;}
+
+                log.info("Trying {}", method);
 
                 Nd4j.getRandom().setSeed(12345);
                 SameDiff sd = SameDiff.create();
                 boolean preserveAspectRatio = true;
                 boolean antialias = true;
-                SDVariable inputImage = sd.var(Nd4j.rand(1, 5, 5, 3));
+                SDVariable inputImage = sd.var(Nd4j.rand(DataType.FLOAT, 1, 5, 5, 3));
                 //  NHWC format
                 long[] expectedShape = new long[]{1, 3, 3, 3};
                 SDVariable requestedSize = sd.constant(Nd4j.createFromArray( new long[]{3, 3}));

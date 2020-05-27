@@ -35,6 +35,7 @@ limitations under the License.
 
 #include <ops/declarable/helpers/image_resize.h>
 #include <exceptions/cuda_exception.h>
+#include <array/NDArrayFactory.h>
 
 namespace sd {
 namespace ops {
@@ -1203,20 +1204,22 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template int resizeBicubicFunctorA_, (sd::LaunchContext * context,
             NDArray const* image, int width, int height, bool const alignCorners, bool const halfPixelCenters, NDArray* output), NUMERIC_TYPES);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
-                      ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output) {
+
+// ------------------------------------------------------------------------------------------------------------------ //
+    int resizeImagesFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+                            ImageResizeMethods method, bool alignCorners, NDArray* output) {
         switch (method) {
-            case kResizeBilinear: return resizeBilinearFunctor(context, image, width, height, false, false, output); break;
-            case kResizeNearest:  return resizeNeighborFunctor(context, image, width, height, false, false, output); break;
-            case kResizeBicubic:  return resizeBicubicFunctor(context, image, width, height, preserveAspectRatio, antialias, output); break;
-            case kResizeLanczos5:
-            case kResizeGaussian:
+            case kResizeBilinear:
+                return resizeBilinearFunctor(context, image, width, height, alignCorners, false, output);
+            case kResizeNearest:
+                return resizeNeighborFunctor(context, image, width, height, alignCorners, false, output);
+            case kResizeBicubic:
+                return resizeBicubicFunctor(context, image, width, height, alignCorners, false, output);
             case kResizeArea:
-            case kResizeMitchelcubic:
-                 throw std::runtime_error("helper::resizeFunctor: Non implemented yet.");
+                return resizeAreaFunctor(context, image, width, height, alignCorners, output);
+            default:
+                throw std::runtime_error("helper::resizeImagesFunctor: Wrong resize method.");
         }
-        return ND4J_STATUS_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

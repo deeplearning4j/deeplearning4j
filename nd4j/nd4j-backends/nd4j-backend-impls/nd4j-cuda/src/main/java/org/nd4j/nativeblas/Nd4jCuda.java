@@ -4417,7 +4417,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
         /**
         * fill target matrix with given value in one or two directions from main diagonal:
-        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
+        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'l' (down) or 'b' (both)
         *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
         * direction - in what direction to fill matrix. There are 3 possible directions:
         *   'u' - fill up, mathematically this corresponds to lower triangular matrix, subdiagonal "lower" unaffected
@@ -4830,9 +4830,11 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 ////////////////////////////////////////////////////////////////////////
 
 
-    
+////////////////////////////////////////////////////////////////////////
 
-    
+
+////////////////////////////////////////////////////////////////////////
+
 
 // #ifndef __JAVACPP_HACK__
 // #endif
@@ -7349,9 +7351,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the element wise stride for this information
  * buffer
  */
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongPointer buffer);
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongBuffer buffer);
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") long[] buffer);
+   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 
     /**

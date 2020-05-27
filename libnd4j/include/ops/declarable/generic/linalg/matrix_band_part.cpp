@@ -25,14 +25,27 @@
 
 namespace sd {
     namespace ops {
-        CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 2) {
+        CONFIGURABLE_OP_IMPL(matrix_band_part, 1, 1, true, 0, 0) {
 
             auto input = INPUT_VARIABLE(0);
 
             auto output   = OUTPUT_VARIABLE(0);
-            Nd4jLong minLower = INT_ARG(0);
-            Nd4jLong maxUpper = INT_ARG(1);
 
+            Nd4jLong minLower(0LL);
+            Nd4jLong maxUpper(0LL);
+            if (block.width() == 1) {
+                REQUIRE_TRUE(block.numI() == 2, 0, "matrix_band_part: min and max band numbers should be given before.");
+                minLower = INT_ARG(0);
+                maxUpper = INT_ARG(1);
+            }
+            else {
+                REQUIRE_TRUE(block.width() == 3, 0, "matrix_band_part: min and max band numbers should be given as scalars before.");
+                auto minLowerT = INPUT_VARIABLE(1);
+                auto maxUpperT = INPUT_VARIABLE(2);
+                REQUIRE_TRUE(minLowerT->isScalar() && maxUpperT->isScalar(), 0, "matrix_band_part: min and max should be scalars, but %i and %i ranks given", minLowerT->rankOf(), maxUpperT->rankOf());
+                minLower = minLowerT->e<Nd4jLong>(0);
+                maxUpper = maxUpperT->e<Nd4jLong>(0);
+            }
             REQUIRE_TRUE(input->rankOf() >= 2, 0, "matrix_band_part: Input rank should be 2 or greater.");
             Nd4jLong N = input->sizeAt(-2);
             Nd4jLong M = input->sizeAt(-1);
@@ -49,9 +62,10 @@ namespace sd {
 
     DECLARE_TYPES(matrix_band_part) {
         getOpDescriptor()
-            ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
-            ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS})
-            ->setSameMode(true);
+            ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+            ->setAllowedInputTypes(1, {ALL_INTS})
+            ->setAllowedInputTypes(2, {ALL_INTS})
+            ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS});
     }
 }
 
