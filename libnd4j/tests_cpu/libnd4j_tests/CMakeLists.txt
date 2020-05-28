@@ -225,17 +225,10 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(MINGW) AND NOT(APPLE))
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
 endif()
 
-file(GLOB_RECURSE COMPILATION_UNITS false ../../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in)
-foreach(FL_ITEM ${COMPILATION_UNITS})
-    string(REGEX MATCH "^(.*)\\.cpp\.in$" dummy ${FL_ITEM})
-    set(FL_ITEM_WLE ${CMAKE_MATCH_1})
-    foreach(FL_TYPE_INDEX RANGE 0 9)
-        #message( "${FL_ITEM_WLE}_${FL_TYPE_INDEX}.cpp")
-        configure_file(  "${FL_ITEM}" "${FL_ITEM_WLE}_${FL_TYPE_INDEX}.cpp" @ONLY)
-        LIST(APPEND CUSTOMOPS_GENERIC_SOURCES ${FL_ITEM_WLE}_${FL_TYPE_INDEX}.cpp )
-    endforeach()
-endforeach()
-
+    file(GLOB_RECURSE COMPILATION_UNITS false ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in)
+    foreach(FL_ITEM ${COMPILATION_UNITS})   
+        genCompilation(FL_ITEM)
+    endforeach() 
 
 # this function strips path from file name, basically making up short file name, i.e. file.cpp
 function(SHORTNAME LONG_NAME OUTPUT)

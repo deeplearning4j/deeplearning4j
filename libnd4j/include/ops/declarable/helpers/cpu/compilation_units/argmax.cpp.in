@@ -16,6 +16,7 @@
 //
 // @author AbdelRauf
 //
+#cmakedefine01 FLOAT_TYPE_GEN 
 
 #include <ops/declarable/helpers/cpu/indexReductions.hpp>
 
