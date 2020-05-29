@@ -8,10 +8,10 @@ RL4J is a reinforcement learning framework integrated with deeplearning4j and re
 Both for Low-Dimensional (array of info) and high-dimensional (pixels) input.
 
 
-![DOOM](doom.gif)
+![DOOM](docs/images/doom.gif)
 
 
-![Cartpole](cartpole.gif)
+![Cartpole](docs/images/cartpole.gif)
 
 
 Here is a useful blog post I wrote to introduce you to reinforcement learning, DQN and Async RL:
@@ -52,7 +52,7 @@ Doom is not ready yet but you can make it work if you feel adventurous with some
 
 # Malmo (Minecraft)
 
-![Malmo](malmo.gif)
+![Malmo](docs/images/malmo.gif)
 
 * Download and unzip Malmo from [here](https://github.com/Microsoft/malmo/releases)
 * export MALMO_HOME=YOURMALMO_FOLDER
@@ -77,4 +77,4 @@ Doom is not ready yet but you can make it work if you feel adventurous with some
 
 * Continuous control
 * Policy Gradient
-* Update rl4j-gym to make it compatible with pixels environments to play with Pong, Doom, etc ..
+* Update rl4j-gym to make it compatible with pixels environments to play with Pong, Doom, etc ...

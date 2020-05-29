@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
   ~
@@ -17,16 +16,16 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>deeplearning4j</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-
-    <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.nd4j</groupId>
     <artifactId>libnd4j</artifactId>
@@ -37,14 +36,6 @@
         arrays for Java
     </description>
     <url>http://nd4j.org/</url>
-
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
 
     <developers>
         <developer>
@@ -105,7 +96,6 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
@@ -124,8 +114,10 @@
                         <buildResource>/org/bytedeco/openblas/${libnd4j.platform}/</buildResource>
                     </buildResources>
                     <includeResources>
-                        <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                        <includeResource>/org/bytedeco/openblas/${libnd4j.platform}/include/</includeResource>
+                        <includeResource>/${javacpp.platform.library.path}/include/
+                        </includeResource>
+                        <includeResource>/org/bytedeco/openblas/${libnd4j.platform}/include/
+                        </includeResource>
                     </includeResources>
                     <linkResources>
                         <linkResource>/${javacpp.platform.library.path}/</linkResource>
@@ -234,7 +226,6 @@
     </build>
 
     <profiles>
-
         <!-- Build on windows can use sh rather than bash due to WSL clashing with msys2 -->
         <profile>
             <id>build-windows</id>
@@ -247,7 +238,6 @@
                 <libnd4j.buildprogram>sh</libnd4j.buildprogram>
             </properties>
         </profile>
-
         <!-- Default build program should be bash on non windows platforms -->
         <profile>
             <id>build-unix</id>
@@ -258,8 +248,6 @@
                 <libnd4j.buildprogram>bash</libnd4j.buildprogram>
             </properties>
         </profile>
-
-
         <!-- Use -Dlibnd4j.singlethread to use single threaded build (multi-threaded by default) -->
         <profile>
             <id>libnd4j-single-thread</id>
@@ -292,7 +280,8 @@
                 </property>
             </activation>
             <properties>
-                <libnd4j.classifier>${libnd4j.platform}-${libnd4j.chip}-${cuda.version}</libnd4j.classifier>
+                <libnd4j.classifier>${libnd4j.platform}-${libnd4j.chip}-${cuda.version}
+                </libnd4j.classifier>
             </properties>
         </profile>
         <profile>
@@ -395,7 +384,6 @@
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
                         <version>1.6.0</version>
-
                         <executions>
                             <execution>
                                 <id>libnd4j-test-clean</id>
@@ -416,9 +404,6 @@
                 </plugins>
             </build>
         </profile>
-
-
-
         <!-- Profiles to set the default libnd4j.helper property, example: mkdnn -->
         <profile>
             <id>libnd4j-helper-avx2</id>
