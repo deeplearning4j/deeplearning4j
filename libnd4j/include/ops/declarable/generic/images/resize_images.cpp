@@ -81,7 +81,6 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(resize_images) {
-            auto shapeList = SHAPELIST(); 
             auto in = inputShape->at(0);
 
             Nd4jLong* outputShape;

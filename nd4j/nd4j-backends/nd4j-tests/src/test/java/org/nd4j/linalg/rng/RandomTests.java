@@ -1514,6 +1514,28 @@ public class RandomTests extends BaseNd4jTest {
         assertEquals(res[0], res1[0]);
     }
 
+
+    @Test
+    public void testRandom() {
+        val r1 = new java.util.Random(119);
+        val r2 = Nd4j.getRandom();
+        r2.setSeed(119);
+        float jmax = 0.0f;
+        float nmax = 0.0f;
+        for (int e = 0; e < 100_000_000; e++) {
+            val f = r1.nextFloat();
+            val n = r2.nextFloat();
+            if (f > jmax)
+                jmax = f;
+
+            if (n > nmax)
+                nmax = n;
+        }
+
+        assertTrue(jmax < 1.0);
+        assertTrue(nmax < 1.0);
+    }
+
     @Override
     public char ordering() {
         return 'c';

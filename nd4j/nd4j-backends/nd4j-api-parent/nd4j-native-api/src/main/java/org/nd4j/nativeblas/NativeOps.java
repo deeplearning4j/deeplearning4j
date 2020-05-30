@@ -1154,6 +1154,8 @@ public interface NativeOps {
     long getRandomGeneratorRootState(OpaqueRandomGenerator ptr);
     long getRandomGeneratorNodeState(OpaqueRandomGenerator ptr);
     void setRandomGeneratorStates(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/);
+    float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
+    double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
     int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
     long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
     void deleteRandomGenerator(OpaqueRandomGenerator ptr);

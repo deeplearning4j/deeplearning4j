@@ -49,8 +49,8 @@ public:
         //_bufferB = new Nd4jLong[100000];
         //_rngA = (sd::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
         //_rngB = (sd::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferB);
-        _rngA.setStates(_seed, _seed);
-        _rngB.setStates(_seed, _seed);
+        _rngA.setStates(_seed * 0xDEADBEEF * 13, _seed * 0xDEADBEEF * 7);
+        _rngB.setStates(_seed * 0xDEADBEEF * 13, _seed * 0xDEADBEEF * 7);
         nexp0->assign(-1.0f);
         nexp1->assign(-2.0f);
         nexp2->assign(-3.0f);
@@ -204,6 +204,9 @@ TEST_F(RNGTests, Test_Uniform_1) {
     RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
+    x0.printLinearBuffer();
+    x1.printLinearBuffer();
+
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
@@ -212,8 +215,80 @@ TEST_F(RNGTests, Test_Uniform_1) {
 
     for (int e = 0; e < x0.lengthOf(); e++) {
         float v = x0.e<float>(e);
+        nd4j_printf("%f\n", v);
         ASSERT_TRUE(v >= 1.0f && v <= 2.0f);
     }
+}
+
+TEST_F(RNGTests, Test_Uniform_10) {
+  auto x = NDArrayFactory::create<float>('c', {10000, 10000});
+  auto z = NDArrayFactory::create<float>(0.0f);
+
+  RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngA, &x, 0.0f, 1.0f);
+
+  sd::ops::reduce_max op;
+  auto status = op.execute({&x}, {&z});
+  ASSERT_EQ(Status::OK(), status);
+
+  ASSERT_LT(z.t<float>(0), 1.0f);
+}
+
+TEST_F(RNGTests, Test_Uniform_10_double) {
+  auto x = NDArrayFactory::create<double>('c', {10000, 10000});
+  auto z = NDArrayFactory::create<double>(0.0f);
+
+  RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngA, &x, 0.0f, 1.0f);
+
+  sd::ops::reduce_max op;
+  auto status = op.execute({&x}, {&z});
+  ASSERT_EQ(Status::OK(), status);
+
+  ASSERT_LT(z.t<double>(0), 1.0);
+}
+
+TEST_F(RNGTests, Test_Uniform_11) {
+  uint32_t max = 0;
+  for (int e = 0; e < 100000000; e++) {
+    auto v = _rngA.xoroshiro32(e) >> 8;
+    if (v > max)
+      max = v;
+  }
+
+  nd4j_printf("Max value: %i\n", (int) max);
+}
+
+TEST_F(RNGTests, Test_Uniform_12) {
+  float max = -std::numeric_limits<float>::infinity();
+  float min = std::numeric_limits<float>::infinity();
+  for (int e = 0; e < 100000000; e++) {
+    auto v = _rngA.relativeT<float>(e);
+    if (v > max)
+      max = v;
+
+    if (v < min)
+      min = v;
+  }
+
+  nd4j_printf("Max value: %.8f; Min value: %.8f\n", (float) max, (float) min);
+  ASSERT_LT(max, 1.0f);
+  ASSERT_GE(min, 0.0);
+}
+
+TEST_F(RNGTests, Test_Uniform_13) {
+  double max = -std::numeric_limits<double>::infinity();
+  double min = std::numeric_limits<double>::infinity();
+  for (int e = 0; e < 100000000; e++) {
+    auto v = _rngA.relativeT<double>(e);
+    if (v > max)
+      max = v;
+
+    if (v < min)
+      min = v;
+  }
+
+  nd4j_printf("Max value: %.8f; Min value: %.8f\n", (float) max, (float) min);
+  ASSERT_LT(max, 1.0);
+  ASSERT_GE(min, 0.0);
 }
 
 TEST_F(RNGTests, Test_Uniform_3) {
@@ -258,8 +333,8 @@ TEST_F(RNGTests, Test_Gaussian_1) {
 }
 
 TEST_F(RNGTests, Test_Gaussian_21) {
-    auto x0 = NDArrayFactory::create<float>('c', {10, 10});
-    auto x1 = NDArrayFactory::create<float>('c', {10, 10});
+    auto x0 = NDArrayFactory::create<float>('c', {1000, 1000});
+    auto x1 = NDArrayFactory::create<float>('c', {1000, 1000});
 
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngA, &x0, 0.0f, 1.0f);
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 0.0f, 1.0f);
@@ -981,6 +1056,26 @@ TEST_F(RNGTests, Test_UniformDistribution_04) {
     ASSERT_FALSE(exp0.equalsTo(z));
 
 
+}
+
+TEST_F(RNGTests, Test_UniformDistribution_05) {
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {10000, 10000});
+    auto al = NDArrayFactory::create<float>(0.f);
+    auto be = NDArrayFactory::create<float>(1.f);
+    auto exp0 = NDArrayFactory::create<float>('c', {10000, 10000});
+
+
+    sd::ops::randomuniform op;
+    auto result = op.evaluate({&x, &al, &be}, {}, {},{}, {DataType::FLOAT32});
+    ASSERT_EQ(Status::OK(), result.status());
+
+    auto z = result.at(0);
+    ASSERT_TRUE(exp0.isSameShape(z));
+    ASSERT_FALSE(exp0.equalsTo(z));
+
+    sd::ops::reduce_max checkOp;
+    auto checkResult = checkOp.evaluate({z});
+    checkResult[0]->printIndexedBuffer("Max on uniform with 0 to 1 on 100M cases is");
 }
 
 namespace sd {

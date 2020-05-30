@@ -2832,6 +2832,14 @@ void setRandomGeneratorStates(sd::graph::RandomGenerator* ptr, Nd4jLong rootSeed
     ptr->setStates(rootSeed, nodeSeed);
 }
 
+float getRandomGeneratorRelativeFloat(sd::graph::RandomGenerator* ptr, Nd4jLong index) {
+  return ptr->relativeT<float>(index);
+}
+
+double getRandomGeneratorRelativeDouble(sd::graph::RandomGenerator* ptr, Nd4jLong index) {
+  return ptr->relativeT<double>(index);
+}
+
 int getRandomGeneratorRelativeInt(sd::graph::RandomGenerator* ptr, Nd4jLong index) {
     return ptr->relativeInt(index);
 }

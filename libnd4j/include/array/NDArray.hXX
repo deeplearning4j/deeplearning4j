@@ -1671,11 +1671,11 @@ void NDArray::printLinearBuffer() const {
     }
     else if(this->dataType() == sd::DataType::FLOAT32) {
         for(Nd4jLong e = 0; e < len; e++)
-            printf("%.3f, ", this->bufferAsT<float>()[e * ews]);
+            printf("%.8f, ", this->bufferAsT<float>()[e * ews]);
     }
     else if(this->dataType() == sd::DataType::DOUBLE) {
         for(Nd4jLong e = 0; e < len; e++)
-            printf("%.3f, ", this->bufferAsT<double>()[e * ews]);
+            printf("%.8f, ", this->bufferAsT<double>()[e * ews]);
     }
     else
         throw std::invalid_argument("NDArray::printLinearBuffer: not implemented yet for this data type !");
@@ -1773,7 +1773,7 @@ void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
         if (this->isZ())
             printf("%lld\n", this->e<Nd4jLong>(0));
         else if (this->isR())
-            printf("%f\n", this->e<float>(0));
+            printf("%.8f\n", this->e<float>(0));
         else if (this->isB()) {
             printf("%s\n", this->e<bool>(0)?"true":"false");
         }

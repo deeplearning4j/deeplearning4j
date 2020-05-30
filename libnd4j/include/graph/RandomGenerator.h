@@ -22,6 +22,7 @@
 #define LIBND4J_GRAPH_RNG_H
 
 #include <types/u64.h>
+#include <types/u32.h>
 #include <system/pointercast.h>
 #include <system/op_boilerplate.h>
 #include <system/dll.h>
@@ -29,6 +30,7 @@
 #include <array/DataTypeUtils.h>
 #include <helpers/logger.h>
 #include <stdexcept>
+#include <math/templatemath.h>
 
 #ifdef __CUDACC__
 #include <cuda.h>
@@ -79,9 +81,9 @@ namespace sd {
              */
             static FORCEINLINE Nd4jLong currentMilliseconds();
 
-
-            FORCEINLINE _CUDA_HD uint32_t xoroshiro32(Nd4jLong index);
-            FORCEINLINE _CUDA_HD uint64_t xoroshiro64(Nd4jLong index);
+        public:
+            FORCEINLINE _CUDA_HD uint32_t xoroshiro32(uint64_t index);
+            FORCEINLINE _CUDA_HD uint64_t xoroshiro64(uint64_t index);
 
             /**
              * This method returns integer value between 0 and MAX_UINT
@@ -119,7 +121,7 @@ namespace sd {
             FORCEINLINE _CUDA_HD int relativeInt(Nd4jLong index);
             FORCEINLINE _CUDA_HD Nd4jLong relativeLong(Nd4jLong index);
 
-            FORCEINLINE _CUDA_HD void rewindH(Nd4jLong steps);
+            FORCEINLINE _CUDA_HD void rewindH(uint64_t steps);
 
             /**
              * These methods set up only node states, with non-changed root ones
@@ -173,6 +175,24 @@ namespace sd {
         }
 
         template <>
+        _CUDA_HD FORCEINLINE float RandomGenerator::relativeT<float>(Nd4jLong index) {
+            u32 u;
+            u._u32 = (0x3f800000 | (this->xoroshiro32(index) >> 9));
+            return u._f32 - 1.0f;
+        }
+
+        template <>
+        _CUDA_HD FORCEINLINE double RandomGenerator::relativeT<double>(Nd4jLong index) {
+#ifdef __DOUBLE_RNG__
+          u64 u;
+          u._ulong = ((UINT64_C(0x3FF) << 52) | (this->xoroshiro64(index) >> 12));
+          return u._double - 1.0;
+#else
+          return (double) relativeT<float>(index);
+#endif
+        }
+
+        template <>
         _CUDA_HD FORCEINLINE uint64_t RandomGenerator::relativeT<uint64_t>(Nd4jLong index) {
             return this->xoroshiro64(index);
         }
@@ -184,16 +204,14 @@ namespace sd {
 
         template <>
         _CUDA_HD FORCEINLINE int RandomGenerator::relativeT<int>(Nd4jLong index) {
-            auto x = this->relativeT<uint32_t>(index);
-            auto r = static_cast<int>(x % DataTypeUtils::max<int>());
-            return r;
+            auto r = relativeT<uint32_t>(index);
+            return r <= DataTypeUtils::max<int>() ? r : r % DataTypeUtils::max<int>();
         }
 
         template <>
         _CUDA_HD FORCEINLINE Nd4jLong RandomGenerator::relativeT<Nd4jLong>(Nd4jLong index) {
-            auto x = this->relativeT<uint64_t>(index);
-            auto r = static_cast<Nd4jLong>(x % DataTypeUtils::max<Nd4jLong>());
-            return r;
+            auto r = relativeT<uint64_t>(index);
+            return r <= DataTypeUtils::max<Nd4jLong>() ? r : r % DataTypeUtils::max<Nd4jLong>();
         }
 
         template <typename T>
@@ -220,24 +238,18 @@ namespace sd {
         template <typename T>
         _CUDA_HD FORCEINLINE T RandomGenerator::relativeT(Nd4jLong index) {
             // This is default implementation for floating point types
-#ifdef __DOUBLE_RNG__            
-            auto i = static_cast<double>(this->relativeT<uint64_t>(index));
-            auto r = i / static_cast<double>(DataTypeUtils::max<uint64_t>());
-            return static_cast<T>(r);
-#else            
-            auto i = static_cast<float>(this->relativeT<uint32_t>(index));            
-            auto r = i / static_cast<float>(DataTypeUtils::max<uint32_t>());
-            return static_cast<T>(r);
-#endif
+            return static_cast<T>(relativeT<float>(index));
         }
 
 
         _CUDA_HD FORCEINLINE int RandomGenerator::relativeInt(Nd4jLong index) {
-            return relativeT<int>(index);
+            auto r = relativeT<uint32_t>(index);
+            return r <= DataTypeUtils::max<int>() ? r : r % DataTypeUtils::max<int>();
         }
 
         _CUDA_HD FORCEINLINE Nd4jLong RandomGenerator::relativeLong(Nd4jLong index) {
-            return relativeT<Nd4jLong>(index);
+            auto r = relativeT<uint64_t>(index);
+            return r <= DataTypeUtils::max<Nd4jLong>() ? r : r % DataTypeUtils::max<Nd4jLong>();
         }
 
         //////
@@ -249,23 +261,12 @@ namespace sd {
             return (x << k) | (x >> (64 - k));
         }
 
-        _CUDA_HD FORCEINLINE uint32_t RandomGenerator::xoroshiro32(Nd4jLong index) {
-
-            auto s0 = _rootState._ulong;            
-            auto s1 = _nodeState._ulong;
-
-            // xor by idx
-            s0 |= ((index + 2) * (s1 + 24243287));            
-            s1 ^= ((index + 2) * (s0 + 723829));
-            
-            unsigned long val = 0;
-            val = s1 ^ s0;
-            int* pHalf = reinterpret_cast<int*>(&val);
-
-            return rotl(*pHalf * 0x9E3779BB, 5) * 5;
+        static FORCEINLINE _CUDA_HD uint32_t next(uint32_t s0, uint32_t s1, uint32_t s2, uint32_t s3) {
+          const uint32_t result = rotl(s0 + s3, 7) + s0;
+          return result;
         }
 
-        _CUDA_HD FORCEINLINE uint64_t RandomGenerator::xoroshiro64(Nd4jLong index) {
+        _CUDA_HD FORCEINLINE uint32_t RandomGenerator::xoroshiro32(uint64_t index) {
             auto s0 = _rootState._ulong;
             auto s1 = _nodeState._ulong;
 
@@ -273,23 +274,29 @@ namespace sd {
             s0 |= ((index + 2) * (s1 + 24243287));
             s1 ^= ((index + 2) * (s0 + 723829));
 
-            // since we're not modifying state - do rotl step right here
-            s1 ^= s0;
-            s0 = rotl(s0, 55) ^ s1 ^ (s1 << 14);
-            s1 = rotl(s1, 36);
+            unsigned long val = 0;
+            val = s1 ^ s0;
+            int* pHalf = reinterpret_cast<int*>(&val);
 
-            return s0 + s1;
+            return rotl(*pHalf * 0x9E3779BB, 5) * 5;
         }
 
-        _CUDA_HD FORCEINLINE void RandomGenerator::rewindH(Nd4jLong steps) {
-            auto s0 = _nodeState._du32._v0;
-            auto s1 = _nodeState._du32._v1;
+        _CUDA_HD FORCEINLINE uint64_t RandomGenerator::xoroshiro64(uint64_t index) {
+            uint64_t upper = ((uint64_t) xoroshiro32(index)) << 32;
+            uint32_t lower = xoroshiro32(sd::math::nd4j_rotl<uint64_t>(index, 32));
+            return upper + lower;
+        }
 
-            s1 ^= s0;
-            _nodeState._du32._v0 = rotl(s0, 26) ^ s1 ^ (s1 << 9); // a, b
-            _nodeState._du32._v1 = rotl(s1, 13); // c
+        _CUDA_HD FORCEINLINE void RandomGenerator::rewindH(uint64_t steps) {
+          // we only update node state, if any
+          auto s0 = _nodeState._du32._v0;
+          auto s1 = _nodeState._du32._v1;
 
-            _nodeState._long ^= (steps ^ 0xdeadbeef);
+          s1 ^= s0;
+          _nodeState._du32._v0 = rotl(s0, 26) ^ s1 ^ (s1 << 9); // a, b
+          _nodeState._du32._v1 = rotl(s1, 13); // c
+
+          _nodeState._long ^= (steps ^ 0xdeadbeef);
         }
     }
 }

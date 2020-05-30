@@ -25,6 +25,8 @@
 #include <array/NDArrayFactory.h>
 #include "testlayers.h"
 #include <graph/Stash.h>
+#include <helpers/BitwiseUtils.h>
+#include <bitset>
 
 using namespace sd;
 
@@ -862,4 +864,14 @@ TEST_F(StringTests, Basic_cast_UTF8toUTF32) {
 
     ASSERT_EQ(u8, z0);
     ASSERT_EQ(u32, z1);
+}
+
+TEST_F(StringTests, test_bit_string_1) {
+  // check bits -> vector conversion first
+  auto vec = BitwiseUtils::valueBits(1);
+
+  // check bits -> string conversion next;
+  auto str = StringUtils::bitsToString(1);
+  ASSERT_EQ(32, str.length());
+  ASSERT_EQ(std::string("00000000000000000000000000000001"), str);
 }

@@ -3098,6 +3098,8 @@ public native @Cast("Nd4jLong") long getRandomGeneratorRootState(OpaqueRandomGen
 public native @Cast("Nd4jLong") long getRandomGeneratorNodeState(OpaqueRandomGenerator ptr);
 public native void setRandomGeneratorStates(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/);
 public native void setRandomGeneratorStates(OpaqueRandomGenerator ptr);
+public native float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
+public native double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
 public native int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
 public native @Cast("Nd4jLong") long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
 public native void deleteRandomGenerator(OpaqueRandomGenerator ptr);
@@ -5048,6 +5050,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <array/DataTypeUtils.h>
 // #include <helpers/logger.h>
 // #include <stdexcept>
+// #include <math/templatemath.h>
 
 // #ifdef __CUDACC__
 // #endif
@@ -5064,6 +5067,8 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
                 return (RandomGenerator)super.position(position);
             }
         
+            public native @Cast("uint32_t") int xoroshiro32(@Cast("uint64_t") long index);
+            public native @Cast("uint64_t") long xoroshiro64(@Cast("uint64_t") long index);
             public RandomGenerator(@Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/) { super((Pointer)null); allocate(rootSeed, nodeSeed); }
             private native void allocate(@Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/);
             public RandomGenerator() { super((Pointer)null); allocate(); }
@@ -5094,7 +5099,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             public native int relativeInt(@Cast("Nd4jLong") long index);
             public native @Cast("Nd4jLong") long relativeLong(@Cast("Nd4jLong") long index);
 
-            public native void rewindH(@Cast("Nd4jLong") long steps);
+            public native void rewindH(@Cast("uint64_t") long steps);
 
             /**
              * These methods set up only node states, with non-changed root ones
@@ -5131,6 +5136,10 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
         
 
+        
+
+        
+
 
         
 
@@ -5140,6 +5149,8 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         @Namespace("sd::graph") public static native @Cast("uint32_t") int rotl(@Cast("const uint32_t") int x, int k);
 
         @Namespace("sd::graph") public static native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, int k);
+
+        @Namespace("sd::graph") public static native @Cast("uint32_t") int next(@Cast("uint32_t") int s0, @Cast("uint32_t") int s1, @Cast("uint32_t") int s2, @Cast("uint32_t") int s3);
 
         
 

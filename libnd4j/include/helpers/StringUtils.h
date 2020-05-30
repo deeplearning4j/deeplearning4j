@@ -45,6 +45,14 @@ namespace sd {
         }
 
         /**
+         * These methods convert integer values to string with 0s and 1s
+         * @param value
+         * @return
+         */
+        template <typename T>
+        static std::string bitsToString(T value);
+
+        /**
          * This method just concatenates error message with a given graphId
          * @param message
          * @param graphId
@@ -137,6 +145,9 @@ namespace sd {
         * @return boolean status
         */
         static bool u32StringToU8String(const std::u32string& u32, std::string& u8);
+
+        template <typename T>
+        static std::string vectorToString(const std::vector<T> &vec);
     };
 }
 
