@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -13,17 +14,15 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-//
-// @author AbdelRauf
-//
-#cmakedefine LIBND4J_TYPE_GEN 
 
-#include <ops/declarable/helpers/cpu/indexReductions.hpp>
+//
+// @author raver119@gmail.com
+//
 
-namespace sd {
-    namespace ops {
-        namespace helpers {
-            BUILD_DOUBLE_TEMPLATE(template void argMax_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions), LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES);
-        }
+#include <loops/cpu/reduce3.hpp>
+#cmakedefine LIBND4J_TYPE_GEN
+namespace functions {
+    namespace reduce3 {
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT Reduce3, , LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES_2);
     }
 }

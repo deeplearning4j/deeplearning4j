@@ -17,6 +17,8 @@
 // @author AbdelRauf
 //
 
+#cmakedefine LIBND4J_TYPE_GEN
+
 #include <ops/declarable/helpers/cpu/indexReductions.hpp>
 
 namespace sd {

@@ -1,4 +1,5 @@
 /*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
  * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
@@ -13,17 +14,20 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-//
-// @author AbdelRauf
-//
-#cmakedefine LIBND4J_TYPE_GEN 
 
-#include <ops/declarable/helpers/cpu/indexReductions.hpp>
+//
+//  @author sgazeos@gmail.com
+//
+
+#include <ops/declarable/helpers/crop_and_resize.h>
+#include <ops/declarable/helpers/cpu/crop_and_resize.hpp>
+
+#cmakedefine LIBND4J_TYPE_GEN
 
 namespace sd {
     namespace ops {
         namespace helpers {
-            BUILD_DOUBLE_TEMPLATE(template void argMax_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions), LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES);
+            BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_, (NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops), LIBND4J_TYPES_@FL_TYPE_INDEX@, FLOAT_TYPES, INTEGER_TYPES);
         }
     }
 }

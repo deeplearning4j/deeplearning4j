@@ -19,10 +19,18 @@
 
 #include <ops/declarable/helpers/cpu/indexReductions.hpp>
 
+
+#cmakedefine LIBND4J_TYPE_GEN 
+
+#if defined(PAIRWISE_TYPE_GEN) || defined(INT_TYPE_GEN) || defined(FLOAT_TYPE_GEN)  || defined(LIBND4J_TYPE_GEN)
 namespace sd {
     namespace ops {
         namespace helpers {
+#if  defined(LIBND4J_TYPE_GEN)
             BUILD_DOUBLE_TEMPLATE(template void argAbsMax_, (const NDArray& input, NDArray& output, const std::vector<int>& dimensions), LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES);
+#endif
+ 
         }
     }
 }
+#endif

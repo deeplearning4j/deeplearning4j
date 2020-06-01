@@ -17,6 +17,10 @@ option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OF
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 
 set(CMAKE_CXX_STANDARD 11)
+
+
+include(GenCompilation)
+
 if (SD_CUDA)
     enable_language(CUDA)
     set(CMAKE_CUDA_STANDARD 11)
