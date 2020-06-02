@@ -3853,13 +3853,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
          * @param writeList
          * @param readList
          */
-        public static native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList);
-        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
-        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList);
+        public static native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList);
+        public static native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList);
+        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
+        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList);
 
-        public static native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList);
-        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
-        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList);
+        public static native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList);
+        public static native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList);
+        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
+        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList);
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
@@ -5047,6 +5049,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #define LIBND4J_GRAPH_RNG_H
 
 // #include <types/u64.h>
+// #include <types/u32.h>
 // #include <system/pointercast.h>
 // #include <system/op_boilerplate.h>
 // #include <system/dll.h>

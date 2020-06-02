@@ -8484,6 +8484,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testSmallSort(){
+        INDArray arr = Nd4j.createFromArray(0.5, 0.4, 0.1, 0.2);
+        INDArray expected = Nd4j.createFromArray(0.1, 0.2, 0.4, 0.5);
+        INDArray sorted = Nd4j.sort(arr, true);
+        assertEquals(expected, sorted);
+    }
+
     @Override
     public char ordering() {
         return 'c';
