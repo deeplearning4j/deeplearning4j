@@ -24,9 +24,7 @@ import org.datavec.image.recordreader.objdetect.impl.VocLabelProvider;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
@@ -36,6 +34,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -50,15 +50,26 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
  * @author Alex Black
  */
+@RunWith(Parameterized.class)
 public class YoloGradientCheckTests extends BaseDL4JTest {
 
     static {
         Nd4j.setDataType(DataType.DOUBLE);
+    }
+
+    private CNN2DFormat format;
+    public YoloGradientCheckTests(CNN2DFormat format){
+        this.format = format;
+    }
+    @Parameterized.Parameters(name = "{0}")
+    public static Object[] params(){
+        return CNN2DFormat.values();
     }
 
     @Rule
@@ -97,8 +108,14 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
 
             Nd4j.getRandom().setSeed(12345);
 
-            INDArray input = Nd4j.rand(new int[]{mb, depthIn, h, w});
-            INDArray labels = yoloLabels(mb, c, h, w);
+            INDArray input, labels;
+            if(format == CNN2DFormat.NCHW){
+                input = Nd4j.rand(DataType.DOUBLE, mb, depthIn, h, w);
+                labels = yoloLabels(mb, c, h, w);
+            } else {
+                input = Nd4j.rand(DataType.DOUBLE, mb, h, w, depthIn);
+                labels = yoloLabels(mb, c, h, w).permute(0,2,3,1);
+            }
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                     .dataType(DataType.DOUBLE)
@@ -112,6 +129,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                     .layer(new Yolo2OutputLayer.Builder()
                             .boundingBoxPriors(bbPrior)
                             .build())
+                    .setInputType(InputType.convolutional(h, w, depthIn, format))
                     .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -120,7 +138,18 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
             String msg = "testYoloOutputLayer() - minibatch = " + mb + ", w=" + w + ", h=" + h + ", l1=" + l1[i] + ", l2=" + l2[i];
             System.out.println(msg);
 
+            INDArray out = net.output(input);
+            if(format == CNN2DFormat.NCHW){
+                assertArrayEquals(new long[]{mb, yoloDepth, h, w}, out.shape());
+            } else {
+                assertArrayEquals(new long[]{mb, h, w, yoloDepth}, out.shape());
+            }
+
+            net.fit(input, labels);
+
+
             boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(net).input(input)
+                    .minAbsoluteError(1e-6)
                     .labels(labels).subset(true).maxPerParam(100));
 
             assertTrue(msg, gradOK);

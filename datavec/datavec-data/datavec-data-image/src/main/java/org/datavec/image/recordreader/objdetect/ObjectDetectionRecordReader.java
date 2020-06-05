@@ -49,7 +49,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 /**
  * An image record reader for object detection.
  * <p>
- * Format of returned values: 4d array, with dimensions [minibatch, 4+C, h, w]
+ * Format of returned values: 4d array, with dimensions [minibatch, 4+C, h, w] (nchw) or [minibatch, h, w, 4+C] (nhwc)
  * Where the image is quantized into h x w grid locations.
  * <p>
  * Note that this matches the format required for Deeplearning4j's Yolo2OutputLayer
@@ -61,42 +61,67 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
     private final int gridW;
     private final int gridH;
     private final ImageObjectLabelProvider labelProvider;
+    private final boolean nchw;
 
     protected Image currentImage;
 
     /**
+     * As per {@link #ObjectDetectionRecordReader(int, int, int, int, int, boolean, ImageObjectLabelProvider)} but hardcoded
+     * to NCHW format
+     */
+    public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW, ImageObjectLabelProvider labelProvider) {
+        this(height, width, channels, gridH, gridW, true, labelProvider);
+    }
+
+    /**
+     * Create ObjectDetectionRecordReader with
      *
      * @param height        Height of the output images
      * @param width         Width of the output images
      * @param channels      Number of channels for the output images
      * @param gridH         Grid/quantization size (along  height dimension) - Y axis
      * @param gridW         Grid/quantization size (along  height dimension) - X axis
+     * @param nchw          If true: return NCHW format labels with array shape [minibatch, 4+C, h, w]; if false, return
+     *                      NHWC format labels with array shape [minibatch, h, w, 4+C]
      * @param labelProvider ImageObjectLabelProvider - used to look up which objects are in each image
      */
-    public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW, ImageObjectLabelProvider labelProvider) {
+    public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW, boolean nchw, ImageObjectLabelProvider labelProvider) {
         super(height, width, channels, null, null);
         this.gridW = gridW;
         this.gridH = gridH;
+        this.nchw = nchw;
         this.labelProvider = labelProvider;
         this.appendLabel = labelProvider != null;
     }
 
     /**
-     * When imageTransform != null, object is removed if new center is outside of transformed image bounds.
-     *
-     * @param height        Height of the output images
-     * @param width         Width of the output images
-     * @param channels      Number of channels for the output images
-     * @param gridH         Grid/quantization size (along  height dimension) - Y axis
-     * @param gridW         Grid/quantization size (along  height dimension) - X axis
-     * @param labelProvider ImageObjectLabelProvider - used to look up which objects are in each image
-     * @param imageTransform ImageTransform - used to transform image and coordinates
+     * As per {@link #ObjectDetectionRecordReader(int, int, int, int, int, boolean, ImageObjectLabelProvider, ImageTransform)}
+     * but hardcoded to NCHW format
      */
     public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW,
-            ImageObjectLabelProvider labelProvider, ImageTransform imageTransform) {
+                                       ImageObjectLabelProvider labelProvider, ImageTransform imageTransform) {
+        this(height, width, channels, gridH, gridW, true, labelProvider, imageTransform);
+    }
+
+    /**
+     * When imageTransform != null, object is removed if new center is outside of transformed image bounds.
+     *
+     * @param height         Height of the output images
+     * @param width          Width of the output images
+     * @param channels       Number of channels for the output images
+     * @param gridH          Grid/quantization size (along  height dimension) - Y axis
+     * @param gridW          Grid/quantization size (along  height dimension) - X axis
+     * @param labelProvider  ImageObjectLabelProvider - used to look up which objects are in each image
+     * @param nchw           If true: return NCHW format labels with array shape [minibatch, 4+C, h, w]; if false, return
+     *                       NHWC format labels with array shape [minibatch, h, w, 4+C]
+     * @param imageTransform ImageTransform - used to transform image and coordinates
+     */
+    public ObjectDetectionRecordReader(int height, int width, int channels, int gridH, int gridW, boolean nchw,
+                                       ImageObjectLabelProvider labelProvider, ImageTransform imageTransform) {
         super(height, width, channels, null, null);
         this.gridW = gridW;
         this.gridH = gridH;
+        this.nchw = nchw;
         this.labelProvider = labelProvider;
         this.appendLabel = labelProvider != null;
         this.imageTransform = imageTransform;
@@ -182,6 +207,10 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
             exampleNum++;
         }
 
+        if(!nchw) {
+            outImg = outImg.permute(0, 2, 3, 1);        //NCHW to NHWC
+            outLabel = outLabel.permute(0, 2, 3, 1);
+        }
         return new NDArrayRecordBatch(Arrays.asList(outImg, outLabel));
     }
 
@@ -256,6 +285,8 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
             imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
         Image image = this.imageLoader.asImageMatrix(dataInputStream);
+        if(!nchw)
+            image.setImage(image.getImage().permute(0,2,3,1));
         Nd4j.getAffinityManager().ensureLocation(image.getImage(), AffinityManager.Location.DEVICE);
 
         List<Writable> ret = RecordConverter.toRecord(image.getImage());
@@ -264,6 +295,8 @@ public class ObjectDetectionRecordReader extends BaseImageRecordReader {
             int nClasses = labels.size();
             INDArray outLabel = Nd4j.create(1, 4 + nClasses, gridH, gridW);
             label(image, imageObjectsForPath, outLabel, 0);
+            if(!nchw)
+                outLabel = outLabel.permute(0,2,3,1);   //NCHW to NHWC
             ret.add(new NDArrayWritable(outLabel));
         }
         return ret;

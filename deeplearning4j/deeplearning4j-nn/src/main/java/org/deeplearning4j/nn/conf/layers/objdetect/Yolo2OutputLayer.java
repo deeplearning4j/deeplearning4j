@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -80,6 +81,8 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     @JsonDeserialize(using = BoundingBoxesDeserializer.class)
     private INDArray boundingBoxes;
 
+    private CNN2DFormat format = CNN2DFormat.NCHW;  //Default for serialization of old formats
+
     private Yolo2OutputLayer() {
         //No-arg constructor for Jackson JSON
     }
@@ -119,7 +122,8 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        //No op
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+        this.format = c.getFormat();
     }
 
     @Override
