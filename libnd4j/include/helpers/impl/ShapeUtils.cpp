@@ -130,7 +130,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const NDArray* a,   cons
         Nd4jLong* outShapeInfo = ShapeBuilders::copyShapeInfoAndType(shapeInfo, dataType, true, workspace);
         ShapeDescriptor descriptor(outShapeInfo, dataType);
         RELEASE(outShapeInfo, workspace);
-        return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+        return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
     }
 
     const int rank = shape::rank(shapeInfo);
@@ -168,7 +168,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const NDArray* a,   cons
 
     ShapeDescriptor descriptor(outShapeInfo, dataType);
     RELEASE(outShapeInfo, workspace);
-    return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+    return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
 }
 
     const Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& dimsToExclude, const NDArray& arr, const bool keepDims, const bool supportOldShapes, sd::memory::Workspace* workspace) {
@@ -207,20 +207,20 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const NDArray* a,   cons
 
             ShapeDescriptor descriptor(newShapeInfo, dataType);
             RELEASE(newShapeInfo, workspace);
-            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+            return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
         }
         else if(supportOldShapes) {
             ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(2), Nd4jLong);
             shape::shapeOldScalar(dataType, newShapeInfo, 'c');
             ShapeDescriptor descriptor(newShapeInfo, dataType);
             RELEASE(newShapeInfo, workspace);
-            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+            return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
         }
         else {
             newShapeInfo = ShapeBuilders::createScalarShapeInfo(dataType, workspace);
             ShapeDescriptor descriptor(newShapeInfo, dataType);
             RELEASE(newShapeInfo, workspace);
-            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+            return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
         }
     }
 
@@ -241,7 +241,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const NDArray* a,   cons
         ShapeUtils::updateStridesAndType(newShapeInfo, shapeInfo, order);
         ShapeDescriptor descriptor(newShapeInfo, dataType);
         RELEASE(newShapeInfo, workspace);
-        return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+        return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
     }
 
 	int newRank = rank - dimSize;
@@ -252,13 +252,13 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const NDArray* a,   cons
             shape::shapeOldScalar(ArrayOptions::dataType(shapeInfo), newShapeInfo, 'c');
             ShapeDescriptor descriptor(newShapeInfo, dataType);
             RELEASE(newShapeInfo, workspace);
-            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+            return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
         }
         else {
             newShapeInfo = ShapeBuilders::createScalarShapeInfo(ArrayOptions::dataType(shapeInfo), workspace);
             ShapeDescriptor descriptor(newShapeInfo, dataType);
             RELEASE(newShapeInfo, workspace);
-            return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+            return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
         }
 	}
 
@@ -289,7 +289,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const NDArray* a,   cons
 
 	ShapeDescriptor descriptor(newShapeInfo, dataType);
 	RELEASE(newShapeInfo, workspace);
-	return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+	return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -341,7 +341,7 @@ std::vector<Nd4jLong> ShapeUtils::evalRepeatShape(int axis, const std::vector<in
 
         RELEASE(shapeInfoNew, workspace);
 
-        return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+        return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -486,7 +486,7 @@ bool ShapeUtils::areShapesBroadcastable(const Nd4jLong *shapeInfo1, const Nd4jLo
 
         ShapeDescriptor descriptor(tmpShapeInfo);
         RELEASE(tmpShapeInfo, workspace);
-        resultShapeInfo = ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+        resultShapeInfo = ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
 
         return true;
     }
@@ -525,7 +525,7 @@ bool ShapeUtils::areShapesBroadcastable(const Nd4jLong *shapeInfo1, const Nd4jLo
 
         ShapeDescriptor descriptor(tmpShapeInfo);
         RELEASE(tmpShapeInfo, workspace);
-        resultShapeInfo = const_cast<Nd4jLong*>(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor));
+        resultShapeInfo = const_cast<Nd4jLong*>(ConstantShapeHelper::getInstance().createShapeInfo(descriptor));
 
         return true;
     }
@@ -594,7 +594,7 @@ bool ShapeUtils::areShapesBroadcastable(const Nd4jLong *shapeInfo1, const Nd4jLo
 
         ShapeDescriptor descriptor(newShapeInfo);
         RELEASE(newShapeInfo, workspace);
-        return ConstantShapeHelper::getInstance()->bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
+        return ConstantShapeHelper::getInstance().bufferForShapeInfo(descriptor).primary();
     }
 
     std::vector<Nd4jLong> ShapeUtils::pullShapeFromShapeInfo(const Nd4jLong *shapeInfo) {
@@ -745,7 +745,7 @@ std::vector<Nd4jLong> ShapeUtils::shapeAsVector(const Nd4jLong* shapeInfo) {
 
         ShapeUtils::updateStridesAndType(outputShapeInfo, shapeInfo, shape::order(shapeInfo));
 
-        auto result = ConstantShapeHelper::getInstance()->createShapeInfo(outputShapeInfo);
+        auto result = ConstantShapeHelper::getInstance().createShapeInfo(outputShapeInfo);
         RELEASE(outputShapeInfo, workspace);
         return result;
     }
@@ -832,7 +832,7 @@ std::vector<int> ShapeUtils::evalBroadcastBackwardAxis(const Nd4jLong *operandSh
             shape[1] = 1;
         }
 
-        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'f', 2, shape);
+        auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'f', 2, shape);
 
         RELEASE(shape, workspace);
 

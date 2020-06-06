@@ -80,7 +80,7 @@ namespace sd {
             if (block.width() > 1)
                 REQUIRE_TRUE(dtype == INPUT_VARIABLE(1)->dataType(), 0, "RandomUniform: data type of output and min/max args should be the same");
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
             return SHAPELIST(newShape);
         }
 

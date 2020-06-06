@@ -69,14 +69,14 @@ namespace sd {
 void executeOnce() override {
     PointersManager manager(LaunchContext::defaultContext(), "BroadcastBM");
 
-    auto packX = ConstantTadHelper::getInstance()->tadForDimensions(_x->shapeInfo(), _axis);
-    auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(_z->shapeInfo(), _axis);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(_x->shapeInfo(), _axis);
+    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(_z->shapeInfo(), _axis);
 
-    auto tadOnlyShapeInfo = Environment::getInstance()->isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo();
-    auto tadOffsets = Environment::getInstance()->isCPU() ? packX.primaryOffsets() : packX.specialOffsets();
+    auto tadOnlyShapeInfo = Environment::getInstance().isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo();
+    auto tadOffsets = Environment::getInstance().isCPU() ? packX.primaryOffsets() : packX.specialOffsets();
 
-    auto tadOnlyShapeInfoZ = Environment::getInstance()->isCPU() ? packZ.primaryShapeInfo() : packZ.specialShapeInfo();
-    auto tadOffsetsZ = Environment::getInstance()->isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets();
+    auto tadOnlyShapeInfoZ = Environment::getInstance().isCPU() ? packZ.primaryShapeInfo() : packZ.specialShapeInfo();
+    auto tadOffsetsZ = Environment::getInstance().isCPU() ? packZ.primaryOffsets() : packZ.specialOffsets();
 
     NativeOpExecutioner::execBroadcast(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), _y->buffer(), _y->shapeInfo(), _y->specialBuffer(), _y->specialShapeInfo(), _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr, _axis.size(),
             /*Nd4jLong **/ tadOnlyShapeInfo, /*Nd4jLong */ tadOffsets, /*Nd4jLong */ tadOnlyShapeInfoZ, /*Nd4jLong */ tadOffsetsZ);

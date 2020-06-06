@@ -389,7 +389,7 @@ namespace sd {
 			{
 				Nd4jLong inner_total;
 				Nd4jLong inner_last = 0;
-				int maxThreads = sd::Environment::getInstance()->maxMasterThreads();
+				int maxThreads = sd::Environment::getInstance().maxMasterThreads();
 				if (second_rank == 1) {
 					inner_total = inner_bases[0]; 
 					if (inner_total  < threadingThreshold) {
@@ -764,7 +764,7 @@ namespace sd {
 				func(0, 0, total, 1);
 #else
 				//
-				uint32_t numThreads = sd::Environment::getInstance()->maxMasterThreads();
+				uint32_t numThreads = sd::Environment::getInstance().maxMasterThreads();
 			    Nd4jLong inner_total = getLength<true>(inner_bases, second_rank);
 				if (total * inner_total <= threadingThreshold) {
 						numThreads = 1;

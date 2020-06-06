@@ -38,7 +38,7 @@ namespace sd {
 
                     unsigned int outSize = outputList.size();
 
-                    //PRAGMA_OMP_PARALLEL_FOR_IF(outSize > Environment::getInstance()->tadThreshold())
+                    //PRAGMA_OMP_PARALLEL_FOR_IF(outSize > Environment::getInstance().tadThreshold())
                     for (unsigned int i = 0; i < outSize; i++) {
                         outputs[i].first = outputList[i];
                         std::vector<int> outDims(outputs[i].first->rankOf() - 1);
@@ -52,7 +52,7 @@ namespace sd {
 
                         outputs[i].second = 0;
 
-                        //PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance()->elementwiseThreshold())
+                        //PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance().elementwiseThreshold())
                         for (Nd4jLong e = 0; e < indices->lengthOf(); ++e)
                             if ((*indices).e<Nd4jLong>(e) == i)
                                 listOutForCurrent.at(outputs[i].second++)->assign(listOfTensors.at(e));

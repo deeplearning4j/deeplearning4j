@@ -34,7 +34,7 @@ namespace sd {
                 // FIXME!!
                 outputAddr.second = e;
 
-                if (Environment::getInstance()->isDebugAndVerbose())
+                if (Environment::getInstance().isDebugAndVerbose())
                     nd4j_debug("Return input: <%i, %i>; Return output: <%i, %i>\n", inputAddr.first, inputAddr.second, outputAddr.first, outputAddr.second);
 
                 auto varIn = __variableSpace->getVariable(inputAddr);
@@ -45,7 +45,7 @@ namespace sd {
                 // FIXME: this is obviously wrong, we should keep depth track for backprop here
                 varOut->getNDArray()->assign(varIn->getNDArray());
 
-                if (Environment::getInstance()->isDebugAndVerbose())
+                if (Environment::getInstance().isDebugAndVerbose())
                     nd4j_debug("In after: [%f]; Out after: [%f]\n", varIn->getNDArray()->meanNumber().e<float>(0), varOut->getNDArray()->meanNumber().e<float>(0));
             }
 

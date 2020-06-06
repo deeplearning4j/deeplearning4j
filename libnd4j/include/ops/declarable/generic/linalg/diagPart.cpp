@@ -72,7 +72,7 @@ namespace ops  {
 
 			ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
 
-    		return SHAPELIST(ConstantShapeHelper::getInstance()->createFromExisting(outShapeInfo, block.workspace()));
+    		return SHAPELIST(ConstantShapeHelper::getInstance().createFromExisting(outShapeInfo, block.workspace()));
 		}
 
 

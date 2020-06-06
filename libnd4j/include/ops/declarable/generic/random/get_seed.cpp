@@ -36,7 +36,7 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(get_seed) {
-            auto newshape = ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::INT64);
+            auto newshape = ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT64);
             return SHAPELIST(newshape);
         }
 

@@ -53,7 +53,7 @@ DECLARE_SHAPE_FN(tri) {
 
     auto dtype = block.numD() ? D_ARG(0) : DataType::FLOAT32;
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', {rows, cols}));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', {rows, cols}));
 }
 
 

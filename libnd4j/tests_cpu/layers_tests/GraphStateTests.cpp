@@ -31,13 +31,13 @@ using namespace sd::graph;
 class GraphStateTests : public testing::Test {
 public:
     GraphStateTests() {
-        Environment::getInstance()->setDebug(false);
-        Environment::getInstance()->setVerbose(false);
+        Environment::getInstance().setDebug(false);
+        Environment::getInstance().setVerbose(false);
     };
 
     ~GraphStateTests() {
-        Environment::getInstance()->setDebug(false);
-        Environment::getInstance()->setVerbose(false);
+        Environment::getInstance().setDebug(false);
+        Environment::getInstance().setVerbose(false);
     }
 };
 

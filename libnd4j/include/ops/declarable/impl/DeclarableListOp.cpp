@@ -47,7 +47,7 @@ namespace sd {
         ShapeList* DeclarableListOp::calculateOutputShape(ShapeList* inputShape, sd::graph::Context& block) {
             // TODO: ensure this method isn't ever called
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', {1, 1});
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', {1, 1});
             return SHAPELIST(newShape);
         }
 

@@ -137,7 +137,7 @@ DECLARE_SHAPE_FN(maxpool3dnew) {
         outputShape[4] = iC;
     }
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outputShape, 5)));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inputShapeInfo), shape::order(inputShapeInfo), outputShape, 5)));
 }
 
         DECLARE_TYPES(maxpool3dnew_bp) {
@@ -217,7 +217,7 @@ CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 14) {
 
 
 DECLARE_SHAPE_FN(maxpool3dnew_bp) {
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)))));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inputShape->at(0), ArrayOptions::dataType(inputShape->at(1)))));
 }
 
 

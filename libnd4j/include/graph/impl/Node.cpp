@@ -636,7 +636,7 @@ namespace sd {
                         block->setOpDescriptor(this->getCustomOp()->getOpDescriptor());
                     }
                 } else if (this->_opType == OpType_CUSTOM) {
-                        auto op = sd::ops::OpRegistrator::getInstance()->getOperation(this->opNum());
+                        auto op = sd::ops::OpRegistrator::getInstance().getOperation(this->opNum());
                         if (op == nullptr) {
                             nd4j_verbose("Can't find operation: %lld\n", this->opNum());
                             throw std::runtime_error("Can't find requested operation");

@@ -97,7 +97,7 @@ namespace helpers {
             shape::checkDimensions(inputRank, axis);
 
         auto tempArray = input.dup();
-        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(tempArray.shapeInfo(), axis);
+        auto packX = ConstantTadHelper::getInstance().tadForDimensions(tempArray.shapeInfo(), axis);
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 

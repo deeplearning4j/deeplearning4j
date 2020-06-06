@@ -166,7 +166,7 @@ namespace sd {
 //                            aNewShape[5] = 8192; // set type as FLOAT32 by default
 //                            aNewShape[6] = 1;
 //                            aNewShape[7] = 99;
-                            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(DataType::FLOAT32, 'c', {1,1});
+                            newShape = ConstantShapeHelper::getInstance().createShapeInfo(DataType::FLOAT32, 'c', {1,1});
                         } else {
                             auto in = node->input()->at(0);
 
@@ -184,7 +184,7 @@ namespace sd {
                             //shape::TAD tad(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
                             auto numTads = shape::tadLength(oldShape, node->getDimensions()->data(), node->getDimensions()->size());
                             Nd4jLong shape[2] = {1, (int) numTads};
-                            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape);
+                            newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(oldShape), 'c', 2, shape);
                         }
 
                         std::pair<int, int> pairAddr(node->id(), 0);
@@ -805,7 +805,7 @@ namespace sd {
                 // we're adding final nodes of the graph. those, not used as input anywhere
                 nd4j_debug("Paring nodes... \n", "");
 
-                if (Environment::getInstance()->isDebugAndVerbose()) {
+                if (Environment::getInstance().isDebugAndVerbose()) {
                     // nd4j_printv("current _output", _output);
                 }
                 //_output.clear();
@@ -852,7 +852,7 @@ namespace sd {
 
                         if (std::find(_output.begin(), _output.end(), node->id()) == _output.end())
                             _output.emplace_back(node->id());
-                    } else if (Environment::getInstance()->isDebugAndVerbose()) {
+                    } else if (Environment::getInstance().isDebugAndVerbose()) {
                         nd4j_debug("Node [%i:<%s>] has %i outputs announced:\n", v, node->name()->c_str(), node->output()->size());
                         printf("{");
                         for (auto s : *node->output()) {
@@ -1202,7 +1202,7 @@ namespace sd {
                         }
                         break;
                         default: {
-                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + ops::OpRegistrator::getInstance()->local_to_string<int>((int) node->opNum()) + "}";
+                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + ops::OpRegistrator::getInstance().local_to_string<int>((int) node->opNum()) + "}";
                         }
                     }
 
@@ -1250,7 +1250,7 @@ namespace sd {
                         }
                         break;
                         default: {
-                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + ops::OpRegistrator::getInstance()->local_to_string<int>((int) node->opNum()) + "}";
+                            opNameStr = std::string(EnumUtils::_OpTypeToString(node->opType()))+"{" + ops::OpRegistrator::getInstance().local_to_string<int>((int) node->opNum()) + "}";
                         }
                     }
 
@@ -1447,7 +1447,7 @@ namespace sd {
             }
 
 
-            hash = ops::HashHelper::getInstance()->getLongHash(localStamp);
+            hash = ops::HashHelper::getInstance().getLongHash(localStamp);
 
             nd4j_debug("Graph hash: %lld\n", hash);
 

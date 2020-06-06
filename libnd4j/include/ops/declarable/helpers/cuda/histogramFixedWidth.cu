@@ -164,9 +164,9 @@ void histogramFixedWidth(sd::LaunchContext* context, const NDArray& input, const
 //         cudaError_t err = cudaMalloc(&outputBuffer, output.lengthOf() * sizeof(Nd4jLong));
 //         if (err != 0)
 //             throw cuda_exception::build("helpers::histogramFixedWidth: Cannot allocate memory for output", err);
-//         copyBuffers<Nd4jLong ><<<256, 512, 8192, *stream>>>(outputBuffer, output.specialBuffer(), output.specialShapeInfo(), output.lengthOf());
-//         histogramFixedWidthKernel<T><<<256, 512, 8192, *stream>>>(outputBuffer, output.lengthOf(), input.specialBuffer(), input.specialShapeInfo(), input.lengthOf(), leftEdge, binWidth, secondEdge, lastButOneEdge);
-//         returnBuffers<Nd4jLong><<<256, 512, 8192, *stream>>>(output.specialBuffer(), outputBuffer, output.specialShapeInfo(), output.lengthOf());
+//         copyBuffers<Nd4jLong ><<<256, 512, 8192, *stream>>>(outputBuffer, output.specialBuffer(), output.special(), output.lengthOf());
+//         histogramFixedWidthKernel<T><<<256, 512, 8192, *stream>>>(outputBuffer, output.lengthOf(), input.specialBuffer(), input.special(), input.lengthOf(), leftEdge, binWidth, secondEdge, lastButOneEdge);
+//         returnBuffers<Nd4jLong><<<256, 512, 8192, *stream>>>(output.specialBuffer(), outputBuffer, output.special(), output.lengthOf());
 //         //cudaSyncStream(*stream);
 //         err = cudaFree(outputBuffer);
 //         if (err != 0)

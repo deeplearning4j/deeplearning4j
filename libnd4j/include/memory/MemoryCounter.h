@@ -34,8 +34,6 @@ namespace sd {
          */
         class ND4J_EXPORT MemoryCounter {
         private:
-            static MemoryCounter* _INSTANCE;
-
             // used for synchronization
             std::mutex _locker;
 
@@ -56,7 +54,7 @@ namespace sd {
             ~MemoryCounter() = default;
 
         public:
-            static MemoryCounter *getInstance();
+            static MemoryCounter & getInstance();
 
             /**
              * This method checks if allocation of numBytes won't break through per-group or per-device limit

@@ -106,7 +106,7 @@ namespace sd {
                 if (actualIndicesCount < maxOutputSize)
                     maxOutputSize = actualIndicesCount;
             }
-            outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(maxOutputSize, DataType::INT32);
+            outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, DataType::INT32);
 
             return SHAPELIST(outputShape);
         }
@@ -211,7 +211,7 @@ namespace sd {
             if (len > 0)
                 len = helpers::nonMaxSuppressionV3(block.launchContext(), boxes, scales, maxOutputSize, overlayThreshold, scoreThreshold, nullptr);
 
-            auto outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(len, DataType::INT32);
+            auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(len, DataType::INT32);
 
             return SHAPELIST(outputShape);
         }

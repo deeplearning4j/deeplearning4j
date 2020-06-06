@@ -166,7 +166,7 @@ namespace functions {
                     if (dimensionLength < 1)
                         return;
 
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
                     tadOnlyShapeInfo = tadPack.primaryShapeInfo();
                     tadOffsets = tadPack.primaryOffsets();
                 }
@@ -193,7 +193,7 @@ namespace functions {
         Z _CUDA_H ReduceBoolFunction<X, Z>::execScalar(const void *vx, Nd4jLong xEws, Nd4jLong length, void *vextraParams) {
                 auto x = reinterpret_cast<const X *>(vx);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
-                int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance()->maxThreads());
+                int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance().maxThreads());
                 Z intermediate[64];
 
                 PRAGMA_OMP_SIMD

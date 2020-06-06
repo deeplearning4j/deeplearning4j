@@ -107,7 +107,7 @@ namespace ops {
             rates = r->template asVectorT<int>();
         } else {
             if (block.numI() < 9) {
-                auto newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(block.dataType());
+                auto newShape = ConstantShapeHelper::getInstance().scalarShapeInfo(block.dataType());
                 return SHAPELIST(newShape);
             }
 
@@ -127,7 +127,7 @@ namespace ops {
         helpers::dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &sH, &sW, &pH, &pW, &dH, &dW, &oH, &oW);
 
         std::array<Nd4jLong, 4> shape = {{bS, oH, oW, iC}};
-        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
+        auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
 }

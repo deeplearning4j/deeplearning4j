@@ -67,7 +67,7 @@ DECLARE_SHAPE_FN(rgb_to_grs) {
     auto nShape = input->getShapeAsVector();
     nShape[dimC] = 1;
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(input->dataType(), input->ordering(), nShape));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(input->dataType(), input->ordering(), nShape));
 }
 
 }

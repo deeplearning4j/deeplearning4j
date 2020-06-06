@@ -60,9 +60,9 @@ namespace helpers {
         m({col, m.rows(), col, m.columns()}).assign(in({col, m.rows(), col, m.columns()}));
 
 //        auto stream = context->getCudaStream();
-//        matrixMinorKernel<T><<<128, 128, 256, *stream>>>(m.dataBuffer()->specialAsT<T>(), m.specialShapeInfo(),
-//        matrixMinorKernel<T><<<128, 128, 256, *stream>>>(m.dataBuffer()->specialAsT<T>(), m.specialShapeInfo(),
-//                reinterpret_cast<T*>(in.specialBuffer()), in.specialShapeInfo(), col, in.rows(), in.columns());
+//        matrixMinorKernel<T><<<128, 128, 256, *stream>>>(m.dataBuffer()->specialAsT<T>(), m.special(),
+//        matrixMinorKernel<T><<<128, 128, 256, *stream>>>(m.dataBuffer()->specialAsT<T>(), m.special(),
+//                reinterpret_cast<T*>(in.specialBuffer()), in.special(), col, in.rows(), in.columns());
 //
         m.tickWriteDevice();
         return m;

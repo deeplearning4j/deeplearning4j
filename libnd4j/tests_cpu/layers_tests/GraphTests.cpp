@@ -39,8 +39,8 @@ public:
     int fShape[] = {2, 2, 2, 1, 2, 0, 1, 102};
      */
     GraphTests() {
-        //Environment::getInstance()->setDebug(true);
-        //Environment::getInstance()->setVerbose(true);
+        //Environment::getInstance().setDebug(true);
+        //Environment::getInstance().setVerbose(true);
     }
 };
 
@@ -910,7 +910,7 @@ TEST_F(GraphTests, TestMultiOutput1) {
     auto nodeB0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {-2}, {11});
     nodeB0->markInplace(false);
 
-    auto op = sd::ops::OpRegistrator::getInstance()->getOperation("testop2i2o");
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation("testop2i2o");
 
     // this op will add 1.0 to first input, and 2.0 for second input
     auto nodeT = new Node(op, 11, {1, 2}, {21, 31}, {}, 0.0f);
@@ -951,7 +951,7 @@ TEST_F(GraphTests, TestMultiOutput1) {
 }
 
 TEST_F(GraphTests, TestDivergentNode1) {
-    auto op = sd::ops::OpRegistrator::getInstance()->getOperation("Switch");
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation("Switch");
     auto nodeY = new Node(op, 1);
 
     ASSERT_TRUE(nodeY->isDivergencePoint());

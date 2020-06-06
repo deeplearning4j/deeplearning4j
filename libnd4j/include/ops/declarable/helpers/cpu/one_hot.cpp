@@ -31,7 +31,7 @@ namespace sd {
                 auto output = reinterpret_cast<Z*>(voutput);
                 auto indices = reinterpret_cast<I const*>(vindices);
 
-                auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(zShapeInfo, {axis});
+                auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(zShapeInfo, {axis});
 
                 auto iLen = static_cast<unsigned int>(shape::length(iShapeInfo));
                 auto tLen = static_cast<unsigned int>(shape::length(tadPack.primaryShapeInfo()));

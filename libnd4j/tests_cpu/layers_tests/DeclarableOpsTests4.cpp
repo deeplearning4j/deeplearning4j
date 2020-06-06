@@ -641,7 +641,7 @@ TEST_F(DeclarableOpsTests4, biasadd_bp_2) {
 }
 
 TEST_F(DeclarableOpsTests4, biasadd_4) {
-    if (!Environment::getInstance()->isExperimentalBuild())
+    if (!Environment::getInstance().isExperimentalBuild())
         return;
 
     auto x = NDArrayFactory::create<double>('c', {2, 3});

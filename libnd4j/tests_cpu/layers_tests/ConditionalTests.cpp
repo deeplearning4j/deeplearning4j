@@ -30,13 +30,13 @@ using namespace sd::graph;
 class ConditionalTests : public testing::Test {
 public:
     ConditionalTests(){
-        //Environment::getInstance()->setVerbose(true);
-        //Environment::getInstance()->setDebug(true);
+        //Environment::getInstance().setVerbose(true);
+        //Environment::getInstance().setDebug(true);
     }
 
     ~ConditionalTests(){
-        //Environment::getInstance()->setVerbose(false);
-        //Environment::getInstance()->setDebug(false);
+        //Environment::getInstance().setVerbose(false);
+        //Environment::getInstance().setDebug(false);
     }
 };
 
@@ -139,8 +139,8 @@ TEST_F(ConditionalTests, Flat_Test_1) {
  * Condition is True
  */
 TEST_F(ConditionalTests, Flat_Test_2) {
-    Environment::getInstance()->setDebug(true);
-    Environment::getInstance()->setVerbose(true);
+    Environment::getInstance().setDebug(true);
+    Environment::getInstance().setVerbose(true);
     sd::ops::identity op0;
 
     auto graph = GraphExecutioner::importFromFlatBuffers("./resources/simpleif_0.fb");

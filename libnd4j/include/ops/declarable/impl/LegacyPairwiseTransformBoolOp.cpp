@@ -67,7 +67,7 @@ namespace sd {
         */
         ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
         }
     }
 }

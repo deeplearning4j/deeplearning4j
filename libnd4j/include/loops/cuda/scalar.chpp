@@ -152,7 +152,7 @@ void _CUDA_H ScalarTransform<X,Y,Z>::intermediateAlongDimension(dim3& launchDims
 template<typename X, typename Y, typename Z>
 void ScalarTransform<X,Y,Z>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void const* vx, Nd4jLong const* xShapeInfo, Nd4jLong const* hxShapeInfo, void *vz, Nd4jLong const* zShapeInfo, Nd4jLong const* hzShapeInfo, void const* vscalar, void *vextraParams) {
 
-    if (sd::Environment::getInstance()->isDebugAndVerbose())
+    if (sd::Environment::getInstance().isDebugAndVerbose())
 	   printf("H14 opNum:[%i]\n", opNum);
 
     DISPATCH_BY_OPNUM_TTT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, hxShapeInfo, vz, zShapeInfo, hzShapeInfo, vscalar, vextraParams, nullptr), SCALAR_OPS);

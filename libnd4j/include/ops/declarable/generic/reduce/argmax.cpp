@@ -86,7 +86,7 @@ namespace sd {
 
             // special case - output is scalar
             if (dims.empty() || (dims.size() == 1 && dims.at(0) == sd::DataTypeUtils::max<int>())) {
-                return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(dtype));
+                return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
             }
 
             return SHAPELIST(ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), dtype, keepDims, false, block.getWorkspace()));

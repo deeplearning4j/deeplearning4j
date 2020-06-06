@@ -141,9 +141,9 @@ namespace sd {
             static int triangularSolveFunctor_(sd::LaunchContext * context, NDArray* leftInput, NDArray* rightInput,
                     bool lower, bool unitsOnDiag, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {leftInput, rightInput});
-                auto leftTads = ConstantTadHelper::getInstance()->tadForDimensions(leftInput->shapeInfo(), {-2, -1});
-                auto rightTads = ConstantTadHelper::getInstance()->tadForDimensions(rightInput->shapeInfo(), {-2, -1});
-                auto outputTads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-2, -1});
+                auto leftTads = ConstantTadHelper::getInstance().tadForDimensions(leftInput->shapeInfo(), {-2, -1});
+                auto rightTads = ConstantTadHelper::getInstance().tadForDimensions(rightInput->shapeInfo(), {-2, -1});
+                auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {-2, -1});
 
                 auto stream = context->getCudaStream();
                 T const* leftBuf = reinterpret_cast<T const*>(leftInput->specialBuffer());
@@ -243,8 +243,8 @@ namespace sd {
             static void adjointTriangularMatrix_(sd::LaunchContext* context, NDArray const* input, bool const lower,
                     NDArray* output) {
 
-                auto inputTads = ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), {-2, -1});
-                auto outputTads = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {-2, -1});
+                auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {-2, -1});
+                auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {-2, -1});
                 auto stream = context->getCudaStream();
                 auto inputBuf = reinterpret_cast<T const*>(input->specialBuffer());
                 auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());

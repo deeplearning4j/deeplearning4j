@@ -53,7 +53,7 @@ namespace sd {
             auto inShape = inputShape->at(0);
             DataType newType = DataType::UINT8;
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, newType)));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
         }
 
     }

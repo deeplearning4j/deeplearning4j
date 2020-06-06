@@ -102,13 +102,9 @@ namespace sd {
             destroyHandle_(_cache[e]);
     }
 
-    CublasHelper* CublasHelper::getInstance() {
-        _mutex.lock();
-        if (!_INSTANCE)
-            _INSTANCE = new sd::CublasHelper();
-        _mutex.unlock();
-
-        return _INSTANCE;
+    CublasHelper& CublasHelper::getInstance() {
+      static CublasHelper instance;
+      return instance;
     }
 
     void* CublasHelper::cudnn() {
@@ -138,7 +134,4 @@ namespace sd {
 
         return _cache[deviceId];
     }
-
-
-    sd::CublasHelper* sd::CublasHelper::_INSTANCE = 0;
 }

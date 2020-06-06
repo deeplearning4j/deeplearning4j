@@ -27,11 +27,9 @@ namespace sd {
             _workspace = nullptr;
         };
 
-        MemoryRegistrator* MemoryRegistrator::getInstance() {
-            if (_INSTANCE == 0)
-                _INSTANCE = new MemoryRegistrator();
-
-            return _INSTANCE;
+        MemoryRegistrator& MemoryRegistrator::getInstance() {
+          static MemoryRegistrator instance;
+          return instance;
         }
 
         bool MemoryRegistrator::hasWorkspaceAttached() {
@@ -83,8 +81,5 @@ namespace sd {
 
             return result;
         }
-
-        MemoryRegistrator* MemoryRegistrator::_INSTANCE = 0;
-
     }
 }

@@ -61,7 +61,7 @@ static void ismax_(sd::LaunchContext * context, const NDArray* input, NDArray* o
         int dimensionLength = dimensions.size();
         std::vector<int> copy(dimensions);
 
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), copy.data(), copy.size());
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), copy.data(), copy.size());
 
         // we launch legacy IndexMax op, to get indices of max values along dimension
         auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, dimensions);

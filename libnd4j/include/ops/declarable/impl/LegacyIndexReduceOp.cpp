@@ -54,7 +54,7 @@ namespace sd {
                 newShape[6] = 1;
                 newShape[7] = 99;
 
-                auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape, DataType::INT64));
+                auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newShape, DataType::INT64));
                 RELEASE(newShape, block.getWorkspace());
                 return SHAPELIST(result);
             } else if (block.getAxis()->size()){
@@ -89,7 +89,7 @@ namespace sd {
                         newShape[6] = 1;
                         newShape[7] = 99;
 
-                        auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape, DataType::INT64));
+                        auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newShape, DataType::INT64));
                         RELEASE(newShape, block.getWorkspace());
                         return SHAPELIST(result);
                 } else {
@@ -139,7 +139,7 @@ namespace sd {
                     if (dims.size() > 1)
                         std::sort(dims.begin(), dims.end());
 
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), dims);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
 
                     NativeOpExecutioner::execIndexReduce(block.launchContext(), opNum, x->buffer(), x->shapeInfo(),
                                                         x->specialBuffer(), x->specialShapeInfo(),
@@ -147,7 +147,7 @@ namespace sd {
                                                         reinterpret_cast<Nd4jLong *>(z->buffer()), z->shapeInfo(),
                                                         z->specialBuffer(), z->specialShapeInfo(),
                                                         nullptr, (int) dims.size(),
-                                                        Environment::getInstance()->isCPU() ? tadPack.primaryShapeInfo() : tadPack.specialShapeInfo(), Environment::getInstance()->isCPU() ? tadPack.primaryOffsets() : tadPack.specialOffsets());
+                                                        Environment::getInstance().isCPU() ? tadPack.primaryShapeInfo() : tadPack.specialShapeInfo(), Environment::getInstance().isCPU() ? tadPack.primaryOffsets() : tadPack.specialOffsets());
                 }
             } else {
                 // TF mode
@@ -175,7 +175,7 @@ namespace sd {
 
                     REQUIRE_TRUE(axis.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x->shapeInfo(), axis);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), axis);
 
                     NativeOpExecutioner::execIndexReduce(block.launchContext(), opNum,
                             x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -183,8 +183,8 @@ namespace sd {
                             reinterpret_cast<Nd4jLong *>(z->buffer()),
                             z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                             nullptr, (int) axis.size(),
-                            Environment::getInstance()->isCPU() ? tadPack.primaryShapeInfo() : tadPack.specialShapeInfo(),
-                            Environment::getInstance()->isCPU() ? tadPack.primaryOffsets() : tadPack.specialOffsets());
+                            Environment::getInstance().isCPU() ? tadPack.primaryShapeInfo() : tadPack.specialShapeInfo(),
+                            Environment::getInstance().isCPU() ? tadPack.primaryOffsets() : tadPack.specialOffsets());
                 }
             }
 

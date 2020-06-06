@@ -53,7 +53,7 @@ void* NDArray::platformBuffer()             { return specialBuffer();    }
 void const* NDArray::platformBuffer() const    { return specialBuffer(); }
 
 Nd4jLong const* NDArray::platformShapeInfo() const { return specialShapeInfo(); }
-//Nd4jLong const* NDArray::platformShapeInfo()          { return specialShapeInfo(); }
+//Nd4jLong const* NDArray::platform()          { return special(); }
 
 void NDArray::syncToDevice() const          {
     auto currentDeviceId = AffinityManager::currentDeviceId();

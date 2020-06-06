@@ -86,9 +86,9 @@ namespace sd {
                 helpers::chooseFunctorScalar(block.launchContext(), first, scalar, mode, nullptr, &numResults);
             }
 
-            auto newShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(numResults.e<Nd4jLong>(0), ArrayOptions::dataType(inputShape->at(0)));
+            auto newShape = ConstantShapeHelper::getInstance().vectorShapeInfo(numResults.e<Nd4jLong>(0), ArrayOptions::dataType(inputShape->at(0)));
 
-            auto shapeScalar = ConstantShapeHelper::getInstance()->scalarShapeInfo(sd::DataType::INT64);
+            auto shapeScalar = ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64);
             return SHAPELIST(newShape, shapeScalar);
         }
 

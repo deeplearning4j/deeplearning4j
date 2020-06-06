@@ -45,6 +45,7 @@
 #include <memory>
 #include <array/InteropDataBuffer.h>
 #include <memory/MemoryCounter.h>
+#include <array/ConstantShapeBuffer.h>
 
 
 namespace sd {
@@ -155,8 +156,8 @@ namespace sd {
         /**
         *  contains shape info:  matrix rank, numbers of elements per each dimension, dimensions strides, element-wise-stride, c-like or fortan-like order
         */
-        Nd4jLong *_shapeInfo = nullptr;
-        Nd4jLong *_shapeInfoD = nullptr;
+        const Nd4jLong *_shapeInfo = nullptr;
+        const Nd4jLong *_shapeInfoD = nullptr;
 
         /**
         *  pointer on device launch context (with all data needed there).
@@ -1219,7 +1220,7 @@ namespace sd {
         void setShapeInfo(const Nd4jLong *shapeInfo);
         void setShapeInfo(const Nd4jLong *shapeInfo, const sd::DataType dtype);
         void setShapeInfo(const ShapeDescriptor& descriptor);
-        void setShapeInfo(const ConstantDataBuffer& shapeBuffer);
+        void setShapeInfo(const ConstantShapeBuffer& shapeBuffer);
 
         /**
         *  returns absolute offset which corresponds to given sequential index
@@ -1516,9 +1517,9 @@ FORCEINLINE R NDArray::templatedGet(void const* buffer, Nd4jLong index) const {
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
-    auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
-    _shapeInfo = buffer.primaryAsT<Nd4jLong>();
-    _shapeInfoD = buffer.specialAsT<Nd4jLong>();
+    auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+    _shapeInfo = buffer.primary();
+    _shapeInfoD = buffer.special();
 
     if (shapeInfo != nullptr) {
         _dataType = ArrayOptions::dataType(_shapeInfo);
@@ -1535,9 +1536,9 @@ void NDArray::setShapeInfo(Nd4jLong *shapeInfo) {
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::setShapeInfo(Nd4jLong *shapeInfo, const sd::DataType dtype) {
-    auto buffer = ConstantShapeHelper::getInstance()->bufferForShapeInfo(shapeInfo);
-    _shapeInfo = buffer.primaryAsT<Nd4jLong>();
-    _shapeInfoD = buffer.specialAsT<Nd4jLong>();
+    auto buffer = ConstantShapeHelper::getInstance().bufferForShapeInfo(shapeInfo);
+    _shapeInfo = buffer.primary();
+    _shapeInfoD = buffer.special();
 
     if (shapeInfo != nullptr) {
         _dataType = dtype;
@@ -1623,7 +1624,7 @@ bool NDArray::nonNull() const {
     if (isEmpty())
         return true;
 
-    if(!Environment::getInstance()->isCPU())
+    if(!Environment::getInstance().isCPU())
         return getDataBuffer()->special() != nullptr && specialShapeInfo() != nullptr;
 
     return getDataBuffer()->primary() != nullptr && shapeInfo() != nullptr;

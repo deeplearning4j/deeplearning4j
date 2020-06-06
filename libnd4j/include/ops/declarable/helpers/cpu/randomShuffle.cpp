@@ -46,7 +46,7 @@ void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGenerator&
 
         // apply Fisher-Yates shuffle
         if(isInplace) {
-            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
+            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance().tadThreshold())
             for(int i = firstDim-1; i > 0; --i) {
                 int r = rng.relativeInt(i) % i;
                 if(i == r)
@@ -84,7 +84,7 @@ void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGenerator&
 
         // apply Fisher-Yates shuffle
         if(isInplace) {
-            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->elementwiseThreshold())
+            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance().elementwiseThreshold())
             for(int i = firstDim - 1; i > 0; --i) {
                 int r = rng.relativeInt(i) % i;
 
@@ -99,7 +99,7 @@ void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGenerator&
             std::vector<int> indices(firstDim);
             std::iota(indices.begin(), indices.end(), 0);
             bool isZeroShuffled = false;
-            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
+            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance().tadThreshold())
             for(int i = firstDim - 1; i > 0; --i) {
                 int r = rng.relativeInt(i) % i;
                 subArrsListOut.at(i)->assign(subArrsListIn.at(indices[r]));

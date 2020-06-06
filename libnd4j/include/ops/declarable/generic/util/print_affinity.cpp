@@ -44,7 +44,7 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(print_affinity) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::INT32));
+            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT32));
         }
     }
 }

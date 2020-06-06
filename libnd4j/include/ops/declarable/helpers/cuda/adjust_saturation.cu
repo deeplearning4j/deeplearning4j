@@ -83,8 +83,8 @@ static _CUDA_H void adjustSaturationCudaLauncher(const int blocksPerGrid, const 
 ////////////////////////////////////////////////////////////////////////
 void adjustSaturation(sd::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(),  {dimC});
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {dimC});
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),  {dimC});
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -162,10 +162,10 @@ static void _adjust_saturation_single(sd::LaunchContext * context, NDArray *arra
     auto tuples = array->lengthOf() / 3;
 
     if (isNHWC) {
-        adjustSaturationSingleNHWCKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(), array->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), tuples, delta);
+        adjustSaturationSingleNHWCKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(), array->specialShapeInfo(), output->specialBuffer(), output->special(), tuples, delta);
     } else {
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->shapeInfo(), {1, 2});
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {1, 2});
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(array->shapeInfo(), {1, 2});
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {1, 2});
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 
@@ -185,12 +185,12 @@ static void _adjust_saturation_batch(sd::LaunchContext * context, NDArray *array
         BUILD_SINGLE_SELECTOR(xType, _adjust_saturation_single, (context, array, output, delta, isNHWC);, FLOAT_TYPES);
     } else {
         // TODO: check this one
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(array->shapeInfo(), {0, 2, 3});
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {0, 2, 3});
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(array->shapeInfo(), {0, 2, 3});
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {0, 2, 3});
 
-        auto tadLength = shape::length(packX.primaryShapeInfo());
+        auto tadLength = shape::length(packX.primary());
 
-        adjustSaturationSingleNCHWKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), tadLength, tuples, delta);
+        adjustSaturationSingleNCHWKernel<T><<<256, 256, 1024, *context->getCudaStream()>>>(array->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), packZ.platform(), packZ.platform(), tadLength, tuples, delta);
     }
 }
 

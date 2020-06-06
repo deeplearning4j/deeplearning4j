@@ -127,7 +127,7 @@ namespace functions {
             if (dimensionLength < 1)
                 return;
 
-            auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+            auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
             //pre squeezed: this is for keeping the pointer to the original
             //shape information for tad offset

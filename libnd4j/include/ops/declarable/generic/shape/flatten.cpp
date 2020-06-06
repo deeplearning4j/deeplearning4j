@@ -60,7 +60,7 @@ namespace sd {
                 REQUIRE_TRUE(dtype == ArrayOptions::dataType(inputShape->at(e)), 0, "Flatten: all input arrays must have the same datatype");
             }
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(length, dtype));
+            return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(length, dtype));
         }
     }
 }

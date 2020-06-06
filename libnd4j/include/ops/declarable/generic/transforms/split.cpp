@@ -115,7 +115,7 @@ namespace ops {
 		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
 		// if(INPUT_VARIABLE(inputVar)->isEmpty()){
 		// 	for (int e = 0; e < num_splits; e++) {
-  //               auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(dataType);
+  //               auto empty = ConstantShapeHelper::getInstance().emptyShapeInfo(dataType);
 		// 		shapes->push_back(empty);
 		// 	}
 		// 	return shapes;
@@ -136,7 +136,7 @@ namespace ops {
                 shape[e] = shape::sizeAt(input, e);
 
         for (int e = 0; e < num_splits; e++) {
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dataType, shape::order(input), shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dataType, shape::order(input), shape);
             shapes->push_back(newShape);
         }
 

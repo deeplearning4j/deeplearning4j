@@ -65,7 +65,7 @@ void Reduce3<X,Z>::execScalar(const void *vx, const Nd4jLong *xShapeInfo,
     const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     Z startingVal = OpType::startingValue(x);
-    int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance()->maxThreads());
+    int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance().maxThreads());
     Z intermediate[64];
     Z extraParamsLocal[3 * 64];
 

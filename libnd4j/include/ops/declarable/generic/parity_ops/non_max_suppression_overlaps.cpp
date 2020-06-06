@@ -75,7 +75,7 @@ namespace sd {
             if (boxSize < maxOutputSize) 
                 maxOutputSize = boxSize;
 
-            auto outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(maxOutputSize, DataType::INT32);
+            auto outputShape = ConstantShapeHelper::getInstance().vectorShapeInfo(maxOutputSize, DataType::INT32);
 
             return SHAPELIST(outputShape);
         }

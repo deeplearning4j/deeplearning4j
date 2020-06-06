@@ -25,11 +25,9 @@
 
 namespace sd {
     namespace graph {
-        GraphHolder* GraphHolder::getInstance() {
-            if (_INSTANCE == 0)
-                _INSTANCE = new GraphHolder();
-
-            return _INSTANCE;
+        GraphHolder& GraphHolder::getInstance() {
+          static GraphHolder instance;
+          return instance;
         };
 
         void GraphHolder::registerGraph(Nd4jLong graphId, Graph* graph) {
@@ -126,7 +124,5 @@ namespace sd {
 
             return res;
         }
-
-        GraphHolder* GraphHolder::_INSTANCE = 0;
     }
 }

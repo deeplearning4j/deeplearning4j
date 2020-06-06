@@ -104,7 +104,7 @@ DECLARE_SHAPE_FN(pad) {
     ShapeUtils::updateStridesAndType(outShapeInfo, inputShapeInfo, shape::order(inputShapeInfo));
     ShapeDescriptor descriptor(outShapeInfo);
     RELEASE(outShapeInfo, block.getWorkspace());
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor));
 }
 
 

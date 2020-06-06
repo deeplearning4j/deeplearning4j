@@ -21,6 +21,8 @@
 #include "../ConstantTadHelper.h"
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
+#include <array/ConstantOffsetsBuffer.h>
+#include <array/PrimaryPointerDeallocator.h>
 
 #ifndef __CUDABLAS__
 
@@ -32,11 +34,9 @@ namespace sd {
         _cache.emplace_back(pack);
     }
 
-    ConstantTadHelper* ConstantTadHelper::getInstance() {
-        if (!_INSTANCE)
-            _INSTANCE = new ConstantTadHelper();
-
-        return _INSTANCE;
+    ConstantTadHelper& ConstantTadHelper::getInstance() {
+      static ConstantTadHelper instance;
+      return instance;
     }
 
     TadPack ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, int dimension, const bool keepUnitiesInShape) {
@@ -60,60 +60,31 @@ namespace sd {
     TadPack ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
         const int deviceId = 0;
 
-        _mutex.lock();
+        std::lock_guard<std::mutex> lock(_mutex);
         if (_cache[deviceId].count(descriptor) == 0) {
-
+          // if there's no TadPack matching this descriptor - create one
             const auto shapeInfo = descriptor.originalShape().toShapeInfo();
             const int rank = shape::rank(shapeInfo);
             const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, descriptor.axis());
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(shapeInfo, dimsToExclude);
             const int subArrRank = (rank == dimsToExclude.size() || descriptor.areUnitiesinShape()) ? rank : rank - dimsToExclude.size();
 
-            auto sPtr = new Nd4jLong[shape::shapeInfoLength(subArrRank)];   // shape of sub-arrays (same for all for them)
-            auto oPtr = new Nd4jLong[numOfSubArrs];
+            auto sPtr = std::make_shared<PointerWrapper>(new Nd4jLong[shape::shapeInfoLength(subArrRank)], std::make_shared<PrimaryPointerDeallocator>());   // shape of sub-arrays (same for all for them)
+            auto oPtr = std::make_shared<PointerWrapper>(new Nd4jLong[numOfSubArrs], std::make_shared<PrimaryPointerDeallocator>());
 
             if (numOfSubArrs > 0)
-                shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr, oPtr, descriptor.areUnitiesinShape());
+                shape::calcSubArrsShapeInfoAndOffsets(shapeInfo, numOfSubArrs, dimsToExclude.size(), dimsToExclude.data(), sPtr->pointerAsT<Nd4jLong>(), oPtr->pointerAsT<Nd4jLong>(), descriptor.areUnitiesinShape());
 
-
-            ConstantDataBuffer shapesBuffer(sPtr, nullptr, shape::shapeInfoLength(subArrRank)*sizeof(Nd4jLong), DataType::INT64);
-            ConstantDataBuffer offsetsBuffer(oPtr, nullptr, numOfSubArrs*sizeof(Nd4jLong), DataType::INT64);
-            TadPack t(shapesBuffer, offsetsBuffer, numOfSubArrs);
-
-
-
-            // auto shapeInfo = descriptor.originalShape().toShapeInfo();
-            // shape::TAD tad;
-            // tad.init(shapeInfo, descriptor.axis().data(), descriptor.axis().size());
-            // tad.createTadOnlyShapeInfo();
-            // tad.createOffsets();
-
-            // auto sPtr = new Nd4jLong[shape::shapeInfoLength(tad.tadOnlyShapeInfo)];
-            // auto oPtr = new Nd4jLong[tad.numTads];
-
-            // memcpy(sPtr, tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-            // memcpy(oPtr, tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
-
-            // TadPack t(shapesBuffer, offsetsBuffer, tad.numTads);
-
-
+            ConstantShapeBuffer shapeBuffer(sPtr);
+            ConstantOffsetsBuffer offsetsBuffer(oPtr);
+            TadPack t(shapeBuffer, offsetsBuffer, numOfSubArrs);
             _cache[deviceId][descriptor] = t;
 
-            TadPack &r = _cache[deviceId][descriptor];
-            _mutex.unlock();
-
             delete[] shapeInfo;
-
-            return r;
-        } else {
-            TadPack r = _cache[deviceId][descriptor];
-            _mutex.unlock();
-
-            return r;
         }
-    }
 
-    sd::ConstantTadHelper* sd::ConstantTadHelper::_INSTANCE = 0;
+        return _cache[deviceId][descriptor];
+    }
 }
 
 #endif

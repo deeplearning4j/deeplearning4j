@@ -59,8 +59,8 @@ static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDAr
     }
     else {
 
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(),  dimC);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimC);
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),  dimC);
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
         const Nd4jLong numOfTads   = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];

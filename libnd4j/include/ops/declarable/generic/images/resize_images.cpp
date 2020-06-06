@@ -118,7 +118,7 @@ namespace sd {
             else if (shape::rank(in) == 3)
                 shape = {height, width, in[3]};
 
-            auto outShape = ConstantShapeHelper::getInstance()->createShapeInfo(DataType::FLOAT32, shape::order(in), shape);
+            auto outShape = ConstantShapeHelper::getInstance().createShapeInfo(DataType::FLOAT32, shape::order(in), shape);
             return SHAPELIST(outShape);
         }
         DECLARE_TYPES(resize_images) {

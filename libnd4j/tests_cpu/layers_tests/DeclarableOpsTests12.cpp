@@ -780,8 +780,8 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
 
     std::vector<int> dims = {1};
 
-    auto xTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dims);
-    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dims);
+    auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dims);
+    auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), dims);
 
     Nd4jPointer nativeStart[2];
 
@@ -816,8 +816,8 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
 
     std::vector<int> dims = {1};
 
-    auto xTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dims);
-    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dims);
+    auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dims);
+    auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), dims);
 
     Nd4jPointer nativeStart[2];
 #ifdef __CUDABLAS__

@@ -491,6 +491,73 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 // #endif //DEV_TESTS_DATABUFFER_H
 
 
+// Parsed from array/PointerDeallocator.h
+
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef SD_POINTERDEALLOCATOR_H_
+// #define SD_POINTERDEALLOCATOR_H_
+
+// #include <system/dll.h>
+// #include <system/pointercast.h>
+
+
+
+// #endif //SD_POINTERDEALLOCATOR_H_
+
+
+// Parsed from array/PointerWrapper.h
+
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef SD_ARRAY_POINTER_H_
+// #define SD_ARRAY_POINTER_H_
+
+// #include <system/dll.h>
+// #include <system/pointercast.h>
+// #include <array/PointerDeallocator.h>
+// #include <memory>
+ // namespace sd
+
+// #endif //SD_ARRAY_POINTER_H_
+
+
 // Parsed from array/ConstantDataBuffer.h
 
 /*******************************************************************************
@@ -517,6 +584,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // #include <system/dll.h>
 // #include <system/pointercast.h>
+// #include <memory>
+// #include <array/PointerWrapper.h>
+// #include <array/DataType.h>
     @Namespace("sd") @NoOffset public static class ConstantDataBuffer extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -528,24 +598,130 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
             return (ConstantDataBuffer)super.position(position);
         }
     
-        public ConstantDataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf) { super((Pointer)null); allocate(primary, special, numEelements, sizeOf); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf);
         public ConstantDataBuffer(@Const @ByRef ConstantDataBuffer other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef ConstantDataBuffer other);
         public ConstantDataBuffer() { super((Pointer)null); allocate(); }
         private native void allocate();
 
-        public native @Cast("Nd4jLong") long sizeOf();
-        public native @Cast("Nd4jLong") long length();
+        public native @Cast("uint8_t") byte sizeOf();
+        public native @Cast("uint64_t") long length();
 
-        public native @Cast("Nd4jPointer") Pointer primary();
-        public native @Cast("Nd4jPointer") Pointer special();
+        public native Pointer primary();
+        public native Pointer special();
 
         public native @ByRef @Name("operator =") ConstantDataBuffer put(@Const @ByRef ConstantDataBuffer other);
     }
 
 
 // #endif //DEV_TESTS_CONSTANTDATABUFFER_H
+
+
+// Parsed from array/ConstantShapeBuffer.h
+
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef SD_ARRAY_CONSTANTSHAPEBUFFER_H_
+// #define SD_ARRAY_CONSTANTSHAPEBUFFER_H_
+
+// #include <system/dll.h>
+// #include <system/pointercast.h>
+// #include <array/PointerWrapper.h>
+// #include <memory>
+
+@Namespace("sd") public static class ConstantShapeBuffer extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public ConstantShapeBuffer(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public ConstantShapeBuffer(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public ConstantShapeBuffer position(long position) {
+        return (ConstantShapeBuffer)super.position(position);
+    }
+
+  public ConstantShapeBuffer() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  public native @Cast("const Nd4jLong*") LongPointer primary();
+  public native @Cast("const Nd4jLong*") LongPointer special();
+  public native @Cast("const Nd4jLong*") LongPointer platform();
+}
+
+ // namespace sd
+
+// #endif //SD_ARRAY_CONSTANTSHAPEBUFFER_H_
+
+
+// Parsed from array/ConstantOffsetsBuffer.h
+
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef SD_ARRAY_CONSTANTOFFSETSBUFFER_H_
+// #define SD_ARRAY_CONSTANTOFFSETSBUFFER_H_
+
+// #include <system/dll.h>
+// #include <system/pointercast.h>
+// #include <memory>
+// #include <array/PointerWrapper.h>
+
+@Namespace("sd") public static class ConstantOffsetsBuffer extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public ConstantOffsetsBuffer(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public ConstantOffsetsBuffer(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public ConstantOffsetsBuffer position(long position) {
+        return (ConstantOffsetsBuffer)super.position(position);
+    }
+
+  public ConstantOffsetsBuffer() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  public native @Cast("const Nd4jLong*") LongPointer primary();
+  public native @Cast("const Nd4jLong*") LongPointer special();
+  public native @Cast("const Nd4jLong*") LongPointer platform();
+}
+
+ // namespace sd
+
+// #endif //SD_ARRAY_CONSTANTOFFSETSBUFFER_H_
 
 
 // Parsed from array/ConstantDescriptor.h
@@ -659,7 +835,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 // #ifndef DEV_TESTS_TADPACK_H
 // #define DEV_TESTS_TADPACK_H
 
-// #include "ConstantDataBuffer.h"
+// #include <array/ConstantOffsetsBuffer.h>
+// #include <array/ConstantShapeBuffer.h>
     @Namespace("sd") @NoOffset public static class TadPack extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -671,8 +848,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
             return (TadPack)super.position(position);
         }
     
-        public TadPack(@ByRef ConstantDataBuffer shapes, @ByRef ConstantDataBuffer offets, @Cast("Nd4jLong") long numTads) { super((Pointer)null); allocate(shapes, offets, numTads); }
-        private native void allocate(@ByRef ConstantDataBuffer shapes, @ByRef ConstantDataBuffer offets, @Cast("Nd4jLong") long numTads);
+        public TadPack(@Const @ByRef ConstantShapeBuffer shapes, @Const @ByRef ConstantOffsetsBuffer offets, @Cast("Nd4jLong") long numTads) { super((Pointer)null); allocate(shapes, offets, numTads); }
+        private native void allocate(@Const @ByRef ConstantShapeBuffer shapes, @Const @ByRef ConstantOffsetsBuffer offets, @Cast("Nd4jLong") long numTads);
         public TadPack() { super((Pointer)null); allocate(); }
         private native void allocate();
 
@@ -863,7 +1040,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
         public native int _blasMinorVersion(); public native Environment _blasMinorVersion(int setter);
         public native int _blasPatchVersion(); public native Environment _blasPatchVersion(int setter);
 
-        public static native Environment getInstance();
+        public static native @ByRef Environment getInstance();
 
         public native @Cast("bool") boolean isVerbose();
         public native void setVerbose(@Cast("bool") boolean reallyVerbose);
@@ -3052,9 +3229,9 @@ public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointe
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongBuffer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") long[] specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
 
-public native OpaqueConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
-public native OpaqueConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
-public native OpaqueConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
 
 public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer data, int length);
 public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer data, int length);
@@ -3067,9 +3244,12 @@ public native OpaqueConstantDataBuffer constantBuffer(@Cast("sd::DataType") int 
 public native @Cast("Nd4jPointer") Pointer getConstantDataBufferPrimary(OpaqueConstantDataBuffer dbf);
 public native @Cast("Nd4jPointer") Pointer getConstantDataBufferSpecial(OpaqueConstantDataBuffer dbf);
 public native @Cast("Nd4jLong") long getConstantDataBufferLength(OpaqueConstantDataBuffer dbf);
-public native @Cast("Nd4jLong") long getConstantDataBufferSizeOf(OpaqueConstantDataBuffer dbf);
 
-public native void deleteShapeBuffer(OpaqueConstantDataBuffer ptr);
+public native @Cast("Nd4jPointer") Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf);
+public native @Cast("Nd4jPointer") Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf);
+
+public native void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer ptr);
+public native void deleteConstantDataBuffer(OpaqueConstantDataBuffer ptr);
 
 public native OpaqueContext createGraphContext(int nodeId);
 public native OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext ptr);
@@ -3643,6 +3823,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <memory>
 // #include <array/InteropDataBuffer.h>
 // #include <memory/MemoryCounter.h>
+// #include <array/ConstantShapeBuffer.h>
 
 
 
@@ -4482,7 +4663,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         public native void setShapeInfo(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype);
         public native void setShapeInfo(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype);
         public native void setShapeInfo(@Const @ByRef ShapeDescriptor descriptor);
-        public native void setShapeInfo(@Const @ByRef ConstantDataBuffer shapeBuffer);
+        public native void setShapeInfo(@Const @ByRef ConstantShapeBuffer shapeBuffer);
 
         /**
         *  returns absolute offset which corresponds to given sequential index
@@ -7206,13 +7387,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param rank the rank of the shape
  */
 
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") long[] shape, int rank);
 
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") long[] shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
@@ -10072,10 +10253,10 @@ public static final int ALL_FLOATS =BFLOAT16;
 // #endif
 
 
-public static native @MemberGetter int ELEMENT_THRESHOLD();
-public static final int ELEMENT_THRESHOLD = ELEMENT_THRESHOLD();
-public static native @MemberGetter int TAD_THRESHOLD();
-public static final int TAD_THRESHOLD = TAD_THRESHOLD();
+public static native @MemberGetter double ELEMENT_THRESHOLD();
+public static final double ELEMENT_THRESHOLD = ELEMENT_THRESHOLD();
+public static native @MemberGetter double TAD_THRESHOLD();
+public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define SHAPELIST(...)  new ShapeList({__VA_ARGS__}, block.workspace() != nullptr)
 
@@ -10085,8 +10266,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define PRINT_FIRST(...)    printf(__VA_ARGS__); fflush(stdout)
 // #endif
 
-// #define DEBUG_CALL(STREAM)      if (sd::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
-// #define DEBUG_KERNEL(STREAM, OP_NUM)       if (sd::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tFile(__FILE__); std::string tOp = "Kernel OpNum failed: [" + sd::StringUtils::valueToString<int>(OP_NUM) + std::string("]; File: ") + tFile + std::string(":") + sd::StringUtils::valueToString<int>(__LINE__); throw std::runtime_error(tOp.c_str()); }; }
+// #define DEBUG_CALL(STREAM)      if (sd::Environment::getInstance().isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
+// #define DEBUG_KERNEL(STREAM, OP_NUM)       if (sd::Environment::getInstance().isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tFile(__FILE__); std::string tOp = "Kernel OpNum failed: [" + sd::StringUtils::valueToString<int>(OP_NUM) + std::string("]; File: ") + tFile + std::string(":") + sd::StringUtils::valueToString<int>(__LINE__); throw std::runtime_error(tOp.c_str()); }; }
 
 
 // #define LAUNCH(A, B, C, D) <<<A, B, C, D>>>
@@ -11067,7 +11248,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #define _EXPAND_OP_CALL_1(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) NAME<TYPE_A<TYPE>>PARAMZ;
 // #define _EXPAND_OP_DIRECT(PARAMZ, NUM_A, TYPE_A)  case NUM_A: { z = TYPE_A<T>::op PARAMZ; break; }
-// #define _EXPAND_OP_CALL_T(TYPE, NUM_A, TYPE_A) OpTracker::getInstance()->storeOperation(TYPE, #TYPE_A, NUM_A);
+// #define _EXPAND_OP_CALL_T(TYPE, NUM_A, TYPE_A) OpTracker::getInstance().storeOperation(TYPE, #TYPE_A, NUM_A);
 
 // #define _EXPAND_FACTORY_CALL(TYPE, LAYER_ID, LAYER_NAME, ACTIVATION_ID, ACTIVATION_NAME) if (activationNum == ACTIVATION_ID && layerNum == LAYER_ID) { return new LAYER_NAME<TYPE, ACTIVATION_NAME<TYPE>>(); };
 
@@ -11209,7 +11390,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                         struct __registrator_##NAME {
 //                             __registrator_##NAME() {
 //                                 OpName *ptr = new OpName();
-//                                 OpRegistrator::getInstance()->registerOperation(ptr);
+//                                 OpRegistrator::getInstance().registerOperation(ptr);
 //                             }
 //                         };
 //                         static sd::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
@@ -11277,7 +11458,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                     auto shapeList = SHAPELIST();
 //                                                     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width() : this->getOpDescriptor()->getNumberOfOutputs();
 //                                                     for (int e = 0; e < opLimit; e++) {
-//                                                         auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)));
+//                                                         auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)));
 //                                                         shapeList->push_back(newshape);
 //                                                     }
 //                                                     return shapeList;
@@ -11288,14 +11469,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #define DECLARE_SYN(NAME, ORIGINAL) template <typename OpName>
 //                                     struct __registratorSynonym_##NAME {
 //                                         __registratorSynonym_##NAME(const char *name, const char *oname) {
-//                                             auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperation(oname));
+//                                             auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance().getOperation(oname));
 //                                             if (ptr == nullptr) {
 //                                                 std::string newName(name);
 //                                                 std::string oldName(oname);
-//                                                 OpRegistrator::getInstance()->updateMSVC(sd::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+//                                                 OpRegistrator::getInstance().pdateMSVC(sd::ops::HashHelper::getInstance().getLongHash(newName), oldName);
 //                                                 return;
 //                                             }
-//                                             OpRegistrator::getInstance()->registerOperation(name, ptr);
+//                                             OpRegistrator::getInstance().registerOperation(name, ptr);
 //                                             }
 //                                         };
 //                                         static sd::ops::__registratorSynonym_##NAME<ORIGINAL> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
@@ -11339,7 +11520,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                     auto shapeList = SHAPELIST();
 //                                                                                     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width() : this->getOpDescriptor()->getNumberOfOutputs();
 //                                                                                     for (int e = 0; e < opLimit; e++) {
-//                                                                                         auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)));
+//                                                                                         auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)));
 //                                                                                         shapeList->push_back(newshape);
 //                                                                                     }
 //                                                                                     return shapeList;
@@ -11434,12 +11615,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #else
 
-// #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; sd::memory::MemoryTracker::getInstance()->countIn(sd::memory::MemoryType::HOST, VARIABLE, LENGTH * sizeof(TT)); } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
-// #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { sd::memory::MemoryTracker::getInstance()->countOut(VARIABLE); delete[] VARIABLE;};
+// #define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::HOST, VARIABLE, LENGTH * sizeof(TT)); } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
+// #define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { sd::memory::MemoryTracker::getInstance().countOut(VARIABLE); delete[] VARIABLE;};
 
 // #endif
 
-// #define CONSTANT(SHAPE) ConstantShapeHelper::getInstance()->createFromExisting(SHAPE, block.workspace())
+// #define CONSTANT(SHAPE) ConstantShapeHelper::getInstance().createFromExisting(SHAPE, block.workspace())
 
 
 
@@ -12372,7 +12553,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public OpRegistrator(Pointer p) { super(p); }
         
 
-            public static native OpRegistrator getInstance();
+            public static native @ByRef OpRegistrator getInstance();
 
             public static native void exitHandler();
             public static native void sigIntHandler(int sig);

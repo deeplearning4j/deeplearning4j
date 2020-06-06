@@ -100,7 +100,7 @@ namespace sd {
                 shape.push_back(shape::shapeOf(inShape)[e]);
 
             shape.insert(shape.begin() + axis, depth);
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', rank + 1, shape.data());
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', rank + 1, shape.data());
 
             return SHAPELIST(newShape);
         }

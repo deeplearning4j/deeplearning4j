@@ -39,31 +39,31 @@ public:
 };
 
 TEST_F(DataBufferTests, test_alloc_limit_1) {
-    if (!Environment::getInstance()->isCPU())
+    if (!Environment::getInstance().isCPU())
         return;
 
     auto deviceId = AffinityManager::currentDeviceId();
-    auto odLimit = MemoryCounter::getInstance()->deviceLimit(deviceId);
-    auto ogLimit = MemoryCounter::getInstance()->groupLimit(MemoryType::HOST);
-    auto odUse = MemoryCounter::getInstance()->allocatedDevice(deviceId);
-    auto ogUse = MemoryCounter::getInstance()->allocatedGroup(MemoryType::HOST);
+    auto odLimit = MemoryCounter::getInstance().deviceLimit(deviceId);
+    auto ogLimit = MemoryCounter::getInstance().groupLimit(MemoryType::HOST);
+    auto odUse = MemoryCounter::getInstance().allocatedDevice(deviceId);
+    auto ogUse = MemoryCounter::getInstance().allocatedGroup(MemoryType::HOST);
 
     auto limitSize = odUse + (150 * 1024 * 1024);
     auto allocSize = 100000000;
 
-    MemoryCounter::getInstance()->setDeviceLimit(deviceId, odLimit + limitSize);
-    MemoryCounter::getInstance()->setGroupLimit(MemoryType::HOST, odLimit + limitSize);
+    MemoryCounter::getInstance().setDeviceLimit(deviceId, odLimit + limitSize);
+    MemoryCounter::getInstance().setGroupLimit(MemoryType::HOST, odLimit + limitSize);
 
     DataBuffer buffer(allocSize, DataType::INT32);
 
     // separately testing per-device limits and group limits
-    ASSERT_EQ(odUse + allocSize, MemoryCounter::getInstance()->allocatedDevice(deviceId));
-    ASSERT_EQ(ogUse + allocSize, MemoryCounter::getInstance()->allocatedGroup(MemoryType::HOST));
+    ASSERT_EQ(odUse + allocSize, MemoryCounter::getInstance().allocatedDevice(deviceId));
+    ASSERT_EQ(ogUse + allocSize, MemoryCounter::getInstance().allocatedGroup(MemoryType::HOST));
 
 
     // setting smaller limits, to make sure next allocation fails with OOM exception
-    MemoryCounter::getInstance()->setDeviceLimit(deviceId, allocSize - 100);
-    MemoryCounter::getInstance()->setGroupLimit(MemoryType::HOST, allocSize - 100);
+    MemoryCounter::getInstance().setDeviceLimit(deviceId, allocSize - 100);
+    MemoryCounter::getInstance().setGroupLimit(MemoryType::HOST, allocSize - 100);
 
     try {
         DataBuffer bufferFailed(allocSize, DataType::INT32);
@@ -73,6 +73,6 @@ TEST_F(DataBufferTests, test_alloc_limit_1) {
     }
 
     // restore original limits, so subsequent tests do not fail
-    MemoryCounter::getInstance()->setDeviceLimit(deviceId, odLimit);
-    MemoryCounter::getInstance()->setGroupLimit(MemoryType::HOST, odLimit);
+    MemoryCounter::getInstance().setDeviceLimit(deviceId, odLimit);
+    MemoryCounter::getInstance().setGroupLimit(MemoryType::HOST, odLimit);
 }

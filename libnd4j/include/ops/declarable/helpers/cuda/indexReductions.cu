@@ -32,7 +32,7 @@ namespace sd {
                     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexMax, input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(), output.specialBuffer(), output.specialShapeInfo());
                 }
                 else {
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
 
                     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexMax,
                         input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(),
@@ -51,7 +51,7 @@ namespace sd {
                     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexMin, input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(), output.specialBuffer(), output.specialShapeInfo());
                 }
                 else {
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
 
                     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexMin,
                         input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(),
@@ -70,7 +70,7 @@ namespace sd {
                     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMax, input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(), output.specialBuffer(), output.specialShapeInfo());
                 }
                 else {
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
 
                     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMax,
                         input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(),
@@ -89,7 +89,7 @@ namespace sd {
                     NativeOpExecutioner::execIndexReduceScalar(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMin, input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(), nullptr, output.buffer(), output.shapeInfo(), output.specialBuffer(), output.specialShapeInfo());
                 }
                 else {
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
 
                     NativeOpExecutioner::execIndexReduce(LaunchContext::defaultContext(), indexreduce::Ops::IndexAbsoluteMin,
                         input.buffer(), input.shapeInfo(), input.specialBuffer(), input.specialShapeInfo(),

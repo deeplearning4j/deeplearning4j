@@ -114,8 +114,8 @@ namespace helpers {
         if (sizeCol * rateCol < 3)
             colCast = 0;
 
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(images->shapeInfo(), restDims.data(), restDims.size());
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), restDims.data(), restDims.size());
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(images->shapeInfo(), restDims.data(), restDims.size());
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), restDims.data(), restDims.size());
         int batchCount = packX.numberOfTads();
 
         PointersManager manager(context, "helpers::extractPatches");

@@ -99,7 +99,7 @@ namespace sd {
             nShape[dimA] = numOfSamples;
 
             DataType nType = (argSize > 1) ? ( INT_ARG(1) >= 0 ? static_cast<DataType>(INT_ARG(1)) : sd::DataType::INT64) : sd::DataType::INT64;
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(nType, input->ordering(), nShape));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(nType, input->ordering(), nShape));
         }
         
         DECLARE_TYPES(random_multinomial) {

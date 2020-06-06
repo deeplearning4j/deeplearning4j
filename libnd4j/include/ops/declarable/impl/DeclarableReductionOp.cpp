@@ -52,7 +52,7 @@ namespace sd {
 
             // special case - output is scalar
             if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == sd::DataTypeUtils::max<int>())) {
-                auto newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(block.dataType());
+                auto newShape = ConstantShapeHelper::getInstance().scalarShapeInfo(block.dataType());
                 return SHAPELIST(newShape);
             }
 

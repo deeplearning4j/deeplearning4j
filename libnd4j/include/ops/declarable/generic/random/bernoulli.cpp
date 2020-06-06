@@ -53,7 +53,7 @@ namespace sd {
             auto in = INPUT_VARIABLE(0);
             auto shape = in->template asVectorT<Nd4jLong>();
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
             return SHAPELIST(newShape);
         }
 

@@ -384,9 +384,9 @@ namespace shape {
  * @param rank the rank of the shape
  */
 
-    ND4J_EXPORT _CUDA_HD int isMatrix(Nd4jLong *shape, int rank);
+    ND4J_EXPORT _CUDA_HD int isMatrix(const Nd4jLong *shape, int rank);
 
-    INLINEDEF _CUDA_HD int isMatrix(Nd4jLong *shapeInfo);
+    INLINEDEF _CUDA_HD int isMatrix(const Nd4jLong *shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
@@ -2346,7 +2346,7 @@ INLINEDEF _CUDA_HD int numOfNonUnitDims(const int rank, const Nd4jLong* inShape)
 * @param shape the shape of the array
 * @param rank the rank of the shape
 */
-    INLINEDEF _CUDA_HD int isMatrix(Nd4jLong *shape, int rank) {
+    INLINEDEF _CUDA_HD int isMatrix(const Nd4jLong *shape, int rank) {
         if (rank > 2)
             return 0;
         else if (rank <= 2) {
@@ -2357,7 +2357,7 @@ INLINEDEF _CUDA_HD int numOfNonUnitDims(const int rank, const Nd4jLong* inShape)
         return 1;
     }
 
-    INLINEDEF _CUDA_HD int isMatrix(Nd4jLong *shapeInfo) {
+    INLINEDEF _CUDA_HD int isMatrix(const Nd4jLong *shapeInfo) {
         return isMatrix(shape::shapeOf(shapeInfo),shape::rank(shapeInfo));
     }
 

@@ -128,9 +128,9 @@ namespace sd {
             Nd4jLong const* outShapeInfo = nullptr;
 
             if(INT_ARG(0) != 0) 			// in this case output is scalar
-                outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
+                outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
             else 							// in this case output has the same shape as labels and predictions
-                outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
+                outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
 
             return SHAPELIST(outShapeInfo);
 

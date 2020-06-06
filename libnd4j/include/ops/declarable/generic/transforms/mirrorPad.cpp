@@ -81,7 +81,7 @@ DECLARE_SHAPE_FN(mirror_pad) {
     
     if(rank == 1) {
         Nd4jLong len = input->lengthOf() + paddings->e<Nd4jLong>(0) + paddings->e<Nd4jLong>(1);
-        return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(len, input->dataType()));
+        return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(len, input->dataType()));
     }
 
     Nd4jLong* outShapeInfo(nullptr);

@@ -224,8 +224,8 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         auto x = reinterpret_cast<X*>(vx);
         auto y = reinterpret_cast<Y*>(vy);
 
-        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
-        auto packY = ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
+        auto packX = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        auto packY = ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
         auto xLength = shape::length(xShapeInfo);
         auto xTadLength = shape::length(packX.primaryShapeInfo());
@@ -248,8 +248,8 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         auto x = reinterpret_cast<X*>(vx);
         auto y = reinterpret_cast<Y*>(vy);
 
-        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
-        auto packY = ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
+        auto packX = ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        auto packY = ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
         auto xLength = shape::length(xShapeInfo);
         auto xTadLength = shape::length(packX.primaryShapeInfo());

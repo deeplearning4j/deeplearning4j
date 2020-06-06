@@ -87,7 +87,7 @@ void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indic
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
+        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance().maxThreads());
     }
     else {      // outRank > 1
 
@@ -107,7 +107,7 @@ void scatter(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& indic
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
+        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance().maxThreads());
     }
 }
 
@@ -129,7 +129,7 @@ void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
+        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : sd::Environment::getInstance().maxThreads());
     }
     else {
         std::vector<int> dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank-1});
@@ -154,7 +154,7 @@ void scatterND(sd::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
             }
         };
 
-        samediff::Threads::parallel_tad(func, 0, indLen / indLastDim, 1, lock ? 1 : sd::Environment::getInstance()->maxThreads());
+        samediff::Threads::parallel_tad(func, 0, indLen / indLastDim, 1, lock ? 1 : sd::Environment::getInstance().maxThreads());
     }
 }
 

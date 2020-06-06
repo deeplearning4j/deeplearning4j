@@ -111,7 +111,7 @@ namespace sd {
                 outLength = sd::math::nd4j_min(outLength, max->e<int>(0));
             }
 
-            auto newshape = ConstantShapeHelper::getInstance()->vectorShapeInfo(outLength, dtype);
+            auto newshape = ConstantShapeHelper::getInstance().vectorShapeInfo(outLength, dtype);
 
             shapeList->push_back(newshape); 
             return shapeList;

@@ -29,6 +29,7 @@
 #include <cuda_runtime.h>
 #include <cuda.h>
 #include <execution/AffinityManager.h>
+#include <array/PrimaryPointerDeallocator.h>
 
 #define CONSTANT_LIMIT 49152
 
@@ -84,11 +85,17 @@ namespace sd {
             throw cuda_exception::build("Final cudaSetDevice failed", res);
     }
 
-    ConstantHelper* ConstantHelper::getInstance() {
-        if (!_INSTANCE)
-            _INSTANCE = new sd::ConstantHelper();
+ConstantHelper::~ConstantHelper() {
+  for (const auto &v:_cache) {
+    for (const auto &c:v) {
+      delete c.second;
+    }
+  }
+}
 
-        return _INSTANCE;
+    ConstantHelper& ConstantHelper::getInstance() {
+      static ConstantHelper instance;
+      return instance;
     }
 
     void* ConstantHelper::replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace) {
@@ -156,19 +163,21 @@ namespace sd {
              result = holder->getConstantDataBuffer(dataType);
         } else {
             auto numBytes = descriptor.length() * DataTypeUtils::sizeOf(dataType);
-            auto cbuff = new int8_t[numBytes];
+            auto cbuff = std::make_shared<PointerWrapper>(new int8_t[numBytes], std::make_shared<PrimaryPointerDeallocator>());
             _counters[deviceId] += numBytes;
 
             // create buffer with this dtype
             if (descriptor.isFloat()) {
-                BUILD_DOUBLE_SELECTOR(sd::DataType::DOUBLE, dataType, sd::SpecialTypeConverter::convertGeneric, (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff), (sd::DataType::DOUBLE, double), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(sd::DataType::DOUBLE, dataType, sd::SpecialTypeConverter::convertGeneric, (nullptr, const_cast<double *>(descriptor.floatValues().data()), descriptor.length(), cbuff->pointer()), (sd::DataType::DOUBLE, double), LIBND4J_TYPES);
             } else if (descriptor.isInteger()) {
-                BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::SpecialTypeConverter::convertGeneric, (nullptr, const_cast<Nd4jLong *>(descriptor.integerValues().data()), descriptor.length(), cbuff), (sd::DataType::INT64, Nd4jLong), LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(sd::DataType::INT64, dataType, sd::SpecialTypeConverter::convertGeneric, (nullptr, const_cast<Nd4jLong *>(descriptor.integerValues().data()), descriptor.length(), cbuff->pointer()), (sd::DataType::INT64, Nd4jLong), LIBND4J_TYPES);
             }
 
-            auto dbuff = replicatePointer(cbuff, descriptor.length() * DataTypeUtils::sizeOf(dataType));
+            // we don't have deallocator here.
+            // TODO: we probably want to make use deallocator here, if we're not using constant memory
+            auto dbuff = std::make_shared<PointerWrapper>(replicatePointer(cbuff->pointer(), descriptor.length() * DataTypeUtils::sizeOf(dataType)));
 
-            ConstantDataBuffer dataBuffer(cbuff, dbuff, descriptor.length(), DataTypeUtils::sizeOf(dataType));
+            ConstantDataBuffer dataBuffer(cbuff, dbuff, descriptor.length(), dataType);
 
             holder->addBuffer(dataBuffer, dataType);
             result = holder->getConstantDataBuffer(dataType);
@@ -184,6 +193,4 @@ namespace sd {
         else
             return _counters[deviceId];
     }
-
-    sd::ConstantHelper* sd::ConstantHelper::_INSTANCE = 0;
 }

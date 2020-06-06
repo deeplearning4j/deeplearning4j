@@ -2717,7 +2717,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test9) {
     int* dims = reinterpret_cast<int*>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int)));
     input.reduceAlongDimension(sd::reduce::Mean, mean, dimensions);
     NDArray::prepareSpecialUse({&variance}, {&input});
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
     NativeOpExecutioner::execSummaryStats(input.getContext(), 0,input.buffer(), input.shapeInfo(),input.specialBuffer(), input.specialShapeInfo(),nullptr,variance.buffer(), variance.shapeInfo(),variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),packX.platformShapeInfo(), packX.platformOffsets(),false);
     manager.synchronize();
     NDArray::registerSpecialUse({&variance}, {&input});
@@ -2768,7 +2768,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test10) {
     int* dims = reinterpret_cast<int*>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int)));
     input.reduceAlongDimension(sd::reduce::Mean, mean, dimensions);
     NDArray::prepareSpecialUse({&variance}, {&input});
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
     NativeOpExecutioner::execSummaryStats(input.getContext(), 0,input.buffer(), input.shapeInfo(),input.specialBuffer(), input.specialShapeInfo(),nullptr,variance.buffer(), variance.shapeInfo(),variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),packX.platformShapeInfo(), packX.platformOffsets(),false);
     manager.synchronize();
     NDArray::registerSpecialUse({&variance}, {&input});
@@ -2831,7 +2831,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test11) {
     int* dims = reinterpret_cast<int*>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int)));
     input.reduceAlongDimension(sd::reduce::Mean, mean, dimensions, true);
     NDArray::prepareSpecialUse({&variance}, {&input});
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimensions);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
     NativeOpExecutioner::execSummaryStats(input.getContext(), 0,input.buffer(), input.shapeInfo(),input.specialBuffer(), input.specialShapeInfo(),nullptr,variance.buffer(), variance.shapeInfo(),variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),packX.platformShapeInfo(), packX.platformOffsets(),false);
     manager.synchronize();
     NDArray::registerSpecialUse({&variance}, {&input});

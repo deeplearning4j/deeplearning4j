@@ -30,7 +30,6 @@ namespace sd {
     namespace graph {
         class ND4J_EXPORT GraphHolder {
         private:
-            static GraphHolder *_INSTANCE;
             MAP_IMPL<Nd4jLong, Graph *> _graphF;
 
             MAP_IMPL<Nd4jLong, SimpleReadWriteLock> _locks;
@@ -38,7 +37,7 @@ namespace sd {
             GraphHolder() = default;
             ~GraphHolder() = default;
         public:
-            static GraphHolder* getInstance();
+            static GraphHolder& getInstance();
 
             void registerGraph(Nd4jLong graphId, Graph *graph);
             

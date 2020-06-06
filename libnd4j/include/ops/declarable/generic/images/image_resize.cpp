@@ -82,7 +82,7 @@ namespace sd {
             auto dtype = DataType::FLOAT32;
             if (method == helpers::ImageResizeMethods::kResizeNearest)
                 dtype = ArrayOptions::dataType(in);
-            auto shape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape::rank(in) == 4?std::vector<Nd4jLong>{in[1], height, width, in[4]}:std::vector<Nd4jLong>{ height, width, in[4]});
+            auto shape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape::rank(in) == 4?std::vector<Nd4jLong>{in[1], height, width, in[4]}:std::vector<Nd4jLong>{ height, width, in[4]});
 
             return SHAPELIST(shape);
         }

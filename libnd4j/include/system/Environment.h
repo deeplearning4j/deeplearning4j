@@ -62,11 +62,9 @@ namespace sd{
         // device compute capability for CUDA
         std::vector<Pair> _capabilities;
 
-        static Environment* _instance;
-
         Environment();
-        ~Environment();
     public:
+      ~Environment();
         /**
          * These 3 fields are mostly for CUDA/cuBLAS version tracking
          */
@@ -74,7 +72,7 @@ namespace sd{
         int _blasMinorVersion = 0;
         int _blasPatchVersion = 0;
 
-        static Environment* getInstance();
+        static Environment& getInstance();
 
         bool isVerbose();
         void setVerbose(bool reallyVerbose);

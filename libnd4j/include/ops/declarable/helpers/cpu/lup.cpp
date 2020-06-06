@@ -111,7 +111,7 @@ namespace helpers {
                 invertedMatrix->r<T>(i, i) /= inputMatrix->t<T>(i, i);
         };
 
-        //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
+        //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance().elementwiseThreshold())
         auto invertUpDiagonals = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i += increment)
                 invertedMatrix->r<T>(i, i + 1) -= (inputMatrix->t<T>(i, i + 1) * invertedMatrix->t<T>(i + 1, i + 1) /
