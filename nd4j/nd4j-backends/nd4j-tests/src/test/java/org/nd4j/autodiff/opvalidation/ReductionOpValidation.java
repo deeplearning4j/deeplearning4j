@@ -32,8 +32,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmin;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyWithLogitsLoss;
 import org.nd4j.linalg.api.ops.impl.reduce.Moments;
 import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
@@ -863,12 +863,12 @@ public class ReductionOpValidation extends BaseOpValidation {
                         break;
                     case 2:
                         reduce = sd.math().iamax(s, dim);
-                        exp = Nd4j.getExecutioner().exec(new IAMax(in.dup(), dim));
+                        exp = Nd4j.getExecutioner().exec(new ArgAmax(in.dup(), dim))[0];
                         name = "iamax";
                         break;
                     case 3:
                         reduce = sd.math().iamin(s, dim);
-                        exp = Nd4j.getExecutioner().exec(new IAMin(in.dup(), dim));
+                        exp = Nd4j.getExecutioner().exec(new ArgAmin(in.dup(), dim))[0];
                         name = "iamin";
                         break;
                     case 4:

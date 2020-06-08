@@ -321,7 +321,7 @@ void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray
     template <typename T>
     static __global__ void fillShuffleKernel(T* input, Nd4jLong const* inputShape, T* output, Nd4jLong const* outputShape, Nd4jLong firstDim, int* indices, sd::graph::RandomGenerator* rng) {
 
-//        PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
+//        PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance().tadThreshold())
         auto tid = blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
 

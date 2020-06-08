@@ -17,6 +17,10 @@ option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OF
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 
 set(CMAKE_CXX_STANDARD 11)
+
+
+include(GenCompilation)
+
 if (SD_CUDA)
     enable_language(CUDA)
     set(CMAKE_CUDA_STANDARD 11)
@@ -251,7 +255,6 @@ set(CPACK_PACKAGE_VERSION_MINOR "8")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "libnd4j")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 
 # Determine distribution and release — may require redhat-lsb-core installed on CentOS / RH

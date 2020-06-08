@@ -21,7 +21,9 @@
 //
 
 #include <helpers/StringUtils.h>
+#include <helpers/BitwiseUtils.h>
 #include <exceptions/datatype_exception.h>
+#include <bitset>
 
 namespace sd {
     static FORCEINLINE bool match(const uint8_t *haystack, const uint8_t *needle, uint64_t length) {
@@ -31,6 +33,17 @@ namespace sd {
 
         return true;
     }
+
+    template <typename T>
+    std::string StringUtils::bitsToString(T value) {
+      return std::bitset<sizeof(T) * 8>(value).to_string();
+    }
+
+template std::string StringUtils::bitsToString(int value);
+template std::string StringUtils::bitsToString(uint32_t value);
+template std::string StringUtils::bitsToString(Nd4jLong value);
+template std::string StringUtils::bitsToString(uint64_t value);
+
 
     uint64_t StringUtils::countSubarrays(const void *vhaystack, uint64_t haystackLength, const void *vneedle, uint64_t needleLength) {
         auto haystack = reinterpret_cast<const uint8_t*>(vhaystack);
@@ -155,4 +168,17 @@ namespace sd {
         return true;
     }
 
+  template<typename T>
+  std::string StringUtils::vectorToString(const std::vector<T> &vec) {
+    std::string result;
+    for (auto v:vec)
+      result += valueToString<T>(v);
+
+    return result;
+  }
+
+  template std::string StringUtils::vectorToString(const std::vector<int> &vec);
+  template std::string StringUtils::vectorToString(const std::vector<Nd4jLong> &vec);
+  template std::string StringUtils::vectorToString(const std::vector<int16_t> &vec);
+  template std::string StringUtils::vectorToString(const std::vector<uint32_t> &vec);
 }

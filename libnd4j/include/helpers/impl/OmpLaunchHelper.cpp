@@ -32,7 +32,7 @@ namespace sd {
 ////////////////////////////////////////////////////////////////////////////////
 OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads) {            
 
-    auto maxItersPerThread = Environment::getInstance()->elementwiseThreshold();    
+    auto maxItersPerThread = Environment::getInstance().elementwiseThreshold();
         
     if(N < maxItersPerThread)
         _numThreads = 1;
@@ -45,7 +45,7 @@ OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads) {
             else
                 desiredNumThreads = sd::math::nd4j_min<int>(omp_get_max_threads(), desiredNumThreads);
         #else
-            desiredNumThreads = sd::Environment::getInstance()->maxThreads();
+            desiredNumThreads = sd::Environment::getInstance().maxThreads();
         #endif
         _numThreads = sd::math::nd4j_min<int>(N / maxItersPerThread, desiredNumThreads);
     }
@@ -75,12 +75,12 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         #ifdef _OPENMP
             return betterThreads(N, omp_get_max_threads());
         #else
-            return betterThreads(N, sd::Environment::getInstance()->maxThreads());;
+            return betterThreads(N, sd::Environment::getInstance().maxThreads());;
         #endif
     }
 
     int OmpLaunchHelper::betterThreads(Nd4jLong N, int maxThreads) {
-        auto t = Environment::getInstance()->elementwiseThreshold();
+        auto t = Environment::getInstance().elementwiseThreshold();
         if (N < t)
             return 1;
         else {
@@ -92,7 +92,7 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
 #ifdef _OPENMP
         auto maxThreads = omp_get_max_threads();
 #else
-        auto maxThreads = sd::Environment::getInstance()->maxThreads();
+        auto maxThreads = sd::Environment::getInstance().maxThreads();
 #endif
 
         // if there's only 1 thread allowed - nothing to do here
@@ -102,7 +102,7 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         auto totalLength = tadLength * numTads;
 
         // if array is tiny - no need to spawn any threeds
-        if (totalLength < Environment::getInstance()->elementwiseThreshold())
+        if (totalLength < Environment::getInstance().elementwiseThreshold())
             return 1;
 
         // by default we're spawning as many threads we can, but not more than number of TADs

@@ -87,13 +87,13 @@ namespace sd {
 
             shape::calcSubArrShapeInfoAndOffset(indices.data(), input->shapeInfo(), subArrShapeInfo, offset, true);
 
-            auto subArrShapeInfoPack = ConstantShapeHelper::getInstance()->bufferForShapeInfo(subArrShapeInfo);
+            auto subArrShapeInfoPack = ConstantShapeHelper::getInstance().bufferForShapeInfo(subArrShapeInfo);
 
             NDArray::prepareSpecialUse({output}, {input});
 
             NativeOpExecutioner::execTransformAny(block.launchContext(), sd::transform::Assign,
-                                                input->bufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(subArrShapeInfoPack.primary()),
-                                                input->specialBufferWithOffset(offset), reinterpret_cast<Nd4jLong *>(subArrShapeInfoPack.special()),
+                                                input->bufferWithOffset(offset), subArrShapeInfoPack.primary(),
+                                                input->specialBufferWithOffset(offset), subArrShapeInfoPack.special(),
                                                 output->buffer(), output->shapeInfo(), output->specialBuffer(), output->specialShapeInfo(),
                                                 nullptr, nullptr, nullptr, true);
 
@@ -160,7 +160,7 @@ namespace sd {
                 shape.emplace_back(size);
             }
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', shape);
             return SHAPELIST(newShape);
         }
 

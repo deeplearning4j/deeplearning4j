@@ -70,16 +70,16 @@ void DataBuffer::allocateSpecial() {
         auto deviceId = sd::AffinityManager::currentDeviceId();
 
         if (_workspace == nullptr)
-            if (!sd::memory::MemoryCounter::getInstance()->validate(getLenInBytes()))
-                throw sd::allocation_exception::build("Requested amount exceeds device limits", sd::memory::MemoryCounter::getInstance()->deviceLimit(deviceId), getLenInBytes());
+            if (!sd::memory::MemoryCounter::getInstance().validate(getLenInBytes()))
+                throw sd::allocation_exception::build("Requested amount exceeds device limits", sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId), getLenInBytes());
 
 
         ALLOCATE_SPECIAL(_specialBuffer, _workspace, getLenInBytes(), int8_t);
         _isOwnerSpecial = true;
 
         if (_workspace == nullptr) {
-            sd::memory::MemoryCounter::getInstance()->countIn(deviceId, getLenInBytes());
-            sd::memory::MemoryCounter::getInstance()->countIn(sd::memory::MemoryType::DEVICE, getLenInBytes());
+            sd::memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
+            sd::memory::MemoryCounter::getInstance().countIn(sd::memory::MemoryType::DEVICE, getLenInBytes());
         }
     }
 }
@@ -135,8 +135,8 @@ void DataBuffer::deleteSpecial() {
 
         // count out towards DataBuffer device, only if we're not in workspace
         if (_workspace == nullptr) {
-            sd::memory::MemoryCounter::getInstance()->countOut(_deviceId, getLenInBytes());
-            sd::memory::MemoryCounter::getInstance()->countOut(sd::memory::MemoryType::DEVICE, getLenInBytes());
+            sd::memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
+            sd::memory::MemoryCounter::getInstance().countOut(sd::memory::MemoryType::DEVICE, getLenInBytes());
         }
     }
 }

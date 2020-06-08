@@ -82,6 +82,16 @@ public class CudaNativeRandom extends NativeRandom {
     }
 
     @Override
+    public float nextFloat() {
+        return nativeOps.getRandomGeneratorRelativeFloat((OpaqueRandomGenerator)statePointer, currentPosition.getAndIncrement());
+    }
+
+    @Override
+    public double nextDouble() {
+        return nativeOps.getRandomGeneratorRelativeDouble((OpaqueRandomGenerator)statePointer, currentPosition.getAndIncrement());
+    }
+
+    @Override
     public int nextInt() {
         return nativeOps.getRandomGeneratorRelativeInt((OpaqueRandomGenerator)statePointer, currentPosition.getAndIncrement());
     }

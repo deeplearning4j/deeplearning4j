@@ -469,6 +469,73 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
 // #endif //DEV_TESTS_DATABUFFER_H
 
 
+// Parsed from array/PointerDeallocator.h
+
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef SD_POINTERDEALLOCATOR_H_
+// #define SD_POINTERDEALLOCATOR_H_
+
+// #include <system/dll.h>
+// #include <system/pointercast.h>
+
+
+
+// #endif //SD_POINTERDEALLOCATOR_H_
+
+
+// Parsed from array/PointerWrapper.h
+
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+//  @author raver119@gmail.com
+//
+
+// #ifndef SD_ARRAY_POINTER_H_
+// #define SD_ARRAY_POINTER_H_
+
+// #include <system/dll.h>
+// #include <system/pointercast.h>
+// #include <array/PointerDeallocator.h>
+// #include <memory>
+ // namespace sd
+
+// #endif //SD_ARRAY_POINTER_H_
+
+
 // Parsed from array/ConstantDescriptor.h
 
 /*******************************************************************************
@@ -581,6 +648,9 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
 
 // #include <system/dll.h>
 // #include <system/pointercast.h>
+// #include <memory>
+// #include <array/PointerWrapper.h>
+// #include <array/DataType.h>
     @Namespace("sd") @NoOffset public static class ConstantDataBuffer extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -592,24 +662,130 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
             return (ConstantDataBuffer)super.position(position);
         }
     
-        public ConstantDataBuffer(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf) { super((Pointer)null); allocate(primary, special, numEelements, sizeOf); }
-        private native void allocate(@Cast("Nd4jPointer") Pointer primary, @Cast("Nd4jPointer") Pointer special, @Cast("Nd4jLong") long numEelements, @Cast("Nd4jLong") long sizeOf);
         public ConstantDataBuffer(@Const @ByRef ConstantDataBuffer other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef ConstantDataBuffer other);
         public ConstantDataBuffer() { super((Pointer)null); allocate(); }
         private native void allocate();
 
-        public native @Cast("Nd4jLong") long sizeOf();
-        public native @Cast("Nd4jLong") long length();
+        public native @Cast("uint8_t") byte sizeOf();
+        public native @Cast("uint64_t") long length();
 
-        public native @Cast("Nd4jPointer") Pointer primary();
-        public native @Cast("Nd4jPointer") Pointer special();
+        public native Pointer primary();
+        public native Pointer special();
 
         public native @ByRef @Name("operator =") ConstantDataBuffer put(@Const @ByRef ConstantDataBuffer other);
     }
 
 
 // #endif //DEV_TESTS_CONSTANTDATABUFFER_H
+
+
+// Parsed from array/ConstantShapeBuffer.h
+
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef SD_ARRAY_CONSTANTSHAPEBUFFER_H_
+// #define SD_ARRAY_CONSTANTSHAPEBUFFER_H_
+
+// #include <system/dll.h>
+// #include <system/pointercast.h>
+// #include <array/PointerWrapper.h>
+// #include <memory>
+
+@Namespace("sd") public static class ConstantShapeBuffer extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public ConstantShapeBuffer(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public ConstantShapeBuffer(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public ConstantShapeBuffer position(long position) {
+        return (ConstantShapeBuffer)super.position(position);
+    }
+
+  public ConstantShapeBuffer() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  public native @Cast("const Nd4jLong*") LongPointer primary();
+  public native @Cast("const Nd4jLong*") LongPointer special();
+  public native @Cast("const Nd4jLong*") LongPointer platform();
+}
+
+ // namespace sd
+
+// #endif //SD_ARRAY_CONSTANTSHAPEBUFFER_H_
+
+
+// Parsed from array/ConstantOffsetsBuffer.h
+
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef SD_ARRAY_CONSTANTOFFSETSBUFFER_H_
+// #define SD_ARRAY_CONSTANTOFFSETSBUFFER_H_
+
+// #include <system/dll.h>
+// #include <system/pointercast.h>
+// #include <memory>
+// #include <array/PointerWrapper.h>
+
+@Namespace("sd") public static class ConstantOffsetsBuffer extends Pointer {
+    static { Loader.load(); }
+    /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+    public ConstantOffsetsBuffer(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public ConstantOffsetsBuffer(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public ConstantOffsetsBuffer position(long position) {
+        return (ConstantOffsetsBuffer)super.position(position);
+    }
+
+  public ConstantOffsetsBuffer() { super((Pointer)null); allocate(); }
+  private native void allocate();
+
+  public native @Cast("const Nd4jLong*") LongPointer primary();
+  public native @Cast("const Nd4jLong*") LongPointer special();
+  public native @Cast("const Nd4jLong*") LongPointer platform();
+}
+
+ // namespace sd
+
+// #endif //SD_ARRAY_CONSTANTOFFSETSBUFFER_H_
 
 
 // Parsed from array/TadPack.h
@@ -637,7 +813,8 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
 // #ifndef DEV_TESTS_TADPACK_H
 // #define DEV_TESTS_TADPACK_H
 
-// #include "ConstantDataBuffer.h"
+// #include <array/ConstantOffsetsBuffer.h>
+// #include <array/ConstantShapeBuffer.h>
     @Namespace("sd") @NoOffset public static class TadPack extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -649,8 +826,8 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
             return (TadPack)super.position(position);
         }
     
-        public TadPack(@ByRef ConstantDataBuffer shapes, @ByRef ConstantDataBuffer offets, @Cast("Nd4jLong") long numTads) { super((Pointer)null); allocate(shapes, offets, numTads); }
-        private native void allocate(@ByRef ConstantDataBuffer shapes, @ByRef ConstantDataBuffer offets, @Cast("Nd4jLong") long numTads);
+        public TadPack(@Const @ByRef ConstantShapeBuffer shapes, @Const @ByRef ConstantOffsetsBuffer offets, @Cast("Nd4jLong") long numTads) { super((Pointer)null); allocate(shapes, offets, numTads); }
+        private native void allocate(@Const @ByRef ConstantShapeBuffer shapes, @Const @ByRef ConstantOffsetsBuffer offets, @Cast("Nd4jLong") long numTads);
         public TadPack() { super((Pointer)null); allocate(); }
         private native void allocate();
 
@@ -859,7 +1036,7 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
         public native int _blasMinorVersion(); public native Environment _blasMinorVersion(int setter);
         public native int _blasPatchVersion(); public native Environment _blasPatchVersion(int setter);
 
-        public static native Environment getInstance();
+        public static native @ByRef Environment getInstance();
 
         public native @Cast("bool") boolean isVerbose();
         public native void setVerbose(@Cast("bool") boolean reallyVerbose);
@@ -3048,9 +3225,9 @@ public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointe
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongBuffer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") long[] shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") long[] specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
 
-public native OpaqueConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
-public native OpaqueConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
-public native OpaqueConstantDataBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
 
 public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer data, int length);
 public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer data, int length);
@@ -3063,9 +3240,12 @@ public native OpaqueConstantDataBuffer constantBuffer(@Cast("sd::DataType") int 
 public native @Cast("Nd4jPointer") Pointer getConstantDataBufferPrimary(OpaqueConstantDataBuffer dbf);
 public native @Cast("Nd4jPointer") Pointer getConstantDataBufferSpecial(OpaqueConstantDataBuffer dbf);
 public native @Cast("Nd4jLong") long getConstantDataBufferLength(OpaqueConstantDataBuffer dbf);
-public native @Cast("Nd4jLong") long getConstantDataBufferSizeOf(OpaqueConstantDataBuffer dbf);
 
-public native void deleteShapeBuffer(OpaqueConstantDataBuffer ptr);
+public native @Cast("Nd4jPointer") Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf);
+public native @Cast("Nd4jPointer") Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf);
+
+public native void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer ptr);
+public native void deleteConstantDataBuffer(OpaqueConstantDataBuffer ptr);
 
 public native OpaqueContext createGraphContext(int nodeId);
 public native OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext ptr);
@@ -3098,6 +3278,8 @@ public native @Cast("Nd4jLong") long getRandomGeneratorRootState(OpaqueRandomGen
 public native @Cast("Nd4jLong") long getRandomGeneratorNodeState(OpaqueRandomGenerator ptr);
 public native void setRandomGeneratorStates(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/);
 public native void setRandomGeneratorStates(OpaqueRandomGenerator ptr);
+public native float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
+public native double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
 public native int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
 public native @Cast("Nd4jLong") long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
 public native void deleteRandomGenerator(OpaqueRandomGenerator ptr);
@@ -3637,6 +3819,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <memory>
 // #include <array/InteropDataBuffer.h>
 // #include <memory/MemoryCounter.h>
+// #include <array/ConstantShapeBuffer.h>
 
 
 
@@ -3847,13 +4030,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
          * @param writeList
          * @param readList
          */
-        public static native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList);
-        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
-        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList);
+        public static native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList);
+        public static native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList);
+        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
+        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList);
 
-        public static native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList);
-        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
-        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef ConstNDArrayVector readList);
+        public static native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList);
+        public static native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList);
+        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
+        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList);
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
@@ -4417,7 +4602,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
         /**
         * fill target matrix with given value in one or two directions from main diagonal:
-        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
+        *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'l' (down) or 'b' (both)
         *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
         * direction - in what direction to fill matrix. There are 3 possible directions:
         *   'u' - fill up, mathematically this corresponds to lower triangular matrix, subdiagonal "lower" unaffected
@@ -4474,7 +4659,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         public native void setShapeInfo(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const sd::DataType") int dtype);
         public native void setShapeInfo(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const sd::DataType") int dtype);
         public native void setShapeInfo(@Const @ByRef ShapeDescriptor descriptor);
-        public native void setShapeInfo(@Const @ByRef ConstantDataBuffer shapeBuffer);
+        public native void setShapeInfo(@Const @ByRef ConstantShapeBuffer shapeBuffer);
 
         /**
         *  returns absolute offset which corresponds to given sequential index
@@ -4830,9 +5015,11 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 ////////////////////////////////////////////////////////////////////////
 
 
-    
+////////////////////////////////////////////////////////////////////////
 
-    
+
+////////////////////////////////////////////////////////////////////////
+
 
 // #ifndef __JAVACPP_HACK__
 // #endif
@@ -5039,6 +5226,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #define LIBND4J_GRAPH_RNG_H
 
 // #include <types/u64.h>
+// #include <types/u32.h>
 // #include <system/pointercast.h>
 // #include <system/op_boilerplate.h>
 // #include <system/dll.h>
@@ -5046,6 +5234,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <array/DataTypeUtils.h>
 // #include <helpers/logger.h>
 // #include <stdexcept>
+// #include <math/templatemath.h>
 
 // #ifdef __CUDACC__
 // #endif
@@ -5062,6 +5251,8 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
                 return (RandomGenerator)super.position(position);
             }
         
+            public native @Cast("uint32_t") int xoroshiro32(@Cast("uint64_t") long index);
+            public native @Cast("uint64_t") long xoroshiro64(@Cast("uint64_t") long index);
             public RandomGenerator(@Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/) { super((Pointer)null); allocate(rootSeed, nodeSeed); }
             private native void allocate(@Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/);
             public RandomGenerator() { super((Pointer)null); allocate(); }
@@ -5092,7 +5283,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             public native int relativeInt(@Cast("Nd4jLong") long index);
             public native @Cast("Nd4jLong") long relativeLong(@Cast("Nd4jLong") long index);
 
-            public native void rewindH(@Cast("Nd4jLong") long steps);
+            public native void rewindH(@Cast("uint64_t") long steps);
 
             /**
              * These methods set up only node states, with non-changed root ones
@@ -5129,6 +5320,10 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
         
 
+        
+
+        
+
 
         
 
@@ -5138,6 +5333,8 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         @Namespace("sd::graph") public static native @Cast("uint32_t") int rotl(@Cast("const uint32_t") int x, int k);
 
         @Namespace("sd::graph") public static native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, int k);
+
+        @Namespace("sd::graph") public static native @Cast("uint32_t") int next(@Cast("uint32_t") int s0, @Cast("uint32_t") int s1, @Cast("uint32_t") int s2, @Cast("uint32_t") int s3);
 
         
 
@@ -7186,13 +7383,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param rank the rank of the shape
  */
 
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") long[] shape, int rank);
 
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native int isMatrix(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") long[] shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
@@ -7349,9 +7546,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the element wise stride for this information
  * buffer
  */
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongPointer buffer);
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongBuffer buffer);
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") long[] buffer);
+   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 
     /**
@@ -10127,7 +10324,7 @@ public static final int PREALLOC_SIZE = 33554432;
             public OpRegistrator(Pointer p) { super(p); }
         
 
-            public static native OpRegistrator getInstance();
+            public static native @ByRef OpRegistrator getInstance();
 
             public static native void exitHandler();
             public static native void sigIntHandler(int sig);

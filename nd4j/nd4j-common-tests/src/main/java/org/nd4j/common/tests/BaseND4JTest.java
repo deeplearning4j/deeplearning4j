@@ -55,7 +55,7 @@ public abstract class BaseND4JTest {
      * Override this method to set the default timeout for methods in the test class
      */
     public long getTimeoutMilliseconds(){
-        return 60_000;
+        return 90_000;
     }
 
     /**

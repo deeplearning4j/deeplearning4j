@@ -42,7 +42,7 @@ namespace sd {
             if (block.numB() > 0)
                 printSpecial = B_ARG(0);
 
-            if (printSpecial && !sd::Environment::getInstance()->isCPU()) {
+            if (printSpecial && !sd::Environment::getInstance().isCPU()) {
                 // only specific backends support special printout. for cpu-based backends it's the same as regular print
 
                 if (block.width() == 2)
@@ -69,7 +69,7 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(print_variable) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::INT32));
+            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::INT32));
         }
     }
 }

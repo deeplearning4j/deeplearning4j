@@ -40,7 +40,7 @@
 #define PLATFORM_IMPL_F(NAME, ENGINE, CNAME)         struct ND4J_EXPORT __registratorPlatformHelper_##CNAME { \
                                                         __registratorPlatformHelper_##CNAME() { \
                                                             auto helper = new PLATFORM_##CNAME(); \
-                                                            OpRegistrator::getInstance()->registerHelper(helper); \
+                                                            OpRegistrator::getInstance().registerHelper(helper); \
                                                         } \
                                                     }; \
                                                     static __registratorPlatformHelper_##CNAME platformHelper_##CNAME; \

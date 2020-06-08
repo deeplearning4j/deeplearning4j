@@ -35,7 +35,6 @@
 namespace sd {
     class ND4J_EXPORT ConstantHelper {
     private:
-        static ConstantHelper* _INSTANCE;
         ConstantHelper();
 
         std::vector<MAP_IMPL<ConstantDescriptor, ConstantHolder*>> _cache;
@@ -48,9 +47,9 @@ namespace sd {
 
         std::vector<Nd4jLong> _counters;
     public:
-        ~ConstantHelper() = default;
+        ~ConstantHelper();
 
-        static ConstantHelper* getInstance();
+        static ConstantHelper& getInstance();
         static int getCurrentDevice();
         static int getNumberOfDevices();
         void* replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace = nullptr);

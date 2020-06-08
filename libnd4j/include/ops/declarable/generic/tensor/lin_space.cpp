@@ -58,7 +58,7 @@ namespace ops {
         auto dataType = (nInputs > 0) ? ArrayOptions::dataType(inputShape->at(0)) : ( block.numD() > 0 ? static_cast<DataType>(D_ARG(0)) : DataType::FLOAT32) ;
         Nd4jLong steps = (nInputs > 0) ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : static_cast<Nd4jLong>(I_ARG(0));
 
-        return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(steps, dataType));
+        return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(steps, dataType));
     }
 
 

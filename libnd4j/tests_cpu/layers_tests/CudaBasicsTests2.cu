@@ -40,7 +40,7 @@ public:
 };
 
 TEST_F(CudaBasicsTests2, test_devices_1) {
-	auto caps = Environment::getInstance()->capabilities();
+	auto caps = Environment::getInstance().capabilities();
 	ASSERT_FALSE(caps.empty());
 }
 
@@ -259,7 +259,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_12) {
 
 	int devCnt = 0;
 	cudaGetDevice(&devCnt);
-	if(Environment::getInstance()->capabilities()[devCnt].first() < 5) return;
+	if(Environment::getInstance().capabilities()[devCnt].first() < 5) return;
 
 	const Nd4jLong M = 4;
 	const Nd4jLong K = 4;
@@ -282,7 +282,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_13) {
 
 	int devCnt = 0;
 	cudaGetDevice(&devCnt);
-	if(Environment::getInstance()->capabilities()[devCnt].first() < 5) return;
+	if(Environment::getInstance().capabilities()[devCnt].first() < 5) return;
 
 	const Nd4jLong M = 3;
 	const Nd4jLong K = 4;
@@ -304,7 +304,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_14) {
 
 	int devCnt = 0;
 	cudaGetDevice(&devCnt);
-	if(Environment::getInstance()->capabilities()[devCnt].first() < 5) return;
+	if(Environment::getInstance().capabilities()[devCnt].first() < 5) return;
 
 	const Nd4jLong M = 3;
 	const Nd4jLong K = 4;
@@ -326,7 +326,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_15) {
 
 	int devCnt = 0;
 	cudaGetDevice(&devCnt);
-	if(Environment::getInstance()->capabilities()[devCnt].first() < 5) return;
+	if(Environment::getInstance().capabilities()[devCnt].first() < 5) return;
 
 	const Nd4jLong M = 3;
 	const Nd4jLong K = 4;
@@ -349,7 +349,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_16) {
 
 	int devCnt = 0;
 	cudaGetDevice(&devCnt);
-	if(Environment::getInstance()->capabilities()[devCnt].first() < 5) return;
+	if(Environment::getInstance().capabilities()[devCnt].first() < 5) return;
 
 	const Nd4jLong M = 3;
 	const Nd4jLong K = 4;
@@ -371,7 +371,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_17) {
 
 	int devCnt = 0;
 	cudaGetDevice(&devCnt);
-	if(Environment::getInstance()->capabilities()[devCnt].first() < 5) return;
+	if(Environment::getInstance().capabilities()[devCnt].first() < 5) return;
 
 	const Nd4jLong M = 3;
 	const Nd4jLong K = 4;
@@ -393,7 +393,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_18) {
 
 	int devCnt = 0;
 	cudaGetDevice(&devCnt);
-	if(Environment::getInstance()->capabilities()[devCnt].first() < 5.3) return;
+	if(Environment::getInstance().capabilities()[devCnt].first() < 5.3) return;
 
 	const Nd4jLong M = 3;
 	const Nd4jLong K = 4;
@@ -415,7 +415,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_19) {
 
 	int devCnt = 0;
 	cudaGetDevice(&devCnt);
-	if(Environment::getInstance()->capabilities()[devCnt].first() < 5.3) return;
+	if(Environment::getInstance().capabilities()[devCnt].first() < 5.3) return;
 
 	const Nd4jLong M = 3;
 	const Nd4jLong K = 4;
@@ -437,7 +437,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_20) {
 
 	int devCnt = 0;
 	cudaGetDevice(&devCnt);
-	if(Environment::getInstance()->capabilities()[devCnt].first() < 5.3) return;
+	if(Environment::getInstance().capabilities()[devCnt].first() < 5.3) return;
 
 	const Nd4jLong M = 3;
 	const Nd4jLong K = 4;

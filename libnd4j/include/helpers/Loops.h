@@ -702,21 +702,21 @@ namespace sd {
         std::vector<Nd4jLong> zeroOffsets;
 
         if (xLen == yLen) {
-            tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
-            tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
+            tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dims, dimsLen);
+            tadPackY = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dims, dimsLen);
             xTadShapeInfo = tadPackX.primaryShapeInfo();
             yTadShapeInfo = tadPackY.primaryShapeInfo();
             xTadOffsets = tadPackX.primaryOffsets();
             yTadOffsets = tadPackY.primaryOffsets();
         }
         else if (yLen > xLen) {
-            tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
+            tadPackY = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dims, dimsLen);
             xTadShapeInfo = xShapeInfo;
             yTadShapeInfo = tadPackY.primaryShapeInfo();
             yTadOffsets = tadPackY.primaryOffsets();
         }
         else {
-            tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
+            tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dims, dimsLen);
             yTadShapeInfo = yShapeInfo;
             xTadShapeInfo = tadPackX.primaryShapeInfo();
             xTadOffsets = tadPackX.primaryOffsets();

@@ -27,17 +27,12 @@ package org.nd4j.enums;
  * ResizeArea: Anti-aliased resampling with area interpolation. 'antialias' has no effect when used with area interpolation; it always anti-aliases.
  * ResizeMitchelcubic: Mitchell-Netravali Cubic non-interpolating filter. For synthetic images (especially those lacking proper prefiltering), less ringing than Keys cubic kernel but less sharp. */
 public enum ImageResizeMethod {
-  ResizeBilinear,
-
-  ResizeBicubic,
-
+  ResizeBilinear, // as java require
   ResizeNearest,
-
+  ResizeBicubic,
+  ResizeArea,
   ResizeGaussian,
-
+  ResizeLanczos3,
   ResizeLanczos5,
-
-  ResizeMitchelcubic,
-
-  ResizeArea
+  ResizeMitchellcubic;
 }

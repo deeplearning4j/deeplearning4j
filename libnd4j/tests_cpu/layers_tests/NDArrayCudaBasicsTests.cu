@@ -686,7 +686,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_3) {
 
 TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
 
-    //if (!Environment::getInstance()->isExperimentalBuild())
+    //if (!Environment::getInstance().isExperimentalBuild())
     //    return;
 
     NDArray x = NDArrayFactory::create<double>('c', {2,3,4});
@@ -746,7 +746,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
 
 TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
 
-    //if (!Environment::getInstance()->isExperimentalBuild())
+    //if (!Environment::getInstance().isExperimentalBuild())
     //    return;
 
     NDArray x('c', {2,3,4}, sd::DataType::DOUBLE);
@@ -944,7 +944,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_002) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
 
-    //if (!Environment::getInstance()->isExperimentalBuild())
+    //if (!Environment::getInstance().isExperimentalBuild())
     //    return;
 
     NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT32);

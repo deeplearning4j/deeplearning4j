@@ -56,7 +56,7 @@ namespace sd {
             auto dtype = values->dataType();
 
             // basically output shape is defined by the type of input, and desired shape input
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape->getBufferAsVector<Nd4jLong>()));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape->getBufferAsVector<Nd4jLong>()));
         }
 
         DECLARE_TYPES(compat_sparse_to_dense) {

@@ -71,9 +71,7 @@ public class RandomGamma extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if(attributesForNode.containsKey("alpha")) {
-            outputDataType = DataTypeAdapter.dtypeConv(attributesForNode.get("alpha").getType());
-        }
+            outputDataType = DataTypeAdapter.dtypeConv(attributesForNode.get("T").getType());
     }
 
     @Override

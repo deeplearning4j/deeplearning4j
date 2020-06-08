@@ -78,8 +78,8 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
 
                 const Nd4jLong numOfSubArrs = indices->lengthOf();
 
-                auto inTadPack  = ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimsIn);
-                auto outTadPack = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimsOut);
+                auto inTadPack  = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimsIn);
+                auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimsOut);
 
                 auto inTadShapeInfo  = inTadPack.primaryShapeInfo();
                 auto outTadShapeInfo = outTadPack.primaryShapeInfo();
@@ -105,8 +105,8 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
                             auto outBuff = output->bufferWithOffset(outTadPack.primaryOffsets()[i]);
 
                             NativeOpExecutioner::execTransformAny(input->getContext(), transform::Assign,
-                                                                 inBuff,  inTadShapeInfo,  nullptr/*input specialBuffer*/, nullptr/*input specialShapeInfo*/,
-                                                                 outBuff, outTadShapeInfo, nullptr/*output specialBuffer*/, nullptr/*output specialShapeInfo*/,
+                                                                 inBuff,  inTadShapeInfo,  nullptr/*input specialBuffer*/, nullptr/*input special*/,
+                                                                 outBuff, outTadShapeInfo, nullptr/*output specialBuffer*/, nullptr/*output special*/,
                                                                  nullptr, nullptr, nullptr, false/*allowParallelism*/);
                         }
                     };
@@ -129,8 +129,8 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
 
             std::vector<int> dims  = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
 
-            auto inTadPack  = ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dims);
-            auto outTadPack = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dims);
+            auto inTadPack  = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dims);
+            auto outTadPack = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);
 
             auto inTadShapeInfo  = inTadPack.primaryShapeInfo();
             auto outTadShapeInfo = outTadPack.primaryShapeInfo();
@@ -158,8 +158,8 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
                         auto outBuff = output->bufferWithOffset(outTadPack.primaryOffsets()[i]);
 
                         NativeOpExecutioner::execTransformAny(input->getContext(), transform::Assign,
-                                                             inBuff,  inTadShapeInfo,  nullptr/*input specialBuffer*/, nullptr/*input specialShapeInfo*/,
-                                                             outBuff, outTadShapeInfo, nullptr/*output specialBuffer*/, nullptr/*output specialShapeInfo*/,
+                                                             inBuff,  inTadShapeInfo,  nullptr/*input specialBuffer*/, nullptr/*input special*/,
+                                                             outBuff, outTadShapeInfo, nullptr/*output specialBuffer*/, nullptr/*output special*/,
                                                              nullptr, nullptr, nullptr, false/*allowParallelism*/);
 
                     }

@@ -55,11 +55,11 @@ public:
     const int oW = (iW - kW - (kW - 1) * (dW - 1) + 2 * pW) / sW + 1;     // output width
 
     DeclarableOpsTests1() {
-        sd::memory::MemoryTracker::getInstance()->reset();
+        sd::memory::MemoryTracker::getInstance().reset();
     }
 
     ~DeclarableOpsTests1() {
-        sd::memory::MemoryTracker::getInstance()->summarize();
+        sd::memory::MemoryTracker::getInstance().summarize();
     }
 };
 
@@ -144,7 +144,7 @@ TEST_F(DeclarableOpsTests1, BasicInitialization1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, BasicInitialization2) {
-    auto op = sd::ops::OpRegistrator::getInstance()->getOperation("concat");
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation("concat");
 
     ASSERT_TRUE(op != nullptr);
     std::string expName("concat");
@@ -217,19 +217,19 @@ TEST_F(DeclarableOpsTests1, AXpY_Test_1) {
 }
 
 TEST_F(DeclarableOpsTests1, BasicInitialization3) {
-    auto op1 = sd::ops::OpRegistrator::getInstance()->getOperation("concat");
+    auto op1 = sd::ops::OpRegistrator::getInstance().getOperation("concat");
     std::string expName("concat");
-    auto hash = sd::ops::HashHelper::getInstance()->getLongHash(expName);
+    auto hash = sd::ops::HashHelper::getInstance().getLongHash(expName);
 
-    auto op2 = sd::ops::OpRegistrator::getInstance()->getOperation(hash);
+    auto op2 = sd::ops::OpRegistrator::getInstance().getOperation(hash);
 
     ASSERT_TRUE(op1 == op2);
 }
 
 
 TEST_F(DeclarableOpsTests1, SynonymInitialization2) {
-    auto op = sd::ops::OpRegistrator::getInstance()->getOperation("Mul");
-    auto op2 = sd::ops::OpRegistrator::getInstance()->getOperation("multiply");
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation("Mul");
+    auto op2 = sd::ops::OpRegistrator::getInstance().getOperation("multiply");
 
     ASSERT_TRUE(op != nullptr);
     std::string expName("multiply");
@@ -597,7 +597,7 @@ TEST_F(DeclarableOpsTests1, TestTensorDot17) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, DivergentCheck1) {
-    auto op = sd::ops::OpRegistrator::getInstance()->getOperation("switch");
+    auto op = sd::ops::OpRegistrator::getInstance().getOperation("switch");
 
     ASSERT_TRUE(op != nullptr);
     std::string expName("Switch");
@@ -1695,7 +1695,7 @@ TEST_F(DeclarableOpsTests1, Test_Cast_1) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestRegistrator1) {
-    auto res = sd::ops::OpRegistrator::getInstance()->getAllCustomOperations();
+    auto res = sd::ops::OpRegistrator::getInstance().getAllCustomOperations();
 }
 
 // //////////////////////////////////////////////////////////////////////
@@ -1713,7 +1713,7 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 //     z->assign(120.0f);
 //     std::string opName("add");
 
-//     auto hash = sd::ops::HashHelper::getInstance()->getInstance()->getLongHash(opName);
+//     auto hash = sd::ops::HashHelper::getInstance().getInstance()->getLongHash(opName);
 
 //     auto inputBuffers = new Nd4jPointer[2];
 //     auto inputShapes = new Nd4jPointer[2];
@@ -1763,7 +1763,7 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 
 //     std::string opName("add");
 
-//     auto hash = sd::ops::HashHelper::getInstance()->getInstance()->getLongHash(opName);
+//     auto hash = sd::ops::HashHelper::getInstance().getInstance()->getLongHash(opName);
 
 //     auto inputBuffers = new Nd4jPointer[2];
 //     auto inputShapes = new Nd4jPointer[2];

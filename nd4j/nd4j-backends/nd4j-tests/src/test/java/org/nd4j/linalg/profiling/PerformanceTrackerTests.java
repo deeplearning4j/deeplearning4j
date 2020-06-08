@@ -124,6 +124,7 @@ public class PerformanceTrackerTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore("useless these days")
     public void testTrackerGpu_1() {
         if (!Nd4j.getExecutioner().getClass().getCanonicalName().toLowerCase().contains("cuda"))
             return;

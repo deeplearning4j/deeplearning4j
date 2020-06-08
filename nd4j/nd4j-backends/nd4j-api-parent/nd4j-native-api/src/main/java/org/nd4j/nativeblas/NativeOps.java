@@ -1119,7 +1119,7 @@ public interface NativeOps {
      */
     int dataTypeFromNpyHeader(Pointer numpyHeader);
 
-    OpaqueConstantDataBuffer shapeBuffer(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, boolean empty);
+    OpaqueConstantShapeBuffer shapeBuffer(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, boolean empty);
 
     OpaqueConstantDataBuffer constantBufferDouble(int dtype, DoublePointer data, int length);
 
@@ -1128,9 +1128,12 @@ public interface NativeOps {
     Pointer getConstantDataBufferPrimary(OpaqueConstantDataBuffer dbf);
     Pointer getConstantDataBufferSpecial(OpaqueConstantDataBuffer dbf);
     long getConstantDataBufferLength(OpaqueConstantDataBuffer dbf);
-    long getConstantDataBufferSizeOf(OpaqueConstantDataBuffer dbf);
 
-    void deleteShapeBuffer(OpaqueConstantDataBuffer state);
+    Pointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer dbf);
+    Pointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer dbf);
+
+    void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer state);
+    void deleteConstantDataBuffer(OpaqueConstantDataBuffer state);
 
     OpaqueContext createGraphContext(int nodeId);
     OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext ptr);
@@ -1154,6 +1157,8 @@ public interface NativeOps {
     long getRandomGeneratorRootState(OpaqueRandomGenerator ptr);
     long getRandomGeneratorNodeState(OpaqueRandomGenerator ptr);
     void setRandomGeneratorStates(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/);
+    float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
+    double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
     int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
     long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
     void deleteRandomGenerator(OpaqueRandomGenerator ptr);

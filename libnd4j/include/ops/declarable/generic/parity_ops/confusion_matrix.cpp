@@ -77,7 +77,7 @@ namespace sd {
             }
             
             std::array<Nd4jLong, 2> shape = {{numClasses,numClasses}};
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', 2, shape.data());
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', 2, shape.data());
             return SHAPELIST(newShape);
         }
     }

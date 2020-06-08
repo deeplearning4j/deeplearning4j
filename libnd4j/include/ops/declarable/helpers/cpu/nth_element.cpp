@@ -47,7 +47,7 @@ namespace helpers {
         else { // rank greater than 1
             std::vector<int> lastDims({input->rankOf() - 1});// = ShapeUtils::evalDimsToExclude(input->rankOf(), {input->rankOf() - 1});
 
-            auto pack = sd::ConstantTadHelper::getInstance()->tadForDimensions(sortedVals.shapeInfo(), lastDims);
+            auto pack = sd::ConstantTadHelper::getInstance().tadForDimensions(sortedVals.shapeInfo(), lastDims);
 
             SpecialMethods<T>::sortTadGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), lastDims.data(), lastDims.size(), pack.primaryShapeInfo(), pack.primaryOffsets(), reverse);
 

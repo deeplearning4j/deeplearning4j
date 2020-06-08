@@ -91,7 +91,7 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
     }
     else {
 
-        auto zTadPack = ConstantTadHelper::getInstance()->tadForDimensions(output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
+        auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
         auto zTadShapeInfo  = zTadPack.primaryShapeInfo();
 
         for (uint i = 0; i < numOfSubArrs; ++i) {
@@ -179,7 +179,7 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
     }
     else {
 
-        auto xTadPack = ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
+        auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
         auto xTadShapeInfo  = xTadPack.primaryShapeInfo();
 
         for (uint i = 0; i < numOfSubArrs; ++i) {
@@ -272,7 +272,7 @@ BUILD_SINGLE_TEMPLATE(template void unstack_, (sd::LaunchContext* context, const
 // 		outArrs[i]->syncToDevice();
 //     input.syncToDevice();
 
-//     BUILD_SINGLE_SELECTOR(input.dataType(), unstackCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), dOutBuffers, outArrs[0]->specialShapeInfo(), axis), LIBND4J_TYPES);
+//     BUILD_SINGLE_SELECTOR(input.dataType(), unstackCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), dOutBuffers, outArrs[0]->special(), axis), LIBND4J_TYPES);
 
 //     manager.synchronize();
 
@@ -350,7 +350,7 @@ BUILD_SINGLE_TEMPLATE(template void unstack_, (sd::LaunchContext* context, const
 // 		inArrs[i]->syncToDevice();
 //     output.syncToDevice();
 
-//     BUILD_SINGLE_SELECTOR(output.dataType(), stackCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), dInBuffers, inArrs[0]->specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), axis), LIBND4J_TYPES);
+//     BUILD_SINGLE_SELECTOR(output.dataType(), stackCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), dInBuffers, inArrs[0]->specialShapeInfo(), output.specialBuffer(), output.special(), axis), LIBND4J_TYPES);
 
 //     manager.synchronize();
 

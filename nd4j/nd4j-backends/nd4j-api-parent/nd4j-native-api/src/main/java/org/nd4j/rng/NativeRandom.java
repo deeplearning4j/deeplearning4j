@@ -107,14 +107,10 @@ public abstract class NativeRandom implements Random {
     }
 
     @Override
-    public float nextFloat() {
-        return (float) nextInt() / (float) Integer.MAX_VALUE;
-    }
+    public abstract float nextFloat();
 
     @Override
-    public double nextDouble() {
-        return (double) nextInt() / (double) Integer.MAX_VALUE;
-    }
+    public abstract double nextDouble();
 
     @Override
     public double nextGaussian() {

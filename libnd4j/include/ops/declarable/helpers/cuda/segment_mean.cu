@@ -174,8 +174,8 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
             auto inputTads = packX.specialShapeInfo();
             auto inputTadOffsets = packX.specialOffsets();
             auto outputTads = packZ.specialShapeInfo();
@@ -216,8 +216,8 @@ namespace helpers {
         else {
             output->assign(0);
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
             Nd4jLong const*  inputTads = packX.specialShapeInfo();
             Nd4jLong const*  inputTadOffsets = packX.specialOffsets();
             Nd4jLong const*  outputTads = packZ.specialShapeInfo();
@@ -333,10 +333,10 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
-//            auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.shapeInfo(), dimensions);
-            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->shapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
+//            auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
             Nd4jLong const*  inputTads = packX.specialShapeInfo();
             Nd4jLong const*  inputTadOffsets = packX.specialOffsets();
             Nd4jLong const*  outputTads = packZ.specialShapeInfo();
@@ -386,10 +386,10 @@ namespace helpers {
         }
         else {
             std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
-            auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
-            auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimensions);
-//            auto packGradIn = sd::ConstantTadHelper::getInstance()->tadForDimensions(tempRes.shapeInfo(), dimensions);
-            auto packGradOut = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradOut->shapeInfo(), dimensions);
+            auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
+            auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimensions);
+//            auto packGradIn = sd::ConstantTadHelper::getInstance().tadForDimensions(tempRes.shapeInfo(), dimensions);
+            auto packGradOut = sd::ConstantTadHelper::getInstance().tadForDimensions(gradOut->shapeInfo(), dimensions);
             Nd4jLong const*  inputTads = packX.specialShapeInfo();
             Nd4jLong const*  inputTadOffsets = packX.specialOffsets();
             Nd4jLong const*  outputTads = packZ.specialShapeInfo();

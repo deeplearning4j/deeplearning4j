@@ -73,7 +73,7 @@ namespace helpers {
                                    bool setUp = (theSame && row >= 0 && col >= 0 && row < rowDim && col < colDim) ||
                                                 (!theSame);
                                    if (setUp) {
-                                       outMatrix->t<T>(i, j, pos) = patch->e<T>(row, col, pixel);
+                                       outMatrix->r<T>(i, j, pos) = patch->e<T>(row, col, pixel);
                                    }
                                    pos++;
                                }

@@ -118,7 +118,7 @@ static void betaIncForArray(sd::LaunchContext * context, const NDArray& a, const
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++)
-            output.t<T>(i) = betaIncCore<T>(a.t<T>(i), b.t<T>(i), x.t<T>(i));
+            output.r<T>(i) = betaIncCore<T>(a.t<T>(i), b.t<T>(i), x.t<T>(i));
     };
 
     samediff::Threads::parallel_for(func, 0, xLen);

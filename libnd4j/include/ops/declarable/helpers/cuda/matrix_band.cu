@@ -94,8 +94,8 @@ namespace helpers {
         std::vector<int> lastDims({input->rankOf() - 2, input->rankOf() - 1});
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), lastDims);
 
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), lastDims);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), lastDims);
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), lastDims);
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), lastDims);
 
         const Nd4jLong numTads = packX.numberOfTads();
 

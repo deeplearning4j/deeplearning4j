@@ -237,14 +237,14 @@ namespace sd {
             auto deviceId = sd::AffinityManager::currentDeviceId();
             // check if this allocation won't bring us above limit
             if (_workspace == nullptr) {
-                if (Environment::getInstance()->isCPU()) {
+                if (Environment::getInstance().isCPU()) {
                     // on cpu backend we validate against device 0 for now
-                    if (!sd::memory::MemoryCounter::getInstance()->validate(getLenInBytes()))
-                        throw sd::allocation_exception::build("Requested amount exceeds HOST device limits", sd::memory::MemoryCounter::getInstance()->deviceLimit(deviceId), getLenInBytes());
+                    if (!sd::memory::MemoryCounter::getInstance().validate(getLenInBytes()))
+                        throw sd::allocation_exception::build("Requested amount exceeds HOST device limits", sd::memory::MemoryCounter::getInstance().deviceLimit(deviceId), getLenInBytes());
                 } else {
                     // in heterogenous mode we valdate against device group
-                    if (!sd::memory::MemoryCounter::getInstance()->validateGroup(sd::memory::MemoryType::HOST, getLenInBytes()))
-                        throw sd::allocation_exception::build("Requested amount exceeds HOST group limits", sd::memory::MemoryCounter::getInstance()->groupLimit(sd::memory::MemoryType::HOST), getLenInBytes());
+                    if (!sd::memory::MemoryCounter::getInstance().validateGroup(sd::memory::MemoryType::HOST, getLenInBytes()))
+                        throw sd::allocation_exception::build("Requested amount exceeds HOST group limits", sd::memory::MemoryCounter::getInstance().groupLimit(sd::memory::MemoryType::HOST), getLenInBytes());
                 }
             }
 
@@ -253,10 +253,10 @@ namespace sd {
 
             // count in towards current deviceId if we're not in workspace mode
             if (_workspace == nullptr) {
-                if (Environment::getInstance()->isCPU()) // we don't want this counter to be added to CUDA device
-                    sd::memory::MemoryCounter::getInstance()->countIn(deviceId, getLenInBytes());
+                if (Environment::getInstance().isCPU()) // we don't want this counter to be added to CUDA device
+                    sd::memory::MemoryCounter::getInstance().countIn(deviceId, getLenInBytes());
 
-                sd::memory::MemoryCounter::getInstance()->countIn(sd::memory::MemoryType::HOST, getLenInBytes());
+                sd::memory::MemoryCounter::getInstance().countIn(sd::memory::MemoryType::HOST, getLenInBytes());
             }
         }
     }
@@ -279,10 +279,10 @@ namespace sd {
 
             // count out towards DataBuffer device, only if we're not in workspace
             if (_workspace == nullptr) {
-                if (Environment::getInstance()->isCPU())
-                    sd::memory::MemoryCounter::getInstance()->countOut(_deviceId, getLenInBytes());
+                if (Environment::getInstance().isCPU())
+                    sd::memory::MemoryCounter::getInstance().countOut(_deviceId, getLenInBytes());
 
-                sd::memory::MemoryCounter::getInstance()->countOut(sd::memory::MemoryType::HOST, getLenInBytes());
+                sd::memory::MemoryCounter::getInstance().countOut(sd::memory::MemoryType::HOST, getLenInBytes());
             }
         }
     }

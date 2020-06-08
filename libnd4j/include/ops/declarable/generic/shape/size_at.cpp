@@ -42,7 +42,7 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(size_at) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(sd::DataType::INT64));
+            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64));
         }
 
         DECLARE_TYPES(size_at) {

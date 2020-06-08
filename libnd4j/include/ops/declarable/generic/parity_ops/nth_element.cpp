@@ -61,11 +61,11 @@ namespace sd {
                 outShape = CONSTANT(outputShape);
             }
             else if (outRank == 1) {
-                outShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(in, 0), ArrayOptions::dataType(in));
+                outShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(in, 0), ArrayOptions::dataType(in));
             }
             else {
                 //outputShape = shape::createScalarShapeInfo();
-                outShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in));
+                outShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in));
             }
             return SHAPELIST(outShape);
         }

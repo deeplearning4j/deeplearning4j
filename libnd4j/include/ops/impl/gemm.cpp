@@ -68,7 +68,7 @@ namespace sd {
             if (beta == 0.0) {
                 Z z = 0.f;
                 int length = M*N;
-                if (length <= Environment::getInstance()->elementwiseThreshold()) {
+                if (length <= Environment::getInstance().elementwiseThreshold()) {
                     for (int r = 0; r < length; r++)
                         C[r] = z;
                 } else {

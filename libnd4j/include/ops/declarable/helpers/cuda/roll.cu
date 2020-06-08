@@ -253,7 +253,7 @@ namespace helpers {
                 for (int i = 0; i < dims.size(); ++i)
                     dims[i] = axe + 1 + i;
 
-                auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dims);
+                auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dims);
 
                 int numTads = packZ.numberOfTads();
                 int sizeAt = input->sizeAt(axe);

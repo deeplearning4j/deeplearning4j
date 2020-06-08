@@ -218,7 +218,7 @@ void ScalarBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_t 
                                                 void const* vscalar,
                                                 void const* vextraParams) {
 
-    if (sd::Environment::getInstance()->isDebugAndVerbose())
+    if (sd::Environment::getInstance().isDebugAndVerbose())
         printf("H14 opNum:[%i]\n", opNum);
 
     DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vz, zShapeInfo, vscalar, const_cast<void*>(vextraParams), nullptr), SCALAR_BOOL_OPS);

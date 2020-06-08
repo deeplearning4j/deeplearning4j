@@ -42,7 +42,7 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
 
     REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), z->lengthOf());
 
-    if (Environment::getInstance()->isDebugAndVerbose())
+    if (Environment::getInstance().isDebugAndVerbose())
         nd4j_printv("Reshape: new shape", z->getShapeAsVector());
 
     z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
@@ -159,7 +159,7 @@ DECLARE_SHAPE_FN(reshape) {
     auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
     REQUIRE_TRUE(x->lengthOf() == len, 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), len);
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(x->dataType(), orderNew, shapeNew));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), orderNew, shapeNew));
 }
 
 

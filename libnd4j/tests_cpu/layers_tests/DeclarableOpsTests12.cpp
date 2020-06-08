@@ -27,6 +27,7 @@
 #include <helpers/ConstantTadHelper.h>
 #include <helpers/PointersManager.h>
 #include <helpers/MmulHelper.h>
+#include <ops/declarable/helpers/image_resize.h>
 
 using namespace sd;
 
@@ -779,8 +780,8 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
 
     std::vector<int> dims = {1};
 
-    auto xTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dims);
-    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dims);
+    auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dims);
+    auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), dims);
 
     Nd4jPointer nativeStart[2];
 
@@ -815,8 +816,8 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
 
     std::vector<int> dims = {1};
 
-    auto xTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dims);
-    auto zTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dims);
+    auto xTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dims);
+    auto zTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(z.shapeInfo(), dims);
 
     Nd4jPointer nativeStart[2];
 #ifdef __CUDABLAS__
@@ -2819,6 +2820,330 @@ TEST_F(DeclarableOpsTests12, QR_Test_2) {
     ASSERT_TRUE(exp->isSameShape(in));
     ASSERT_TRUE(exp->equalsTo(in));
     
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test1) {
+
+    NDArray input    = NDArrayFactory::create<float>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+             0.628328f,  0.97913796f,  1.8058043f,   2.563919f,   2.844548f,
+            3.6026628f,   4.4293294f,  4.7801394f,  2.9474494f,  3.2982588f,
+            4.1249247f,   4.8830395f,  5.1636696f,  5.9217834f,  6.7484493f,
+              7.09926f,    8.165832f,   8.516642f,  9.3433075f,  10.101422f,
+            10.382052f,   11.140167f,  11.966835f,  12.317646f,  10.924093f,
+            11.274903f,    12.10157f,  12.859686f,  13.140315f,  13.898429f,
+            14.725095f,   15.075906f,  13.682358f,  14.033167f,  14.859833f,
+            15.617949f,   15.898578f,  16.656693f,   17.48336f,  17.834171f,
+            18.900742f,   19.251549f,  20.078213f,   20.83633f,   21.11696f,
+            21.875074f,   22.701742f,  23.052553f,  21.219858f,   21.57067f,
+            22.397337f,   23.155449f,  23.436079f,  24.194195f,  25.020863f,
+            25.371672f
+    });
+
+    sd::ops::image_resize op;
+    // resize with lancos5 without antialising and aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeLanczos5}, {false, false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result->printBuffer("Lancos5 Resized to 7x8");
+//    expected.printBuffer("Lancos5 Expect for 7x8");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test2) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+            0.628328f,  0.97913796f,  1.8058043f,   2.563919f,   2.844548f,
+            3.6026628f,   4.4293294f,  4.7801394f,  2.9474494f,  3.2982588f,
+            4.1249247f,   4.8830395f,  5.1636696f,  5.9217834f,  6.7484493f,
+            7.09926f,    8.165832f,   8.516642f,  9.3433075f,  10.101422f,
+            10.382052f,   11.140167f,  11.966835f,  12.317646f,  10.924093f,
+            11.274903f,    12.10157f,  12.859686f,  13.140315f,  13.898429f,
+            14.725095f,   15.075906f,  13.682358f,  14.033167f,  14.859833f,
+            15.617949f,   15.898578f,  16.656693f,   17.48336f,  17.834171f,
+            18.900742f,   19.251549f,  20.078213f,   20.83633f,   21.11696f,
+            21.875074f,   22.701742f,  23.052553f,  21.219858f,   21.57067f,
+            22.397337f,   23.155449f,  23.436079f,  24.194195f,  25.020863f,
+            25.371672f
+    });
+
+    sd::ops::image_resize op;
+    // resize with lanczos5 without antialising and aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeLanczos5}, {false, false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result.printBuffer("Lanczos5 Resized to 8x7");
+//    expected.printBuffer("Lanczos5 Expect for 8x7");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test3) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+            0.6537938f,  1.0309073f,  1.8018917f,  2.4606667f,  2.9888396f,  3.6476145f,  4.418599f,
+            4.7957115f,  3.1913466f,  3.5684595f,  4.3394437f,   4.998219f,   5.526393f,  6.185168f,
+             6.956152f,  7.3332644f,   7.626866f,    8.00398f,   8.774965f,   9.433739f,  9.961912f,
+            10.620688f,  11.391673f, 11.7687845f,  10.929041f,  11.306154f,  12.077138f, 12.735914f,
+            13.264087f,  13.922862f,  14.693848f,   15.07096f,  14.231217f,   14.60833f, 15.379314f,
+            16.038086f,   16.56626f,  17.225037f,  17.996023f,  18.373135f,  18.666735f, 19.043848f,
+            19.814833f,  20.473606f,   21.00178f,  21.660557f,  22.431541f,  22.808653f, 21.204287f,
+            21.581398f,  22.352386f,   23.01116f,  23.539333f,   24.19811f,  24.969095f, 25.346205f
+    });
+
+    sd::ops::image_resize op;
+    // resize with lanczos3 without antialising and aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeLanczos3}, {false, false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result.printBuffer("Lanczos3 Resized to 8x7");
+//    expected.printBuffer("Lanczos3 Expect for 8x7");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test4) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+             1.4150869f,  1.7928237f,  2.4084527f,  3.0680697f, 3.6419308f,    4.301548f, 4.9171767f,
+              5.294914f,   4.012885f,   4.390622f,  5.0062513f, 5.6658688f,     6.23973f,  6.899347f,
+              7.514975f,  7.8927126f,   7.358912f,   7.736648f,  8.352278f,    9.011895f,  9.585756f,
+             10.245375f,  10.861001f,  11.238739f,  11.060086f, 11.437822f,  12.0534525f, 12.713069f,
+              13.28693f,  13.946548f,  14.562176f,  14.939912f, 14.761261f,   15.138998f, 15.754629f,
+             16.414246f,  16.988108f,  17.647724f,  18.263351f, 18.641088f,   18.107288f, 18.485023f,
+             19.100655f,  19.760273f,  20.334133f,  20.993752f, 21.609377f,   21.987114f, 20.705086f,
+             21.082823f,  21.698452f,   22.35807f,   22.93193f, 23.591549f,   24.207174f, 24.584913f
+    });
+
+    sd::ops::image_resize op;
+    // resize with gaussian without antialising and aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeGaussian}, {false, false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result.printBuffer("Lanczos3 Resized to 8x7");
+//    expected.printBuffer("Lanczos3 Expect for 8x7");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test5) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+            0.6372399f,  1.0536414f,  1.7716959f,  2.3966959f,  3.0216959f,  3.6466963f,  4.3647504f,   4.781152f,
+            3.3926036f,  3.8090053f,  4.5270596f,  5.1520596f,  5.7770596f,  6.4020596f,  7.1201134f,  7.5365143f,
+             7.358708f,  7.7751093f,   8.493164f,   9.118163f,   9.743165f,  10.368165f,  11.086218f,  11.502619f,
+            10.928043f,  11.344445f,    12.0625f,    12.6875f,    13.3125f,    13.9375f,  14.655554f,  15.071955f,
+             14.49738f,  14.913782f,  15.631836f,  16.256836f,  16.881836f,  17.506836f,   18.22489f,   18.64129f,
+            18.463486f,  18.879889f,  19.597942f,  20.222942f,  20.847942f,  21.472942f,  22.190996f,  22.607397f,
+            21.218851f,  21.635252f,  22.353308f,  22.978308f,  23.603308f,  24.228308f,  24.946362f,  25.362762f
+    });
+
+    sd::ops::image_resize op;
+    // resize with bicubic without antialising and aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result->printBuffer("Bicubic Resized to 7x8");
+//    expected.printBuffer("Bicubic Expect for 7x8");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test6) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+            0.63678247f,  1.0531839f,  1.7712381f,  2.396238f,   3.021238f ,    3.646238f,   4.364292f,   4.780694f,
+            3.3934183f,   3.8098197f,  4.5278745f, 5.1528745f,  5.7778745f,    6.402874f,  7.1209283f,  7.5373297f,
+            7.3566165f,   7.7730184f,   8.491073f,  9.116073f,   9.741073f,  10.366074f , 11.084127f  , 11.500528f,
+            10.928043f,   11.344445f,   12.0625f   , 12.6875f    , 13.3125f    , 13.9375f    ,     14.655554f,  15.071955f , 14.499474f  , 14.915876f  , 15.633932f,   16.25893f, 16.883932f, 17.508932f, 18.226984f  , 18.643385f,
+              18.46267f,   18.87907f, 19.597128f, 20.222126f  , 20.847128f,      21.472126f, 22.190182f  , 22.606583f  , 21.219305f, 21.635706f  ,
+             22.353762f,  22.978762f  , 23.603762f  , 24.228764f, 24.946815f  ,      25.363216f
+    });
+
+    sd::ops::image_resize op;
+    // resize with bicubic with antialising and without aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBicubic}, {false, true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result->printBuffer("Bicubic Resized to 7x8");
+//    expected.printBuffer("Bicubic Expect for 7x8");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test7) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+            0.98593485f,  1.3872082f,  2.0625007f,  2.6875007f, 3.3125012f,    3.937501f,   4.612794f,   5.014066f,
+             3.6096964f,    4.01097f,  4.6862626f,   5.311262f,  5.936263f,    6.561262f,  7.2365556f,   7.637828f,
+             7.4145045f,  7.8157787f,   8.491071f,   9.116072f,  9.741073f,   10.366072f,  11.041365f, 11.4426365f,
+             10.985933f,  11.387209f,  12.062499f,  12.687501f, 13.312502f,     13.9375f,  14.612794f,  15.014066f,
+             14.557361f,  14.958637f,  15.633926f,   16.25893f,  16.88393f,   17.508926f,   18.18422f,  18.585491f,
+              18.36217f,  18.763443f,  19.438736f,  20.063736f, 20.688738f,   21.313736f,   21.98903f,    22.3903f,
+              20.985931f, 21.387209f,    22.0625f,    22.6875f,   23.3125f,   23.937498f,  24.612793f,  25.014061f
+    });
+
+    sd::ops::image_resize op;
+    // resize with Mitchell cubic with antialising and without aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeMitchellcubic}, {false, true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result->printBuffer("Mitchell cubic Resized to 7x8");
+//    expected.printBuffer("Mitchell cubic Expect for 7x8");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test8) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+            1.f       ,  1.4375f   ,  2.0625f   ,  2.6875f   ,  3.3125f   ,  3.9375f   ,  4.5625f   ,  5.f       ,
+            3.8571427f,  4.2946424f,  4.9196424f,  5.5446424f,  6.1696424f,  6.7946424f,  7.4196424f,  7.8571424f,
+            7.4285717f,  7.8660717f,  8.491072f ,  9.116072f ,  9.741072f , 10.366072f , 10.991072f , 11.428572f ,
+            11.f      , 11.4375f   , 12.0625f   , 12.6875f   , 13.3125f   , 13.9375f   , 14.5625f   , 15.f       ,
+            14.571429f , 15.008929f,  15.633929f, 16.25893f  , 16.88393f  , 17.50893f  , 18.13393f  , 18.57143f  ,
+            18.142857f , 18.580357f,  19.205357f, 19.830357f , 20.455357f , 21.080357f , 21.705357f , 22.142857f ,
+            21.f       , 21.4375f  , 22.0625f   , 22.6875f   , 23.3125f   , 23.9375f   , 24.5625f   ,       25.f
+    });
+
+    sd::ops::image_resize op;
+    // resize with bilinear without antialising and aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeBilinear}, {false, false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result->printBuffer("Bilinear Resized to 7x8");
+//    expected.printBuffer("Bilinear Expect for 7x8");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test9) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+            1.f     , 1.4f    , 2.f     , 2.8f    , 3.2f    , 4.f     , 4.6f    , 5.f     ,
+            4.f     , 4.4f    , 5.f     , 5.8f    , 6.2f    , 7.f     , 7.6f    , 8.f     ,
+            6.999998f, 7.399998f, 7.999998f, 8.799997f, 9.199997f, 9.999997f, 10.599997f, 10.999996f,
+            11.f, 11.399999f, 12.f, 12.799999f, 13.199999f, 13.999998f, 14.599998f, 14.999999f,
+            15.f, 15.4f, 16.f, 16.8f, 17.2f, 18.f, 18.6f, 19.f, 17.999989f,
+            18.399990f, 18.999989f, 19.799988f, 20.199987f, 20.999989f, 21.599989f, 21.999989f, 21.f,
+            21.4f, 22.f, 22.8f, 23.2f, 24.f, 24.6f, 25.f
+    });
+
+    sd::ops::image_resize op;
+    // resize with area without antialising and aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeArea}, {false, false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result->printBuffer("Area Resized to 7x8");
+//    expected.printBuffer("Area Expect for 7x8");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test10) {
+
+    NDArray input    = NDArrayFactory::create<float>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 7, 8, 1}, {
+            1,  1,  2,  3,  3,  4,  5,  5,  6,  6,  7,  8,  8,  9, 10, 10,  6,
+            6,  7,  8,  8,  9, 10, 10, 11, 11, 12, 13, 13, 14, 15, 15, 16, 16,
+            17, 18, 18, 19, 20, 20, 16, 16, 17, 18, 18, 19, 20, 20, 21, 21, 22,
+            23, 23, 24, 25, 25
+    });
+
+    sd::ops::image_resize op;
+    // resize with nearest neigbors without antialising and aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeNearest}, {false, false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result->printBuffer("Nearest neighbor Resized to 7x8");
+//    expected.printBuffer("Nearest neighbor Expect for 7x8");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
+TEST_F(DeclarableOpsTests12, ImageResize_Test11) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 5, 5, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25
+    });
+    auto size = NDArrayFactory::create<int>({7, 8});
+    NDArray expected = NDArrayFactory::create<int>('c', {1, 7, 8, 1}, {
+            1,  1,  2,  3,  3,  4,  5,  5,  6,  6,  7,  8,  8,  9, 10, 10,  6,
+            6,  7,  8,  8,  9, 10, 10, 11, 11, 12, 13, 13, 14, 15, 15, 16, 16,
+            17, 18, 18, 19, 20, 20, 16, 16, 17, 18, 18, 19, 20, 20, 21, 21, 22,
+            23, 23, 24, 25, 25
+    });
+
+    sd::ops::image_resize op;
+    // resize with nearest neigbors without antialising and aspect ratio preserving
+    auto results = op.evaluate({&input, &size}, {}, {ops::helpers::kResizeNearest}, {false, false});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto result = results[0];///.at(0);
+//    result->printBuffer("Nearest neighbor Resized to 7x8");
+//    expected.printBuffer("Nearest neighbor Expect for 7x8");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
 }
 
 ////////////////////////////////////////////////////////////////////////////////

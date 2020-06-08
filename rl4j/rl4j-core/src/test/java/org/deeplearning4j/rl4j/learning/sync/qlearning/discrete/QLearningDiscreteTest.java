@@ -18,6 +18,7 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.agent.learning.ILearningBehavior;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
@@ -74,6 +75,9 @@ public class QLearningDiscreteTest {
     @Mock
     QLearningConfiguration mockQlearningConfiguration;
 
+    @Mock
+    ILearningBehavior<Integer> learningBehavior;
+
     // HWC
     int[] observationShape = new int[]{3, 10, 10};
     int totalObservationSize = 1;
@@ -92,18 +96,28 @@ public class QLearningDiscreteTest {
     }
 
 
-    private void mockTestContext(int maxSteps, int updateStart, int batchSize, double rewardFactor, int maxExperienceReplay) {
+    private void mockTestContext(int maxSteps, int updateStart, int batchSize, double rewardFactor, int maxExperienceReplay, ILearningBehavior<Integer> learningBehavior) {
         when(mockQlearningConfiguration.getBatchSize()).thenReturn(batchSize);
         when(mockQlearningConfiguration.getRewardFactor()).thenReturn(rewardFactor);
         when(mockQlearningConfiguration.getExpRepMaxSize()).thenReturn(maxExperienceReplay);
         when(mockQlearningConfiguration.getSeed()).thenReturn(123L);
 
-        qLearningDiscrete = mock(
-                QLearningDiscrete.class,
-                Mockito.withSettings()
-                        .useConstructor(mockMDP, mockDQN, mockQlearningConfiguration, 0)
-                        .defaultAnswer(Mockito.CALLS_REAL_METHODS)
-        );
+        if(learningBehavior != null) {
+            qLearningDiscrete = mock(
+                    QLearningDiscrete.class,
+                    Mockito.withSettings()
+                            .useConstructor(mockMDP, mockDQN, mockQlearningConfiguration, 0, learningBehavior, Nd4j.getRandom())
+                            .defaultAnswer(Mockito.CALLS_REAL_METHODS)
+            );
+        }
+        else {
+            qLearningDiscrete = mock(
+                    QLearningDiscrete.class,
+                    Mockito.withSettings()
+                            .useConstructor(mockMDP, mockDQN, mockQlearningConfiguration, 0)
+                            .defaultAnswer(Mockito.CALLS_REAL_METHODS)
+            );
+        }
     }
 
     private void mockHistoryProcessor(int skipFrames) {
@@ -136,7 +150,7 @@ public class QLearningDiscreteTest {
     public void when_singleTrainStep_expect_correctValues() {
 
         // Arrange
-        mockTestContext(100,0,2,1.0, 10);
+        mockTestContext(100,0,2,1.0, 10, null);
 
         // An example observation and 2 Q values output (2 actions)
         Observation observation = new Observation(Nd4j.zeros(observationShape));
@@ -162,7 +176,7 @@ public class QLearningDiscreteTest {
     @Test
     public void when_singleTrainStepSkippedFrames_expect_correctValues() {
         // Arrange
-        mockTestContext(100,0,2,1.0, 10);
+        mockTestContext(100,0,2,1.0, 10, learningBehavior);
 
         Observation skippedObservation = Observation.SkippedObservation;
         Observation nextObservation = new Observation(Nd4j.zeros(observationShape));
@@ -180,8 +194,8 @@ public class QLearningDiscreteTest {
         assertEquals(0, stepReply.getReward(), 1e-5);
         assertFalse(stepReply.isDone());
         assertFalse(stepReply.getObservation().isSkipped());
-        assertEquals(0, qLearningDiscrete.getExperienceHandler().getTrainingBatchSize());
 
+        verify(learningBehavior, never()).handleNewExperience(any(Observation.class), any(Integer.class), any(Double.class), any(Boolean.class));
         verify(mockDQN, never()).output(any(INDArray.class));
 
     }

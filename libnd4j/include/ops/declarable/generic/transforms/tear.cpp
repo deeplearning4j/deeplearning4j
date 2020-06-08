@@ -57,12 +57,12 @@ namespace sd {
             if (dims.size() > 1)
                 std::sort(dims.begin(), dims.end());
 
-            auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(inShape, dims);
+            auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(inShape, dims);
             auto numTads = tadPack.numberOfTads();
 
             auto result = SHAPELIST();
             for (Nd4jLong e = 0; e < numTads; e++) {
-                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), shape::order(inShape), shape::rank(tadPack.primaryShapeInfo()), shape::shapeOf(tadPack.primaryShapeInfo()));
+                auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), shape::order(inShape), shape::rank(tadPack.primaryShapeInfo()), shape::shapeOf(tadPack.primaryShapeInfo()));
                 result->push_back(newShape);
             }
 

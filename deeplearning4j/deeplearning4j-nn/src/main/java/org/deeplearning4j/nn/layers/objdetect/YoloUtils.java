@@ -39,12 +39,23 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
  */
 public class YoloUtils {
 
-    /** Essentially: just apply activation functions... */
+    /** Essentially: just apply activation functions... For NCHW format. For NCHW format, use one of the other activate methods */
     public static INDArray activate(INDArray boundingBoxPriors, INDArray input) {
-        return activate(boundingBoxPriors, input, LayerWorkspaceMgr.noWorkspaces());
+        return activate(boundingBoxPriors, input, true);
     }
 
-    public static INDArray activate(@NonNull INDArray boundingBoxPriors, @NonNull INDArray input, LayerWorkspaceMgr layerWorkspaceMgr){
+    public static INDArray activate(INDArray boundingBoxPriors, INDArray input, boolean nchw) {
+        return activate(boundingBoxPriors, input, nchw, LayerWorkspaceMgr.noWorkspaces());
+    }
+
+    public static INDArray activate(@NonNull INDArray boundingBoxPriors, @NonNull INDArray input, LayerWorkspaceMgr layerWorkspaceMgr) {
+        return activate(boundingBoxPriors, input, true, layerWorkspaceMgr);
+    }
+
+    public static INDArray activate(@NonNull INDArray boundingBoxPriors, @NonNull INDArray input, boolean nchw, LayerWorkspaceMgr layerWorkspaceMgr){
+        if(!nchw)
+            input = input.permute(0,3,1,2); //NHWC to NCHW
+
         long mb = input.size(0);
         long h = input.size(2);
         long w = input.size(3);
@@ -82,6 +93,9 @@ public class YoloUtils {
 
         INDArray outputClasses = output5.get(all(), all(), interval(5, 5+c), all(), all());   //Shape: [minibatch, C, H, W]
         outputClasses.assign(postSoftmax5d);
+
+        if(!nchw)
+            output = output.permute(0,2,3,1);       //NCHW to NHWC
 
         return output;
     }

@@ -117,7 +117,7 @@ namespace sd {
                     theNewShape = CONSTANT(newShape);
                 }
                 else {
-                    theNewShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(sd::DataType::INT64);
+                    theNewShape = ConstantShapeHelper::getInstance().emptyShapeInfo(sd::DataType::INT64);
                 }
 
                 return SHAPELIST(theNewShape);

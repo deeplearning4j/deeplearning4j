@@ -4,34 +4,44 @@ import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
+@RunWith(MockitoJUnitRunner.class)
 public class ReplayMemoryExperienceHandlerTest {
+
+    @Mock
+    IExpReplay<Integer> expReplayMock;
+
     @Test
     public void when_addingFirstExperience_expect_notAddedToStoreBeforeNextObservationIsAdded() {
         // Arrange
-        TestExpReplay expReplayMock = new TestExpReplay();
+        when(expReplayMock.getDesignatedBatchSize()).thenReturn(10);
+
         ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(expReplayMock);
 
         // Act
         sut.addExperience(new Observation(Nd4j.create(new double[] { 1.0 })), 1, 1.0, false);
-        int numStoredTransitions = expReplayMock.addedTransitions.size();
+        boolean isStoreCalledAfterFirstAdd = mockingDetails(expReplayMock).getInvocations().stream().anyMatch(x -> x.getMethod().getName() == "store");
         sut.addExperience(new Observation(Nd4j.create(new double[] { 2.0 })), 2, 2.0, false);
+        boolean isStoreCalledAfterSecondAdd = mockingDetails(expReplayMock).getInvocations().stream().anyMatch(x -> x.getMethod().getName() == "store");
 
         // Assert
-        assertEquals(0, numStoredTransitions);
-        assertEquals(1, expReplayMock.addedTransitions.size());
+        assertFalse(isStoreCalledAfterFirstAdd);
+        assertTrue(isStoreCalledAfterSecondAdd);
     }
 
     @Test
     public void when_addingExperience_expect_transitionsAreCorrect() {
         // Arrange
-        TestExpReplay expReplayMock = new TestExpReplay();
         ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(expReplayMock);
 
         // Act
@@ -40,24 +50,25 @@ public class ReplayMemoryExperienceHandlerTest {
         sut.setFinalObservation(new Observation(Nd4j.create(new double[] { 3.0 })));
 
         // Assert
-        assertEquals(2, expReplayMock.addedTransitions.size());
+        ArgumentCaptor<Transition<Integer>> argument = ArgumentCaptor.forClass(Transition.class);
+        verify(expReplayMock, times(2)).store(argument.capture());
+        List<Transition<Integer>> transitions = argument.getAllValues();
 
-        assertEquals(1.0, expReplayMock.addedTransitions.get(0).getObservation().getData().getDouble(0), 0.00001);
-        assertEquals(1, (int)expReplayMock.addedTransitions.get(0).getAction());
-        assertEquals(1.0, expReplayMock.addedTransitions.get(0).getReward(), 0.00001);
-        assertEquals(2.0, expReplayMock.addedTransitions.get(0).getNextObservation().getDouble(0), 0.00001);
+        assertEquals(1.0, transitions.get(0).getObservation().getData().getDouble(0), 0.00001);
+        assertEquals(1, (int)transitions.get(0).getAction());
+        assertEquals(1.0, transitions.get(0).getReward(), 0.00001);
+        assertEquals(2.0, transitions.get(0).getNextObservation().getDouble(0), 0.00001);
 
-        assertEquals(2.0, expReplayMock.addedTransitions.get(1).getObservation().getData().getDouble(0), 0.00001);
-        assertEquals(2, (int)expReplayMock.addedTransitions.get(1).getAction());
-        assertEquals(2.0, expReplayMock.addedTransitions.get(1).getReward(), 0.00001);
-        assertEquals(3.0, expReplayMock.addedTransitions.get(1).getNextObservation().getDouble(0), 0.00001);
+        assertEquals(2.0, transitions.get(1).getObservation().getData().getDouble(0), 0.00001);
+        assertEquals(2, (int)transitions.get(1).getAction());
+        assertEquals(2.0, transitions.get(1).getReward(), 0.00001);
+        assertEquals(3.0, transitions.get(1).getNextObservation().getDouble(0), 0.00001);
 
     }
 
     @Test
     public void when_settingFinalObservation_expect_nextAddedExperienceDoNotUsePreviousObservation() {
         // Arrange
-        TestExpReplay expReplayMock = new TestExpReplay();
         ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(expReplayMock);
 
         // Act
@@ -66,42 +77,57 @@ public class ReplayMemoryExperienceHandlerTest {
         sut.addExperience(new Observation(Nd4j.create(new double[] { 3.0 })), 3, 3.0, false);
 
         // Assert
-        assertEquals(1, expReplayMock.addedTransitions.size());
-        assertEquals(1, (int)expReplayMock.addedTransitions.get(0).getAction());
+        ArgumentCaptor<Transition<Integer>> argument = ArgumentCaptor.forClass(Transition.class);
+        verify(expReplayMock, times(1)).store(argument.capture());
+        Transition<Integer> transition = argument.getValue();
+
+        assertEquals(1, (int)transition.getAction());
     }
 
     @Test
     public void when_addingExperience_expect_getTrainingBatchSizeReturnSize() {
         // Arrange
-        TestExpReplay expReplayMock = new TestExpReplay();
-        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(expReplayMock);
+        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(10, 5, Nd4j.getRandom());
         sut.addExperience(new Observation(Nd4j.create(new double[] { 1.0 })), 1, 1.0, false);
         sut.addExperience(new Observation(Nd4j.create(new double[] { 2.0 })), 2, 2.0, false);
         sut.setFinalObservation(new Observation(Nd4j.create(new double[] { 3.0 })));
 
         // Act
         int size = sut.getTrainingBatchSize();
+
         // Assert
         assertEquals(2, size);
     }
 
-    private static class TestExpReplay implements IExpReplay<Integer> {
+    @Test
+    public void when_experienceSizeIsSmallerThanBatchSize_expect_TrainingBatchIsNotReady() {
+        // Arrange
+        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(10, 5, Nd4j.getRandom());
+        sut.addExperience(new Observation(Nd4j.create(new double[] { 1.0 })), 1, 1.0, false);
+        sut.addExperience(new Observation(Nd4j.create(new double[] { 2.0 })), 2, 2.0, false);
+        sut.setFinalObservation(new Observation(Nd4j.create(new double[] { 3.0 })));
 
-        public final List<Transition<Integer>> addedTransitions = new ArrayList<>();
+        // Act
 
-        @Override
-        public ArrayList<Transition<Integer>> getBatch() {
-            return null;
-        }
-
-        @Override
-        public void store(Transition<Integer> transition) {
-            addedTransitions.add(transition);
-        }
-
-        @Override
-        public int getBatchSize() {
-            return addedTransitions.size();
-        }
+        // Assert
+        assertFalse(sut.isTrainingBatchReady());
     }
+
+    @Test
+    public void when_experienceSizeIsGreaterOrEqualToBatchSize_expect_TrainingBatchIsReady() {
+        // Arrange
+        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(10, 5, Nd4j.getRandom());
+        sut.addExperience(new Observation(Nd4j.create(new double[] { 1.0 })), 1, 1.0, false);
+        sut.addExperience(new Observation(Nd4j.create(new double[] { 2.0 })), 2, 2.0, false);
+        sut.addExperience(new Observation(Nd4j.create(new double[] { 3.0 })), 3, 3.0, false);
+        sut.addExperience(new Observation(Nd4j.create(new double[] { 4.0 })), 4, 4.0, false);
+        sut.addExperience(new Observation(Nd4j.create(new double[] { 5.0 })), 5, 5.0, false);
+        sut.setFinalObservation(new Observation(Nd4j.create(new double[] { 6.0 })));
+
+        // Act
+
+        // Assert
+        assertTrue(sut.isTrainingBatchReady());
+    }
+
 }

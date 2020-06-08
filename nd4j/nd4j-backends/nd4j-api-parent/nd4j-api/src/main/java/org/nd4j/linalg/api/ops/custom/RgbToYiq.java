@@ -43,11 +43,6 @@ public class RgbToYiq extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "RgbToYiq";
-    }
-
-    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);

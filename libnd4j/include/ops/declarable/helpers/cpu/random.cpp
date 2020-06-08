@@ -68,7 +68,7 @@ namespace helpers {
                                                                         beta != nullptr ? copyBeta->t<T>(e) * u : u);
                     }
                     else {
-                        output->t<T>(pos + e) = math::nd4j_igamma<T, T, T>(copyAlpha->t<T>(e),
+                        output->r<T>(pos + e) = math::nd4j_igamma<T, T, T>(copyAlpha->t<T>(e),
                                                                         beta != nullptr ? copyBeta->t<T>(e) * u : u);
                     }
         }
@@ -121,7 +121,7 @@ namespace helpers {
                 if (directOut)
                     outputBuf[pos + e] = x;
                 else
-                    output->t<T>(pos + e) = x;
+                    output->r<T>(pos + e) = x;
             }
         }
     }
@@ -146,7 +146,7 @@ namespace helpers {
         else {
             PRAGMA_OMP_PARALLEL_FOR
             for (Nd4jLong i = 0; i < output->lengthOf(); i++) {
-                output->t<T>(i) = rng.relativeT<T>(i, minVal, maxVal);
+                output->r<T>(i) = rng.relativeT<T>(i, minVal, maxVal);
             }
         }
     }
@@ -159,12 +159,12 @@ namespace helpers {
     // methods: gumbel trick + softmax + argmax
     template <typename Tx, typename Tz>
     void fillRandomMultiNomial_(LaunchContext* context, graph::RandomGenerator& rng, NDArray& input, NDArray& output, const Nd4jLong numOfSamples, const int dimC) {
-        
+
         const Tx* x = input.bufferAsT<Tx>();
         Tz* z = output.bufferAsT<Tz>();
-        
+
         Tx minVal = DataTypeUtils::min<Tx>();
-        Tx maxVal = 1.0; 
+        Tx maxVal = 1.0;
 
         auto dimA = (0 == dimC) ? 1 : 0;
         const Nd4jLong batchValue = output.sizeAt(dimC);
@@ -178,7 +178,7 @@ namespace helpers {
         auto func = PRAGMA_THREADS_FOR_2D{
                 for (auto nBatchIndex = start_x; nBatchIndex < stop_x; nBatchIndex += inc_x) {
                     for (auto nSampleIndexInBatch = start_y; nSampleIndexInBatch < stop_y; nSampleIndexInBatch += inc_y) {
-                        
+
                         const Tx* xTad = x + (nBatchIndex * xDimCstride);
                         Tz* zTad = z + (nBatchIndex * zDimCstride);
                         Tz& arg = zTad[nSampleIndexInBatch * zDimAstride];

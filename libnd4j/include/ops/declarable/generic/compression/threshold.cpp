@@ -65,7 +65,7 @@ namespace sd {
                 elements = 0;
 
             // result array must have 4 additional int elements for header
-            return SHAPELIST(x->shapeInfo(), sd::ConstantShapeHelper::getInstance()->vectorShapeInfo(elements + 4, DataType::INT32));
+            return SHAPELIST(x->shapeInfo(), sd::ConstantShapeHelper::getInstance().vectorShapeInfo(elements + 4, DataType::INT32));
         }
 
         DECLARE_TYPES(encode_threshold) {

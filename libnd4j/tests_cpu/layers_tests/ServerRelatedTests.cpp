@@ -29,13 +29,13 @@ using namespace sd::graph;
 class ServerRelatedTests : public testing::Test {
 public:
     ServerRelatedTests() {
-        Environment::getInstance()->setDebug(true);
-        Environment::getInstance()->setVerbose(true);
+        Environment::getInstance().setDebug(true);
+        Environment::getInstance().setVerbose(true);
     }
 
     ~ServerRelatedTests() {
-        Environment::getInstance()->setDebug(false);
-        Environment::getInstance()->setVerbose(false);
+        Environment::getInstance().setDebug(false);
+        Environment::getInstance().setVerbose(false);
     }
 };
 /*
@@ -89,9 +89,9 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_1) {
 
     auto exp = NDArrayFactory::create<float>('c', {3}, {3.f, 3.f, 3.f});
 
-    GraphHolder::getInstance()->registerGraph(11901L, oGraph);
+    GraphHolder::getInstance().registerGraph(11901L, oGraph);
 
-    auto cGraph = GraphHolder::getInstance()->cloneGraph(11901L);
+    auto cGraph = GraphHolder::getInstance().cloneGraph(11901L);
 
     ASSERT_TRUE(oGraph != cGraph);
 
@@ -108,7 +108,7 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_1) {
 
     delete cGraph;
 
-    GraphHolder::getInstance()->dropGraphAny(11901L);
+    GraphHolder::getInstance().dropGraphAny(11901L);
 }
 
 TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
@@ -120,9 +120,9 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
     auto input0 = NDArrayFactory::create<float>('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
     auto exp = NDArrayFactory::create<float>('c', {3}, {6.f, 6.f, 6.f});
 
-    GraphHolder::getInstance()->registerGraph(11902L, oGraph);
+    GraphHolder::getInstance().registerGraph(11902L, oGraph);
 
-    auto cGraph = GraphHolder::getInstance()->cloneGraph(11902L);
+    auto cGraph = GraphHolder::getInstance().cloneGraph(11902L);
 
     ASSERT_TRUE(oGraph != cGraph);
 
@@ -148,7 +148,7 @@ TEST_F(ServerRelatedTests, Basic_Execution_Test_2) {
 
     delete cGraph;
 
-    GraphHolder::getInstance()->dropGraphAny(11902L);
+    GraphHolder::getInstance().dropGraphAny(11902L);
 }
 
 TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
@@ -160,7 +160,7 @@ TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
     auto input0 = NDArrayFactory::create<float>('c', {3, 3}, {2.f,2.f,2.f, 2.f,2.f,2.f, 2.f,2.f,2.f});
     auto exp = NDArrayFactory::create<float>('c', {3}, {6.f, 6.f, 6.f});
 
-    GraphHolder::getInstance()->registerGraph(11903L, oGraph);
+    GraphHolder::getInstance().registerGraph(11903L, oGraph);
 
     // mastering InferenceRequest
     InferenceRequest ir(11903L);
@@ -172,7 +172,7 @@ TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
     auto fir = GetFlatInferenceRequest(fptr);
 
 
-    auto flatResult = GraphHolder::getInstance()->execute(fir->id(), builder, fir);
+    auto flatResult = GraphHolder::getInstance().execute(fir->id(), builder, fir);
 
     builder.Finish(flatResult);
     auto ptr = builder.GetBufferPointer();
@@ -183,6 +183,6 @@ TEST_F(ServerRelatedTests, BasicExecutionTests_3) {
 
     ASSERT_EQ(exp, *restored.at(0)->getNDArray());
 
-    GraphHolder::getInstance()->dropGraphAny(11903L);
+    GraphHolder::getInstance().dropGraphAny(11903L);
 }
 #endif

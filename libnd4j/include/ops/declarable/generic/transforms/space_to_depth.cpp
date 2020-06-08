@@ -80,7 +80,7 @@ namespace ops {
         else 
             shape = {{bS, oD, oH, oW }};
 
-        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
+        auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
 }

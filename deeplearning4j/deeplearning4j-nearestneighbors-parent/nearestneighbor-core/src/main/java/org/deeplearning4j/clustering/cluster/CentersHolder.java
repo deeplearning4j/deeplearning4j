@@ -20,7 +20,7 @@ import org.deeplearning4j.clustering.algorithm.Distance;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ReduceOp;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
@@ -29,7 +29,7 @@ public class CentersHolder {
     private long index = 0;
 
     protected transient ReduceOp op;
-    protected IMin imin;
+    protected ArgMin imin;
     protected transient INDArray distances;
     protected transient INDArray argMin;
 
@@ -60,7 +60,7 @@ public class CentersHolder {
 
         if (op == null) {
             op = ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray(), 1);
-            imin = new IMin(distances, argMin);
+            imin = new ArgMin(distances, argMin);
             op.setZ(distances);
         }
 
@@ -84,7 +84,7 @@ public class CentersHolder {
 
         if (op == null) {
             op = ClusterUtils.createDistanceFunctionOp(distanceFunction, centers, point.getArray(), 1);
-            imin = new IMin(distances, argMin);
+            imin = new ArgMin(distances, argMin);
             op.setZ(distances);
         }
 

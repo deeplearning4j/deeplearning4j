@@ -36,7 +36,7 @@ namespace sd {
             auto outputs = _descriptor->getOutputTypesForOutput(0);
             sd::DataType dtype = block.dataType(0);
             if (block.dataType(0) != sd::DataType::BOOL && !(outputs.size() == 1 && outputs[0] == sd::DataType::BOOL)) {
-                if (Environment::getInstance()->isExperimentalBuild()) {
+                if (Environment::getInstance().isExperimentalBuild()) {
                     if (shape::length(y) > shape::length(x)) {
                         dtype = DataTypeUtils::pickPairwiseResultType(y, x);
                     } else {
@@ -51,33 +51,33 @@ namespace sd {
             if(shape::isEmpty(x) || shape::isEmpty(y)) {
                 // this is edge case, [3, 4] + [] = []
                 if ((shape::isEmpty(x) && shape::rank(x) == 0) || (shape::isEmpty(y) && shape::rank(y) == 0)) {
-                    shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor::emptyDescriptor(dtype)));
+                    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor::emptyDescriptor(dtype)));
                     return shapeList;
                 }
 
 
                 const Nd4jLong *newshape = nullptr;
                 ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape, dtype)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newshape, dtype)));
 			} else if (shape::isScalar(x) && shape::isScalar(y)) {
                 if (shape::rank(x) >= shape::rank(y)) {
-                    shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));
+                    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(x, dtype)));
                 } else {
-                    shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(y, dtype)));
+                    shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(y, dtype)));
                 }
             } else if (shape::equalsSoft(x, y)) {
-                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(x, dtype)));
             } else if (shape::isScalar(x) && !shape::isScalar(y)) {
-                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(y, dtype)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(y, dtype)));
             } else if (!shape::isScalar(x) && shape::isScalar(y)) {
-                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(x, dtype)));
             } else if (ShapeUtils::areShapesBroadcastable(x, y)) {
                 const Nd4jLong *newshape = nullptr;
                 ShapeUtils::evalBroadcastShapeInfo(x, y, true, newshape, block.workspace());
-                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newshape, dtype)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newshape, dtype)));
             } else {
                 // in this case we'll throw exception later
-                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x, dtype)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(x, dtype)));
             }
 
             return shapeList;

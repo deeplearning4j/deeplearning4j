@@ -45,7 +45,7 @@ namespace sd {
 
             auto isFOrder = INT_ARG(0) == 1;
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(input), isFOrder ? 'f' : 'c', shape::rank(input), shape::shapeOf(input));
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(input), isFOrder ? 'f' : 'c', shape::rank(input), shape::shapeOf(input));
             return SHAPELIST(newShape);
         }
     }

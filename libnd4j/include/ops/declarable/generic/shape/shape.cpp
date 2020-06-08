@@ -46,7 +46,7 @@ namespace sd {
             if (block.numI() > 0)
                 dtype = DataTypeUtils::fromInt(INT_ARG(0));
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::rank(inShape), dtype));
+            return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(shape::rank(inShape), dtype));
         };
 
         DECLARE_TYPES(shape_of) {

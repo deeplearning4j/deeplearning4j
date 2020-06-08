@@ -32,7 +32,6 @@ namespace sd {
     namespace memory {
         class ND4J_EXPORT MemoryRegistrator {
         protected:
-            static MemoryRegistrator* _INSTANCE;
             Workspace* _workspace;
             MAP_IMPL<Nd4jLong, Nd4jLong> _footprint;
             std::mutex _lock;
@@ -40,7 +39,7 @@ namespace sd {
             MemoryRegistrator();
             ~MemoryRegistrator() = default;
         public:
-            static MemoryRegistrator* getInstance();
+            static MemoryRegistrator& getInstance();
             bool hasWorkspaceAttached();
             Workspace* getWorkspace();
             void attachWorkspace(Workspace* workspace);

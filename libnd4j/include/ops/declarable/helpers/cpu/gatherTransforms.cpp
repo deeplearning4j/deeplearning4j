@@ -116,7 +116,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 output->assign(scalarNDArray);
             } else {
                 auto dimensions = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-                auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimensions);
+                auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimensions);
 
                 auto tadArr = NDArray(reinterpret_cast<void *>(reinterpret_cast<T*>(input->buffer()) + tadPack.primaryOffsets()[indices->e<Nd4jLong>(0)]), tadPack.primaryShapeInfo(), output->getContext());
                 output->assign(&tadArr);

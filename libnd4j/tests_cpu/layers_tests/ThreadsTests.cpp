@@ -208,9 +208,31 @@ TEST_F(ThreadsTests, reduction_test_1) {
     ASSERT_EQ(8192, sum);
 }
 
+static void _code(int thread_id) {
+  auto x = NDArrayFactory::create<float>('c', {65536 * 16});
+  x.assign(1.1f);
+}
+
+TEST_F(ThreadsTests, crash_test_1) {
+  if (!Environment::getInstance().isCPU())
+    return;
+
+  for (int e = 0; e < 3; e++) {
+    std::vector<std::thread> threads(std::thread::hardware_concurrency());
+
+    // creating some threads
+    for (int t = 0; t < threads.size(); t++)
+      threads[t] = std::thread(_code, t);
+
+    // blocking until everything is finished
+    for (auto &t:threads)
+      t.join();
+  }
+}
+
 /*
 TEST_F(ThreadsTests, basic_test_1) {
-    if (!Environment::getInstance()->isCPU())
+    if (!Environment::getInstance().isCPU())
         return;
 
     auto instance = samediff::ThreadPool::getInstance();

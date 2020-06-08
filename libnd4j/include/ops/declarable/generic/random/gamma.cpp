@@ -68,7 +68,7 @@ namespace sd {
             auto dtype = ArrayOptions::dataType(alphaShape);
             for (auto i = 0; i < shape::rank(additionalShape); i++)
                 shape.push_back(shape::sizeAt(additionalShape, i));
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
             return SHAPELIST(newShape);
         }
 

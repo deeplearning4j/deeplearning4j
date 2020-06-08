@@ -115,7 +115,7 @@ namespace broadcast {
                 auto tadOffsets = xTadOffset;
 
                 if (xTadShapeInfo == nullptr || tadOffsets == nullptr) {
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
                     xTadShapeShapeInfo = const_cast<Nd4jLong*>(tadPack.primaryShapeInfo());
                     tadOffsets = const_cast<Nd4jLong*>(tadPack.primaryOffsets());
@@ -135,7 +135,7 @@ namespace broadcast {
 
                 int tadsPerThread = tads / TAD_THRESHOLD;
                 int threads = sd::math::nd4j_max<int>(1, tadsPerThread);
-                threads = sd::math::nd4j_min<int>(threads, sd::Environment::getInstance()->maxThreads());
+                threads = sd::math::nd4j_min<int>(threads, sd::Environment::getInstance().maxThreads());
 
                 auto xEws = shape::elementWiseStride(xTadShapeShapeInfo);
                 auto yEws = shape::elementWiseStride(yShapeInfo);
@@ -280,7 +280,7 @@ namespace broadcast {
                 auto tadOffsets = yTadOffset;
 
                 if (yTadShapeInfo == nullptr || tadOffsets == nullptr) {
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dimension, dimensionLength);
 
                     yTadShapeShapeInfo = const_cast<Nd4jLong*>(tadPack.primaryShapeInfo());
                     tadOffsets = const_cast<Nd4jLong*>(tadPack.primaryOffsets());
@@ -300,7 +300,7 @@ namespace broadcast {
 
                 int tadsPerThread = tads / TAD_THRESHOLD;
                 int threads = sd::math::nd4j_max<int>(1, tadsPerThread);
-                threads = sd::math::nd4j_min<int>(threads, sd::Environment::getInstance()->maxThreads());
+                threads = sd::math::nd4j_min<int>(threads, sd::Environment::getInstance().maxThreads());
 
                 auto yEws = shape::elementWiseStride(yTadShapeShapeInfo);
                 auto xEws = shape::elementWiseStride(xShapeInfo);

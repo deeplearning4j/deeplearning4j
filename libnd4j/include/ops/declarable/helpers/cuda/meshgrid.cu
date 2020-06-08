@@ -104,7 +104,7 @@ namespace helpers {
             hOutBuffers[i] = outArrs[i]->specialBuffer();
 
 
-            auto pack = ConstantTadHelper::getInstance()->tadForDimensions(outArrs[i]->shapeInfo(), {inIndices[i]});
+            auto pack = ConstantTadHelper::getInstance().tadForDimensions(outArrs[i]->shapeInfo(), {inIndices[i]});
             hOutTadShapes[i] = pack.specialShapeInfo();
             hOutTadOffsets[i] = pack.specialOffsets();
             hNumTads[i] = pack.numberOfTads();

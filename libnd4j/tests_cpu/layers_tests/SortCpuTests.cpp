@@ -34,7 +34,7 @@ public:
 
 
 TEST_F(SortCpuTests, test_linear_sort_by_key_1) {
-    if (!Environment::getInstance()->isCPU())
+    if (!Environment::getInstance().isCPU())
         return;
 
     auto k = NDArrayFactory::create<Nd4jLong>('c', {10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
@@ -51,7 +51,7 @@ TEST_F(SortCpuTests, test_linear_sort_by_key_1) {
 }
 
 TEST_F(SortCpuTests, test_linear_sort_by_val_1) {
-    if (!Environment::getInstance()->isCPU())
+    if (!Environment::getInstance().isCPU())
         return;
 
     auto k = NDArrayFactory::create<Nd4jLong>('c', {10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
@@ -68,7 +68,7 @@ TEST_F(SortCpuTests, test_linear_sort_by_val_1) {
 }
 
 TEST_F(SortCpuTests, test_tad_sort_by_key_1) {
-    if (!Environment::getInstance()->isCPU())
+    if (!Environment::getInstance().isCPU())
         return;
 
     auto k = NDArrayFactory::create<Nd4jLong>('c', {2, 10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8,   1, 3, 5, 9, 0, 2, 4, 6, 7, 8});
@@ -86,7 +86,7 @@ TEST_F(SortCpuTests, test_tad_sort_by_key_1) {
 }
 
 TEST_F(SortCpuTests, test_tad_sort_by_val_1) {
-    if (!Environment::getInstance()->isCPU())
+    if (!Environment::getInstance().isCPU())
         return;
 
     auto k = NDArrayFactory::create<Nd4jLong>('c', {2, 10}, {1, 3, 5, 9, 0, 2, 4, 6, 7, 8,   1, 3, 5, 9, 0, 2, 4, 6, 7, 8});

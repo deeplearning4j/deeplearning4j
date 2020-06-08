@@ -49,7 +49,7 @@ namespace sd {
             auto it = INT_ARG(0);
             DataType newType = DataTypeUtils::fromInt(it);
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, newType)));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
         }
 
         DECLARE_TYPES(cast) {

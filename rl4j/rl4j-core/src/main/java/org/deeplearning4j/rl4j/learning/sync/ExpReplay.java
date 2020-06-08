@@ -80,6 +80,11 @@ public class ExpReplay<A> implements IExpReplay<A> {
         //log.info("size: "+storage.size());
     }
 
+    @Override
+    public int getDesignatedBatchSize() {
+        return batchSize;
+    }
+
     public int getBatchSize() {
         int storageSize = storage.size();
         return Math.min(storageSize, batchSize);

@@ -21,15 +21,17 @@
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_argmin)
 
-#include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/axis.h>
+#include <ops/declarable/helpers/reductions.h>
+#include <ops/declarable/CustomOperations.h>
+#include <helpers/ConstantTadHelper.h>
 
 namespace sd {
     namespace ops {
 
         DECLARE_TYPES(argmin) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
+                ->setAllowedInputTypes({ ALL_FLOATS,ALL_INTS })
                     ->setAllowedOutputTypes({ALL_INTS});
         }
 
@@ -39,16 +41,18 @@ namespace sd {
 
             auto output = OUTPUT_VARIABLE(0);
 
+            if (output->isEmpty())
+                return Status::OK();
+
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
                 auto axisVector = INPUT_VARIABLE(1);
                 helpers::adjustAxis(input->rankOf(), axisVector, axis);
+                helpers::argMin(*input, *output, axis);
+            }
+            else {
+                helpers::argMin(*input, *output, axis);
 
-                input->applyIndexReduce(indexreduce::IndexMin, *output, axis);
-            } else {
-                helpers::adjustAxis(input->rankOf(), axis);
-
-                input->applyIndexReduce(indexreduce::IndexMin, *output, axis);
             }
 
             STORE_RESULT(output);
@@ -58,7 +62,7 @@ namespace sd {
 
         DECLARE_SHAPE_FN(argmin) {
             std::vector<int> dims;
-            auto in = inputShape->at(0);
+
             if (block.width() == 1) {
                 dims = *block.getIArguments();
             } else {
@@ -66,23 +70,28 @@ namespace sd {
                 dims = y->template asVectorT<int>();
             }
 
+            auto keepDims = block.numB() ? B_ARG(0) : false;
+            auto dtype = block.numD() ? D_ARG(0) : DataType::INT64;
+
             // we're resolving negative axis here
-            helpers::adjustAxis(shape::rank(in), dims);
+            helpers::adjustAxis(shape::rank(inputShape->at(0)), dims);
 
-            if (dims.size() > 1)
-                std::sort(dims.begin(), dims.end());
+            auto in = inputShape->at(0);
+            for (auto d : dims) {
+                // we have special case here
+                if (d == sd::DataTypeUtils::max<int>())
+                    continue;
 
-            for (auto d:dims) {
-                REQUIRE_TRUE(inputShape->at(0)[d+1] != 0, 0, "ArgMin: you can't reduce along axis with 0 in shape");
+                REQUIRE_TRUE(d < shape::rank(in), 0, "ArgMin: axis can't be above rank")
+                REQUIRE_TRUE(in[d + 1] != 0, 0, "ArgMin: you can't reduce along axis with 0 in shape");
             }
 
             // special case - output is scalar
-            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == sd::DataTypeUtils::max<int>())) {
-                return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::INT64));
+            if (dims.empty() || (dims.size() == 1 && dims.at(0) == sd::DataTypeUtils::max<int>())) {
+                return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(dtype));
             }
 
-            auto newShape = ShapeUtils::evalReduceShapeInfo('c', dims, in, DataType::INT64, false, false, block.getWorkspace());
-            return SHAPELIST(newShape);
+            return SHAPELIST(ShapeUtils::evalReduceShapeInfo('c', dims, inputShape->at(0), dtype, keepDims, false, block.getWorkspace()));
         }
 
     }

@@ -261,6 +261,10 @@ public abstract class DifferentialFunction {
                 if(target.getType() == float.class && value instanceof Double){
                     value = ((Double) value).floatValue();
                 }
+                //Edge case: we store char fields as integers, rather than introduce an extra property
+                if(target.getType() == char.class && value instanceof Integer){
+                    value = (char)((Integer)value).intValue();
+                }
 
                 target.set(this,value);
             } catch (IllegalAccessException e) {

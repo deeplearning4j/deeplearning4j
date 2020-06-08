@@ -24,11 +24,9 @@
 namespace sd {
     namespace ops {
 
-        HashHelper* HashHelper::getInstance() {
-            if (_INSTANCE == 0)
-                _INSTANCE = new HashHelper();
-
-            return _INSTANCE;
+        HashHelper& HashHelper::getInstance() {
+          static HashHelper instance;
+          return instance;
         }
 
         Nd4jLong HashHelper::getLongHash(std::string& str) {
@@ -64,8 +62,6 @@ namespace sd {
 
             return h;
         }
-
-        sd::ops::HashHelper* sd::ops::HashHelper::_INSTANCE = 0;
     }
 }
 

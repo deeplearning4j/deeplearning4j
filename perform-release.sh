@@ -66,7 +66,7 @@ if [[ "${SKIP_BUILD}" == "0" ]]; then
     source change-spark-versions.sh 1
     source change-scala-versions.sh 2.10
     source change-cuda-versions.sh 8.0
-    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=8.0 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+    mvn clean deploy -Dgpg.executable=gpg2 -Prelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=8.0 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
 
     if [[ -z ${STAGING_REPOSITORY:-} ]]; then
         # create new staging repository with everything in it
@@ -79,10 +79,10 @@ if [[ "${SKIP_BUILD}" == "0" ]]; then
 
     source change-scala-versions.sh 2.11
     source change-cuda-versions.sh 9.0
-    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=9.0 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
+    mvn clean deploy -Dgpg.executable=gpg2 -Prelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=9.0 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY
     source change-spark-versions.sh 2
     source change-cuda-versions.sh 9.2
-    mvn clean deploy -Dgpg.executable=gpg2 -DperformRelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=9.2 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Dspark.major.version=2
+    mvn clean deploy -Dgpg.executable=gpg2 -Prelease -Dlocal.software.repository=$RELEASE_PROFILE -Dmaven.test.skip -Dlibnd4j.cuda=9.2 -Denforcer.skip -DstagingRepositoryId=$STAGING_REPOSITORY -Dspark.major.version=2
 
     source change-spark-versions.sh 1
     source change-scala-versions.sh 2.11

@@ -43,9 +43,12 @@
 #include <array>
 #include <performance/benchmarking/FullBenchmarkSuit.h>
 #include <performance/benchmarking/LightBenchmarkSuit.h>
-
+#include <random>
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <ops/declarable/helpers/addBias.h>
+#include <ops/declarable/helpers/axis.h>
+#include <ops/declarable/helpers/reductions.h>
+#include <helpers/LoopsCoordsHelper.h>
 
 using namespace sd;
 using namespace sd::graph;
@@ -56,8 +59,6 @@ public:
     int poolSize = 10;
 
     PlaygroundTests() {
-        printf("\n");
-        fflush(stdout);
     }
 };
 
@@ -123,12 +124,12 @@ TEST_F(PlaygroundTests, test_bert_full_1) {
 
 */
 
-    sd::Environment::getInstance()->setProfiling(true);
+    sd::Environment::getInstance().setProfiling(true);
     auto profile = GraphProfilingHelper::profile(graph, 1);
 
     profile->printOut();
 
-    sd::Environment::getInstance()->setProfiling(false);
+    sd::Environment::getInstance().setProfiling(false);
     delete profile;
 
 /*
@@ -184,12 +185,12 @@ TEST_F(PlaygroundTests, test_bert_1) {
     ASSERT_EQ(z, *array);
 
 */
-    sd::Environment::getInstance()->setProfiling(true);
+    sd::Environment::getInstance().setProfiling(true);
     auto profile = GraphProfilingHelper::profile(graph, 1);
 
     profile->printOut();
 
-    sd::Environment::getInstance()->setProfiling(false);
+    sd::Environment::getInstance().setProfiling(false);
     delete profile;
 
 /*
@@ -236,12 +237,12 @@ TEST_F(PlaygroundTests, test_bert_2) {
     ASSERT_EQ(z, *array);
 */
 
-    sd::Environment::getInstance()->setProfiling(true);
+    sd::Environment::getInstance().setProfiling(true);
     auto profile = GraphProfilingHelper::profile(graph, 1);
 
     profile->printOut();
 
-    sd::Environment::getInstance()->setProfiling(false);
+    sd::Environment::getInstance().setProfiling(false);
     delete profile;
 
 /*
@@ -275,6 +276,256 @@ TEST_F(PlaygroundTests, test_one_off_ops_1) {
     op.execute({&x, &y}, {&z});
 }
 
+#if defined(INDEX_REDUCTIONS_BENCH_TESTS)
+//temporarly, testing against the original one
+void original_argmax(const NDArray& input, std::vector<int>& axis, NDArray& output) {
+    sd::ops::helpers::adjustAxis(input.rankOf(), axis);
+    input.applyIndexReduce(sd::indexreduce::IndexMax, output, axis);
+}
+
+template<typename T>
+void fill_random(sd::NDArray& arr) {
+    Nd4jLong coords[MAX_RANK] = {};
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    //for floats
+    std::uniform_real_distribution<T> dis((T)-10.0, (T)22.9);
+    T* x = arr.bufferAsT<T>();
+    Nd4jLong* shapeInfo = arr.getShapeInfo();
+    Nd4jLong* strides = arr.stridesOf();
+    Nd4jLong rank = shapeInfo[0];
+    Nd4jLong* bases = &(shapeInfo[1]);
+    size_t t = 1;
+    for (size_t i = 0; i < rank ; i++) {
+        t *= bases[i];
+    }
+    size_t offset = 0;
+    if (arr.ordering() == 'c') {
+
+        for (size_t i = 0; i < t; i++) {
+            x[offset] = dis(gen) ;
+            offset = sd::inc_coords(bases, strides, coords, offset, rank);
+        }
+
+    }
+    else {
+
+        for (size_t i = 0; i < t; i++) {
+            x[offset] = dis(gen) ;
+            offset = sd::inc_coords<false>(bases, strides, coords, offset, rank);
+        }
+
+    }
+}
+ 
+void testLegacy(bool random) {
+#if 0
+    int bases[] = { 3, 2, 4, 5, 7 };
+    constexpr int Loop = 1;
+#else
+    int bases[] = { 8, 32, 64, 32, 64 };
+    constexpr int Loop = 10;
+#endif
+    constexpr int N = 5;
+
+    auto x = NDArrayFactory::create<float>('c', { bases[0], bases[1], bases[2], bases[3], bases[4] });
+    if (!random) {
+        x.linspace(1);
+    }
+    else{
+        fill_random<float>(x);
+     }
+
+#define COMBINATIONS 1
+#if COMBINATIONS
+//https://www.rosettacode.org/wiki/Combinations#C.2B.2B
+for (int k = N; k >= 1; k--) {
+
+    std::string bitmask(k, 1); // K leading 1's
+    bitmask.resize(N, 0); // N-K trailing 0's
+
+    do {
+
+
+        std::vector<int> dimension;
+
+        std::vector<Nd4jLong> output_bases;
+
+        for (int i = 0; i < N; ++i) // [0..N-1] integers
+        {
+            if (bitmask[i])  dimension.push_back(i);
+            else {
+                output_bases.push_back(bases[i]);
+            }
+        }
+#else
+std::vector<int> dimension = { 0,1,2,3 };
+int k = 4;
+#endif
+auto dim = NDArrayFactory::create<int>(dimension);
+
+#if 1 
+nd4j_printf("C(N:%d K:%d) \n", N, k);
+dim.printIndexedBuffer("Dimension");
+for (int xind : dimension) {
+    nd4j_printf(" %d ,", bases[xind]);
+}
+nd4j_printf("%s", "\n");
+#endif
+
+
+
+std::vector<Nd4jLong> values;
+sd::ResultSet result;
+for (int e = 0; e < Loop; e++) {
+    auto timeStart = std::chrono::system_clock::now();
+    NDArray exp = output_bases.size() > 0 ? NDArrayFactory::create<Nd4jLong>('c', output_bases) : NDArrayFactory::create<Nd4jLong>(0);
+    original_argmax(x, dimension, exp);
+    auto timeEnd = std::chrono::system_clock::now();
+    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+    values.emplace_back(outerTime);
+}
+ 
+std::sort(values.begin(), values.end());
+
+nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+#if COMBINATIONS
+
+    } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+
+}
+#endif
+}
+
+#define DEBUG 1
+
+void testNewReduction(bool random, bool checkCorrectness = false , char order ='c') {
+    std::vector<Nd4jLong> arr_dimensions;
+#if defined(DEBUG)
+    int bases[] = { 3, 2, 3, 3, 5 ,4,7,4,7,7 };
+    constexpr int Loop = 1;
+    constexpr int N = 10;
+#else
+    int bases[] = { 8, 32, 64, 32, 64 };
+    constexpr int Loop = 10;
+    constexpr int N = 5;
+
+#endif
+    
+    for (int i = 0; i < N; i++) {
+        arr_dimensions.push_back(bases[i]);
+    }
+    auto x = NDArrayFactory::create<float>(order,arr_dimensions);
+    if (!random) {
+        x.linspace(1);
+    }
+    else {
+        fill_random<float>(x);
+    }
+
+#define COMBINATIONS 1
+#if COMBINATIONS
+    //https://www.rosettacode.org/wiki/Combinations#C.2B.2B
+    for (int k = N; k >= 1; k--) {
+
+        std::string bitmask(k, 1); // K leading 1's
+        bitmask.resize(N, 0); // N-K trailing 0's
+
+        do {
+
+
+            std::vector<int> dimension;
+
+            std::vector<Nd4jLong> output_bases;
+
+            for (int i = 0; i < N; ++i) // [0..N-1] integers
+            {
+                if (bitmask[i])  dimension.push_back(i);
+                else {
+                    output_bases.push_back(bases[i]);
+                }
+            }
+#else
+    std::vector<int> dimension = { 0,1,2,3 };
+    int k = 4;
+#endif
+    auto dim = NDArrayFactory::create<int>(dimension);
+
+#if 1 
+    nd4j_printf("C(N:%d K:%d) \n", N, k);
+    dim.printIndexedBuffer("Dimension");
+    for (int xind : dimension) {
+        nd4j_printf(" %d ,", bases[xind]);
+    }
+    nd4j_printf("%s", "\n");
+#endif
+
+
+    sd::ops::argmax op;
+    std::vector<Nd4jLong> values;
+    sd::ResultSet result;
+    for (int e = 0; e < Loop; e++) {
+        auto timeStart = std::chrono::system_clock::now();
+        result = op.evaluate({ &x, &dim }, {}, {});
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    }
+    auto z = result.at(0);
+
+    if (checkCorrectness) {
+        //check for the correctness
+        NDArray exp = output_bases.size() > 0 ? NDArrayFactory::create<Nd4jLong>('c', output_bases) : NDArrayFactory::create<Nd4jLong>(0);
+        original_argmax(x, dimension, exp);
+   
+
+#if  0// defined(DEBUG)
+     x.printIndexedBuffer("X");
+    exp.printIndexedBuffer("Expected");
+    z->printIndexedBuffer("Z");
+#endif
+ 
+        ASSERT_TRUE(exp.isSameShape(z));
+        ASSERT_TRUE(exp.equalsTo(z));
+    }
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
+#if COMBINATIONS
+
+        } while (std::prev_permutation(bitmask.begin(), bitmask.end()));
+
+    }
+#endif
+}
+
+constexpr bool test_corr = true;
+#if !defined(DEBUG)
+TEST_F(PlaygroundTests, ArgMaxPerfLinspace) {
+    testNewReduction(false, test_corr);
+}
+#endif
+ 
+TEST_F(PlaygroundTests, ArgMaxPerfRandom) {
+    testNewReduction(true, test_corr);
+}
+
+TEST_F(PlaygroundTests, ArgMaxPerfRandomOrderF) {
+    testNewReduction(true, test_corr, 'f');
+}
+ 
+#if !defined(DEBUG)
+TEST_F(PlaygroundTests, ArgMaxPerfLegacyLinspace) {
+    testLegacy(false);
+}
+
+TEST_F(PlaygroundTests, ArgMaxPerfLegacyRandom) {
+    testLegacy(true);
+}
+
+#endif
+
+#endif
 
 /*
 
@@ -380,7 +631,7 @@ TEST_F(PlaygroundTests, test_s_0) {
 
     for (auto shape: shapes) {
         for (auto t: threads) {
-            sd::Environment::getInstance()->setMaxMasterThreads(t);
+            sd::Environment::getInstance().setMaxMasterThreads(t);
 
             auto x = NDArrayFactory::create<float>('c', shape);
             auto y = NDArrayFactory::create<float>('c', {shape[3]});
@@ -419,7 +670,7 @@ TEST_F(PlaygroundTests, test_s_1) {
 
     for (auto shape: shapes) {
         for (auto t: threads) {
-            sd::Environment::getInstance()->setMaxMasterThreads(t);
+            sd::Environment::getInstance().setMaxMasterThreads(t);
 
             auto x = NDArrayFactory::create<float>('c', shape);
             auto y = NDArrayFactory::create<float>('c', {shape[1]});
@@ -915,6 +1166,529 @@ TEST_F(PlaygroundTests, lstmLayerCellBp_1) {
 }
 
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_1) {
+
+    const int sL   = 3;
+    const int bS   = 2;
+    const int nIn  = 2;
+    const int nOut = 3;
+
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 0;    // forward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // dLdh per each time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;  // cells state at last time step
+
+    const double cellClip = 0.5;       // clipping
+
+    NDArray x('c', {sL, bS, nIn}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {4*nOut}, sd::DataType::DOUBLE);
+    NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {sL, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
+
+    x.linspace(-2,0.1);
+    hI.linspace(-1.5,0.1);
+    cI.linspace(0.7,-0.1);
+    Wx.linspace(1,-0.1);
+    Wr.linspace(-1,0.1);
+    Wp.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+
+    sd::ops::lstmLayer opFF;
+    sd::ops::lstmLayer_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_2) {
+
+    const int sL   = 3;
+    const int bS   = 2;
+    const int nIn  = 2;
+    const int nOut = 3;
+
+    const int dataFormat = 1;       // [bS,sL,nIn]
+    const int directionMode = 0;    // forward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = false;  // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
+
+    const double cellClip = 0.5;       // clipping
+
+    NDArray x('c', {bS, sL, nIn}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {4*nOut}, sd::DataType::DOUBLE);
+    NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {bS, sL, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
+
+    x.linspace(-2,0.1);
+    hI.linspace(-1.5,0.1);
+    cI.linspace(0.7,-0.1);
+    Wx.linspace(1,-0.1);
+    Wr.linspace(-1,0.1);
+    Wp.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
+
+    sd::ops::lstmLayer opFF;
+    sd::ops::lstmLayer_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, std::vector<bool>(), {0., 1.}, GradCheck::LossFunc::MEAN);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_3) {
+
+    const int sL   = 4;
+    const int bS   = 3;
+    const int nIn  = 3;
+    const int nOut = 2;
+
+    const int dataFormat = 2;       // [bS, nIn, sL]
+    const int directionMode = 0;    // forward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = true;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // dLdh per each time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
+
+    const double cellClip = 0.5;       //  clipping
+
+    NDArray x('c', {bS, nIn, sL}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {4*nOut}, sd::DataType::DOUBLE);
+    NDArray seqLen('c', {bS}, {2,0,4}, sd::DataType::DOUBLE);
+    NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {bS, nOut, sL}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
+
+    x.linspace(-2,0.1);
+    hI.linspace(-1.5,0.1);
+    cI.linspace(0.7,-0.1);
+    Wx.linspace(1,-0.1);
+    Wr.linspace(-1,0.1);
+    Wp.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+
+    sd::ops::lstmLayer opFF;
+    sd::ops::lstmLayer_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_4) {
+
+    const int sL   = 3;
+    const int bS   = 2;
+    const int nIn  = 2;
+    const int nOut = 3;
+
+    const int dataFormat = 1;       // [bS,sL,nIn]
+    const int directionMode = 1;    // backward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // dLdh per each time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
+
+    const double cellClip = 0.5;       // clipping
+
+    NDArray x('c', {bS, sL, nIn}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {4*nOut}, sd::DataType::DOUBLE);
+    NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {bS, sL, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
+
+    x.linspace(-2,0.1);
+    hI.linspace(-1.5,0.1);
+    cI.linspace(0.7,-0.1);
+    Wx.linspace(1,-0.1);
+    Wr.linspace(-1,0.1);
+    Wp.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+
+    sd::ops::lstmLayer opFF;
+    sd::ops::lstmLayer_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_5) {
+
+    const int sL   = 3;
+    const int bS   = 2;
+    const int nIn  = 2;
+    const int nOut = 2;
+
+    const int dataFormat = 2;       // [bS, nIn, sL]
+    const int directionMode = 1;    // backward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = true;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // dLdh per each time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
+
+    const double cellClip = 0.5;       // clipping
+
+    NDArray x('c', {bS, nIn, sL}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {nIn, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wr('c', {nOut, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {4*nOut}, sd::DataType::DOUBLE);
+    NDArray seqLen('c', {bS}, {0,2}, sd::DataType::DOUBLE);
+    NDArray hI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray cI('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray Wp('c', {3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {bS, nOut, sL}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {bS, nOut}, sd::DataType::DOUBLE);
+
+    x.linspace(-2,0.1);
+    hI.linspace(-1.5,0.1);
+    cI.linspace(0.7,-0.1);
+    Wx.linspace(1,-0.1);
+    Wr.linspace(-1,0.1);
+    Wp.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+
+    sd::ops::lstmLayer opFF;
+    sd::ops::lstmLayer_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_6) {
+
+    const int sL   = 3;
+    const int bS   = 2;
+    const int nIn  = 2;
+    const int nOut = 2;
+
+    const int dataFormat = 2;       // [bS, nIn, sL]
+    const int directionMode = 2;    // bidirectional sum
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = true;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // dLdh per each time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
+
+    const double cellClip = 0.5;       // clipping
+
+    NDArray x('c', {bS, nIn, sL}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {2, nIn, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wr('c', {2, nOut, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {2, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray seqLen('c', {bS}, {0,2}, sd::DataType::DOUBLE);
+    NDArray hI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray cI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray Wp('c', {2, 3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {bS, nOut, sL}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+
+    x.linspace(-2,0.1);
+    hI.linspace(-1.5,0.1);
+    cI.linspace(0.7,-0.1);
+    Wx.linspace(1,-0.1);
+    Wr.linspace(-1,0.1);
+    Wp.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdcL}, tArgs, iArgs, bArgs);
+
+    sd::ops::lstmLayer opFF;
+    sd::ops::lstmLayer_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_7) {
+
+    const int sL   = 3;
+    const int bS   = 2;
+    const int nIn  = 2;
+    const int nOut = 2;
+
+    const int dataFormat = 1;       // [bS,sL,nIn]
+    const int directionMode = 3;    // bidirectional concat
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = true;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // dLdh per each time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
+
+    const double cellClip = 0.5;       // clipping
+
+    NDArray x('c', {bS,sL,nIn}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {2, nIn, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wr('c', {2, nOut, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {2, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray seqLen('c', {bS}, {0,2}, sd::DataType::DOUBLE);
+    NDArray hI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray cI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray Wp('c', {2, 3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {bS,sL,2*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+
+    x.linspace(-2,0.1);
+    hI.linspace(-1.5,0.1);
+    cI.linspace(0.7,-0.1);
+    Wx.linspace(1,-0.1);
+    Wr.linspace(-1,0.1);
+    Wp.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdcL}, tArgs, iArgs, bArgs);
+
+    sd::ops::lstmLayer opFF;
+    sd::ops::lstmLayer_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_bp_8) {
+
+    const int sL   = 3;
+    const int bS   = 2;
+    const int nIn  = 2;
+    const int nOut = 2;
+
+    const int dataFormat = 3;       // [sL, bS, nIn]
+    const int directionMode = 4;    // bidirectional extra output dim
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = true;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // dLdh per each time step
+    const auto retLastH   = true;   // output at last time step
+    const auto retLastC   = true;   // cells state at last time step
+
+    const double cellClip = 0.5;       // clipping
+
+    NDArray x('c', {sL, bS, nIn}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {2, nIn, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray Wr('c', {2, nOut, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {2, 4*nOut}, sd::DataType::DOUBLE);
+    NDArray seqLen('c', {bS}, {0,2}, sd::DataType::DOUBLE);
+    NDArray hI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray cI('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray Wp('c', {2, 3*nOut}, sd::DataType::DOUBLE);
+    NDArray dLdh('c', {sL, 2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdhL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+    NDArray dLdcL('c', {2, bS, nOut}, sd::DataType::DOUBLE);
+
+    x.linspace(-2,0.1);
+    hI.linspace(-1.5,0.1);
+    cI.linspace(0.7,-0.1);
+    Wx.linspace(1,-0.1);
+    Wr.linspace(-1,0.1);
+    Wp.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    std::vector<double>   tArgs = {cellClip};
+    std::vector<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::vector<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    const OpArgsHolder argsHolderFF({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+    const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL, &dLdcL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdh}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdhL}, tArgs, iArgs, bArgs);
+    // const OpArgsHolder argsHolderBP({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp, &dLdcL}, tArgs, iArgs, bArgs);
+
+    sd::ops::lstmLayer opFF;
+    sd::ops::lstmLayer_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, false, true, true, true});
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, gru_bp_1) {
+
+    const int sL = 3;
+    const int bS = 2;
+    const int nIn = 5;
+    const int nOut = 4;
+
+
+    NDArray x('c', {sL, bS, nIn}, {0.5,  1. ,  1.5,  2. ,  2.5, 3. ,  3.5,  4. ,  4.5,  5. ,  5.5,  6. ,  6.5,  7. ,  7.5, 8. ,  8.5,  9. ,  9.5, 10. ,  10.5, 11. , 11.5, 12. , 12.5, 13. , 13.5, 14. , 14.5, 15.}, sd::DataType::DOUBLE);
+    NDArray hI('c', {bS, nOut}, {-3,-2,-1,0,1,2,3,4}, sd::DataType::DOUBLE);
+    NDArray Wx('c', {nIn, 3*nOut}, sd::DataType::DOUBLE);
+    NDArray Wh('c', {nOut, 3*nOut}, sd::DataType::DOUBLE);
+    NDArray b('c', {3*nOut}, sd::DataType::DOUBLE);
+
+    NDArray dLdh('c', {sL, bS, nOut}, sd::DataType::DOUBLE);
+
+    Wx.linspace(1,-0.1);
+    Wh.linspace(0.2,0.2);
+    b.linspace(1,-0.15);
+
+    const OpArgsHolder argsHolderFF({&x, &hI, &Wx, &Wh, &b}, {}, {});
+    const OpArgsHolder argsHolderBP({&x, &hI, &Wx, &Wh, &b, &dLdh}, {}, {});
+
+    sd::ops::gru opFF;
+    sd::ops::gru_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+}
 
 */
 

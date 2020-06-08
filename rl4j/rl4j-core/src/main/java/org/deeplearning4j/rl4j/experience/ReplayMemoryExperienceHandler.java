@@ -36,6 +36,7 @@ import java.util.List;
 public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, Transition<A>> {
     private static final int DEFAULT_MAX_REPLAY_MEMORY_SIZE = 150000;
     private static final int DEFAULT_BATCH_SIZE = 32;
+    private final int batchSize;
 
     private IExpReplay<A> expReplay;
 
@@ -43,6 +44,7 @@ public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, Tr
 
     public ReplayMemoryExperienceHandler(IExpReplay<A> expReplay) {
         this.expReplay = expReplay;
+        this.batchSize = expReplay.getDesignatedBatchSize();
     }
 
     public ReplayMemoryExperienceHandler(int maxReplayMemorySize, int batchSize, Random random) {
@@ -62,6 +64,11 @@ public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, Tr
     @Override
     public int getTrainingBatchSize() {
         return expReplay.getBatchSize();
+    }
+
+    @Override
+    public boolean isTrainingBatchReady() {
+        return expReplay.getBatchSize() >= batchSize;
     }
 
     /**

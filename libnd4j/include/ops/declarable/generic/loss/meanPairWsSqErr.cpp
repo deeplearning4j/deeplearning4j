@@ -200,7 +200,7 @@ namespace sd {
             Nd4jLong const* outShapeInfo = nullptr;
 
             if(INT_ARG(0) != 0) 			// in this case output is scalar
-                outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
+                outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
             else { 							// in this case output has the shape as labels and logits minus last dimension
                 std::vector<int> dimensions = {-1};
                 outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(predictionsShapeInfo), dimensions, predictionsShapeInfo, false, true, block.getWorkspace());

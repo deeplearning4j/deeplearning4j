@@ -31,31 +31,29 @@ namespace sd {
         template <typename OpName>
         __registrator<OpName>::__registrator() {
             auto ptr = new OpName();
-            OpRegistrator::getInstance()->registerOperation(ptr);
+            OpRegistrator::getInstance().registerOperation(ptr);
         }
 
 
         template <typename OpName>
         __registratorSynonym<OpName>::__registratorSynonym(const char *name, const char *oname) {
-            auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperation(oname));
+            auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance().getOperation(oname));
             if (ptr == nullptr) {
                 std::string newName(name);
                 std::string oldName(oname);
 
-                OpRegistrator::getInstance()->updateMSVC(sd::ops::HashHelper::getInstance()->getLongHash(newName), oldName);
+                OpRegistrator::getInstance().updateMSVC(sd::ops::HashHelper::getInstance().getLongHash(newName), oldName);
                 return;
             }
-            OpRegistrator::getInstance()->registerOperation(name, ptr);
+            OpRegistrator::getInstance().registerOperation(name, ptr);
         }
 
         ///////////////////////////////
 
 
-        OpRegistrator* OpRegistrator::getInstance() {
-            if (!_INSTANCE)
-                _INSTANCE = new sd::ops::OpRegistrator();
-
-            return _INSTANCE;
+        OpRegistrator& OpRegistrator::getInstance() {
+          static OpRegistrator instance;
+          return instance;
         }
 
 
@@ -89,21 +87,15 @@ namespace sd {
         }
 
         void OpRegistrator::sigIntHandler(int sig) {
-#ifndef _RELEASE
-            delete OpRegistrator::getInstance();
-#endif
+
         }
 
         void OpRegistrator::exitHandler() {
-#ifndef _RELEASE
-            delete OpRegistrator::getInstance();
-#endif
+
         }
 
         void OpRegistrator::sigSegVHandler(int sig) {
-#ifndef _RELEASE
-            delete OpRegistrator::getInstance();
-#endif
+
         }
 
         OpRegistrator::~OpRegistrator() {
@@ -156,7 +148,7 @@ namespace sd {
             std::pair<std::string, sd::ops::DeclarableOp*> pair(str, op);
             _declarablesD.insert(pair);
 
-            auto hash = sd::ops::HashHelper::getInstance()->getLongHash(str);
+            auto hash = sd::ops::HashHelper::getInstance().getLongHash(str);
             std::pair<Nd4jLong, sd::ops::DeclarableOp*> pair2(hash, op);
             _declarablesLD.insert(pair2);
             return true;
@@ -256,8 +248,6 @@ namespace sd {
 
             return result;
         }
-
-        sd::ops::OpRegistrator* sd::ops::OpRegistrator::_INSTANCE = 0;
     }
 }
 

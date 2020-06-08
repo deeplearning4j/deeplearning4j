@@ -919,17 +919,12 @@ namespace simdOps {
 	template <typename X, typename Y, typename Z>
 	class Mod {
 	public:
-		/*
-
-		 // just a optional note, feel free to remove later
-
-		op_def static half op(half d1, half d2, half *params) {
-			return __float2half(simdOps::Mod<float>::op(__half2float(d1), __half2float(d2), nullptr));
-		}
-		 */
 
 		op_def static Z op(X d1, Y d2) {
-            return static_cast<int>(d1) % static_cast<int>(d2);
+		  auto dx = static_cast<X>(d2);
+		  auto f = sd::math::nd4j_floor<X, X>(d1 / dx);
+		  auto r = f * dx;
+		  return d1 - r;
         }
 
 		op_def static Z op(X d1, Y d2, Z *params) {

@@ -31,8 +31,6 @@ namespace sd {
     namespace ops {
         class ND4J_EXPORT HashHelper {
         private:
-            static HashHelper* _INSTANCE;
-
             Nd4jLong _byteTable[256];
             const Nd4jLong HSTART = 0xBB40E64DA205B064L;
             const Nd4jLong HMULT = 7664345821815920749L;
@@ -41,7 +39,7 @@ namespace sd {
             std::mutex _locker;
 
         public:
-            static HashHelper* getInstance();
+            static HashHelper& getInstance();
             Nd4jLong getLongHash(std::string& str);
         };
     }

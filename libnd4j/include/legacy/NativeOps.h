@@ -1567,8 +1567,9 @@ ND4J_EXPORT void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd
 
 
 typedef sd::ConstantDataBuffer OpaqueConstantDataBuffer;
+typedef sd::ConstantShapeBuffer OpaqueConstantShapeBuffer;
 
-ND4J_EXPORT OpaqueConstantDataBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, sd::DataType dtype, char order, Nd4jLong ews, bool empty);
+ND4J_EXPORT OpaqueConstantShapeBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, sd::DataType dtype, char order, Nd4jLong ews, bool empty);
 
 ND4J_EXPORT OpaqueConstantDataBuffer* constantBufferLong(sd::DataType dtype, Nd4jLong const* data, int length);
 ND4J_EXPORT OpaqueConstantDataBuffer* constantBufferDouble(sd::DataType dtype, double *data, int length);
@@ -1577,9 +1578,12 @@ ND4J_EXPORT OpaqueConstantDataBuffer* constantBuffer(sd::DataType dtype, sd::Con
 ND4J_EXPORT Nd4jPointer getConstantDataBufferPrimary(OpaqueConstantDataBuffer* dbf);
 ND4J_EXPORT Nd4jPointer getConstantDataBufferSpecial(OpaqueConstantDataBuffer* dbf);
 ND4J_EXPORT Nd4jLong getConstantDataBufferLength(OpaqueConstantDataBuffer* dbf);
-ND4J_EXPORT Nd4jLong getConstantDataBufferSizeOf(OpaqueConstantDataBuffer* dbf);
 
-ND4J_EXPORT void deleteShapeBuffer(OpaqueConstantDataBuffer* ptr);
+ND4J_EXPORT Nd4jPointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer* dbf);
+ND4J_EXPORT Nd4jPointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer* dbf);
+
+ND4J_EXPORT void deleteConstantShapeBuffer(OpaqueConstantShapeBuffer* ptr);
+ND4J_EXPORT void deleteConstantDataBuffer(OpaqueConstantDataBuffer* ptr);
 
 typedef sd::graph::Context OpaqueContext;
 typedef sd::graph::RandomGenerator OpaqueRandomGenerator;
@@ -1606,6 +1610,8 @@ ND4J_EXPORT OpaqueRandomGenerator* createRandomGenerator(Nd4jLong rootSeed = 0, 
 ND4J_EXPORT Nd4jLong getRandomGeneratorRootState(OpaqueRandomGenerator* ptr);
 ND4J_EXPORT Nd4jLong getRandomGeneratorNodeState(OpaqueRandomGenerator* ptr);
 ND4J_EXPORT void setRandomGeneratorStates(OpaqueRandomGenerator* ptr, Nd4jLong rootSeed = 0, Nd4jLong nodeSeed = 0);
+ND4J_EXPORT float getRandomGeneratorRelativeFloat(OpaqueRandomGenerator* ptr, Nd4jLong index);
+ND4J_EXPORT double getRandomGeneratorRelativeDouble(OpaqueRandomGenerator* ptr, Nd4jLong index);
 ND4J_EXPORT int getRandomGeneratorRelativeInt(OpaqueRandomGenerator* ptr, Nd4jLong index);
 ND4J_EXPORT Nd4jLong getRandomGeneratorRelativeLong(OpaqueRandomGenerator* ptr, Nd4jLong index);
 ND4J_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator* ptr);

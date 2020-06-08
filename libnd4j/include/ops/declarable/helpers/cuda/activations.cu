@@ -321,8 +321,8 @@ void softmax(sd::LaunchContext * context, const NDArray& input, NDArray& output,
 	}
 	else {
 
-		auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), {dimension});
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.shapeInfo(), {dimension});
+		auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
 
         const int threadsPerBlock = MAX_NUM_THREADS / 4;
         const int blocksPerGrid = packZ.numberOfTads();

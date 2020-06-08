@@ -39,7 +39,7 @@ namespace sd {
             for (int e = 0; e < shape::rank(inputShape->at(0)); e++)
                 shapeOf[e] = inputShape->at(0)[e+1] * 2;
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', shape::rank(inputShape->at(0)), shapeOf);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape::rank(inputShape->at(0)), shapeOf);
             RELEASE(shapeOf, block.getWorkspace());
             return SHAPELIST(newShape);
         }

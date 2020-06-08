@@ -91,8 +91,8 @@ FORCEINLINE static void rgbToFromYuv_(const NDArray& input, NDArray& output, con
         return;
     }
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimC);
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.shapeInfo(), dimC);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimC);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), dimC);
 
     const Nd4jLong numOfTads = packX.numberOfTads();
     const Nd4jLong xDimCstride = input.stridesOf()[dimC];
@@ -149,8 +149,8 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
         samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     }
     else {
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimC);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimC);
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
         const Nd4jLong numOfTads = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];
@@ -199,8 +199,8 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
         samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     }
     else {
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), dimC);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimC);
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
         const Nd4jLong numOfTads = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];

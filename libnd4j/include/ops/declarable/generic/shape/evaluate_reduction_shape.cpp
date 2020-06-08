@@ -34,7 +34,7 @@ namespace sd {
 
             auto shape = inputShape->asVectorT<Nd4jLong>();
 
-            auto tempShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(sd::DataType::INT64, 'c', shape);
+            auto tempShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(sd::DataType::INT64, 'c', shape);
             auto tempReductionShapeInfo = ShapeUtils::evalReduceShapeInfo('c', axis, tempShapeInfo, keepDims, oldFormat, block.workspace());
 
             REQUIRE_TRUE(output->lengthOf() == shape::rank(tempReductionShapeInfo), 0, "evaluate_reduction_shape: output length should be %i, but got %i instead", shape::rank(tempReductionShapeInfo), output->lengthOf());
@@ -73,7 +73,7 @@ namespace sd {
                 }
             }
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(length, sd::DataType::INT64));
+            return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(length, sd::DataType::INT64));
         }
     }
 }

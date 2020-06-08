@@ -682,14 +682,6 @@ public class LegacyOpMapper {
 
     public static Class<?> indexReduceClass(int opNum){
         switch (opNum){
-            case 0:
-                return IMax.class;
-            case 1:
-                return IMin.class;
-            case 2:
-                return IAMax.class;
-            case 3:
-                return IAMin.class;
             case 4:
                 return FirstIndex.class;
             case 5:

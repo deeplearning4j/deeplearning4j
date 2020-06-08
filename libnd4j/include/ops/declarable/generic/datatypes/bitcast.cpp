@@ -64,11 +64,11 @@ namespace sd {
             auto outputSize = DataTypeUtils::sizeOf(newType);
 
             if (shape::length(inShape) == 0)
-                return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, newType)));
+                return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
 
             if (inputSize == outputSize) {
                 // only type should be changed
-                return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, newType)));
+                return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, newType)));
             }
             else if (inputSize > outputSize) {
                 // range of output increased by 1 with inputSize / outputSize as last dimension
@@ -78,7 +78,7 @@ namespace sd {
                     shapeOf[i] = inShape[i + 1];
                 }
                 shapeOf[i] = inputSize / outputSize;
-                auto outputShape = ConstantShapeHelper::getInstance()->createShapeInfo(newType, shape::order(inShape), shapeOf);
+                auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(newType, shape::order(inShape), shapeOf);
                 return SHAPELIST(outputShape);
             }
             REQUIRE_TRUE(shape::sizeAt(inShape, -1) == outputSize / inputSize, 0, "BITCAST: %llu > %llu. So last dimension should be %i, but %i given.", inputSize, outputSize, outputSize / inputSize, shape::sizeAt(inShape, -1));
@@ -88,7 +88,7 @@ namespace sd {
                 shapeOf[i] = inShape[i + 1];
             }
 
-            auto outputShape = ConstantShapeHelper::getInstance()->createShapeInfo(newType, shape::order(inShape), shapeOf);
+            auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(newType, shape::order(inShape), shapeOf);
             return SHAPELIST(outputShape);
         }
 

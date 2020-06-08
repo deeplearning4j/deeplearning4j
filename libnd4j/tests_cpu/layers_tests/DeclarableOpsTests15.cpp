@@ -1923,7 +1923,6 @@ TEST_F(DeclarableOpsTests15, TestTensorMmul_BP17) {
     ASSERT_TRUE(isGradCorrect);
 }
 
-
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests15, gru_1) {
 
@@ -1960,31 +1959,67 @@ TEST_F(DeclarableOpsTests15, gru_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests15, gru_bp_1) {
+TEST_F(DeclarableOpsTests15, sqrtm_1) {
 
-    const int sL = 3;
-    const int bS = 2;
-    const int nIn = 5;
-    const int nOut = 4;
+    NDArray x1('c', {1,1}, {4.}, sd::DataType::DOUBLE);
+    NDArray x2('c', {2,2}, {1.3,2,0.3,.5}, sd::DataType::DOUBLE);
+    NDArray x3('c', {3,3}, {0.5 ,-0.4 ,1.2 ,-2.8 ,-0.2 ,-2.1 ,-2.4 ,-2.0 ,1.1}, sd::DataType::DOUBLE);
+    NDArray x4('c', {4,4}, {0.33 ,-7.25 ,1.71 ,6.20 ,1.34 ,5.38 ,-2.76 ,-8.51 ,7.59 ,3.44 ,2.24 ,-6.82 ,-1.15 ,4.80 ,-4.67 ,2.14}, sd::DataType::DOUBLE);
+    NDArray x5('c', {5,5}, {2.4 ,0.3 ,0.0 ,1.1 ,1.8 ,0.1 ,1.7 ,2.7 ,1.5 ,2.6 ,0.6 ,2.1 ,2.2 ,1.0 ,0.2 ,1.2 ,2.8 ,1.9 ,0.8 ,2.0 ,0.5 ,1.6 ,0.9 ,1.4 ,2.5}, sd::DataType::DOUBLE);
 
+    NDArray exp1('c', {1,1}, {2.}, sd::DataType::DOUBLE);
+    NDArray exp2('c', {2,2}, {1.0163674, 1.3341597,0.200124, 0.4827035}, sd::DataType::DOUBLE);
+    NDArray exp3('c', {3,3}, {6.5692188, 2.6273616,-0.1387864,-16.8404762,-7.0296495, 0.9204148,-11.4664296,-5.834273 , 2.2087478}, sd::DataType::DOUBLE);
+    NDArray exp4('c', {4,4}, {1.161387 ,-1.9343154, 0.230372 , 0.8660897,0.80588  , 3.4045446,-1.0152824,-2.0369467,2.2589629, 1.9674252, 1.5109997,-1.4283141,0.0226356, 1.3032279,-1.00396  , 1.8278487}, sd::DataType::DOUBLE);
+    NDArray exp5('c', {5,5}, {1.4175046,-0.4425298, 0.1846149, 0.3166522, 0.9140631,-0.1929139, 0.2889113, 1.4045273, 0.2600026, 1.552021 , 0.1372758, 0.5703854, 1.3336126, 0.3869317,-0.082492 ,
+                                0.8607272, 3.1792474,-0.9499947, 0.8541668,-1.4243879, 0.0081136,-0.0622248, 0.4534325, 0.4641865, 1.8132138}, sd::DataType::DOUBLE);
 
-    NDArray x('c', {sL, bS, nIn}, {0.5,  1. ,  1.5,  2. ,  2.5, 3. ,  3.5,  4. ,  4.5,  5. ,  5.5,  6. ,  6.5,  7. ,  7.5, 8. ,  8.5,  9. ,  9.5, 10. ,  10.5, 11. , 11.5, 12. , 12.5, 13. , 13.5, 14. , 14.5, 15.}, sd::DataType::DOUBLE);
-    NDArray hI('c', {bS, nOut}, {-3,-2,-1,0,1,2,3,4}, sd::DataType::DOUBLE);
-    NDArray Wx('c', {nIn, 3*nOut}, sd::DataType::DOUBLE);
-    NDArray Wh('c', {nOut, 3*nOut}, sd::DataType::DOUBLE);
-    NDArray b('c', {3*nOut}, sd::DataType::DOUBLE);
+    sd::ops::sqrtm op;
 
-    NDArray dLdh('c', {sL, bS, nOut}, sd::DataType::DOUBLE);
+    auto results = op.evaluate({&x1}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+    ASSERT_TRUE(exp1.isSameShape(results.at(0)));
+    ASSERT_TRUE(exp1.equalsTo(results.at(0)));
 
-    Wx.linspace(1,-0.1);
-    Wh.linspace(0.2,0.2);
-    b.linspace(1,-0.15);
+    results = op.evaluate({&x2}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+    ASSERT_TRUE(exp2.isSameShape(results.at(0)));
+    ASSERT_TRUE(exp2.equalsTo(results.at(0)));
 
-    const OpArgsHolder argsHolderFF({&x, &hI, &Wx, &Wh, &b}, {}, {});
-    const OpArgsHolder argsHolderBP({&x, &hI, &Wx, &Wh, &b, &dLdh}, {}, {});
+    results = op.evaluate({&x3}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+    ASSERT_TRUE(exp3.isSameShape(results.at(0)));
+    ASSERT_TRUE(exp3.equalsTo(results.at(0)));
 
-    sd::ops::gru opFF;
-    sd::ops::gru_bp opBP;
+    results = op.evaluate({&x4}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+    ASSERT_TRUE(exp4.isSameShape(results.at(0)));
+    ASSERT_TRUE(exp4.equalsTo(results.at(0)));
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    results = op.evaluate({&x5}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+    ASSERT_TRUE(exp5.isSameShape(results.at(0)));
+    ASSERT_TRUE(exp5.equalsTo(results.at(0)));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, sqrtm_2) {
+
+    NDArray x('c', {10,10}, {-0.3 ,2.7 ,4.9 ,7.0 ,7.3 ,-1.3 ,0.5 ,9.9 ,-9.4 ,8.4 ,2.2 ,5.2 ,7.6 ,1.2 ,2.0 ,-3.8 ,2.1 ,6.1 ,1.6 ,6.9 ,5.1 ,5.3 ,6.4 ,8.7 ,0.1 ,8.5 ,
+                               3.3 ,1.0 ,6.8 ,0.4 ,0.7 ,3.2 ,7.4 ,6.7 ,1.1 ,7.2 ,6.0 ,7.5 ,9.7 ,5.4 ,9.0 ,6.3 ,0.0 ,4.5 ,8.3 ,7.9 ,3.0 ,6.5 ,0.6 ,8.0 ,9.5 ,3.6 ,1.9 ,6.2 ,0.9 ,4.0 ,4.1 ,
+                               8.1 ,3.9 ,4.3 ,4.7 ,3.7 ,3.4 ,5.8 ,10.0 ,8.6 ,9.3 ,9.1 ,4.6 ,1.4 ,7.8 ,1.5 ,7.7 ,4.2 ,9.6 ,8.2 ,-7.1 ,5.7 ,5.5 ,2.6 ,8.8 ,2.9 ,0.2 ,5.6 ,-2.5 ,8.9 ,2.8 ,0.8 ,1.5 ,3.1 ,3.5 ,4.4 ,2.4 ,9.2 ,-4.8 ,1.7 ,6.6 ,9.8 ,1.8 ,5.9}, sd::DataType::DOUBLE);
+
+    NDArray expZ('c', {10,10}, {1.2779038,  0.0333321,  0.8215617,  0.5736392,  1.3973911, -1.1757741,0.1990005,  1.5893778, -3.0159568,  2.5829108,0.5692253,  2.219431 ,  1.022612 , -0.3131795, -0.1957848, -1.7805065,
+                                0.6668489,  1.1968921,  0.9781974,  1.2007764,0.7028634,  0.7496937,  2.2511438,  2.1945378,  0.2559353,  2.8948612,-0.4306994, -0.9922216,  0.3884369, -1.4174481,
+                                -1.6060233,  0.1571057,  1.432471 ,  0.4508346,  0.0618069, -2.4511742,2.0641709,  2.4751085,  1.84787  ,  3.4146313,0.7774219,  0.768369 , -0.1417226, -0.3970577,  2.9512879,  0.5474537,
+                                0.4991412,  0.7604095,  0.4523091,  1.7813704,2.5998339,  0.9402402, -0.82775  ,  2.3637147, -0.6394584,  4.6181937,-0.1762181, -0.2820475,  0.9280713, -2.1876918,
+                                0.1576249,  0.336376 ,  0.2017592,  0.851786 ,  1.3542577,  1.2752901,2.9718476,  1.1102557,  0.0067319, -0.2652283,0.8839235, -0.2637131,  1.5687876,  0.5156139,  1.9015886,  0.9087172,
+                                -1.5607482,  2.4216275,  1.0399745, -0.4930439,1.3044354,  0.1690006,  0.2106909, -0.2683631, -0.4193939,  1.0233265,0.4571777, -0.2024148,  2.3564855,  1.0442339,
+                                1.1073322,  1.0728525, -0.5917566,  2.2267418, -1.6096582,  2.0685315,0.6800798,  0.4451858, -0.4048465,  1.2347676}, sd::DataType::DOUBLE);
+    sd::ops::sqrtm op;
+
+    auto results = op.evaluate({&x}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+    ASSERT_TRUE(expZ.isSameShape(results.at(0)));
+    ASSERT_TRUE(expZ.equalsTo(results.at(0)));
 }

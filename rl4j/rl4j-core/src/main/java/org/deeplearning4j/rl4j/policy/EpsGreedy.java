@@ -17,16 +17,19 @@
 
 package org.deeplearning4j.rl4j.policy;
 
-import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.rl4j.environment.IActionSchema;
 import org.deeplearning4j.rl4j.learning.IEpochTrainer;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/24/16.
@@ -38,17 +41,59 @@ import org.nd4j.linalg.api.rng.Random;
  * epislon is annealed to minEpsilon over epsilonNbStep steps
  *
  */
-@AllArgsConstructor
 @Slf4j
-public class EpsGreedy<OBSERVATION extends Encodable, A, AS extends ActionSpace<A>> extends Policy<A> {
+public class EpsGreedy<A> extends Policy<A> {
 
-    final private Policy<A> policy;
-    final private MDP<OBSERVATION, A, AS> mdp;
+    final private INeuralNetPolicy<A> policy;
     final private int updateStart;
     final private int epsilonNbStep;
     final private Random rnd;
     final private double minEpsilon;
+
+    private final IActionSchema<A> actionSchema;
+
+    final private MDP<Encodable, A, ActionSpace<A>> mdp;
     final private IEpochTrainer learning;
+
+    // Using agent's (learning's) step count is incorrect; frame skipping makes epsilon's value decrease too quickly
+    private int annealingStep = 0;
+
+    @Deprecated
+    public <OBSERVATION extends Encodable, AS extends ActionSpace<A>> EpsGreedy(Policy<A> policy,
+                                                                                MDP<Encodable, A, ActionSpace<A>> mdp,
+                                                                                int updateStart,
+                                                                                int epsilonNbStep,
+                                                                                Random rnd,
+                                                                                double minEpsilon,
+                                                                                IEpochTrainer learning) {
+        this.policy = policy;
+        this.mdp = mdp;
+        this.updateStart = updateStart;
+        this.epsilonNbStep = epsilonNbStep;
+        this.rnd = rnd;
+        this.minEpsilon = minEpsilon;
+        this.learning = learning;
+
+        this.actionSchema = null;
+    }
+
+    public EpsGreedy(@NonNull Policy<A> policy, @NonNull IActionSchema<A> actionSchema, double minEpsilon, int updateStart, int epsilonNbStep) {
+        this(policy, actionSchema, minEpsilon, updateStart, epsilonNbStep, null);
+    }
+
+    @Builder
+    public EpsGreedy(@NonNull INeuralNetPolicy<A> policy, @NonNull IActionSchema<A> actionSchema, double minEpsilon, int updateStart, int epsilonNbStep, Random rnd) {
+        this.policy = policy;
+
+        this.rnd = rnd == null ? Nd4j.getRandom() : rnd;
+        this.minEpsilon = minEpsilon;
+        this.updateStart = updateStart;
+        this.epsilonNbStep = epsilonNbStep;
+        this.actionSchema = actionSchema;
+
+        this.mdp = null;
+        this.learning = null;
+    }
 
     public NeuralNet getNeuralNet() {
         return policy.getNeuralNet();
@@ -57,6 +102,11 @@ public class EpsGreedy<OBSERVATION extends Encodable, A, AS extends ActionSpace<
     public A nextAction(INDArray input) {
 
         double ep = getEpsilon();
+        if(actionSchema != null) {
+            // Only legacy classes should pass here.
+            throw new RuntimeException("nextAction(Observation observation) should be called when using a AgentLearner");
+        }
+
         if (learning.getStepCount() % 500 == 1)
             log.info("EP: " + ep + " " + learning.getStepCount());
         if (rnd.nextDouble() > ep)
@@ -66,10 +116,31 @@ public class EpsGreedy<OBSERVATION extends Encodable, A, AS extends ActionSpace<
     }
 
     public A nextAction(Observation observation) {
-        return this.nextAction(observation.getData());
+        if(actionSchema == null) {
+            return this.nextAction(observation.getData());
+        }
+
+        A result;
+
+        double ep = getEpsilon();
+        if (annealingStep % 500 == 1) {
+            log.info("EP: " + ep + " " + annealingStep);
+        }
+
+        if (rnd.nextDouble() > ep) {
+            result = policy.nextAction(observation);
+        }
+        else {
+            result = actionSchema.getRandomAction();
+        }
+
+        ++annealingStep;
+
+        return result;
     }
 
     public double getEpsilon() {
-        return Math.min(1.0, Math.max(minEpsilon, 1.0 - (learning.getStepCount() - updateStart) * 1.0 / epsilonNbStep));
+        int step = actionSchema != null ? annealingStep : learning.getStepCount();
+        return Math.min(1.0, Math.max(minEpsilon, 1.0 - (step - updateStart) * 1.0 / epsilonNbStep));
     }
 }

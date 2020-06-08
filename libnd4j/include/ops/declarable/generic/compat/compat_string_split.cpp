@@ -121,8 +121,8 @@ namespace sd {
             // values tensor is going to be vector always
             // indices tensor is going to be vector with length equal to values.length * output rank
 
-            auto valuesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(cnt, sd::DataType::UTF8);
-            auto indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(cnt * (input->rankOf() + 1), sd::DataType::INT64);
+            auto valuesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(cnt, sd::DataType::UTF8);
+            auto indicesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(cnt * (input->rankOf() + 1), sd::DataType::INT64);
 
             return SHAPELIST(indicesShape, valuesShape);
         }

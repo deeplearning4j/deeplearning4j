@@ -62,12 +62,6 @@ public class IsNonDecreasing extends DynamicCustomOp {
         return "is_non_decreasing";
     }
 
-
-    @Override
-    public String tensorflowName() {
-        return "IsNonDecreasing";
-    }
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));

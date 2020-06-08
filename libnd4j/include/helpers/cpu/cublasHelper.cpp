@@ -37,11 +37,9 @@ namespace sd {
 
     }
 
-    CublasHelper* CublasHelper::getInstance() {
-        if (!_INSTANCE)
-            _INSTANCE = new sd::CublasHelper();
-
-        return _INSTANCE;
+    CublasHelper& CublasHelper::getInstance() {
+      static CublasHelper instance;
+      return instance;
     }
 
     void* CublasHelper::handle() {
@@ -55,7 +53,4 @@ namespace sd {
     void* CublasHelper::handle(int deviceId) {
         return nullptr;
     }
-
-
-    sd::CublasHelper* sd::CublasHelper::_INSTANCE = 0;
 }

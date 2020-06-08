@@ -93,7 +93,7 @@ namespace sd {
             auto inP = inputShape->at(0);
 
             std::vector<Nd4jLong> shape({shape::shapeOf(inP)[0], (Nd4jLong) block.getIArguments()->size()});
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inP), 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inP), 'c', shape);
             return SHAPELIST(newShape);
         }
 

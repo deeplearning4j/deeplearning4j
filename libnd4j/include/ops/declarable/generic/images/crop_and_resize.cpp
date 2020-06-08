@@ -76,7 +76,7 @@ namespace sd {
             outputShape[2] = height;
             outputShape[3] = in[4];
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4)));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4)));
         }
 
         DECLARE_TYPES(crop_and_resize) {

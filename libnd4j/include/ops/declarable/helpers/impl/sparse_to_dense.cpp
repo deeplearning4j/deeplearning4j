@@ -50,6 +50,7 @@ namespace sd {
                 // make sure host buffer is updated
                 values.syncToHost();
                 indices.syncToHost();
+                output.syncToHost();
 
                 auto rank = output.rankOf();
 

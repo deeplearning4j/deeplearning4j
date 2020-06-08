@@ -53,8 +53,8 @@ namespace sd {
         DECLARE_SHAPE_FN(max_pool_with_argmax) {
             
             auto in = inputShape->at(0);
-            auto valuesShape = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(in));
-            auto indicesShape = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(in, DataType::INT64));
+            auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in));
+            auto indicesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in, DataType::INT64));
             
             return SHAPELIST(valuesShape, indicesShape);
         }

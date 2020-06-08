@@ -78,7 +78,7 @@ public class CopyOp extends BaseTransformSameOp {
 
     @Override
     public String[] tensorflowNames() {
-        return new String[]{"Copy","DeepCopy","CopyHost"};
+        return new String[]{"Copy"};
     }
 
     @Override

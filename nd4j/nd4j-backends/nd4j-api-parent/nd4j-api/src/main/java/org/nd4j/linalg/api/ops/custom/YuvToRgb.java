@@ -42,10 +42,6 @@ public class YuvToRgb extends DynamicCustomOp {
         return "yuv_to_rgb";
     }
 
-    @Override
-    public String tensorflowName() {
-        return "YuvToRgb";
-    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){

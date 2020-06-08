@@ -2013,7 +2013,6 @@ TYPED_TEST(TypedConvolutionTests1, conv3d_test9) {
 
     ASSERT_TRUE(exp.isSameShape(z));
 
-    shapes->destroy();
     delete shapes;
 }
 

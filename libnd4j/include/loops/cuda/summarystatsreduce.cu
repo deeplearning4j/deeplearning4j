@@ -344,7 +344,7 @@ void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeI
             auto z = reinterpret_cast<Z*>(vz);
             auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
 
-            if (sd::Environment::getInstance()->isDebugAndVerbose())
+            if (sd::Environment::getInstance().isDebugAndVerbose())
                 printf("D16 opNum:[%i]\n", opNum);
 
             summaryStatsReduceT<X,Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
@@ -369,7 +369,7 @@ void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeI
             auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
 
-            if (sd::Environment::getInstance()->isDebugAndVerbose())
+            if (sd::Environment::getInstance().isDebugAndVerbose())
                 printf("F17 opNum:[%i]\n", opNum);
 
             auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
@@ -396,7 +396,7 @@ void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeI
             auto z = static_cast<Z*>(vz);
             auto extraParams = static_cast<Z*>(vextraParams);
 
-            if (sd::Environment::getInstance()->isDebugAndVerbose())
+            if (sd::Environment::getInstance().isDebugAndVerbose())
                 printf("D18 opNum:[%i]\n", opNum);
 
             summaryStatsReduceT<X, Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(

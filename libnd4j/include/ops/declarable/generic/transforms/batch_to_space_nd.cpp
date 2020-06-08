@@ -118,7 +118,7 @@ DECLARE_SHAPE_FN(batch_to_space_nd) {
     for (uint i = 0; i < numOfSpatialDims; ++i)
         outShape[i + 1] = outShape[i + 1] * INPUT_VARIABLE(1)->e<Nd4jLong>(i) - INPUT_VARIABLE(2)->e<uint>(i,0) - INPUT_VARIABLE(2)->e<uint>(i,1);
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outShape));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outShape));
 }
 
 

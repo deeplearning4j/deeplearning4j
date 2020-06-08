@@ -17,6 +17,8 @@
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.linalg.factory.ops.*;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
@@ -50,8 +52,6 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
@@ -627,16 +627,16 @@ public class Nd4j {
      * @return array of maximum values.
      */
     public static INDArray argMax(INDArray arr, @NonNull int... dimension) {
-        IMax imax = new IMax(arr, dimension);
-        return Nd4j.getExecutioner().exec(imax);
+        val imax = new ArgMax(arr, dimension);
+        return Nd4j.getExecutioner().exec(imax)[0];
     }
 
     /**
      * See {@link #argMax(INDArray, int...)} but return minimum values.
      */
     public static INDArray argMin(INDArray arr, @NonNull int... dimension) {
-        IMin imin = new IMin(arr, dimension);
-        return Nd4j.getExecutioner().exec(imin);
+        val imin = new ArgMin(arr, dimension);
+        return Nd4j.getExecutioner().exec(imin)[0];
     }
 
     /**
@@ -1131,6 +1131,7 @@ public class Nd4j {
             case LONG:
                 return LongIndexer.create((LongPointer) pointer);
             case UINT32:
+                return UIntIndexer.create((IntPointer) pointer);
             case INT:
                 return IntIndexer.create((IntPointer) pointer);
             case UINT16:

@@ -40,7 +40,7 @@ namespace helpers {
 
         for (auto x = 0; x < lastDims.size(); x++) {
             for (auto r = 0; r < rows; r++) {
-                 lastDims[x]->t<T>(r,r) = (T)value;
+                 lastDims[x]->r<T>(r,r) = (T)value;
             }
         }
 
@@ -71,7 +71,7 @@ namespace helpers {
             if (err) return err;
             // alternate moment: inverse lower triangular matrix to solve equation A'x = b' => L^Tx = L^-1 * b'
             // solve one upper triangular system (to avoid float problems)
-            
+
             // 5. Solve two triangular systems:
             auto rightB = rightOutput.ulike();
             helpers::triangularSolveFunctor(context, &leftOutput, &rightOutput, true, false, &rightB);

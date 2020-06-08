@@ -51,7 +51,7 @@ namespace sd {
             void scatterSimple_(sd::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions) {
 
                 auto dims = ShapeUtils::evalDimsToExclude(input.rankOf(), dimensions);
-                auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dims);
+                auto packX = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dims);
 
                 auto xLength = shape::length(packX.primaryShapeInfo());
                 auto iLength = indices.lengthOf();

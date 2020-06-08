@@ -1945,7 +1945,7 @@ TEST_F(DeclarableOpsTests3, svd_test1) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -1981,7 +1981,7 @@ TEST_F(DeclarableOpsTests3, svd_test2) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2017,7 +2017,7 @@ TEST_F(DeclarableOpsTests3, svd_test3) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2053,7 +2053,7 @@ TEST_F(DeclarableOpsTests3, svd_test4) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2089,7 +2089,7 @@ TEST_F(DeclarableOpsTests3, svd_test5) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2143,7 +2143,7 @@ TEST_F(DeclarableOpsTests3, svd_test6) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2317,7 +2317,7 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 
     // ASSERT_TRUE(expS.equalsTo(s));
 
-    // if(sd::Environment::getInstance()->isCPU()) {
+    // if(sd::Environment::getInstance().isCPU()) {
     //     ASSERT_TRUE(expU.equalsTo(u));
     //     ASSERT_TRUE(expV.equalsTo(v));
     // }
@@ -2380,7 +2380,7 @@ TEST_F(DeclarableOpsTests3, svd_test9) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2438,7 +2438,7 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2482,7 +2482,7 @@ TEST_F(DeclarableOpsTests3, svd_test11) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }

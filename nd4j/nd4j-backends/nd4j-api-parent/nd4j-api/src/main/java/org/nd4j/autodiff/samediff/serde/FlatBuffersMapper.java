@@ -483,6 +483,8 @@ public class FlatBuffersMapper {
                 //No op
             } else if (v instanceof Boolean) {
                 b = new boolean[]{(Boolean) v};
+            } else if(v instanceof Character){
+                i = new int[]{(Character)v};
             } else if (v instanceof Number) {
                 if (v instanceof Double) {
                     d = new double[]{(Double) v};

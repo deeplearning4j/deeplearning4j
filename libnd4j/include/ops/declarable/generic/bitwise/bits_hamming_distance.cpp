@@ -41,7 +41,7 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(bits_hamming_distance) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(sd::DataType::INT64));
+            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64));
         }
 
         DECLARE_TYPES(bits_hamming_distance) {

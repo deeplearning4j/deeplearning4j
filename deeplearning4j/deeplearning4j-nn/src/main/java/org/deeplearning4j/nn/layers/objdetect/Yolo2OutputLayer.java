@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.objdetect;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -110,6 +111,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         Preconditions.checkState(labels.rank() == 4, "Expected rank 4 labels array with shape [minibatch, 4+numClasses, h, w]" +
                 " but got rank %s labels array with shape %s", labels.rank(), labels.shape());
 
+        boolean nchw = layerConf().getFormat() == CNN2DFormat.NCHW;
+        INDArray input = nchw ? this.input : this.input.permute(0,3,1,2);   //NHWC to NCHW
+        INDArray labels = this.labels.castTo(input.dataType());     //Ensure correct dtype (same as params); no-op if already correct dtype
+        if(!nchw)
+            labels = labels.permute(0,3,1,2);   //NHWC to NCHW
+
         double lambdaCoord = layerConf().getLambdaCoord();
         double lambdaNoObj = layerConf().getLambdaNoObj();
 
@@ -119,7 +126,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int b = (int) layerConf().getBoundingBoxes().size(0);
         int c = (int) labels.size(1)-4;
 
-        INDArray labels = this.labels.castTo(input.dataType());     //Ensure correct dtype (same as params); no-op if already correct dtype
+
 
         //Various shape arrays, to reuse
         long[] nhw = new long[]{mb, h, w};
@@ -380,13 +387,17 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         epsWH.addi(dLc_din_wh);
         epsXY.addi(dLc_din_xy);
 
+        if(!nchw)
+            epsOut = epsOut.permute(0,2,3,1);   //NCHW to NHWC
+
         return epsOut;
     }
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
-        return YoloUtils.activate(layerConf().getBoundingBoxes(), input, workspaceMgr);
+        boolean nchw = layerConf().getFormat() == CNN2DFormat.NCHW;
+        return YoloUtils.activate(layerConf().getBoundingBoxes(), input, nchw, workspaceMgr);
     }
 
     @Override

@@ -42,6 +42,11 @@ public interface ExperienceHandler<A, E> {
     int getTrainingBatchSize();
 
     /**
+     * @return True if a batch is ready for training.
+     */
+    boolean isTrainingBatchReady();
+
+    /**
      * The elements are returned in the historical order (i.e. in the order they happened)
      * @return The list of experience elements
      */

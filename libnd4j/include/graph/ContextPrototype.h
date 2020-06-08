@@ -61,7 +61,7 @@ namespace sd {
             std::vector<sd::DataType> _dataTypes;
 
             sd::ops::OpDescriptor* _opDescriptor;
-            bool _useMKLDNN = sd::Environment::getInstance()->isUseMKLDNN();
+            bool _useMKLDNN = sd::Environment::getInstance().isUseMKLDNN();
 
             // target engine for execution
             samediff::Engine _engine = DEFAULT_ENGINE;

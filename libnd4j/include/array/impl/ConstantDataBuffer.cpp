@@ -18,29 +18,38 @@
 // @author raver119@gmail.com
 //
 
-#include "../ConstantDataBuffer.h"
+#include <array/ConstantDataBuffer.h>
+#include <array/DataTypeUtils.h>
 
 namespace sd {
-    ConstantDataBuffer::ConstantDataBuffer(Nd4jPointer primary, Nd4jPointer special, Nd4jLong numEelements, Nd4jLong sizeOf) {
-        _primaryBuffer = primary;
-        _specialBuffer = special;
-        _length = numEelements;
-        _sizeOf = sizeOf;
+ConstantDataBuffer::ConstantDataBuffer(
+    const std::shared_ptr<PointerWrapper>& primary,
+    uint64_t numEelements,
+    DataType dtype) : ConstantDataBuffer(primary, {}, numEelements, dtype)   {
+  //
+}
+
+ConstantDataBuffer::ConstantDataBuffer(
+    const std::shared_ptr<PointerWrapper>& primary,
+    const std::shared_ptr<PointerWrapper>& special,
+    uint64_t numEelements,
+    DataType dtype) : _primaryBuffer(primary), _specialBuffer(special), _length(numEelements) {
+        _sizeOf = DataTypeUtils::sizeOf(dtype);
     }
 
-    Nd4jPointer ConstantDataBuffer::primary() const {
-        return _primaryBuffer;
+    void* ConstantDataBuffer::primary() const {
+        return _primaryBuffer->pointer();
     }
 
-    Nd4jPointer ConstantDataBuffer::special() const {
-        return _specialBuffer;
+    void* ConstantDataBuffer::special() const {
+        return _specialBuffer ? _specialBuffer->pointer() : nullptr;
     }
 
-    Nd4jLong ConstantDataBuffer::sizeOf() const {
+    uint8_t ConstantDataBuffer::sizeOf() const {
         return _sizeOf;
     }
 
-    Nd4jLong ConstantDataBuffer::length() const {
+    uint64_t ConstantDataBuffer::length() const {
         return _length;
     }
 
@@ -52,21 +61,21 @@ namespace sd {
     }
 
     template <typename T>
-    T* ConstantDataBuffer::primaryAsT() {
-        return reinterpret_cast<T*>(_primaryBuffer);
+    T* ConstantDataBuffer::primaryAsT() const {
+        return reinterpret_cast<T*>(_primaryBuffer->pointer());
     }
-    template ND4J_EXPORT float* ConstantDataBuffer::primaryAsT<float>();
-    template ND4J_EXPORT double* ConstantDataBuffer::primaryAsT<double>();
-    template ND4J_EXPORT int* ConstantDataBuffer::primaryAsT<int>();
-    template ND4J_EXPORT Nd4jLong* ConstantDataBuffer::primaryAsT<Nd4jLong>();
+    template ND4J_EXPORT float* ConstantDataBuffer::primaryAsT<float>() const;
+    template ND4J_EXPORT double* ConstantDataBuffer::primaryAsT<double>() const;
+    template ND4J_EXPORT int* ConstantDataBuffer::primaryAsT<int>() const;
+    template ND4J_EXPORT Nd4jLong* ConstantDataBuffer::primaryAsT<Nd4jLong>() const;
 
     template <typename T>
-    T* ConstantDataBuffer::specialAsT() {
-        return reinterpret_cast<T*>(_specialBuffer);
+    T* ConstantDataBuffer::specialAsT() const {
+        return reinterpret_cast<T*>(special());
     }
-    template ND4J_EXPORT float* ConstantDataBuffer::specialAsT<float>();
-    template ND4J_EXPORT double* ConstantDataBuffer::specialAsT<double>();
-    template ND4J_EXPORT int* ConstantDataBuffer::specialAsT<int>();
-    template ND4J_EXPORT Nd4jLong* ConstantDataBuffer::specialAsT<Nd4jLong>();
+    template ND4J_EXPORT float* ConstantDataBuffer::specialAsT<float>() const;
+    template ND4J_EXPORT double* ConstantDataBuffer::specialAsT<double>() const;
+    template ND4J_EXPORT int* ConstantDataBuffer::specialAsT<int>() const;
+    template ND4J_EXPORT Nd4jLong* ConstantDataBuffer::specialAsT<Nd4jLong>() const;
 
 }

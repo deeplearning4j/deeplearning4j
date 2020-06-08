@@ -73,8 +73,8 @@ namespace helpers {
                     NDArray sortedVals = NDArrayFactory::create<T>('c', {k}, input->getContext());
                     NDArray topIndices = NDArrayFactory::create<Nd4jLong>('c', {k}, input->getContext());
                     for (uint pos = 0; pos < k; ++pos) {
-                        topIndices.t<Nd4jLong>(pos) = pos;
-                        topValues.t<T>(pos) = trial.t<T>(pos);
+                        topIndices.r<Nd4jLong>(pos) = pos;
+                        topValues.r<T>(pos) = trial.t<T>(pos);
                     }
                     //std::vector<T> sortedVals(topValues);
                     sortedVals.assign(topValues);// = NDArrayFactory::create<T>('c', {k});
@@ -93,9 +93,9 @@ namespace helpers {
                                 T* topBegin = reinterpret_cast<T*>(topValues.buffer());
                                 T* topEnd = topBegin + k;
                                 auto exchangePos = std::distance(topBegin, std::find(topBegin, topEnd, sortedVals.t<T>(0)));
-                                topValues.t<T>(exchangePos) = val; //*exchangeIt = val;
-                                topIndices.t<Nd4jLong>(exchangePos) = i;
-                                sortedVals.t<T>(0) = val; // suppress in sorted
+                                topValues.r<T>(exchangePos) = val; //*exchangeIt = val;
+                                topIndices.r<Nd4jLong>(exchangePos) = i;
+                                sortedVals.r<T>(0) = val; // suppress in sorted
                                 //std::sort(sortedVals.begin(), sortedVals.end()); // sorted in ascending order
                                 SpecialMethods<T>::sortGeneric(sortedVals.buffer(), sortedVals.shapeInfo(), false);
                             }
@@ -107,7 +107,7 @@ namespace helpers {
                         for (Nd4jLong j = 0; j < width; j++)
                             for (uint pos = 0; pos < k; ++pos)
                                 if (topValues.t<T>(pos) == trial.t<T>(j))
-                                    topIndices.t<Nd4jLong>(pos) = j;
+                                    topIndices.r<Nd4jLong>(pos) = j;
                     }
                     else { // else sort by indices
                         std::map<Nd4jLong, T> sortValsMap;
@@ -121,8 +121,8 @@ namespace helpers {
                         //});
                         Nd4jLong e = 0;
                         for (auto it = sortValsMap.begin(); it != sortValsMap.end(); ++it, e++) {
-                            topIndices.t<Nd4jLong>(e) = it->first;
-                            topValues.t<T>(e) = it->second;
+                            topIndices.r<Nd4jLong>(e) = it->first;
+                            topValues.r<T>(e) = it->second;
                         }
 
                     }

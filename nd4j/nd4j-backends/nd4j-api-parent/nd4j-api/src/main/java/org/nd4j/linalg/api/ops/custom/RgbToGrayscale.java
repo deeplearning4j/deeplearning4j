@@ -37,8 +37,4 @@ public class RgbToGrayscale extends DynamicCustomOp {
         return "rgb_to_grs";
     }
 
-    @Override
-    public String tensorflowName() {
-        return "RgbToGrs";
-    }
 }

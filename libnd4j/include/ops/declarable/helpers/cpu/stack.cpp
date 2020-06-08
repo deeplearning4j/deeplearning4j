@@ -47,7 +47,7 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, c
 	}
 	else {
 
-		auto zTadPack = ConstantTadHelper::getInstance()->tadForDimensions(output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
+		auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
 		auto zTadShapeInfo  = zTadPack.primaryShapeInfo();
 
         auto func = PRAGMA_THREADS_FOR {
@@ -57,8 +57,8 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray& output, c
                 void* zBuff = output.bufferWithOffset(zTadPack.primaryOffsets()[i]);
 
                 NativeOpExecutioner::execTransformAny(inArrs[0]->getContext(), transform::Assign,
-                                                     inArrs[i]->buffer(), inArrs[i]->shapeInfo(), nullptr/*input specialBuffer*/,  nullptr/*input specialShapeInfo*/,
-                                                     zBuff,                  zTadShapeInfo,             nullptr/*output specialBuffer*/, nullptr/*output specialShapeInfo*/,
+                                                     inArrs[i]->buffer(), inArrs[i]->shapeInfo(), nullptr/*input specialBuffer*/,  nullptr/*input special*/,
+                                                     zBuff,                  zTadShapeInfo,             nullptr/*output specialBuffer*/, nullptr/*output special*/,
                                                      nullptr, nullptr, nullptr, false/*allowParallelism*/);
             }
         };
@@ -92,7 +92,7 @@ static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs,
 	}
 	else {
 
-		auto xTadPack = ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
+		auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
 		auto xTadShapeInfo  = xTadPack.primaryShapeInfo();
 
         auto func = PRAGMA_THREADS_FOR {
@@ -100,8 +100,8 @@ static void unstack_(const NDArray& input, const std::vector<NDArray*>& outArrs,
                 auto xBuff = input.bufferWithOffset(xTadPack.primaryOffsets()[i]);
 
                 NativeOpExecutioner::execTransformAny(input.getContext(), transform::Assign,
-                									 xBuff,                   xTadShapeInfo,              nullptr/*input specialBuffer*/, nullptr/*input specialShapeInfo*/,
-                                                     outArrs[i]->buffer(), outArrs[i]->shapeInfo(), nullptr/*output specialBuffer*/,  nullptr/*output specialShapeInfo*/,
+                									 xBuff,                   xTadShapeInfo,              nullptr/*input specialBuffer*/, nullptr/*input special*/,
+                                                     outArrs[i]->buffer(), outArrs[i]->shapeInfo(), nullptr/*output specialBuffer*/,  nullptr/*output special*/,
                                                      nullptr, nullptr, nullptr, false/*allowParallelism*/);
             }
         };

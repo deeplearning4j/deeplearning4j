@@ -206,7 +206,7 @@ LoopKind::Kind LoopKind::deduceKindOfLoopTadXZ(const Nd4jLong* xShapeInfo, const
     const bool tVectorOrC = shape::isCommonVector(tadShapeInfo, temp) || tOrder == 'c';
     const bool zVectorOrC = shape::isCommonVector(zShapeInfo, temp)   || zOrder == 'c';;
 
-    if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance()->elementwiseThreshold() && xEws == 1 && xOrder == 'c' && xRank == 2 &&
+    if(shape::length(tadShapeInfo) * shape::length(zShapeInfo) <= Environment::getInstance().elementwiseThreshold() && xEws == 1 && xOrder == 'c' && xRank == 2 &&
         tEws > 1 && zEws == 1 && (allC || (tVectorOrC && zVectorOrC)))
         return SMALLARR2DX;
     if(tEws == 1 && zEws == 1 && (allC || (tVectorOrC && zVectorOrC)))

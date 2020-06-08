@@ -41,7 +41,7 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(check_numerics) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inputShape->at(0))));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inputShape->at(0))));
         }
 
         DECLARE_TYPES(check_numerics) {

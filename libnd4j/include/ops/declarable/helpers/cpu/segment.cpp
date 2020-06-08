@@ -46,7 +46,7 @@ namespace helpers {
                     idx = indices->e<Nd4jLong>(e);
                     val = input->t<T>(e);
                 }
-                output->t<T>(idx) = val;
+                output->r<T>(idx) = val;
             }
         }
         else {
@@ -65,7 +65,7 @@ namespace helpers {
                 if (indices->e<int>(i) == idx) {
 
                     for (Nd4jLong e = 0; e < maxT->lengthOf(); e++) {
-                       maxT->t<T>(e) = sd::math::nd4j_max(maxT->t<T>(e), listOfTensors.at(i)->t<T>(e));
+                       maxT->r<T>(e) = sd::math::nd4j_max(maxT->t<T>(e), listOfTensors.at(i)->t<T>(e));
                     }
                 }
                 else {
@@ -96,7 +96,7 @@ namespace helpers {
                     idx = indices->e<Nd4jLong>(e);
                     val = input->t<T>(e);
                 }
-                output->t<T>(idx) = val;
+                output->r<T>(idx) = val;
             }
         }
         else {
@@ -417,7 +417,7 @@ namespace helpers {
                 for (size_t idx = 1; idx < fi->second.size(); ++idx) {
                     val = sd::math::nd4j_min(val, input->t<T>(fi->second.at(idx)));
                 }
-                output->t<T>(fi->first) = val;
+                output->r<T>(fi->first) = val;
             }
         }
         else {
@@ -436,7 +436,7 @@ namespace helpers {
                     auto minT = listOfTensors.at(fi->second.at(idx));
 
                     for (Nd4jLong e = 0; e < outputT->lengthOf(); ++e) {
-                        outputT->t<T>(e) = sd::math::nd4j_min(minT->t<T>(e), outputT->t<T>(e));
+                        outputT->r<T>(e) = sd::math::nd4j_min(minT->t<T>(e), outputT->t<T>(e));
                     }
                 }
                 //outputT->assign(maxT);
@@ -890,7 +890,7 @@ namespace helpers {
                 for (auto e = start; e < stop; e++) {
                     auto classNum = indices->e<Nd4jLong>(e);
                     if (sd::math::nd4j_abs(tempRes.t<T>(classNum) - input->t<T>(e)) < 1.e-6)
-                        output->t<T>(e) = gradOut->t<T>(classNum);
+                        output->r<T>(e) = gradOut->t<T>(classNum);
                 }
             };
 
@@ -913,7 +913,7 @@ namespace helpers {
 
                     for (Nd4jLong e = 0; e < current->lengthOf(); e++) {
                         if (sd::math::nd4j_abs(listOfBPTensors.at(classNum)->t<T>(e) - current->t<T>(e)) < 1.e-6)
-                            currentOut->t<T>(e) = currentGradOut->t<T>(e);
+                            currentOut->r<T>(e) = currentGradOut->t<T>(e);
                     }
                 }
             //};

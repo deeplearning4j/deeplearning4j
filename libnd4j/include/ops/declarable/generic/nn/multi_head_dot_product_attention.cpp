@@ -138,8 +138,8 @@ namespace ops  {
         auto numHeads = shape::sizeAt(WkShape, 0);
         auto timeSteps = shape::sizeAt(keysShape, 2);
 
-        auto weightsShape = ConstantShapeHelper::getInstance()->createShapeInfo(sd::ArrayOptions::dataType(valuesShape), 'c', {batchSize, numHeads, timeSteps, queryCount});
-        auto outputShape = ConstantShapeHelper::getInstance()->createShapeInfo(sd::ArrayOptions::dataType(valuesShape), 'c', {batchSize, outSize, queryCount});
+        auto weightsShape = ConstantShapeHelper::getInstance().createShapeInfo(sd::ArrayOptions::dataType(valuesShape), 'c', {batchSize, numHeads, timeSteps, queryCount});
+        auto outputShape = ConstantShapeHelper::getInstance().createShapeInfo(sd::ArrayOptions::dataType(valuesShape), 'c', {batchSize, outSize, queryCount});
 
         if(INT_ARG(1)){
             return SHAPELIST(outputShape, weightsShape);

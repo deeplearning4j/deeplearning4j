@@ -42,24 +42,24 @@ public:
 TEST_F(OpTrackerTests, Test_Existence_1) {
     sd::_loader loader;
 
-    // nd4j_printf("Groups: %i; Operations: %i\n", OpTracker::getInstance()->totalGroups(), OpTracker::getInstance()->totalOperations());
+    // nd4j_printf("Groups: %i; Operations: %i\n", OpTracker::getInstance().totalGroups(), OpTracker::getInstance().totalOperations());
 
-    ASSERT_TRUE(OpTracker::getInstance()->totalGroups() > 0);
-    ASSERT_TRUE(OpTracker::getInstance()->totalOperations() > 0);
+    ASSERT_TRUE(OpTracker::getInstance().totalGroups() > 0);
+    ASSERT_TRUE(OpTracker::getInstance().totalOperations() > 0);
 
-    OpTracker::getInstance()->exportOperations();
+    OpTracker::getInstance().exportOperations();
 }
 
 TEST_F(OpTrackerTests, Test_Ops_List_1) {
     sd::ops::less op;
-    auto vec = OpRegistrator::getInstance()->getAllHashes();
+    auto vec = OpRegistrator::getInstance().getAllHashes();
 
     // nd4j_printf("Total ops: %lld\n", vec.size());
     // nd4j_printf("Less hash: %lld\n", op.getOpHash());
 
     for (const auto &v: vec) {
         if (v == 5484196977525668316L) {
-            auto op = OpRegistrator::getInstance()->getOperation(v);
+            auto op = OpRegistrator::getInstance().getOperation(v);
             // nd4j_printf("OpName: %s\n", op->getOpName()->c_str());
         }
     }

@@ -99,7 +99,7 @@ namespace sd {
             auto length = shape::length(in);
 
             if (rank == 0 || (rank == 1 && length == 1)) {
-                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
                 return shapeList;
             }
 
@@ -144,11 +144,11 @@ namespace sd {
             }
 
             if (shape.size() == 0) {
-                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
                 return shapeList;
             }
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), order, shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), order, shape);
             shapeList->push_back(newShape);
             return shapeList;
         }

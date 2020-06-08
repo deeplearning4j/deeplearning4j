@@ -79,7 +79,7 @@ namespace ops {
         for(int i = 1; i < outRank; ++i)
             outShape[i] = shape::sizeAt(restShape, i);
 
-        return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(restShape), shape::order(firstShape), outShape)));
+        return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(restShape), shape::order(firstShape), outShape)));
     }
 }
 }

@@ -52,10 +52,10 @@ import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThan;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
@@ -3765,10 +3765,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
-        IMax iMax = new IMax(arr);
-        IAMax iaMax = new IAMax(arr.dup());
-        val imax = Nd4j.getExecutioner().execAndReturn(iMax).getFinalResult().intValue();
-        val iamax = Nd4j.getExecutioner().execAndReturn(iaMax).getFinalResult().intValue();
+        val iMax = new ArgMax(arr);
+        val iaMax = new ArgAmax(arr.dup());
+        val imax = Nd4j.getExecutioner().exec(iMax)[0].getInt(0);
+        val iamax = Nd4j.getExecutioner().exec(iaMax)[0].getInt(0);
 //        System.out.println("IMAX: " + imax);
 //        System.out.println("IAMAX: " + iamax);
         assertEquals(1, iamax);
@@ -3780,10 +3780,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testIMinIAMin() {
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
         INDArray abs = Transforms.abs(arr);
-        IAMin iaMin = new IAMin(abs);
-        IMin iMin = new IMin(arr.dup());
-        double imin = Nd4j.getExecutioner().execAndReturn(iMin).getFinalResult().doubleValue();
-        double iamin = Nd4j.getExecutioner().execAndReturn(iaMin).getFinalResult().doubleValue();
+        val iaMin = new ArgAmin(abs);
+        val iMin = new ArgMin(arr.dup());
+        double imin = Nd4j.getExecutioner().exec(iMin)[0].getDouble(0);
+        double iamin = Nd4j.getExecutioner().exec(iaMin)[0].getDouble(0);
 //        System.out.println("IMin: " + imin);
 //        System.out.println("IAMin: " + iamin);
         assertEquals(3, iamin, 1e-12);
@@ -4077,7 +4077,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
         }
 
-        INDArray out = Nd4j.getExecutioner().exec(new IMax(arr, 1,2));
+        INDArray out = Nd4j.exec(new ArgMax(arr, 1,2))[0];
 
         assertEquals(DataType.LONG, out.dataType());
 
@@ -4119,8 +4119,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
 
-        INDArray actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c'), 0,1));
-        INDArray actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f'),  0,1));
+        INDArray actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), 0,1))[0];
+        INDArray actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'),  0,1))[0];
         //
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -4153,8 +4153,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
 
-        actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c'), 2, 3));
-        actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f'), 2, 3));
+        actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), 2, 3))[0];
+        actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'), 2, 3))[0];
 
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -8482,6 +8482,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 assertEquals(dt2, a2.dataType());
             }
         }
+    }
+
+    @Test
+    public void testSmallSort(){
+        INDArray arr = Nd4j.createFromArray(0.5, 0.4, 0.1, 0.2);
+        INDArray expected = Nd4j.createFromArray(0.1, 0.2, 0.4, 0.5);
+        INDArray sorted = Nd4j.sort(arr, true);
+        assertEquals(expected, sorted);
     }
 
     @Override

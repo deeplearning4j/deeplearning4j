@@ -111,7 +111,7 @@ DECLARE_SHAPE_FN(gruCell) {
     s0[2] = nU;
 
     ShapeUtils::updateStridesAndType(s0, x, shape::order(hLast));
-    auto ts0 = ConstantShapeHelper::getInstance()->createFromExisting(s0, block.workspace());
+    auto ts0 = ConstantShapeHelper::getInstance().createFromExisting(s0, block.workspace());
 
     //4 output shapes, all [bs, nU]
     return SHAPELIST(ts0, ts0, ts0, ts0);

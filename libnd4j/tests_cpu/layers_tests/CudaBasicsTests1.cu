@@ -254,7 +254,7 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
 
-	 if (!Environment::getInstance()->isExperimentalBuild())
+	 if (!Environment::getInstance().isExperimentalBuild())
         return;
 
     NDArray x1('c', {2,2}, {1,2,3,4}, sd::DataType::INT32);
@@ -970,7 +970,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_3) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execScalar_1) {
 
-	if (!Environment::getInstance()->isExperimentalBuild())
+	if (!Environment::getInstance().isExperimentalBuild())
         return;
     	
     NDArray x('c', {2,3},  {0,1,2,3,4,5}, sd::DataType::INT64);
@@ -1005,7 +1005,7 @@ TEST_F(CudaBasicsTests1, execScalar_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execScalar_2) {
 
-	if (!Environment::getInstance()->isExperimentalBuild())
+	if (!Environment::getInstance().isExperimentalBuild())
         return;
     	
     NDArray x('c', {2,3},  {-1,-2,-3,-4,-5,-6}, sd::DataType::INT64);
@@ -1041,7 +1041,7 @@ TEST_F(CudaBasicsTests1, execScalar_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execScalar_3) {
 
-	if (!Environment::getInstance()->isExperimentalBuild())
+	if (!Environment::getInstance().isExperimentalBuild())
         return;
     	
     NDArray x('c', {2,3,2},  {0,1,2,3,4,5,6,7,8,9,10,11}, sd::DataType::INT64);
@@ -1192,7 +1192,7 @@ TEST_F(CudaBasicsTests1, execScalarBool_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execBroadcast_1) {
 
-	if (!Environment::getInstance()->isExperimentalBuild())
+	if (!Environment::getInstance().isExperimentalBuild())
         return;
     	
 	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT32);
@@ -1252,7 +1252,7 @@ TEST_F(CudaBasicsTests1, execBroadcast_1) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execBroadcast_2) {
 
-	if (!Environment::getInstance()->isExperimentalBuild())
+	if (!Environment::getInstance().isExperimentalBuild())
         return;
     	
 	NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT32);
@@ -1429,7 +1429,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_2) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(CudaBasicsTests1, execPairwiseTransform_1) {
 
-	if (!Environment::getInstance()->isExperimentalBuild())
+	if (!Environment::getInstance().isExperimentalBuild())
         return;
     	
 	NDArray x('c', {2,2,2}, {1,5,3,7,2,6,4,8}, sd::DataType::INT32);
@@ -2544,7 +2544,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_1) {
     NDArray z('c', {3}, {100,100,100}, sd::DataType::DOUBLE);
    
     std::vector<int> dimensions = {0,1};
-    auto packX = ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions);
+    auto packX = ConstantTadHelper::getInstance().tadForDimensions(x.shapeInfo(), dimensions);
     LaunchContext* context = x.getContext();
 
 	x.syncToDevice();
@@ -2858,7 +2858,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
 	NativeOpExecutioner::execSummaryStats(&lc, sd::variance::SummaryStatsStandardDeviation,
 								nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
 								nullptr, 								
-								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+								nullptr, z.shapeInfo(), z.specialBuffer(), z.special(),
 								(int*)devicePtrs[0], dimensions.size(), 
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2],
 								true);
@@ -2941,13 +2941,13 @@ TEST_F(CudaBasicsTests1, execRandom_1) {
 //    cudaResult = cudaStreamCreate(&stream);	ASSERT_EQ(0, cudaResult);
 //    LaunchContext lc(&stream);
 //
-//	//	::execRandom(extraPointers, random::GaussianDistribution, &gen, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &extra);
+//	//	::execRandom(extraPointers, random::GaussianDistribution, &gen, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.special(), &extra);
 //	// call cuda kernel which calculates result
 //	NativeOpExecutioner::execRandom(&lc, sd::random::GaussianDistribution,
 //								&gen,
-//								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-//								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-//								nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+//								nullptr, z.shapeInfo(), z.specialBuffer(), z.special(),
+//								nullptr, z.shapeInfo(), z.specialBuffer(), z.special(),
+//								nullptr, z.shapeInfo(), z.specialBuffer(), z.special(),
 //								extraArguments.argumentsAsT(z.dataType()));
 //
 //	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);

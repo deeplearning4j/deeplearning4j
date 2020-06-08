@@ -212,8 +212,8 @@ namespace helpers {
     //////////////////////////////////////////////////////////////////////////
     void reverse(sd::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>* intArgs) {
 
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), *intArgs);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), *intArgs);
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), *intArgs);
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), *intArgs);
 
         NDArray::prepareSpecialUse({output}, {input});
 

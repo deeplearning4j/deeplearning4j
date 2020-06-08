@@ -51,7 +51,7 @@ namespace sd {
             for (auto d = 0; d < shape::rank(lambdaShape); ++d ) {
                 shape.emplace_back(shape::sizeAt(lambdaShape, d));
             }
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
             return SHAPELIST(newShape);
         }
 

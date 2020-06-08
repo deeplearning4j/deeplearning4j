@@ -187,7 +187,7 @@ namespace sd {
                 }
                 else if(input.isSameShapeStrict(output)) {
 
-                    TadPack tadPack  = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), dimension);
+                    TadPack tadPack  = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimension);
                     auto tadShapeInfo  = tadPack.primaryShapeInfo();
                     auto tadOffsets    = tadPack.primaryOffsets();
                     const uint numOfSubArrs = tadPack.numberOfTads();

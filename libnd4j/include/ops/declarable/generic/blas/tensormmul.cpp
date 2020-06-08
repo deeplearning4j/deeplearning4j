@@ -80,7 +80,7 @@ DECLARE_SHAPE_FN(tensormmul) {
     std::vector<Nd4jLong> shapeAt, shapeBt;
     auto outShape = sd::ShapeUtils::evalShapeForTensorDot(aShapeInfo, bShapeInfo, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(aShapeInfo), 'c', outShape)));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(aShapeInfo), 'c', outShape)));
 }
 
 ////////////////////////////////////////////////////////////////////////

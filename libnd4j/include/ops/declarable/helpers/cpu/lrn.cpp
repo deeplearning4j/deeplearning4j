@@ -35,13 +35,13 @@ static int lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray* outpu
 
     const int rank = input->rankOf();
 
-    TadPack inTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->shapeInfo(), {rank - 1});
+    TadPack inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {rank - 1});
     TadPack outTadPack;
 
     if(shape::haveSameShapeAndStrides(input->shapeInfo(), output->shapeInfo()))
         outTadPack = inTadPack;
     else
-        outTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), {rank - 1});
+        outTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {rank - 1});
 
     const Nd4jLong numOfTads = inTadPack.numberOfTads();
     const Nd4jLong tadLen    = input->sizeAt(-1); 
@@ -151,13 +151,13 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     
     const int rank = input.rankOf();
 
-    TadPack inTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.shapeInfo(), {rank - 1});
+    TadPack inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {rank - 1});
     TadPack gradITadPack;
 
     if(shape::haveSameShapeAndStrides(input.shapeInfo(), gradI.shapeInfo()))
         gradITadPack = inTadPack;
     else
-        gradITadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradI.shapeInfo(), {rank - 1});
+        gradITadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(gradI.shapeInfo(), {rank - 1});
 
     const Nd4jLong numOfTads = inTadPack.numberOfTads();
     const Nd4jLong tadLen    = input.sizeAt(-1); 
