@@ -31,6 +31,87 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
+    /**
+     * gammaLess - compute gamma distributed value for shapes (alpha) from 0 to 1
+     * @tparam T - any float types are acceptable
+     * @param rng - random generator for uniformly vals
+     * @param alpha - shape of distribution
+     * @param beta - scale of distributed values
+     * @return gamma distributed value
+     */
+    template <typename T>
+    T gammaLess(graph::RandomGenerator& rng, T const alpha, T const beta) {
+        auto d = T(1.0334f) - T(0.0766f) * math::p_exp(T(2.2942f) * alpha);
+        auto a = math::p_pow(T(2.f), alpha) * math::p_pow(T(1.f) - math::p_exp(-d * T(0.5f)), alpha);
+        auto b = alpha * math::p_pow(d, alpha - T(1.f)) * exp(-d);
+        auto c = a + b;
+        T rawX;
+        static auto index = 0LL;
+        const T underAlpha = T(1.f) / alpha;
+        const T powerAlpha = math::p_pow(T(2.f), alpha - T(1.f));
+
+        for (;;) {
+            auto u = rng.relativeT<T>(index++, T(0.f), T(1.f));
+
+            if (u <= a / c) rawX = -T(2.f) * math::p_log(T(1.f) - T(0.5f) * math::p_pow(T(c * u), underAlpha));
+            else            rawX = - math::p_log(c * (T(1.f) - u)/(alpha * math::p_pow(d, alpha - T(1.f))));
+
+            T v = rng.relativeT(index++, 0.f, 1.f);
+            if (rawX <= d) {
+                auto testVal = (math::p_pow(rawX, alpha - 1.f) * math::p_exp(-T(0.5f) * rawX)) / (powerAlpha * math::p_pow(T(1.f) - math::p_exp(-T(0.5f) * rawX), alpha - T(1.f)));
+                if (testVal < v) continue;
+                break;
+            }
+            else {
+                if (v <= math::p_pow(d / rawX, T(1.f) - alpha)) break;
+                continue;
+            }
+        }
+
+        return rawX / beta;
+    }
+
+    /**
+     * gammaGreat - generate gamma distributed value for shape (alpha) greater then 1
+     * @tparam T - given type (any float type is accepted.)
+     * @param rng  - random generator
+     * @param alpha - shape of the gamma distribution (alpha)
+     * @param beta  - scale of the gamma distribution (beta)
+     * @return - gamma distributed value with given params
+     */
+    template <typename T>
+    T gammaGreat(graph::RandomGenerator& rng, T const alpha, T const beta) {
+        auto decreasedAlpha = alpha - T(1.f/3.f);
+        auto c = T(1.)/ math::p_sqrt(T(9.f) * decreasedAlpha);
+        static auto index = 0LL;
+        T x;
+        auto normalDistributed = [](graph::RandomGenerator& rng, Nd4jLong& index) {
+            auto v1 = rng.relativeT(index++, T(0.f), T(1.f));
+            auto v2 = rng.relativeT(index++, T(0.f), T(1.f));
+
+            return math::p_cos(T(2.f * 3.141592f) * v2) * math::p_sqrt(T(-2.f) * math::p_log(v1));
+        };
+
+//        const T underAlpha = T(1.f) / alpha;
+//        const T powerAlpha = math::p_pow(T(2.f), alpha - T(1.f));
+
+        float normalizedVar;
+        for(;;) {
+            do {
+                x = normalDistributed(rng, index); //printf("X = %f\n", x);
+                normalizedVar = T(1.f) + c * x;
+            } while(normalizedVar < T(0.f));
+            normalizedVar = normalizedVar * normalizedVar * normalizedVar; //v * v * v;
+
+            auto u = rng.relativeT<T>(index++, T(0.f), T(1.f)); //printf("UNI = %f\n", u);
+            if( u < T(1.f) - T(.0331f) * (x * x) * (x * x) )
+                break; //return (d * v / b);
+            if( log(u) < 0.5f * x * x + decreasedAlpha * (1. - normalizedVar + math::p_log(normalizedVar)) )
+                break;
+        }
+        return (decreasedAlpha * normalizedVar / beta);
+    }
+
     template <typename T>
     void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
 
@@ -52,24 +133,19 @@ namespace helpers {
 
             copyAlpha = new NDArray(alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *alpha));
             copyBeta  = new NDArray(betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *beta));
-
         }
-//        bool directAlpha = alpha->ews() == 1 && alpha->ordering() == 'c';
         bool directOutput = output->ews() == 1 && output->ordering() == 'c';
         T* outputBuf = output->dataBuffer()->primaryAsT<T>();
 
         PRAGMA_OMP_PARALLEL_FOR
         for (Nd4jLong k = 0; k < shift; k++) {
             auto pos = k * step;
-            auto u = rng.relativeT<T>(k, 0., 1.);
             for (Nd4jLong e = 0; e < step; e++)
                     if (directOutput) {
-                        outputBuf[pos + e] = math::nd4j_igamma<T, T, T>(copyAlpha->t<T>(e),
-                                                                        beta != nullptr ? copyBeta->t<T>(e) * u : u);
+                        outputBuf[pos + e] = copyAlpha->t<T>(e) <= 1? gammaLess(rng, copyAlpha->t<T>(e), beta?copyBeta->t<T>(e):T(1.f)):gammaGreat(rng, copyAlpha->t<T>(e), beta?copyBeta->t<T>(e):T(1.f));
                     }
                     else {
-                        output->r<T>(pos + e) = math::nd4j_igamma<T, T, T>(copyAlpha->t<T>(e),
-                                                                        beta != nullptr ? copyBeta->t<T>(e) * u : u);
+                        output->r<T>(pos + e) = copyAlpha->t<T>(e) <= 1? gammaLess(rng, copyAlpha->t<T>(e), beta?copyBeta->t<T>(e):T(1.f)):gammaGreat(rng, copyAlpha->t<T>(e), beta?copyBeta->t<T>(e):T(1.f));
                     }
         }
 
