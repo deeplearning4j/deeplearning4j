@@ -187,7 +187,7 @@ if (${HELPERS_cudnn})
 
     if (CUDNN_LIBRARY)
         set(HAVE_CUDNN true)
-        set(CUDNN ${CUDNN_LIBRARY}})
+        set(CUDNN ${CUDNN_LIBRARY})
     else()
         message(FATAL_ERROR "Unable to find cuDNN")
     endif()
