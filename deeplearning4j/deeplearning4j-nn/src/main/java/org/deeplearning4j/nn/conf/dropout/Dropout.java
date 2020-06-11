@@ -66,8 +66,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Data
-@JsonIgnoreProperties({"mask", "helper", "helperCountFail"})
-@EqualsAndHashCode(exclude = {"mask", "helper", "helperCountFail"})
+@JsonIgnoreProperties({"mask", "helper", "helperCountFail", "initializedHelper"})
+@EqualsAndHashCode(exclude = {"mask", "helper", "helperCountFail", "initializedHelper"})
 @Slf4j
 public class Dropout implements IDropout {
 
