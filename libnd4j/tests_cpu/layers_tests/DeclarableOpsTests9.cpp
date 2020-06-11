@@ -251,11 +251,10 @@ TEST_F(DeclarableOpsTests9, concat_test1) {
     auto result = op.evaluate({&x0, &x1, &x2}, {}, {1});
     ASSERT_EQ(ND4J_STATUS_OK, result.status());
     auto output = result.at(0);
+    // output->printCurrentBuffer<float>(false);
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
-
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////

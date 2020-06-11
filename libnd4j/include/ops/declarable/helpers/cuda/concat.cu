@@ -53,7 +53,7 @@ __global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, const
 
     int coords[MAX_RANK];
 
-    for (uint64_t i = tid; i < zLen; i += totalThreads) {
+    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
         shape::index2coords(i, zShapeInfo, coords);
 
         const auto zOffset = shape::getOffset(zShapeInfo, coords);
@@ -162,9 +162,9 @@ void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inAr
     // }
     // else {      // general (slower) case
 
-        const int threadsPerBlock = 256;
-        const int blocksPerGrid = 512;
-        const int sharedMem = 512;
+        const int threadsPerBlock = MAX_NUM_THREADS / 2;
+        const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+        const int sharedMem = 256;
 
         // prepare arrays of pointers on buffers and shapes
         std::vector<const void*> hInBuffers(numOfInArrs);

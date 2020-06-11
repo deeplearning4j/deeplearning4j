@@ -419,3 +419,4 @@ TEST_F(DeclarableOpsTests19, test_squeeze_1) {
     auto status = op.execute({&x}, {&e}, {axis});
     ASSERT_EQ(Status::OK(), status);
 }
+
