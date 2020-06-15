@@ -75,7 +75,8 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     private static Function<String, StatsStorage> statsStorageProvider;
 
     private static Integer instancePort;
-    private static Thread autoStopThread;
+    @Getter
+    private static Thread shutdownHook;
 
     /**
      * Get (and, initialize if necessary) the UI server. This synchronous function will wait until the server started.
@@ -188,19 +189,17 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         Vertx vertx = Vertx.vertx();
         vertx.deployVerticle(VertxUIServer.class.getName(), promise);
 
-        Thread currentThread = Thread.currentThread();
-        VertxUIServer.autoStopThread = new Thread(() -> {
-            try {
-                currentThread.join();
-                if (VertxUIServer.instance != null && !VertxUIServer.instance.isStopped()) {
-                    log.info("Deeplearning4j UI server is auto-stopping after thread (name: {}) died.",
-                            currentThread.getName());
+        VertxUIServer.shutdownHook = new Thread(() -> {
+            if (VertxUIServer.instance != null && !VertxUIServer.instance.isStopped()) {
+                log.info("Deeplearning4j UI server is auto-stopping in shutdown hook.");
+                try {
                     instance.stop();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
-            } catch (InterruptedException e) {
-                log.error("Deeplearning4j UI server auto-stop thread was interrupted.", e);
             }
         });
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
 
@@ -385,7 +384,6 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
                                 + server.actualPort(), result.cause()));
                     }
                 });
-        VertxUIServer.autoStopThread.start();
     }
 
     private List<String> extractArgsFromRoute(String path, RoutingContext rc) {
