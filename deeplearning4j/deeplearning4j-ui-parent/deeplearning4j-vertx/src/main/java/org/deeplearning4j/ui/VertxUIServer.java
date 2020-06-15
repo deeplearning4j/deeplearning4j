@@ -195,7 +195,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
                 try {
                     instance.stop();
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    log.error("Interrupted stopping of Deeplearning4j UI server in shutdown hook.", e);
                 }
             }
         });
