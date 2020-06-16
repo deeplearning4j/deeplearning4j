@@ -90,4 +90,8 @@ public class PythonGIL implements AutoCloseable {
         PyEval_SaveThread();
         PyEval_RestoreThread(mainThreadState);
     }
+
+    public static boolean locked(){
+        return acquired.get();
+    }
 }

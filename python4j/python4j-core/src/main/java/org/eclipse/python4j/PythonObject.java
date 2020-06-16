@@ -147,7 +147,8 @@ public class PythonObject {
             }
             PythonObject pyArgs;
             PythonObject pyKwargs;
-            if (args == null) {
+
+            if (args == null || args.isEmpty()) {
                 pyArgs = new PythonObject(PyTuple_New(0));
             } else {
                 PythonObject argsList = PythonTypes.convert(args);
@@ -158,6 +159,7 @@ public class PythonObject {
             } else {
                 pyKwargs = PythonTypes.convert(kwargs);
             }
+
             PythonObject ret = new PythonObject(
                     PyObject_Call(
                             nativePythonObject,
@@ -165,7 +167,9 @@ public class PythonObject {
                             pyKwargs == null ? null : pyKwargs.nativePythonObject
                     )
             );
+
             PythonGC.keep(ret);
+
             return ret;
         }
 
@@ -241,4 +245,48 @@ public class PythonObject {
         PyObject_SetItem(nativePythonObject, key.nativePythonObject, value.nativePythonObject);
     }
 
+
+    public PythonObject abs(){
+        return new PythonObject(PyNumber_Absolute(nativePythonObject));
+    }
+    public PythonObject add(PythonObject pythonObject){
+        return new PythonObject(PyNumber_Add(nativePythonObject, pythonObject.nativePythonObject));
+    }
+    public PythonObject sub(PythonObject pythonObject){
+        return new PythonObject(PyNumber_Subtract(nativePythonObject, pythonObject.nativePythonObject));
+    }
+    public PythonObject mod(PythonObject pythonObject){
+        return new PythonObject(PyNumber_Divmod(nativePythonObject, pythonObject.nativePythonObject));
+    }
+    public PythonObject mul(PythonObject pythonObject){
+        return new PythonObject(PyNumber_Multiply(nativePythonObject, pythonObject.nativePythonObject));
+    }
+    public PythonObject trueDiv(PythonObject pythonObject){
+        return new PythonObject(PyNumber_TrueDivide(nativePythonObject, pythonObject.nativePythonObject));
+    }
+    public PythonObject floorDiv(PythonObject pythonObject){
+        return new PythonObject(PyNumber_FloorDivide(nativePythonObject, pythonObject.nativePythonObject));
+    }
+    public PythonObject matMul(PythonObject pythonObject){
+        return new PythonObject(PyNumber_MatrixMultiply(nativePythonObject, pythonObject.nativePythonObject));
+    }
+
+    public void addi(PythonObject pythonObject){
+        PyNumber_InPlaceAdd(nativePythonObject, pythonObject.nativePythonObject);
+    }
+    public void subi(PythonObject pythonObject){
+        PyNumber_InPlaceSubtract(nativePythonObject, pythonObject.nativePythonObject);
+    }
+    public void muli(PythonObject pythonObject){
+        PyNumber_InPlaceMultiply(nativePythonObject, pythonObject.nativePythonObject);
+    }
+    public void trueDivi(PythonObject pythonObject){
+        PyNumber_InPlaceTrueDivide(nativePythonObject, pythonObject.nativePythonObject);
+    }
+    public void floorDivi(PythonObject pythonObject){
+        PyNumber_InPlaceFloorDivide(nativePythonObject, pythonObject.nativePythonObject);
+    }
+    public void matMuli(PythonObject pythonObject){
+        PyNumber_InPlaceMatrixMultiply(nativePythonObject, pythonObject.nativePythonObject);
+    }
 }

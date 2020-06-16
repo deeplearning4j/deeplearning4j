@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -42,7 +43,6 @@ public class PythonExecutioner {
     private final static String DEFAULT_PYTHON_PATH_PROPERTY = "org.eclipse.python4j.path";
     private final static String JAVACPP_PYTHON_APPEND_TYPE = "org.eclipse.python4j.path.append";
     private final static String DEFAULT_APPEND_TYPE = "before";
-
     static {
         init();
     }
@@ -55,6 +55,11 @@ public class PythonExecutioner {
         initPythonPath();
         PyEval_InitThreads();
         Py_InitializeEx(0);
+        for (PythonType type: PythonTypes.get()){
+            type.init();
+        }
+        // Constructors of custom types may contain initialization code that should
+        // run on the main the thread.
     }
 
     /**
@@ -109,6 +114,8 @@ public class PythonExecutioner {
     public static void getVariables(PythonVariable... pyVars) {
         getVariables(Arrays.asList(pyVars));
     }
+
+
 
     /**
      * Gets the variable with the given name from the interpreter.
@@ -205,9 +212,9 @@ public class PythonExecutioner {
      *
      * @return
      */
-    public static List<PythonVariable> getAllVariables() {
+    public static PythonVariables getAllVariables() {
         PythonGIL.assertThreadSafe();
-        List<PythonVariable> ret = new ArrayList<>();
+        PythonVariables ret = new PythonVariables();
         PyObject main = PyImport_ImportModule("__main__");
         PyObject globals = PyModule_GetDict(main);
         PyObject keys = PyDict_Keys(globals);
@@ -259,7 +266,7 @@ public class PythonExecutioner {
      * @param inputs
      * @return
      */
-    public static List<PythonVariable> execAndReturnAllVariables(String code, List<PythonVariable> inputs) {
+    public static PythonVariables execAndReturnAllVariables(String code, List<PythonVariable> inputs) {
         setVariables(inputs);
         simpleExec(getWrappedCode(code));
         return getAllVariables();
@@ -271,7 +278,7 @@ public class PythonExecutioner {
      * @param code
      * @return
      */
-    public static List<PythonVariable> execAndReturnAllVariables(String code) {
+    public static PythonVariables execAndReturnAllVariables(String code) {
         simpleExec(getWrappedCode(code));
         return getAllVariables();
     }
@@ -279,25 +286,22 @@ public class PythonExecutioner {
     private static synchronized void initPythonPath() {
         try {
             String path = System.getProperty(DEFAULT_PYTHON_PATH_PROPERTY);
+
+            List<File> packagesList = new ArrayList<>();
+            packagesList.addAll(Arrays.asList(cachePackages()));
+            for (PythonType type: PythonTypes.get()){
+                packagesList.addAll(Arrays.asList(type.packages()));
+            }
+            //// TODO: fix in javacpp
+            packagesList.add(new File(python.cachePackage(), "site-packages"));
+
+            File[] packages = packagesList.toArray(new File[0]);
+
             if (path == null) {
-                File[] packages = cachePackages();
-
-                //// TODO: fix in javacpp
-                File sitePackagesWindows = new File(python.cachePackage(), "site-packages");
-                File[] packages2 = new File[packages.length + 1];
-                for (int i = 0; i < packages.length; i++) {
-                    //System.out.println(packages[i].getAbsolutePath());
-                    packages2[i] = packages[i];
-                }
-                packages2[packages.length] = sitePackagesWindows;
-                //System.out.println(sitePackagesWindows.getAbsolutePath());
-                packages = packages2;
-                //////////
-
                 Py_SetPath(packages);
             } else {
                 StringBuffer sb = new StringBuffer();
-                File[] packages = cachePackages();
+
                 JavaCppPathType pathAppendValue = JavaCppPathType.valueOf(System.getProperty(JAVACPP_PYTHON_APPEND_TYPE, DEFAULT_APPEND_TYPE).toUpperCase());
                 switch (pathAppendValue) {
                     case BEFORE:

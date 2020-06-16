@@ -19,8 +19,10 @@ package org.eclipse.python4j;
 import javax.lang.model.SourceVersion;
 
 
+import java.io.Closeable;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -44,6 +46,31 @@ public class PythonContextManager {
 
     static {
         init();
+    }
+
+
+    public static class Context implements Closeable{
+        private final String name;
+        private  final String previous;
+        private final boolean temp;
+        public Context(){
+            name = "temp_" + UUID.randomUUID().toString().replace("-", "_");
+            temp = true;
+            previous = getCurrentContext();
+            setContext(name);
+        }
+        public Context(String name){
+           this.name = name;
+           temp = false;
+            previous = getCurrentContext();
+            setContext(name);
+        }
+
+        @Override
+        public void close(){
+            setContext(previous);
+            if (temp) deleteContext(name);
+        }
     }
 
     private static void init() {
@@ -190,6 +217,7 @@ public class PythonContextManager {
         setContext(tempContext);
         deleteContext(currContext);
         setContext(currContext);
+        deleteContext(tempContext);
     }
 
     /**

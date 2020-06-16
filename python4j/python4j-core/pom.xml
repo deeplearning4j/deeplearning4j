@@ -39,6 +39,5 @@
             <artifactId>cpython-platform</artifactId>
             <version>${cpython-platform.version}</version>
         </dependency>
-
     </dependencies>
 </project>

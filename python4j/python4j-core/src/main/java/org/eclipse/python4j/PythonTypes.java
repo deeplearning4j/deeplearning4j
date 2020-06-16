@@ -18,7 +18,16 @@ package org.eclipse.python4j;
 
 
 import org.bytedeco.cpython.PyObject;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.Pointer;
+import sun.misc.Unsafe;
+import sun.nio.ch.DirectBuffer;
 
+import java.lang.reflect.Field;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.*;
 
 import static org.bytedeco.cpython.global.python.*;
@@ -28,7 +37,7 @@ public class PythonTypes {
 
 
     private static List<PythonType> getPrimitiveTypes() {
-        return Arrays.<PythonType>asList(STR, INT, FLOAT, BOOL);
+        return Arrays.<PythonType>asList(STR, INT, FLOAT, BOOL, MEMORYVIEW);
     }
 
     private static List<PythonType> getCollectionTypes() {
@@ -36,8 +45,13 @@ public class PythonTypes {
     }
 
     private static List<PythonType> getExternalTypes() {
-        //TODO service loader
-        return new ArrayList<>();
+        List<PythonType> ret = new ArrayList<>();
+        ServiceLoader<PythonType> sl = ServiceLoader.load(PythonType.class);
+        Iterator<PythonType> iter = sl.iterator();
+        while (iter.hasNext()) {
+            ret.add(iter.next());
+        }
+        return ret;
     }
 
     public static List<PythonType> get() {
@@ -48,14 +62,16 @@ public class PythonTypes {
         return ret;
     }
 
-    public static PythonType get(String name) {
+    public static <T> PythonType<T> get(String name) {
         for (PythonType pt : get()) {
             if (pt.getName().equals(name)) {  // TODO use map instead?
                 return pt;
             }
+
         }
         throw new PythonException("Unknown python type: " + name);
     }
+
 
     public static PythonType getPythonTypeForJavaObject(Object javaObject) {
         for (PythonType pt : get()) {
@@ -66,7 +82,7 @@ public class PythonTypes {
         throw new PythonException("Unable to find python type for java type: " + javaObject.getClass());
     }
 
-    public static PythonType getPythonTypeForPythonObject(PythonObject pythonObject) {
+    public static <T> PythonType<T> getPythonTypeForPythonObject(PythonObject pythonObject) {
         PyObject pyType = PyObject_Type(pythonObject.getNativePythonObject());
         try {
             String pyTypeStr = PythonTypes.STR.toJava(new PythonObject(pyType, false));
@@ -75,6 +91,14 @@ public class PythonTypes {
                 String pyTypeStr2 = "<class '" + pt.getName() + "'>";
                 if (pyTypeStr.equals(pyTypeStr2)) {
                     return pt;
+                } else {
+                    try (PythonGC gc = PythonGC.watch()) {
+                        PythonObject pyType2 = pt.pythonType();
+                        if (pyType2 != null && Python.isinstance(pythonObject, pyType2)) {
+                            return pt;
+                        }
+                    }
+
                 }
             }
             throw new PythonException("Unable to find converter for python object of type " + pyTypeStr);
@@ -213,11 +237,48 @@ public class PythonTypes {
     public static final PythonType<List> LIST = new PythonType<List>("list", List.class) {
 
         @Override
+        public boolean accepts(Object javaObject) {
+            return (javaObject instanceof List || javaObject.getClass().isArray());
+        }
+
+        @Override
         public List adapt(Object javaObject) {
             if (javaObject instanceof List) {
                 return (List) javaObject;
-            } else if (javaObject instanceof Object[]) {
-                return Arrays.asList((Object[]) javaObject);
+            } else if (javaObject.getClass().isArray()) {
+                List<Object> ret = new ArrayList<>();
+                if (javaObject instanceof Object[]) {
+                    Object[] arr = (Object[]) javaObject;
+                    return new ArrayList<>(Arrays.asList(arr));
+                } else if (javaObject instanceof short[]) {
+                    short[] arr = (short[]) javaObject;
+                    for (short x : arr) ret.add(x);
+                    return ret;
+                } else if (javaObject instanceof int[]) {
+                    int[] arr = (int[]) javaObject;
+                    for (int x : arr) ret.add(x);
+                    return ret;
+                } else if (javaObject instanceof long[]) {
+                    long[] arr = (long[]) javaObject;
+                    for (long x : arr) ret.add(x);
+                    return ret;
+                } else if (javaObject instanceof float[]) {
+                    float[] arr = (float[]) javaObject;
+                    for (float x : arr) ret.add(x);
+                    return ret;
+                } else if (javaObject instanceof double[]) {
+                    double[] arr = (double[]) javaObject;
+                    for (double x : arr) ret.add(x);
+                    return ret;
+                } else if (javaObject instanceof boolean[]) {
+                    boolean[] arr = (boolean[]) javaObject;
+                    for (boolean x : arr) ret.add(x);
+                    return ret;
+                } else {
+                    throw new PythonException("Unsupported array type: " + javaObject.getClass().toString());
+                }
+
+
             } else {
                 throw new PythonException("Cannot cast object of type " + javaObject.getClass().getName() + " to List");
             }
@@ -327,7 +388,13 @@ public class PythonTypes {
                 }
                 Object v = javaObject.get(k);
                 PythonObject pyVal;
-                pyVal = PythonTypes.convert(v);
+                if (v instanceof PythonObject) {
+                    pyVal = (PythonObject) v;
+                } else if (v instanceof PyObject) {
+                    pyVal = new PythonObject((PyObject) v);
+                } else {
+                    pyVal = PythonTypes.convert(v);
+                }
                 int errCode = PyDict_SetItem(pyDict, pyKey.getNativePythonObject(), pyVal.getNativePythonObject());
                 if (errCode != 0) {
                     String keyStr = pyKey.toString();
@@ -341,4 +408,85 @@ public class PythonTypes {
             return new PythonObject(pyDict);
         }
     };
+
+
+    public static final PythonType<BytePointer> MEMORYVIEW = new PythonType<BytePointer>("memoryview", BytePointer.class) {
+        @Override
+        public BytePointer toJava(PythonObject pythonObject) {
+            try (PythonGC gc = PythonGC.watch()) {
+                if (!(Python.isinstance(pythonObject, Python.memoryviewType()))) {
+                    throw new PythonException("Expected memoryview. Received: " + pythonObject);
+                }
+                PythonObject pySize = Python.len(pythonObject);
+                PythonObject ctypes = Python.importModule("ctypes");
+                PythonObject charType = ctypes.attr("c_char");
+                PythonObject charArrayType = new PythonObject(PyNumber_Multiply(charType.getNativePythonObject(),
+                        pySize.getNativePythonObject()));
+                PythonObject fromBuffer = charArrayType.attr("from_buffer");
+                if (pythonObject.attr("readonly").toBoolean()) {
+                    pythonObject = Python.bytearray(pythonObject);
+                }
+                PythonObject arr = fromBuffer.call(pythonObject);
+                PythonObject cast = ctypes.attr("cast");
+                PythonObject voidPtrType = ctypes.attr("c_void_p");
+                PythonObject voidPtr = cast.call(arr, voidPtrType);
+                long address = voidPtr.attr("value").toLong();
+                long size = pySize.toLong();
+                try {
+                    Field addressField = Buffer.class.getDeclaredField("address");
+                    addressField.setAccessible(true);
+                    Field capacityField = Buffer.class.getDeclaredField("capacity");
+                    capacityField.setAccessible(true);
+                    ByteBuffer buff = ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder());
+                    addressField.setLong(buff, address);
+                    capacityField.setInt(buff, (int) size);
+                    BytePointer ret = new BytePointer(buff);
+                    ret.limit(size);
+                    return ret;
+
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+            }
+        }
+
+        @Override
+        public PythonObject toPython(BytePointer javaObject) {
+            long address = javaObject.address();
+            long size = javaObject.limit();
+            try (PythonGC gc = PythonGC.watch()) {
+                PythonObject ctypes = Python.importModule("ctypes");
+                PythonObject charType = ctypes.attr("c_char");
+                PythonObject pySize = new PythonObject(size);
+                PythonObject charArrayType = new PythonObject(PyNumber_Multiply(charType.getNativePythonObject(),
+                        pySize.getNativePythonObject()));
+                PythonObject fromAddress = charArrayType.attr("from_address");
+                PythonObject arr = fromAddress.call(new PythonObject(address));
+                PythonObject memoryView = Python.memoryview(arr).attr("cast").call("b");
+                PythonGC.keep(memoryView);
+                return memoryView;
+            }
+
+        }
+
+        @Override
+        public boolean accepts(Object javaObject) {
+            return javaObject instanceof Pointer || javaObject instanceof DirectBuffer;
+        }
+
+        @Override
+        public BytePointer adapt(Object javaObject) {
+            if (javaObject instanceof BytePointer) {
+                return (BytePointer) javaObject;
+            } else if (javaObject instanceof Pointer) {
+                return new BytePointer((Pointer) javaObject);
+            } else if (javaObject instanceof DirectBuffer) {
+                return new BytePointer((ByteBuffer) javaObject);
+            } else {
+                throw new PythonException("Cannot cast object of type " + javaObject.getClass().getName() + " to BytePointer");
+            }
+        }
+    };
+
 }

@@ -17,6 +17,8 @@
 package org.eclipse.python4j;
 
 
+import java.io.File;
+
 public abstract class PythonType<T> {
 
     private final String name;
@@ -43,5 +45,25 @@ public abstract class PythonType<T> {
         return name;
     }
 
+    @Override
+    public boolean equals(Object obj){
+        if (!(obj instanceof PythonType)){
+            return false;
+        }
+        PythonType other = (PythonType)obj;
+        return this.getClass().equals(other.getClass()) && this.name.equals(other.name);
+    }
+
+    public PythonObject pythonType(){
+        return null;
+    }
+
+    public File[] packages(){
+        return new File[0];
+    }
+
+    public void init(){ //not to be called from constructor
+
+    }
 
 }

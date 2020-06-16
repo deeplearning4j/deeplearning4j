@@ -20,25 +20,29 @@ package org.eclipse.python4j;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
-@Data
-@NoArgsConstructor
 /**
  * PythonJob is the right abstraction for executing multiple python scripts
  * in a multi thread stateful environment. The setup-and-run mode allows your
  * "setup" code (imports, model loading etc) to be executed only once.
  */
+@Data
+@Slf4j
 public class PythonJob {
+
 
     private String code;
     private String name;
     private String context;
-    private boolean setupRunMode;
+    private final boolean setupRunMode;
     private PythonObject runF;
+    private final AtomicBoolean setupDone = new AtomicBoolean(false);
 
     static {
         new PythonExecutioner();
@@ -63,7 +67,6 @@ public class PythonJob {
         if (PythonContextManager.hasContext(context)) {
             throw new PythonException("Unable to create python job " + name + ". Context " + context + " already exists!");
         }
-        if (setupRunMode) setup();
     }
 
 
@@ -71,17 +74,18 @@ public class PythonJob {
      * Clears all variables in current context and calls setup()
      */
     public void clearState(){
-        String context = this.context;
-        PythonContextManager.setContext("main");
-        PythonContextManager.deleteContext(context);
-        this.context = context;
+        PythonContextManager.setContext(this.context);
+        PythonContextManager.reset();
+        setupDone.set(false);
         setup();
     }
 
     public void setup(){
+        if (setupDone.get()) return;
         try (PythonGIL gil = PythonGIL.lock()) {
             PythonContextManager.setContext(context);
             PythonObject runF = PythonExecutioner.getVariable("run");
+
             if (runF == null || runF.isNone() || !Python.callable(runF)) {
                 PythonExecutioner.exec(code);
                 runF = PythonExecutioner.getVariable("run");
@@ -98,10 +102,12 @@ public class PythonJob {
             if (!setupF.isNone()) {
                 setupF.call();
             }
+            setupDone.set(true);
         }
     }
 
     public void exec(List<PythonVariable> inputs, List<PythonVariable> outputs) {
+        if (setupRunMode)setup();
         try (PythonGIL gil = PythonGIL.lock()) {
             try (PythonGC _ = PythonGC.watch()) {
                 PythonContextManager.setContext(context);
@@ -139,6 +145,7 @@ public class PythonJob {
     }
 
     public List<PythonVariable> execAndReturnAllVariables(List<PythonVariable> inputs){
+        if (setupRunMode)setup();
         try (PythonGIL gil = PythonGIL.lock()) {
             try (PythonGC _ = PythonGC.watch()) {
                 PythonContextManager.setContext(context);

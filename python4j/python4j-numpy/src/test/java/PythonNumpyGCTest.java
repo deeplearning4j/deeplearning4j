@@ -19,21 +19,22 @@ import org.eclipse.python4j.PythonGC;
 import org.eclipse.python4j.PythonObject;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.concurrent.NotThreadSafe;
 
 
 @NotThreadSafe
-public class PythonGCTest {
+public class PythonNumpyGCTest {
 
     @Test
-    public void testGC() throws Exception{
+    public void testGC(){
         PythonObject gcModule = Python.importModule("gc");
         PythonObject getObjects = gcModule.attr("get_objects");
         PythonObject pyObjCount1 = Python.len(getObjects.call());
         long objCount1 =  pyObjCount1.toLong();
         PythonObject pyList = Python.list();
-        pyList.attr("append").call("a");
+        pyList.attr("append").call(new PythonObject(Nd4j.linspace(1, 10, 10)));
         pyList.attr("append").call(1.0);
         pyList.attr("append").call(true);
         PythonObject pyObjCount2 = Python.len(getObjects.call());
@@ -42,7 +43,7 @@ public class PythonGCTest {
         Assert.assertTrue(diff > 2);
         try(PythonGC gc = PythonGC.watch()){
             PythonObject pyList2 = Python.list();
-            pyList2.attr("append").call("a");
+            pyList2.attr("append").call(new PythonObject(Nd4j.linspace(1, 10, 10)));
             pyList2.attr("append").call(1.0);
             pyList2.attr("append").call(true);
         }
