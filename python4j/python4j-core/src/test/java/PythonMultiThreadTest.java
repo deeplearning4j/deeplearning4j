@@ -14,10 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-import org.eclipse.python4j.*;
+import org.nd4j.python4j.*;
 import org.junit.Assert;
 import org.junit.Test;
-
 import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayList;
 import java.util.Arrays;

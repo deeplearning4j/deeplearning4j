@@ -29,7 +29,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.eclipse</groupId>
+            <groupId>org.nd4j</groupId>
             <artifactId>python4j-core</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>

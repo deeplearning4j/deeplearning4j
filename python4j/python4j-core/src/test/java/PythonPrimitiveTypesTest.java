@@ -15,9 +15,9 @@
  ******************************************************************************/
 
 
-import org.eclipse.python4j.PythonException;
-import org.eclipse.python4j.PythonObject;
-import org.eclipse.python4j.PythonTypes;
+import org.nd4j.python4j.PythonException;
+import org.nd4j.python4j.PythonObject;
+import org.nd4j.python4j.PythonTypes;
 import org.junit.Assert;
 import org.junit.Test;
 

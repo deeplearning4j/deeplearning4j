@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 
-package org.eclipse.python4j;
+package org.nd4j.python4j;
 
 import org.bytedeco.cpython.PyObject;
 
@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 

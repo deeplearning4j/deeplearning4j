@@ -14,14 +14,12 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.eclipse.python4j;
+package org.nd4j.python4j;
 
 
 import org.bytedeco.cpython.PyObject;
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.Loader;
 import org.bytedeco.javacpp.Pointer;
-import sun.misc.Unsafe;
 import sun.nio.ch.DirectBuffer;
 
 import java.lang.reflect.Field;

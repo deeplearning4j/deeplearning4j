@@ -16,14 +16,13 @@
 
 
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.Loader;
-import org.eclipse.python4j.*;
 import org.junit.Assert;
 import org.junit.Test;
-import sun.nio.ch.DirectBuffer;
+import org.nd4j.python4j.PythonExecutioner;
+import org.nd4j.python4j.PythonTypes;
+import org.nd4j.python4j.PythonVariable;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.*;
 
@@ -37,8 +36,6 @@ public class PythonBufferTest {
         buff.put((byte) 98);
         buff.put((byte) 99);
         buff.rewind();
-
-        BytePointer bp = new BytePointer(buff);
 
         List<PythonVariable> inputs = new ArrayList<>();
         inputs.add(new PythonVariable<>("buff", PythonTypes.MEMORYVIEW, buff));
