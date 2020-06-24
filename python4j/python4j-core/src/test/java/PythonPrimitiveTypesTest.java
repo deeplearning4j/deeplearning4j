@@ -15,11 +15,12 @@
  ******************************************************************************/
 
 
-import org.nd4j.python4j.PythonException;
-import org.nd4j.python4j.PythonObject;
-import org.nd4j.python4j.PythonTypes;
+import org.nd4j.python4j.*;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class PythonPrimitiveTypesTest {
 
@@ -77,6 +78,19 @@ public class PythonPrimitiveTypesTest {
         boolean b3 = PythonTypes.BOOL.toJava(p2);
 
         Assert.assertEquals(b, b3);
+    }
+    @Test
+    public void testBytes() {
+        byte[] bytes = new byte[]{97, 98, 99};
+        List<PythonVariable> inputs = new ArrayList<>();
+        inputs.add(new PythonVariable<>("buff", PythonTypes.BYTES, bytes));
+        List<PythonVariable> outputs = new ArrayList<>();
+        outputs.add(new PythonVariable<>("s1", PythonTypes.STR));
+        outputs.add(new PythonVariable<>("buff2", PythonTypes.BYTES));
+        String code = "s1 = ''.join(chr(c) for c in buff)\nbuff2=b'def'";
+        PythonExecutioner.exec(code, inputs, outputs);
+        Assert.assertEquals("abc", outputs.get(0).getValue());
+        Assert.assertArrayEquals(new byte[]{100, 101, 102}, (byte[])outputs.get(1).getValue());
     }
 
 }

@@ -35,7 +35,7 @@ public class PythonTypes {
 
 
     private static List<PythonType> getPrimitiveTypes() {
-        return Arrays.<PythonType>asList(STR, INT, FLOAT, BOOL, MEMORYVIEW);
+        return Arrays.<PythonType>asList(STR, INT, FLOAT, BOOL, BYTES);
     }
 
     private static List<PythonType> getCollectionTypes() {
@@ -256,6 +256,10 @@ public class PythonTypes {
                     int[] arr = (int[]) javaObject;
                     for (int x : arr) ret.add(x);
                     return ret;
+                }else if (javaObject instanceof byte[]){
+                    byte[] arr = (byte[]) javaObject;
+                    for (int x : arr) ret.add(x);
+                    return ret;
                 } else if (javaObject instanceof long[]) {
                     long[] arr = (long[]) javaObject;
                     for (long x : arr) ret.add(x);
@@ -408,83 +412,125 @@ public class PythonTypes {
     };
 
 
-    public static final PythonType<BytePointer> MEMORYVIEW = new PythonType<BytePointer>("memoryview", BytePointer.class) {
+    public static final PythonType<byte[]> BYTES = new PythonType<byte[]>("bytes", byte[].class) {
         @Override
-        public BytePointer toJava(PythonObject pythonObject) {
+        public byte[] toJava(PythonObject pythonObject) {
             try (PythonGC gc = PythonGC.watch()) {
-                if (!(Python.isinstance(pythonObject, Python.memoryviewType()))) {
-                    throw new PythonException("Expected memoryview. Received: " + pythonObject);
+                if (!(Python.isinstance(pythonObject, Python.bytesType()))) {
+                    throw new PythonException("Expected bytes. Received: " + pythonObject);
                 }
                 PythonObject pySize = Python.len(pythonObject);
-                PythonObject ctypes = Python.importModule("ctypes");
-                PythonObject charType = ctypes.attr("c_char");
-                PythonObject charArrayType = new PythonObject(PyNumber_Multiply(charType.getNativePythonObject(),
-                        pySize.getNativePythonObject()));
-                PythonObject fromBuffer = charArrayType.attr("from_buffer");
-                if (pythonObject.attr("readonly").toBoolean()) {
-                    pythonObject = Python.bytearray(pythonObject);
+                byte[] ret = new byte[pySize.toInt()];
+                for (int i = 0; i < ret.length; i++) {
+                    ret[i] = (byte)pythonObject.get(i).toInt();
                 }
-                PythonObject arr = fromBuffer.call(pythonObject);
-                PythonObject cast = ctypes.attr("cast");
-                PythonObject voidPtrType = ctypes.attr("c_void_p");
-                PythonObject voidPtr = cast.call(arr, voidPtrType);
-                long address = voidPtr.attr("value").toLong();
-                long size = pySize.toLong();
-                try {
-                    Field addressField = Buffer.class.getDeclaredField("address");
-                    addressField.setAccessible(true);
-                    Field capacityField = Buffer.class.getDeclaredField("capacity");
-                    capacityField.setAccessible(true);
-                    ByteBuffer buff = ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder());
-                    addressField.setLong(buff, address);
-                    capacityField.setInt(buff, (int) size);
-                    BytePointer ret = new BytePointer(buff);
-                    ret.limit(size);
-                    return ret;
-
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-
+                return ret;
             }
         }
 
         @Override
-        public PythonObject toPython(BytePointer javaObject) {
-            long address = javaObject.address();
-            long size = javaObject.limit();
-            try (PythonGC gc = PythonGC.watch()) {
-                PythonObject ctypes = Python.importModule("ctypes");
-                PythonObject charType = ctypes.attr("c_char");
-                PythonObject pySize = new PythonObject(size);
-                PythonObject charArrayType = new PythonObject(PyNumber_Multiply(charType.getNativePythonObject(),
-                        pySize.getNativePythonObject()));
-                PythonObject fromAddress = charArrayType.attr("from_address");
-                PythonObject arr = fromAddress.call(new PythonObject(address));
-                PythonObject memoryView = Python.memoryview(arr).attr("cast").call("b");
-                PythonGC.keep(memoryView);
-                return memoryView;
+        public PythonObject toPython(byte[] javaObject) {
+            try(PythonGC gc = PythonGC.watch()){
+                PythonObject ret = Python.bytes(LIST.toPython(LIST.adapt(javaObject)));
+                PythonGC.keep(ret);
+                return ret;
             }
-
         }
-
         @Override
         public boolean accepts(Object javaObject) {
-            return javaObject instanceof Pointer || javaObject instanceof DirectBuffer;
+            return javaObject instanceof byte[];
+        }
+        @Override
+        public byte[] adapt(Object javaObject) {
+            if (javaObject instanceof byte[]){
+                return (byte[])javaObject;
+            }
+            throw new PythonException("Cannot cast object of type " + javaObject.getClass().getName() + " to byte[]");
         }
 
-        @Override
-        public BytePointer adapt(Object javaObject) {
-            if (javaObject instanceof BytePointer) {
-                return (BytePointer) javaObject;
-            } else if (javaObject instanceof Pointer) {
-                return new BytePointer((Pointer) javaObject);
-            } else if (javaObject instanceof DirectBuffer) {
-                return new BytePointer((ByteBuffer) javaObject);
-            } else {
-                throw new PythonException("Cannot cast object of type " + javaObject.getClass().getName() + " to BytePointer");
-            }
-        }
     };
+
+    /**
+     * Crashes on Adopt OpenJDK
+     * Use implementation in python4j-numpy instead for zero-copy byte buffers.
+     */
+//    public static final PythonType<BytePointer> MEMORYVIEW = new PythonType<BytePointer>("memoryview", BytePointer.class) {
+//        @Override
+//        public BytePointer toJava(PythonObject pythonObject) {
+//            try (PythonGC gc = PythonGC.watch()) {
+//                if (!(Python.isinstance(pythonObject, Python.memoryviewType()))) {
+//                    throw new PythonException("Expected memoryview. Received: " + pythonObject);
+//                }
+//                PythonObject pySize = Python.len(pythonObject);
+//                PythonObject ctypes = Python.importModule("ctypes");
+//                PythonObject charType = ctypes.attr("c_char");
+//                PythonObject charArrayType = new PythonObject(PyNumber_Multiply(charType.getNativePythonObject(),
+//                        pySize.getNativePythonObject()));
+//                PythonObject fromBuffer = charArrayType.attr("from_buffer");
+//                if (pythonObject.attr("readonly").toBoolean()) {
+//                    pythonObject = Python.bytearray(pythonObject);
+//                }
+//                PythonObject arr = fromBuffer.call(pythonObject);
+//                PythonObject cast = ctypes.attr("cast");
+//                PythonObject voidPtrType = ctypes.attr("c_void_p");
+//                PythonObject voidPtr = cast.call(arr, voidPtrType);
+//                long address = voidPtr.attr("value").toLong();
+//                long size = pySize.toLong();
+//                try {
+//                    Field addressField = Buffer.class.getDeclaredField("address");
+//                    addressField.setAccessible(true);
+//                    Field capacityField = Buffer.class.getDeclaredField("capacity");
+//                    capacityField.setAccessible(true);
+//                    ByteBuffer buff = ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder());
+//                    addressField.setLong(buff, address);
+//                    capacityField.setInt(buff, (int) size);
+//                    BytePointer ret = new BytePointer(buff);
+//                    ret.limit(size);
+//                    return ret;
+//
+//                } catch (Exception e) {
+//                    throw new RuntimeException(e);
+//                }
+//
+//            }
+//        }
+//
+//        @Override
+//        public PythonObject toPython(BytePointer javaObject) {
+//            long address = javaObject.address();
+//            long size = javaObject.limit();
+//            try (PythonGC gc = PythonGC.watch()) {
+//                PythonObject ctypes = Python.importModule("ctypes");
+//                PythonObject charType = ctypes.attr("c_char");
+//                PythonObject pySize = new PythonObject(size);
+//                PythonObject charArrayType = new PythonObject(PyNumber_Multiply(charType.getNativePythonObject(),
+//                        pySize.getNativePythonObject()));
+//                PythonObject fromAddress = charArrayType.attr("from_address");
+//                PythonObject arr = fromAddress.call(new PythonObject(address));
+//                PythonObject memoryView = Python.memoryview(arr).attr("cast").call("b");
+//                PythonGC.keep(memoryView);
+//                return memoryView;
+//            }
+//
+//        }
+//
+//        @Override
+//        public boolean accepts(Object javaObject) {
+//            return javaObject instanceof Pointer || javaObject instanceof DirectBuffer;
+//        }
+//
+//        @Override
+//        public BytePointer adapt(Object javaObject) {
+//            if (javaObject instanceof BytePointer) {
+//                return (BytePointer) javaObject;
+//            } else if (javaObject instanceof Pointer) {
+//                return new BytePointer((Pointer) javaObject);
+//            } else if (javaObject instanceof DirectBuffer) {
+//                return new BytePointer((ByteBuffer) javaObject);
+//            } else {
+//                throw new PythonException("Cannot cast object of type " + javaObject.getClass().getName() + " to BytePointer");
+//            }
+//        }
+//    };
 
 }
