@@ -39,7 +39,7 @@ public class PythonPrimitiveTypesTest {
     }
 
     @Test
-    public void testStr() throws PythonException{
+    public void testStr() throws PythonException {
         String s = "abcd";
         PythonObject p = PythonTypes.STR.toPython(s);
         String s2 = PythonTypes.STR.toJava(p);
@@ -53,7 +53,7 @@ public class PythonPrimitiveTypesTest {
     }
 
     @Test
-    public void testFloat() throws PythonException{
+    public void testFloat() throws PythonException {
         double f = 7;
         PythonObject p = PythonTypes.FLOAT.toPython(f);
         double f2 = PythonTypes.FLOAT.toJava(p);
@@ -67,7 +67,7 @@ public class PythonPrimitiveTypesTest {
     }
 
     @Test
-    public void testBool() throws PythonException{
+    public void testBool() throws PythonException {
         boolean b = true;
         PythonObject p = PythonTypes.BOOL.toPython(b);
         boolean b2 = PythonTypes.BOOL.toJava(p);
@@ -79,18 +79,35 @@ public class PythonPrimitiveTypesTest {
 
         Assert.assertEquals(b, b3);
     }
+
     @Test
     public void testBytes() {
+        byte[] bytes = new byte[256];
+        for (int i = 0; i < 256; i++) {
+            bytes[i] = (byte) i;
+        }
+        List<PythonVariable> inputs = new ArrayList<>();
+        inputs.add(new PythonVariable<>("b1", PythonTypes.BYTES, bytes));
+        List<PythonVariable> outputs = new ArrayList<>();
+        outputs.add(new PythonVariable<>("b2", PythonTypes.BYTES));
+        String code = "b2=b1";
+        PythonExecutioner.exec(code, inputs, outputs);
+        Assert.assertArrayEquals(bytes, (byte[]) outputs.get(0).getValue());
+    }
+
+    @Test
+    public void testBytes2() {
         byte[] bytes = new byte[]{97, 98, 99};
         List<PythonVariable> inputs = new ArrayList<>();
-        inputs.add(new PythonVariable<>("buff", PythonTypes.BYTES, bytes));
+        inputs.add(new PythonVariable<>("b1", PythonTypes.BYTES, bytes));
         List<PythonVariable> outputs = new ArrayList<>();
         outputs.add(new PythonVariable<>("s1", PythonTypes.STR));
-        outputs.add(new PythonVariable<>("buff2", PythonTypes.BYTES));
-        String code = "s1 = ''.join(chr(c) for c in buff)\nbuff2=b'def'";
+        outputs.add(new PythonVariable<>("b2", PythonTypes.BYTES));
+        String code = "s1 = ''.join(chr(c) for c in b1)\nb2=b'def'";
         PythonExecutioner.exec(code, inputs, outputs);
         Assert.assertEquals("abc", outputs.get(0).getValue());
-        Assert.assertArrayEquals(new byte[]{100, 101, 102}, (byte[])outputs.get(1).getValue());
+        Assert.assertArrayEquals(new byte[]{100, 101, 102}, (byte[]) outputs.get(1).getValue());
     }
+
 
 }
