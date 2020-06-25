@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 
-package org.eclipse.python4j;
+package org.nd4j.python4j;
 
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.Loader;

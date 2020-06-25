@@ -21,7 +21,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>python4j-parent</artifactId>
-        <groupId>org.eclipse</groupId>
+        <groupId>org.nd4j</groupId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <packaging>jar</packaging>

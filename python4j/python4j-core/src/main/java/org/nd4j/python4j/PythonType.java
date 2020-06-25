@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.eclipse.python4j;
+package org.nd4j.python4j;
 
 
 import java.io.File;

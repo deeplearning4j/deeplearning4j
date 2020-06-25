@@ -14,11 +14,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.eclipse.python4j;
+package org.nd4j.python4j;
 
 
 import org.bytedeco.cpython.PyThreadState;
-import org.omg.SendingContext.RunTime;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

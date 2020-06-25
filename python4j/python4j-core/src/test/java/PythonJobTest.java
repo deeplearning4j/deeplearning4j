@@ -14,10 +14,10 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-import org.eclipse.python4j.PythonContextManager;
-import org.eclipse.python4j.PythonJob;
-import org.eclipse.python4j.PythonTypes;
-import org.eclipse.python4j.PythonVariable;
+import org.nd4j.python4j.PythonContextManager;
+import org.nd4j.python4j.PythonJob;
+import org.nd4j.python4j.PythonTypes;
+import org.nd4j.python4j.PythonVariable;
 import org.junit.Test;
 
 import java.util.ArrayList;

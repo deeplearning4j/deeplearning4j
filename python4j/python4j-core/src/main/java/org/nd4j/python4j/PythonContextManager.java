@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.eclipse.python4j;
+package org.nd4j.python4j;
 
 import javax.lang.model.SourceVersion;
 
@@ -103,7 +103,18 @@ public class PythonContextManager {
     }
 
     private static boolean validateContextName(String s) {
-        return SourceVersion.isIdentifier(s) && !s.startsWith(COLLAPSED_KEY);
+        for (int i=0; i<s.length(); i++){
+            char c = s.toLowerCase().charAt(i);
+            if (i == 0){
+                if (c >= '0' && c <= '9'){
+                    return false;
+                }
+            }
+            if (!(c=='_' || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))){
+                return false;
+            }
+        }
+        return true;
     }
 
     private static String getContextPrefix(String contextName) {

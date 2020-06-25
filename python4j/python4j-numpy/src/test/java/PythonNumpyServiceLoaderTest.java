@@ -15,18 +15,14 @@
  ******************************************************************************/
 
 
-import org.eclipse.python4j.*;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.python4j.NumpyArray;
+import org.nd4j.python4j.PythonTypes;
 
 import javax.annotation.concurrent.NotThreadSafe;
-import java.util.ArrayList;
-import java.util.List;
 
 @NotThreadSafe
 public class PythonNumpyServiceLoaderTest {
@@ -36,6 +32,4 @@ public class PythonNumpyServiceLoaderTest {
         Assert.assertEquals(NumpyArray.INSTANCE, PythonTypes.<INDArray>get("numpy.ndarray"));
         Assert.assertEquals(NumpyArray.INSTANCE, PythonTypes.getPythonTypeForJavaObject(Nd4j.zeros(1)));
     }
-
-
 }
