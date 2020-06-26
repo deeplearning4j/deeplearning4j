@@ -1,10 +1,13 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm;
 
 import org.deeplearning4j.rl4j.learning.sync.Transition;
-import org.deeplearning4j.rl4j.learning.sync.support.MockDQN;
-import org.deeplearning4j.rl4j.learning.sync.support.MockTargetQNetworkSource;
+import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -12,17 +15,31 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class StandardDQNTest {
+
+    @Mock
+    IOutputNeuralNet qNetworkMock;
+
+    @Mock
+    IOutputNeuralNet targetQNetworkMock;
+
+
+    @Before
+    public void setup() {
+        when(qNetworkMock.output(any(INDArray.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> i.getArguments()[0]);
+    }
+
+
     @Test
     public void when_isTerminal_expect_rewardValueAtIdx0() {
 
         // Assemble
-        MockDQN qNetwork = new MockDQN();
-        MockDQN targetQNetwork = new MockDQN();
-        MockTargetQNetworkSource targetQNetworkSource = new MockTargetQNetworkSource(qNetwork, targetQNetwork);
-
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
                 add(buildTransition(buildObservation(new double[]{1.1, 2.2}),
@@ -30,7 +47,7 @@ public class StandardDQNTest {
             }
         };
 
-        StandardDQN sut = new StandardDQN(targetQNetworkSource, 0.5);
+        StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
         DataSet result = sut.computeTDTargets(transitions);
@@ -45,10 +62,6 @@ public class StandardDQNTest {
     public void when_isNotTerminal_expect_rewardPlusEstimatedQValue() {
 
         // Assemble
-        MockDQN qNetwork = new MockDQN();
-        MockDQN targetQNetwork = new MockDQN();
-        MockTargetQNetworkSource targetQNetworkSource = new MockTargetQNetworkSource(qNetwork, targetQNetwork);
-
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
                 add(buildTransition(buildObservation(new double[]{1.1, 2.2}),
@@ -56,7 +69,7 @@ public class StandardDQNTest {
             }
         };
 
-        StandardDQN sut = new StandardDQN(targetQNetworkSource, 0.5);
+        StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
         DataSet result = sut.computeTDTargets(transitions);
@@ -71,10 +84,6 @@ public class StandardDQNTest {
     public void when_batchHasMoreThanOne_expect_everySampleEvaluated() {
 
         // Assemble
-        MockDQN qNetwork = new MockDQN();
-        MockDQN targetQNetwork = new MockDQN();
-        MockTargetQNetworkSource targetQNetworkSource = new MockTargetQNetworkSource(qNetwork, targetQNetwork);
-
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
                 add(buildTransition(buildObservation(new double[]{1.1, 2.2}),
@@ -86,7 +95,7 @@ public class StandardDQNTest {
             }
         };
 
-        StandardDQN sut = new StandardDQN(targetQNetworkSource, 0.5);
+        StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
         DataSet result = sut.computeTDTargets(transitions);
