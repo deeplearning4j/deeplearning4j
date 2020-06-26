@@ -244,7 +244,8 @@ TEST_F(DeclarableOpsTests19, test_threshold_encode_decode) {
 #ifdef _RELEASE
 TEST_F(DeclarableOpsTests19, test_threshold_encode_decode_2) {
   // [2,1,135079944,1,1,8192,1,99]
-  auto initial = NDArrayFactory::create<float>('c', {1, 135079944});
+  constexpr int sizeX= 10*1000*1000;
+  auto initial = NDArrayFactory::create<float>('c', {1, sizeX});
   initial = 1.0f;
   auto exp = initial.dup();
   auto neg = initial.like();
@@ -254,7 +255,7 @@ TEST_F(DeclarableOpsTests19, test_threshold_encode_decode_2) {
   auto enc_result = enc.evaluate({&initial}, {0.5f});
   auto encoded = enc_result.at(1);
 
-  ASSERT_EQ(135079944 + 4, encoded->lengthOf());
+  ASSERT_EQ(sizeX + 4, encoded->lengthOf());
   ASSERT_NE(exp, initial);
 /*
   for (int e = 0; e < initial.lengthOf(); e++) {

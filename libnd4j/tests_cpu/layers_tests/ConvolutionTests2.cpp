@@ -1113,7 +1113,10 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_6) {
     ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     auto z = result.at(0);
-
+#if 0    
+    exp.printIndexedBuffer("Expected");
+    z->printIndexedBuffer("Z");
+#endif    
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -1132,7 +1135,10 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_7) {
     ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     auto z = result.at(0);
-
+#if 0    
+    exp.printIndexedBuffer("Expected");
+    z->printIndexedBuffer("Z");
+#endif    
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -1151,7 +1157,10 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_8) {
     ASSERT_EQ(ND4J_STATUS_OK, result.status());
 
     auto z = result.at(0);
-
+#if 0    
+    exp.printIndexedBuffer("Expected");
+    z->printIndexedBuffer("Z");
+#endif    
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 }
@@ -1204,7 +1213,10 @@ TYPED_TEST(TypedConvolutionTests2, maxpool2d_10) {
     auto* output = results.at(0);
 
     ASSERT_EQ(Status::OK(), results.status());
-
+#if 0    
+    expOutput.printIndexedBuffer("expOutput");
+    output->printIndexedBuffer("output");
+#endif    
     ASSERT_TRUE(expOutput.isSameShape(output));
     ASSERT_TRUE(expOutput.equalsTo(output));
 }

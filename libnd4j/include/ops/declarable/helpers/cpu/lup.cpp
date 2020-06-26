@@ -215,7 +215,9 @@ namespace helpers {
         auto maxValue = T(0); //sd::math::nd4j_abs(compoundBuffer[xInitialIndex]);
         auto result = -1;
         //auto loop = PRAGMA_THREADS_FOR {
-            auto start = column, stop = rowNum, increment = 1;
+            auto start = column;
+	    auto stop = rowNum;
+	    auto increment = 1;
             for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
                 Nd4jLong xPos[] = {rowCounter, column};
                 auto xIndex = shape::getOffset(compoundShape, xPos, 0);

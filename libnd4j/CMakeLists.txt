@@ -131,6 +131,23 @@ if(NOT SD_CUDA)
     endif()
 endif()
 
+#arm-compute entry
+if(${HELPERS_armcompute})
+ find_package(ARMCOMPUTE REQUIRED)
+
+ if(ARMCOMPUTE_FOUND)
+    message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
+    set(HAVE_ARMCOMPUTE 1)
+    # Add preprocessor definition for ARM Compute NEON 
+    add_definitions(-DARMCOMPUTENEON_ENABLED)
+    #build our library with neon support
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
+    include_directories(${ARMCOMPUTE_INCLUDE})
+    message("----${ARMCOMPUTE_INCLUDE}---")
+ endif()
+
+endif()
+ 
 
 # new mkl-dnn entry
 if (${HELPERS_mkldnn})
