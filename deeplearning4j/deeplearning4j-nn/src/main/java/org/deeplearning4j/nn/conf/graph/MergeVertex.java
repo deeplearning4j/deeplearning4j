@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
+import lombok.Data;
 import lombok.val;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
@@ -38,6 +39,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *      -> [numExamples,depth1 + depth2,width,height]}<br>
  * @author Alex Black
  */
+@Data
 public class MergeVertex extends GraphVertex {
 
     protected int mergeAxis = 1;       //default value for backward compatibility (deserialization of old version JSON) - NCHW and NCW format

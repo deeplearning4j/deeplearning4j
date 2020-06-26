@@ -16,7 +16,8 @@
 
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 20.04.2018
-//
+// implementation is based on following article:
+// "MergeShuffle: A Very Fast, Parallel Random Permutation Algorithm", https://arxiv.org/abs/1508.03167
 
 
 
@@ -31,96 +32,167 @@ namespace ops 	  {
 namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
+// Fisher-Yates shuffle
 template <typename T>
-void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
+static void fisherYates(sd::graph::RandomGenerator& rng, T* buff, const Nd4jLong& len, const Nd4jLong& ews, Nd4jLong ind) {
 
-    // check edge cases first
-    int temp;
+    for(Nd4jLong i = len-1; i > 0; --i) {
+        const Nd4jLong j = rng.relativeLong(ind++) % (i + 1);
+        if(i != j)
+            math::nd4j_swap<T>(buff[i*ews], buff[j*ews]);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// mutual shuffle of two adjacent already shuffled ranges with length len1 and (totLen - len1) correspondingly
+template <typename T>
+static void mergeShuffle(sd::graph::RandomGenerator& rng, T* buff, const Nd4jLong& len1, const Nd4jLong& totLen, const Nd4jLong& ews, Nd4jLong ind) {
+
+    Nd4jLong beg = 0;           // beginning
+    Nd4jLong mid = len1;        // middle
+
+    while (true) {
+        if(rng.relativeLong(ind++) % 2) {
+            if(mid == totLen)
+                break;
+            math::nd4j_swap<T>(buff[ews * beg], buff[ews * mid++]);
+        } else {
+            if(beg == mid)
+                break;
+        }
+        ++beg;
+    }
+
+    // fisherYates
+    while (beg < totLen) {
+        const Nd4jLong j = rng.relativeLong(ind++) % (beg + 1);
+        if(beg != j)
+            math::nd4j_swap<T>(buff[ews * beg], buff[ews * j]);
+        ++beg;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void randomShuffle_(NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
+
     const int firstDim = input.sizeAt(0);
+    int temp;
+
     if(input.lengthOf() == 1 || firstDim == 1) {
 
         if(!isInplace)
             output.assign(input);
     }
-    else if (input.isVector() || shape::isLikeVector(input.shapeInfo(), temp)) {
+    else if (shape::isCommonVector(input.shapeInfo(), temp)) {
 
-        // apply Fisher-Yates shuffle
-        if(isInplace) {
-            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance().tadThreshold())
-            for(int i = firstDim-1; i > 0; --i) {
-                int r = rng.relativeInt(i) % i;
-                if(i == r)
-                    continue;
-                T t0 = input.t<T>(i);
-                T t1 = input.t<T>(r);
-                //math::nd4j_swap<T>(input(i), input(r));
-                input.r<T>(i) = t1;
-                input.r<T>(r) = t0;
-            }
+        NDArray* arr = &input;
+
+        if (!isInplace) {
+            output.assign(input);
+            arr = &output;
         }
-        else {
-            std::vector<int> indices(firstDim);
-            std::iota(indices.begin(), indices.end(), 0);
-            output.p<T>(Nd4jLong(0), input.e<T>(0));
 
-            // FIXME: parallelism!!
-            for(int i = firstDim-1; i > 0; --i) {
-                int r = rng.relativeInt(i) % i;
-                output.r<T>(i) = input.t<T>(indices[r]);
-                if(i == r)
-                    continue;
+        const Nd4jLong ews = arr->ews();
 
-                output.r<T>(r) = input.t<T>(indices[i]);
-                math::nd4j_swap<int>(indices[i], indices[r]);
+        const Nd4jLong len       = arr->lengthOf();
+        const Nd4jLong threshold = 1<<22;  // this number was deduced from diagram in article
+
+        int power = 0;
+        while ((len >> power) > threshold)
+            ++power;
+
+        const Nd4jLong numChunks = 1 << power;
+
+        auto funcFisherYates = PRAGMA_THREADS_FOR {
+
+            for (auto i = start; i < stop; ++i) {
+
+                Nd4jLong offset = (len * i) >> power;
+                Nd4jLong currLen = ((len * (i + 1)) >> power) - offset;
+                fisherYates<T>(rng, arr->bufferAsT<T>() + offset*ews, currLen, ews, offset);
             }
-            rng.rewindH(firstDim-1);
-        }
+        };
+
+        auto funcMerge = PRAGMA_THREADS_FOR {
+
+            for (int64_t i = start, k = 1; i < stop; i += increment, ++k) {
+                Nd4jLong offset = len * i >> power;
+                Nd4jLong len1   = (len * (i + increment/2) >> power) - offset;
+                Nd4jLong totLen = (len * (i + increment)   >> power) - offset;
+                mergeShuffle<T>(rng, arr->bufferAsT<T>() + offset*ews, len1, totLen, ews, len * k + offset);
+            }
+        };
+
+        samediff::Threads::parallel_for(funcFisherYates, 0, numChunks);
+
+        for (int j = 1; j < numChunks; j += j)
+            samediff::Threads::parallel_for(funcMerge, 0, numChunks, 2*j);
+
+        // #pragma omp parallel for
+        // for (uint i = 0; i < numChunks; ++i) {
+
+        //     Nd4jLong offset = (len * i) >> power;
+        //     Nd4jLong currLen = ((len * (i + 1)) >> power) - offset;
+        //     fisherYates<T>(rng, arr->bufferAsT<T>() + offset*ews, currLen, ews, offset);
+        // }
+
+        // for (uint j = 1; j < numChunks; j += j) {
+        //     #pragma omp parallel for
+        //     for (auto i = 0; i < numChunks; i += 2*j) {
+        //         Nd4jLong offset = len * i >> power;
+        //         Nd4jLong len1   = (len * (i + j) >> power) - offset;
+        //         Nd4jLong totLen = (len * (i + 2*j)   >> power) - offset;
+        //         mergeShuffle(rng, arr->bufferAsT<T>() + offset*ews, len1, totLen, ews, len * j + offset);
+        //     }
+        // }
+
+        rng.rewindH((len + 1) * power);
     }
     else {
 
-        // evaluate sub-arrays list of input array through all dimensions excluding first one
-        std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input.rankOf(), {0});
-        auto subArrsListIn = input.allTensorsAlongDimension(dimensions);
+        auto dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), {0});
 
-        // apply Fisher-Yates shuffle
         if(isInplace) {
-            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance().elementwiseThreshold())
-            for(int i = firstDim - 1; i > 0; --i) {
-                int r = rng.relativeInt(i) % i;
 
-                if(i == r)
-                    continue;
-                subArrsListIn.at(i)->swapUnsafe(*subArrsListIn.at(r));
+            auto subArrsList = input.allTensorsAlongDimension(dimsToExclude);
+
+            // Fisher-Yates shuffle
+            for(int i = firstDim - 1; i > 0; --i) {
+                const int j = rng.relativeInt(i) % (i + 1);
+                if(i != j)
+                    subArrsList.at(i)->swapUnsafe(*subArrsList.at(j));
             }
         }
         else {
-            // evaluate sub-arrays list of output array through all dimensions excluding first one
-            auto subArrsListOut = output.allTensorsAlongDimension(dimensions);
+
+            auto subArrsListIn  = input.allTensorsAlongDimension(dimsToExclude);
+            auto subArrsListOut = output.allTensorsAlongDimension(dimsToExclude);
+
             std::vector<int> indices(firstDim);
-            std::iota(indices.begin(), indices.end(), 0);
-            bool isZeroShuffled = false;
-            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance().tadThreshold())
-            for(int i = firstDim - 1; i > 0; --i) {
-                int r = rng.relativeInt(i) % i;
-                subArrsListOut.at(i)->assign(subArrsListIn.at(indices[r]));
-                if(r == 0)
-                    isZeroShuffled = true;
-                if(i == r)
-                    continue;
-                subArrsListOut.at(r)->assign(subArrsListIn.at(indices[i]));
-                math::nd4j_swap<int>(indices[i], indices[r]);
-            }
-            if(!isZeroShuffled)
-                subArrsListOut.at(0)->assign(subArrsListIn.at(0));
+            std::iota(indices.begin(), indices.end(), 0);   // 0,1,2,3, ... firstDim-1
+
+            // shuffle indices
+            fisherYates<int>(rng, indices.data(), firstDim, 1, 0);
+
+            auto func = PRAGMA_THREADS_FOR {
+
+                for (auto i = start; i < stop; ++i)
+                    subArrsListOut.at(i)->assign(subArrsListIn.at(indices[i]));
+            };
+
+            samediff::Threads::parallel_for(func, 0, firstDim);
         }
+
         rng.rewindH(firstDim-1);
     }
-
 }
 
-    void randomShuffle(sd::LaunchContext * context, NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
-        BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (input, output, rng, isInplace), LIBND4J_TYPES);
-    }
+void randomShuffle(sd::LaunchContext * context, NDArray& input, NDArray& output, sd::graph::RandomGenerator& rng, const bool isInplace) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (input, output, rng, isInplace), LIBND4J_TYPES);
+}
+
 }
 }
 }
+

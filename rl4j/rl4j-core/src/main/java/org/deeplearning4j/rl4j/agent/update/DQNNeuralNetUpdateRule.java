@@ -17,7 +17,6 @@ package org.deeplearning4j.rl4j.agent.update;
 
 import lombok.Getter;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.TargetQNetworkSource;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.DoubleDQN;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.ITDTargetAlgorithm;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.StandardDQN;
@@ -28,13 +27,10 @@ import java.util.List;
 
 // Temporary class that will be replaced with a more generic class that delegates gradient computation
 // and network update to sub components.
-public class DQNNeuralNetUpdateRule implements IUpdateRule<Transition<Integer>>, TargetQNetworkSource {
+public class DQNNeuralNetUpdateRule implements IUpdateRule<Transition<Integer>> {
 
-    @Getter
     private final IDQN qNetwork;
-
-    @Getter
-    private IDQN targetQNetwork;
+    private final IDQN targetQNetwork;
     private final int targetUpdateFrequency;
 
     private final ITDTargetAlgorithm<Integer> tdTargetAlgorithm;
@@ -47,8 +43,8 @@ public class DQNNeuralNetUpdateRule implements IUpdateRule<Transition<Integer>>,
         this.targetQNetwork = qNetwork.clone();
         this.targetUpdateFrequency = targetUpdateFrequency;
         tdTargetAlgorithm = isDoubleDQN
-                ? new DoubleDQN(this, gamma, errorClamp)
-                : new StandardDQN(this, gamma, errorClamp);
+                ? new DoubleDQN(qNetwork, targetQNetwork, gamma, errorClamp)
+                : new StandardDQN(qNetwork, targetQNetwork, gamma, errorClamp);
     }
 
     @Override
@@ -56,7 +52,7 @@ public class DQNNeuralNetUpdateRule implements IUpdateRule<Transition<Integer>>,
         DataSet targets = tdTargetAlgorithm.computeTDTargets(trainingBatch);
         qNetwork.fit(targets.getFeatures(), targets.getLabels());
         if(++updateCount % targetUpdateFrequency == 0) {
-            targetQNetwork = qNetwork.clone();
+            targetQNetwork.copy(qNetwork);
         }
     }
 }

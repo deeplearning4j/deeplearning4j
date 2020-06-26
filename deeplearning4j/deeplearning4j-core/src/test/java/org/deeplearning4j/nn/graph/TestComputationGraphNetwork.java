@@ -57,10 +57,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.util.ModelSerializer;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -82,6 +80,7 @@ import org.nd4j.common.resources.Resources;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
@@ -90,6 +89,9 @@ import static org.junit.Assert.*;
 
 @Slf4j
 public class TestComputationGraphNetwork extends BaseDL4JTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
 
     private static ComputationGraphConfiguration getIrisGraphConfiguration() {
         return new NeuralNetConfiguration.Builder().seed(12345)
@@ -2176,5 +2178,41 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         INDArray in = Nd4j.createFromArray(3).reshape(1, 1);
         INDArray label = Nd4j.createFromArray(1, 0).reshape(1, 2);
         cg.fit(new DataSet(in, label));
+    }
+
+    @Test
+    public void testMergeNchw() throws Exception {
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .convolutionMode(ConvolutionMode.Same)
+                .graphBuilder()
+                .addInputs("in")
+                .layer("l0", new ConvolutionLayer.Builder()
+                        .nOut(16)
+                        .kernelSize(2,2).stride(1,1)
+                        .build(), "in")
+                .layer("l1", new ConvolutionLayer.Builder()
+                        .nOut(8)
+                        .kernelSize(2,2).stride(1,1)
+                        .build(), "in")
+                .addVertex("merge", new MergeVertex(), "l0", "l1")
+                .layer("out", new CnnLossLayer.Builder().activation(Activation.TANH).lossFunction(LossFunctions.LossFunction.MSE).build(), "merge")
+                .setOutputs("out")
+                .setInputTypes(InputType.convolutional(32, 32, 3, CNN2DFormat.NHWC))
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray[] in = new INDArray[]{Nd4j.rand(DataType.FLOAT, 1, 32, 32, 3)};
+        INDArray out = cg.outputSingle(in);
+
+        File dir = testDir.newFolder();
+        File f = new File(dir, "net.zip");
+        cg.save(f);
+
+        ComputationGraph c2 = ComputationGraph.load(f, true);
+        INDArray out2 = c2.outputSingle(in);
+
+        assertEquals(out, out2);
     }
 }
