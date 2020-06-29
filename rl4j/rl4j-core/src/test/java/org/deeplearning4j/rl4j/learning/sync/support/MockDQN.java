@@ -2,10 +2,12 @@ package org.deeplearning4j.rl4j.learning.sync.support;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -67,18 +69,18 @@ public class MockDQN implements IDQN {
     }
 
     @Override
+    public void fit(DataSet featuresLabels) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void copy(ITrainableNeuralNet from) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public IDQN clone() {
         return null;
-    }
-
-    @Override
-    public void copy(NeuralNet from) {
-
-    }
-
-    @Override
-    public void copy(IDQN from) {
-
     }
 
     @Override

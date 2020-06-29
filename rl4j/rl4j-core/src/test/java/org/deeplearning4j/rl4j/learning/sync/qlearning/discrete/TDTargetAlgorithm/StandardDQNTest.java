@@ -50,7 +50,7 @@ public class StandardDQNTest {
         StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.computeTDTargets(transitions);
+        DataSet result = sut.compute(transitions);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels();
@@ -72,7 +72,7 @@ public class StandardDQNTest {
         StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.computeTDTargets(transitions);
+        DataSet result = sut.compute(transitions);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels();
@@ -98,7 +98,7 @@ public class StandardDQNTest {
         StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.computeTDTargets(transitions);
+        DataSet result = sut.compute(transitions);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels();

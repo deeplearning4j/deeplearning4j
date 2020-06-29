@@ -258,7 +258,7 @@ public class PythonTypes {
                     return ret;
                 }else if (javaObject instanceof byte[]){
                     byte[] arr = (byte[]) javaObject;
-                    for (int x : arr) ret.add(x);
+                    for (int x : arr) ret.add(x & 0xff);
                     return ret;
                 } else if (javaObject instanceof long[]) {
                     long[] arr = (long[]) javaObject;

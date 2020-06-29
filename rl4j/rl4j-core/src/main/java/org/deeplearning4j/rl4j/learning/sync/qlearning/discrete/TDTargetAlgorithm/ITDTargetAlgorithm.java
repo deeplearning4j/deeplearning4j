@@ -34,5 +34,5 @@ public interface ITDTargetAlgorithm<A> {
      * @param transitions The transitions from the experience replay
      * @return A DataSet where every element is the observation and the estimated Q-Values for all actions
      */
-    DataSet computeTDTargets(List<Transition<A>> transitions);
+    DataSet compute(List<Transition<A>> transitions);
 }

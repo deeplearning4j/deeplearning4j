@@ -25,6 +25,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,7 +34,7 @@ import java.util.Collection;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
  */
-public class DQN<NN extends DQN> implements IDQN<NN> {
+public class DQN implements IDQN<DQN> {
 
     final protected MultiLayerNetwork mln;
 
@@ -79,14 +80,21 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
         return new INDArray[] {output(batch)};
     }
 
-    public NN clone() {
-        NN nn = (NN)new DQN(mln.clone());
-        nn.mln.setListeners(mln.getListeners());
-        return nn;
+    @Override
+    public void fit(DataSet featuresLabels) {
+        fit(featuresLabels.getFeatures(), featuresLabels.getLabels());
     }
 
-    public void copy(NN from) {
+    @Override
+    public void copy(DQN from) {
         mln.setParams(from.mln.params());
+    }
+
+    @Override
+    public DQN clone() {
+        DQN nn = new DQN(mln.clone());
+        nn.mln.setListeners(mln.getListeners());
+        return nn;
     }
 
     public Gradient[] gradient(INDArray input, INDArray labels) {

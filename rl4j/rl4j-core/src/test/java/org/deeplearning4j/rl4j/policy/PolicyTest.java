@@ -36,6 +36,7 @@ import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -89,6 +90,11 @@ public class PolicyTest {
         }
 
         @Override
+        public void fit(DataSet featuresLabels) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void copy(NN from) {
             throw new UnsupportedOperationException();
         }
@@ -125,6 +131,16 @@ public class PolicyTest {
 
         @Override
         public void save(String filename) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public INDArray output(Observation observation) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public INDArray output(INDArray batch) {
             throw new UnsupportedOperationException();
         }
     }
