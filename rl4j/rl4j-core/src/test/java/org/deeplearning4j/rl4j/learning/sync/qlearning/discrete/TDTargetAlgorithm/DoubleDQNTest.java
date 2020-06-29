@@ -50,7 +50,7 @@ public class DoubleDQNTest {
         DoubleDQN sut = new DoubleDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.computeTDTargets(transitions);
+        DataSet result = sut.compute(transitions);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels();
@@ -74,7 +74,7 @@ public class DoubleDQNTest {
         DoubleDQN sut = new DoubleDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.computeTDTargets(transitions);
+        DataSet result = sut.compute(transitions);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels();
@@ -102,7 +102,7 @@ public class DoubleDQNTest {
         DoubleDQN sut = new DoubleDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.computeTDTargets(transitions);
+        DataSet result = sut.compute(transitions);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels();

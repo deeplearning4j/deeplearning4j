@@ -16,6 +16,8 @@
 package org.deeplearning4j.rl4j.agent.update;
 
 import lombok.Getter;
+import org.deeplearning4j.rl4j.agent.update.neuralnetupdater.INeuralNetUpdater;
+import org.deeplearning4j.rl4j.agent.update.neuralnetupdater.NeuralNetUpdater;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.DoubleDQN;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.ITDTargetAlgorithm;
@@ -29,30 +31,26 @@ import java.util.List;
 // and network update to sub components.
 public class DQNNeuralNetUpdateRule implements IUpdateRule<Transition<Integer>> {
 
-    private final IDQN qNetwork;
     private final IDQN targetQNetwork;
-    private final int targetUpdateFrequency;
+    private final INeuralNetUpdater updater;
 
     private final ITDTargetAlgorithm<Integer> tdTargetAlgorithm;
 
     @Getter
     private int updateCount = 0;
 
-    public DQNNeuralNetUpdateRule(IDQN qNetwork, int targetUpdateFrequency, boolean isDoubleDQN, double gamma, double errorClamp) {
-        this.qNetwork = qNetwork;
+    public DQNNeuralNetUpdateRule(IDQN<IDQN> qNetwork, int targetUpdateFrequency, boolean isDoubleDQN, double gamma, double errorClamp) {
         this.targetQNetwork = qNetwork.clone();
-        this.targetUpdateFrequency = targetUpdateFrequency;
         tdTargetAlgorithm = isDoubleDQN
                 ? new DoubleDQN(qNetwork, targetQNetwork, gamma, errorClamp)
                 : new StandardDQN(qNetwork, targetQNetwork, gamma, errorClamp);
+        updater = new NeuralNetUpdater(qNetwork, targetQNetwork, targetUpdateFrequency);
+
     }
 
     @Override
     public void update(List<Transition<Integer>> trainingBatch) {
-        DataSet targets = tdTargetAlgorithm.computeTDTargets(trainingBatch);
-        qNetwork.fit(targets.getFeatures(), targets.getLabels());
-        if(++updateCount % targetUpdateFrequency == 0) {
-            targetQNetwork.copy(qNetwork);
-        }
+        DataSet targets = tdTargetAlgorithm.compute(trainingBatch);
+        updater.update(targets);
     }
 }

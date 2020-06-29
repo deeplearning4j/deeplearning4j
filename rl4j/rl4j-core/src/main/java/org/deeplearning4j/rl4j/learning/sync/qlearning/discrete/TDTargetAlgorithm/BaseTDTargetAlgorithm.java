@@ -80,7 +80,7 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
     protected abstract double computeTarget(int batchIdx, double reward, boolean isTerminal);
 
     @Override
-    public DataSet computeTDTargets(List<Transition<Integer>> transitions) {
+    public DataSet compute(List<Transition<Integer>> transitions) {
 
         int size = transitions.size();
 

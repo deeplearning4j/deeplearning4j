@@ -29,7 +29,7 @@ import java.io.OutputStream;
  * Factorisation between ActorCritic and DQN neural net.
  * Useful for AsyncLearning and Thread code.
  */
-public interface NeuralNet<NN extends NeuralNet> {
+public interface NeuralNet<NN extends NeuralNet> extends IOutputNeuralNet, ITrainableNeuralNet<NN> {
 
     /**
      * Returns the underlying MultiLayerNetwork or ComputationGraph objects.
@@ -51,18 +51,6 @@ public interface NeuralNet<NN extends NeuralNet> {
      * @return evaluation by the model of the input by all outputs
      */
     INDArray[] outputAll(INDArray batch);
-
-    /**
-     * clone the Neural Net with the same paramaeters
-     * @return the cloned neural net
-     */
-    NN clone();
-
-    /**
-     * copy the parameters from a neural net
-     * @param from where to copy parameters
-     */
-    void copy(NN from);
 
     /**
      * Calculate the gradients from input and label (target) of all outputs
