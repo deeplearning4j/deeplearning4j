@@ -1,6 +1,9 @@
-package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm;
+package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
+import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
+import org.deeplearning4j.rl4j.network.CommonLabelNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Before;
@@ -9,7 +12,6 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -47,13 +49,13 @@ public class StandardDQNTest {
             }
         };
 
-        StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
+        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN sut = new org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.compute(transitions);
+        FeaturesLabels result = sut.compute(transitions);
 
         // Assert
-        INDArray evaluatedQValues = result.getLabels();
+        INDArray evaluatedQValues = result.getLabels(CommonLabelNames.QValues);
         assertEquals(1.0, evaluatedQValues.getDouble(0, 0), 0.0001);
         assertEquals(2.2, evaluatedQValues.getDouble(0, 1), 0.0001);
     }
@@ -69,13 +71,13 @@ public class StandardDQNTest {
             }
         };
 
-        StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
+        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN sut = new org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.compute(transitions);
+        FeaturesLabels result = sut.compute(transitions);
 
         // Assert
-        INDArray evaluatedQValues = result.getLabels();
+        INDArray evaluatedQValues = result.getLabels(CommonLabelNames.QValues);
         assertEquals(1.0 + 0.5 * 22.0, evaluatedQValues.getDouble(0, 0), 0.0001);
         assertEquals(2.2, evaluatedQValues.getDouble(0, 1), 0.0001);
     }
@@ -95,13 +97,13 @@ public class StandardDQNTest {
             }
         };
 
-        StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
+        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.compute(transitions);
+        FeaturesLabels result = sut.compute(transitions);
 
         // Assert
-        INDArray evaluatedQValues = result.getLabels();
+        INDArray evaluatedQValues = result.getLabels(CommonLabelNames.QValues);
         assertEquals((1.0 + 0.5 * 22.0), evaluatedQValues.getDouble(0, 0), 0.0001);
         assertEquals(2.2, evaluatedQValues.getDouble(0, 1), 0.0001);
 

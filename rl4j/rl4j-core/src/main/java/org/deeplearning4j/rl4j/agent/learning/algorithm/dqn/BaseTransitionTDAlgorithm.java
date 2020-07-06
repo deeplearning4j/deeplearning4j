@@ -14,21 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm;
+package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
+import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
+import org.deeplearning4j.rl4j.network.CommonLabelNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
 
 import java.util.List;
 
 /**
- * The base of all TD target calculation algorithms that use deep learning.
- *
- * @author Alexandre Boulanger
+ * The base of all {@link Transition Transition-based} TD algorithms.
  */
-public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Integer> {
+public abstract class BaseTransitionTDAlgorithm implements IUpdateAlgorithm<FeaturesLabels, Transition<Integer>> {
 
     protected final IOutputNeuralNet qNetwork;
     protected final double gamma;
@@ -42,7 +42,7 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
      * @param gamma The discount factor
      * @param errorClamp Will prevent the new Q-Value from being farther than <i>errorClamp</i> away from the previous value. Double.NaN will disable the clamping.
      */
-    protected BaseTDTargetAlgorithm(IOutputNeuralNet qNetwork, double gamma, double errorClamp) {
+    protected BaseTransitionTDAlgorithm(IOutputNeuralNet qNetwork, double gamma, double errorClamp) {
         this.qNetwork = qNetwork;
         this.gamma = gamma;
 
@@ -56,7 +56,7 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
      * @param gamma The discount factor
      * Note: Error clamping is disabled with this ctor
      */
-    protected BaseTDTargetAlgorithm(IOutputNeuralNet qNetwork, double gamma) {
+    protected BaseTransitionTDAlgorithm(IOutputNeuralNet qNetwork, double gamma) {
         this(qNetwork, gamma, Double.NaN);
     }
 
@@ -80,7 +80,7 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
     protected abstract double computeTarget(int batchIdx, double reward, boolean isTerminal);
 
     @Override
-    public DataSet compute(List<Transition<Integer>> transitions) {
+    public FeaturesLabels compute(List<Transition<Integer>> transitions) {
 
         int size = transitions.size();
 
@@ -103,6 +103,9 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
             updatedQValues.putScalar(i, transition.getAction(), yTarget);
         }
 
-        return new org.nd4j.linalg.dataset.DataSet(observations, updatedQValues);
+        FeaturesLabels featuresLabels = new FeaturesLabels(observations);
+        featuresLabels.putLabels(CommonLabelNames.QValues, updatedQValues);
+
+        return featuresLabels;
     }
 }

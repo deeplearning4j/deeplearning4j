@@ -17,7 +17,7 @@ package org.deeplearning4j.rl4j.agent;
 
 import lombok.Getter;
 import lombok.NonNull;
-import org.deeplearning4j.rl4j.agent.learning.ILearningBehavior;
+import org.deeplearning4j.rl4j.agent.learning.behavior.ILearningBehavior;
 import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.environment.StepResult;
 import org.deeplearning4j.rl4j.observation.Observation;

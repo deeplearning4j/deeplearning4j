@@ -1,6 +1,6 @@
 package org.deeplearning4j.rl4j.agent;
 
-import org.deeplearning4j.rl4j.agent.learning.LearningBehavior;
+import org.deeplearning4j.rl4j.agent.learning.behavior.LearningBehavior;
 import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.environment.IntegerActionSchema;
 import org.deeplearning4j.rl4j.environment.Schema;

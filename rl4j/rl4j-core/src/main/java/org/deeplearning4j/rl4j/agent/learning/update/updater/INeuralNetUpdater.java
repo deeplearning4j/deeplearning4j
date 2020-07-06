@@ -13,14 +13,17 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.agent.update;
+package org.deeplearning4j.rl4j.agent.learning.update.updater;
 
-import lombok.Value;
-import org.deeplearning4j.nn.gradient.Gradient;
-
-// Work in progress
-@Value
-public class Gradients {
-    private Gradient[] gradients; // Temporary: we'll need something better than a Gradient[]
-    private int batchSize;
+/**
+ * The role of INeuralNetUpdater implementations is to update a {@link org.deeplearning4j.rl4j.network.NeuralNet NeuralNet}.<p />
+ * @param <DATA_TYPE> The type of the data needed to to update the netwok. See {@link org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels FeaturesLabels}
+ *                   and {@link org.deeplearning4j.rl4j.agent.learning.update.Gradients Gradients}.
+ */
+public interface INeuralNetUpdater<DATA_TYPE> {
+    /**
+     * Update a {@link org.deeplearning4j.rl4j.network.NeuralNet NeuralNet}.
+     * @param dataType
+     */
+    void update(DATA_TYPE dataType);
 }

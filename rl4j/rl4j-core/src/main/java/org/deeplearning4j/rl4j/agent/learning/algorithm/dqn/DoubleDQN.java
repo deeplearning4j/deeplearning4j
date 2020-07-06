@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm;
+package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;

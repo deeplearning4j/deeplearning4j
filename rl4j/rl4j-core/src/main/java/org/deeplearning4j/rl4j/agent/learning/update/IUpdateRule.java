@@ -13,7 +13,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.agent.update;
+package org.deeplearning4j.rl4j.agent.learning.update;
 
 import java.util.List;
 

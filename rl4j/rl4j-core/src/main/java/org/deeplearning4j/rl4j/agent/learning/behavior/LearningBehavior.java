@@ -13,10 +13,10 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.agent.learning;
+package org.deeplearning4j.rl4j.agent.learning.behavior;
 
 import lombok.Builder;
-import org.deeplearning4j.rl4j.agent.update.IUpdateRule;
+import org.deeplearning4j.rl4j.agent.learning.update.IUpdateRule;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.observation.Observation;
 
@@ -29,9 +29,6 @@ import org.deeplearning4j.rl4j.observation.Observation;
  */
 @Builder
 public class LearningBehavior<ACTION, EXPERIENCE_TYPE> implements ILearningBehavior<ACTION> {
-
-    @Builder.Default
-    private int experienceUpdateSize = 64;
 
     private final ExperienceHandler<ACTION, EXPERIENCE_TYPE> experienceHandler;
     private final IUpdateRule<EXPERIENCE_TYPE> updateRule;

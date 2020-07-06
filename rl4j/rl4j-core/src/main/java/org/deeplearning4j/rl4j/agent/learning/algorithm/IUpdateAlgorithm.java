@@ -14,25 +14,22 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm;
-
-import org.deeplearning4j.rl4j.learning.sync.Transition;
-import org.nd4j.linalg.dataset.api.DataSet;
+package org.deeplearning4j.rl4j.agent.learning.algorithm;
 
 import java.util.List;
 
 /**
- * The interface of all TD target calculation algorithms.
+ * The interface of all <i>features-labels</i> based update algorithms.
  *
- * @param <A> The type of actions
- *
- * @author Alexandre Boulanger
+ * @param <EXPERIENCE_TYPE> The type of experiences
+ * @param <RESULT_TYPE> The type of the result. See {@link org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels FeaturesLabels}
+ *                     and {@link org.deeplearning4j.rl4j.agent.learning.update.Gradients Gradients}
  */
-public interface ITDTargetAlgorithm<A> {
+public interface IUpdateAlgorithm<RESULT_TYPE, EXPERIENCE_TYPE> {
     /**
-     * Compute the updated estimated Q-Values for every transition
-     * @param transitions The transitions from the experience replay
+     * Compute the labels required to update the network from the training batch
+     * @param trainingBatch The transitions from the experience replay
      * @return A DataSet where every element is the observation and the estimated Q-Values for all actions
      */
-    DataSet compute(List<Transition<A>> transitions);
+    RESULT_TYPE compute(List<EXPERIENCE_TYPE> trainingBatch);
 }

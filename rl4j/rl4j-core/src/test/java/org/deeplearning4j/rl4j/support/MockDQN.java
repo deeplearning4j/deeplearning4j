@@ -2,13 +2,13 @@ package org.deeplearning4j.rl4j.support;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
+import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
-import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.observation.Observation;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
-import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -66,7 +66,17 @@ public class MockDQN implements IDQN {
     }
 
     @Override
-    public void fit(DataSet featuresLabels) {
+    public void fit(FeaturesLabels featuresLabels) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Gradients computeGradients(FeaturesLabels updateLabels) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void applyGradients(Gradients gradients) {
         throw new UnsupportedOperationException();
     }
 

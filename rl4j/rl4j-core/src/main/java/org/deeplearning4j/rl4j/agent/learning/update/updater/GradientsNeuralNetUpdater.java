@@ -13,15 +13,15 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.agent.update.neuralnetupdater;
+package org.deeplearning4j.rl4j.agent.learning.update.updater;
 
+import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
-import org.nd4j.linalg.dataset.api.DataSet;
 
 /**
  * A {@link INeuralNetUpdater} that updates a neural network and sync a target network at defined intervals
  */
-public class NeuralNetUpdater implements INeuralNetUpdater {
+public class GradientsNeuralNetUpdater implements INeuralNetUpdater<Gradients> {
 
     private final ITrainableNeuralNet current;
     private final ITrainableNeuralNet target;
@@ -29,14 +29,17 @@ public class NeuralNetUpdater implements INeuralNetUpdater {
     private int updateCount = 0;
     private final int targetUpdateFrequency;
 
+    // TODO: Add async support
     /**
      * @param current The current {@link ITrainableNeuralNet network}
      * @param target The target {@link ITrainableNeuralNet network}
      * @param targetUpdateFrequency Will synchronize the target network at every <i>targetUpdateFrequency</i> updates
+     *
+     * Note: Presently async is not supported
      */
-    public NeuralNetUpdater(ITrainableNeuralNet current,
-                            ITrainableNeuralNet target,
-                            int targetUpdateFrequency) {
+    public GradientsNeuralNetUpdater(ITrainableNeuralNet current,
+                                     ITrainableNeuralNet target,
+                                     int targetUpdateFrequency) {
         this.current = current;
         this.target = target;
 
@@ -45,11 +48,11 @@ public class NeuralNetUpdater implements INeuralNetUpdater {
 
     /**
      * Update the current network
-     * @param featuresLabels A Dataset that will be used to update the network.
+     * @param gradients A {@link Gradients} that will be used to update the network.
      */
     @Override
-    public void update(DataSet featuresLabels) {
-        current.fit(featuresLabels);
+    public void update(Gradients gradients) {
+        current.applyGradients(gradients);
         syncTargetNetwork();
     }
 

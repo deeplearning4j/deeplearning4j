@@ -22,10 +22,13 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
+import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
+import org.deeplearning4j.rl4j.network.CommonGradientNames;
+import org.deeplearning4j.rl4j.network.CommonLabelNames;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -81,8 +84,8 @@ public class DQN implements IDQN<DQN> {
     }
 
     @Override
-    public void fit(DataSet featuresLabels) {
-        fit(featuresLabels.getFeatures(), featuresLabels.getLabels());
+    public void fit(FeaturesLabels featuresLabels) {
+        fit(featuresLabels.getFeatures(), featuresLabels.getLabels(CommonLabelNames.QValues));
     }
 
     @Override
@@ -113,6 +116,41 @@ public class DQN implements IDQN<DQN> {
 
     public Gradient[] gradient(INDArray input, INDArray[] labels) {
         return gradient(input, labels[0]);
+    }
+
+
+    @Override
+    public Gradients computeGradients(FeaturesLabels updateLabels) {
+        mln.setInput(updateLabels.getFeatures());
+        mln.setLabels(updateLabels.getLabels(CommonLabelNames.QValues));
+        mln.computeGradientAndScore();
+        Collection<TrainingListener> iterationListeners = mln.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (TrainingListener l : iterationListeners) {
+                l.onGradientCalculation(mln);
+            }
+        }
+        Gradients result = new Gradients(updateLabels.getBatchSize());
+        result.putGradient(CommonGradientNames.QValues, mln.gradient());
+        return result;
+    }
+
+    @Override
+    public void applyGradients(Gradients gradients) {
+        Gradient qValues = gradients.getGradient(CommonGradientNames.QValues);
+
+        MultiLayerConfiguration mlnConf = mln.getLayerWiseConfigurations();
+        int iterationCount = mlnConf.getIterationCount();
+        int epochCount = mlnConf.getEpochCount();
+        mln.getUpdater().update(mln, qValues, iterationCount, epochCount, (int)gradients.getBatchSize(), LayerWorkspaceMgr.noWorkspaces());
+        mln.params().subi(qValues.gradient());
+        Collection<TrainingListener> iterationListeners = mln.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (TrainingListener listener : iterationListeners) {
+                listener.iterationDone(mln, iterationCount, epochCount);
+            }
+        }
+        mlnConf.setIterationCount(iterationCount + 1);
     }
 
     public void applyGradient(Gradient[] gradient, int batchSize) {

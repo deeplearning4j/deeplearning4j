@@ -1,6 +1,7 @@
-package org.deeplearning4j.rl4j.agent.learning;
+package org.deeplearning4j.rl4j.agent.learning.behavior;
 
-import org.deeplearning4j.rl4j.agent.update.IUpdateRule;
+import org.deeplearning4j.rl4j.agent.learning.behavior.LearningBehavior;
+import org.deeplearning4j.rl4j.agent.learning.update.IUpdateRule;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Before;
@@ -17,7 +18,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
