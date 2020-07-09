@@ -78,13 +78,12 @@ Arm_DataType getArmType ( const DataType &dType){
     return ret;
 }
 bool isArmcomputeFriendly(const NDArray& arr) {
-   auto dType = getArmType(arr.dataType());
+  auto dType = getArmType(arr.dataType());
   int rank = (int)(arr.rankOf());
   return dType != Arm_DataType::UNKNOWN && 
          rank<=arm_compute::MAX_DIMS &&
          arr.ordering() == 'c' &&
-         arr.ews()==1 &&
-         shape::strideDescendingCAscendingF(arr.shapeInfo()) == true;
+         arr.ews()==1 ;
 }
 
 Arm_TensorInfo getArmTensorInfo(int rank, Nd4jLong* bases,sd::DataType ndArrayType, arm_compute::DataLayout layout) {
