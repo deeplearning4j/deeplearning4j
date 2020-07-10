@@ -628,17 +628,17 @@ namespace sd {
         *  keepDims - if true then put unities in place of reduced dimensions
         */
 
-        NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-        NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::vector<int>& dimensions, const bool keepDims = false) const;
+        NDArray reduceAlongDimension(sd::reduce::FloatOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false) const;
 
-        NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-        NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::vector<int>& dimensions, const bool keepDims = false) const;
+        NDArray reduceAlongDimension(sd::reduce::SameOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false) const;
 
-        NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-        NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::vector<int>& dimensions, const bool keepDims = false) const;
+        NDArray reduceAlongDimension(sd::reduce::BoolOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false) const;
 
-        NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
-        NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false) const;
+        NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::vector<int>& dimensions, const bool keepDims = false) const;
+        NDArray reduceAlongDimension(sd::reduce::LongOps op, const std::initializer_list<int>& dimensions, const bool keepDims = false) const;
 
         /**
         *  method reduces array by excluding its shapes along dimensions present in given dimensions vector
@@ -647,10 +647,10 @@ namespace sd {
         *  keepDims - if true then put unities in place of reduced dimensions
         *  extras - extra parameters
         */
-        void reduceAlongDimension(sd::reduce::FloatOps op, NDArray& target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
-        void reduceAlongDimension(sd::reduce::SameOps op,  NDArray& target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
-        void reduceAlongDimension(sd::reduce::BoolOps op,  NDArray& target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
-        void reduceAlongDimension(sd::reduce::LongOps op,  NDArray& target, const std::vector<int>& dimensions, const bool keepDims = false, const bool supportOldShapes = false, const bool checkTargetShape = true) const;
+        void reduceAlongDimension(sd::reduce::FloatOps op, NDArray& target, const std::vector<int>& dimensions, const bool keepDims = false, const bool checkTargetShape = true) const;
+        void reduceAlongDimension(sd::reduce::SameOps op,  NDArray& target, const std::vector<int>& dimensions, const bool keepDims = false, const bool checkTargetShape = true) const;
+        void reduceAlongDimension(sd::reduce::BoolOps op,  NDArray& target, const std::vector<int>& dimensions, const bool keepDims = false, const bool checkTargetShape = true) const;
+        void reduceAlongDimension(sd::reduce::LongOps op,  NDArray& target, const std::vector<int>& dimensions, const bool keepDims = false, const bool checkTargetShape = true) const;
 
         /**
         *  return variance of array elements set

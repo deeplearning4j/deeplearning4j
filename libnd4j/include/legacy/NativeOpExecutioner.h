@@ -470,8 +470,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                 void *extraParams,
                                 void *hZ, const Nd4jLong *hZShapeInfo,
                                 void *dZ, const Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
+                                int *dimension, int dimensionLength);
 
     static void execReduceSame(sd::LaunchContext  *lc,
                                int opNum,
@@ -480,8 +479,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                void *extraParams,
                                void *hZ, const Nd4jLong *hZShapeInfo,
                                void *dZ, const Nd4jLong *dZShapeInfo,
-                               int *dimension, int dimensionLength,
-                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
+                               int *dimension, int dimensionLength);
 
     static void execReduceBool(sd::LaunchContext  *lc,
                                int opNum,
@@ -490,8 +488,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                void *extraParams,
                                void *hZ, const Nd4jLong *hZShapeInfo,
                                void *dZ, const Nd4jLong *dZShapeInfo,
-                               int *dimension, int dimensionLength,
-                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
+                               int *dimension, int dimensionLength);
 
     static void execReduceLong(sd::LaunchContext  *lc,
                                int opNum,
@@ -500,8 +497,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                void *extraParams,
                                void *hZ, const Nd4jLong *hZShapeInfo,
                                void *dZ, const Nd4jLong *dZShapeInfo,
-                               int *dimension, int dimensionLength,
-                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
+                               int *dimension, int dimensionLength);
 
     /**
      *

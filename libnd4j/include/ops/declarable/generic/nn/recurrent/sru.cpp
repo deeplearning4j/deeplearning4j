@@ -278,8 +278,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         gradX->applyBroadcast(broadcast::Multiply, {0,1}, *mask, *gradX);  // apply mask
 
     // gradB
-    auto temp3 = gradBias->reduceAlongDimension(reduce::Sum, {0,2}, false, true);    // [1 x 2K]
-    gradB->assign(temp3);
+    auto gradB2 = gradB->reshape(gradB->ordering(), {2*K});
+    gradBias->reduceAlongDimension(reduce::Sum, gradB2, {0,2});    // [1 x 2K]
 
     // gradW [bS x 3K x K]
     x->permutei({0, 2, 1});                                               // [bS x N x K]

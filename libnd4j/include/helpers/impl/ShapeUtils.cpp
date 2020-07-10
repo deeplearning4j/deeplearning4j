@@ -1063,6 +1063,17 @@ bool ShapeUtils::areShapesEqual(const Nd4jLong* shapeInfo, const std::vector<Nd4
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+std::vector<int> ShapeUtils::evalDimsForReduceOp(const int rank, const std::vector<int>& dimsToExclude) {
+
+    std::vector<int> output = ShapeUtils::evalDimsToExclude(rank, dimsToExclude);
+
+    for(uint j = 0; j < dimsToExclude.size(); ++j)
+        output.emplace_back(dimsToExclude[j]);
+
+    return output;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 /*
 bool ShapeUtils::isSubArrayCase(const NDArray& arr1, const NDArray& arr2, std::vector<int>& sameDims) {
 
