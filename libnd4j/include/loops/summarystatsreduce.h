@@ -275,7 +275,7 @@ namespace functions {
             }
 
             template<typename OpType>
-            static _CUDA_D void aggregatePartials(SummaryStatsData<X> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *extraParams);
+            static _CUDA_D void aggregatePartials(SummaryStatsData<X> *sPartials, Nd4jLong tid, Nd4jLong numElements, void *extraParams);
 
 
             template<typename OpType>

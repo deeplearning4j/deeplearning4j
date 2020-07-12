@@ -289,24 +289,24 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.5.3</javacpp.version>
-        <javacpp-presets.version>1.5.3</javacpp-presets.version>
-        <javacv.version>1.5.3</javacv.version>
+        <javacpp.version>1.5.4-SNAPSHOT</javacpp.version>
+        <javacpp-presets.version>1.5.4-SNAPSHOT</javacpp-presets.version>
+        <javacv.version>1.5.4-SNAPSHOT</javacv.version>
 
-        <python.version>3.7.7</python.version>
+        <python.version>3.7.8</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
-        <numpy.version>1.18.2</numpy.version>
+        <numpy.version>1.19.0</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
-        <openblas.version>0.3.9-1</openblas.version>
+        <openblas.version>0.3.10</openblas.version>
         <mkl.version>2020.1</mkl.version>
         <opencv.version>4.3.0</opencv.version>
-        <ffmpeg.version>4.2.2</ffmpeg.version>
+        <ffmpeg.version>4.3</ffmpeg.version>
         <leptonica.version>1.79.0</leptonica.version>
         <hdf5.version>1.12.0</hdf5.version>
         <ale.version>0.6.1</ale.version>
-        <gym.version>0.17.1</gym.version>
-        <tensorflow.version>1.15.2</tensorflow.version>
+        <gym.version>0.17.2</gym.version>
+        <tensorflow.version>1.15.3</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
         <commons-compress.version>1.18</commons-compress.version>

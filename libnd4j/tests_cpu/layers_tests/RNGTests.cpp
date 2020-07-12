@@ -781,34 +781,6 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2_SGA) {
 
 }
 
-TEST_F(RNGTests, Test_ExponentialDistribution_3_SGA) {
-    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {1000, 1000});
-    auto exp0 = NDArrayFactory::create<double>('c', {1000, 1000});
-    RandomGenerator oc(2716049175077475646L, -6182841917129177862L);
-    auto expMean = NDArrayFactory::create<double>(0.5f);
-    auto expVar = NDArrayFactory::create<double>(0.25f);
-    sd::ops::random_exponential op;
-    RandomLauncher::fillExponential(exp0.getContext(), oc, &exp0, 2.f);
-
-    auto result = op.evaluate({&x}, {1.});
-    ASSERT_EQ(Status::OK(), result.status());
-
-    auto z = result.at(0);
-
-    auto mean = z->reduceNumber(reduce::Mean);
-    auto variance = z->varianceNumber(variance::SummaryStatsVariance, false);
-    ASSERT_NEAR(mean.e<double>(0), 1.f, 1.e-2f);
-    ASSERT_NEAR(variance.e<double>(0), 1.f, 1.e-2f);
-    mean = exp0.reduceNumber(reduce::Mean);
-    variance = exp0.varianceNumber(variance::SummaryStatsVariance, false);
-    ASSERT_TRUE(mean.equalsTo(expMean, 1.e-3));
-    ASSERT_TRUE(variance.equalsTo(expVar, 1.e-3));
-    RandomLauncher::fillExponential(exp0.getContext(), oc, &exp0, 1.f);
-    mean = exp0.reduceNumber(reduce::Mean);
-    variance = exp0.varianceNumber(variance::SummaryStatsVariance, false);
-
-}
-
 TEST_F(RNGTests, Test_ExponentialDistribution_2) {
     auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {10, 10});
     auto y = NDArrayFactory::create<float>('c', {10, 10});

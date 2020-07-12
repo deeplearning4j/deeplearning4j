@@ -124,6 +124,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected AtomicLong generationId = new AtomicLong(0);
 
+    // this field is used as alignment base for all allocations within this workspace
+    public final static int alignmentBase = 16;
+
     // this memory manager implementation will be used to allocate real memory for this workspace
 
     public Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration) {
@@ -340,9 +343,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
         // we enforce 8 byte alignment to ensure CUDA doesn't blame us
-        long div = requiredMemory % 8;
+        long div = requiredMemory % alignmentBase;
         if (div != 0)
-            requiredMemory += (8 - div);
+            requiredMemory += (alignmentBase - div);
 
         // shortcut made to skip workspace
         if (!isUsed.get()) {

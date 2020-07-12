@@ -105,14 +105,11 @@ __device__ void ReduceSameFunction<X>::transformCudaXD(const void *vx, const Nd4
     // }
 
     //shared memory space for storing intermediate results
-    __shared__ X* sPartials;
+    __shared__ X sPartials[CUDA_BLOCK_SIZE];
     __shared__ int tadLen, numTads;
     __shared__ bool sameOffsets;
 
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<X*>(shmem);
-
         sameOffsets = shape::haveSameShapeAndStrides(zShapeInfo, outerXTadShapeInfo);
 
         tadLen  = shape::length(innerXTadShapeInfo);
@@ -170,13 +167,11 @@ __device__ void ReduceSameFunction<X>::execScalarCuda(void const* vx, Nd4jLong c
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
     //shared memory space for storing intermediate results
-    __shared__ X* sPartials;
+    __shared__ X sPartials[CUDA_BLOCK_SIZE];
     __shared__ Nd4jLong xEws;
     __shared__ Nd4jLong len;
 
     if(threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<X*>(shmem);
         xEws = shape::elementWiseStride(xShapeInfo);
         len = shape::length(xShapeInfo);
     }

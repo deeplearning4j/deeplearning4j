@@ -36,6 +36,7 @@
 #include <array/ShapeDescriptor.h>
 #include <array/ConstantDataBuffer.h>
 #include <helpers/ShapeUtils.h>
+#include <exceptions/cuda_exception.h>
 
 using namespace sd;
 using namespace sd::graph;
@@ -830,7 +831,10 @@ TEST_F(CudaBasicsTests1, execIndexReduce_1) {
 										(int*)devicePtrs[0], dimensions.size(),
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
-	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
+	cudaResult = cudaStreamSynchronize(stream);
+	if (cudaResult != 0)
+	  throw sd::cuda_exception::build("execIndexReduce failed", cudaResult);
+
     z.tickWriteDevice();
 
  	// verify results

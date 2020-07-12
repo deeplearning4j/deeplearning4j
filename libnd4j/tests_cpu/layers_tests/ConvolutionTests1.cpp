@@ -2849,9 +2849,68 @@ TYPED_TEST(TypedConvolutionTests1, deconv2d_tf_test1) {
     ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
-
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv2d_bp_7) {
+  int bS=2, iH=12,iW=12,  iC=3,oC=3,  kH=3,kW=3,  sH=2,sW=2,  pH=0,pW=0,  dH=1,dW=1;
+  int       oH=6,oW=6;
+  int paddingMode = 1;             // 1-SAME, 0-VALID;
+  int dataFormat  = 0;             // 1-NHWC, 0-NCHW
+
+  NDArray input('c', {bS, iC, iH, iW}, sd::DataType::FLOAT32);
+  NDArray weights('c', {kH, kW, iC, oC}, sd::DataType::FLOAT32);
+  NDArray bias('c', {oC}, {1,2,3}, sd::DataType::FLOAT32);
+  NDArray gradO('c', {bS, oC, oH, oW}, sd::DataType::FLOAT32);
+  NDArray gradI('c', {bS, iC, iH, iW}, sd::DataType::FLOAT32);
+  NDArray gradW('c', {kH, kW, iC, oC}, sd::DataType::FLOAT32);
+  NDArray gradB('c', {oC}, sd::DataType::FLOAT32);
+  input = 2.;
+  weights.linspace(0.1, 0.1);
+  gradO.linspace(0.01, 0.01);
+
+  sd::ops::conv2d_bp op;
+  auto status = op.execute({&input, &weights, &bias, &gradO}, {&gradI, &gradW, &gradB}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat}, {});
+  ASSERT_EQ(Status::OK(), status);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv2d_ff_119_1) {
+  auto i = NDArrayFactory::create<float>('c', {2, 3, 13, 13});
+  auto w = NDArrayFactory::create<float>('c', {3, 3, 3, 3});
+  auto b = NDArrayFactory::create<float>('c', {3});
+  auto o = NDArrayFactory::create<float>('c', {2, 3, 6, 6});
+
+  sd::ops::conv2d op_ff;
+  auto status = op_ff.execute({&i, &w, &b}, {&o}, {3,3,  2,2,  0,0,  1,1,  0,  0,  1});
+  ASSERT_EQ(Status::OK(), status);
+
+  auto gi = i.ulike();
+  auto gw = w.ulike();
+
+  sd::ops::conv2d_bp op_bp;
+  status = op_bp.execute({&i, &w, &b, &o}, {&gi, &gw}, {3,3,  2,2,  0,0,  1,1,  0,  0,  1});
+  ASSERT_EQ(Status::OK(), status);
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, conv2d_ff_119_2) {
+  auto i = NDArrayFactory::create<float>('c', {2, 3, 17, 17});
+  auto w = NDArrayFactory::create<float>('c', {3, 3, 3, 3});
+  auto b = NDArrayFactory::create<float>('c', {3});
+  auto o = NDArrayFactory::create<float>('c', {2, 3, 8, 8});
+
+  sd::ops::conv2d op_ff;
+  auto status = op_ff.execute({&i, &w, &b}, {&o}, {3,3,  2,2,  0,0,  1,1,  0,  0,  1});
+  ASSERT_EQ(Status::OK(), status);
+
+  auto gi = i.ulike();
+  auto gw = w.ulike();
+
+  sd::ops::conv2d_bp op_bp;
+  status = op_bp.execute({&i, &w, &b, &o}, {&gi, &gw}, {3,3,  2,2,  0,0,  1,1,  0,  0,  1});
+  ASSERT_EQ(Status::OK(), status);
+}
 
 #endif //LIBND4J_CONVOLUTIONTESTS1_H
 

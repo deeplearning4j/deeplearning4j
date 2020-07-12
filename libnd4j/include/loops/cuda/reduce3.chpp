@@ -122,12 +122,9 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void const* vx, Nd4jLong const* xS
 	auto z = reinterpret_cast<Z*>(vz);
 
 	__shared__ Z extraZ[3];
-	__shared__ Z* sPartials;
+	__shared__ Z sPartials[CUDA_BLOCK_SIZE];
 
 	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<Z*>(shmem);
-
 		extraZ[0] = (Z) 0.0f;
 		extraZ[1] = (Z) 0.0f;
 
@@ -250,16 +247,11 @@ __device__ void Reduce3<X,Z>::transformAll( void const* vx, Nd4jLong const* xSha
 	auto z = reinterpret_cast<Z*>(vz);
 
     // initialize partials first
-    __shared__ Z* sPartials;
-    if(threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<Z*>(shmem);
-    }
-    __syncthreads();
+    __shared__ Z sPartials[CUDA_BLOCK_SIZE];
 
     Z startingVal = OpType::startingValue(dx);
 	sPartials[threadIdx.x] = startingVal;
-	X *tempX = reinterpret_cast<X*>(sPartials) + blockDim.x;
+	auto tempX = reinterpret_cast<X*>(sPartials) + blockDim.x;
 
     const int maxBlock = blockDim.x;
 
@@ -365,7 +357,7 @@ __device__ void Reduce3<X,Z>::transform(void const* vx, Nd4jLong const* xShapeIn
 
 	__shared__ Z extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
 
-	__shared__ Z* sPartials;
+	__shared__ Z sPartials[CUDA_BLOCK_SIZE];
 	__shared__ int tadLen;
 	__shared__ Nd4jLong zLen;
 	__shared__ Nd4jLong xTadEws;
@@ -375,9 +367,6 @@ __device__ void Reduce3<X,Z>::transform(void const* vx, Nd4jLong const* xShapeIn
 	__shared__ char yTadOrder;
 
 	if(threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<Z*>(shmem);
-
         tadLen    = shape::length(tadOnlyShapeInfo);
         zLen      = shape::length(zShapeInfo);
         xTadEws   = shape::elementWiseStride(tadOnlyShapeInfo);

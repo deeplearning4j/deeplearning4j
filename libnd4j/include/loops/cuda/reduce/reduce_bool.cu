@@ -99,14 +99,11 @@ __device__ void ReduceBoolFunction<X,Z>::transformCudaXD(const void *vx, const N
     auto extraParams = reinterpret_cast<X*>(vextraParams);
 
     //shared memory space for storing intermediate results
-    __shared__ Z* sPartials;
+    __shared__ Z sPartials[CUDA_BLOCK_SIZE];
     __shared__ int tadLen, numTads;
     __shared__ bool sameOffsets;
 
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<Z*>(shmem);
-
         sameOffsets = shape::haveSameShapeAndStrides(zShapeInfo, outerXTadShapeInfo);
 
         tadLen  = shape::length(innerXTadShapeInfo);
@@ -156,13 +153,11 @@ __device__ void ReduceBoolFunction<X,Z>::execScalarCuda(const void *vx, const Nd
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
     //shared memory space for storing intermediate results
-    __shared__ Z* sPartials;
+    __shared__ Z sPartials[CUDA_BLOCK_SIZE];
     __shared__ Nd4jLong xEws;
     __shared__ Nd4jLong len;
 
     if(threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<Z*>(shmem);
         xEws = shape::elementWiseStride(xShapeInfo);
         len = shape::length(xShapeInfo);
     }
