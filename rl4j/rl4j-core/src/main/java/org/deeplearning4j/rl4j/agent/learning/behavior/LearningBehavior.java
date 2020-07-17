@@ -16,6 +16,7 @@
 package org.deeplearning4j.rl4j.agent.learning.behavior;
 
 import lombok.Builder;
+import lombok.NonNull;
 import org.deeplearning4j.rl4j.agent.learning.update.IUpdateRule;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -30,7 +31,10 @@ import org.deeplearning4j.rl4j.observation.Observation;
 @Builder
 public class LearningBehavior<ACTION, EXPERIENCE_TYPE> implements ILearningBehavior<ACTION> {
 
+    @NonNull
     private final ExperienceHandler<ACTION, EXPERIENCE_TYPE> experienceHandler;
+
+    @NonNull
     private final IUpdateRule<EXPERIENCE_TYPE> updateRule;
 
     @Override

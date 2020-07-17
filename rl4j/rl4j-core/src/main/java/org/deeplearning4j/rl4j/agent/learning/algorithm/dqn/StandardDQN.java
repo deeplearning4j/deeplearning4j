@@ -29,16 +29,15 @@ public class StandardDQN extends BaseDQNAlgorithm {
 
     private static final int ACTION_DIMENSION_IDX = 1;
 
-    // In litterature, this corresponds to: max_{a}Q_{tar}(s_{t+1}, a)
+    /**
+     * In literature, this corresponds to: max<sub>a</sub> Q<sub>tar</sub>(s<sub>t+1</sub>, a)
+     */
     private INDArray maxActionsFromQTargetNextObservation;
 
-    public StandardDQN(IOutputNeuralNet qNetwork, IOutputNeuralNet targetQNetwork, double gamma) {
-        super(qNetwork, targetQNetwork, gamma);
+    public StandardDQN(IOutputNeuralNet qNetwork, IOutputNeuralNet targetQNetwork, Configuration configuration) {
+        super(qNetwork, targetQNetwork, configuration);
     }
 
-    public StandardDQN(IOutputNeuralNet qNetwork, IOutputNeuralNet targetQNetwork, double gamma, double errorClamp) {
-        super(qNetwork, targetQNetwork, gamma, errorClamp);
-    }
 
     @Override
     protected void initComputation(INDArray observations, INDArray nextObservations) {
@@ -48,8 +47,8 @@ public class StandardDQN extends BaseDQNAlgorithm {
     }
 
     /**
-     * In litterature, this corresponds to:<br />
-     *      Q(s_t, a_t) = R_{t+1} + \gamma * max_{a}Q_{tar}(s_{t+1}, a)
+     * In literature, this corresponds to:<br />
+     *      Q(s<sub>t</sub>, a<sub>t</sub>) = R<sub>t+1</sub> + &gamma; * max<sub>a</sub> Q<sub>tar</sub>(s<sub>t+1</sub>, a)
      * @param batchIdx The index in the batch of the current transition
      * @param reward The reward of the current transition
      * @param isTerminal True if it's the last transition of the "game"

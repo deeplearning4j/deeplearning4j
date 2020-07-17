@@ -15,6 +15,10 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.agent.learning.algorithm;
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
@@ -39,19 +43,18 @@ public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPa
     private final double gamma;
 
     /**
-     * @param current The \u03b8' parameters (the thread-specific network)
-     * @param target The \u03b8<sup>-</sup> parameters (the global target network)
+     * @param current The &theta;' parameters (the thread-specific network)
+     * @param target The &theta;<sup>&ndash;</sup> parameters (the global target network)
      * @param actionSpaceSize The numbers of possible actions that can be taken on the environment
-     * @param gamma The discount factor
      */
-    public NStepQLearning(ITrainableNeuralNet current,
-                          IOutputNeuralNet target,
+    public NStepQLearning(@NonNull ITrainableNeuralNet current,
+                          @NonNull IOutputNeuralNet target,
                           int actionSpaceSize,
-                          double gamma) {
+                          @NonNull Configuration configuration) {
         this.current = current;
         this.target = target;
         this.actionSpaceSize = actionSpaceSize;
-        this.gamma = gamma;
+        this.gamma = configuration.getGamma();
     }
 
     @Override
@@ -87,5 +90,15 @@ public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPa
         FeaturesLabels featuresLabels = new FeaturesLabels(features);
         featuresLabels.putLabels(CommonLabelNames.QValues, labels);
         return current.computeGradients(featuresLabels);
+    }
+
+    @SuperBuilder
+    @Data
+    public static class Configuration {
+        /**
+         * The discount factor (default is 0.99)
+         */
+        @Builder.Default
+        double gamma = 0.99;
     }
 }

@@ -43,9 +43,10 @@ public class AgentLearnerTest {
     @Test
     public void when_episodeIsStarted_expect_learningBehaviorHandleEpisodeStartCalled() {
         // Arrange
-        AgentLearner<Integer> sut = AgentLearner.builder(environmentMock, transformProcessMock, policyMock, learningBehaviorMock)
+        AgentLearner.Configuration configuration = AgentLearner.Configuration.builder()
                 .maxEpisodeSteps(3)
                 .build();
+        AgentLearner<Integer> sut = new AgentLearner(environmentMock, transformProcessMock, policyMock, configuration, null, learningBehaviorMock);
 
         Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.reset()).thenReturn(new HashMap<>());
@@ -67,9 +68,10 @@ public class AgentLearnerTest {
     @Test
     public void when_runIsCalled_expect_experienceHandledWithLearningBehavior() {
         // Arrange
-        AgentLearner<Integer> sut = AgentLearner.builder(environmentMock, transformProcessMock, policyMock, learningBehaviorMock)
+        AgentLearner.Configuration configuration = AgentLearner.Configuration.builder()
                 .maxEpisodeSteps(4)
                 .build();
+        AgentLearner<Integer> sut = new AgentLearner(environmentMock, transformProcessMock, policyMock, configuration, null, learningBehaviorMock);
 
         Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.getSchema()).thenReturn(schema);
@@ -127,9 +129,10 @@ public class AgentLearnerTest {
     @Test
     public void when_runIsCalledMultipleTimes_expect_totalStepCountCorrect() {
         // Arrange
-        AgentLearner<Integer> sut = AgentLearner.builder(environmentMock, transformProcessMock, policyMock, learningBehaviorMock)
+        AgentLearner.Configuration configuration = AgentLearner.Configuration.builder()
                 .maxEpisodeSteps(4)
                 .build();
+        AgentLearner<Integer> sut = new AgentLearner(environmentMock, transformProcessMock, policyMock, configuration, null, learningBehaviorMock);
 
         Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.getSchema()).thenReturn(schema);
@@ -166,9 +169,10 @@ public class AgentLearnerTest {
     @Test
     public void when_runIsCalledMultipleTimes_expect_rewardSentToLearningBehaviorToBeCorrect() {
         // Arrange
-        AgentLearner<Integer> sut = AgentLearner.builder(environmentMock, transformProcessMock, policyMock, learningBehaviorMock)
+        AgentLearner.Configuration configuration = AgentLearner.Configuration.builder()
                 .maxEpisodeSteps(4)
                 .build();
+        AgentLearner<Integer> sut = new AgentLearner(environmentMock, transformProcessMock, policyMock, configuration, null, learningBehaviorMock);
 
         Schema schema = new Schema(new IntegerActionSchema(0, -1));
         when(environmentMock.getSchema()).thenReturn(schema);

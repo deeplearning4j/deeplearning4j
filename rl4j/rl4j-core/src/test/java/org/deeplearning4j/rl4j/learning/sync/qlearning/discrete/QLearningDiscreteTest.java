@@ -100,6 +100,8 @@ public class QLearningDiscreteTest {
         when(mockQlearningConfiguration.getRewardFactor()).thenReturn(rewardFactor);
         when(mockQlearningConfiguration.getExpRepMaxSize()).thenReturn(maxExperienceReplay);
         when(mockQlearningConfiguration.getSeed()).thenReturn(123L);
+        when(mockQlearningConfiguration.getTargetDqnUpdateFreq()).thenReturn(1);
+        when(mockDQN.clone()).thenReturn(mockDQN);
 
         if(learningBehavior != null) {
             qLearningDiscrete = mock(

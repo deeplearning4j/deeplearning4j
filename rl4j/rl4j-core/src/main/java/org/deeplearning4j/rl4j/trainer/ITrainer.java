@@ -13,31 +13,11 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.network;
-
-import org.deeplearning4j.rl4j.observation.Observation;
-import org.nd4j.linalg.api.ndarray.INDArray;
+package org.deeplearning4j.rl4j.trainer;
 
 /**
- * An interface defining the output aspect of a {@link NeuralNet}.
+ * An interface describing the behavior of all trainers
  */
-public interface IOutputNeuralNet {
-    /**
-     * Compute the output for the supplied observation.
-     * @param observation An {@link Observation}
-     * @return The ouptut of the network
-     */
-    INDArray output(Observation observation);
-
-    /**
-     * Compute the output for the supplied batch.
-     * @param batch
-     * @return The ouptut of the network
-     */
-    INDArray output(INDArray batch);
-
-    /**
-     * Clear the neural net of any previous state
-     */
-    void reset();
+public interface ITrainer {
+    void train();
 }

@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.agent.learning.update.updater;
 
+import org.deeplearning4j.rl4j.agent.Agent;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.junit.Test;
@@ -7,6 +8,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -19,9 +22,29 @@ public class LabelsNeuralNetUpdaterTest {
     ITrainableNeuralNet targetMock;
 
     @Test
-    public void when_callingUpdate_expect_currentUpdatedAndtargetNotChanged() {
+    public void when_callingUpdateWithTargetUpdateFrequencyAt0_expect_Exception() {
         // Arrange
-        LabelsNeuralNetUpdater sut = new LabelsNeuralNetUpdater(currentMock, targetMock, Integer.MAX_VALUE);
+        LabelsNeuralNetUpdater.Configuration configuration = LabelsNeuralNetUpdater.Configuration.builder()
+                .targetUpdateFrequency(0)
+                .build();
+        try {
+            LabelsNeuralNetUpdater sut = new LabelsNeuralNetUpdater(currentMock, targetMock, configuration);
+            fail("IllegalArgumentException should have been thrown");
+        } catch (IllegalArgumentException exception) {
+            String expectedMessage = "Configuration: targetUpdateFrequency must be greater than 0, got:  [0]";
+            String actualMessage = exception.getMessage();
+
+            assertTrue(actualMessage.contains(expectedMessage));
+        }
+
+    }
+
+    @Test
+    public void when_callingUpdate_expect_currentUpdatedAndTargetNotChanged() {
+        // Arrange
+        LabelsNeuralNetUpdater.Configuration configuration = LabelsNeuralNetUpdater.Configuration.builder()
+                .build();
+        LabelsNeuralNetUpdater sut = new LabelsNeuralNetUpdater(currentMock, targetMock, configuration);
         FeaturesLabels featureLabels = new FeaturesLabels(null);
 
         // Act
@@ -35,7 +58,10 @@ public class LabelsNeuralNetUpdaterTest {
     @Test
     public void when_callingUpdate_expect_targetUpdatedFromCurrentAtFrequency() {
         // Arrange
-        LabelsNeuralNetUpdater sut = new LabelsNeuralNetUpdater(currentMock, targetMock, 3);
+        LabelsNeuralNetUpdater.Configuration configuration = LabelsNeuralNetUpdater.Configuration.builder()
+                .targetUpdateFrequency(3)
+                .build();
+        LabelsNeuralNetUpdater sut = new LabelsNeuralNetUpdater(currentMock, targetMock, configuration);
         FeaturesLabels featureLabels = new FeaturesLabels(null);
 
         // Act

@@ -38,7 +38,10 @@ public class NStepQLearningTest {
         when(currentMock.output(any(INDArray.class))).thenAnswer(invocation -> invocation.getArgument(0, INDArray.class).mul(-1.0));
         when(targetMock.output(any(INDArray.class))).thenAnswer(invocation -> invocation.getArgument(0, INDArray.class).mul(-2.0));
 
-        sut = new NStepQLearning(currentMock, targetMock, ACTION_SPACE_SIZE, gamma);
+        NStepQLearning.Configuration configuration = NStepQLearning.Configuration.builder()
+            .gamma(gamma)
+            .build();
+        sut = new NStepQLearning(currentMock, targetMock, ACTION_SPACE_SIZE, configuration);
     }
 
     @Test

@@ -15,6 +15,10 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.agent.learning.update.updater;
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 
@@ -33,17 +37,16 @@ public class GradientsNeuralNetUpdater implements INeuralNetUpdater<Gradients> {
     /**
      * @param current The current {@link ITrainableNeuralNet network}
      * @param target The target {@link ITrainableNeuralNet network}
-     * @param targetUpdateFrequency Will synchronize the target network at every <i>targetUpdateFrequency</i> updates
      *
      * Note: Presently async is not supported
      */
-    public GradientsNeuralNetUpdater(ITrainableNeuralNet current,
-                                     ITrainableNeuralNet target,
-                                     int targetUpdateFrequency) {
+    public GradientsNeuralNetUpdater(@NonNull ITrainableNeuralNet current,
+                                     @NonNull ITrainableNeuralNet target,
+                                     @NonNull Configuration configuration) {
         this.current = current;
         this.target = target;
 
-        this.targetUpdateFrequency = targetUpdateFrequency;
+        this.targetUpdateFrequency = configuration.getTargetUpdateFrequency();
     }
 
     /**
@@ -62,4 +65,13 @@ public class GradientsNeuralNetUpdater implements INeuralNetUpdater<Gradients> {
         }
     }
 
+    @SuperBuilder
+    @Data
+    public static class Configuration {
+        /**
+         * Will synchronize the target network at every <i>targetUpdateFrequency</i> updates (default: no update)
+         */
+        @Builder.Default
+        int targetUpdateFrequency = Integer.MAX_VALUE;
+    }
 }

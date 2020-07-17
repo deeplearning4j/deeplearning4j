@@ -21,7 +21,9 @@ public class GradientsNeuralNetUpdaterTest {
     @Test
     public void when_callingUpdate_expect_currentUpdatedAndtargetNotChanged() {
         // Arrange
-        GradientsNeuralNetUpdater sut = new GradientsNeuralNetUpdater(currentMock, targetMock, Integer.MAX_VALUE);
+        GradientsNeuralNetUpdater.Configuration configuration = GradientsNeuralNetUpdater.Configuration.builder()
+                .build();
+        GradientsNeuralNetUpdater sut = new GradientsNeuralNetUpdater(currentMock, targetMock, configuration);
         Gradients gradients = new Gradients(10);
 
         // Act
@@ -35,7 +37,10 @@ public class GradientsNeuralNetUpdaterTest {
     @Test
     public void when_callingUpdate_expect_targetUpdatedFromCurrentAtFrequency() {
         // Arrange
-        GradientsNeuralNetUpdater sut = new GradientsNeuralNetUpdater(currentMock, targetMock, 3);
+        GradientsNeuralNetUpdater.Configuration configuration = GradientsNeuralNetUpdater.Configuration.builder()
+                .targetUpdateFrequency(3)
+                .build();
+        GradientsNeuralNetUpdater sut = new GradientsNeuralNetUpdater(currentMock, targetMock, configuration);
         Gradients gradients = new Gradients(10);
 
         // Act

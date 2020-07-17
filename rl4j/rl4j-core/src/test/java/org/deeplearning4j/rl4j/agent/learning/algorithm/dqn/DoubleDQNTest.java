@@ -30,6 +30,9 @@ public class DoubleDQNTest {
     @Mock
     IOutputNeuralNet targetQNetworkMock;
 
+    private final BaseTransitionTDAlgorithm.Configuration configuration = BaseTransitionTDAlgorithm.Configuration.builder()
+            .gamma(0.5)
+            .build();
 
     @Before
     public void setup() {
@@ -49,7 +52,7 @@ public class DoubleDQNTest {
             }
         };
 
-        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN sut = new org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN(qNetworkMock, targetQNetworkMock, 0.5);
+        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN sut = new org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN(qNetworkMock, targetQNetworkMock, configuration);
 
         // Act
         FeaturesLabels result = sut.compute(transitions);
@@ -73,7 +76,7 @@ public class DoubleDQNTest {
             }
         };
 
-        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN sut = new org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN(qNetworkMock, targetQNetworkMock, 0.5);
+        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN sut = new org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN(qNetworkMock, targetQNetworkMock, configuration);
 
         // Act
         FeaturesLabels result = sut.compute(transitions);
@@ -101,7 +104,7 @@ public class DoubleDQNTest {
             }
         };
 
-        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN sut = new DoubleDQN(qNetworkMock, targetQNetworkMock, 0.5);
+        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN sut = new DoubleDQN(qNetworkMock, targetQNetworkMock, configuration);
 
         // Act
         FeaturesLabels result = sut.compute(transitions);

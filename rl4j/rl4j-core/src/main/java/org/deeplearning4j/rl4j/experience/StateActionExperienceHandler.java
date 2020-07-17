@@ -15,6 +15,9 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.experience;
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.rl4j.observation.Observation;
 
 import java.util.ArrayList;
@@ -29,13 +32,14 @@ import java.util.List;
  * @author Alexandre Boulanger
  */
 public class StateActionExperienceHandler<A> implements ExperienceHandler<A, StateActionPair<A>> {
+    private static final int DEFAULT_BATCH_SIZE = 8;
 
     private final int batchSize;
 
     private boolean isFinalObservationSet;
 
-    public StateActionExperienceHandler(int batchSize) {
-        this.batchSize = batchSize;
+    public StateActionExperienceHandler(Configuration configuration) {
+        this.batchSize = configuration.getBatchSize();
     }
 
     private List<StateActionPair<A>> stateActionPairs = new ArrayList<>();
@@ -79,4 +83,13 @@ public class StateActionExperienceHandler<A> implements ExperienceHandler<A, Sta
         isFinalObservationSet = false;
     }
 
+    @SuperBuilder
+    @Data
+    public static class Configuration {
+        /**
+         * The default training batch size. Default is 8.
+         */
+        @Builder.Default
+        private int batchSize = DEFAULT_BATCH_SIZE;
+    }
 }

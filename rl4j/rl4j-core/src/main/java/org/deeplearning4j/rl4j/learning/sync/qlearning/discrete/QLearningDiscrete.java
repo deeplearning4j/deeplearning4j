@@ -20,6 +20,7 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 import lombok.Getter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
+import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.BaseTransitionTDAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN;
 import org.deeplearning4j.rl4j.agent.learning.behavior.ILearningBehavior;
@@ -101,12 +102,25 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     private static ILearningBehavior<Integer> buildLearningBehavior(IDQN qNetwork, QLearningConfiguration conf, Random random) {
         ITrainableNeuralNet target = qNetwork.clone();
+        BaseTransitionTDAlgorithm.Configuration aglorithmConfiguration = BaseTransitionTDAlgorithm.Configuration.builder()
+                .gamma(conf.getGamma())
+                .errorClamp(conf.getErrorClamp())
+                .build();
         IUpdateAlgorithm<FeaturesLabels, Transition<Integer>> updateAlgorithm = conf.isDoubleDQN()
-            ? new DoubleDQN(qNetwork, target, conf.getGamma(), conf.getErrorClamp())
-            : new StandardDQN(qNetwork, target, conf.getGamma(), conf.getErrorClamp());
-        INeuralNetUpdater<FeaturesLabels> updater = new LabelsNeuralNetUpdater(qNetwork, target, conf.getTargetDqnUpdateFreq());
+            ? new DoubleDQN(qNetwork, target, aglorithmConfiguration)
+            : new StandardDQN(qNetwork, target, aglorithmConfiguration);
+
+        LabelsNeuralNetUpdater.Configuration neuralNetUpdaterConfiguration = LabelsNeuralNetUpdater.Configuration.builder()
+            .targetUpdateFrequency(conf.getTargetDqnUpdateFreq())
+                .build();
+        INeuralNetUpdater<FeaturesLabels> updater = new LabelsNeuralNetUpdater(qNetwork, target, neuralNetUpdaterConfiguration);
         IUpdateRule<Transition<Integer>> updateRule = new UpdateRule<FeaturesLabels, Transition<Integer>>(updateAlgorithm, updater);
-        ExperienceHandler<Integer, Transition<Integer>> experienceHandler = new ReplayMemoryExperienceHandler(conf.getExpRepMaxSize(), conf.getBatchSize(), random);
+
+        ReplayMemoryExperienceHandler.Configuration experienceHandlerConfiguration = ReplayMemoryExperienceHandler.Configuration.builder()
+            .maxReplayMemorySize(conf.getExpRepMaxSize())
+            .batchSize(conf.getBatchSize())
+            .build();
+        ExperienceHandler<Integer, Transition<Integer>> experienceHandler = new ReplayMemoryExperienceHandler(experienceHandlerConfiguration, random);
         return LearningBehavior.<Integer, Transition<Integer>>builder()
                 .experienceHandler(experienceHandler)
                 .updateRule(updateRule)

@@ -15,8 +15,13 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.agent.learning.update.updater;
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
+import org.nd4j.common.base.Preconditions;
 
 /**
  * A {@link INeuralNetUpdater} that updates a neural network and sync a target network at defined intervals
@@ -33,17 +38,18 @@ public class LabelsNeuralNetUpdater implements INeuralNetUpdater<FeaturesLabels>
     /**
      * @param current The current {@link ITrainableNeuralNet network}
      * @param target The target {@link ITrainableNeuralNet network}
-     * @param targetUpdateFrequency Will synchronize the target network at every <i>targetUpdateFrequency</i> updates
+     * @param configuration The {@link Configuration} to use
      *
      * Note: Presently async is not supported
      */
-    public LabelsNeuralNetUpdater(ITrainableNeuralNet current,
-                                  ITrainableNeuralNet target,
-                                  int targetUpdateFrequency) {
+    public LabelsNeuralNetUpdater(@NonNull ITrainableNeuralNet current,
+                                  @NonNull ITrainableNeuralNet target,
+                                  @NonNull Configuration configuration) {
+        Preconditions.checkArgument(configuration.getTargetUpdateFrequency() > 0, "Configuration: targetUpdateFrequency must be greater than 0, got: ", configuration.getTargetUpdateFrequency());
         this.current = current;
         this.target = target;
 
-        this.targetUpdateFrequency = targetUpdateFrequency;
+        this.targetUpdateFrequency = configuration.getTargetUpdateFrequency();
     }
 
     /**
@@ -60,6 +66,16 @@ public class LabelsNeuralNetUpdater implements INeuralNetUpdater<FeaturesLabels>
         if(++updateCount % targetUpdateFrequency == 0) {
             target.copy(current);
         }
+    }
+
+    @SuperBuilder
+    @Data
+    public static class Configuration {
+        /**
+         * Will synchronize the target network at every <i>targetUpdateFrequency</i> updates (default: no update)
+         */
+        @Builder.Default
+        int targetUpdateFrequency = Integer.MAX_VALUE;
     }
 
 }

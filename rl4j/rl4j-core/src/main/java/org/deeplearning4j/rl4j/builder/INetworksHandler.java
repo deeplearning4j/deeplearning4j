@@ -13,31 +13,31 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.network;
+package org.deeplearning4j.rl4j.builder;
 
-import org.deeplearning4j.rl4j.observation.Observation;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 
 /**
- * An interface defining the output aspect of a {@link NeuralNet}.
+ * An interface that abstract what the different networks are depending on the setup (sync vs async)
  */
-public interface IOutputNeuralNet {
+public interface INetworksHandler {
     /**
-     * Compute the output for the supplied observation.
-     * @param observation An {@link Observation}
-     * @return The ouptut of the network
+     * @return The global shared target parameters &theta;<sup>&ndash;</sup>
      */
-    INDArray output(Observation observation);
+    ITrainableNeuralNet getTargetNetwork();
 
     /**
-     * Compute the output for the supplied batch.
-     * @param batch
-     * @return The ouptut of the network
+     * @return The thread-specific parameters &theta;'
      */
-    INDArray output(INDArray batch);
+    ITrainableNeuralNet getThreadCurrentNetwork();
 
     /**
-     * Clear the neural net of any previous state
+     * @return The global shared parameters &theta;
      */
-    void reset();
+    ITrainableNeuralNet getGlobalCurrentNetwork();
+
+    /**
+     * Perform the required changes before a new IAgentLearner is built
+     */
+    void resetForNewBuild();
 }

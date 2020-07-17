@@ -16,6 +16,10 @@
 
 package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
@@ -39,25 +43,14 @@ public abstract class BaseTransitionTDAlgorithm implements IUpdateAlgorithm<Feat
     /**
      *
      * @param qNetwork The Q-Network
-     * @param gamma The discount factor
-     * @param errorClamp Will prevent the new Q-Value from being farther than <i>errorClamp</i> away from the previous value. Double.NaN will disable the clamping.
+     * @param configuration The {@link Configuration} to use
      */
-    protected BaseTransitionTDAlgorithm(IOutputNeuralNet qNetwork, double gamma, double errorClamp) {
+    protected BaseTransitionTDAlgorithm(@NonNull IOutputNeuralNet qNetwork, @NonNull Configuration configuration) {
         this.qNetwork = qNetwork;
-        this.gamma = gamma;
+        this.gamma = configuration.getGamma();
 
-        this.errorClamp = errorClamp;
+        this.errorClamp = configuration.getErrorClamp();
         isClamped = !Double.isNaN(errorClamp);
-    }
-
-    /**
-     *
-     * @param qNetwork The Q-Network
-     * @param gamma The discount factor
-     * Note: Error clamping is disabled with this ctor
-     */
-    protected BaseTransitionTDAlgorithm(IOutputNeuralNet qNetwork, double gamma) {
-        this(qNetwork, gamma, Double.NaN);
     }
 
     /**
@@ -107,5 +100,21 @@ public abstract class BaseTransitionTDAlgorithm implements IUpdateAlgorithm<Feat
         featuresLabels.putLabels(CommonLabelNames.QValues, updatedQValues);
 
         return featuresLabels;
+    }
+
+    @SuperBuilder
+    @Data
+    public static class Configuration {
+        /**
+         * The discount factor (default is 0.99)
+         */
+        @Builder.Default
+        double gamma = 0.99;
+
+        /**
+         * Will prevent the new Q-Value from being farther than <i>errorClamp</i> away from the previous value. Double.NaN will disable the clamping (default).
+         */
+        @Builder.Default
+        double errorClamp = Double.NaN;
     }
 }

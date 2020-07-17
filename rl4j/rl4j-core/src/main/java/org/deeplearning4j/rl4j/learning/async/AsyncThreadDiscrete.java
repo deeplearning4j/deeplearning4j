@@ -62,7 +62,10 @@ public abstract class AsyncThreadDiscrete<OBSERVATION extends Encodable, NN exte
             current = (NN) asyncGlobal.getTarget().clone();
         }
 
-        experienceHandler = new StateActionExperienceHandler(getNStep());
+        StateActionExperienceHandler.Configuration experienceHandlerConfiguration = StateActionExperienceHandler.Configuration.builder()
+            .batchSize(getNStep())
+            .build();
+        experienceHandler = new StateActionExperienceHandler(experienceHandlerConfiguration);
     }
 
     private int getNStep() {
