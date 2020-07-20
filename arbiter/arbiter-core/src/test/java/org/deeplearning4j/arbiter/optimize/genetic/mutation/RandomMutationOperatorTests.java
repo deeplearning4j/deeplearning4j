@@ -54,7 +54,7 @@ public class RandomMutationOperatorTests extends BaseDL4JTest {
         boolean hasMutated = sut.mutate(genes);
 
         Assert.assertFalse(hasMutated);
-        Assert.assertTrue(Arrays.equals(new double[] {-1.0, -1.0, -1.0}, genes));
+        Assert.assertArrayEquals(new double[]{-1.0, -1.0, -1.0}, genes, 0.0);
     }
 
     @Test
@@ -68,6 +68,6 @@ public class RandomMutationOperatorTests extends BaseDL4JTest {
         boolean hasMutated = sut.mutate(genes);
 
         Assert.assertTrue(hasMutated);
-        Assert.assertTrue(Arrays.equals(new double[] {0.123, -1.0, -1.0}, genes));
+        Assert.assertArrayEquals(new double[]{0.123, -1.0, -1.0}, genes, 0.0);
     }
 }

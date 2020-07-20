@@ -24,7 +24,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterS
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class TestParameterSpaces extends BaseDL4JTest {
 
@@ -94,10 +94,10 @@ public class TestParameterSpaces extends BaseDL4JTest {
         ParameterSpace<Boolean> bSpace = new BooleanSpace();
         bSpace.setIndices(1); //randomly setting to non zero
 
-        assertEquals(true, (boolean) bSpace.getValue(new double[]{0.0, 0.0}));
-        assertEquals(true, (boolean) bSpace.getValue(new double[]{0.1, 0.5}));
-        assertEquals(false, (boolean) bSpace.getValue(new double[]{0.2, 0.7}));
-        assertEquals(false, (boolean) bSpace.getValue(new double[]{0.3, 1.0}));
+        assertTrue(bSpace.getValue(new double[]{0.0, 0.0}));
+        assertTrue(bSpace.getValue(new double[]{0.1, 0.5}));
+        assertFalse(bSpace.getValue(new double[]{0.2, 0.7}));
+        assertFalse(bSpace.getValue(new double[]{0.3, 1.0}));
     }
 
 }
