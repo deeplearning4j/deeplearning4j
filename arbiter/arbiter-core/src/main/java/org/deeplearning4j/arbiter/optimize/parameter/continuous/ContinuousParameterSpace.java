@@ -22,7 +22,6 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.distribution.DistributionUtils;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.RealDistributionDeserializer;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.RealDistributionSerializer;
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;

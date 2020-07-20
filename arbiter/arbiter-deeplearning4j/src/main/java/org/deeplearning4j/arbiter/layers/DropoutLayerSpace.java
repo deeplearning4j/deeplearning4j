@@ -18,13 +18,11 @@ package org.deeplearning4j.arbiter.layers;
 
 import lombok.*;
 import org.deeplearning4j.arbiter.dropout.DropoutSpace;
-import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 
-import java.util.Collections;
 import java.util.List;
 
 @Data
