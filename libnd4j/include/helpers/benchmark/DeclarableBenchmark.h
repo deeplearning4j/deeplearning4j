@@ -36,7 +36,7 @@ namespace sd {
         sd::graph::Context *_context = nullptr;
     public:
         DeclarableBenchmark(sd::ops::DeclarableOp &op, std::string name = 0) : OpBenchmark() {
-            _op = &op; //ops::OpRegistrator::getInstance()->getOperation(op.getOpHash());
+            _op = &op; //ops::OpRegistrator::getInstance().getOperation(op.getOpHash());
             _testName = name;
         }
 

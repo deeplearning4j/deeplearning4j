@@ -43,7 +43,7 @@ namespace sd {
         DECLARE_SHAPE_FN(histogram) {
             auto numBins = INT_ARG(0);
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(numBins, sd::DataType::INT64));
+            return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(numBins, sd::DataType::INT64));
         }
 
 

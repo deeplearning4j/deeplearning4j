@@ -47,6 +47,7 @@ import org.datavec.api.writable.comparator.LongWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -56,7 +57,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 18/07/2016.
  */
-public class TestJsonYaml {
+public class TestJsonYaml extends BaseND4JTest {
 
     @Test
     public void testToFromJsonYaml() {

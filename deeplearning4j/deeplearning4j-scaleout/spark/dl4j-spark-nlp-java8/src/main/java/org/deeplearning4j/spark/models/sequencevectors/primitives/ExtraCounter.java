@@ -18,7 +18,7 @@ package org.deeplearning4j.spark.models.sequencevectors.primitives;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.common.primitives.Counter;
 import org.nd4j.parameterserver.distributed.util.NetworkInformation;
 
 import java.net.InterfaceAddress;

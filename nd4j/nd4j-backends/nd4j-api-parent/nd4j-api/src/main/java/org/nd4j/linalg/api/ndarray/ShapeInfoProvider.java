@@ -17,7 +17,7 @@
 package org.nd4j.linalg.api.ndarray;
 
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**

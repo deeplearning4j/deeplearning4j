@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
@@ -176,10 +176,10 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
         INDArray bias = model.getLayer(0).getParam("b");
         assertEquals(6, bias.length());
 
-        INDArray input = Nd4j.ones(1, 5, 3, 4);
+        INDArray input = Nd4j.ones(1, 3, 4, 5);     //NHWC
         INDArray output = model.output(input);
 
-        assertArrayEquals(new long[] {1, 6, 1, 2}, output.shape());
+        assertArrayEquals(new long[] {1, 1, 2, 6}, output.shape()); //NHWC
 
         logSuccess(modelPath);
     }
@@ -224,7 +224,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
         INDArray input = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(input);
-        assertArrayEquals(new long[]{mb, nOut, inputLength - kernel + 1}, output.shape());
+        assertArrayEquals(new long[]{mb, inputLength - kernel + 1,  nOut}, output.shape());     //NWC
         logSuccess(modelPath);
     }
 
@@ -238,9 +238,9 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
         KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
         MultiLayerNetwork model = loadMultiLayerNetwork(modelPath, false);
 
-        INDArray input = Nd4j.zeros(10, 4, 6, 6);
+        INDArray input = Nd4j.zeros(10, 6, 6, 4);
         INDArray output = model.output(input);
-        assertArrayEquals(new long[]{10, 16, 3, 3}, output.shape());
+        assertArrayEquals(new long[]{10, 3, 3, 16}, output.shape());
         logSuccess(modelPath);
     }
 
@@ -248,10 +248,11 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
         KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
         ComputationGraph model = loadComputationalGraph(modelPath, false);
 
-        INDArray input[] = new INDArray[]{Nd4j.zeros(10, 4, 6, 6), Nd4j.zeros(10, 16, 3, 3)};
+//        INDArray input[] = new INDArray[]{Nd4j.zeros(10, 4, 6, 6), Nd4j.zeros(10, 16, 3, 3)};
+        INDArray input[] = new INDArray[]{Nd4j.zeros(10, 6, 6, 4), Nd4j.zeros(10, 3, 3, 16)};
         INDArray[] output = model.output(input);
         log.info(Arrays.toString(output[0].shape()));
-        assertArrayEquals(new long[]{10, 32, 3, 3}, output[0].shape());
+        assertArrayEquals(new long[]{10, 3, 3, 32}, output[0].shape());
         logSuccess(modelPath);
     }
 
@@ -278,7 +279,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
         INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
-        assertArrayEquals(new long[]{mb, nOut, inputLength}, output.shape());
+        assertArrayEquals(new long[]{mb, inputLength, nOut}, output.shape());       //NWC format
         logSuccess(modelPath);
     }
 
@@ -304,7 +305,7 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
         INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
-        assertArrayEquals(new long[]{mb, nOut, inputLength - kernel + 1}, output.shape());
+        assertArrayEquals(new long[]{mb, inputLength - kernel + 1, nOut}, output.shape());      //NWC
         logSuccess(modelPath);
     }
 

@@ -18,7 +18,6 @@ package org.deeplearning4j.util;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Utilities for CapsNet Layers
@@ -43,17 +42,6 @@ public class CapsuleUtils {
         SDVariable squaredNorm = SD.math.square(x).sum(true, dim);
         SDVariable scale = SD.math.sqrt(squaredNorm.plus(1e-5));
         return x.times(squaredNorm).div(squaredNorm.plus(1.0).times(scale));
-    }
-
-    /**
-     * Compute softmax along a given dimension
-     */
-    public static SDVariable softmax(SameDiff SD, SDVariable x, int dimension, int rank){
-        int[] permutation = ArrayUtil.range(0, rank);
-        permutation[0] = dimension;
-        permutation[dimension] = 0;
-
-        return SD.nn.softmax(x.permute(permutation)).permute(ArrayUtil.invertPermutation(permutation));
     }
 
 }

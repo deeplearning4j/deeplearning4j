@@ -40,14 +40,15 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.*;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -75,7 +76,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.weightinit.impl.UniformInitScheme;
 
@@ -759,8 +760,7 @@ public class SameDiffTests extends BaseNd4jTest {
         val vector = Nd4j.linspace(1, 4, 4).reshape(4, 1);
         val input1 = sd.var("input", matrix);
         val input2 = sd.var("input2", vector);
-        val output = sd
-                .mmul("output", input1, input2, MMulTranspose.builder().transposeA(true).transposeB(false).build());
+        val output = sd.mmul("output", input1, input2, true, false, false);
         INDArray out = output.eval();
         assertArrayEquals(new long[]{3, 1}, out.shape());
     }
@@ -1082,7 +1082,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SDVariable out = sd.nn().batchNorm(sdInput, sdMean, sdVar, sdGamma, sdBeta,
                 0.0, 1);
-        out = sd.nn().tanh("out", out);
+        out = sd.math().tanh(out);
 
         INDArray outArr = out.eval();
         assertArrayEquals(new long[]{1, 10}, outArr.shape());
@@ -1122,8 +1122,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SDVariable sdInput = sd.var("input", input);
 
-        val axis = new int[]{0, 1};
-        SDVariable[] moments = sd.math().moments(sdInput, axis);
+        SDVariable[] moments = sd.math().moments(sdInput, 0, 1);
         SDVariable mean = moments[0];
         SDVariable variance = moments[1];
 
@@ -1411,7 +1410,7 @@ public class SameDiffTests extends BaseNd4jTest {
         for (int i = 0; i <= 2; i++) {
             SameDiff sd = SameDiff.create();
             SDVariable in = sd.var("in", Nd4j.create(2, 3));
-            SDVariable expanded = sd.f().expandDims(in, i);
+            SDVariable expanded = sd.expandDims(in, i);
 
             INDArray out = expanded.eval();
             switch (i) {
@@ -1668,7 +1667,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
-                SDVariable expand = sd.f().expandDims(in, i);
+                SDVariable expand = sd.expandDims(in, i);
 
                 INDArray out = expand.eval();
 
@@ -1709,7 +1708,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
                 SameDiff sd = SameDiff.create();
                 SDVariable in = sd.var("in", inArr);
-                SDVariable squeeze = sd.f().squeeze(in, i);
+                SDVariable squeeze = sd.squeeze(in, i);
 
                 INDArray out = squeeze.eval();
 
@@ -1797,7 +1796,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable labelsVar = sd.constant("labels", labels);
         SDVariable predictionsVar = sd.constant("predictions", pred);
         SDVariable weightsVar = sd.constant("weights", weights);
-        SDVariable cm = sd.math().confusionMatrix("cm", labelsVar, predictionsVar, numClasses, weightsVar);
+        SDVariable cm = sd.math().confusionMatrix("cm", labelsVar, predictionsVar, weightsVar, numClasses);
         INDArray out = cm.eval();
 
         INDArray exp = Nd4j.create(new float[][]{{0, 0, 0, 0, 0}, {0, 0, 10, 0, 0}, {0, 0, 100, 0, 0},
@@ -2289,7 +2288,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         Map<String, INDArray> gradMap = new HashMap<>();
         gradMap.put("out", externalGrad);
-        ExternalErrorsFunction fn = sd.f().externalErrors(out);
+        ExternalErrorsFunction fn = SameDiffUtils.externalErrors(sd, null, out);
 
         Map<String, INDArray> m = new HashMap<>();
         m.put("out-grad", externalGrad);
@@ -2379,7 +2378,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable b = sd.var("b", DataType.FLOAT, 1, 4);
         SDVariable z = in.mmul(w).add(b);
         SDVariable out = sd.math().tanh("tanh", z);
-        ExternalErrorsFunction fn = sd.f().externalErrors(out);
+        ExternalErrorsFunction fn = SameDiffUtils.externalErrors(sd, null, out);
 
         INDArray inA = Nd4j.linspace(1, 15, 15, DataType.FLOAT).reshape(3, 5);
         INDArray wA = Nd4j.linspace(1, 20, 20, DataType.FLOAT).reshape(5, 4);
@@ -2676,7 +2675,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         final long timeSteps = sdInput.getShape()[2];
         SDVariable[] outputSlices = new SDVariable[(int) timeSteps];
-        final SDVariable[] inputSlices = sd.unstack(new String[]{"X_0", "X_1"}, sdInput, 2);
+        final SDVariable[] inputSlices = sd.unstack(new String[]{"X_0", "X_1"}, sdInput, 2, 2);
 
         final val x_0 = inputSlices[0];
         outputSlices[0] = x_0;
@@ -2703,7 +2702,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SameDiff sd = SameDiff.create();
         final SDVariable sdInput = sd.var("input", input);
 
-        final SDVariable[] inputSlices = sd.unstack(new String[]{"X_0", "X_1"}, sdInput, 2);
+        final SDVariable[] inputSlices = sd.unstack(new String[]{"X_0", "X_1"}, sdInput, 2, 2);
         final val temp = inputSlices[0].add(inputSlices[1]).div(inputSlices[1]).mul(inputSlices[0]);
         final val out = temp.add(temp).add(inputSlices[1]);
         out.norm2("out");
@@ -2791,6 +2790,27 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String,INDArray> g = sd.calculateGradients(m, "a", "b");
 
         b.setArray(m.get("b"));
+
+        String err = OpValidation.validate(new TestCase(sd)
+                .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
+                .gradientCheck(true));
+
+        assertNull(err);
+    }
+
+    @Test
+    public void testNonScalarOutput5() {
+        SameDiff sd = SameDiff.create();
+        SDVariable linspace = sd.linspace(DataType.DOUBLE, 1, 75, 75);
+        SDVariable a = sd.reshape("a", linspace, 15, 5);
+        SDVariable b = sd.var("b", Nd4j.ones(DataType.DOUBLE, 15, 5));
+
+        SDVariable out = a.mul(b);
+        out.markAsLoss();
+        out.eval();
+
+        out.eval();
+        sd.grad("a").eval();
 
         String err = OpValidation.validate(new TestCase(sd)
                 .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
@@ -2981,7 +3001,7 @@ public class SameDiffTests extends BaseNd4jTest {
         }
 
         //Also try training:
-        SDVariable sum = sd.math.mergeAdd(ph1, ph2, ph3, ph4);
+        SDVariable sum = sd.math.mergeAdd(new SDVariable[]{ph1, ph2, ph3, ph4});
         SDVariable mean = sum.add(scalar).mean();
         MultiDataSet mds = new MultiDataSet(new INDArray[]{wrongShape, wrongShape, wrongShape, wrongShape}, null);
 
@@ -3243,61 +3263,61 @@ public class SameDiffTests extends BaseNd4jTest {
 
     @Test
     public void testNestedIf() throws IOException {
-        SameDiff SD = SameDiff.create();
-        SDVariable a = SD.var("a", Nd4j.createFromArray(2.0));
-        SDVariable b = SD.var("b", Nd4j.createFromArray(5.0));
-        SDVariable c = SD.var("c", Nd4j.createFromArray(9.0));
-        SDVariable d = SD.var("d", Nd4j.createFromArray(-7.0));
+        SameDiff sd = SameDiff.create();
+        SDVariable a = sd.var("a", Nd4j.createFromArray(2.0));
+        SDVariable b = sd.var("b", Nd4j.createFromArray(5.0));
+        SDVariable c = sd.var("c", Nd4j.createFromArray(9.0));
+        SDVariable d = sd.var("d", Nd4j.createFromArray(-7.0));
 
-        SDVariable output = SD.ifCond("out", null,
-                (sd) -> a.lt(b),
-                (sd) -> sd.ifCond(
+        SDVariable output = sd.ifCond("out", null,
+                (s) -> a.lt(b),
+                (s) -> s.ifCond(
                         (sd2) -> d.lte(0),
                         (sd2) -> c.add(1),
                         (sd2) -> d),
-                (sd) -> c.add(5));
+                (s) -> c.add(5));
         INDArray out = output.eval();
         assertEquals(Nd4j.createFromArray(10.0), out);
 
-        SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
+        sd = SameDiff.fromFlatBuffers(sd.asFlatBuffers(false));
 
-        assertEquals(Nd4j.createFromArray(10.0), SD.output(Collections.emptyMap(), "out").get("out"));
+        assertEquals(Nd4j.createFromArray(10.0), sd.output(Collections.emptyMap(), "out").get("out"));
     }
 
     @Test
     public void testWhile() throws IOException {
 
-        SameDiff SD = SameDiff.create();
-        SDVariable countIn = SD.constant(5);
-        SDVariable sumIn = SD.constant(0);
+        SameDiff sd = SameDiff.create();
+        SDVariable countIn = sd.constant(5);
+        SDVariable sumIn = sd.constant(0);
 
-        SDVariable[] sum = SD.whileLoop("while_1", new SDVariable[]{countIn, sumIn},
-                (sd, vars) -> vars[0].gt(0),
-                (sd, vars) -> new SDVariable[]{vars[0].sub(1), vars[1].add(vars[0])});
+        SDVariable[] sum = sd.whileLoop("while_1", new SDVariable[]{countIn, sumIn},
+                (s, vars) -> vars[0].gt(0),
+                (s, vars) -> new SDVariable[]{vars[0].sub(1), vars[1].add(vars[0])});
 
         INDArray out = sum[1].eval();
         assertEquals(15, out.getInt(0));
 
         String outName = sum[1].name();
 
-        SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
+        sd = SameDiff.fromFlatBuffers(sd.asFlatBuffers(false));
 
-        assertEquals(15, SD.output(Collections.emptyMap(), outName).get(outName).getInt(0));
+        assertEquals(15, sd.output(Collections.emptyMap(), outName).get(outName).getInt(0));
     }
 
     @Test
     @Ignore
     public void testNestedWhile() throws IOException {
-        SameDiff SD = SameDiff.create();
-        SDVariable countIn = SD.constant(5);
-        SDVariable sumIn = SD.constant(0);
-        SDVariable sum2 = SD.constant(0);
+        SameDiff sd = SameDiff.create();
+        SDVariable countIn = sd.constant(5);
+        SDVariable sumIn = sd.constant(0);
+        SDVariable sum2 = sd.constant(0);
         //TODO creating constant instead of using sum2 causes errors
 
-        SDVariable[] sum = SD.whileLoop(new SDVariable[]{countIn, sumIn},
-                (sd, vars) -> vars[0].gt(0),
-                (sd, vars) -> new SDVariable[]{vars[0].sub(1),
-                        vars[1].add(sd.whileLoop(new SDVariable[]{vars[0], sum2},
+        SDVariable[] sum = sd.whileLoop(new SDVariable[]{countIn, sumIn},
+                (s, vars) -> vars[0].gt(0),
+                (s, vars) -> new SDVariable[]{vars[0].sub(1),
+                        vars[1].add(s.whileLoop(new SDVariable[]{vars[0], sum2},
                                 (sd2, vars2) -> vars2[0].gt(0),
                                 (sd2, vars2) -> new SDVariable[]{vars2[0].sub(1), vars2[1].add(vars2[0])})[1])});
 
@@ -3306,23 +3326,23 @@ public class SameDiffTests extends BaseNd4jTest {
 
         String outName = sum[1].name();
 
-        SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
+        sd = SameDiff.fromFlatBuffers(sd.asFlatBuffers(false));
 
-        assertEquals(35, SD.output(Collections.emptyMap(), outName).get(outName).getInt(0));
+        assertEquals(35, sd.output(Collections.emptyMap(), outName).get(outName).getInt(0));
 
     }
 
     @Test
     public void testNestedWhileIf() throws IOException {
-        SameDiff SD = SameDiff.create();
-        SDVariable countIn = SD.constant(5);
-        SDVariable sumIn = SD.constant(0);
-        SDVariable hundred = SD.constant(100);
+        SameDiff sd = SameDiff.create();
+        SDVariable countIn = sd.constant(5);
+        SDVariable sumIn = sd.constant(0);
+        SDVariable hundred = sd.constant(100);
 
-        SDVariable[] sum = SD.whileLoop(new SDVariable[]{countIn, sumIn},
-                (sd, vars) -> vars[0].gte(0),
-                (sd, vars) -> new SDVariable[]{vars[0].sub(1), vars[1].add(
-                        sd.ifCond((sd2) -> vars[0].eq(0),
+        SDVariable[] sum = sd.whileLoop(new SDVariable[]{countIn, sumIn},
+                (s, vars) -> vars[0].gte(0),
+                (s, vars) -> new SDVariable[]{vars[0].sub(1), vars[1].add(
+                        s.ifCond((sd2) -> vars[0].eq(0),
                                 (sd2) -> vars[0].add(100), //TODO replace with hundred and things break
                                 (sd2) -> vars[0])
                 )});
@@ -3332,9 +3352,9 @@ public class SameDiffTests extends BaseNd4jTest {
 
         String outName = sum[1].name();
 
-        SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
+        sd = SameDiff.fromFlatBuffers(sd.asFlatBuffers(false));
 
-        assertEquals(115, SD.output(Collections.emptyMap(), outName).get(outName).getInt(0));
+        assertEquals(115, sd.output(Collections.emptyMap(), outName).get(outName).getInt(0));
     }
 
     @Test
@@ -3447,7 +3467,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
         SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 3));
         SDVariable z = in.mmul(w).add("z", b);
-        SDVariable softmax = sd.nn.softmax("softmax", z);
+        SDVariable softmax = sd.nn.softmax("softmax", z, 0);
 
         Map<String,INDArray> ph = Collections.singletonMap("in", Nd4j.rand(DataType.FLOAT, 2, 4));
         List<String> outputs = Arrays.asList("in", "z", "softmax");
@@ -3522,13 +3542,13 @@ public class SameDiffTests extends BaseNd4jTest {
     @Test
     public void testRngSanityCheck(){
         Nd4j.getRandom().setSeed(12345);
-        for(DataType dt : DataType.values()) {
+        for(DataType dt : new DataType[]{DataType.FLOAT, DataType.DOUBLE,DataType.BFLOAT16}) {
             if (!dt.isNumerical())
                 continue;
             SameDiff sameDiff = SameDiff.create();
             INDArray indaShape = Nd4j.createFromArray(3, 10);
             SDVariable sdShape = sameDiff.constant(indaShape);
-            SDVariable random = sameDiff.random().uniform("data", 0.0, 10.0, sdShape, dt);
+            SDVariable random = sameDiff.random().uniform("data", 0.0, 10.0, dt, 3, 10);
             INDArray out = random.eval();
             String s = out.toString();
         }
@@ -3603,5 +3623,88 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable s1 = p1.sub("op", w1);
         SDVariable s2 = p2.add("op", w1);
         assertNotEquals(sd1, sd2);
+    }
+
+    @Test
+    public void testConv2DWeightsFormat() {
+        int bS=2, iH=4,iW=3,  iC=4,oC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+        int       oH=2,oW=2;
+        SameDiff sd = SameDiff.create();
+
+        WeightsFormat format = WeightsFormat.OIYX;
+
+        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iC, iH, iW});
+        INDArray weights = Nd4j.createFromArray(new float[]{
+                -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
+                2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
+                2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
+                reshape(new long[]{oC, iC, kH, kW});
+
+        INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});
+
+        SDVariable sdInput = sd.var("in", inArr);
+        SDVariable sdWeights = sd.var("dW", weights);
+        SDVariable sdBias = sd.var("b", bias);
+
+        Conv2DConfig c = Conv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(pH).pW(pW)
+                .sH(sH).sW(sW)
+                .dH(dH).dW(dW)
+                .isSameMode(false)
+                .weightsFormat(format)
+                .build();
+
+        SDVariable out = sd.cnn().conv2d(sdInput, sdWeights, sdBias, c);
+
+        assertArrayEquals(new long[]{bS, oC, oH, oW}, out.eval().shape());
+    }
+
+    @Test
+    public void testConv2DDifferentWeightsFormat() {
+        int bS=2, iH=4,iW=3,  iC=4,oC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+        int       oH=2,oW=2;
+        SameDiff sd = SameDiff.create();
+
+        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iC, iH, iW});
+        INDArray weights = Nd4j.rand(DataType.FLOAT, oC, iC, kH, kW);
+
+        INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});
+
+        SDVariable sdInput = sd.var("in", inArr);
+        SDVariable sdWeights = sd.var("dW", weights);
+        SDVariable sdBias = sd.var("b", bias);
+
+        Conv2DConfig c = Conv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(pH).pW(pW)
+                .sH(sH).sW(sW)
+                .dH(dH).dW(dW)
+                .isSameMode(false)
+                .weightsFormat(WeightsFormat.OIYX)
+                .build();
+
+        SDVariable out = sd.cnn().conv2d(sdInput, sdWeights, sdBias, c);
+
+        assertArrayEquals(new long[]{bS, oC, oH, oW}, out.eval().shape());
+
+        weights = weights.permute(0,2,3,1);
+        SDVariable permutedWeights = sd.var("weights2", weights);
+
+        // Shape per format tip:
+        //[3, 4, 3, 2] - OIYX
+        //[3, 3, 2, 4] - OYXI
+        //[3, 2, 4, 2] - YXIO
+        Conv2DConfig c2 = Conv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(pH).pW(pW)
+                .sH(sH).sW(sW)
+                .dH(dH).dW(dW)
+                .isSameMode(false)
+                .weightsFormat(WeightsFormat.OYXI)
+                .build();
+
+        SDVariable out2 = sd.cnn().conv2d(sdInput, permutedWeights, sdBias, c2);
+        assertEquals(out.eval(), out2.eval());
     }
 }

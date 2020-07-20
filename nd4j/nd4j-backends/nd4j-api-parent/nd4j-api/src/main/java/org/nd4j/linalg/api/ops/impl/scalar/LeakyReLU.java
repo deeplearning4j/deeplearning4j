@@ -23,6 +23,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -48,6 +49,10 @@ public class LeakyReLU extends BaseScalarOp {
         this.alpha = alpha;
         this.extraArgs = new Object[]{alpha};
 
+    }
+
+    public LeakyReLU(SameDiff sameDiff, SDVariable i_v, double alpha) {
+        this(sameDiff, i_v, false, alpha);
     }
 
     public LeakyReLU(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double alpha) {
@@ -104,7 +109,7 @@ public class LeakyReLU extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().leakyReluBp(arg(), i_v.get(0), alpha));
+        return new LeakyReLUBp(sameDiff, arg(), i_v.get(0), alpha).outputs();
     }
 
     @Override

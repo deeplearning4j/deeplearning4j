@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.graph.ByteOrder;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
@@ -73,9 +73,9 @@ import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
 import org.nd4j.linalg.util.NDArrayMath;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
@@ -2045,8 +2045,18 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new ND4JIllegalArgumentException("Indices must be a vector or matrix.");
         }
 
-        if(indices.rows() == rank()) {
-            INDArray ret = Nd4j.create(indices.dataType(), indices.columns());
+        if (rank() == 1) {
+            Preconditions.checkArgument(indices.rank() <= 1, "For 1D vector indices must be either scalar or vector as well");
+            val ret = Nd4j.createUninitialized(this.dataType(), indices.length());
+            for (int e = 0; e < indices.length(); e++) {
+                val idx = indices.getLong(e);
+                val value =  getDouble(idx);
+                ret.putScalar(e, value);
+            }
+
+            return ret;
+        } else if(indices.rows() == rank()) {
+            INDArray ret = Nd4j.create(this.dataType(), indices.columns());
 
             for(int i = 0; i < indices.columns(); i++) {
                 int[] specifiedIndex = indices.getColumn(i).dup().data().asInt();
@@ -2866,14 +2876,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray mmul(INDArray other) {
+    public INDArray mmul(INDArray other, char resultOrder) {
+        Preconditions.checkArgument(resultOrder == 'c' || resultOrder == 'f', "Order must be either 'c' or 'f', but [" + resultOrder + "] was given");
         Preconditions.checkState(this.dataType() == other.dataType(), "Matrix multiplication: arrays must have same dtype: %s vs. %s", this.dataType(), other.dataType());
-        // FIXME: for 1D case, we probably want vector output here?
-        long[] shape = {rows(), other.rank() == 1 ? 1 : other.columns()};
-        INDArray result = createUninitialized(this.dataType(), shape, 'f');
+        // FIXME: add support for 3D+ here?
+        long[] shape = other.rank() == 1 ? new long[]{rows()} : new long[]{rows(), other.columns()};
+        INDArray result = createUninitialized(this.dataType(), shape, resultOrder);
         if (result.isScalar())
             return Nd4j.scalar(this.dataType(), Nd4j.getBlasWrapper().dot(this, other)).reshape(1, 1);
         return mmuli(other, result);
+    }
+
+    @Override
+    public INDArray mmul(INDArray other) {
+        return mmul(other, (this.ordering() == 'f' && other.ordering() == 'f' && other.rank() != 1) ? 'f' : 'c');
     }
 
     protected INDArray create(int[] shape, char ordering) {
@@ -5325,7 +5341,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
-            DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
+            DataBuffer buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
             Nd4j.getMemoryManager().memcpy(buffer, this.data());
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
@@ -5385,6 +5401,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return sorted.getDouble(sorted.length() - 1);
 
         double pos = (quantile.doubleValue() / 100.0) * (double) (sorted.length() + 1);
+        if (pos < 1)
+            return sorted.getDouble(0);
+        else if (pos >= sorted.length())
+            return sorted.getDouble(sorted.length() - 1);
 
         double fposition = FastMath.floor(pos);
         int position = (int)fposition;
@@ -5501,7 +5521,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray castTo(DataType dataType) {
         if(dataType == dataType())  //No-op if correct datatype
             return this;
-        if(isEmpty()){
+        if(isEmpty() && rank() == 0){
             return Nd4j.empty(dataType);
         }
         val result = Nd4j.createUninitialized(dataType, this.shape(), this.ordering());

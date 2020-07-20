@@ -41,7 +41,7 @@ namespace sd {
         };
 
         DECLARE_SHAPE_FN(hashcode) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(sd::DataType::INT64));
+            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::INT64));
         }
 
 

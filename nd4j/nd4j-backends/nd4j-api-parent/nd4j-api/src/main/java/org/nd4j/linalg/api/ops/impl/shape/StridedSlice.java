@@ -21,13 +21,15 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -93,6 +95,26 @@ public class StridedSlice extends DynamicCustomOp {
         addArguments();
         //https://github.com/deeplearning4j/libnd4j/blob/master/include/ops/declarable/generic/parity_ops/strided_slice.cpp#L279
 
+    }
+
+    public StridedSlice(INDArray in, int[] begin, int[] end, int[] strides, int beginMask,
+                        int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        this(in, ArrayUtil.toLongArray(begin), ArrayUtil.toLongArray(end), ArrayUtil.toLongArray(strides),
+                beginMask, endMask, ellipsisMask, newAxisMask, shrinkAxisMask);
+    }
+
+    public StridedSlice(INDArray in, long[] begin, long[] end, long[] strides, int beginMask,
+                        int endMask, int ellipsisMask, int newAxisMask, int shrinkAxisMask) {
+        addInputArgument(in);
+        this.begin = begin;
+        this.end = end;
+        this.strides = strides;
+        this.beginMask = beginMask;
+        this.endMask = endMask;
+        this.ellipsisMask = ellipsisMask;
+        this.newAxisMask = newAxisMask;
+        this.shrinkAxisMask = shrinkAxisMask;
+        addArguments();
     }
 
     private void addArguments(){
@@ -238,12 +260,12 @@ public class StridedSlice extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         if(args().length == 1) {
             //Array inputs for begin/end/strides
-            return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), begin, end, strides, beginMask, endMask,
-                    ellipsisMask, newAxisMask, shrinkAxisMask));
+            return new StridedSliceBp(sameDiff, arg(), i_v.get(0), begin, end, strides, beginMask, endMask,
+                    ellipsisMask, newAxisMask, shrinkAxisMask).outputs();
         } else {
             //SDVariable inputs for begin/end/strides
-            return Collections.singletonList(f().stridedSliceBp(arg(), i_v.get(0), arg(1), arg(2), arg(3), beginMask, endMask,
-                    ellipsisMask, newAxisMask, shrinkAxisMask));
+            return new StridedSliceBp(sameDiff, arg(), i_v.get(0), arg(1), arg(2), arg(3), beginMask, endMask,
+                    ellipsisMask, newAxisMask, shrinkAxisMask).outputs();
         }
     }
 

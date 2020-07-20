@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
@@ -30,6 +30,10 @@ import org.nd4j.linalg.api.ndarray.INDArrayStatistics;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
+import org.nd4j.linalg.api.ops.compression.DecodeBitmap;
+import org.nd4j.linalg.api.ops.compression.DecodeThreshold;
+import org.nd4j.linalg.api.ops.compression.EncodeBitmap;
+import org.nd4j.linalg.api.ops.compression.EncodeThreshold;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.rng.Random;
@@ -39,11 +43,11 @@ import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.Optional;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.Optional;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
@@ -57,7 +61,7 @@ import java.util.*;
 @Slf4j
 public abstract class DefaultOpExecutioner implements OpExecutioner {
 
-    private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: deeplearning4j.org/docs/latest/nd4j-overview#workspaces-panic";
+    private static final String SCOPE_PANIC_MSG = "For more details, see the ND4J User Guide: https://deeplearning4j.konduit.ai/nd4j/overview#workspaces-scope-panic";
 
     protected ProfilingMode profilingMode = ProfilingMode.SCOPE_PANIC;
 
@@ -301,24 +305,27 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    protected void checkForWorkspaces(CustomOp op) {
-        for (val input: op.inputArguments())
+    protected void checkForWorkspaces(CustomOp op, OpContext oc) {
+        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
+        List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
+
+        for (val input: inArgs)
             checkWorkspace(op.opName(), input);
 
-        for (val output: op.outputArguments())
+        for (val output: outArgs)
             checkWorkspace(op.opName(), output);
     }
 
-    protected void checkForWorkspaces(Op op) {
-        val x = op.x();
+    protected void checkForWorkspaces(Op op, OpContext oc) {
+        val x = oc != null ? oc.getInputArray(0) : op.x();
         if (x != null)
             checkWorkspace(op.opName(), x);
 
-        val y = op.y();
+        val y = oc != null && oc.getInputArrays().size() > 1 ? oc.getInputArray(1) : op.y();
         if (y != null)
             checkWorkspace(op.opName(), y);
 
-        val z = op.z();
+        val z = oc != null ? oc.getOutputArray(0) : op.z();
         if (z != null)
             checkWorkspace(op.opName(), z);
     }
@@ -346,7 +353,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().processOpCall(op, tadBuffers);
                 break;
             case SCOPE_PANIC:
-                checkForWorkspaces(op);
+                checkForWorkspaces(op, null);
                 return 0L;
             case DISABLED:
             default:
@@ -357,7 +364,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Deprecated
-    public long profilingHookIn(CustomOp op) {
+    public long profilingHookIn(CustomOp op, OpContext oc) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processOpCall(op);
@@ -368,7 +375,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().processOpCall(op);
                 break;
             case SCOPE_PANIC:
-                checkForWorkspaces(op);
+                checkForWorkspaces(op, oc);
                 return 0L;
             case DISABLED:
             default:
@@ -379,7 +386,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Deprecated
-    public void profilingHookOut(Op op, long timeStart) {
+    public void profilingHookOut(Op op, OpContext oc, long timeStart) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -392,14 +399,14 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
             case NAN_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
+                OpExecutionerUtil.checkForNaN(op, oc);
                 break;
             case INF_PANIC:
-                OpExecutionerUtil.checkForInf(op);
+                OpExecutionerUtil.checkForInf(op, oc);
                 break;
             case ANY_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
-                OpExecutionerUtil.checkForInf(op);
+                OpExecutionerUtil.checkForNaN(op, oc);
+                OpExecutionerUtil.checkForInf(op, oc);
                 break;
             case DISABLED:
             default:
@@ -413,7 +420,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Deprecated
-    public void profilingHookOut(CustomOp op, long timeStart) {
+    public void profilingHookOut(CustomOp op, OpContext oc, long timeStart) {
         switch (profilingMode) {
             case ALL:
                 OpProfiler.getInstance().processStackCall(op, timeStart);
@@ -426,14 +433,14 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
                 OpProfiler.getInstance().timeOpCall(op, timeStart);
                 break;
             case NAN_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
+                OpExecutionerUtil.checkForNaN(op, oc);
                 break;
             case INF_PANIC:
-                OpExecutionerUtil.checkForInf(op);
+                OpExecutionerUtil.checkForInf(op, oc);
                 break;
             case ANY_PANIC:
-                OpExecutionerUtil.checkForNaN(op);
-                OpExecutionerUtil.checkForInf(op);
+                OpExecutionerUtil.checkForNaN(op, oc);
+                OpExecutionerUtil.checkForInf(op, oc);
                 break;
             case DISABLED:
             default:
@@ -442,12 +449,15 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
 
-    public long profilingConfigurableHookIn(CustomOp op) {
-        for (val arr: op.inputArguments())
+    public long profilingConfigurableHookIn(CustomOp op, OpContext oc) {
+        List<INDArray> inArgs = oc != null ? oc.getInputArrays() : op.inputArguments();
+        List<INDArray> outArgs = oc != null ? oc.getOutputArrays() : op.outputArguments();
+
+        for (val arr: inArgs)
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Input arguments was closed before call");
 
-        for (val arr: op.outputArguments())
+        for (val arr: outArgs)
             if (arr.wasClosed())
                 throw new IllegalStateException("One of Output arguments was closed before call");
 
@@ -460,7 +470,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
 
         if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
-            checkForWorkspaces(op);
+            checkForWorkspaces(op, oc);
         }
 
         return System.nanoTime();
@@ -491,14 +501,14 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             OpProfiler.getInstance().processOpCall(op, tadBuffers);
         }
         if (OpProfiler.getInstance().getConfig().isCheckWorkspaces()) {
-            checkForWorkspaces(op);
+            checkForWorkspaces(op, null);
         }
 
         return System.nanoTime();
     }
 
 
-    public void profilingConfigurableHookOut(Op op, long timeStart) {
+    public void profilingConfigurableHookOut(Op op, OpContext oc, long timeStart) {
         if (OpProfiler.getInstance().getConfig() == null)
             return;
 
@@ -509,10 +519,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             OpProfiler.getInstance().timeOpCall(op, timeStart);
         }
         if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
-            OpExecutionerUtil.checkForNaN(op);
+            OpExecutionerUtil.checkForNaN(op, oc);
         }
         if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
-            OpExecutionerUtil.checkForInf(op);
+            OpExecutionerUtil.checkForInf(op, oc);
         }
         if (OpProfiler.getInstance().getConfig().isNativeStatistics()) {
             if (op.z() != null) {
@@ -531,7 +541,7 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
         }
     }
 
-    public void profilingConfigurableHookOut(CustomOp op, long timeStart) {
+    public void profilingConfigurableHookOut(CustomOp op, OpContext oc, long timeStart) {
         if (OpProfiler.getInstance().getConfig() == null)
             return;
 
@@ -542,10 +552,10 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
             OpProfiler.getInstance().timeOpCall(op, timeStart);
         }
         if (OpProfiler.getInstance().getConfig().isCheckForNAN()) {
-            OpExecutionerUtil.checkForNaN(op);
+            OpExecutionerUtil.checkForNaN(op, oc);
         }
         if (OpProfiler.getInstance().getConfig().isCheckForINF()) {
-            OpExecutionerUtil.checkForInf(op);
+            OpExecutionerUtil.checkForInf(op, oc);
         }
     }
 
@@ -679,38 +689,65 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
 
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        return thresholdEncode(input, threshold, Integer.MAX_VALUE);
+    }
+
+    private long _length(long[] shape) {
+        // scalar case
+        if (shape.length == 0)
+            return 1;
+        else if (shape.length == 1)
+            return shape[0];
+        else {
+            long length = 1;
+            for (int e = 0; e < shape.length; e++)
+                length *= shape[e];
+
+            return length;
+        }
     }
 
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        val op_shape = new EncodeThreshold(input, (float) threshold, boundary);
+        val shapes = Nd4j.getExecutioner().calculateOutputShape(op_shape);
+
+        if (_length(shapes.get(1).getShape()) < 2)
+            return null;
+
+        val result = Nd4j.create(DataType.INT32, shapes.get(1).getShape());
+
+        op_shape.addOutputArgument(input, result);
+        Nd4j.exec(op_shape);
+
+        return result.getInt(0) > 0 ? result : null;
     }
 
     @Override
     public INDArray thresholdDecode(INDArray encoded, INDArray target) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Nd4j.exec(new DecodeThreshold(encoded, target));
+        return target;
     }
 
     @Override
     public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        val results = Nd4j.exec(new EncodeBitmap(indArray, target, Nd4j.scalar(0), (float) threshold));
+
+        // return number of elements taht were compressed
+        return results[2].getInt(0);
     }
 
     @Override
     public INDArray bitmapEncode(INDArray indArray, double threshold) {
-        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(indArray.length() / 16 + 5);
-
-        INDArray ret = Nd4j.createArrayFromShapeBuffer(buffer, indArray.shapeInfoDataBuffer());
-
-        bitmapEncode(indArray, ret, threshold);
-
-        return ret;
+        val array = Nd4j.create(DataType.INT32, indArray.length() / 16 + 5);
+        bitmapEncode(indArray, array, threshold);
+        return array;
     }
 
     @Override
     public INDArray bitmapDecode(INDArray encoded, INDArray target) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Nd4j.exec(new DecodeBitmap(encoded, target));
+        return target;
     }
 
 

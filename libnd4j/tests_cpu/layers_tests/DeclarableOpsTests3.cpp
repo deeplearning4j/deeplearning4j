@@ -50,7 +50,7 @@ TEST_F(DeclarableOpsTests3, Test_Tile_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-   
+
 }
 
 
@@ -68,7 +68,7 @@ TEST_F(DeclarableOpsTests3, Test_Tile_2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-   
+
 }
 
 TEST_F(DeclarableOpsTests3, Test_Permute_1) {
@@ -123,7 +123,7 @@ TEST_F(DeclarableOpsTests3, Test_Unique_1) {
     ASSERT_TRUE(expI.isSameShape(i));
     ASSERT_TRUE(expI.equalsTo(i));
 
-   
+
 }
 
 TEST_F(DeclarableOpsTests3, Test_Unique_2) {
@@ -171,7 +171,7 @@ TEST_F(DeclarableOpsTests3, Test_Rint_1) {
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-   
+
 }
 
 
@@ -226,7 +226,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp0.equalsTo(z0));
 
-    
+
 
     auto result1 = op.evaluate({&x, &axis}, {1}, {});
 
@@ -241,94 +241,6 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
     auto exp4= x.reduceAlongDimension(reduce::NormMax, dims, false, false);
     ASSERT_TRUE(exp4.isSameShape(z4));
     ASSERT_TRUE(exp4.equalsTo(z4));
-
-}
-
-
-TEST_F(DeclarableOpsTests3, Test_ClipByAvgNorm_1) {
-    auto x = NDArrayFactory::create<double>('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
-    auto exp = NDArrayFactory::create<double>('c', {2, 3}, {-2.88, 0.0, 0.0, 3.84, 0.0, 0.0});
-
-    sd::ops::clipbyavgnorm op;
-    auto result = op.evaluate({&x}, {0.8}, {});
-
-    auto z = result.at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-}
-
-TEST_F(DeclarableOpsTests3, Test_ClipByAvgNorm_2) {
-    auto x= NDArrayFactory::create<float>('c', {2, 3}, {-3.0f, 0.0f, 0.0f, 4.0f, 0.0f, 0.0f});
-    auto exp= NDArrayFactory::create<float>('c', {2, 3}, {-3.f, 0.0f, 0.0f, 4.f, 0.0f, 0.0f});
-
-    sd::ops::clipbyavgnorm op;
-    auto result = op.evaluate({&x}, {0.9}, {});
-
-    auto z = result.at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-}
-
-
-TEST_F(DeclarableOpsTests3, Test_ClipByNorm_1) {
-    auto x= NDArrayFactory::create<double>('c', {2, 3}, {-3.0, 0.0, 0.0, 4.0, 0.0, 0.0});
-    auto exp= NDArrayFactory::create<double>('c', {2, 3}, {-2.4, 0.0, 0.0, 3.2, 0.0, 0.0});
-
-    sd::ops::clipbynorm op;
-    auto result = op.evaluate({&x}, {4.0}, {});
-
-    auto z = result.at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-}
-
-TEST_F(DeclarableOpsTests3, Test_ClipByNorm_2) {
-    auto x= NDArrayFactory::create<double>('c', {2, 3}, {-3.0f, 0.0f, 0.0f, 4.0f, 0.0f, 0.0f});
-    auto exp= NDArrayFactory::create<double>('c', {2, 3}, {-3.0f, 0.0f, 0.0f, 4.0f, 0.0f, 0.0f});
-
-    sd::ops::clipbynorm op;
-    auto result = op.evaluate({&x}, {6.0}, {});
-
-    auto z = result.at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests3, Test_ClipByNorm_3) {
-
-    auto x = NDArrayFactory::create<double>('c', {3, 5});
-    auto unities = NDArrayFactory::create<double>('c', {3, 1}, {1., 1., 1.});
-    auto scale = NDArrayFactory::create<double>('c', {3, 1}, {1.1, 1., 0.9});
-
-    x.linspace(100.);
-
-    auto xNorm1 = x.reduceAlongDimension(reduce::Norm2, {1}, true);
-    x /= xNorm1;
-    xNorm1 = x.reduceAlongDimension(reduce::Norm2,{1}, true);
-
-    ASSERT_TRUE(unities.isSameShape(xNorm1));
-    ASSERT_TRUE(unities.equalsTo(xNorm1));
-
-    x *= scale;
-    xNorm1 = x.reduceAlongDimension(reduce::Norm2, {1}, true);
-
-    sd::ops::clipbynorm op;
-    auto result = op.evaluate({&x}, {1.0}, {1});
-    auto z = result.at(0);
-
-    auto zNorm1 = z->reduceAlongDimension(reduce::Norm2, {1}, true);
-    auto exp = NDArrayFactory::create<double>('c', {3, 1}, {1., 1., xNorm1.e<double>(2)});
-
-    ASSERT_TRUE(exp.isSameShape(&zNorm1));
-    ASSERT_TRUE(exp.equalsTo(&zNorm1));
 
 }
 
@@ -551,7 +463,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_1) {
     }
 
     delete exp;
-   
+
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_2) {
@@ -579,7 +491,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_2) {
     }
 
     delete exp;
-   
+
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_3) {
@@ -607,7 +519,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_3) {
     }
 
     delete exp;
-   
+
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_4) {
@@ -635,7 +547,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_4) {
     }
 
     delete exp;
-   
+
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_5) {
@@ -663,7 +575,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_5) {
     }
 
     delete exp;
-   
+
 }
 
 
@@ -692,7 +604,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_6) {
     }
 
     delete exp;
-   
+
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
@@ -722,7 +634,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
     }
 
     delete exp;
-   
+
 }
 
 TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_Validation_1) {
@@ -734,7 +646,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_Validation_1) {
     sd::ops::batched_gemm op;
     try {
         auto result = op.evaluate({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3});
-       
+
         ASSERT_TRUE(false);
     } catch (std::invalid_argument &e) {
         //
@@ -875,7 +787,7 @@ TEST_F(DeclarableOpsTests3, sruCell_test3) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -946,7 +858,7 @@ TEST_F(DeclarableOpsTests3, gruCell_test2) {
     ASSERT_TRUE(expHt.isSameShape(ht));
     ASSERT_TRUE(expHt.equalsTo(ht));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1001,7 +913,7 @@ TEST_F(DeclarableOpsTests3, invertPermutation_test1) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1021,7 +933,7 @@ TEST_F(DeclarableOpsTests3, invertPermutation_test2) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1099,7 +1011,7 @@ TEST_F(DeclarableOpsTests3, diag_test_vector) {
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-    
+
     delete input;
 }
 
@@ -1120,7 +1032,7 @@ TEST_F(DeclarableOpsTests3, diag_test_col_vector) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
     delete input;
 }
 ///////////////////////////////////////////////////////////////////
@@ -1245,7 +1157,7 @@ TEST_F(DeclarableOpsTests3, matrixSetDiag_test2) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1551,7 +1463,7 @@ TEST_F(DeclarableOpsTests3, betainc_test8) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output, 1e-6));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1576,7 +1488,7 @@ TEST_F(DeclarableOpsTests3, betainc_test9) {
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1642,7 +1554,7 @@ TEST_F(DeclarableOpsTests3, betainc_test12) {
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1689,7 +1601,7 @@ TEST_F(DeclarableOpsTests3, zeta_test2) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1831,7 +1743,7 @@ TEST_F(DeclarableOpsTests3, zeta_test8) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1856,7 +1768,7 @@ TEST_F(DeclarableOpsTests3, zeta_test9) {
     ASSERT_TRUE(expected.isSameShape(z));
     ASSERT_TRUE(expected.equalsTo(z));
 
-//    
+//
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1881,7 +1793,7 @@ TEST_F(DeclarableOpsTests3, zeta_test10) {
     ASSERT_TRUE(expected.isSameShape(z));
     ASSERT_TRUE(expected.equalsTo(z));
 
-//    
+//
 }
 
 
@@ -1908,7 +1820,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
     x.assign(0.5);
 
     auto expected= NDArrayFactory::create<double>('c', {3,3}, {4.934802, -16.828796, 97.409088, -771.474243, 7691.113770, -92203.460938, 1290440.250000, -20644900.000000, 3.71595e+08});
-   
+
     sd::ops::polygamma op;
     auto result = op.evaluate({&n, &x}, {}, {});
 
@@ -1920,7 +1832,7 @@ TEST_F(DeclarableOpsTests3, polygamma_test1) {
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2033,7 +1945,7 @@ TEST_F(DeclarableOpsTests3, svd_test1) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2069,7 +1981,7 @@ TEST_F(DeclarableOpsTests3, svd_test2) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2105,7 +2017,7 @@ TEST_F(DeclarableOpsTests3, svd_test3) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2141,7 +2053,7 @@ TEST_F(DeclarableOpsTests3, svd_test4) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2177,7 +2089,7 @@ TEST_F(DeclarableOpsTests3, svd_test5) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2231,7 +2143,7 @@ TEST_F(DeclarableOpsTests3, svd_test6) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2263,7 +2175,7 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 
     ASSERT_TRUE(expS.equalsTo(s));
     ASSERT_TRUE(expS.isSameShape(s));
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2405,7 +2317,7 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
 
     // ASSERT_TRUE(expS.equalsTo(s));
 
-    // if(sd::Environment::getInstance()->isCPU()) {
+    // if(sd::Environment::getInstance().isCPU()) {
     //     ASSERT_TRUE(expU.equalsTo(u));
     //     ASSERT_TRUE(expV.equalsTo(v));
     // }
@@ -2416,7 +2328,7 @@ TEST_F(DeclarableOpsTests3, svd_test7) {
     //         ASSERT_NEAR(sd::math::nd4j_abs(expV.e<float>(i)), sd::math::nd4j_abs(v->e<float>(i)), 1e-5);
     // }
 
-//    
+//
 // }
 
 ///////////////////////////////////////////////////////////////////
@@ -2468,7 +2380,7 @@ TEST_F(DeclarableOpsTests3, svd_test9) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2526,7 +2438,7 @@ TEST_F(DeclarableOpsTests3, svd_test10) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }
@@ -2570,7 +2482,7 @@ TEST_F(DeclarableOpsTests3, svd_test11) {
 
     ASSERT_TRUE(expS.equalsTo(s));
 
-    if(sd::Environment::getInstance()->isCPU()) {
+    if(sd::Environment::getInstance().isCPU()) {
         ASSERT_TRUE(expU.equalsTo(u));
         ASSERT_TRUE(expV.equalsTo(v));
     }

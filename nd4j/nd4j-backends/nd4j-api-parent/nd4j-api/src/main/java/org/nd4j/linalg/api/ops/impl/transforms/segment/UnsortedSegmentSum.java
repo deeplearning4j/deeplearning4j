@@ -19,12 +19,13 @@ package org.nd4j.linalg.api.ops.impl.transforms.segment;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentSumBp;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -44,6 +45,12 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
+    public UnsortedSegmentSum(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
+        this.numSegments = numSegments;
+        addIArgument(numSegments);
+    }
+
     @Override
     public String opName(){
         return "unsorted_segment_sum";
@@ -56,7 +63,7 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentSumBp(arg(0), arg(1), gradients.get(0), numSegments));
+        return new UnsortedSegmentSumBp(sameDiff, arg(0), arg(1), gradients.get(0), numSegments).outputs();
     }
 
     @Override

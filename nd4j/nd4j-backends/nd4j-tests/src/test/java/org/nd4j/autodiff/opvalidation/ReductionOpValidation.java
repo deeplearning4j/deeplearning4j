@@ -17,7 +17,6 @@
 package org.nd4j.autodiff.opvalidation;
 
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -33,8 +32,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmin;
 import org.nd4j.linalg.api.ops.impl.loss.SoftmaxCrossEntropyWithLogitsLoss;
 import org.nd4j.linalg.api.ops.impl.reduce.Moments;
 import org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments;
@@ -48,10 +47,9 @@ import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -235,39 +233,39 @@ public class ReductionOpValidation extends BaseOpValidation {
                     tc.expectedOutput("loss", inputArr.normmax());
                     break;
                 case 10:
-                    loss = sd.math().countNonZero("loss", input);
+                    loss = sd.math().countNonZero("loss", input, 0,1);
                     name = "countNonZero";
                     tc.expectedOutput("loss", Nd4j.scalar(inputArr.length()));
                     gradCheck = false;  //Long out, not floating point
                     break;
                 case 11:
-                    loss = sd.math().countZero("loss", input);
+                    loss = sd.math().countZero("loss", input, 0,1);
                     name = "countZero";
                     tc.expectedOutput("loss", Nd4j.scalar(0L));
                     gradCheck = false;  //Long out, not floating point
                     break;
                 case 12:
-                    loss = sd.math().amax("loss", input);
+                    loss = sd.math().amax("loss", input, 0,1);
                     name = "amax";
                     tc.expectedOutput("loss", inputArr.amax());
                     break;
                 case 13:
-                    loss = sd.math().amin("loss", input);
+                    loss = sd.math().amin("loss", input, 0,1);
                     name = "amin";
                     tc.expectedOutput("loss", inputArr.amin());
                     break;
                 case 14:
-                    loss = sd.math().asum("loss", input);
+                    loss = sd.math().asum("loss", input, 0,1);
                     name = "asum";
                     tc.expectedOutput("loss", Nd4j.getExecutioner().exec(new ASum(inputArr.dup())));
                     break;
                 case 15:
-                    loss = sd.math().amean("loss", input);
+                    loss = sd.math().amean("loss", input, 0,1);
                     name = "amean";
                     tc.expectedOutput("loss", Nd4j.getExecutioner().exec(new AMean(inputArr.dup())));
                     break;
                 case 16:
-                    loss = sd.math().entropy("loss", input);
+                    loss = sd.math().entropy("loss", input, 0,1);
                     name = "entropy";
                     inputArr = Nd4j.linspace(0.01, 0.99, length, DataType.DOUBLE).reshape('c', minibatch, nOut);
                     tc.expected("loss", inputArr.mul(Transforms.log(inputArr, true)).sum(Integer.MAX_VALUE).negi());
@@ -290,14 +288,14 @@ public class ReductionOpValidation extends BaseOpValidation {
                 case 19:
                     inputArr = Nd4j.rand(minibatch, nOut);
                     name = "logEntropy";
-                    loss = sd.math().logEntropy("loss", input);
+                    loss = sd.math().logEntropy("loss", input, 0,1);
                     double logEntropy = inputArr.logEntropyNumber().doubleValue();
                     tc.expected(loss, Nd4j.scalar(logEntropy));
                     break;
                 case 20:
                     inputArr = Nd4j.rand(minibatch, nOut);
                     name = "shannonEntropy";
-                    loss = sd.math().shannonEntropy("loss", input);
+                    loss = sd.math().shannonEntropy("loss", input, 0);
                     double shannonEntropy = inputArr.shannonEntropyNumber().doubleValue();
                     tc.expected(loss, Nd4j.scalar(shannonEntropy));
                     if (OpValidationSuite.IGNORE_FAILING) {
@@ -821,8 +819,8 @@ public class ReductionOpValidation extends BaseOpValidation {
             SameDiff sd = SameDiff.create();
 
             SDVariable s = sd.var("in", in[i]);
-            SDVariable all = sd.f().all(s);
-            SDVariable any = sd.f().any(s);
+            SDVariable all = sd.all(s);
+            SDVariable any = sd.any(s);
 
             String err = OpValidation.validate(new TestCase(sd)
                     .gradientCheck(false)
@@ -836,11 +834,11 @@ public class ReductionOpValidation extends BaseOpValidation {
     @Test
     public void testIndexAccum() {
         List<String> failed = new ArrayList<>();
-        List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0, 1}, new int[0]);
+        List<int[]> dims = Arrays.asList(new int[]{0}, new int[]{1}, new int[]{0, 1} /*, new int[0]*/);
 
         INDArray in = Nd4j.rand(DataType.DOUBLE,3, 4);
 
-        for (int t = 0; t < 4; t++) {
+        for (int t = 0; t < 3; t++) {
             int[] d = dims.get(t);
             for (int i = 0; i < 7; i++) {
 
@@ -865,12 +863,12 @@ public class ReductionOpValidation extends BaseOpValidation {
                         break;
                     case 2:
                         reduce = sd.math().iamax(s, dim);
-                        exp = Nd4j.getExecutioner().exec(new IAMax(in.dup(), dim));
+                        exp = Nd4j.getExecutioner().exec(new ArgAmax(in.dup(), dim))[0];
                         name = "iamax";
                         break;
                     case 3:
                         reduce = sd.math().iamin(s, dim);
-                        exp = Nd4j.getExecutioner().exec(new IAMin(in.dup(), dim));
+                        exp = Nd4j.getExecutioner().exec(new ArgAmin(in.dup(), dim))[0];
                         name = "iamin";
                         break;
                     case 4:

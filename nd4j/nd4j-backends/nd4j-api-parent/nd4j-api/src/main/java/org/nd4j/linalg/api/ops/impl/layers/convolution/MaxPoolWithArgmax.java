@@ -23,14 +23,14 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -57,8 +57,12 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
         addArgs();
     }
 
-    public MaxPoolWithArgmax(INDArray input, INDArray output,INDArray outArgMax, @NonNull Pooling2DConfig config){
-        super(null, new INDArray[]{input}, new INDArray[]{output, outArgMax});
+    public MaxPoolWithArgmax(@NonNull INDArray input, @NonNull Pooling2DConfig config){
+        this(input, null, null, config);
+    }
+
+    public MaxPoolWithArgmax(@NonNull INDArray input, INDArray output,INDArray outArgMax, @NonNull Pooling2DConfig config){
+        super(null, new INDArray[]{input}, wrapFilterNull(output, outArgMax));
         config.setType(Pooling2D.Pooling2DType.MAX);
 
         this.config = config;
@@ -78,7 +82,7 @@ public class MaxPoolWithArgmax extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        if(config == null && iArguments.size() > 0){
+        if(config == null && !iArguments.isEmpty()){
             //Perhaps loaded from FlatBuffers - hence we have IArgs but not Config object
             config = Pooling2DConfig.builder()
                     .kH(iArguments.get(0))

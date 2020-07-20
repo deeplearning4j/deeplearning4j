@@ -58,19 +58,19 @@ static void nesterovsUpdater_(const NDArray& gradient, const NDArray& initState,
            return;
     }
     
-    bool bXZsame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), update.getShapeInfo());
-    bool bXInSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), initState.getShapeInfo());
-    bool bXStSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), stateV.getShapeInfo());
+    bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
+    bool bXInSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initState.shapeInfo());
+    bool bXStSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateV.shapeInfo());
 
     auto func = PRAGMA_THREADS_FOR{
 
         int coords[MAX_RANK];
         for (auto i = start; i < stop; i++) {
-            shape::index2coordsCPU(start, i, gradient.getShapeInfo(), coords);
-            const auto xOffset =  shape::getOffset(gradient.getShapeInfo(), coords);
-            const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.getShapeInfo(), coords);
-            const auto initOffset = bXInSame ? xOffset : shape::getOffset(initState.getShapeInfo(), coords);
-            const auto stOffset = bXStSame ? xOffset : shape::getOffset(stateV.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
+            const auto xOffset =  shape::getOffset(gradient.shapeInfo(), coords);
+            const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
+            const auto initOffset = bXInSame ? xOffset : shape::getOffset(initState.shapeInfo(), coords);
+            const auto stOffset = bXStSame ? xOffset : shape::getOffset(stateV.shapeInfo(), coords);
             
             T prevState = momentum * init[initOffset];
             st[stOffset] = prevState - lr * grad[xOffset];

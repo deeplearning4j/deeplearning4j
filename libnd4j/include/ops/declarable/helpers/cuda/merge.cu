@@ -34,7 +34,7 @@ namespace sd {
         namespace helpers {
             //////////////////////////////////////////////////////////////////////////
             template <typename T, typename Z>
-            static __global__ void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, const int numArrays, void* voutput, Nd4jLong* outputShape, Nd4jLong length) {
+            static __global__ void mergeMaxIndexCudaLauncher(void** inArrs, void** inShapes, const int numArrays, void* voutput, const Nd4jLong* outputShape, Nd4jLong length) {
                 auto output = reinterpret_cast<Z*>(voutput);
 
                 const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -62,11 +62,11 @@ namespace sd {
             static void mergeMaxIndex_(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
                 
                 int nArrSize = static_cast<int>(inArrs.size());
-                std::vector<void*> inBuffers(nArrSize), inShapes(nArrSize);
+                std::vector<const void*> inBuffers(nArrSize), inShapes(nArrSize);
 
                 for (int e = 0; e < nArrSize; e++) {
-                    inBuffers[e] = inArrs[e]->getSpecialBuffer();
-                    inShapes[e] = inArrs[e]->getSpecialShapeInfo();
+                    inBuffers[e] = inArrs[e]->specialBuffer();
+                    inShapes[e] = inArrs[e]->specialShapeInfo();
                 }
 
                 PointersManager manager(context, "mergeMaxIndex");
@@ -78,7 +78,7 @@ namespace sd {
                 const int threadsPerBlock = MAX_NUM_THREADS / 2;
                 const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
 
-                mergeMaxIndexCudaLauncher<T, Z> << <blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream() >> > (pInBuffers, pInShapes, nArrSize, output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+                mergeMaxIndexCudaLauncher<T, Z><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(pInBuffers, pInShapes, nArrSize, output.specialBuffer(), output.specialShapeInfo(), length);
 
                 manager.synchronize();
             }
@@ -95,7 +95,7 @@ namespace sd {
 
             //////////////////////////////////////////////////////////////////////////
             template <typename T>
-            static __global__ void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const int numArrays, void* voutput, Nd4jLong* outputShape, Nd4jLong length) {
+            static __global__ void mergeMaxCudaLauncher(void** inArrs, void** inShapes, const int numArrays, void* voutput, const Nd4jLong* outputShape, Nd4jLong length) {
                 auto output = reinterpret_cast<T*>(voutput);
 
                 const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -121,11 +121,11 @@ namespace sd {
                 
                 int nArrsSize = static_cast<int>(inArrs.size());
 
-                std::vector<void*> inBuffers(nArrsSize), inShapes(nArrsSize);
+                std::vector<const void*> inBuffers(nArrsSize), inShapes(nArrsSize);
 
                 for (int e = 0; e < nArrsSize; e++) {
-                    inBuffers[e] = inArrs[e]->getSpecialBuffer();
-                    inShapes[e] = inArrs[e]->getSpecialShapeInfo();
+                    inBuffers[e] = inArrs[e]->specialBuffer();
+                    inShapes[e] = inArrs[e]->specialShapeInfo();
                 }
 
                 PointersManager manager(context, "mergeMax");
@@ -137,7 +137,7 @@ namespace sd {
                 const int threadsPerBlock = MAX_NUM_THREADS / 2;
                 const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
 
-                mergeMaxCudaLauncher<T> << <blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream() >> > (pInBuffers, pInShapes, nArrsSize, output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+                mergeMaxCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(pInBuffers, pInShapes, nArrsSize, output.specialBuffer(), output.specialShapeInfo(), length);
 
                 manager.synchronize();
             }
@@ -153,10 +153,15 @@ namespace sd {
 
             //////////////////////////////////////////////////////////////////////////
             template <typename T>
-            static __global__ void mergeMaxBpCudaLauncher(void** inArrs, void** inShapes, void* vgradient, Nd4jLong* gradientShape, const int numArrays,
-                void** outArrs, void** outShapes, Nd4jLong length, bool bSameOrderAndEws1) {
+            static __global__ void mergeMaxBpCudaLauncher(
+                    void** inArrs, void** inShapes,
+                    const void* vgradient, const Nd4jLong* gradientShape,
+                    const int numArrays,
+                    void** outArrs, void** outShapes,
+                    Nd4jLong length,
+                    bool bSameOrderAndEws1) {
 
-                auto grad = reinterpret_cast<T*>(vgradient);
+                auto grad = reinterpret_cast<const T*>(vgradient);
 
                 const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
                 const auto step = gridDim.x * blockDim.x;
@@ -204,13 +209,13 @@ namespace sd {
             template<typename T>
             static void mergeMaxBp_(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, std::vector<NDArray*>& outArrs, int nArrSize, bool bSameOrderAndEws1) {
 
-                std::vector<void*> inBuffers(nArrSize), inShapes(nArrSize), outBuffers(nArrSize), outShapes(nArrSize);
+                std::vector<const void*> inBuffers(nArrSize), inShapes(nArrSize), outBuffers(nArrSize), outShapes(nArrSize);
 
                 for (int e = 0; e < nArrSize; e++) {
-                    inBuffers[e] = inArrs[e]->getSpecialBuffer();
-                    inShapes[e] = inArrs[e]->getSpecialShapeInfo();
-                    outBuffers[e] = outArrs[e]->getSpecialBuffer();
-                    outShapes[e] = outArrs[e]->getSpecialShapeInfo();
+                    inBuffers[e] = inArrs[e]->specialBuffer();
+                    inShapes[e] = inArrs[e]->specialShapeInfo();
+                    outBuffers[e] = outArrs[e]->specialBuffer();
+                    outShapes[e] = outArrs[e]->specialShapeInfo();
                 }
 
                 PointersManager manager(context, "mergeMaxBp");
@@ -226,8 +231,8 @@ namespace sd {
                 const int threadsPerBlock = MAX_NUM_THREADS / 2;
                 const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
 
-                mergeMaxBpCudaLauncher<T> << <blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream() >> > (pInBuffers, pInShapes, inArrs[nArrSize]->getSpecialBuffer(),
-                    inArrs[nArrSize]->getSpecialShapeInfo(), nArrSize, pOutBuffers, pOutShapes,
+                mergeMaxBpCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(pInBuffers, pInShapes, inArrs[nArrSize]->specialBuffer(),
+                    inArrs[nArrSize]->specialShapeInfo(), nArrSize, pOutBuffers, pOutShapes,
                     length, bSameOrderAndEws1);
                 
                 manager.synchronize();
@@ -261,7 +266,7 @@ namespace sd {
 
             //////////////////////////////////////////////////////////////////////////
             template <typename T>
-            static __global__ void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const int numArrays, void* voutput, Nd4jLong* outputShape, Nd4jLong length) {
+            static __global__ void mergeAvgCudaLauncher(void** inArrs, void** inShapes, const int numArrays, void* voutput, const Nd4jLong* outputShape, Nd4jLong length) {
                 auto output = reinterpret_cast<T*>(voutput);
 
                 const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -284,11 +289,11 @@ namespace sd {
             template<typename T>
             static void mergeAvg_(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
                 
-                std::vector<void*> inBuffers(inArrs.size()), inShapes(inArrs.size());
+                std::vector<const void*> inBuffers(inArrs.size()), inShapes(inArrs.size());
 
                 for (int e = 0; e < inArrs.size(); e++) {
-                    inBuffers[e] = inArrs[e]->getSpecialBuffer();
-                    inShapes[e] = inArrs[e]->getSpecialShapeInfo();
+                    inBuffers[e] = inArrs[e]->specialBuffer();
+                    inShapes[e] = inArrs[e]->specialShapeInfo();
                 }
 
                 PointersManager manager(context, "mergeAvg");
@@ -300,7 +305,7 @@ namespace sd {
                 const int threadsPerBlock = MAX_NUM_THREADS / 2;
                 const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
 
-                mergeAvgCudaLauncher<T> << <blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream() >> > (pInBuffers, pInShapes, (int)inArrs.size(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+                mergeAvgCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(pInBuffers, pInShapes, (int)inArrs.size(), output.specialBuffer(), output.specialShapeInfo(), length);
 
                 manager.synchronize();
             }
@@ -315,10 +320,14 @@ namespace sd {
             }
             //////////////////////////////////////////////////////////////////////////
             template <typename T>
-            static __global__ void mergeAvgBpCudaLauncher(void* vgradient, Nd4jLong* gradientShape, void** outArrs, void** outShapes,
-                                                      const int numArrays, Nd4jLong length, bool bSameOrderAndEws1) {
+            static __global__ void mergeAvgBpCudaLauncher(
+                    const void* vgradient, const Nd4jLong* gradientShape,
+                    void** outArrs, void** outShapes,
+                    const int numArrays,
+                    Nd4jLong length,
+                    bool bSameOrderAndEws1) {
 
-                auto grad = reinterpret_cast<T*>(vgradient);
+                auto grad = reinterpret_cast<const T*>(vgradient);
 
                 const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
                 const auto step = gridDim.x * blockDim.x;
@@ -352,11 +361,11 @@ namespace sd {
 
                 int nArrSize = static_cast<int>(outArrs.size());
 
-                std::vector<void*> outBuffers(nArrSize), outShapes(nArrSize);
+                std::vector<const void*> outBuffers(nArrSize), outShapes(nArrSize);
 
                 for (int e = 0; e < nArrSize; e++) {
-                    outBuffers[e] = outArrs[e]->getSpecialBuffer();
-                    outShapes[e] = outArrs[e]->getSpecialShapeInfo();
+                    outBuffers[e] = outArrs[e]->specialBuffer();
+                    outShapes[e] = outArrs[e]->specialShapeInfo();
                 }
 
                 PointersManager manager(context, "mergeAvgBp");
@@ -369,7 +378,7 @@ namespace sd {
                 const int threadsPerBlock = MAX_NUM_THREADS / 2;
                 const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
 
-                mergeAvgBpCudaLauncher<T> << <blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream() >> > (gradient.getSpecialBuffer(), gradient.getSpecialShapeInfo(),
+                mergeAvgBpCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(gradient.specialBuffer(), gradient.specialShapeInfo(),
                     pOutBuffers, pOutShapes, nArrSize, length, bSameOrderAndEws1);
 
                 manager.synchronize();
@@ -396,7 +405,7 @@ namespace sd {
 
             //////////////////////////////////////////////////////////////////////////
             template <typename T>
-            static __global__ void mergeAddCudaLauncher(void** inArrs, void** inShapes, const int numArrays, void* voutput, Nd4jLong* outputShape, Nd4jLong length) {
+            static __global__ void mergeAddCudaLauncher(void** inArrs, void** inShapes, const int numArrays, void* voutput, const Nd4jLong* outputShape, Nd4jLong length) {
                 
                 auto output = reinterpret_cast<T*>(voutput);
 
@@ -421,11 +430,11 @@ namespace sd {
             static void mergeAdd_(sd::LaunchContext* context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
                 
                 int nArrSize = static_cast<int>(inArrs.size());
-                std::vector<void*> inBuffers(nArrSize), inShapes(nArrSize);
+                std::vector<const void*> inBuffers(nArrSize), inShapes(nArrSize);
 
                 for (int e = 0; e < nArrSize; e++) {
-                    inBuffers[e] = inArrs[e]->getSpecialBuffer();
-                    inShapes[e] = inArrs[e]->getSpecialShapeInfo();
+                    inBuffers[e] = inArrs[e]->specialBuffer();
+                    inShapes[e] = inArrs[e]->specialShapeInfo();
                 }
 
                 PointersManager manager(context, "mergeAdd");
@@ -437,7 +446,7 @@ namespace sd {
                 const int threadsPerBlock = MAX_NUM_THREADS / 2;
                 const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
 
-                mergeAddCudaLauncher<T> << <blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream() >> > (pInBuffers, pInShapes, nArrSize, output.getSpecialBuffer(), output.getSpecialShapeInfo(), length);
+                mergeAddCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(pInBuffers, pInShapes, nArrSize, output.specialBuffer(), output.specialShapeInfo(), length);
 
                 manager.synchronize();
             }
@@ -454,10 +463,10 @@ namespace sd {
 
             //////////////////////////////////////////////////////////////////////////
             template <typename T>
-            static __global__ void mergeAddBpCudaLauncher(void* vgradient, Nd4jLong* gradientShape, void** outArrs, void** outShapes,
+            static __global__ void mergeAddBpCudaLauncher(const void* vgradient, const Nd4jLong* gradientShape, void** outArrs, void** outShapes,
                 const int numArrays, Nd4jLong length, bool bSameOrderAndEws1) {
 
-                auto grad = reinterpret_cast<T*>(vgradient);
+                auto grad = reinterpret_cast<const T*>(vgradient);
 
                 const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
                 const auto step = gridDim.x * blockDim.x;
@@ -491,11 +500,11 @@ namespace sd {
 
                 int nArrSize = static_cast<int>(outArrs.size());
 
-                std::vector<void*> outBuffers(nArrSize), outShapes(nArrSize);
+                std::vector<const void*> outBuffers(nArrSize), outShapes(nArrSize);
 
                 for (int e = 0; e < nArrSize; e++) {
-                    outBuffers[e] = outArrs[e]->getSpecialBuffer();
-                    outShapes[e] = outArrs[e]->getSpecialShapeInfo();
+                    outBuffers[e] = outArrs[e]->specialBuffer();
+                    outShapes[e] = outArrs[e]->specialShapeInfo();
                 }
 
                 PointersManager manager(context, "mergeAddBp");
@@ -508,7 +517,7 @@ namespace sd {
                 const int threadsPerBlock = MAX_NUM_THREADS / 2;
                 const int blocksPerGrid = (length + threadsPerBlock - 1) / threadsPerBlock;
 
-                mergeAddBpCudaLauncher<T> << <blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream() >> > (gradient.getSpecialBuffer(), gradient.getSpecialShapeInfo(),
+                mergeAddBpCudaLauncher<T><<<blocksPerGrid, threadsPerBlock, 512, *context->getCudaStream()>>>(gradient.specialBuffer(), gradient.specialShapeInfo(),
                     pOutBuffers, pOutShapes, nArrSize, length, bSameOrderAndEws1);
 
                 manager.synchronize();

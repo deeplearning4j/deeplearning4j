@@ -686,7 +686,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_3) {
 
 TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
 
-    //if (!Environment::getInstance()->isExperimentalBuild())
+    //if (!Environment::getInstance().isExperimentalBuild())
     //    return;
 
     NDArray x = NDArrayFactory::create<double>('c', {2,3,4});
@@ -700,7 +700,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
 
     // evaluate xTad data
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -722,9 +722,9 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
 
     // call cuda kernel which calculates result
     NativeOpExecutioner::execBroadcast(&lc, sd::broadcast::Multiply,
-                                       nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-                                       nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-                                       nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                                       nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                                       nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+                                       nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                                        (int*)devicePtrs[0], dimensions.size(),
                                        (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2],
                                        nullptr, nullptr);
@@ -746,7 +746,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
 
 TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
 
-    //if (!Environment::getInstance()->isExperimentalBuild())
+    //if (!Environment::getInstance().isExperimentalBuild())
     //    return;
 
     NDArray x('c', {2,3,4}, sd::DataType::DOUBLE);
@@ -760,7 +760,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
 
     // evaluate xTad data
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -788,9 +788,9 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
     NDArray::registerSpecialUse({&z}, {&x, &y});
     // call cuda kernel which calculates result
     NativeOpExecutioner::execBroadcast(pLc, sd::broadcast::Multiply,
-                                       nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-                                       nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-                                       nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                                       nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                                       nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+                                       nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                                        (int*)devicePtrs[0], dimensions.size(),
                                        (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2],
                                        nullptr, nullptr);
@@ -944,7 +944,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_002) {
 ////////////////////////////////////////////////////////////////////////////
 TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
 
-    //if (!Environment::getInstance()->isExperimentalBuild())
+    //if (!Environment::getInstance().isExperimentalBuild())
     //    return;
 
     NDArray x('c', {2,3,4}, {100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100,100}, sd::DataType::INT32);
@@ -958,7 +958,7 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
 
     // evaluate xTad data
     shape::TAD xTad;
-    xTad.init(x.getShapeInfo(), dimensions.data(), dimensions.size());
+    xTad.init(x.shapeInfo(), dimensions.data(), dimensions.size());
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
 
@@ -984,9 +984,9 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
 
     // call cuda kernel which calculates result
     NativeOpExecutioner::execBroadcast(pLc, sd::broadcast::Add,
-                                       nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-                                       nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
-                                       nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                                       nullptr, x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                                       nullptr, y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+                                       nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                                        (int*)devicePtrs[0], dimensions.size(),
                                        (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2],
                                        nullptr, nullptr);
@@ -1949,7 +1949,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(xExp.isSameShape(x0));
     ASSERT_TRUE(xExp.equalsTo(x0));
 //    for(int i = 0; i < shape::shapeInfoLength(x0.rankOf()); ++i)
-//        ASSERT_TRUE(x0.getShapeInfo()[i] == shapeExpX0[i]);
+//        ASSERT_TRUE(x0.shapeInfo()[i] == shapeExpX0[i]);
 //    for(int i = 0; i < x0.lengthOf(); ++i)
 //        ASSERT_TRUE(x0.e<float>(i) == buffExpX0[i]);
 
@@ -1959,7 +1959,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(x1Exp.equalsTo(x1));
 
 //    for(int i = 0; i < shape::shapeInfoLength(x1.rankOf()); ++i)
-//        ASSERT_TRUE(x1.getShapeInfo()[i] == shapeExpX1[i]);
+//        ASSERT_TRUE(x1.shapeInfo()[i] == shapeExpX1[i]);
 //    for(int i = 0; i < x1.lengthOf(); ++i)
 //        ASSERT_TRUE(x1.e<float>(i) == buffExpX1[i]);
 
@@ -1970,7 +1970,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
 //    x2Exp.printBuffer("X2 EXPECT");
     ASSERT_TRUE(x2Exp.equalsTo(x2));
 //    for(int i = 0; i < shape::shapeInfoLength(x2.rankOf()); ++i)
-//        ASSERT_TRUE(x2.getShapeInfo()[i] == shapeExpX2[i]);
+//        ASSERT_TRUE(x2.shapeInfo()[i] == shapeExpX2[i]);
 //    for(int i = 0; i < x2.lengthOf(); ++i)
 //        ASSERT_TRUE(x2.e<float>(i) == buffExpX2[i]);
 
@@ -1979,7 +1979,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(x3Exp.isSameShape(x3));
     ASSERT_TRUE(x3Exp.equalsTo(x3));
 //    for(int i = 0; i < shape::shapeInfoLength(x3.rankOf()); ++i)
-//        ASSERT_TRUE(x3.getShapeInfo()[i] == shapeExpX3[i]);
+//        ASSERT_TRUE(x3.shapeInfo()[i] == shapeExpX3[i]);
 //    for(int i = 0; i < x3.lengthOf(); ++i)
 //        ASSERT_TRUE(x3.e<float>(i) == buffExpX3[i]);
 
@@ -1988,7 +1988,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(x4Exp.isSameShape(x4));
     ASSERT_TRUE(x4Exp.equalsTo(x4));
 //    for(int i = 0; i < shape::shapeInfoLength(x4.rankOf()); ++i)
-//        ASSERT_TRUE(x4.getShapeInfo()[i] == shapeExpX4[i]);
+//        ASSERT_TRUE(x4.shapeInfo()[i] == shapeExpX4[i]);
 //    for(int i = 0; i < x4.lengthOf(); ++i)
 //        ASSERT_TRUE(x4.e<float>(i) == buffExpX4[i]);
 
@@ -1998,7 +1998,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(x5Exp.equalsTo(x5));
 
 //    for(int i = 0; i < shape::shapeInfoLength(x5.rankOf()); ++i)
-//        ASSERT_TRUE(x5.getShapeInfo()[i] == shapeExpX5[i]);
+//        ASSERT_TRUE(x5.shapeInfo()[i] == shapeExpX5[i]);
 //    for(int i = 0; i < x5.lengthOf(); ++i)
 //        ASSERT_TRUE(x5.e<float>(i) == buffExpX5[i]);
 
@@ -2008,7 +2008,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(y0Exp.isSameShape(y0));
     ASSERT_TRUE(y0Exp.equalsTo(y0));
 //    for(int i = 0; i < shape::shapeInfoLength(y0.rankOf()); ++i)
-//        ASSERT_TRUE(y0.getShapeInfo()[i] == shapeExpY0[i]);
+//        ASSERT_TRUE(y0.shapeInfo()[i] == shapeExpY0[i]);
 //    for(int i = 0; i < y0.lengthOf(); ++i)
 //        ASSERT_TRUE(y0.e<float>(i) == buffExpY0[i]);
 
@@ -2017,7 +2017,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(y1Exp.isSameShape(y1));
     ASSERT_TRUE(y1Exp.equalsTo(y1));
 //    for(int i = 0; i < shape::shapeInfoLength(y1.rankOf()); ++i)
-//        ASSERT_TRUE(y1.getShapeInfo()[i] == shapeExpY1[i]);
+//        ASSERT_TRUE(y1.shapeInfo()[i] == shapeExpY1[i]);
 //    for(int i = 0; i < y1.lengthOf(); ++i)
 //        ASSERT_TRUE(y1.e<float>(i) == buffExpY1[i]);
 
@@ -2026,7 +2026,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(y2Exp.isSameShape(y2));
     ASSERT_TRUE(y2Exp.equalsTo(y2));
 //    for(int i = 0; i < shape::shapeInfoLength(y2.rankOf()); ++i)
-//        ASSERT_TRUE(y2.getShapeInfo()[i] == shapeExpY2[i]);
+//        ASSERT_TRUE(y2.shapeInfo()[i] == shapeExpY2[i]);
 //    for(int i = 0; i < y2.lengthOf(); ++i)
 //        ASSERT_TRUE(y2.e<float>(i) == buffExpY2[i]);
 
@@ -2035,7 +2035,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(y3Exp.isSameShape(y3));
     ASSERT_TRUE(y3Exp.equalsTo(y3));
 //    for(int i = 0; i < shape::shapeInfoLength(y3.rankOf()); ++i)
-//        ASSERT_TRUE(y3.getShapeInfo()[i] == shapeExpY3[i]);
+//        ASSERT_TRUE(y3.shapeInfo()[i] == shapeExpY3[i]);
 //    for(int i = 0; i < y3.lengthOf(); ++i)
 //        ASSERT_TRUE(y3.e<float>(i) == buffExpY3[i]);
 
@@ -2044,7 +2044,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(y4Exp.isSameShape(y4));
     ASSERT_TRUE(y4Exp.equalsTo(y4));
 //    for(int i = 0; i < shape::shapeInfoLength(y4.rankOf()); ++i)
-//        ASSERT_TRUE(y4.getShapeInfo()[i] == shapeExpY4[i]);
+//        ASSERT_TRUE(y4.shapeInfo()[i] == shapeExpY4[i]);
 //    for(int i = 0; i < y4.lengthOf(); ++i)
 //        ASSERT_TRUE(y4.e<float>(i) == buffExpY4[i]);
 
@@ -2053,7 +2053,7 @@ TEST_F(NDArrayCudaBasicsTests, subarray_1)
     ASSERT_TRUE(y5Exp.isSameShape(y5));
     ASSERT_TRUE(y5Exp.equalsTo(y5));
 //    for(int i = 0; i < shape::shapeInfoLength(y5.rankOf()); ++i)
-//        ASSERT_TRUE(y5.getShapeInfo()[i] == shapeExpY5[i]);
+//        ASSERT_TRUE(y5.shapeInfo()[i] == shapeExpY5[i]);
 //    for(int i = 0; i < y5.lengthOf(); ++i)
 //        ASSERT_TRUE(y5.e<float>(i) == buffExpY5[i]);
 
@@ -2077,9 +2077,9 @@ TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
     NDArray tmp(sd::DataType::FLOAT32, x.getContext()); // scalar = 0
 
     ExtraArguments extras({eps});
-    NativeOpExecutioner::execReduce3Scalar(diag.getContext(), reduce3::EqualsWithEps, diag.getBuffer(),
-            diag.getShapeInfo(), diag.getSpecialBuffer(), diag.getSpecialShapeInfo(), extras.argumentsAsT(sd::DataType::FLOAT32),
-            exp.getBuffer(), exp.getShapeInfo(), exp.getSpecialBuffer(), exp.getSpecialShapeInfo(),
+    NativeOpExecutioner::execReduce3Scalar(diag.getContext(), reduce3::EqualsWithEps, diag.buffer(),
+            diag.shapeInfo(), diag.specialBuffer(), diag.specialShapeInfo(), extras.argumentsAsT(sd::DataType::FLOAT32),
+            exp.buffer(), exp.shapeInfo(), exp.specialBuffer(), exp.specialShapeInfo(),
             tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
     cudaStream_t* stream = x.getContext()->getCudaStream();
     auto res = cudaStreamSynchronize(*stream);

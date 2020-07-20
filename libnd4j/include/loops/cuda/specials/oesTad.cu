@@ -22,10 +22,10 @@
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-__global__ void execOesTadKernelKey(void *vx, Nd4jLong *xShapeInfo,
-                                    void *vy, Nd4jLong *yShapeInfo,
+__global__ void execOesTadKernelKey(void *vx, Nd4jLong const* xShapeInfo,
+                                    void *vy, Nd4jLong const* yShapeInfo,
                                  int *dimension, int dimensionLength,
-                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                 Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
                                  bool descending) {
 
     auto x = static_cast<X*>(vx);
@@ -94,9 +94,9 @@ __global__ void execOesTadKernelKey(void *vx, Nd4jLong *xShapeInfo,
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ void execOesTadKernel(void *vx, Nd4jLong *xShapeInfo,
+__global__ void execOesTadKernel(void *vx, Nd4jLong const* xShapeInfo,
                                 int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
                                 bool descending) {
 
     auto x = static_cast<T*>(vx);
@@ -182,9 +182,9 @@ __global__ void execOesTadKernel(void *vx, Nd4jLong *xShapeInfo,
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 __host__ void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream,
-                                void *vx, Nd4jLong *xShapeInfo,
+                                void *vx, Nd4jLong const* xShapeInfo,
                                 int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
                                 bool descending) {
 
     execOesTadKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
@@ -192,14 +192,14 @@ __host__ void oesTadGeneric(dim3 &launchDims, cudaStream_t *stream,
 
 template <typename X, typename Y>
 __host__ void oesTadGenericKey(dim3 &launchDims, cudaStream_t *stream,
-                            void *vx, Nd4jLong *xShapeInfo,
-                            void *vy, Nd4jLong *yShapeInfo,
+                            void *vx, Nd4jLong const* xShapeInfo,
+                            void *vy, Nd4jLong const* yShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                            Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
                             bool descending) {
 
     execOesTadKernelKey<X,Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
 
-BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT oesTadGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending), LIBND4J_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void ND4J_EXPORT oesTadGenericKey, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool descending), LIBND4J_TYPES, LIBND4J_TYPES);
+BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT oesTadGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong const* xShapeInfo, int *dimension, int dimensionLength, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool descending), LIBND4J_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void ND4J_EXPORT oesTadGenericKey, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong const* xShapeInfo, void *vy, Nd4jLong const* yShapeInfo, int *dimension, int dimensionLength, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool descending), LIBND4J_TYPES, LIBND4J_TYPES);

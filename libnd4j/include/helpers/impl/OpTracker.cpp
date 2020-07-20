@@ -29,11 +29,9 @@ using namespace sd::graph;
 
 namespace sd {
     
-    OpTracker* OpTracker::getInstance() {
-        if (_INSTANCE == 0)
-            _INSTANCE = new OpTracker();
-
-        return _INSTANCE;
+    OpTracker& OpTracker::getInstance() {
+      static OpTracker instance;
+      return instance;
     }
 
     void OpTracker::storeOperation(sd::graph::OpType opType, const OpDescriptor& descriptor) {
@@ -118,6 +116,4 @@ namespace sd {
 
         return _export.c_str();
     }
-
-    sd::OpTracker* sd::OpTracker::_INSTANCE = 0;
 }

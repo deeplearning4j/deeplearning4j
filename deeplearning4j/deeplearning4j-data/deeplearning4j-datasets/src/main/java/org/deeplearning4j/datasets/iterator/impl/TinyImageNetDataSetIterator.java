@@ -24,7 +24,7 @@ import org.deeplearning4j.common.resources.ResourceType;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.fetchers.DataSetType;
 import org.deeplearning4j.datasets.fetchers.TinyImageNetFetcher;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
 import java.io.File;

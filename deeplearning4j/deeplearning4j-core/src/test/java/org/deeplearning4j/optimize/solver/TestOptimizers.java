@@ -54,7 +54,7 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -1034,6 +1034,10 @@ public class TestOptimizers extends BaseDL4JTest {
         @Override
         public boolean updaterDivideByMinibatch(String paramName) {
             return true;
+        }
+
+        @Override
+        public void close(){
         }
     }
 }

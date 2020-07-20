@@ -169,71 +169,43 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
     x_lstm_md = dnnl::memory::desc({sL, bS, nIn}, xType, dnnl::memory::format_tag::any);
     // x_user_md = dataFormat == 0 ? dnnl::memory::desc({sL, bS, nIn}, type, dnnl::memory::format_tag::tnc) : dnnl::memory::desc({bS, sL, nIn}, type, dnnl::memory::format_tag::ntc);
     x_user_md = dnnl::memory::desc({sL, bS, nIn}, xType, dnnl::memory::format_tag::tnc);
-    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    x_user_md.data.format_desc.blocking.strides[0] = x->stridesOf()[0];
-    x_user_md.data.format_desc.blocking.strides[1] = x->stridesOf()[1];
-    x_user_md.data.format_desc.blocking.strides[2] = x->stridesOf()[2];
+    mkldnnUtils::setBlockStrides(*x, x_user_md);
 
     // wx
     wx_lstm_md = dnnl::memory::desc({1,dirDim,nIn,4,nOut}, wType, dnnl::memory::format_tag::any);
     wx_user_md = dnnl::memory::desc({1,dirDim,nIn,4,nOut}, wType, dnnl::memory::format_tag::ldigo);
-    wx_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    wx_user_md.data.format_desc.blocking.strides[0] = Wx->stridesOf()[0];
-    wx_user_md.data.format_desc.blocking.strides[1] = Wx->stridesOf()[1];
-    wx_user_md.data.format_desc.blocking.strides[2] = Wx->stridesOf()[2];
-    wx_user_md.data.format_desc.blocking.strides[3] = Wx->stridesOf()[3];
-    wx_user_md.data.format_desc.blocking.strides[4] = Wx->stridesOf()[4];
+    mkldnnUtils::setBlockStrides(*Wx, wx_user_md);
 
     // wr
     wr_lstm_md = dnnl::memory::desc({1,dirDim,nOut,4,nOut}, wType, dnnl::memory::format_tag::any);
     wr_user_md = dnnl::memory::desc({1,dirDim,nOut,4,nOut}, wType, dnnl::memory::format_tag::ldigo);
-    wr_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    wr_user_md.data.format_desc.blocking.strides[0] = Wr->stridesOf()[0];
-    wr_user_md.data.format_desc.blocking.strides[1] = Wr->stridesOf()[1];
-    wr_user_md.data.format_desc.blocking.strides[2] = Wr->stridesOf()[2];
-    wr_user_md.data.format_desc.blocking.strides[3] = Wr->stridesOf()[3];
-    wr_user_md.data.format_desc.blocking.strides[4] = Wr->stridesOf()[4];
+    mkldnnUtils::setBlockStrides(*Wr, wr_user_md);
 
     // h
     h_lstm_md = dnnl::memory::desc({sL, bS, hDirDim*nOut}, hType, dnnl::memory::format_tag::any);
     // h_user_md = dataFormat == 0 ? dnnl::memory::desc({sL, bS, hDirDim*nOut}, type, dnnl::memory::format_tag::tnc) : dnnl::memory::desc({bS, sL, hDirDim*nOut}, type, dnnl::memory::format_tag::ntc);
     h_user_md = dnnl::memory::desc({sL, bS, hDirDim*nOut}, hType, dnnl::memory::format_tag::tnc);
-    h_user_md.data.format_kind = dnnl_blocked;    // overrides format
-    h_user_md.data.format_desc.blocking.strides[0] = h->stridesOf()[0];
-    h_user_md.data.format_desc.blocking.strides[1] = h->stridesOf()[1];
-    h_user_md.data.format_desc.blocking.strides[2] = h->stridesOf()[2];
+    mkldnnUtils::setBlockStrides(*h, h_user_md);
 
     // b
     if(b) {
         b_lstm_md = dnnl::memory::desc({1,dirDim,4,nOut}, bType, dnnl::memory::format_tag::any);
         b_user_md = dnnl::memory::desc({1,dirDim,4,nOut}, bType, dnnl::memory::format_tag::ldgo);
-        b_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        b_user_md.data.format_desc.blocking.strides[0] = b->stridesOf()[0];
-        b_user_md.data.format_desc.blocking.strides[1] = b->stridesOf()[1];
-        b_user_md.data.format_desc.blocking.strides[2] = b->stridesOf()[2];
-        b_user_md.data.format_desc.blocking.strides[3] = b->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*b, b_user_md);
     }
 
     // hI
     if(hI) {
         hI_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::any);
         hI_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::ldnc);
-        hI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        hI_user_md.data.format_desc.blocking.strides[0] = hI->stridesOf()[0];
-        hI_user_md.data.format_desc.blocking.strides[1] = hI->stridesOf()[1];
-        hI_user_md.data.format_desc.blocking.strides[2] = hI->stridesOf()[2];
-        hI_user_md.data.format_desc.blocking.strides[3] = hI->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*hI, hI_user_md);
     }
 
     // cI
     if(cI) {
         cI_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::any);
         cI_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::ldnc);
-        cI_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        cI_user_md.data.format_desc.blocking.strides[0] = cI->stridesOf()[0];
-        cI_user_md.data.format_desc.blocking.strides[1] = cI->stridesOf()[1];
-        cI_user_md.data.format_desc.blocking.strides[2] = cI->stridesOf()[2];
-        cI_user_md.data.format_desc.blocking.strides[2] = cI->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*cI, cI_user_md);
     }
 
     // hL
@@ -241,20 +213,13 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
         hL_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::any);
         hL_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
         hL_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        hL_user_md.data.format_desc.blocking.strides[0] = hL->stridesOf()[0];
-        hL_user_md.data.format_desc.blocking.strides[1] = hL->stridesOf()[1];
-        hL_user_md.data.format_desc.blocking.strides[2] = hL->stridesOf()[2];
-        hL_user_md.data.format_desc.blocking.strides[3] = hL->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*hL, hL_user_md);
     }
 
     if(cL) {
         cL_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
         cL_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
-        cL_user_md.data.format_kind = dnnl_blocked;    // overrides format
-        cL_user_md.data.format_desc.blocking.strides[0] = cL->stridesOf()[0];
-        cL_user_md.data.format_desc.blocking.strides[1] = cL->stridesOf()[1];
-        cL_user_md.data.format_desc.blocking.strides[2] = cL->stridesOf()[2];
-        cL_user_md.data.format_desc.blocking.strides[3] = cL->stridesOf()[3];
+        mkldnnUtils::setBlockStrides(*cL, cL_user_md);
     }
 
     // lstm memory description
@@ -272,64 +237,49 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 
     // provide memory and check whether reorder is required
     // x
-    mkldnnUtils::loadDataToMklStream(x, engine, stream, x_user_md, lstm_prim_desc.src_layer_desc(), args[DNNL_ARG_SRC_LAYER]);
+    mkldnnUtils::loadDataToMklStream(*x, engine, stream, x_user_md, lstm_prim_desc.src_layer_desc(), args[DNNL_ARG_SRC_LAYER]);
 
     // wx
-    mkldnnUtils::loadDataToMklStream(Wx, engine, stream, wx_user_md, lstm_prim_desc.weights_layer_desc(), args[DNNL_ARG_WEIGHTS_LAYER]);
+    mkldnnUtils::loadDataToMklStream(*Wx, engine, stream, wx_user_md, lstm_prim_desc.weights_layer_desc(), args[DNNL_ARG_WEIGHTS_LAYER]);
 
     // wr
-    mkldnnUtils::loadDataToMklStream(Wr, engine, stream, wr_user_md, lstm_prim_desc.weights_iter_desc(), args[DNNL_ARG_WEIGHTS_ITER]);
+    mkldnnUtils::loadDataToMklStream(*Wr, engine, stream, wr_user_md, lstm_prim_desc.weights_iter_desc(), args[DNNL_ARG_WEIGHTS_ITER]);
 
     // h
-    auto h_user_mem = dnnl::memory(h_user_md, engine, h->getBuffer());
-    const bool hReorder = lstm_prim_desc.dst_layer_desc() != h_user_mem.get_desc();
-    auto h_lstm_mem = hReorder ? dnnl::memory(lstm_prim_desc.dst_layer_desc(), engine) : h_user_mem;
-    args[DNNL_ARG_DST_LAYER] = h_lstm_mem;
+    auto h_user_mem = mkldnnUtils::loadDataToMklStream(*h, engine, stream, h_user_md, lstm_prim_desc.dst_layer_desc(), args[DNNL_ARG_DST_LAYER]);
 
     // b
-    if(b) {
-        mkldnnUtils::loadDataToMklStream(b, engine, stream, b_user_md, lstm_prim_desc.bias_desc(), args[DNNL_ARG_BIAS]);
-    }
+    if(b)
+        mkldnnUtils::loadDataToMklStream(*b, engine, stream, b_user_md, lstm_prim_desc.bias_desc(), args[DNNL_ARG_BIAS]);
 
     // hI
-    if(hI) {
-        mkldnnUtils::loadDataToMklStream(hI, engine, stream, hI_user_md, lstm_prim_desc.src_iter_desc(), args[DNNL_ARG_SRC_ITER]);
-    }
+    if(hI)
+        mkldnnUtils::loadDataToMklStream(*hI, engine, stream, hI_user_md, lstm_prim_desc.src_iter_desc(), args[DNNL_ARG_SRC_ITER]);
 
     // cI
-    if(cI) {
-        mkldnnUtils::loadDataToMklStream(cI, engine, stream, cI_user_md, lstm_prim_desc.src_iter_c_desc(), args[DNNL_ARG_SRC_ITER_C]);
-    }
+    if(cI)
+        mkldnnUtils::loadDataToMklStream(*cI, engine, stream, cI_user_md, lstm_prim_desc.src_iter_c_desc(), args[DNNL_ARG_SRC_ITER_C]);
 
-    bool hLReorder(false), cLReorder(false);
     dnnl::memory hL_user_mem, cL_user_mem, hL_lstm_mem, cL_lstm_mem;
 
     // hL
-    if(hL) {
-        hL_user_mem = dnnl::memory(hL_user_md, engine, hL->getBuffer());
-        hLReorder = lstm_prim_desc.dst_iter_desc() != hL_user_mem.get_desc();
-        hL_lstm_mem = hLReorder ? dnnl::memory(lstm_prim_desc.dst_iter_desc(), engine) : hL_user_mem;
-        args[DNNL_ARG_DST_ITER] = hL_lstm_mem;
-    }
+    if(hL)
+        hL_user_mem = mkldnnUtils::loadDataToMklStream(*hL, engine, stream, hL_user_md, lstm_prim_desc.dst_iter_desc(), args[DNNL_ARG_DST_ITER]);
 
     // cL
-    if(cL) {
-        cL_user_mem = dnnl::memory(cL_user_md, engine, cL->getBuffer());
-        cLReorder = lstm_prim_desc.dst_iter_c_desc() != cL_user_mem.get_desc();
-        cL_lstm_mem = cLReorder ? dnnl::memory(lstm_prim_desc.dst_iter_c_desc(), engine) : cL_user_mem;
-        args[DNNL_ARG_DST_ITER_C] = cL_lstm_mem;
-    }
+    if(cL)
+        cL_user_mem = mkldnnUtils::loadDataToMklStream(*cL, engine, stream, cL_user_md, lstm_prim_desc.dst_iter_c_desc(), args[DNNL_ARG_DST_ITER_C]);
 
     // run calculations
     lstm_forward(lstm_prim_desc).execute(stream, args);
 
     // reorder outputs if necessary
-    if (hReorder)
-        reorder(h_lstm_mem, h_user_mem).execute(stream, h_lstm_mem, h_user_mem);
-    if(hLReorder)
-        reorder(hL_lstm_mem, hL_user_mem).execute(stream, hL_lstm_mem, hL_user_mem);
-    if(cLReorder)
-        reorder(cL_lstm_mem, cL_user_mem).execute(stream, cL_lstm_mem, cL_user_mem);
+    if (lstm_prim_desc.dst_layer_desc() != h_user_mem.get_desc())
+        reorder(args[DNNL_ARG_DST_LAYER], h_user_mem).execute(stream, args[DNNL_ARG_DST_LAYER], h_user_mem);
+    if(lstm_prim_desc.dst_iter_desc() != hL_user_mem.get_desc())
+        reorder(args[DNNL_ARG_DST_ITER], hL_user_mem).execute(stream, args[DNNL_ARG_DST_ITER], hL_user_mem);
+    if(lstm_prim_desc.dst_iter_c_desc() != cL_user_mem.get_desc())
+        reorder(args[DNNL_ARG_DST_ITER_C], cL_user_mem).execute(stream, args[DNNL_ARG_DST_ITER_C], cL_user_mem);
 
     stream.wait();
 }
@@ -368,7 +318,8 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
     REQUIRE_TRUE(hasSeqLen == false, 0, "LSTM_LAYER_MKLDNN operation: mkl dnn library doesn't support array specifying max time step per each example in batch !");
     REQUIRE_TRUE(dataFormat < 2, 0, "LSTM_LAYER_MKLDNN operation: wrong data format, only two formats are allowed for input/output tensors in mkl dnn library: TNC and NTC!");
     REQUIRE_TRUE(directionMode < 4, 0, "LSTM_LAYER_MKLDNN operation: option for bidirectional extra output dimension is not valid in mkl dnn library !");
-    REQUIRE_TRUE((retLastH && retLastC) || (!retLastH && !retLastC), 0, "LSTM_LAYER_MKLDNN operation: only two options are present: 1) calculate both output at last time and cell state at last time; 2) do not calculate both !");
+    REQUIRE_TRUE(retLastH == retLastC, 0, "LSTM_LAYER_MKLDNN operation: only two options are present: 1) calculate both output at last time and cell state at last time; 2) do not calculate both !");
+	REQUIRE_TRUE(hasInitH == hasInitC, 0, "LSTM_LAYER_MKLDNN operation: either both of or neither of initial C and initial H must be provided");
 
     count = 0;
     auto h  = retFullSeq ? OUTPUT_VARIABLE(count++) : nullptr;           // output
@@ -376,9 +327,9 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
     auto cL = retLastC   ? OUTPUT_VARIABLE(count++) : nullptr;           // cell state at last step
 
     // evaluate dimensions
-    const Nd4jLong sL   = dataFormat == 3 ?  x->sizeAt(0) : x->sizeAt(dataFormat);
-    const Nd4jLong bS   = dataFormat == 1 || dataFormat == 2 ? x->sizeAt(0) : x->sizeAt(-2);
-    const Nd4jLong nIn  = dataFormat == 2 ? x->sizeAt(1) : x->sizeAt(-1);
+    const Nd4jLong sL   = x->sizeAt(dataFormat);
+    const Nd4jLong bS   = dataFormat == 0 ? x->sizeAt(1) : x->sizeAt(0);
+    const Nd4jLong nIn  = x->sizeAt(2);
     const Nd4jLong nOut = Wx->sizeAt(-1) / 4;
 
     // inputs validations
@@ -434,14 +385,21 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
 
     WxR = new NDArray(Wx->reshape(Wx->ordering(), {1,dirDim,nIn,4,nOut}));
     WrR = new NDArray(Wr->reshape(Wr->ordering(), {1,dirDim,nOut,4,nOut}));
+
     if(b)
-        bR  = new NDArray(b->reshape(b->ordering(),  {1,dirDim,4,nOut}));
+        bR = new NDArray(b->reshape(b->ordering(),  {1,dirDim,4,nOut}));
+    else
+        bR = new NDArray(x->ordering(), {1,dirDim,4,nOut}, x->dataType(), x->getContext());     // already nullified
+
     if(hI)
         hIR = new NDArray(hI->reshape(hI->ordering(), {1,dirDim,bS,nOut}));
+
     if(cI)
         cIR = new NDArray(cI->reshape(cI->ordering(), {1,dirDim,bS,nOut}));
+
     if(hL)
         hLR = new NDArray(hL->reshape(hL->ordering(), {1,dirDim,bS,nOut}, false));
+
     if(cL)
         cLR = new NDArray(cL->reshape(cL->ordering(), {1,dirDim,bS,nOut}, false));
 
@@ -464,12 +422,20 @@ PLATFORM_IMPL(lstmLayer, ENGINE_CPU) {
 }
 
 PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
+
+    const auto dataFormat    = INT_ARG(0);    // for unidirectional: 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn], 2 = [bS, nIn, sL], for bidirectional: 3 = [sL, 2, bS, nOut] (for ONNX)
+    const auto directionMode = INT_ARG(1);    // direction: 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat, 4 = bidirectional extra output dim (in conjunction with format dataFormat = 3)
+
     const auto hasBiases  = B_ARG(0);   // indicates whether biases array is provided
+    const auto hasSeqLen  = B_ARG(1);   // indicates whether seqLen array is provided
     const auto hasInitH   = B_ARG(2);   // indicates whether initial output is provided
     const auto hasInitC   = B_ARG(3);   // indicates whether initial cell state is provided
+    const auto hasPH      = B_ARG(4);   // indicates whether peephole connections are present
     const auto retFullSeq = B_ARG(5);   // indicates whether to return whole time sequence h {h_0, h_1, ... , h_sL-1}
     const auto retLastH   = B_ARG(6);   // indicates whether to return output at last time step only, in this case shape would be [bS, nOut] (exact shape depends on dataFormat argument)
     const auto retLastC   = B_ARG(7);   // indicates whether to return cells state at last time step only, in this case shape would be [bS, nOut] (exact shape depends on dataFormat argument)
+
+    const auto cellClip = T_ARG(0);                                     // cell clipping value, if it = 0 then do not apply clipping
 
     const auto x  = INPUT_VARIABLE(0);          // input
     const auto Wx = INPUT_VARIABLE(1);          // input weights
@@ -490,12 +456,21 @@ PLATFORM_CHECK(lstmLayer, ENGINE_CPU) {
     DataType WrType = Wr->dataType();
     DataType bType  = b  != nullptr ? b->dataType() : (xType == DataType::HALF ? xType : DataType::FLOAT32);
     DataType hIType = hI != nullptr ? hI->dataType() : xType;
-    DataType cIType = cI != nullptr ? hI->dataType() : xType;
+    DataType cIType = cI != nullptr ? cI->dataType() : xType;
     DataType hType  = h  != nullptr ? h->dataType()  : xType;
     DataType hLType = hL != nullptr ? hL->dataType() : xType;
     DataType cLType = cL != nullptr ? cL->dataType() : xType;
 
-    return block.isUseMKLDNN() && (
+    auto featuresSupported = (cellClip == 0)     //Cell clipping not supported
+        && retFullSeq                            //Always return full sequence in case of MKL DNN
+        && !hasPH                                //Peephole connections not supported in MKL DNN
+		&& !hasSeqLen                            //Sequence length array not supported in MKL DNN
+		&& dataFormat < 2                        //Data format - only 0 and 1 supported in MKL DNN- 0 = [sL, bS, nIn], 1 = [bS, sL ,nIn]
+		&& directionMode < 4                     //Direction mode - only 0-3 supported in MKL DNN (no extra dim option) - 0 = fwd, 1 = bwd, 2 = bidirectional sum, 3 = bidirectional concat
+		&& retLastH == retLastC                  //Return both lastH and lastC, or return neither (not just 1 or other)
+		&& hasInitH == hasInitC;				 //Need both or neither initial H and C
+
+    return block.isUseMKLDNN() && featuresSupported && (
             (xType==DataType::FLOAT32 && WxType==DataType::FLOAT32 && WrType==DataType::FLOAT32 && bType==DataType::FLOAT32 && hIType==DataType::FLOAT32 && cIType==DataType::FLOAT32 && hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32) ||
             (xType==DataType::HALF    && WxType==DataType::HALF    && WrType==DataType::HALF    && bType==DataType::HALF    && hIType==DataType::HALF    && cIType==DataType::HALF    && hType==DataType::HALF    && hLType==DataType::HALF    && cLType==DataType::HALF)    ||
             (xType==DataType::UINT8   && WxType==DataType::INT8    && WrType==DataType::INT8    && bType==DataType::FLOAT32 && hIType==DataType::UINT8   && cIType==DataType::UINT8   && (hType==DataType::FLOAT32 && hLType==DataType::FLOAT32 && cLType==DataType::FLOAT32 || hType==DataType::UINT8 && hLType==DataType::UINT8 && cLType==DataType::UINT8))

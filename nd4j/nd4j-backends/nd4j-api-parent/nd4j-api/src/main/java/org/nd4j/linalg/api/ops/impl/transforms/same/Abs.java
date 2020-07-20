@@ -16,9 +16,10 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.same;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
@@ -32,13 +33,17 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class Abs extends BaseTransformSameOp {
+
+    public Abs(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public Abs(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public Abs() {
-    }
 
     public Abs(INDArray x, INDArray z) {
         super(x, z);
@@ -72,7 +77,7 @@ public class Abs extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().sign(arg()).mul(i_v.get(0));
+        SDVariable ret = sameDiff.math.sign(arg()).mul(i_v.get(0));
         return Arrays.asList(ret);
     }
 

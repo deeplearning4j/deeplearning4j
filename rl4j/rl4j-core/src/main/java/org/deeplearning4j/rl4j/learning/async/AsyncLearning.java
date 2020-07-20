@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -21,14 +22,17 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.listener.*;
+import org.deeplearning4j.rl4j.learning.configuration.AsyncQLearningConfiguration;
+import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * The entry point for async training. This class will start a number ({@link AsyncConfiguration#getNumThread()
+ * The entry point for async training. This class will start a number ({@link AsyncQLearningConfiguration#getNumThreads()
  * configuration.getNumThread()}) of worker threads. Then, it will monitor their progress at regular intervals
  * (see setProgressEventInterval(int))
  *
@@ -36,8 +40,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alexandre Boulanger
  */
 @Slf4j
-public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-                extends Learning<O, A, AS, NN>
+public abstract class AsyncLearning<OBSERVATION extends Encodable, ACTION, ACTION_SPACE extends ActionSpace<ACTION>, NN extends NeuralNet>
+                extends Learning<OBSERVATION, ACTION, ACTION_SPACE, NN>
                 implements IAsyncLearning {
 
     private Thread monitorThread = null;
@@ -56,17 +60,14 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     /**
      * Returns the configuration
-     * @return the configuration (see {@link AsyncConfiguration})
+     *
+     * @return the configuration (see {@link AsyncQLearningConfiguration})
      */
-    public abstract AsyncConfiguration getConfiguration();
+    public abstract IAsyncLearningConfiguration getConfiguration();
 
     protected abstract AsyncThread newThread(int i, int deviceAffinity);
 
     protected abstract IAsyncGlobal<NN> getAsyncGlobal();
-
-    protected void startGlobalThread() {
-        getAsyncGlobal().start();
-    }
 
     protected boolean isTrainingComplete() {
         return getAsyncGlobal().isTrainingComplete();
@@ -77,12 +78,12 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
     /**
      * Number of milliseconds between calls to onTrainingProgress
      */
-    @Getter @Setter
+    @Getter
+    @Setter
     private int progressMonitorFrequency = 20000;
 
     private void launchThreads() {
-        startGlobalThread();
-        for (int i = 0; i < getConfiguration().getNumThread(); i++) {
+        for (int i = 0; i < getConfiguration().getNumThreads(); i++) {
             Thread t = newThread(i, i % Nd4j.getAffinityManager().getNumberOfDevices());
             t.start();
         }
@@ -93,8 +94,8 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
      * @return The current step
      */
     @Override
-    public int getStepCounter() {
-        return getAsyncGlobal().getT().get();
+    public int getStepCount() {
+        return getAsyncGlobal().getStepCount();
     }
 
     /**
@@ -123,16 +124,15 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
             monitorTraining();
         }
 
-        cleanupPostTraining();
         listeners.notifyTrainingFinished();
     }
 
     protected void monitorTraining() {
         try {
             monitorThread = Thread.currentThread();
-            while (canContinue && !isTrainingComplete() && getAsyncGlobal().isRunning()) {
+            while (canContinue && !isTrainingComplete()) {
                 canContinue = listeners.notifyTrainingProgress(this);
-                if(!canContinue) {
+                if (!canContinue) {
                     return;
                 }
 
@@ -146,20 +146,15 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         monitorThread = null;
     }
 
-    protected void cleanupPostTraining() {
-        // Worker threads stops automatically when the global thread stops
-        getAsyncGlobal().terminate();
-    }
-
     /**
      * Force the immediate termination of the learning. All learning threads, the AsyncGlobal thread and the monitor thread will be terminated.
      */
     public void terminate() {
-        if(canContinue) {
+        if (canContinue) {
             canContinue = false;
 
             Thread safeMonitorThread = monitorThread;
-            if(safeMonitorThread != null) {
+            if (safeMonitorThread != null) {
                 safeMonitorThread.interrupt();
             }
         }

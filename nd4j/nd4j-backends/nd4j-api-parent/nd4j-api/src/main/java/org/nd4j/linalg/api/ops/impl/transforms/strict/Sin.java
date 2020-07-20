@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,6 +36,10 @@ import java.util.List;
 public class Sin extends BaseTransformStrictOp {
     public Sin(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
+    }
+
+    public Sin(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
     }
 
     public Sin(INDArray x, INDArray z) {
@@ -71,8 +76,8 @@ public class Sin extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().cos(arg()).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        SDVariable ret = sameDiff.math.cos(arg()).mul(i_v.get(0));
+        return Collections.singletonList(ret);
     }
 
 }

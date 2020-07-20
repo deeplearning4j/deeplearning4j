@@ -17,7 +17,7 @@
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
 import lombok.*;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.v2.transport.PortSupplier;
 

@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -17,22 +18,32 @@
 package org.deeplearning4j.rl4j.learning.async;
 
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 
-import java.util.concurrent.atomic.AtomicInteger;
+public interface IAsyncGlobal<NN extends ITrainableNeuralNet> {
 
-public interface IAsyncGlobal<NN extends NeuralNet> {
-    boolean isRunning();
     boolean isTrainingComplete();
-    void start();
 
     /**
-     * Force the immediate termination of the AsyncGlobal instance. Queued work items will be discarded.
+     * The number of updates that have been applied by worker threads.
      */
-    void terminate();
+    int getWorkerUpdateCount();
 
-    AtomicInteger getT();
-    NN getCurrent();
+    /**
+     * The total number of environment steps that have been processed.
+     */
+    int getStepCount();
+
+    /**
+     * A copy of the global network that is updated after a certain number of worker episodes.
+     */
     NN getTarget();
-    void enqueue(Gradient[] gradient, Integer nstep);
+
+    /**
+     * Apply gradients to the global network
+     * @param gradient
+     * @param batchSize
+     */
+    void applyGradient(Gradient[] gradient, int batchSize);
+
 }

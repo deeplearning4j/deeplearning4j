@@ -28,8 +28,9 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
@@ -48,14 +49,16 @@ public class MergeVertex extends BaseGraphVertex {
 
     private long[][] forwardPassShapes;
     private int fwdPassRank;
+    private int mergeAxis;
 
-    public MergeVertex(ComputationGraph graph, String name, int vertexIndex, DataType dataType) {
-        this(graph, name, vertexIndex, null, null, dataType);
+    public MergeVertex(ComputationGraph graph, String name, int vertexIndex, DataType dataType, int mergeAxis) {
+        this(graph, name, vertexIndex, null, null, dataType, mergeAxis);
     }
 
     public MergeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, DataType dataType) {
+                    VertexIndices[] outputVertices, DataType dataType, int mergeAxis) {
         super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
+        this.mergeAxis = mergeAxis;
     }
 
     @Override
@@ -92,7 +95,6 @@ public class MergeVertex extends BaseGraphVertex {
 
         forwardPassShapes = new long[in.length][0];
         val nExamples = in[0].size(0);
-        int nOut = 0;
         fwdPassRank = in[0].rank();
         for (int i = 0; i < in.length; i++) {
             val currShape = in[i].shape();
@@ -109,12 +111,11 @@ public class MergeVertex extends BaseGraphVertex {
                                                 + Arrays.toString(in[0].shape()) + ", activations[" + i
                                                 + "] shape: " + Arrays.toString(in[i].shape()));
             }
-
-            nOut += currShape[1]; //Same dimension for all of CNNs, FF, RNNs
         }
 
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)){
-            return Nd4j.concat(1, in);
+            INDArray out = Nd4j.concat(mergeAxis, in);
+            return out;
         }
     }
 
@@ -145,20 +146,16 @@ public class MergeVertex extends BaseGraphVertex {
                 break;
             case 3:
                 for (int i = 0; i < forwardPassShapes.length; i++) {
-                    out[i].assign(epsilon.get(NDArrayIndex.all(), //All rows
-                                    NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1]), //subset of columns
-                                    NDArrayIndex.all())); //All time steps
+                    out[i].assign(epsilon.get(indices(3, mergeAxis, cumulative, cumulative + forwardPassShapes[i][mergeAxis]))); //All time steps
 
-                    cumulative += forwardPassShapes[i][1];
+                    cumulative += forwardPassShapes[i][mergeAxis];
                 }
                 break;
             case 4:
                 for (int i = 0; i < forwardPassShapes.length; i++) {
-                    out[i].assign(epsilon.get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(cumulative, cumulative + forwardPassShapes[i][1]), //Subset of depth
-                                    NDArrayIndex.all(), //Width
-                                    NDArrayIndex.all())); //height
-                    cumulative += forwardPassShapes[i][1];
+                    out[i].assign(epsilon.get(indices(4, mergeAxis, cumulative, cumulative + forwardPassShapes[i][mergeAxis]))); //height
+
+                    cumulative += forwardPassShapes[i][mergeAxis];
                 }
                 break;
             default:
@@ -167,6 +164,19 @@ public class MergeVertex extends BaseGraphVertex {
 
         return new Pair<>(null, out);
     }
+
+    private INDArrayIndex[] indices(int num, int axis, long from, long to){
+        INDArrayIndex[] out = new INDArrayIndex[num];
+        for( int i=0; i<num; i++ ){
+            if(i == axis){
+                out[i] = NDArrayIndex.interval(from, to);
+            } else {
+                out[i] = NDArrayIndex.all();
+            }
+        }
+        return out;
+    }
+
 
     @Override
     public void setBackpropGradientsViewArray(INDArray backpropGradientsViewArray) {

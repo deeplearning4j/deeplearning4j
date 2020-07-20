@@ -147,9 +147,9 @@ DECLARE_SHAPE_FN(static_bidirectional_rnn) {
     auto WhBWShapeInfo  = inputShape->at(5);         // hidden-to-hidden weights for backward RNN, [numUnitsBW x numUnitsBW]
 	auto bBWShapeInfo   = inputShape->at(6);         // biases for backward RNN, [2*numUnitsBW]
 
-	Nd4jLong* h0FWShapeInfo = nullptr;					// initial cell output for forward  RNN (at time step = 0) [bS x numUnitsFW]
-	Nd4jLong* h0BWShapeInfo = nullptr;			    	// initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
-	Nd4jLong* maxTimeStepShapeInfo = nullptr;       		// vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
+	Nd4jLong const* h0FWShapeInfo = nullptr;					// initial cell output for forward  RNN (at time step = 0) [bS x numUnitsFW]
+	Nd4jLong const* h0BWShapeInfo = nullptr;			    	// initial cell output for backward RNN (at time step = 0) [bS x numUnitsBW]
+	Nd4jLong const* maxTimeStepShapeInfo = nullptr;       		// vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
 
 	switch(block.width()) {
 		case 8:

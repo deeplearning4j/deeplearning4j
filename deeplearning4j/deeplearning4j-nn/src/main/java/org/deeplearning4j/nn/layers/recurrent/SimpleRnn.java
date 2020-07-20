@@ -23,7 +23,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -34,8 +34,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNormBp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Quad;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.primitives.Quad;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
@@ -49,6 +49,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
  */
 public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
+
 
     public SimpleRnn(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
@@ -72,7 +73,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         INDArray out = activateHelper(last, training, false, workspaceMgr).getFirst();
         if(storeLastForTBPTT){
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-                tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)));
+                tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, out.get(all(), all(), point(out.size(2)-1)).dup());
             }
         }
         return out;
@@ -92,6 +93,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         val nOut = layerConf().getNOut();
 
         INDArray input = this.input.castTo(dataType);   //No-op if correct type
+        input = permuteIfNWC(input);
 
         //First: Do forward pass to get gate activations and Zs
         Quad<INDArray,INDArray, INDArray, INDArray> p = activateHelper(null, true, true, workspaceMgr);
@@ -125,8 +127,9 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         } else {
             end = 0;
         }
+        epsilon = permuteIfNWC(epsilon);
         for( long i = tsLength-1; i>= end; i--){
-            INDArray dldaCurrent = epsilon.get(all(), all(), point(i));
+            INDArray dldaCurrent = epsilon.get(all(), all(), point(i)).dup();
             INDArray aCurrent = p.getFirst().get(all(), all(), point(i));
             INDArray zCurrent = p.getSecond().get(all(), all(), point(i));
             INDArray nCurrent = (hasLayerNorm() ? p.getThird().get(all(), all(), point(i)) : null);
@@ -141,7 +144,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 //Recurrent weight gradients:
                 Nd4j.gemm(aCurrent, dldzNext, rwg, true, false, 1.0, 1.0);
             }
-            INDArray dldzCurrent = a.backprop(zCurrent.dup(), dldaCurrent.dup()).getFirst();
+            INDArray dldzCurrent = a.backprop(zCurrent.dup(), dldaCurrent).getFirst();
 
             //Handle masking
             INDArray maskCol = null;
@@ -200,6 +203,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         }
 
         epsOut = backpropDropOutIfPresent(epsOut);
+        epsOut = permuteIfNWC(epsOut);
         return new Pair<>(grad, epsOut);
     }
 
@@ -224,6 +228,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         applyDropOutIfNecessary(training, workspaceMgr);
 
         INDArray input = this.input.castTo(dataType);    //No-op if correct type
+        input = permuteIfNWC(input);
         val m = input.size(0);
         val tsLength = input.size(2);
         val nOut = layerConf().getNOut();
@@ -300,7 +305,12 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 Nd4j.getExecutioner().exec(new BroadcastMulOp(outZ, mask, outZ, 0, 2));
             }
         }
-
+        if (!forBackprop) {
+            out = permuteIfNWC(out);
+            outZ = permuteIfNWC(outZ);
+            outPreNorm = permuteIfNWC(outPreNorm);
+            recPreNorm = permuteIfNWC(recPreNorm);
+        }
         return new Quad<>(out, outZ, outPreNorm, recPreNorm);
     }
 

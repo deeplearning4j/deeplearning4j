@@ -18,11 +18,10 @@ package org.nd4j.tensorflow.conversion.graphrunner;
 
 import lombok.*;
 import org.apache.commons.io.FileUtils;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.protobuf.ByteString;
 import org.nd4j.shade.protobuf.InvalidProtocolBufferException;
 import org.nd4j.shade.protobuf.util.JsonFormat;
@@ -540,7 +539,7 @@ public class GraphRunner implements Closeable {
             org.tensorflow.framework.GraphDef graphDef1 = org.tensorflow.framework.GraphDef.parseFrom(graphToUse);
             initSessionAndStatusIfNeeded(graphDef1);
         } catch (org.nd4j.shade.protobuf.InvalidProtocolBufferException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 
@@ -562,7 +561,7 @@ public class GraphRunner implements Closeable {
             org.tensorflow.framework.ConfigProto configProto = org.tensorflow.framework.ConfigProto.parseFrom(binaryString);
             return configProto;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return null;
@@ -641,7 +640,7 @@ public class GraphRunner implements Closeable {
         try {
             return org.nd4j.shade.protobuf.util.JsonFormat.printer().print(sessionOptionsConfigProto);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return null;
@@ -681,7 +680,7 @@ public class GraphRunner implements Closeable {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return builder1.build();

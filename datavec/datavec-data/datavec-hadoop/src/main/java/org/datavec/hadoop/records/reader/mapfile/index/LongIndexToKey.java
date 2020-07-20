@@ -18,11 +18,10 @@ package org.datavec.hadoop.records.reader.mapfile.index;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.MapFile;
-import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.nd4j.linalg.primitives.Pair;
 import org.datavec.hadoop.records.reader.mapfile.IndexToKey;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.IOException;
 import java.util.ArrayList;

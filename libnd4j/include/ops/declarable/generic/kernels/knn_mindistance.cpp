@@ -45,7 +45,7 @@ namespace sd {
             auto input = inputShape->at(0);
 
             // always return scalar here
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(input)));
+            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(input)));
         }
 
         DECLARE_TYPES(knn_mindistance) {

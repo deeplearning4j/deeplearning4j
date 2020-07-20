@@ -77,6 +77,8 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected int patternPosition = 0;
     @Getter @Setter
     protected boolean logLabelCountOnInit = true;
+    @Getter @Setter
+    protected boolean nchw_channels_first = true;
 
     public final static String HEIGHT = NAME_SPACE + ".height";
     public final static String WIDTH = NAME_SPACE + ".width";
@@ -101,6 +103,11 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     protected BaseImageRecordReader(long height, long width, long channels, PathLabelGenerator labelGenerator,
                                     PathMultiLabelGenerator labelMultiGenerator, ImageTransform imageTransform) {
+        this(height, width, channels, true, labelGenerator, labelMultiGenerator, imageTransform);
+    }
+
+    protected BaseImageRecordReader(long height, long width, long channels, boolean nchw_channels_first, PathLabelGenerator labelGenerator,
+                                    PathMultiLabelGenerator labelMultiGenerator, ImageTransform imageTransform) {
         this.height = height;
         this.width = width;
         this.channels = channels;
@@ -108,6 +115,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         this.labelMultiGenerator = labelMultiGenerator;
         this.imageTransform = imageTransform;
         this.appendLabel = (labelGenerator != null || labelMultiGenerator != null);
+        this.nchw_channels_first = nchw_channels_first;
     }
 
     protected boolean containsFormat(String format) {
@@ -225,7 +233,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 finishedInputStreamSplit = true;
                 return Arrays.<Writable>asList(ndArrayWritable);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         }
         if (iter != null) {
@@ -237,9 +245,13 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 return next();
             try {
                 invokeListeners(image);
-                INDArray row = imageLoader.asMatrix(image);
-                Nd4j.getAffinityManager().ensureLocation(row, AffinityManager.Location.DEVICE);
-                ret = RecordConverter.toRecord(row);
+                INDArray array = imageLoader.asMatrix(image);
+                if(!nchw_channels_first){
+                    array = array.permute(0,2,3,1);     //NCHW to NHWC
+                }
+
+                Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.DEVICE);
+                ret = RecordConverter.toRecord(array);
                 if (appendLabel || writeLabel){
                     if(labelMultiGenerator != null){
                         ret.addAll(labelMultiGenerator.getLabels(image.getPath()));
@@ -286,7 +298,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     @Override
     public List<List<Writable>> next(int num) {
-        Preconditions.checkArgument(num > 0, "Number of examples must be > 0: got " + num);
+        Preconditions.checkArgument(num > 0, "Number of examples must be > 0: got %s", num);
 
         if (imageLoader == null) {
             imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
@@ -336,6 +348,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 System.out.println("Image file failed during load: " + currBatch.get(i).getAbsolutePath());
                 throw new RuntimeException(e);
             }
+        }
+        if(!nchw_channels_first){
+            features = features.permute(0,2,3,1);   //NCHW to NHWC
         }
         Nd4j.getAffinityManager().ensureLocation(features, AffinityManager.Location.DEVICE);
 
@@ -483,8 +498,10 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         if (imageLoader == null) {
             imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
         }
-        INDArray row = imageLoader.asMatrix(dataInputStream);
-        List<Writable> ret = RecordConverter.toRecord(row);
+        INDArray array = imageLoader.asMatrix(dataInputStream);
+        if(!nchw_channels_first)
+            array = array.permute(0,2,3,1);
+        List<Writable> ret = RecordConverter.toRecord(array);
         if (appendLabel)
             ret.add(new IntWritable(labels.indexOf(getLabel(uri.getPath()))));
         return ret;

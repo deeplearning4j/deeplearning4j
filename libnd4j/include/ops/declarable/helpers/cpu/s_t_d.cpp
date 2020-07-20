@@ -25,14 +25,14 @@ namespace sd {
 namespace ops {
 namespace helpers {
     template <typename T>
-    static void _spaceTodepth_(NDArray *input, NDArray *output, int block_size, bool isNHWC) {
-            auto input_ptr = reinterpret_cast<T *>(input->buffer());
+    static void _spaceTodepth_(const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+            auto input_ptr = reinterpret_cast<T const*>(input.buffer());
             auto output_ptr = reinterpret_cast<T *>(output->buffer());
 
-            const int batch_size = input->sizeAt(0);
-            const int input_depth = isNHWC ? input->sizeAt(3) : input->sizeAt(1);
-            const int input_height = isNHWC ? input->sizeAt(1) : input->sizeAt(2);
-            const int input_width = isNHWC ? input->sizeAt(2) : input->sizeAt(3);
+            const int batch_size = input.sizeAt(0);
+            const int input_depth = isNHWC ? input.sizeAt(3) : input.sizeAt(1);
+            const int input_height = isNHWC ? input.sizeAt(1) : input.sizeAt(2);
+            const int input_width = isNHWC ? input.sizeAt(2) : input.sizeAt(3);
 
             const int output_depth = isNHWC ? output->sizeAt(3) : output->sizeAt(1);
             const int output_height = isNHWC ? output->sizeAt(1) : output->sizeAt(2);
@@ -97,11 +97,11 @@ namespace helpers {
         }
     }
 
-    void _spaceTodepth(sd::LaunchContext * context, NDArray *input, NDArray *output, int block_size, bool isNHWC) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), LIBND4J_TYPES);
+    void _spaceTodepth(sd::LaunchContext * context, const NDArray &input, NDArray *output, int block_size, bool isNHWC) {
+        BUILD_SINGLE_SELECTOR(input.dataType(), _spaceTodepth_, (input, output, block_size, isNHWC), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_, (NDArray *input, NDArray *output, int block_size, bool isNHWC), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void _spaceTodepth_, (const NDArray &input, NDArray *output, int block_size, bool isNHWC), LIBND4J_TYPES);
 
 }
 }

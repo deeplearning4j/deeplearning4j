@@ -18,11 +18,10 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -56,6 +55,14 @@ public class Upsampling2d extends DynamicCustomOp {
         addIArgument(nchw ? 1 : 0);
     }
 
+    public Upsampling2d(SameDiff sameDiff, SDVariable input, int scaleH, int scaleW, boolean nchw) {
+        this(sameDiff, input, nchw, scaleH, scaleW);
+    }
+
+    public Upsampling2d(SameDiff sameDiff, SDVariable input, int scale) {
+        super(null,sameDiff, new SDVariable[]{input});
+        addIArgument(scale);
+    }
 
     public Upsampling2d(INDArray input, int scale) {
         this(input, scale, scale, true);
@@ -91,7 +98,7 @@ public class Upsampling2d extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().upsampling2dBp(arg(), f1.get(0), nchw, scaleH, scaleW));
+        return new Upsampling2dDerivative(sameDiff, arg(), f1.get(0), nchw, scaleH, scaleW).outputs();
     }
 
     @Override

@@ -21,9 +21,13 @@ import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
+import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
+import org.deeplearning4j.text.documentiterator.LabelledDocument;
+import org.deeplearning4j.text.documentiterator.LabelsSource;
+import org.deeplearning4j.text.documentiterator.SimpleLabelAwareIterator;
 import org.deeplearning4j.text.sentenceiterator.CollectionSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareFileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
@@ -35,11 +39,12 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.common.util.SerializationUtils;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
@@ -129,6 +134,43 @@ public class TfidfVectorizerTest extends BaseDL4JTest {
 
         dataSet = vectorizer2.vectorize("This is 3 file.", "label2");
         assertEquals(vector, dataSet.getFeatures());
+    }
+
+    public void testTfIdfVectorizerFromLabelAwareIterator() throws Exception {
+        LabelledDocument doc1 = new LabelledDocument();
+        doc1.addLabel("dog");
+        doc1.setContent("it barks like a dog");
+
+        LabelledDocument doc2 = new LabelledDocument();
+        doc2.addLabel("cat");
+        doc2.setContent("it meows like a cat");
+
+        List<LabelledDocument> docs = new ArrayList<>(2);
+        docs.add(doc1);
+        docs.add(doc2);
+        
+        LabelAwareIterator iterator = new SimpleLabelAwareIterator(docs);
+        TokenizerFactory tokenizerFactory = new DefaultTokenizerFactory();
+
+        TfidfVectorizer vectorizer = new TfidfVectorizer
+            .Builder()
+            .setMinWordFrequency(1)
+            .setStopWords(new ArrayList<String>())
+            .setTokenizerFactory(tokenizerFactory)
+            .setIterator(iterator)
+            .allowParallelTokenization(false)
+            .build();
+
+        vectorizer.fit();
+
+        DataSet dataset = vectorizer.vectorize("it meows like a cat", "cat");
+        assertNotNull(dataset);
+        
+        LabelsSource source = vectorizer.getLabelsSource();
+        assertEquals(2, source.getNumberOfLabelsUsed());
+        List<String> labels = source.getLabels();
+        assertEquals("dog", labels.get(0));
+        assertEquals("cat", labels.get(1));
     }
 
     @Test(timeout = 10000L)

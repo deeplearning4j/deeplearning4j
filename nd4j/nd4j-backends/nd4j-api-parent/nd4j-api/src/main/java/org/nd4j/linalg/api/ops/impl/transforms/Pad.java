@@ -20,7 +20,8 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.enums.PadMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -46,6 +47,24 @@ public class Pad extends DynamicCustomOp {
 
     public Pad(){ }
 
+    private static Mode adaptMode(PadMode mode) {
+        Mode legacyMode = Mode.CONSTANT;
+
+        if (mode == PadMode.CONSTANT) {
+            legacyMode = Mode.CONSTANT;
+        }
+        else if (mode == PadMode.REFLECT) {
+            legacyMode = Mode.REFLECT;
+        }
+        else if (mode == PadMode.SYMMETRIC) {
+            legacyMode = Mode.SYMMETRIC;
+        }
+        return legacyMode;
+    }
+
+    public Pad(SameDiff sd, SDVariable in, SDVariable padding, PadMode mode, double padValue) {
+        this(sd, in, padding, adaptMode(mode), padValue);
+    }
     public Pad(SameDiff sd, SDVariable in, SDVariable padding, Mode mode, double padValue) {
         super(sd, new SDVariable[]{in, padding}, false);
         Preconditions.checkState(padding.dataType().isIntType(), "Padding array must be an integer datatype, got %s", padding.dataType());
@@ -54,12 +73,28 @@ public class Pad extends DynamicCustomOp {
         addTArgument(padValue);
     }
 
+    public Pad(SameDiff sd, SDVariable in, SDVariable padding, double padValue) {
+        this(sd, in, padding, Mode.CONSTANT, padValue);
+    }
+
+    public Pad(@NonNull INDArray in, @NonNull INDArray padding, double padValue){
+        this(in, padding, null, Mode.CONSTANT, padValue);
+    }
+
+    public Pad(@NonNull INDArray in, @NonNull INDArray padding,  @NonNull PadMode mode, double padValue) {
+        this(in, padding, null, adaptMode(mode), padValue);
+    }
+
     public Pad(@NonNull INDArray in, @NonNull INDArray padding, INDArray out, @NonNull Mode mode, double padValue){
         super(null, new INDArray[]{in, padding}, out == null ? null : new INDArray[]{out});
         Preconditions.checkState(padding.dataType().isIntType(), "Padding array must be an integer datatype, got %s", padding.dataType());
         this.mode = mode;
         addIArgument(mode.ordinal());
         addTArgument(padValue);
+    }
+
+    public Pad(@NonNull INDArray in, @NonNull INDArray padding, INDArray out, @NonNull PadMode mode, double padValue) {
+        this(in, padding, out, adaptMode(mode), padValue);
     }
 
     @Override

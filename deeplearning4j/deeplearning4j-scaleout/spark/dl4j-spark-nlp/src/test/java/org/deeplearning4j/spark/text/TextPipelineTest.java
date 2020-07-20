@@ -31,10 +31,11 @@ import org.deeplearning4j.spark.text.functions.CountCumSum;
 import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.deeplearning4j.text.stopwords.StopWords;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Counter;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Counter;
+import org.nd4j.common.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -325,7 +326,7 @@ public class TextPipelineTest extends BaseSparkTest {
         sc.stop();
     }
 
-    @Test
+    @Test @Ignore   //AB 2020/04/20 https://github.com/eclipse/deeplearning4j/issues/8849
     public void testCountCumSum() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
@@ -350,7 +351,7 @@ public class TextPipelineTest extends BaseSparkTest {
      *
      * @throws Exception
      */
-    @Test
+    @Test @Ignore   //AB 2020/04/19 https://github.com/eclipse/deeplearning4j/issues/8849
     public void testZipFunction1() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
@@ -388,7 +389,7 @@ public class TextPipelineTest extends BaseSparkTest {
         sc.stop();
     }
 
-    @Test
+    @Test @Ignore   //AB 2020/04/19 https://github.com/eclipse/deeplearning4j/issues/8849
     public void testZipFunction2() throws Exception {
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);

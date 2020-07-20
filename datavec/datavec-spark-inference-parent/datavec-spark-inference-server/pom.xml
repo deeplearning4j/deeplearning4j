@@ -164,6 +164,13 @@
             <artifactId>spark-core_2.11</artifactId>
             <version>${spark.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>

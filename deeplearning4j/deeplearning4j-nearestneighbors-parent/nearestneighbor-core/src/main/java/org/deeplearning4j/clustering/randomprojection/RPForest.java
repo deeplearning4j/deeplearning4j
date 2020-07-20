@@ -18,10 +18,9 @@ package org.deeplearning4j.clustering.randomprojection;
 
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**

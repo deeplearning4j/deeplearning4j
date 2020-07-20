@@ -16,6 +16,7 @@
 
 package org.datavec.image.loader;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.Loader;
@@ -23,20 +24,19 @@ import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.datavec.image.data.Image;
 import org.datavec.image.data.ImageWritable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.Random;
 
@@ -53,6 +53,7 @@ import static org.junit.Assert.fail;
  *
  * @author saudet
  */
+@Slf4j
 public class TestNativeImageLoader {
     static final long seed = 10;
     static final Random rng = new Random(seed);
@@ -123,7 +124,7 @@ public class TestNativeImageLoader {
         try {
             array6 = loader5.asMatrix(new ClassPathResource(path2MitosisFile).getFile().getAbsolutePath());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
         assertEquals(5, array6.rank());
@@ -156,7 +157,7 @@ public class TestNativeImageLoader {
         try {
             array8 = loader7.asMatrix(new ClassPathResource(path2MitosisFile).getFile().getAbsolutePath());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         assertEquals(5, array8.rank());
         assertEquals(pages2, array8.size(0));
@@ -172,7 +173,7 @@ public class TestNativeImageLoader {
         try {
             array9 = loader8.asMatrix(new ClassPathResource(braintiff).getFile().getAbsolutePath());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
         assertEquals(5, array9.rank());
@@ -600,6 +601,58 @@ public class TestNativeImageLoader {
             String msg = e.getMessage();
             assertTrue(msg, msg.contains("decode image"));
         }
+    }
+
+    @Test
+    public void testNCHW_NHWC() throws Exception {
+        File f = Resources.asFile("datavec-data-image/voc/2007/JPEGImages/000005.jpg");
+
+        NativeImageLoader il = new NativeImageLoader(32, 32, 3);
+
+        //asMatrix(File, boolean)
+        INDArray a_nchw = il.asMatrix(f);
+        INDArray a_nchw2 = il.asMatrix(f, true);
+        INDArray a_nhwc = il.asMatrix(f, false);
+
+        assertEquals(a_nchw, a_nchw2);
+        assertEquals(a_nchw, a_nhwc.permute(0,3,1,2));
+
+
+        //asMatrix(InputStream, boolean)
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            a_nchw = il.asMatrix(is);
+        }
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            a_nchw2 = il.asMatrix(is, true);
+        }
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            a_nhwc = il.asMatrix(is, false);
+        }
+        assertEquals(a_nchw, a_nchw2);
+        assertEquals(a_nchw, a_nhwc.permute(0,3,1,2));
+
+
+        //asImageMatrix(File, boolean)
+        Image i_nchw = il.asImageMatrix(f);
+        Image i_nchw2 = il.asImageMatrix(f, true);
+        Image i_nhwc = il.asImageMatrix(f, false);
+
+        assertEquals(i_nchw.getImage(), i_nchw2.getImage());
+        assertEquals(i_nchw.getImage(), i_nhwc.getImage().permute(0,3,1,2));        //NHWC to NCHW
+
+
+        //asImageMatrix(InputStream, boolean)
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            i_nchw = il.asImageMatrix(is);
+        }
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            i_nchw2 = il.asImageMatrix(is, true);
+        }
+        try(InputStream is = new BufferedInputStream(new FileInputStream(f))){
+            i_nhwc = il.asImageMatrix(is, false);
+        }
+        assertEquals(i_nchw.getImage(), i_nchw2.getImage());
+        assertEquals(i_nchw.getImage(), i_nhwc.getImage().permute(0,3,1,2));        //NHWC to NCHW
     }
 
 }

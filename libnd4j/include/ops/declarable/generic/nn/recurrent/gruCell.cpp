@@ -111,7 +111,7 @@ DECLARE_SHAPE_FN(gruCell) {
     s0[2] = nU;
 
     ShapeUtils::updateStridesAndType(s0, x, shape::order(hLast));
-    auto ts0 = ConstantShapeHelper::getInstance()->createFromExisting(s0, block.workspace());
+    auto ts0 = ConstantShapeHelper::getInstance().createFromExisting(s0, block.workspace());
 
     //4 output shapes, all [bs, nU]
     return SHAPELIST(ts0, ts0, ts0, ts0);
@@ -161,7 +161,7 @@ CUSTOM_OP_IMPL(gruCell_bp, 10, 6, false, 0, 0) {
     REQUIRE_TRUE(dLdc->isSameShape(hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdc array (gradient wrt cell state), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdc).c_str());
     REQUIRE_TRUE(dLdh->isSameShape(hiCorrectShape),  0, "GRU_CELL_BP op: wrong shape of dLdh array (gradient wrt current cell output), expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hiCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdh).c_str());
 
-    helpers::gruCellBP(block.launchContext(), x, hi, W, Wc, b, bc, dLdr, dLdu, dLdc, dLdh, dLdx, dLdhi, dLdW, dLdWc, dLdb, dLdbc);
+    helpers::gruCellBp(block.launchContext(), x, hi, W, Wc, b, bc, dLdr, dLdu, dLdc, dLdh, dLdx, dLdhi, dLdW, dLdWc, dLdb, dLdbc);
 
     return Status::OK();
 }

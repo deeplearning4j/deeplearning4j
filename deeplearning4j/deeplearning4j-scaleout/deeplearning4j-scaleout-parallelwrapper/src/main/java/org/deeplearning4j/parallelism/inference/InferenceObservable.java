@@ -17,7 +17,7 @@
 package org.deeplearning4j.parallelism.inference;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 import java.util.Observer;

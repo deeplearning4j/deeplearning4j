@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -25,7 +26,7 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -45,6 +46,7 @@ import java.util.Map;
 public class ZeroPaddingLayer extends NoParamLayer {
 
     private int[] padding;
+    private CNN2DFormat dataFormat = CNN2DFormat.NCHW;
 
     public ZeroPaddingLayer(int padTopBottom, int padLeftRight) {
         this(new Builder(padTopBottom, padLeftRight));
@@ -63,6 +65,7 @@ public class ZeroPaddingLayer extends NoParamLayer {
         }
 
         this.padding = builder.padding;
+        this.dataFormat = builder.cnn2DFormat;
     }
 
     @Override
@@ -85,7 +88,9 @@ public class ZeroPaddingLayer extends NoParamLayer {
         int outH = hwd[0] + padding[0] + padding[1];
         int outW = hwd[1] + padding[2] + padding[3];
 
-        return InputType.convolutional(outH, outW, hwd[2]);
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+
+        return InputType.convolutional(outH, outW, hwd[2], c.getFormat());
     }
 
     @Override
@@ -107,6 +112,12 @@ public class ZeroPaddingLayer extends NoParamLayer {
                         .build();
     }
 
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        this.dataFormat = c.getFormat();
+    }
+
     @Getter
     @Setter
     public static class Builder extends Layer.Builder<Builder> {
@@ -116,6 +127,19 @@ public class ZeroPaddingLayer extends NoParamLayer {
          */
         @Setter(AccessLevel.NONE)
         private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
+
+        private CNN2DFormat cnn2DFormat = CNN2DFormat.NCHW;
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public Builder dataFormat(CNN2DFormat format){
+            this.cnn2DFormat = format;
+            return this;
+        }
 
         /**
          * @param padding Padding value for top, bottom, left, and right. Must be length 4 array

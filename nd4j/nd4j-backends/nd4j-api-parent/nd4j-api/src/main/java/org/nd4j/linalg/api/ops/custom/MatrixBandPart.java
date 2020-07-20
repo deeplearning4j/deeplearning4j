@@ -15,10 +15,11 @@
  ******************************************************************************/
 package org.nd4j.linalg.api.ops.custom;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -26,9 +27,8 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
+@NoArgsConstructor
 public class MatrixBandPart extends DynamicCustomOp {
-
-    public MatrixBandPart() {}
 
     public MatrixBandPart(@NonNull INDArray input, int minLower, int maxUpper) {
         Preconditions.checkArgument(input.rank() >= 2, "MatrixBandPart: Input rank should be 2 or higher");

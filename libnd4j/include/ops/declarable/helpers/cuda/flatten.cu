@@ -25,7 +25,7 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename T>
-            void _CUDA_G flattenKernel(void **xBuffers, Nd4jLong **xShapeInfos, Nd4jLong *offsets, Nd4jLong numInputs, void *zBuffer, Nd4jLong *zShapeInfo, char order) {
+            void _CUDA_G flattenKernel(void **xBuffers, Nd4jLong **xShapeInfos, Nd4jLong *offsets, Nd4jLong numInputs, void *zBuffer, const Nd4jLong *zShapeInfo, char order) {
 
                 int xCoord[MAX_RANK];
 
@@ -47,9 +47,9 @@ namespace sd {
             void flatten_(sd::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
                 PointersManager pm(context, "flatten");
 
-                std::vector<void*> hdBuffers(inputs.size());
+                std::vector<const void*> hdBuffers(inputs.size());
                 std::vector<Nd4jLong> hOffsets(inputs.size());
-                std::vector<Nd4jLong *> hdShapes(inputs.size());
+                std::vector<const Nd4jLong *> hdShapes(inputs.size());
                 Nd4jLong cOffset = 0;
 
                 // calculating offsets in output
@@ -67,7 +67,7 @@ namespace sd {
                 auto dOffsets = (Nd4jLong *) pm.replicatePointer(hOffsets.data(), inputs.size() * sizeof(Nd4jLong));
 
 
-                flattenKernel<T><<<256, 512, 8192, *context->getCudaStream()>>>(dBuffers, dShapes, dOffsets, inputs.size(), output->getSpecialBuffer(), output->getSpecialShapeInfo(), order);
+                flattenKernel<T><<<256, 512, 8192, *context->getCudaStream()>>>(dBuffers, dShapes, dOffsets, inputs.size(), output->specialBuffer(), output->specialShapeInfo(), order);
 
                 pm.synchronize();
             }

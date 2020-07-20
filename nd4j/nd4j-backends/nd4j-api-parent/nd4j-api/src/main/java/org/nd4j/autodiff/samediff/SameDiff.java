@@ -24,7 +24,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.listeners.*;
 import org.nd4j.autodiff.listeners.impl.HistoryListener;
 import org.nd4j.autodiff.listeners.records.History;
@@ -39,7 +38,7 @@ import org.nd4j.autodiff.samediff.config.OutputConfig;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
@@ -53,7 +52,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Assert;
@@ -73,11 +72,12 @@ import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.ND4JFileUtils;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.common.util.ND4JFileUtils;
 import org.nd4j.shade.guava.collect.HashBasedTable;
+import org.nd4j.shade.guava.collect.Sets;
 import org.nd4j.shade.guava.collect.Table;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.weightinit.WeightInitScheme;
@@ -93,7 +93,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
+import static org.nd4j.autodiff.util.SameDiffUtils.stackOutputs;
 
 /**
  * SameDiff is the entrypoint for ND4J's automatic differentiation functionality.
@@ -104,7 +104,6 @@ import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
  * <p>
  * In order to execute the graph, you run one of the execution methods, such as {@link #output(Map, String...)}
  */
-@AllArgsConstructor
 @Slf4j
 public class SameDiff extends SDBaseOps {
     protected static final String GRAD_FN_KEY = "grad";
@@ -140,7 +139,7 @@ public class SameDiff extends SDBaseOps {
 
     ////////////////////////////////////////
 
-    private DifferentialFunctionFactory functionFactory;
+//    private DifferentialFunctionFactory functionFactory;
 
     // counter for auto-naming variables
     private int variableId = 0;
@@ -180,6 +179,11 @@ public class SameDiff extends SDBaseOps {
      * Op creator object for bitwise operations
      */
     public final SDBitwise bitwise = new SDBitwise(this);
+
+    /**
+     * Op creator object for linalg operations
+     */
+    public final SDLinalg linalg = new SDLinalg(this);
 
     /**
      * Op creator object for math operations
@@ -237,6 +241,13 @@ public class SameDiff extends SDBaseOps {
         return bitwise;
     }
 
+    /**
+     * Op creator object for linalg operations
+     */
+    public SDLinalg linalg(){
+        return linalg;
+    }
+
     private Map<String, SameDiff> sameDiffFunctionInstances;
 
     private Table<String, String, String> fieldVariableResolutionMapping;
@@ -281,15 +292,6 @@ public class SameDiff extends SDBaseOps {
     public SameDiff enableDebugMode() {
         debugMode = true;
         return this;
-    }
-
-    /**
-     * Returns this samediff instance's {@link DifferentialFunctionFactory}
-     *
-     * @return DifferentialFunctionFactory
-     */
-    public DifferentialFunctionFactory f() {
-        return functionFactory;
     }
 
     /**
@@ -902,7 +904,8 @@ public class SameDiff extends SDBaseOps {
     }
 
     private SameDiff() {
-        functionFactory = new DifferentialFunctionFactory(this);
+        super(null);
+        super.sd = this;
         sameDiffFunctionInstances = new LinkedHashMap<>();
         fieldVariableResolutionMapping = HashBasedTable.create();
     }
@@ -3448,6 +3451,12 @@ public class SameDiff extends SDBaseOps {
                 sd.renameVariable(from, to);
             }
         }
+
+        //Check losses:
+        if(lossVariables.contains(from)){
+            int idx = lossVariables.indexOf(from);
+            lossVariables.set(idx, to);
+        }
     }
 
 
@@ -4526,7 +4535,7 @@ public class SameDiff extends SDBaseOps {
             }
 
             //Also exclude assert etc ops - doesn't make sense to return these "outputs" to user
-            if (v.getOutputOfOp() != null) {
+            if (v.getOutputOfOp() != null && v.getVariable().dataType().isFPType()) {
                 String opName = v.getOutputOfOp();
                 SameDiffOp o = ops.get(opName);
                 if (o.getOp() instanceof Assert) {
@@ -4601,12 +4610,6 @@ public class SameDiff extends SDBaseOps {
         varToUpdate.setVarName(newVarName);
         renameVariable(oldVarName, newVarName);
         return varToUpdate;
-    }
-
-    @Override
-    protected SameDiff sd() {
-        //Helper method for SDBaseOps etc
-        return this;
     }
 
 
@@ -5822,7 +5825,6 @@ public class SameDiff extends SDBaseOps {
      * See {@link #generateNewVarName(String, int, boolean)}
      * existingOp is true.
      */
-    @Override
     public String generateNewVarName(String base, int argIndex) {
         return generateNewVarName(base, argIndex, true);
     }
@@ -5849,5 +5851,257 @@ public class SameDiff extends SDBaseOps {
     @Override
     public String toString(){
         return "SameDiff(nVars=" + variables.size() + ",nOps=" + ops.size() + ")";
+    }
+
+
+
+    /**
+     * See {@link #ifCond(String, String, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda)}
+     */
+    public SDVariable ifCond(@NonNull SameDiffNoArgSingleLambda cond,
+                             @NonNull SameDiffNoArgSingleLambda trueBody, @NonNull SameDiffNoArgSingleLambda falseBody){
+        return ifCond(null, null, cond, trueBody, falseBody);
+    }
+
+
+    /**
+     * See {@link #ifCond(String, String, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda)}
+     */
+    public SDVariable ifCond(String ifName, @NonNull SameDiffNoArgSingleLambda cond,
+                             @NonNull SameDiffNoArgSingleLambda trueBody, @NonNull SameDiffNoArgSingleLambda falseBody){
+        return ifCond(null, ifName, cond, trueBody, falseBody);
+    }
+
+    /**
+     * Constructs a If statement using the tensorflow style control flow operations (Switch and Merge)
+     *
+     * If the result of cond is true, returns the result of trueBody, otherwise returns the result of falseBody
+     *
+     * Note that cond and body lambdas are only called once to construct the graph.  The constructed graph is used to evaluate.
+     *
+     * See <a href="http://download.tensorflow.org/paper/white_paper_tf_control_flow_implementation_2017_11_1.pdf">Tensorflow Control Flow Implementation</a>
+     *
+     * @param outputName Name to give the output variable.  If null, doesn't rename
+     * @param ifName  The name of the if block.  If null, uses "if"
+     * @param cond  A lambda evaluating to the if condition
+     * @param trueBody  A lambda to be executed if cond is true (the if block)
+     * @param falseBody  A lambda to be executed if cond is false (the else block)
+     * @return The value of trueBody if cond is true, or falseBody if it isn't
+     */
+    public SDVariable ifCond(String outputName, String ifName, @NonNull SameDiffNoArgSingleLambda cond,
+                             @NonNull SameDiffNoArgSingleLambda trueBody, @NonNull SameDiffNoArgSingleLambda falseBody){
+
+        ifName = newBlockName(ifName == null ? "if" : ifName);
+
+        NameScope ifScope = sd.withNameScope(ifName);
+
+        NameScope condScope = withNameScope("cond");
+        final SDVariable pred = cond.define(this);
+        condScope.close();
+
+        if (pred.dataType() != DataType.BOOL) {
+            //cleanup partially added block
+
+            for(SDVariable v : getVariablesInScope(ifScope))
+                this.getVariables().remove(v.name());
+
+            for(SameDiffOp op : this.getOpsInScope(ifScope)) {
+                for(String in : op.getInputsToOp()){
+                    this.removeArgFromOp(in, op.getOp());
+                }
+                this.getOps().remove(op.getName());
+            }
+
+
+            throw new IllegalStateException("Can not use " + pred.name()
+                    + " as the condition of an If statement, the condition must be a boolean.");
+        }
+
+        final Map<String, SDVariable[]> switches = new HashMap<>();
+
+        final Set<String> declared = Sets.newHashSet(this.variableMap().keySet());
+
+        this.addArgumentInterceptor(new ArgumentInterceptor() {
+            @Override
+            public SDVariable intercept(SDVariable argument) {
+
+                // if its declared in the if, we don't care acout it
+                if(!declared.contains(argument.name()))
+                    return argument;
+
+                // if we've already added a switch, move on
+                if(switches.containsKey(argument.name()))
+                    return switches.get(argument.name())[1];
+
+                SDVariable[] s = switchOp(argument, pred);
+                switches.put(argument.name(), s);
+                return s[1];
+            }
+        });
+        NameScope trueScope = this.withNameScope("trueBody");
+        SDVariable trueOut = trueBody.define(this);
+        this.removeArgumentInterceptor();
+
+        if(declared.contains(trueOut.name())) {
+            SDVariable[] s = switchOp(trueOut, pred);
+            switches.put(trueOut.name(), s);
+            trueOut = s[1];
+        }
+
+        trueScope.close();
+
+        final Set<String> declared2 = Sets.newHashSet(variableMap().keySet());
+        sd.addArgumentInterceptor(new ArgumentInterceptor() {
+            @Override
+            public SDVariable intercept(SDVariable argument) {
+
+                // if its declared in the if, we don't care acout it
+                if(!declared2.contains(argument.name()))
+                    return argument;
+
+                // if we've already added a switch, move on
+                if(switches.containsKey(argument.name()))
+                    return switches.get(argument.name())[0];
+
+                SDVariable[] s = switchOp(argument, pred);
+                switches.put(argument.name(), s);
+                return s[0];
+            }
+        });
+        NameScope falseScope = this.withNameScope("falseBody");
+        SDVariable falseOut = falseBody.define(this);
+        this.removeArgumentInterceptor();
+
+        if(declared2.contains(falseOut.name())) {
+            SDVariable[] s = switchOp(falseOut, pred);
+            switches.put(falseOut.name(), s);
+            falseOut = s[0];
+        }
+        falseScope.close();
+
+        SDVariable output = merge(trueOut, falseOut);
+
+        ifScope.close();
+
+        return updateVariableNameAndReference(output, outputName);
+    }
+
+    /**
+     * See {@link #whileLoop(String[], String, SDVariable[], SameDiffSingleLambda, SameDiffLambda)}
+     */
+    public SDVariable[] whileLoop(@NonNull SDVariable[] loopVars,
+                                  @NonNull SameDiffSingleLambda cond, @NonNull SameDiffLambda body){
+        return whileLoop(null, null, loopVars, cond, body);
+    }
+
+    /**
+     * See {@link #whileLoop(String[], String, SDVariable[], SameDiffSingleLambda, SameDiffLambda)}
+     */
+    public SDVariable[] whileLoop(String loopName, @NonNull SDVariable[] loopVars,
+                                  @NonNull SameDiffSingleLambda cond, @NonNull SameDiffLambda body){
+        return whileLoop(null, loopName, loopVars, cond, body);
+    }
+
+
+    /**
+     * Constructs a While loop using the tensorflow style control flow operations (Switch, Merge, Enter, Exit, and NextIteration)
+     *
+     * Repeatedly executes body on the loop variables and updates them with the results, until cond evaluates to false
+     *
+     * Note that cond and body lambdas are only called once to construct the graph.  The constructed graph is used for further iterations.
+     *
+     * See <a href="http://download.tensorflow.org/paper/white_paper_tf_control_flow_implementation_2017_11_1.pdf">Tensorflow Control Flow Implementation</a>
+     *
+     * @param outputNames  Names to give the output variables.  If null, doesn't rename
+     * @param loopName  The name of the loop block and frame (must be unique).  If null, uses "if"
+     * @param loopVars  Loop variables' inputs
+     * @param cond  A lambda evaluating to the loop condition
+     * @param body  A lambda doing the loop operation and returning the new loop variable values
+     * @return  The values of the loop variables once condition is false
+     */
+    public SDVariable[] whileLoop(String[] outputNames, final String loopName, @NonNull SDVariable[] loopVars,
+                                  @NonNull SameDiffSingleLambda cond, @NonNull SameDiffLambda body){
+
+        final String frameName = this.newBlockName(loopName == null ? "while" : loopName);
+
+        NameScope loopScope = this.withNameScope(frameName);
+
+        //SDVariable counter = SD.scalar(SD.generateNewVarName("counter", 0), 0);
+
+        SDVariable[] entered = new SDVariable[loopVars.length];
+        for(int i = 0 ; i < loopVars.length ; i++){
+            entered[i] = new Enter(this, frameName, loopVars[i]).outputVariable();
+        }
+
+        SDVariable[] merged = new SDVariable[loopVars.length];
+        Merge[] mergeOps = new Merge[loopVars.length];
+        for(int i = 0 ; i < loopVars.length ; i++){
+            // the second arg will later be replaced with the output of NextIteration
+            // but that isn't available yet (and can't be, as it depends on this)
+            mergeOps[i] = new Merge(this, entered[i], entered[i]);
+            merged[i] = mergeOps[i].outputVariable();
+        }
+
+        //Merge counterMerge = new Merge(SD, counter, counter);
+        //counter = counterMerge.outputVariable();
+
+        NameScope condScope = this.withNameScope("cond");
+        SDVariable cond_result = cond.define(this, merged);
+        condScope.close();
+
+
+        if (cond_result.dataType() != DataType.BOOL)
+            throw new IllegalStateException("Can not use " + cond_result.name() + " as the condition of an While loop, the condition must be a boolean.");
+
+
+        final Set<String> alreadyEntered = Sets.newHashSet();
+        SDVariable[] trueSwitches = new SDVariable[loopVars.length];
+        SDVariable[] exits = new SDVariable[loopVars.length];
+        for(int i = 0 ; i < loopVars.length ; i++){
+            SDVariable[] s = switchOp(merged[i], cond_result);
+            trueSwitches[i] = s[1];
+            alreadyEntered.add(s[1].name());
+            exits[i] = new Exit(this, s[0]).outputVariable();
+        }
+
+        final Set<String> declared = Sets.newHashSet(this.variableMap().keySet());
+        final Map<String, SDVariable> done = new HashMap<>();
+
+        final SameDiff sd = this;
+        this.addArgumentInterceptor(new ArgumentInterceptor() {
+            @Override
+            public SDVariable intercept(SDVariable argument) {
+
+                if(!declared.contains(argument.name()))
+                    return argument;
+
+                if(alreadyEntered.contains(argument.name()))
+                    return argument;
+
+                if(done.containsKey(argument.name()))
+                    return done.get(argument.name());
+
+                SDVariable e = new Enter(sd, frameName, argument, true).outputVariable();
+                done.put(argument.name(), e);
+                return e;
+            }
+        });
+
+        NameScope bodyScope = this.withNameScope("body");
+        SDVariable[] outs = body.define(this, trueSwitches);
+        bodyScope.close();
+        this.removeArgumentInterceptor();
+
+        //counter.add(1);
+
+        for(int i = 0 ; i < loopVars.length ; i++){
+            SDVariable n = new NextIteration(this, outs[i]).outputVariable();
+            mergeOps[i].replaceArg(1,n);
+        }
+
+        //counterMerge.replaceArg(1, counter);
+
+        loopScope.close();
+        return updateVariableNamesAndReferences(exits, outputNames);
     }
 }

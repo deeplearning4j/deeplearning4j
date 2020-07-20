@@ -18,7 +18,6 @@ package org.deeplearning4j.spark.util;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -44,15 +43,13 @@ import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction2;
 import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
-import org.deeplearning4j.spark.impl.common.repartition.EqualPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.HashingBalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
 import org.deeplearning4j.spark.impl.repartitioner.EqualRepartitioner;
-import org.deeplearning4j.util.UIDProvider;
+import org.deeplearning4j.core.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.MathUtils;
 import org.slf4j.Logger;
 import scala.Tuple2;
 
@@ -73,8 +70,8 @@ public class SparkUtils {
     private static final String KRYO_EXCEPTION_MSG = "Kryo serialization detected without an appropriate registrator "
                     + "for ND4J INDArrays.\nWhen using Kryo, An appropriate Kryo registrator must be used to avoid"
                     + " serialization issues (NullPointerException) with off-heap data in INDArrays.\n"
-                    + "Use nd4j-kryo_2.10 or _2.11 artifact, with sparkConf.set(\"spark.kryo.registrator\", \"org.nd4j.Nd4jRegistrator\");\n"
-                    + "See https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-howto#kryo for more details";
+                    + "Use nd4j-kryo_2.10 or _2.11 artifact, with sparkConf.set(\"spark.kryo.registrator\", \"org.nd4j.kryo.Nd4jRegistrator\");\n"
+                    + "See https://deeplearning4j.konduit.ai/distributed-deep-learning/howto#how-to-use-kryo-serialization-with-dl-4-j-and-nd-4-j for more details";
 
     private static String sparkExecutorId;
 
@@ -92,7 +89,7 @@ public class SparkUtils {
         String serializer = javaSparkContext.getConf().get("spark.serializer", null);
         if (serializer != null && serializer.equals("org.apache.spark.serializer.KryoSerializer")) {
             String kryoRegistrator = javaSparkContext.getConf().get("spark.kryo.registrator", null);
-            if (kryoRegistrator == null || !kryoRegistrator.equals("org.nd4j.Nd4jRegistrator")) {
+            if (kryoRegistrator == null || !kryoRegistrator.equals("org.nd4j.kryo.Nd4jRegistrator")) {
 
                 //It's probably going to fail later due to Kryo failing on the INDArray deserialization (off-heap data)
                 //But: the user might be using a custom Kryo registrator that can handle ND4J INDArrays, even if they

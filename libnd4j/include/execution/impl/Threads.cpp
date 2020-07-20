@@ -357,7 +357,7 @@ namespace samediff {
             return 1;
         }
 
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+        auto ticket = ThreadPool::getInstance().tryAcquire(numThreads);
         if (ticket != nullptr) {
             // if we got our threads - we'll run our jobs here
             auto span = delta / numThreads;
@@ -449,7 +449,7 @@ namespace samediff {
             // but we still mimic multithreaded execution
             return numThreads;
         } else {
-            auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+            auto ticket = ThreadPool::getInstance().tryAcquire(numThreads);
             if (ticket != nullptr) {
 
                 for (int e = 0; e < numThreads; e++) {
@@ -499,7 +499,7 @@ namespace samediff {
             return 1;
         }
 
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+        auto ticket = ThreadPool::getInstance().tryAcquire(numThreads);
         if (ticket != nullptr) {
             auto splitLoop = ThreadsHelper::pickLoop3d(numThreads, itersX, itersY, itersZ);
 
@@ -526,7 +526,7 @@ namespace samediff {
     }
 
     int Threads::parallel_do(FUNC_DO function, uint64_t numThreads) {
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+        auto ticket = ThreadPool::getInstance().tryAcquire(numThreads - 1);
         if (ticket != nullptr) {
 
             // submit tasks one by one
@@ -565,13 +565,13 @@ namespace samediff {
         if (numThreads == 1)
             return function(0, start, stop, increment);
 
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+        auto ticket = ThreadPool::getInstance().tryAcquire(numThreads - 1);
         if (ticket == nullptr)
             return function(0, start, stop, increment);
 
         // create temporary array
         int64_t intermediatery[256];
-        auto span = delta / numThreads;
+        auto span = (numElements / numThreads) - (numElements % numThreads);
 
         // execute threads in parallel
         for (uint32_t e = 0; e < numThreads; e++) {
@@ -609,13 +609,13 @@ namespace samediff {
         if (numThreads == 1)
             return function(0, start, stop, increment);
 
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
+        auto ticket = ThreadPool::getInstance().tryAcquire(numThreads - 1);
         if (ticket == nullptr)
             return function(0, start, stop, increment);
 
         // create temporary array
         double intermediatery[256];
-        auto span = delta / numThreads;
+        auto span = (numElements / numThreads) - (numElements % numThreads);
 
         // execute threads in parallel
         for (uint32_t e = 0; e < numThreads; e++) {
@@ -668,7 +668,7 @@ namespace samediff {
         numThreads = static_cast<int>(std::ceil((double)delta / spand));
         auto span  = static_cast<Nd4jLong>(spand);
 
-        auto ticket = samediff::ThreadPool::getInstance()->tryAcquire(numThreads);
+        auto ticket = samediff::ThreadPool::getInstance().tryAcquire(numThreads);
         if (ticket != nullptr) {
             //tail_add is additional value of the last part
             //it could be negative or positive

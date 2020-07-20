@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -66,6 +66,10 @@ public class OneHot extends DynamicCustomOp {
         this(indices, output, depth, -1, 1, 0);
     }
 
+    public OneHot(INDArray indices, int depth) {
+        this(indices, null, depth, 0, 1.0, 0.0);
+    }
+
     public OneHot(INDArray indices, INDArray output, int depth, int axis, double on, double off) {
         super(null, indices, output, null, null);
         this.depth = depth;
@@ -75,8 +79,16 @@ public class OneHot extends DynamicCustomOp {
         addArgs();
     }
 
+    public OneHot(INDArray indices, int depth, int axis, double on, double off) {
+        this(indices, null, depth, axis, on, off);
+    }
 
-
+    public OneHot(INDArray indices, int depth, int axis, double on, double off, DataType dataType) {
+        this(indices, null, depth, axis, on, off);
+        this.outputType = dataType;
+        if (outputType != null)
+            addDArgument(outputType);
+    }
 
     protected void addArgs() {
         addIArgument(jaxis);

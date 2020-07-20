@@ -36,7 +36,7 @@ import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.InMemoryLookupCache;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
-import org.deeplearning4j.text.sentenceiterator.UimaSentenceIterator;
+import org.deeplearning4j.nlp.uima.sentenceiterator.UimaSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -48,9 +48,9 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.rules.Timeout;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.shade.guava.primitives.Doubles;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -856,15 +856,26 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
 
     @Test
     public void testFastText() {
-
-        File[] files = {fastTextRaw, fastTextZip, fastTextGzip};
+        File[] files = { fastTextRaw, fastTextZip, fastTextGzip };
         for (File file : files) {
             try {
                 Word2Vec word2Vec = WordVectorSerializer.readAsCsv(file);
-                assertEquals(99,  word2Vec.getVocab().numWords());
+                assertEquals(99, word2Vec.getVocab().numWords());
+            } catch (Exception readCsvException) {
+                fail("Failure for input file " + file.getAbsolutePath() + " " + readCsvException.getMessage());
+            }
+        }
+    }
 
-            } catch (Exception e) {
-                fail("Failure for input file " + file.getAbsolutePath() + " " + e.getMessage());
+    @Test
+    public void testFastText_readWord2VecModel() {
+        File[] files = { fastTextRaw, fastTextZip, fastTextGzip };
+        for (File file : files) {
+            try {
+                Word2Vec word2Vec = WordVectorSerializer.readWord2VecModel(file);
+                assertEquals(99, word2Vec.getVocab().numWords());
+            } catch (Exception readCsvException) {
+                fail("Failure for input file " + file.getAbsolutePath() + " " + readCsvException.getMessage());
             }
         }
     }

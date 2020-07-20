@@ -19,12 +19,13 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -52,19 +53,27 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
     private int inputHeight;
     private int inputWidth;
     private int numChannels;
-
+    private RNNFormat rnnDataFormat = RNNFormat.NCW;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private int product;
 
     public RnnToCnnPreProcessor(@JsonProperty("inputHeight") int inputHeight,
-                    @JsonProperty("inputWidth") int inputWidth, @JsonProperty("numChannels") int numChannels) {
+                                @JsonProperty("inputWidth") int inputWidth,
+                                @JsonProperty("numChannels") int numChannels,
+                                @JsonProperty("rnnDataFormat") RNNFormat rnnDataFormat) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
         this.product = inputHeight * inputWidth * numChannels;
+        this.rnnDataFormat = rnnDataFormat;
     }
 
+    public RnnToCnnPreProcessor(int inputHeight,
+                                int inputWidth,
+                                int numChannels){
+        this(inputHeight, inputWidth, numChannels, RNNFormat.NCW);
+    }
 
     @Override
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
@@ -72,6 +81,9 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
             input = input.dup('f');
         //Input: 3d activations (RNN)
         //Output: 4d activations (CNN)
+        if (rnnDataFormat == RNNFormat.NWC){
+            input = input.permute(0, 2, 1);
+        }
         val shape = input.shape();
         INDArray in2d;
         if (shape[0] == 1) {
@@ -98,14 +110,17 @@ public class RnnToCnnPreProcessor implements InputPreProcessor {
         val shape = output.shape();
         //First: reshape 4d to 2d
         INDArray twod = output.reshape('c', output.size(0), ArrayUtil.prod(output.shape()) / output.size(0));
-        //Second: reshape 2d to 4d
+        //Second: reshape 2d to 3d
         INDArray reshaped = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, twod, 'f').reshape('f', miniBatchSize, shape[0] / miniBatchSize, product);
-        return reshaped.permute(0, 2, 1);
+        if (rnnDataFormat == RNNFormat.NCW) {
+            reshaped = reshaped.permute(0, 2, 1);
+        }
+        return reshaped;
     }
 
     @Override
     public RnnToCnnPreProcessor clone() {
-        return new RnnToCnnPreProcessor(inputHeight, inputWidth, numChannels);
+        return new RnnToCnnPreProcessor(inputHeight, inputWidth, numChannels, rnnDataFormat);
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -49,9 +50,12 @@ public class ScalarAdd extends BaseScalarOp {
         this(arr, 0);
     }
 
+    public ScalarAdd(@NonNull SameDiff sameDiff, @NonNull SDVariable i_v, Number scalar) {
+        this(sameDiff, i_v, scalar, false);
+    }
+
     public ScalarAdd(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace) {
         super(sameDiff, i_v, scalar, inPlace);
-
     }
 
     public ScalarAdd(SameDiff sameDiff, SDVariable i_v, Number scalar, boolean inPlace, Object[] extraArgs) {

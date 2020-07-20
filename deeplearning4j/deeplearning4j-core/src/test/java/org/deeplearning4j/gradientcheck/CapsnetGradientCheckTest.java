@@ -43,6 +43,11 @@ import java.util.Random;
 
 public class CapsnetGradientCheckTest extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testCapsNet() {
 

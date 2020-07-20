@@ -20,8 +20,8 @@ import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.loss.bp.MeanSquaredErrorLossBp;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -34,6 +34,11 @@ public class MeanSquaredErrorLoss extends BaseLoss {
 
     public MeanSquaredErrorLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels){
         super(sameDiff, lossReduce, predictions, weights, labels);
+    }
+
+    public MeanSquaredErrorLoss(SameDiff sameDiff, SDVariable labels, SDVariable predictions, SDVariable weights,
+                                LossReduce lossReduce) {
+        this(sameDiff, lossReduce, predictions, weights, labels);
     }
 
     public MeanSquaredErrorLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce){
@@ -51,8 +56,7 @@ public class MeanSquaredErrorLoss extends BaseLoss {
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //No external gradient
         //Args are: predictions, weights, label
-        SDVariable[] grads = f().lossMeanSquaredErrorBp(arg(2), arg(0), arg(1), lossReduce);
-        return Arrays.asList(grads);
+        return new MeanSquaredErrorLossBp(sameDiff, lossReduce, arg(0), arg(1), arg(2)).outputs();
     }
 
 }

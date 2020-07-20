@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.mkldnn;
 
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -34,8 +35,8 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Collections;
 import java.util.Map;
@@ -59,14 +60,23 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
+    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides, int[] pad,
+                                                     PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation,
+                                                     CNN2DFormat format, LayerWorkspaceMgr workspaceMgr) {
         if(poolingType == PoolingType.SUM || poolingType == PoolingType.PNORM)
             return null;
 
         INDArray gradAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape());
 
+        int hIdx = 2;
+        int wIdx = 3;
+        if(format == CNN2DFormat.NHWC){
+            hIdx = 1;
+            wIdx = 2;
+        }
+
         if (convolutionMode == ConvolutionMode.Same) {
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(new int[]{(int)epsilon.size(2), (int)epsilon.size(3)}, new int[] {(int)input.size(2), (int)input.size(3)}, kernel, strides, dilation);
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(new int[]{(int)epsilon.size(hIdx), (int)epsilon.size(wIdx)}, new int[] {(int)input.size(hIdx), (int)input.size(wIdx)}, kernel, strides, dilation);
         }
 
         Pooling2DConfig conf = Pooling2DConfig.builder()
@@ -75,7 +85,7 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
                 .sH(strides[0]).sW(strides[1])
                 .dH(dilation[0]).dW(dilation[1])
                 .pH(pad[0]).pW(pad[1])
-                .isNHWC(false)
+                .isNHWC(format == CNN2DFormat.NHWC)
                 .build();
 
         switch (poolingType){
@@ -94,16 +104,26 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
     }
 
     @Override
-    public INDArray activate(INDArray input, boolean training, int[] kernel, int[] strides, int[] pad, PoolingType poolingType, ConvolutionMode convolutionMode, int[] dilation, LayerWorkspaceMgr workspaceMgr) {
-        int[] outSize;
-        if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int)input.size(2), (int)input.size(3)}, kernel, strides, dilation);
-        } else {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+    public INDArray activate(INDArray input, boolean training, int[] kernel, int[] strides, int[] pad, PoolingType poolingType,
+                             ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format, LayerWorkspaceMgr workspaceMgr) {
+
+        int hIdx = 2;
+        int wIdx = 3;
+        if(format == CNN2DFormat.NHWC){
+            hIdx = 1;
+            wIdx = 2;
         }
 
-        long[] outShape = new long[]{input.size(0), input.size(1), outSize[0], outSize[1]};
+        int[] outSize;
+        if (convolutionMode == ConvolutionMode.Same) {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, format); //Also performs validation
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int)input.size(hIdx), (int)input.size(wIdx)}, kernel, strides, dilation);
+        } else {
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, format); //Also performs validation
+        }
+
+        long[] outShape = format == CNN2DFormat.NCHW ? new long[]{input.size(0), input.size(1), outSize[0], outSize[1]} :
+                new long[]{input.size(0), outSize[0], outSize[1], input.size(3)};
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), outShape);
 
         if(context == null){
@@ -115,7 +135,7 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
                     dilation[0], dilation[1],
                     ArrayUtil.fromBoolean(convolutionMode == ConvolutionMode.Same),
                     0,  //Extra - not used?
-                    0); //0 = NCHW
+                    format == CNN2DFormat.NCHW ? 0 : 1); //0 = NCHW, 1=NHWC
         }
 
         DynamicCustomOp op;

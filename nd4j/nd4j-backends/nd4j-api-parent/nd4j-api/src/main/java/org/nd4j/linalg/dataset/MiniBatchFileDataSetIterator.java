@@ -16,12 +16,13 @@
 
 package org.nd4j.linalg.dataset;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.util.ND4JFileUtils;
+import org.nd4j.common.util.ND4JFileUtils;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import java.util.UUID;
  * Mini batch file datasetiterator
  * auto partitions a dataset in to mini batches
  */
+@Slf4j
 public class MiniBatchFileDataSetIterator implements DataSetIterator {
     private int batchSize;
     private List<String[]> paths;
@@ -75,7 +77,7 @@ public class MiniBatchFileDataSetIterator implements DataSetIterator {
                     try {
                         FileUtils.deleteDirectory(MiniBatchFileDataSetIterator.this.rootDir);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        log.error("",e);
                     }
                 }
             }));

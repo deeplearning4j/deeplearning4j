@@ -42,33 +42,33 @@ public:
 TEST_F(DataBufferTestsCuda, test_alloc_limit_1) {
     auto deviceId = AffinityManager::currentDeviceId();
 
-    auto odLimit = MemoryCounter::getInstance()->deviceLimit(deviceId);
+    auto odLimit = MemoryCounter::getInstance().deviceLimit(deviceId);
 
-    auto opLimit = MemoryCounter::getInstance()->groupLimit(MemoryType::HOST);
-    auto osLimit = MemoryCounter::getInstance()->groupLimit(MemoryType::DEVICE);
+    auto opLimit = MemoryCounter::getInstance().groupLimit(MemoryType::HOST);
+    auto osLimit = MemoryCounter::getInstance().groupLimit(MemoryType::DEVICE);
 
-    auto odUse = MemoryCounter::getInstance()->allocatedDevice(deviceId);
+    auto odUse = MemoryCounter::getInstance().allocatedDevice(deviceId);
 
-    auto opUse = MemoryCounter::getInstance()->allocatedGroup(MemoryType::HOST);
-    auto osUse = MemoryCounter::getInstance()->allocatedGroup(MemoryType::DEVICE);
+    auto opUse = MemoryCounter::getInstance().allocatedGroup(MemoryType::HOST);
+    auto osUse = MemoryCounter::getInstance().allocatedGroup(MemoryType::DEVICE);
 
     auto limitSize = odUse + 150000000;
     auto allocSize = 100000000;
 
-    MemoryCounter::getInstance()->setDeviceLimit(deviceId, odLimit + limitSize);
-    MemoryCounter::getInstance()->setGroupLimit(MemoryType::HOST, opLimit + limitSize);
-    MemoryCounter::getInstance()->setGroupLimit(MemoryType::DEVICE, osLimit + limitSize);
+    MemoryCounter::getInstance().setDeviceLimit(deviceId, odLimit + limitSize);
+    MemoryCounter::getInstance().setGroupLimit(MemoryType::HOST, opLimit + limitSize);
+    MemoryCounter::getInstance().setGroupLimit(MemoryType::DEVICE, osLimit + limitSize);
 
     DataBuffer buffer(allocSize, DataType::INT32, nullptr, true);
 
     // separately testing per-device limits and group limits
-    ASSERT_EQ(odUse + allocSize, MemoryCounter::getInstance()->allocatedDevice(deviceId));
-    ASSERT_EQ(opUse + allocSize, MemoryCounter::getInstance()->allocatedGroup(MemoryType::HOST));
-    ASSERT_EQ(osUse + allocSize, MemoryCounter::getInstance()->allocatedGroup(MemoryType::DEVICE));
+    ASSERT_EQ(odUse + allocSize, MemoryCounter::getInstance().allocatedDevice(deviceId));
+    ASSERT_EQ(opUse + allocSize, MemoryCounter::getInstance().allocatedGroup(MemoryType::HOST));
+    ASSERT_EQ(osUse + allocSize, MemoryCounter::getInstance().allocatedGroup(MemoryType::DEVICE));
 
     // setting smaller limits, to make sure next allocation fails with OOM exception
-    MemoryCounter::getInstance()->setDeviceLimit(deviceId, allocSize - 100);
-    MemoryCounter::getInstance()->setGroupLimit(MemoryType::DEVICE, allocSize - 100);
+    MemoryCounter::getInstance().setDeviceLimit(deviceId, allocSize - 100);
+    MemoryCounter::getInstance().setGroupLimit(MemoryType::DEVICE, allocSize - 100);
 
 
     // this allocation should fail, since we're allocating too much
@@ -82,8 +82,8 @@ TEST_F(DataBufferTestsCuda, test_alloc_limit_1) {
     //
 
     // restore original limits, so subsequent tests do not fail
-    MemoryCounter::getInstance()->setDeviceLimit(deviceId, odLimit);
-    MemoryCounter::getInstance()->setGroupLimit(MemoryType::HOST, opLimit);
-    MemoryCounter::getInstance()->setGroupLimit(MemoryType::DEVICE, osLimit);
+    MemoryCounter::getInstance().setDeviceLimit(deviceId, odLimit);
+    MemoryCounter::getInstance().setGroupLimit(MemoryType::HOST, opLimit);
+    MemoryCounter::getInstance().setGroupLimit(MemoryType::DEVICE, osLimit);
 }
  */

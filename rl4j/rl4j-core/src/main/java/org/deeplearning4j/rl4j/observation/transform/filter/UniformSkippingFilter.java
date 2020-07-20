@@ -16,7 +16,7 @@
 package org.deeplearning4j.rl4j.observation.transform.filter;
 
 import org.deeplearning4j.rl4j.observation.transform.FilterOperation;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import java.util.Map;
 
 /**

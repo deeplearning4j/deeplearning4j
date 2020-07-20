@@ -16,12 +16,14 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidDerivative;
 
 import java.util.Collections;
@@ -32,8 +34,8 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
+@NoArgsConstructor
 public class HardSigmoid extends BaseTransformStrictOp {
-    public HardSigmoid() {}
 
     public HardSigmoid(INDArray x, INDArray z) {
         super(x, z);
@@ -45,6 +47,10 @@ public class HardSigmoid extends BaseTransformStrictOp {
 
     public HardSigmoid(SameDiff sameDiff, SDVariable in, boolean inPlace){
         super(sameDiff, in, inPlace);
+    }
+
+    public HardSigmoid(SameDiff sameDiff, SDVariable in){
+        this(sameDiff, in, false);
     }
 
     @Override
@@ -69,7 +75,7 @@ public class HardSigmoid extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().hardSigmoidBp(arg(), f1.get(0)));
+        return new HardSigmoidBp(sameDiff, arg(), f1.get(0)).outputs();
     }
 
 

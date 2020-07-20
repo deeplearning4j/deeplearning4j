@@ -53,9 +53,9 @@ static void rgbToGrs_(const NDArray& input, NDArray& output, const int dimC) {
 
         int coords[MAX_RANK];
         for (auto i = start; i < stop; i++) {
-            shape::index2coordsCPU(start, i, output.getShapeInfo(), coords);
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
-            const auto xOffset0 =  shape::getOffset(input.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, output.shapeInfo(), coords);
+            const auto zOffset = shape::getOffset(output.shapeInfo(), coords);
+            const auto xOffset0 =  shape::getOffset(input.shapeInfo(), coords);
             const auto xOffset1 = xOffset0 + input.strideAt(dimC);
             const auto xOffset2 = xOffset1 + input.strideAt(dimC);
             z[zOffset] = 0.2989f*x[xOffset0] + 0.5870f*x[xOffset1] + 0.1140f*x[xOffset2];
@@ -91,8 +91,8 @@ FORCEINLINE static void rgbToFromYuv_(const NDArray& input, NDArray& output, con
         return;
     }
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimC);
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), dimC);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimC);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), dimC);
 
     const Nd4jLong numOfTads = packX.numberOfTads();
     const Nd4jLong xDimCstride = input.stridesOf()[dimC];
@@ -149,8 +149,8 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
         samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     }
     else {
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
         const Nd4jLong numOfTads = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];
@@ -199,8 +199,8 @@ FORCEINLINE static void tripleTransformer(const NDArray* input, NDArray* output,
         samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     }
     else {
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
         const Nd4jLong numOfTads = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];

@@ -21,7 +21,6 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.commons.math3.ml.clustering.KMeansPlusPlusClusterer;
 import org.deeplearning4j.clustering.cluster.Cluster;
 import org.deeplearning4j.clustering.cluster.ClusterSet;
 import org.deeplearning4j.clustering.cluster.ClusterUtils;
@@ -33,14 +32,13 @@ import org.deeplearning4j.clustering.strategy.ClusteringStrategy;
 import org.deeplearning4j.clustering.strategy.ClusteringStrategyType;
 import org.deeplearning4j.clustering.strategy.OptimisationStrategy;
 import org.deeplearning4j.clustering.util.MultiThreadUtils;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 
 /**

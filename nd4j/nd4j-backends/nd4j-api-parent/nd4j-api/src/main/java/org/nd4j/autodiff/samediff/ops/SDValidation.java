@@ -55,6 +55,15 @@ public class SDValidation {
                     v.name() + "\" with non-integer data type " + v.dataType());
     }
 
+    protected static void validateNumerical(String opName, String inputName, SDVariable[] vars) {
+        for (SDVariable v : vars) {
+            if (v == null) continue;
+            if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
+                throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an numerical type type; got variable \"" +
+                        v.name() + "\" with non-integer data type " + v.dataType());
+        }
+    }
+
     /**
      * Validate that the operation is being applied on numerical SDVariables (not boolean or utf8).
      * Some operations (such as sum, norm2, add(Number) etc don't make sense when applied to boolean/utf8 arrays
@@ -95,6 +104,16 @@ public class SDValidation {
         if (!v.dataType().isIntType())
             throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an integer type; got variable \"" +
                     v.name() + "\" with non-integer data type " + v.dataType());
+    }
+
+    protected static void validateInteger(String opName, String inputName, SDVariable[] vars) {
+        for (SDVariable v : vars) {
+            if (v == null)
+                return;
+            if (!v.dataType().isIntType())
+                throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an integer type; got variable \"" +
+                        v.name() + "\" with non-integer data type " + v.dataType());
+        }
     }
 
     /**
@@ -200,4 +219,18 @@ public class SDValidation {
         }
     }
 
+    public static boolean isSameType(SDVariable x, SDVariable y) {
+        return x.dataType() == y.dataType();
+    }
+
+    public static boolean isSameType(SDVariable[] x) {
+        DataType firstDataType = x[0].dataType();
+        if (x.length > 1) {
+            for (int i = 1; i < x.length; ++i) {
+                if (firstDataType != x[i].dataType())
+                    return false;
+            }
+        }
+        return true;
+    }
 }

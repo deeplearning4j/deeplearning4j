@@ -36,21 +36,24 @@ import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
 
 public class RegressionTest100b3 extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
+    }
 
     @Override
     public DataType getDataType(){

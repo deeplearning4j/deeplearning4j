@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -102,7 +103,7 @@ public class KerasEmbedding extends KerasLayer {
                     "on Embedding layers. Zero Masking for the Embedding layer only works with unidirectional LSTM for now."
                     + " If you want to have this behaviour for your imported model " +
                     "in DL4J, apply masking as a pre-processing step to your input." +
-                    "See http://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent#masking for more on this.");
+                    "See https://deeplearning4j.konduit.ai/models/recurrent#masking-one-to-many-many-to-one-and-sequence-classification for more on this.");
 
         IWeightInit init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
@@ -121,6 +122,7 @@ public class KerasEmbedding extends KerasLayer {
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization)
+                .outputDataFormat(RNNFormat.NWC)
                 .hasBias(false);
         if (embeddingConstraint != null)
             builder.constrainWeights(embeddingConstraint);

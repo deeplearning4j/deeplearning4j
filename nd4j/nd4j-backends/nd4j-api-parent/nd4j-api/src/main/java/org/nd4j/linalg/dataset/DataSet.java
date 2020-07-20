@@ -18,17 +18,17 @@ package org.nd4j.linalg.dataset;
 
 import org.nd4j.shade.guava.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.util.MathUtils;
 
 import java.io.*;
 import java.util.*;
@@ -329,7 +329,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             dos.flush();
             dos.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 
@@ -1368,7 +1368,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         INDArray[] fMaskNew = (fMask != null ? new INDArray[] {fMask} : null);
         INDArray[] lMaskNew = (lMask != null ? new INDArray[] {lMask} : null);
 
-        return new org.nd4j.linalg.dataset.MultiDataSet(fNew, lNew, fMaskNew, lMaskNew);
+        return new org.nd4j.linalg.dataset.MultiDataSet(fNew, lNew, fMaskNew, lMaskNew, exampleMetaData);
     }
 
 

@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -15,7 +16,7 @@
  ******************************************************************************/
 
 //
-// created by Yurii Shyrma on 15.02.2018
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <system/op_boilerplate.h>
@@ -30,82 +31,156 @@ namespace ops {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(gru, 5, 1, false, 0, 0) {
-    auto x  = INPUT_VARIABLE(0);                    // input [time x bS x iS]
-    auto h0 = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [bS x nU]
+    auto x  = INPUT_VARIABLE(0);                    // input [time, bS, nIn]
+    auto hI = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [bS, nOut]
 
-    auto Wx  = INPUT_VARIABLE(2);                   // input-to-hidden  weights, [iS x 3*nU]
-    auto Wh  = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [nU x 3*nU]
-    auto b   = INPUT_VARIABLE(4);                   // biases, [3*nU]
+    auto Wx  = INPUT_VARIABLE(2);                   // input-to-hidden  weights, [nIn, 3*nOut]
+    auto Wh  = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [nOut, 3*nOut]
+    auto b   = INPUT_VARIABLE(4);                   // biases, [3*nOut]
 
-    auto h   =  OUTPUT_VARIABLE(0);                 // cell outputs [time x bS x nU], that is per each time step
+    auto h   =  OUTPUT_VARIABLE(0);                 // cell outputs [time, bS, nOut], that is per each time step
 
-    const int rank     = x->rankOf();              // = 3
-    const int time     = x->sizeAt(0);
-    const int bS       = x->sizeAt(1);
-    const int iS   = x->sizeAt(2);
-    const int nU = h0->sizeAt(1);
+    const int bS   = x->sizeAt(1);
+    const int nIn  = x->sizeAt(2);
+    const int nOut = hI->sizeAt(1);
 
-    const std::vector<Nd4jLong> h0CorrectShape = {bS, nU};
-    const std::vector<Nd4jLong> wxCorrectShape = {iS, 3*nU};
-    const std::vector<Nd4jLong> whCorrectShape = {nU, 3*nU};
-    const std::vector<Nd4jLong> bCorrectShape  = {3*nU};
+    const std::vector<Nd4jLong> h0CorrectShape = {bS, nOut};
+    const std::vector<Nd4jLong> wxCorrectShape = {nIn, 3*nOut};
+    const std::vector<Nd4jLong> whCorrectShape = {nOut, 3*nOut};
+    const std::vector<Nd4jLong> bCorrectShape  = {3*nOut};
 
-    REQUIRE_TRUE(h0->isSameShape(h0CorrectShape), 0, "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(h0).c_str());
+    REQUIRE_TRUE(hI->isSameShape(h0CorrectShape), 0, "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(hI).c_str());
     REQUIRE_TRUE(Wx->isSameShape(wxCorrectShape), 0, "GRU operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(wxCorrectShape).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
     REQUIRE_TRUE(Wh->isSameShape(whCorrectShape), 0, "GRU operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(whCorrectShape).c_str(), ShapeUtils::shapeAsString(Wh).c_str());
     REQUIRE_TRUE(b->isSameShape(bCorrectShape),   0, "GRU operation: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
 
-    helpers::gruTimeLoop(block.launchContext(), x, h0, Wx, Wh, b, h);
+    helpers::gruTimeLoop(block.launchContext(), x, hI, Wx, Wh, b, h);
 
     return Status::OK();
 }
 
+//////////////////////////////////////////////////////////////////////////
+DECLARE_TYPES(gru) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(sd::DataType::ANY)
+            ->setAllowedOutputTypes({ALL_FLOATS});
+}
 
-        DECLARE_TYPES(gru) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
-
-
+//////////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(gru) {
-    const auto xShapeInfo  = inputShape->at(0);                     // input [time x bS x inSize]
-    const auto h0ShapeInfo = inputShape->at(1);                     // initial cell output [bS x numUnits], that is at time step t=0
-    const auto WxShapeInfo = inputShape->at(2);                     // input-to-hidden weights, [inSize   x 3*numUnits]
-    const auto WhShapeInfo = inputShape->at(3);                     // hidden-to-hidden weights, [numUnits x 3*numUnits]
-    const auto bShapeInfo  = inputShape->at(4);                     // biases, [3*numUnits]
 
-    const int rank     = shape::rank(xShapeInfo);              // = 3
-    const auto time     = xShapeInfo[1];
-    const auto bS       = xShapeInfo[2];
-    const auto inSize   = xShapeInfo[3];
-    const auto numUnits = h0ShapeInfo[2];
+    auto x  = INPUT_VARIABLE(0);                    // input [time, bS, nIn]
+    auto hI = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [bS, nOut]
 
-    const std::vector<Nd4jLong> h0CorrectShape = {bS, numUnits};
-    const std::vector<Nd4jLong> wxCorrectShape = {inSize, 3*numUnits};
-    const std::vector<Nd4jLong> whCorrectShape = {numUnits, 3*numUnits};
-    const std::vector<Nd4jLong> bCorrectShape  = {3*numUnits};
+    auto Wx  = INPUT_VARIABLE(2);                   // input-to-hidden  weights, [nIn, 3*nOut]
+    auto Wh  = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [nOut, 3*nOut]
+    auto b   = INPUT_VARIABLE(4);                   // biases, [3*nOut]
 
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(h0ShapeInfo, h0CorrectShape), 0, "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(h0ShapeInfo).c_str());
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(WxShapeInfo, wxCorrectShape), 0, "GRU operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(wxCorrectShape).c_str(), ShapeUtils::shapeAsString(WxShapeInfo).c_str());
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(WhShapeInfo, whCorrectShape), 0, "GRU operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(whCorrectShape).c_str(), ShapeUtils::shapeAsString(WhShapeInfo).c_str());
-    REQUIRE_TRUE(ShapeUtils::areShapesEqual(bShapeInfo, bCorrectShape),   0, "GRU operation: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(bShapeInfo).c_str());
+    const int time = x->sizeAt(0);
+    const int bS   = x->sizeAt(1);
+    const int nIn  = x->sizeAt(2);
+    const int nOut = hI->sizeAt(1);
 
+    const std::vector<Nd4jLong> h0CorrectShape = {bS, nOut};
+    const std::vector<Nd4jLong> wxCorrectShape = {nIn, 3*nOut};
+    const std::vector<Nd4jLong> whCorrectShape = {nOut, 3*nOut};
+    const std::vector<Nd4jLong> bCorrectShape  = {3*nOut};
 
-    // evaluate output shapeInfo
-    Nd4jLong *hShapeInfo(nullptr);
-    ALLOCATE(hShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
+    REQUIRE_TRUE(hI->isSameShape(h0CorrectShape), 0, "GRU operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(hI).c_str());
+    REQUIRE_TRUE(Wx->isSameShape(wxCorrectShape), 0, "GRU operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(wxCorrectShape).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
+    REQUIRE_TRUE(Wh->isSameShape(whCorrectShape), 0, "GRU operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(whCorrectShape).c_str(), ShapeUtils::shapeAsString(Wh).c_str());
+    REQUIRE_TRUE(b->isSameShape(bCorrectShape),   0, "GRU operation: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
 
-    hShapeInfo[0] = rank;
-    hShapeInfo[1] = time;
-    hShapeInfo[2] = bS;
-    hShapeInfo[3] = numUnits;
-
-    ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(h0ShapeInfo));
+    auto hShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(hI->dataType(), hI->ordering(), {time, bS, nOut});
 
     return SHAPELIST(hShapeInfo);
 }
 
+
+//////////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(gru_bp, 6, 5, false, 0, 0) {
+
+    auto x   = INPUT_VARIABLE(0);                   // input [time, bS, nIn]
+    auto hI  = INPUT_VARIABLE(1);                   // initial cell output (at time step = 0) [bS, nOut]
+
+    auto Wx   = INPUT_VARIABLE(2);                  // input-to-hidden  weights, [nIn, 3*nOut]
+    auto Wh   = INPUT_VARIABLE(3);                  // hidden-to-hidden weights, [nOut, 3*nOut]
+    auto b    = INPUT_VARIABLE(4);                  // biases, [3*nOut]
+
+    auto dLdh = INPUT_VARIABLE(5);                  // gradient vs. ff output, [time, bS, nOut]
+
+    auto dLdx  = OUTPUT_VARIABLE(0);                // gradient vs. ff input, [time, bS, nIn]
+    auto dLdhI = OUTPUT_NULLIFIED(1);               // gradient vs. initial cell output, [bS, nOut]
+    auto dLdWx = OUTPUT_NULLIFIED(2);               // gradient vs. input-to-hidden  weights, [nIn, 3*nOut]
+    auto dLdWh = OUTPUT_NULLIFIED(3);               // gradient vs. hidden-to-hidden weights, [nOut, 3*nOut]
+    auto dLdb  = OUTPUT_NULLIFIED(4);               // gradient vs. biases [3*nOut]
+
+    const int time = x->sizeAt(0);
+    const int bS   = x->sizeAt(1);
+    const int nIn  = x->sizeAt(2);
+    const int nOut = hI->sizeAt(1);
+
+    const std::vector<Nd4jLong> h0CorrectShape = {bS, nOut};
+    const std::vector<Nd4jLong> wxCorrectShape = {nIn, 3*nOut};
+    const std::vector<Nd4jLong> whCorrectShape = {nOut, 3*nOut};
+    const std::vector<Nd4jLong> bCorrectShape  = {3*nOut};
+    const std::vector<Nd4jLong> hCorrectShape  = {time, bS, nOut};
+
+    REQUIRE_TRUE(hI->isSameShape(h0CorrectShape), 0, "GRU_BP operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(hI).c_str());
+    REQUIRE_TRUE(Wx->isSameShape(wxCorrectShape), 0, "GRU_BP operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(wxCorrectShape).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
+    REQUIRE_TRUE(Wh->isSameShape(whCorrectShape), 0, "GRU_BP operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(whCorrectShape).c_str(), ShapeUtils::shapeAsString(Wh).c_str());
+    REQUIRE_TRUE(b->isSameShape(bCorrectShape),   0, "GRU_BP operation: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
+    REQUIRE_TRUE(dLdh->isSameShape(hCorrectShape),0, "GRU_BP operation: wrong shape of gradient vs. ff output, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdh).c_str());
+
+    helpers::gruTimeLoopBp(block.launchContext(), x, hI, Wx, Wh, b, dLdh, dLdx, dLdhI, dLdWx, dLdWh, dLdb);
+
+    return Status::OK();
+}
+
+//////////////////////////////////////////////////////////////////////////
+DECLARE_TYPES(gru_bp) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(sd::DataType::ANY)
+            ->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+//////////////////////////////////////////////////////////////////////////
+DECLARE_SHAPE_FN(gru_bp) {
+
+    auto x  = INPUT_VARIABLE(0);                    // input [time, bS, nIn]
+    auto hI = INPUT_VARIABLE(1);                    // initial cell output (at time step = 0) [bS, nOut]
+
+    auto Wx   = INPUT_VARIABLE(2);                   // input-to-hidden  weights, [nIn, 3*nOut]
+    auto Wh   = INPUT_VARIABLE(3);                   // hidden-to-hidden weights, [nOut, 3*nOut]
+    auto b    = INPUT_VARIABLE(4);                   // biases, [3*nOut]
+
+    auto dLdh = INPUT_VARIABLE(5);                  // gradient vs. ff output, [time, bS, nOut]
+
+    const int time = x->sizeAt(0);
+    const int bS   = x->sizeAt(1);
+    const int nIn  = x->sizeAt(2);
+    const int nOut = hI->sizeAt(1);
+
+    const std::vector<Nd4jLong> h0CorrectShape = {bS, nOut};
+    const std::vector<Nd4jLong> wxCorrectShape = {nIn, 3*nOut};
+    const std::vector<Nd4jLong> whCorrectShape = {nOut, 3*nOut};
+    const std::vector<Nd4jLong> bCorrectShape  = {3*nOut};
+    const std::vector<Nd4jLong> hCorrectShape  = {time, bS, nOut};
+
+    REQUIRE_TRUE(hI->isSameShape(h0CorrectShape), 0, "GRU_BP operation: wrong shape of previous cell output array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(h0CorrectShape).c_str(), ShapeUtils::shapeAsString(hI).c_str());
+    REQUIRE_TRUE(Wx->isSameShape(wxCorrectShape), 0, "GRU_BP operation: wrong shape of input-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(wxCorrectShape).c_str(), ShapeUtils::shapeAsString(Wx).c_str());
+    REQUIRE_TRUE(Wh->isSameShape(whCorrectShape), 0, "GRU_BP operation: wrong shape of hidden-to-hidden weights array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(whCorrectShape).c_str(), ShapeUtils::shapeAsString(Wh).c_str());
+    REQUIRE_TRUE(b->isSameShape(bCorrectShape),   0, "GRU_BP operation: wrong shape of biases array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(bCorrectShape).c_str(), ShapeUtils::shapeAsString(b).c_str());
+    REQUIRE_TRUE(dLdh->isSameShape(hCorrectShape),0, "GRU_BP operation: wrong shape of gradient vs. ff output, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(hCorrectShape).c_str(), ShapeUtils::shapeAsString(dLdh).c_str());
+
+    auto  dLdxShapeInfo  = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), x->shapeInfo());
+    auto  dLdhIShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), hI->shapeInfo());
+    auto  dLdWxShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), Wx->shapeInfo());
+    auto  dLdWhShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), Wh->shapeInfo());
+    auto  dLdbShapeInfo  = ConstantShapeHelper::getInstance().createShapeInfo(dLdh->dataType(), b->shapeInfo());
+
+    return SHAPELIST(dLdxShapeInfo, dLdhIShapeInfo, dLdWxShapeInfo, dLdWhShapeInfo, dLdbShapeInfo);
+}
 
 }
 }

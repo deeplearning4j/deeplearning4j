@@ -2,9 +2,10 @@ package org.deeplearning4j.rl4j.support;
 
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.observation.transform.EncodableToINDArrayTransform;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.observation.transform.filter.UniformSkippingFilter;
-import org.deeplearning4j.rl4j.observation.transform.legacy.EncodableToINDArrayTransform;
+import org.deeplearning4j.rl4j.observation.transform.legacy.EncodableToImageWritableTransform;
 import org.deeplearning4j.rl4j.observation.transform.operation.HistoryMergeTransform;
 import org.deeplearning4j.rl4j.observation.transform.operation.SimpleNormalizationTransform;
 import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.CircularFifoStore;
@@ -15,7 +16,7 @@ import org.nd4j.linalg.api.rng.Random;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MockMDP implements MDP<MockEncodable, Integer, DiscreteSpace> {
+public class MockMDP implements MDP<MockObservation, Integer, DiscreteSpace> {
 
     private final DiscreteSpace actionSpace;
     private final int stepsUntilDone;
@@ -55,11 +56,11 @@ public class MockMDP implements MDP<MockEncodable, Integer, DiscreteSpace> {
     }
 
     @Override
-    public MockEncodable reset() {
+    public MockObservation reset() {
         ++resetCount;
         currentObsValue = 0;
         step = 0;
-        return new MockEncodable(currentObsValue++);
+        return new MockObservation(currentObsValue++);
     }
 
     @Override
@@ -68,10 +69,10 @@ public class MockMDP implements MDP<MockEncodable, Integer, DiscreteSpace> {
     }
 
     @Override
-    public StepReply<MockEncodable> step(Integer action) {
+    public StepReply<MockObservation> step(Integer action) {
         actions.add(action);
         ++step;
-        return new StepReply<>(new MockEncodable(currentObsValue), (double) currentObsValue++, isDone(), null);
+        return new StepReply<>(new MockObservation(currentObsValue), (double) currentObsValue++, isDone(), null);
     }
 
     @Override
@@ -84,14 +85,14 @@ public class MockMDP implements MDP<MockEncodable, Integer, DiscreteSpace> {
         return null;
     }
 
-    public static TransformProcess buildTransformProcess(int[] shape, int skipFrame, int historyLength) {
+    public static TransformProcess buildTransformProcess(int skipFrame, int historyLength) {
         return TransformProcess.builder()
                 .filter(new UniformSkippingFilter(skipFrame))
-                .transform("data", new EncodableToINDArrayTransform(shape))
+                .transform("data", new EncodableToINDArrayTransform())
                 .transform("data", new SimpleNormalizationTransform(0.0, 255.0))
                 .transform("data", HistoryMergeTransform.builder()
                         .elementStore(new CircularFifoStore(historyLength))
-                        .build())
+                        .build(4))
                 .build("data");
     }
 

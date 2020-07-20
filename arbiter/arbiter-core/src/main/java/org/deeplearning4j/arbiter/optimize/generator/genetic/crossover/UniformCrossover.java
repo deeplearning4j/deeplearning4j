@@ -21,7 +21,7 @@ import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.RandomTwoParentSelection;
 import org.deeplearning4j.arbiter.optimize.generator.genetic.crossover.parentselection.TwoParentSelection;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 /**
  * The uniform crossover will, for each gene, randomly select the parent that donates the gene.

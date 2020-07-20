@@ -16,9 +16,9 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce3;
 
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.util.SameDiffUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -93,14 +93,14 @@ public class CosineSimilarity extends BaseReduce3Op {
         //Then:
         // dc(x,y)/dx_i = 1/b * (y - x * a / (l2(x))^2)
 
-        return doDiff(sameDiff, f(), larg(), rarg(), i_v1.get(0), keepDims, dimensions);
+        return doDiff(sameDiff, larg(), rarg(), i_v1.get(0), keepDims, dimensions);
     }
 
-    public static List<SDVariable> doDiff(SameDiff sameDiff, DifferentialFunctionFactory f, SDVariable x, SDVariable y,
+    public static List<SDVariable> doDiff(SameDiff sameDiff, SDVariable x, SDVariable y,
                                           SDVariable gradOut, boolean keepDims, int... dimensions){
         SDVariable a = sameDiff.sum(x.mul(y),true, dimensions);
-        SDVariable l2x = f.norm2(x, true, dimensions);
-        SDVariable l2y = f.norm2(y, true, dimensions);
+        SDVariable l2x = sameDiff.norm2(x, true, dimensions);
+        SDVariable l2y = sameDiff.norm2(y, true, dimensions);
         SDVariable b = l2x.mul(l2y);
 
         SDVariable l2xSq = sameDiff.math().square(l2x);
@@ -110,7 +110,7 @@ public class CosineSimilarity extends BaseReduce3Op {
             //keepDims or full array reduction
             broadcastableGrad = gradOut;
         } else {
-            broadcastableGrad = sameDiff.f().reductionBroadcastableWithOrigShape(x, sameDiff.constant(Nd4j.createFromArray(dimensions)), gradOut);
+            broadcastableGrad = SameDiffUtils.reductionBroadcastableWithOrigShape(x, sameDiff.constant(Nd4j.createFromArray(dimensions)), gradOut);
         }
 
         SDVariable dcdx = y.sub(x.mul(a).div(l2xSq)).div(b);

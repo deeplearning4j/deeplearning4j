@@ -32,17 +32,16 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.batch.NDArrayRecordBatch;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -466,6 +465,88 @@ public class TestImageRecordReader {
 
         public int getCount() {
             return count;
+        }
+    }
+
+
+
+    @Test
+    public void testNCHW_NCHW() throws Exception {
+        //Idea: labels order should be consistent regardless of input file order
+        File f0 = testDir.newFolder();
+        new ClassPathResource("datavec-data-image/testimages/").copyDirectory(f0);
+
+        FileSplit fs0 = new FileSplit(f0, new Random(12345));
+        FileSplit fs1 = new FileSplit(f0, new Random(12345));
+        assertEquals(6, fs0.locations().length);
+        assertEquals(6, fs1.locations().length);
+
+        ImageRecordReader nchw = new ImageRecordReader(32, 32, 3, true);
+        nchw.initialize(fs0);
+
+        ImageRecordReader nhwc = new ImageRecordReader(32, 32, 3, false);
+        nhwc.initialize(fs1);
+
+        while(nchw.hasNext()){
+            assertTrue(nhwc.hasNext());
+
+            List<Writable> l_nchw = nchw.next();
+            List<Writable> l_nhwc = nhwc.next();
+
+            INDArray a_nchw = ((NDArrayWritable)l_nchw.get(0)).get();
+            INDArray a_nhwc = ((NDArrayWritable)l_nhwc.get(0)).get();
+
+            assertArrayEquals(new long[]{1, 3, 32, 32}, a_nchw.shape());
+            assertArrayEquals(new long[]{1, 32, 32, 3}, a_nhwc.shape());
+
+            INDArray permuted = a_nhwc.permute(0,3,1,2);    //NHWC to NCHW
+            assertEquals(a_nchw, permuted);
+        }
+
+
+        //Test batch:
+        nchw.reset();
+        nhwc.reset();
+
+        int batchCount = 0;
+        while(nchw.hasNext()){
+            assertTrue(nhwc.hasNext());
+            batchCount++;
+
+            List<List<Writable>> l_nchw = nchw.next(3);
+            List<List<Writable>> l_nhwc = nhwc.next(3);
+            assertEquals(3, l_nchw.size());
+            assertEquals(3, l_nhwc.size());
+
+            NDArrayRecordBatch b_nchw = (NDArrayRecordBatch)l_nchw;
+            NDArrayRecordBatch b_nhwc = (NDArrayRecordBatch)l_nhwc;
+
+            INDArray a_nchw = b_nchw.getArrays().get(0);
+            INDArray a_nhwc = b_nhwc.getArrays().get(0);
+
+            assertArrayEquals(new long[]{3, 3, 32, 32}, a_nchw.shape());
+            assertArrayEquals(new long[]{3, 32, 32, 3}, a_nhwc.shape());
+
+            INDArray permuted = a_nhwc.permute(0,3,1,2);    //NHWC to NCHW
+            assertEquals(a_nchw, permuted);
+        }
+        assertEquals(2, batchCount);
+
+
+        //Test record(URI, DataInputStream)
+
+        URI u = fs0.locations()[0];
+
+        try(DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(u))))) {
+            List<Writable> l = nchw.record(u, dis);
+            INDArray arr = ((NDArrayWritable)l.get(0)).get();
+            assertArrayEquals(new long[]{1, 3, 32, 32}, arr.shape());
+        }
+
+        try(DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(new File(u))))) {
+            List<Writable> l = nhwc.record(u, dis);
+            INDArray arr = ((NDArrayWritable)l.get(0)).get();
+            assertArrayEquals(new long[]{1, 32, 32, 3}, arr.shape());
         }
     }
 }

@@ -18,10 +18,10 @@
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.config.ND4JEnvironmentVars;
-import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.common.config.ND4JEnvironmentVars;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
-import org.nd4j.linalg.io.Resource;
+import org.nd4j.common.io.Resource;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +31,7 @@ import java.util.*;
 /**
  * An ND4j backend.
  *
- * A "backend" is also described here: http://nd4j.org/backend.html
+ * A "backend" is also described here: https://deeplearning4j.konduit.ai/nd4j/backend
  *
  * A backend also has 2  variables to be aware of.
  * 1 is the environment variable, ND4J_DYNAMIC_LOAD_CLASSPATH
@@ -196,7 +196,7 @@ public abstract class Nd4jBackend {
             try {
                 Nd4jContext.getInstance().updateProperties(backend.getConfigurationResource().getInputStream());
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
             if(logInit) {
@@ -219,7 +219,7 @@ public abstract class Nd4jBackend {
 
         else
             throw new NoAvailableBackendException(
-                            "Please ensure that you have an nd4j backend on your classpath. Please see: http://nd4j.org/getstarted.html");
+                            "Please ensure that you have an nd4j backend on your classpath. Please see: https://deeplearning4j.konduit.ai/nd4j/backend");
 
         triedDynamicLoad = true;
         //load all the discoverable uris and try to load the backend again

@@ -20,7 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,9 +44,17 @@ public class Concat extends DynamicCustomOp {
     }
 
     public Concat(int concatDimension, INDArray... arrays) {
-        super(null, arrays, new INDArray[0]);
+        super(null, arrays, null);
         this.concatDimension = concatDimension;
         addIArgument(concatDimension);
+    }
+
+    public Concat(INDArray[] arrays, int concatDimension) {
+        this(concatDimension, arrays);
+    }
+
+    public Concat(SameDiff sameDiff, SDVariable[] inputs, int concatDimension){
+        this(sameDiff, concatDimension, inputs);
     }
 
     public Concat(SameDiff sameDiff, int concatDimension, SDVariable... inputs){

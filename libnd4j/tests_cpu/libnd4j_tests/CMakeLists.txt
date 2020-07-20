@@ -45,6 +45,21 @@ if ("${BUILD_MKLDNN}")
     set(MKLDNN dnnl)
 endif()
 
+if (${HELPERS_armcompute})
+ find_package(ARMCOMPUTE REQUIRED)
+
+ if(ARMCOMPUTE_FOUND)
+    message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
+    set(HAVE_ARMCOMPUTE 1)
+    # Add preprocessor definition for ARM Compute NEON
+    add_definitions(-DARMCOMPUTENEON_ENABLED)
+    #build our library with neon support
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
+    include_directories(${ARMCOMPUTE_INCLUDE})
+ endif()
+
+endif()
+
 # Download and unpack flatbuffers at configure time
 configure_file(../../CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
@@ -115,7 +130,7 @@ elseif(WIN32)
 		set(CMAKE_CXX_FLAGS  " -g -fPIC -std=c++11 -Wa,-mbig-obj")
 	endif()
 else()
-    set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -DLINUX_BUILD=true")
+    set(CMAKE_CXX_FLAGS " ${CMAKE_CXX_FLAGS} -ffast-math -DFFAST_MATH=true -DLINUX_BUILD=true")
 
     if ("${_RELEASE}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
         message("Release build for tests")
@@ -217,6 +232,10 @@ if ("${BUILD_MKLDNN}")
     file(GLOB_RECURSE CUSTOMOPS_PLATFORM_SOURCES false ../../include/ops/declarable/platform/mkldnn/*.cpp)
 endif()
 
+if(HAVE_ARMCOMPUTE)
+    file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES false ../include/ops/declarable/platform/armcompute/*.cpp ../include/ops/declarable/platform/armcompute/armcomputeUtils.h)
+endif()
+
 message("CPU backend")
 add_definitions(-D__CPUBLAS__=true)
 
@@ -225,6 +244,12 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(MINGW) AND NOT(APPLE))
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
 endif()
 
+    file(GLOB_RECURSE COMPILATION_UNITS false ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in 
+    ../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in)
+
+    foreach(FL_ITEM ${COMPILATION_UNITS})   
+        genCompilation(FL_ITEM)
+    endforeach() 
 
 # this function strips path from file name, basically making up short file name, i.e. file.cpp
 function(SHORTNAME LONG_NAME OUTPUT)
@@ -270,8 +295,9 @@ endforeach(TMP_PATH)
 
 
 add_executable(runtests ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${EXEC_SOURCES} ${HELPERS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_PLATFORM_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
+    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_PLATFORM_SOURCES} 
+    ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES})
 
-target_link_libraries(runtests gtest ${MKLDNN} gtest_main ${BLAS_LIBRARIES})
+target_link_libraries(runtests gtest ${MKLDNN} ${ARMCOMPUTE_LIBRARIES} gtest_main ${BLAS_LIBRARIES})
 

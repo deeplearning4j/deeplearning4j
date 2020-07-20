@@ -16,8 +16,8 @@
 
 package org.datavec.api.transform.ops;
 
-import org.nd4j.linalg.function.Consumer;
-import org.nd4j.linalg.function.Supplier;
+import org.nd4j.common.function.Consumer;
+import org.nd4j.common.function.Supplier;
 
 import java.io.Serializable;
 

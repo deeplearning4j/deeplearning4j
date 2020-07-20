@@ -19,9 +19,8 @@ package org.deeplearning4j.spark.parameterserver.networking.v2;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.function.Consumer;
-import org.nd4j.linalg.function.Supplier;
-import org.nd4j.linalg.primitives.Atomic;
+import org.nd4j.common.function.Supplier;
+import org.nd4j.common.primitives.Atomic;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 

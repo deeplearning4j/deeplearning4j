@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
   ~
@@ -14,20 +15,52 @@
   ~ SPDX-License-Identifier: Apache-2.0
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>nd4j</artifactId>
         <groupId>org.nd4j</groupId>
+        <artifactId>nd4j</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-parameter-server-parent</artifactId>
     <packaging>pom</packaging>
 
     <name>nd4j-parameter-server-parent</name>
 
+    <modules>
+        <module>nd4j-parameter-server</module>
+        <module>nd4j-parameter-server-client</module>
+        <module>nd4j-parameter-server-model</module>
+        <module>nd4j-parameter-server-status</module>
+        <module>nd4j-parameter-server-rocksdb-storage</module>
+        <module>nd4j-parameter-server-node</module>
+    </modules>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.nd4j</groupId>
+                <artifactId>nd4j-common-tests</artifactId>
+                <version>${project.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.nd4j</groupId>
+                <artifactId>nd4j-parameter-server</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -52,12 +85,10 @@
                     </execution>
                 </executions>
             </plugin>
-
             <plugin>
                 <groupId>com.google.code.play2-maven-plugin</groupId>
                 <artifactId>play2-maven-plugin</artifactId>
                 <version>${maven-play2-plugin.version}</version>
-
                 <!-- Generate Scala Page Templates
                 The Play framework template engine ("twirl") uses templates for HTML pages (or in principle any text-based
                 data: CSV, XML etc). These templates (*.scala.html files) need to be converted to Scala classes using
@@ -80,9 +111,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-
-
             <plugin>
                 <groupId>com.google.code.sbt-compiler-maven-plugin</groupId>
                 <artifactId>sbt-compiler-maven-plugin</artifactId>
@@ -90,21 +118,6 @@
             </plugin>
         </plugins>
     </build>
-
-
-    <modules>
-        <module>nd4j-parameter-server</module>
-        <module>nd4j-parameter-server-client</module>
-        <module>nd4j-parameterserver-model</module>
-        <module>nd4j-parameter-server-status</module>
-        <module>nd4j-parameter-server-rocksdb-storage</module>
-        <module>nd4j-parameter-server-node</module>
-    </modules>
-
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-    </properties>
 
     <profiles>
         <profile>
@@ -116,12 +129,8 @@
                 <maven.compiler.release>8</maven.compiler.release>
             </properties>
         </profile>
-
         <profile>
             <id>testresources</id>
         </profile>
     </profiles>
-    <dependencies>
-
-    </dependencies>
 </project>

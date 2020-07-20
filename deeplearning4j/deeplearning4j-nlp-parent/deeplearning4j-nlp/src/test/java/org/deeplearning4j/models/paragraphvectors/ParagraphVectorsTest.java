@@ -23,17 +23,14 @@ import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.CBOW;
-import org.deeplearning4j.models.embeddings.reader.impl.FlatModelUtils;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.SentenceTransformer;
 import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.BasicTransformerIterator;
-import org.deeplearning4j.models.sequencevectors.transformers.impl.iterables.ParallelTransformerIterator;
 import org.deeplearning4j.text.sentenceiterator.*;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW;
@@ -54,22 +51,18 @@ import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIterato
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.CollectionUtils;
+import org.nd4j.common.io.CollectionUtils;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.SerializationUtils;
-import org.nd4j.resources.Resources;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.common.util.SerializationUtils;
+import org.nd4j.common.resources.Resources;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
@@ -1164,7 +1157,7 @@ public class ParagraphVectorsTest extends BaseDL4JTest {
 
             unserialized = ParagraphVectors.fromJson(json);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
             fail();
         }
 

@@ -20,6 +20,7 @@ import org.apache.commons.compress.utils.IOUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -30,7 +31,8 @@ import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization;
 import org.deeplearning4j.nn.layers.recurrent.LSTM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -124,12 +126,20 @@ public class TestUtils {
         return randomOneHot(examples, nOut, new Random(12345));
     }
 
+    public static INDArray randomOneHot(DataType dataType, long examples, long nOut){
+        return randomOneHot(dataType, examples, nOut, new Random(12345));
+    }
+
     public static INDArray randomOneHot(long examples, long nOut, long rngSeed){
         return randomOneHot(examples, nOut, new Random(rngSeed));
     }
 
-    public static INDArray randomOneHot(long examples, long nOut, Random rng){
-        INDArray arr = Nd4j.create(examples, nOut);
+    public static INDArray randomOneHot(long examples, long nOut, Random rng) {
+        return randomOneHot(Nd4j.defaultFloatingPointType(), examples,nOut, rng);
+    }
+
+    public static INDArray randomOneHot(DataType dataType, long examples, long nOut, Random rng){
+        INDArray arr = Nd4j.create(dataType, examples, nOut);
         for( int i=0; i<examples; i++ ){
             arr.putScalar(i, rng.nextInt((int) nOut), 1.0);
         }
@@ -144,11 +154,22 @@ public class TestUtils {
         return randomOneHotTimeSeries(minibatch, outSize, tsLength, new Random(rngSeed));
     }
 
-    public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength, Random rng){
-        INDArray out = Nd4j.create(new int[]{minibatch, outSize, tsLength}, 'f');
+    public static INDArray randomOneHotTimeSeries(int minibatch, int outSize, int tsLength, Random rng) {
+        return randomOneHotTimeSeries(RNNFormat.NCW, minibatch, outSize, tsLength, rng);
+    }
+
+    public static INDArray randomOneHotTimeSeries(RNNFormat format, int minibatch, int outSize, int tsLength, Random rng){
+        boolean ncw = format == RNNFormat.NCW;
+        long[] shape = ncw ? new long[]{minibatch, outSize, tsLength} : new long[]{minibatch, tsLength, outSize};
+        char order = ncw ? 'f' : 'c';
+        INDArray out = Nd4j.create(DataType.FLOAT, shape, order);
         for( int i=0; i<minibatch; i++ ){
             for( int j=0; j<tsLength; j++ ){
-                out.putScalar(i, rng.nextInt(outSize), j, 1.0);
+                if(ncw){
+                    out.putScalar(i, rng.nextInt(outSize), j, 1.0);
+                } else {
+                    out.putScalar(i, j, rng.nextInt(outSize), 1.0);
+                }
             }
         }
         return out;

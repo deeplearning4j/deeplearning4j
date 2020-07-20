@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -28,7 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 
@@ -91,17 +91,14 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray input = this.input.castTo(dataType);   //Cast to network dtype if required (no-op if already correct type)
 
-        long miniBatch = input.size(0);
-        long inDepth = input.size(1);
-        long inH = input.size(2);
-        long inW = input.size(3);
+        boolean nchw = layerConf().getFormat() == CNN2DFormat.NCHW;
 
-        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), new long[]{miniBatch, inDepth, inH, inW}, 'c');
+        INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape(), 'c');
 
         Gradient gradient = new DefaultGradient();
 
-        INDArray epsilonNHWC = epsilon.permute(0, 2, 3, 1);
-        INDArray outEpsilonNHWC = outEpsilon.permute(0, 2, 3, 1);
+        INDArray epsilonNHWC = nchw ? epsilon.permute(0, 2, 3, 1) : epsilon;
+        INDArray outEpsilonNHWC = nchw ? outEpsilon.permute(0, 2, 3, 1) : outEpsilon;
 
         CustomOp op = DynamicCustomOp.builder("batch_to_space_nd")
                 .addInputs(epsilonNHWC, getBlocksArray(), getPaddingArray())
@@ -121,7 +118,7 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                     + " array as input to space to batch with shape " + Arrays.toString(input.shape())
-                    + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
+                    + ". Expected rank 4 array with shape " + layerConf().getFormat().dimensionNames() + ". "
                     + layerId());
         }
 
@@ -129,10 +126,12 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
+        boolean nchw = layerConf().getFormat() == CNN2DFormat.NCHW;
+
         long inMiniBatch = input.size(0);
-        long depth = input.size(1);
-        long inH = input.size(2);
-        long inW = input.size(3);
+        long depth = input.size(nchw ? 1 : 3);
+        long inH = input.size(nchw ? 2 : 1);
+        long inW = input.size(nchw ? 3 : 2);
 
         int[] blocks = getBlocks();
         int[][] padding = getPadding();
@@ -144,10 +143,12 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         long outW = paddedW / blocks[1];
         long outMiniBatch = inMiniBatch * blocks[0] * blocks[1];
 
-        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), new long[]{outMiniBatch, depth, outH, outW}, 'c');
+        long[] outShape = nchw ? new long[]{outMiniBatch, depth, outH, outW} : new long[]{outMiniBatch, outH, outW, depth};
 
-        INDArray inNHWC = input.permute(0, 2, 3, 1);
-        INDArray outNHWC = out.permute(0, 2, 3, 1);
+        INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
+
+        INDArray inNHWC = nchw ? input.permute(0, 2, 3, 1) : input;
+        INDArray outNHWC = nchw ? out.permute(0, 2, 3, 1) : out;
 
         CustomOp op = DynamicCustomOp.builder("space_to_batch_nd")
                 .addInputs(inNHWC, getBlocksArray(), getPaddingArray())

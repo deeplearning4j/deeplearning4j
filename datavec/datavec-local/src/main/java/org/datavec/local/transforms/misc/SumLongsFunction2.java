@@ -17,8 +17,8 @@
 package org.datavec.local.transforms.misc;
 
 
-import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.function.Function;
+import org.nd4j.common.primitives.Pair;
 
 /**
  * Created by Alex on 03/09/2016.

@@ -50,7 +50,7 @@ namespace sd {
 
             ArrayOptions::setDataType(newShape, ArrayOptions::dataType(inputShape->at(0)));
 
-            auto shape = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShape));
+            auto shape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newShape));
             RELEASE(newShape, block.getWorkspace());
             return SHAPELIST(shape);
         }

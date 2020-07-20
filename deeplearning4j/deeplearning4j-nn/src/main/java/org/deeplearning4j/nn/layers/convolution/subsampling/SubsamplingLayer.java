@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -34,8 +35,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.util.OneTimeLogger;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.Arrays;
 
@@ -65,7 +66,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
-                helper = Class.forName("org.deeplearning4j.nn.layers.convolution.subsampling.CudnnSubsamplingHelper")
+                helper = Class.forName("org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper")
                         .asSubclass(SubsamplingHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnSubsamplingHelper successfully initialized");
                 if (!helper.checkSupported()) {
@@ -77,7 +78,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 } else {
                     OneTimeLogger.info(log, "cuDNN not found: "
                             + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn", t);
+                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
                 }
             }
         } else if("CPU".equalsIgnoreCase(backend) ){
@@ -108,18 +109,26 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         if(epsilon.dataType() != dataType)
             epsilon = epsilon.castTo(dataType);
 
-        int inH = (int)input.size(2);
-        int inW = (int)input.size(3);
+        CNN2DFormat dataFormat = layerConf().getCnn2dDataFormat();
+        int hIdx = 2;
+        int wIdx = 3;
+        if(dataFormat == CNN2DFormat.NHWC){
+            hIdx = 1;
+            wIdx = 2;
+        }
+
+        int inH = (int)input.size(hIdx);
+        int inW = (int)input.size(wIdx);
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
         int[] dilation = layerConf().getDilation();
 
         int[] pad;
-        int[] outSize = new int[]{(int)input.size(2), (int)input.size(3)};    //NCHW
+        int[] outSizeFwd = new int[]{(int)epsilon.size(hIdx), (int)epsilon.size(wIdx)};    //NCHW
         boolean same = convolutionMode == ConvolutionMode.Same;
         if (same) {
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSizeFwd, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
         }
@@ -128,7 +137,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             Pair<Gradient, INDArray> ret = null;
             try{
                 ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
-                        layerConf().getPoolingType(), convolutionMode, dilation, workspaceMgr);
+                        layerConf().getPoolingType(), convolutionMode, dilation, dataFormat, workspaceMgr);
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
             } catch (Exception e){
@@ -188,24 +197,12 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         b.addInputs(input, epsilon)
                 .addOutputs(epsAtInput)
                 .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                        (same ? 1 : 0), extra, 0);  //last 0 = NCHW
+                        (same ? 1 : 0), extra,
+                        dataFormat == CNN2DFormat.NCHW ? 0 : 1);  //0 = NCHW, 1=NHWC
 
         Nd4j.exec(b.build());
 
         return new Pair<>(retGradient, epsAtInput);
-    }
-
-    private static double minValue(){
-        switch (Nd4j.dataType()){
-            case DOUBLE:
-                return -Double.MAX_VALUE;
-            case FLOAT:
-                return -Float.MAX_VALUE;
-            case HALF:
-                return -65504.0;
-            default:
-                throw new IllegalStateException("Unexpected data type: " + Nd4j.dataType());
-        }
     }
 
 
@@ -219,16 +216,26 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                             + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
-                            + ". Expected rank 4 array with shape [minibatchSize, channels, inputHeight, inputWidth]. "
+                            + ". Expected rank 4 array with shape " + layerConf().getCnn2dDataFormat().dimensionNames() + ". "
                             + layerId());
         }
 
         INDArray input = this.input.castTo(dataType);
 
+        int chIdx = 1;
+        int hIdx = 2;
+        int wIdx = 3;
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC){
+            chIdx = 3;
+            hIdx = 1;
+            wIdx = 2;
+        }
+
+        CNN2DFormat dataFormat = layerConf().getCnn2dDataFormat();
         long miniBatch = input.size(0);
-        long inDepth = input.size(1);
-        int inH = (int)input.size(2);
-        int inW = (int)input.size(3);
+        long inDepth = input.size(chIdx);
+        int inH = (int)input.size(hIdx);
+        int inW = (int)input.size(wIdx);
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
@@ -237,11 +244,11 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int[] outSize;
         boolean same = convolutionMode == ConvolutionMode.Same;
         if (same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, layerConf().getCnn2dDataFormat()); //Also performs validation
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, layerConf().getCnn2dDataFormat()); //Also performs validation
         }
         long outH = outSize[0];
         long outW = outSize[1];
@@ -251,7 +258,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             INDArray ret = null;
             try {
                 ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
-                        convolutionMode, dilation, workspaceMgr);
+                        convolutionMode, dilation, dataFormat, workspaceMgr);
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
             } catch (Exception e){
@@ -271,7 +278,9 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             }
         }
 
-        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), new long[]{miniBatch, inDepth, outH, outW}, 'c');
+        long[] outShape = (layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW) ? new long[]{miniBatch, inDepth, outH, outW} : new long[]{miniBatch, outH, outW, inDepth};
+
+        INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), outShape, 'c');
         DynamicCustomOp.DynamicCustomOpsBuilder b;
         int extra = 0;
         switch (layerConf().getPoolingType()){
@@ -299,7 +308,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         b.addInputs(input)
                 .addOutputs(output)
                 .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                        (same ? 1 : 0), extra, 0);  //Last 0: NCHW
+                        (same ? 1 : 0), extra,
+                        layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW ? 0 : 1);  //0: NCHW, 1=NHWC
 
         Nd4j.exec(b.build());
 

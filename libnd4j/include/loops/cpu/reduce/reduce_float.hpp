@@ -33,12 +33,10 @@ namespace functions {
     namespace reduce {
         template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceFloatFunction<X,Z>::execScalar(void *vx,
-                                                Nd4jLong *xShapeInfo,
-                                                void *vextraParams,
-                                                void *vz,
-                                                Nd4jLong *zShapeInfo) {
-            auto x = reinterpret_cast<X *>(vx);
+        void _CUDA_H ReduceFloatFunction<X,Z>::execScalar(const void *vx, const Nd4jLong *xShapeInfo,
+                                                          void *vextraParams,
+                                                          void *vz, const Nd4jLong *zShapeInfo) {
+            auto x = reinterpret_cast<const X *>(vx);
             auto z = reinterpret_cast<Z *>(vz);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
@@ -72,7 +70,7 @@ namespace functions {
                 auto startingValue = OpType::startingValue(x);
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance()->maxThreads());
+                int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance().maxThreads());
                 Z intermediate[64];
 
                 PRAGMA_OMP_SIMD
@@ -98,8 +96,8 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-            Z _CUDA_H ReduceFloatFunction<X, Z>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextraParams) {
-                auto x = reinterpret_cast<X *>(vx);
+            Z _CUDA_H ReduceFloatFunction<X, Z>::execScalar(const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams) {
+                auto x = reinterpret_cast<const X *>(vx);
                 auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
                 const Nd4jLong length = shape::length(xShapeInfo);
@@ -122,33 +120,27 @@ namespace functions {
 
         template <typename X, typename Y>
         Y ReduceFloatFunction<X, Y>::execScalar(const int opNum,
-                void *x,
-                Nd4jLong *xShapeInfo,
-                void *extraParams) {
+                                                const void *x, const Nd4jLong *xShapeInfo,
+                                                void *extraParams) {
                 RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), REDUCE_FLOAT_OPS);
         }
 
         template <typename X, typename Y>
         void ReduceFloatFunction<X, Y>::execScalar(const int opNum,
-                                        void *x,
-                                        Nd4jLong *xShapeInfo,
-                                        void *extraParams,
-                                        void *z,
-                                        Nd4jLong *zShapeInfo) {
+                                                   const void *x, const Nd4jLong *xShapeInfo,
+                                                   void *extraParams,
+                                                   void *z, const Nd4jLong *zShapeInfo) {
             DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_FLOAT_OPS);
         }
 
         template <typename X, typename Y>
         void ReduceFloatFunction<X, Y>::exec(const int opNum,
-                             void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *extraParams,
-                             void *z,
-                             Nd4jLong *zShapeInfo,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset, int64_t start, int64_t stop) {
+                                             const void *x, const Nd4jLong *xShapeInfo,
+                                             void *extraParams,
+                                             void *z, const Nd4jLong *zShapeInfo,
+                                             int *dimension, int dimensionLength,
+                                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                                             int64_t start, int64_t stop) {
                 DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                                xShapeInfo,
                                                extraParams,
@@ -163,17 +155,14 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-        void _CUDA_H ReduceFloatFunction<X,Z>::exec(void *vx,
-                             Nd4jLong *xShapeInfo,
-                             void *vextraParams,
-                             void *vresult,
-                             Nd4jLong *zShapeInfo,
-                             int *dimension,
-                             int dimensionLength,
-                             Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset, int64_t start, int64_t stop) {
+        void _CUDA_H ReduceFloatFunction<X,Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
+                                                    void *vextraParams,
+                                                    void *vresult, const Nd4jLong *zShapeInfo,
+                                                    int *dimension, int dimensionLength,
+                                                    const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
+                                                    int64_t start, int64_t stop) {
 
-                auto x = reinterpret_cast<X *>(vx);
+                auto x = reinterpret_cast<const X *>(vx);
                 auto z = reinterpret_cast<Z *>(vresult);
                 auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
@@ -211,7 +200,7 @@ namespace functions {
                     if (dimensionLength < 0)
                         return;
 
-                    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
                     tadOnlyShapeInfo = tadPack.primaryShapeInfo();
                     tadOffsets = tadPack.primaryOffsets();
                 }
@@ -226,11 +215,9 @@ namespace functions {
 
         template <typename X, typename Z>
         template<typename OpType>
-        void _CUDA_H ReduceFloatFunction<X,Z>::exec(void *x,
-                             Nd4jLong *xShapeInfo,
-                             void *extraParams,
-                             void *vresult,
-                             Nd4jLong *resultShapeInfo) {
+        void _CUDA_H ReduceFloatFunction<X,Z>::exec(const void *x, const Nd4jLong *xShapeInfo,
+                                                    void *extraParams,
+                                                    void *vresult, const Nd4jLong *resultShapeInfo) {
                 // FIXME: wtf???
                 auto z = reinterpret_cast<Z*>(vresult);
                 z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
@@ -238,11 +225,11 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-        Z _CUDA_H ReduceFloatFunction<X, Z>::execScalar(void *vx, Nd4jLong xEws, Nd4jLong length, void *vextraParams) {
+        Z _CUDA_H ReduceFloatFunction<X, Z>::execScalar(const void *vx, Nd4jLong xEws, Nd4jLong length, void *vextraParams) {
 
-            auto x = reinterpret_cast<X *>(vx);
+            auto x = reinterpret_cast<const X *>(vx);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
-            int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance()->maxThreads());
+            int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance().maxThreads());
             Z intermediate[64];
 
             PRAGMA_OMP_SIMD

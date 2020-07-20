@@ -18,7 +18,6 @@ package org.nd4j.linalg.api.ops.impl.reduce.bool;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceBoolOp;
 
@@ -68,7 +67,7 @@ public class IsInf extends BaseReduceBoolOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().zerosLike(arg()));
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
     @Override

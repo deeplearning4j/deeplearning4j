@@ -29,8 +29,8 @@ namespace sd {
                                    void *vz,
                                    Nd4jLong len,
                                    Nd4jLong *indexes,
-                                   Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                   Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+                                   Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
+                                   Nd4jLong const* zTadShapeInfo, Nd4jLong const* zTadOffsets) {
 
         auto x = reinterpret_cast<T *>(vx);
         auto z = reinterpret_cast<T *>(vz);
@@ -67,8 +67,8 @@ namespace sd {
                                        void *vz,
                                        Nd4jLong len,
                                        Nd4jLong *indexes,
-                                       Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                       Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+                                       Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
+                                       Nd4jLong const* zTadShapeInfo, Nd4jLong const* zTadOffsets) {
 
         pullRowsKernel<T>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
     }
@@ -80,13 +80,13 @@ namespace sd {
                                         void *vz,
                                         Nd4jLong len,
                                         Nd4jLong *indexes,
-                                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                        Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+                                        Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
+                                        Nd4jLong const* zTadShapeInfo, Nd4jLong const* zTadOffsets) {
 
         execPullRowsKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vz, len, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
         sd::DebugHelper::checkErrorCode(stream, "pullRows(...) failed");
     }
 
-    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT pullRowsKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * vx, void * vz, Nd4jLong len, Nd4jLong * indexes, Nd4jLong * tadShapeInfo, Nd4jLong * tadOffsets, Nd4jLong *zTadShapeInfo, Nd4jLong * zTadOffsets), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT pullRowsKernelGeneric, (dim3 & launchDims, cudaStream_t * stream, void * vx, void * vz, Nd4jLong len, Nd4jLong * indexes, Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, Nd4jLong const* zTadShapeInfo, Nd4jLong const* zTadOffsets), LIBND4J_TYPES);
 }
 

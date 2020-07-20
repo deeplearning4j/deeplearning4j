@@ -5,7 +5,7 @@ import java.util.Collections;
 
 import lombok.Data;
 import lombok.NonNull;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 import java.util.List;
 
@@ -80,7 +80,7 @@ public class Loss {
 
     public static Loss sum(List<Loss> losses) {
 
-        if (losses.size() == 0)
+        if (losses.isEmpty())
             return new Loss(Collections.<String>emptyList(), new double[0]);
 
         double[] lossValues = new double[losses.get(0).losses.length];

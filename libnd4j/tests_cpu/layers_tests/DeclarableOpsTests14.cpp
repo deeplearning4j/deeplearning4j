@@ -40,7 +40,7 @@ public:
 
 TEST_F(DeclarableOpsTests14, Test_Validation_Edge_1) {
     auto x = NDArrayFactory::create<int>('c', {2}, {2, 2});
-    auto exp = NDArrayFactory::create('c', {2, 2}, Environment::getInstance()->defaultFloatDataType());
+    auto exp = NDArrayFactory::create('c', {2, 2}, Environment::getInstance().defaultFloatDataType());
     exp.assign(4.0f);
 
     sd::ops::fill op;
@@ -51,23 +51,7 @@ TEST_F(DeclarableOpsTests14, Test_Validation_Edge_1) {
 
     ASSERT_EQ(exp, *z);
 
-    
-}
 
-TEST_F(DeclarableOpsTests14, Test_Reshape_CF_1) {
-    auto x = NDArrayFactory::create<double>('f', {2, 3}, {1.0, 4.0, 2.0, 5.0, 3.0, 6.0});
-    auto e = NDArrayFactory::create<double>('f', {3, 2}, {1.0, 3.0, 5.0, 2.0, 4.0, 6.0});
-
-    auto r = x.reshape('c', {3, 2});;
-    r.streamline('f');
-
-    sd::ops::reshape op;
-    auto result = op.evaluate({&x}, {3, 2});
-    ASSERT_EQ(Status::OK(), result.status());
-
-    auto z = result.at(0);
-
-    
 }
 
 TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_1) {
@@ -108,7 +92,7 @@ TEST_F(DeclarableOpsTests14, Multiply_test) {
         ASSERT_EQ(e, r);
         ASSERT_EQ(e, *f);
 
-        
+
     }
 }
 
@@ -124,7 +108,7 @@ TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_1) {
     auto z = result.at(0);
     ASSERT_EQ(e, *z);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_2) {
@@ -139,7 +123,7 @@ TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_2) {
     auto z = result.at(0);
     ASSERT_EQ(e, *z);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Test_Reduce_Min_Small_0) {
@@ -193,7 +177,7 @@ TEST_F(DeclarableOpsTests14, Test_scalar_broadcast_1) {
 
     ASSERT_EQ(e, *result.at(0));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Test_scalar_broadcast_2) {
@@ -210,7 +194,7 @@ TEST_F(DeclarableOpsTests14, Test_scalar_broadcast_2) {
 
     ASSERT_EQ(e, *result.at(0));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_fill_1) {
@@ -224,7 +208,7 @@ TEST_F(DeclarableOpsTests14, test_empty_fill_1) {
     auto z = result.at(0);
     ASSERT_EQ(y, *z);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, test_lstmBlockCell_1) {
@@ -259,7 +243,7 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_min_1) {
     auto out = res2.at(0);
 
     ASSERT_EQ(out->e<float>(0), DataTypeUtils::infOrMax<float>());
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_reduce_max_1) {
@@ -271,7 +255,7 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_max_1) {
     auto out = res2.at(0);
 
     ASSERT_EQ(out->e<float>(0), -DataTypeUtils::infOrMax<float>());
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_reduce_sum_1) {
@@ -286,7 +270,7 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_sum_1) {
     ASSERT_EQ(res2.status(), Status::OK());
     auto out = res2.at(0);
     ASSERT_EQ(out->e<float>(0), 0.f);
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_reduce_mean_1) {
@@ -303,7 +287,7 @@ TEST_F(DeclarableOpsTests14, test_empty_reduce_mean_1) {
     // out->printShapeInfo("ReduceMean empty shape with keep dims");
     // out->printIndexedBuffer("ReduceMean scalar");
     ASSERT_TRUE(std::isnan(out->e<float>(0)));
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_1) {
@@ -324,7 +308,7 @@ TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_1) {
 
     ASSERT_TRUE(exp.isSameShape(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_2) {
@@ -345,7 +329,7 @@ TEST_F(DeclarableOpsTests14, Test_StridedSliceZeros_2) {
 
     ASSERT_TRUE(exp.isSameShape(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_argmax_1) {
@@ -363,7 +347,7 @@ TEST_F(DeclarableOpsTests14, test_empty_argmax_1) {
 
     ASSERT_EQ(e, *z);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, test_empty_argmax_2) {
@@ -391,7 +375,7 @@ TEST_F(DeclarableOpsTests14, test_empty_tanh_5) {
     ASSERT_TRUE(x.isSameShape(z));
     ASSERT_EQ(x, *z);
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -409,7 +393,7 @@ TEST_F(DeclarableOpsTests14, repeat_1) {
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -427,7 +411,7 @@ TEST_F(DeclarableOpsTests14, repeat_2) {
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -445,7 +429,7 @@ TEST_F(DeclarableOpsTests14, repeat_3) {
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -463,7 +447,7 @@ TEST_F(DeclarableOpsTests14, repeat_4) {
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -481,7 +465,7 @@ TEST_F(DeclarableOpsTests14, repeat_5) {
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(z));
 
-    
+
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest) {
@@ -502,7 +486,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest) {
 
     ASSERT_EQ(e, res);
 
-    
+
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest2) {
@@ -523,7 +507,7 @@ TEST_F(DeclarableOpsTests14, Test_broadcast_SpecialCaseTest2) {
 
     ASSERT_EQ(e, res);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////////
@@ -639,7 +623,7 @@ TEST_F(DeclarableOpsTests14, matmul_test1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -661,7 +645,7 @@ TEST_F(DeclarableOpsTests14, matmul_test2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -682,7 +666,7 @@ TEST_F(DeclarableOpsTests14, matmul_test3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -704,7 +688,7 @@ TEST_F(DeclarableOpsTests14, matmul_test4) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -726,7 +710,7 @@ TEST_F(DeclarableOpsTests14, matmul_test5) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -747,7 +731,7 @@ TEST_F(DeclarableOpsTests14, matmul_test6) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -770,7 +754,7 @@ TEST_F(DeclarableOpsTests14, matmul_test7) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -795,7 +779,7 @@ TEST_F(DeclarableOpsTests14, matmul_test8) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -820,7 +804,7 @@ TEST_F(DeclarableOpsTests14, matmul_test9) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, matmul_test10) {
@@ -876,7 +860,7 @@ TEST_F(DeclarableOpsTests14, matmul_test11) {
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, matmul_test12) {
@@ -894,7 +878,7 @@ TEST_F(DeclarableOpsTests14, matmul_test12) {
     ASSERT_TRUE(exp.equalsTo(z));
 
 
-    
+
 }
 
 
@@ -914,7 +898,7 @@ TEST_F(DeclarableOpsTests14, matmul_test13) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, matmul_test14) {
@@ -933,7 +917,7 @@ TEST_F(DeclarableOpsTests14, matmul_test14) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, matmul_test15) {
@@ -952,7 +936,7 @@ TEST_F(DeclarableOpsTests14, matmul_test15) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, matmul_test16) {
@@ -971,7 +955,7 @@ TEST_F(DeclarableOpsTests14, matmul_test16) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, matmul_test17) {
@@ -985,7 +969,7 @@ TEST_F(DeclarableOpsTests14, matmul_test17) {
 
     ASSERT_EQ(exp, *result.at(0));
 
-    
+
 }
 
 
@@ -1007,7 +991,7 @@ TEST_F(DeclarableOpsTests14, matmul_test18) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1027,7 +1011,7 @@ TEST_F(DeclarableOpsTests14, matmul_test19) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1048,7 +1032,7 @@ TEST_F(DeclarableOpsTests14, matmul_test20) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1069,7 +1053,7 @@ TEST_F(DeclarableOpsTests14, matmul_test21) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1090,7 +1074,7 @@ TEST_F(DeclarableOpsTests14, matmul_test22) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1111,7 +1095,7 @@ TEST_F(DeclarableOpsTests14, matmul_test23) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1135,7 +1119,7 @@ TEST_F(DeclarableOpsTests14, matmul_test24) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1156,7 +1140,7 @@ TEST_F(DeclarableOpsTests14, matmul_test25) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1177,7 +1161,7 @@ TEST_F(DeclarableOpsTests14, matmul_test26) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1198,7 +1182,7 @@ TEST_F(DeclarableOpsTests14, matmul_test27) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -1220,7 +1204,7 @@ TEST_F(DeclarableOpsTests14, matmul_test28) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -1242,7 +1226,7 @@ TEST_F(DeclarableOpsTests14, matmul_test29) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test30) {
@@ -1262,7 +1246,7 @@ TEST_F(DeclarableOpsTests14, matmul_test30) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test31) {
@@ -1282,7 +1266,7 @@ TEST_F(DeclarableOpsTests14, matmul_test31) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test32) {
@@ -1299,7 +1283,7 @@ TEST_F(DeclarableOpsTests14, matmul_test32) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 /////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test33) {
@@ -1319,7 +1303,7 @@ TEST_F(DeclarableOpsTests14, matmul_test33) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 //////////////////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test34) {
@@ -1336,7 +1320,7 @@ TEST_F(DeclarableOpsTests14, matmul_test34) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test35) {
@@ -1353,7 +1337,7 @@ TEST_F(DeclarableOpsTests14, matmul_test35) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test36) {
@@ -1370,7 +1354,7 @@ TEST_F(DeclarableOpsTests14, matmul_test36) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests14, matmul_test37) {
@@ -1617,7 +1601,7 @@ TEST_F(DeclarableOpsTests14, Stack_1) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 
 }
 
@@ -1645,7 +1629,7 @@ TEST_F(DeclarableOpsTests14, Stack_2) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 
@@ -1673,7 +1657,7 @@ TEST_F(DeclarableOpsTests14, Stack_3) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1700,7 +1684,7 @@ TEST_F(DeclarableOpsTests14, Stack_4) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1727,7 +1711,7 @@ TEST_F(DeclarableOpsTests14, Stack_5) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1754,7 +1738,7 @@ TEST_F(DeclarableOpsTests14, Stack_6) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 
@@ -1778,7 +1762,7 @@ TEST_F(DeclarableOpsTests14, Stack_7) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1801,7 +1785,7 @@ TEST_F(DeclarableOpsTests14, Stack_8) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1824,7 +1808,7 @@ TEST_F(DeclarableOpsTests14, Stack_9) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1850,7 +1834,7 @@ TEST_F(DeclarableOpsTests14, Stack_10) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Stack_11) {
@@ -1872,7 +1856,7 @@ TEST_F(DeclarableOpsTests14, Stack_11) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 
@@ -1895,7 +1879,7 @@ TEST_F(DeclarableOpsTests14, Stack_12) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1917,7 +1901,7 @@ TEST_F(DeclarableOpsTests14, Stack_13) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1941,7 +1925,7 @@ TEST_F(DeclarableOpsTests14, Stack_14) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Stack_15) {
@@ -1959,7 +1943,7 @@ TEST_F(DeclarableOpsTests14, Stack_15) {
 
     ASSERT_TRUE(exp.isSameShape(z));
 
-    
+
 }
 
 
@@ -1978,7 +1962,7 @@ TEST_F(DeclarableOpsTests14, Stack_16) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Stack_17) {
@@ -1999,7 +1983,7 @@ TEST_F(DeclarableOpsTests14, Stack_17) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Stack_18) {
@@ -2018,8 +2002,8 @@ TEST_F(DeclarableOpsTests14, Stack_18) {
     auto out = res2.at(0);
 
     ASSERT_EQ(out->e<float>(0), DataTypeUtils::infOrMax<float>());
-    
-    
+
+
 }
 
 TEST_F(DeclarableOpsTests14, Stack_19) {
@@ -2033,7 +2017,7 @@ TEST_F(DeclarableOpsTests14, Stack_19) {
     auto z = result.at(0);
     ASSERT_EQ(e, *z);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Stack_20) {
@@ -2047,7 +2031,7 @@ TEST_F(DeclarableOpsTests14, Stack_20) {
     auto z = result.at(0);
     ASSERT_EQ(e, *z);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests14, Stack_21) {
@@ -2073,7 +2057,368 @@ TEST_F(DeclarableOpsTests14, Stack_21) {
 
     ASSERT_TRUE(outStack->isSameShape(outConcat));
     ASSERT_TRUE(outStack->equalsTo(outConcat));
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Reshape1) {
+    const std::vector<Nd4jLong> xShape = { 5,4,3 };
+    const std::vector<Nd4jLong> yShape = { 3,5,4 };
+
+    auto x = NDArrayFactory::create_<float>('f', xShape);
+    auto y = NDArrayFactory::create_<float>('f', yShape);
+
+
+    auto variableSpace = new VariableSpace();
+    variableSpace->putVariable(-1, x);
+    variableSpace->putVariable(-2, y);
+    auto block = new Context(1, variableSpace, true);
+    block->fillInputs({ -1, -2 });
+
+    sd::ops::reshapeas reshape;
+
+    reshape.execute(block);
+
+    ASSERT_TRUE(x->isSameShape(y));
+
+    delete variableSpace;
+    delete block;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, Reshape2) {
+    const std::vector<Nd4jLong> xShape = { 5,4,3 };
+    const std::vector<Nd4jLong> yShape = { 3,5,4 };
+
+    auto x = NDArrayFactory::create_<float>('c', xShape);
+    auto y = NDArrayFactory::create_<float>('c', yShape);
+
+    auto variableSpace = new VariableSpace();
+    variableSpace->putVariable(-1, x);
+    variableSpace->putVariable(1, new Variable());
+
+    auto block = new Context(1, variableSpace, false);
+    block->fillInputs({ -1 });
+    std::vector<int>* arguments = block->getIArguments();
+    arguments->push_back(-y->ordering());
+    arguments->push_back(3);
+    arguments->push_back(5);
+    arguments->push_back(4);
+
+    sd::ops::reshape reshape;
+
+    Nd4jStatus status = reshape.execute(block);
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
+
+    ASSERT_TRUE(result->isSameShape(y));
+
+    delete y;
+    delete block;
+    delete variableSpace;
+}
+
+TEST_F(DeclarableOpsTests14, Reshape3) {
+    auto x = NDArrayFactory::create<float>('c', { 3, 4, 5 });
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({ &x }, {}, { -99, 3, 4, 5 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(x.isSameShape(z));
+}
+
+TEST_F(DeclarableOpsTests14, Reshape4) {
+    auto x = NDArrayFactory::create<float>('c', { 3, 4, 5 });
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({ &x }, {}, { 3, 4, 5 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(x.isSameShape(z));
+}
+
+TEST_F(DeclarableOpsTests14, Reshape5) {
+    auto x = NDArrayFactory::create<float>('c', { 3, 4, 5 });
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({ &x }, {}, { 5, 4, 3 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+}
+
+TEST_F(DeclarableOpsTests14, Reshape6) {
+    auto x = NDArrayFactory::create<float>('c', { 3, 4, 5 });
+    auto exp = NDArrayFactory::create<float>('c', { 4, 15 });
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({ &x }, {}, { 4, -1 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(z->isSameShape(exp));
+}
+
+TEST_F(DeclarableOpsTests14, Reshape7) {
+    auto x = NDArrayFactory::create<float>('c', { 3, 4, 5 });
+    auto exp = NDArrayFactory::create<float>('c', { 60 });
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({ &x }, {}, { -1 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(z->isSameShape(exp));
+}
+
+TEST_F(DeclarableOpsTests14, Reshape8) {
+    auto x = NDArrayFactory::create<double>('f', {2, 3}, {1.0, 4.0, 2.0, 5.0, 3.0, 6.0});
+    auto e = NDArrayFactory::create<double>('f', {3, 2}, {1.0, 3.0, 5.0, 2.0, 4.0, 6.0});
+
+    auto r = x.reshape('c', {3, 2});;
+    r.streamline('f');
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({&x}, {3, 2});
+    ASSERT_EQ(Status::OK(), result.status());
+
+    auto z = result.at(0);
+}
+
+TEST_F(DeclarableOpsTests14, Reshape9) {
+    auto array = NDArrayFactory::create<float>(119.f);
+    auto e = NDArrayFactory::create<float>('c', {1, 1}, {119.f});
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({&array}, {}, {1, 1});
+    ASSERT_EQ(Status::OK(), result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_EQ(e, *z);
+}
+
+TEST_F(DeclarableOpsTests14, Reshape10) {
+    auto array = NDArrayFactory::create<float>(119.f);
+    auto e = NDArrayFactory::create<float>('c', {1, 1}, {119.f});
+    auto z = NDArrayFactory::create<float>('c', {1, 1});
+
+    sd::ops::reshape op;
+    auto result = op.execute({&array}, {&z}, {}, {1, 1}, {});
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests14, Reshape11) {
+    auto x = NDArrayFactory::create<double>('c', {4, 3});
+    auto exp = NDArrayFactory::create<double>('c', {4, 3});
+
+    x.linspace(1);
+    exp.linspace(1);
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({&x}, {-99, 4, 3});
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+TEST_F(DeclarableOpsTests14, Reshape12) {
+    auto x = NDArrayFactory::create<double>('c', {2, 2, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
+    auto shape = NDArrayFactory::create<Nd4jLong>('c', {2}, {-1, 2});
+    auto exp = NDArrayFactory::create<double>('c', {4, 2}, {1, 2, 3, 4, 5, 6, 7, 8});
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({&x, &shape});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+TEST_F(DeclarableOpsTests14, Reshape13) {
+    auto vector = NDArrayFactory::create<float>('c', {1}, {119.0f});
+    auto exp = NDArrayFactory::create<float>(119.f);
+    auto empty = NDArrayFactory::empty_<int>();
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({&vector, empty}, {}, {});
+
+    ASSERT_EQ(Status::OK(), result.status());
+
+    ASSERT_EQ(exp, *result.at(0));
+
+    delete empty;
+}
+
+TEST_F(DeclarableOpsTests14, Reshape14) {
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 0, 2});
+    auto y = NDArrayFactory::create<int>('c', {2}, {10, 0});
+    auto e = NDArrayFactory::create<float>('c', {10, 0});
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_EQ(e, *z);
 
 }
 
+TEST_F(DeclarableOpsTests14, Reshape15) {
 
+    auto x0 = NDArrayFactory::create<float>('c', {2, 0});
+    auto x1 = NDArrayFactory::create<float>('c', {0, 1, 2});
+
+    auto shape0 = NDArrayFactory::create<Nd4jLong>('c', {3}, {2, 0, -1});
+    auto shape1 = NDArrayFactory::create<Nd4jLong>('c', {2}, {-1, 1});
+
+    auto e0 = NDArrayFactory::create<float>('c', {2, 0, 1});
+    auto e1 = NDArrayFactory::create<float>('c', {0, 1});
+
+    sd::ops::reshape op;
+    auto result0 = op.evaluate({&x0, &shape0}, {}, {});
+    ASSERT_EQ(Status::OK(), result0.status());
+    auto z0 = result0.at(0);
+    ASSERT_EQ(e0, *z0);
+
+    auto result1 = op.evaluate({&x1, &shape1}, {}, {});
+    ASSERT_EQ(Status::OK(), result1.status());
+    auto z1 = result1.at(0);
+    ASSERT_EQ(e1, *z1);
+}
+
+TEST_F(DeclarableOpsTests14, Reshape16) {
+    auto x = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 3, 4});
+    auto shape = NDArrayFactory::create<int>('c', {1, 3}, {1, 2, 2});
+
+    auto exp = NDArrayFactory::create<int>('c', {1, 2, 2}, {1, 2, 3, 4});
+
+    sd::ops::reshape op;
+
+    auto result = op.evaluate({&x, &shape}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+TEST_F(DeclarableOpsTests14, Reshape17) {
+    auto x = NDArrayFactory::create<float>(2.0f);
+    auto exp = NDArrayFactory::create<float>('c', {1, 1, 1}, {2.0f});
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({&x}, {}, {-99, 1, 1, 1});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+TEST_F(DeclarableOpsTests14, Reshape18) {
+    auto x = NDArrayFactory::create<float>('c', {1, 3}, {1, 2, 3});
+    auto exp = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({&x}, {}, {-99, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+
+}
+
+TEST_F(DeclarableOpsTests14, Reshape19) {
+    auto x = NDArrayFactory::create<float>('c', {3}, {1, 2, 3});
+    auto exp = NDArrayFactory::create<float>('c', {1, 3}, {1, 2, 3});
+
+    sd::ops::reshape op;
+    auto result = op.evaluate({&x}, {}, {-99, 1, 3});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+}
+
+
+TEST_F(DeclarableOpsTests14, Reshape20) {
+
+    NDArray x1('c', {2,0}, sd::DataType::FLOAT32);
+    NDArray x2('c', {10,0}, sd::DataType::FLOAT32);
+    NDArray x3('c', {2,0,0,10}, sd::DataType::FLOAT32);
+    NDArray x4('c', {0,0,10}, sd::DataType::FLOAT32);
+    NDArray x5('c', {0,2,10}, sd::DataType::FLOAT32);
+    NDArray x6('c', {0,10,0}, sd::DataType::FLOAT32);
+    NDArray x7('c', {0,1,2}, sd::DataType::FLOAT32);
+    NDArray x8('c', {1,2,0}, sd::DataType::FLOAT32);
+
+    sd::ops::reshape op;
+
+    auto result = op.evaluate({&x1}, {}, {2, -1});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({2,0}));
+
+    result = op.evaluate({&x2}, {}, {2, 0, -1});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({2,0,5}));
+
+    result = op.evaluate({&x2}, {}, {5, 2, -1});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({5,2,0}));
+
+    result = op.evaluate({&x2}, {}, {-1, 2, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({5,2,0}));
+
+    result = op.evaluate({&x3}, {}, {2, 0, -1});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({2,0,10}));
+
+    result = op.evaluate({&x4}, {}, {2, -1, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({2,5,0}));
+
+    result = op.evaluate({&x5}, {}, {2, 0, 0, 0, -1});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({2,0,0,0,10}));
+
+    result = op.evaluate({&x6}, {}, {-1, 2, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({5, 2, 0}));
+
+    result = op.evaluate({&x7}, {}, {-1, 0});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({2, 0}));
+
+    result = op.evaluate({&x7}, {}, {10,0,50,100});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({10,0,50,100}));
+
+    result = op.evaluate({&x7}, {}, {2,0,-1});
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(result.at(0)->isSameShape({2,0,1}));
+}

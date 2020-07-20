@@ -14,9 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-//
-//  @author raver119@gmail.com
-//
+ //
+ //  @author raver119@gmail.com
+ //
 
 #include <system/op_boilerplate.h>
 #if NOT_EXCLUDED(OP_split_string)
@@ -60,7 +60,7 @@ namespace sd {
 
                 // filling output indices
                 for (uint64_t f = 0; f < cnt; f++) {
-                    for (auto v: icoords)
+                    for (auto v : icoords)
                         indices->p(ic++, v);
 
                     // last index
@@ -75,12 +75,12 @@ namespace sd {
             for (auto e = 0L; e < input->lengthOf(); e++) {
                 auto split = StringUtils::split(input->e<std::string>(e), d);
 
-                for (const auto &s:split)
+                for (const auto& s : split)
                     strings.emplace_back(s);
             }
 
             // now once we have all strings in single vector time to fill
-            auto tmp = NDArrayFactory::string({(Nd4jLong) strings.size()}, strings);
+            auto tmp = NDArrayFactory::string({ (Nd4jLong)strings.size() }, strings, input->dataType(), block.launchContext());
             auto blen = StringUtils::byteLength(tmp) + ShapeUtils::stringBufferHeaderRequirements(strings.size());
 
             // for CUDA mostly
@@ -121,17 +121,17 @@ namespace sd {
             // values tensor is going to be vector always
             // indices tensor is going to be vector with length equal to values.length * output rank
 
-            auto valuesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(cnt, sd::DataType::UTF8);
-            auto indicesShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(cnt * (input->rankOf() + 1), sd::DataType::INT64);
+            auto valuesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(cnt, sd::DataType::UTF8);
+            auto indicesShape = ConstantShapeHelper::getInstance().vectorShapeInfo(cnt * (input->rankOf() + 1), sd::DataType::INT64);
 
             return SHAPELIST(indicesShape, valuesShape);
         }
 
         DECLARE_TYPES(compat_string_split) {
             getOpDescriptor()
-                    ->setAllowedInputTypes({ALL_STRINGS})
-                    ->setAllowedOutputTypes(0, {ALL_INDICES})
-                    ->setAllowedOutputTypes(1, {ALL_STRINGS});
+                ->setAllowedInputTypes({ ALL_STRINGS })
+                ->setAllowedOutputTypes(0, { ALL_INDICES })
+                ->setAllowedOutputTypes(1, { ALL_STRINGS });
         }
     }
 }

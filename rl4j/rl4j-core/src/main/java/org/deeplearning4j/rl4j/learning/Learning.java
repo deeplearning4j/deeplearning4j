@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -38,13 +37,13 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  */
 @Slf4j
-public abstract class Learning<O, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-                implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
+public abstract class Learning<OBSERVATION extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+                implements ILearning<OBSERVATION, A, AS>, NeuralNetFetchable<NN> {
 
     @Getter @Setter
-    private int stepCounter = 0;
+    protected int stepCount = 0;
     @Getter @Setter
-    private int epochCounter = 0;
+    private int epochCount = 0;
     @Getter @Setter
     private IHistoryProcessor historyProcessor = null;
 
@@ -73,11 +72,11 @@ public abstract class Learning<O, A, AS extends ActionSpace<A>, NN extends Neura
     public abstract NN getNeuralNet();
 
     public void incrementStep() {
-        stepCounter++;
+        stepCount++;
     }
 
     public void incrementEpoch() {
-        epochCounter++;
+        epochCount++;
     }
 
     public void setHistoryProcessor(HistoryProcessor.Configuration conf) {

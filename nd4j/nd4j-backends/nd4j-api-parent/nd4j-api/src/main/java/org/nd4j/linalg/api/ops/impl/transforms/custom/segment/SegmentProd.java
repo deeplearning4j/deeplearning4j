@@ -18,11 +18,12 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom.segment;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.SegmentProdBp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,6 +40,10 @@ public class SegmentProd extends DynamicCustomOp {
 
     public SegmentProd(){ }
 
+    public SegmentProd(INDArray data, INDArray segmentIds){
+        super(new INDArray[]{data, segmentIds}, null);
+    }
+
     @Override
     public String opName(){
         return "segment_prod";
@@ -51,7 +56,7 @@ public class SegmentProd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().segmentProdBp(arg(0), arg(1), gradients.get(0)));
+        return new SegmentProdBp(sameDiff, arg(0), arg(1), gradients.get(0)).outputs();
     }
 
     @Override

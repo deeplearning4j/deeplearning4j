@@ -18,7 +18,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,6 +37,10 @@ import java.util.List;
 public class LessThan extends BaseDynamicTransformOp {
     public LessThan() {}
 
+    public LessThan( SameDiff sameDiff, SDVariable x, SDVariable y) {
+        this(sameDiff, new SDVariable[]{x,y}, false);
+    }
+
     public LessThan( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
     }
@@ -47,6 +51,10 @@ public class LessThan extends BaseDynamicTransformOp {
 
     public LessThan(INDArray x, INDArray y, INDArray z){
         this(new INDArray[]{x, y}, new INDArray[]{z});
+    }
+
+    public LessThan(INDArray x, INDArray y){
+        this(new INDArray[]{x, y}, null);
     }
 
     @Override

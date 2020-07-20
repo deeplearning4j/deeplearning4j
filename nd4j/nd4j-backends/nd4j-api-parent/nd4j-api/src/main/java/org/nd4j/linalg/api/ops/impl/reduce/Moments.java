@@ -20,11 +20,13 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.VarianceBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -83,8 +85,8 @@ public class Moments extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> grad){
         SDVariable dLdMean = grad.get(0);
         SDVariable dLdVar = grad.get(1);        //Note: non-bias-corrected variance
-        SDVariable meanBp = f().meanBp(arg(), dLdMean, false, axes);
-        SDVariable varBp = f().varianceBp(arg(), dLdVar, false, false, axes);
+        SDVariable meanBp = new MeanBp(sameDiff, arg(), dLdMean, false, axes).outputVariable();
+        SDVariable varBp = new VarianceBp(sameDiff, arg(), dLdVar, false, false, axes).outputVariable();
         return Collections.singletonList(meanBp.add(varBp));
     }
 

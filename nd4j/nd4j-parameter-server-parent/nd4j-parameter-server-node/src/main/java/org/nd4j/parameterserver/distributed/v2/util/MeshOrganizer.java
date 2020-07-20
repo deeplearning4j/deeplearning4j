@@ -18,8 +18,8 @@ package org.nd4j.parameterserver.distributed.v2.util;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.primitives.Atomic;
-import org.nd4j.linalg.util.SerializationUtils;
+import org.nd4j.common.primitives.Atomic;
+import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.parameterserver.distributed.v2.enums.MeshBuildMode;
 import org.nd4j.parameterserver.distributed.enums.NodeStatus;
 

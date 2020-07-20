@@ -20,7 +20,7 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;

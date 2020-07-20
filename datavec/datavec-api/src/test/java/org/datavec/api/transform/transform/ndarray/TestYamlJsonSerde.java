@@ -27,6 +27,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.serde.JsonSerializer;
 import org.datavec.api.transform.serde.YamlSerializer;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 20/07/2016.
  */
-public class TestYamlJsonSerde {
+public class TestYamlJsonSerde extends BaseND4JTest {
 
     public static YamlSerializer y = new YamlSerializer();
     public static JsonSerializer j = new JsonSerializer();

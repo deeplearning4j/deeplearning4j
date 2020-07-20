@@ -18,9 +18,11 @@ package org.nd4j.linalg.api.ops.impl.transforms.segment;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentMaxBp;
 
 import java.util.*;
 
@@ -41,6 +43,12 @@ public class UnsortedSegmentMax extends DynamicCustomOp {
 
     public UnsortedSegmentMax(){ }
 
+    public UnsortedSegmentMax(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
+        this.numSegments = numSegments;
+        addIArgument(numSegments);
+    }
+
     @Override
     public String opName(){
         return "unsorted_segment_max";
@@ -53,7 +61,7 @@ public class UnsortedSegmentMax extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentMaxBp(arg(0), arg(1), gradients.get(0), numSegments));
+        return new UnsortedSegmentMaxBp(sameDiff, arg(0), arg(1), gradients.get(0), numSegments).outputs();
     }
 
     @Override

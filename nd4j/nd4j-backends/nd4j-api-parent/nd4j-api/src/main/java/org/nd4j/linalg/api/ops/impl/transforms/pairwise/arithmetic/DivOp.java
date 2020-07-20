@@ -16,11 +16,14 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.DivBpOp;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -33,12 +36,16 @@ public class DivOp extends BaseDynamicTransformOp {
 
     public DivOp() {}
 
-    public DivOp( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
-        super(sameDiff, args, inPlace);
+    public DivOp( @NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable y) {
+        super(sameDiff, new SDVariable[]{x, y}, false);
     }
 
     public DivOp(INDArray first, INDArray second, INDArray result){
         this(new INDArray[]{first, second}, result == null ? null : new INDArray[]{result});
+    }
+
+    public DivOp( @NonNull INDArray x, INDArray y) {
+        this(new INDArray[]{x,y}, null);
     }
 
     public DivOp( INDArray[] inputs, INDArray[] outputs) {
@@ -65,7 +72,7 @@ public class DivOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return f().divBp(larg(), rarg(), i_v.get(0));
+        return Arrays.asList(new DivBpOp(sameDiff, larg(), rarg(), i_v.get(0)).outputVariables());
     }
 
 

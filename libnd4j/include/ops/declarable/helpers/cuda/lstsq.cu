@@ -33,7 +33,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static __global__ void fillRegularizerKernel(T* ioMatrixData, Nd4jLong* ioMatrixShape, Nd4jLong* ioMatrixTads, Nd4jLong* ioMatrixOffsets, Nd4jLong batchSize, Nd4jLong rows, T const value) {
+    static __global__ void fillRegularizerKernel(T* ioMatrixData, const Nd4jLong* ioMatrixShape, const Nd4jLong* ioMatrixTads, const Nd4jLong* ioMatrixOffsets, Nd4jLong batchSize, Nd4jLong rows, T const value) {
 
         for (auto x = blockIdx.x; x < batchSize; x += gridDim.x) {
             auto z = ioMatrixData + ioMatrixOffsets[x];
@@ -48,7 +48,7 @@ namespace helpers {
 
     template <typename T>
     static void fillRegularizer(sd::LaunchContext* context, NDArray& ioMatrix, double const value) {
-        auto lastDimsTads = ConstantTadHelper::getInstance()->tadForDimensions(ioMatrix.shapeInfo(), {-2, -1});
+        auto lastDimsTads = ConstantTadHelper::getInstance().tadForDimensions(ioMatrix.shapeInfo(), {-2, -1});
         auto stream = context->getCudaStream();
         auto rows = ioMatrix.sizeAt(-2);
         //auto cols = ioMatrix.sizeAt(-1);
@@ -61,7 +61,7 @@ namespace helpers {
         if (fast) { // Cholesky decomposition approach
             // Equation for solve A^T * Ax = A^T * b, so
             // 1. Computing A2:
-            auto tAtShape = ShapeUtils::evalShapeForMatmul(leftInput->getShapeInfo(), leftInput->getShapeInfo(), true, false);
+            auto tAtShape = ShapeUtils::evalShapeForMatmul(leftInput->shapeInfo(), leftInput->shapeInfo(), true, false);
             //tAtShape[tAtShape.size() - 2] = output->sizeAt(-2);
             NDArray leftOutput(leftInput->ordering(), tAtShape, output->dataType(), context);
             MmulHelper::matmul(leftInput, leftInput, &leftOutput, true, false); // Computing A2 = A^T * A

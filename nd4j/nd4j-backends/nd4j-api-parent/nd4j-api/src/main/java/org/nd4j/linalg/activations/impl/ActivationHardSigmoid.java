@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.HardSigmoid;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 /**
  * f(x) = min(1, max(0, 0.2*x + 0.5))

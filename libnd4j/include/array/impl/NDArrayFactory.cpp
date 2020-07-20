@@ -417,7 +417,7 @@ NDArray NDArrayFactory::create(const std::vector<T> &values, sd::LaunchContext *
 
     NDArray res(buffer, ShapeDescriptor::vectorDescriptor(values.size(), DataTypeUtils::fromT<T>()), context);
 
-    memcpyFromVector<T>(res.getBuffer(), values);
+    memcpyFromVector<T>(res.buffer(), values);
 
     res.tickWriteHost();
     res.syncToDevice();

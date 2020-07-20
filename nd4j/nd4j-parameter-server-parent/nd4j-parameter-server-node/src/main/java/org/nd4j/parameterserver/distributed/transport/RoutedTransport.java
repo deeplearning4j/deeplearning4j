@@ -27,7 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.nd4j.aeron.ipc.AeronUtil;
-import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.HashUtil;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;

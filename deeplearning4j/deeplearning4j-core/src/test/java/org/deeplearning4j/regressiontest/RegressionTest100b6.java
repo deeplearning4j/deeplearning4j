@@ -41,7 +41,7 @@ import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -54,6 +54,11 @@ public class RegressionTest100b6 extends BaseDL4JTest {
     @Override
     public DataType getDataType() {
         return DataType.FLOAT;
+    }
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
     }
 
     @Test
@@ -106,7 +111,8 @@ public class RegressionTest100b6 extends BaseDL4JTest {
             assertEquals(dtype, net.getLayerWiseConfigurations().getDataType());
             assertEquals(dtype, net.params().dataType());
             boolean eq = outExp.equalsWithEps(outAct, 0.01);
-            assertTrue(outExp + " vs " + outAct, eq);        }
+            assertTrue("Test for dtype: " + dtypeName + " - " + outExp + " vs " + outAct, eq);
+        }
     }
 
 

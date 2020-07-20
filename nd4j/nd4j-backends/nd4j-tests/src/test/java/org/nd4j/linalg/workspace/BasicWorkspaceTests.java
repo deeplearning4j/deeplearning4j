@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -683,7 +684,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
 
         workspace.initializeWorkspace();
-        long reqMemory = 12 * Nd4j.sizeOfDataType(arrayCold.dataType());
+        long reqMemory = 11 * Nd4j.sizeOfDataType(arrayCold.dataType());
         assertEquals(reqMemory + reqMemory % 8, workspace.getCurrentSize());
 
 
@@ -930,6 +931,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         WorkspaceConfiguration mmap = WorkspaceConfiguration.builder()
                 .initialSize(1000000)
                 .policyLocation(LocationPolicy.MMAP)
+                .policyLearning(LearningPolicy.NONE)
                 .build();
 
         MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(mmap, "M2");
@@ -1218,6 +1220,30 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
     }
 
+    @Test
+    public void testCircularWorkspaceAsymmetry_1() {
+        // nothing to test on CPU here
+        if (Nd4j.getEnvironment().isCPU())
+            return;
+
+        // circular workspace mode
+        val configuration = WorkspaceConfiguration.builder().initialSize(10 * 1024 * 1024)
+                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED).policyAllocation(AllocationPolicy.STRICT)
+                .policySpill(SpillPolicy.FAIL).policyLearning(LearningPolicy.NONE).build();
+
+
+        try (val ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "circular_ws")) {
+            val array = Nd4j.create(DataType.FLOAT, 10, 10);
+
+            // we expect that this array has no data/buffer on HOST side
+            assertEquals(AffinityManager.Location.DEVICE, Nd4j.getAffinityManager().getActiveLocation(array));
+
+            // since this array doesn't have HOST buffer - it will allocate one now
+            array.getDouble(3L);
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+    }
 
     @Override
     public char ordering() {

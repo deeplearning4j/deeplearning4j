@@ -40,11 +40,9 @@ namespace sd {
             //
         }
 
-        MemoryTracker* MemoryTracker::getInstance() {
-            if (_INSTANCE == 0)
-                _INSTANCE = new MemoryTracker();
-
-            return _INSTANCE;
+        MemoryTracker& MemoryTracker::getInstance() {
+            static MemoryTracker instance;
+            return instance;
         }
 
 #if defined(__GNUC__) && !defined(__MINGW64__) && !defined(SD_ANDROID_BUILD) && !defined(SD_IOS_BUILD)  && !defined(SD_APPLE_BUILD)
@@ -90,13 +88,16 @@ namespace sd {
                     return result;
                 }
             }
+
+            // safe return
+            return std::string("");
         }
 
 #endif
 
         void MemoryTracker::countIn(MemoryType type, Nd4jPointer ptr, Nd4jLong numBytes) {
 #if defined(__GNUC__) && !defined(__MINGW64__) && !defined(SD_ANDROID_BUILD) && !defined(SD_IOS_BUILD)  && !defined(SD_APPLE_BUILD)
-            if (Environment::getInstance()->isDetectingLeaks()) {
+            if (Environment::getInstance().isDetectingLeaks()) {
                 auto lptr = reinterpret_cast<Nd4jLong>(ptr);
 
                 _locker.lock();
@@ -130,7 +131,7 @@ namespace sd {
 
         void MemoryTracker::countOut(Nd4jPointer ptr) {
 #if defined(__GNUC__) && !defined(__MINGW64__) && !defined(SD_ANDROID_BUILD) && !defined(SD_IOS_BUILD)  && !defined(SD_APPLE_BUILD)
-            if (Environment::getInstance()->isDetectingLeaks()) {
+            if (Environment::getInstance().isDetectingLeaks()) {
                 auto lptr = reinterpret_cast<Nd4jLong>(ptr);
 
                 _locker.lock();
@@ -169,7 +170,5 @@ namespace sd {
             _allocations.clear();
             _released.clear();
         }
-
-        MemoryTracker* MemoryTracker::_INSTANCE = 0;
     }
 }

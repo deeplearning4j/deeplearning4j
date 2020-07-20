@@ -41,43 +41,43 @@ namespace sd {
     public:
 
         template <typename OpType>
-        static FORCEINLINE void loopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, E* extraParams, int64_t start, int64_t stop);
+        static FORCEINLINE void loopReduce(const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, E* extraParams, int64_t start, int64_t stop);
     };
 
     template <typename X, typename Z>
     class ReductionFloatLoops : public ReductionLoops<X, Z, Z> {
     public:
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, Z* extraParams, int64_t start, int64_t stop);
+        static void wrapper(int opNum, const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, Z* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, Z* extraParams, int64_t start, int64_t stop);
+        static void innerloopReduce(const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, Z* extraParams, int64_t start, int64_t stop);
     };
 
     template <typename X, typename Z>
     class ND4J_EXPORT ReductionBoolLoops : public ReductionLoops<X, Z, X> {
     public:
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
+        static void wrapper(int opNum, const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
+        static void innerloopReduce(const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
     };
 
     template <typename X, typename Z>
     class ND4J_EXPORT ReductionLongLoops : public ReductionLoops<X, Z, X> {
     public:
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
+        static void wrapper(int opNum, const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
+        static void innerloopReduce(const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
     };
 
     template <typename X>
     class ND4J_EXPORT ReductionSameLoops : public ReductionLoops<X, X, X> {
     public:
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
+        static void wrapper(int opNum, const X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
+        static void innerloopReduce(const X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
     };
 
 
@@ -85,10 +85,10 @@ namespace sd {
     class ND4J_EXPORT IndexReductionLoops {
     private:
     public:
-        static void wrapIndexReduce(const int opNum, void* x, Nd4jLong* xShapeInfo, void* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* extraParams);
+        static void wrapIndexReduce(int opNum, const void* x, const Nd4jLong* xShapeInfo, void* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* extraParams);
 
         template <typename OpType>
-        static void loopIndexReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void loopIndexReduce(const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams);
     };
 
 
@@ -98,7 +98,7 @@ namespace sd {
     public:
 
         template<typename OpType>
-        static FORCEINLINE void loopTransform(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, E* extraParams, uint64_t threadId, uint64_t numThreads);
+        static FORCEINLINE void loopTransform(const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, E* extraParams, uint64_t threadId, uint64_t numThreads);
     };
 
     template <typename X, typename Z>
@@ -106,20 +106,20 @@ namespace sd {
     public:
 
         template <typename OpType>
-        static FORCEINLINE void loopReduce3(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start, int64_t stop);
+        static FORCEINLINE void loopReduce3(const X* x, const Nd4jLong* xShapeInfo, const X* y, const Nd4jLong* yShapeInfo, Z* z, const Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static FORCEINLINE void loopReduce3All(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets, Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets, Z* extraParams, int64_t start, int64_t stop);
+        static FORCEINLINE void loopReduce3All(const X* x, const Nd4jLong* xShapeInfo, const X* y, const Nd4jLong* yShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets, const Nd4jLong* yTadShapeInfo, const Nd4jLong* yTadOffsets, Z* extraParams, int64_t start, int64_t stop);
 
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start, int64_t stop);
+        static void wrapper(int opNum, const X* x, const Nd4jLong* xShapeInfo, const X* y, const Nd4jLong* yShapeInfo, Z* z, const Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start, int64_t stop);
 
-        static void wrapperAll(const int opNum, X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets, Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets, Z* extraParams, int64_t start, int64_t stop);
-
-        template <typename OpType>
-        static void innerloopReduce3(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start, int64_t stop);
+        static void wrapperAll(int opNum, const X* x, const Nd4jLong* xShapeInfo, const X* y, const Nd4jLong* yShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets, const Nd4jLong* yTadShapeInfo, const Nd4jLong* yTadOffsets, Z* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce3All(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets, Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets, Z* extraParams, int64_t start, int64_t stop);
+        static void innerloopReduce3(const X* x, const Nd4jLong* xShapeInfo, const X* y, const Nd4jLong* yShapeInfo, Z* z, const Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start, int64_t stop);
+
+        template <typename OpType>
+        static void innerloopReduce3All(const X* x, const Nd4jLong* xShapeInfo, const X* y, const Nd4jLong* yShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets, const Nd4jLong* yTadShapeInfo, const Nd4jLong* yTadOffsets, Z* extraParams, int64_t start, int64_t stop);
     };
 
 
@@ -263,10 +263,11 @@ namespace sd {
     //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Z, typename E>
     template <typename OpType>
-    void sd::ReductionLoops<X, Z, E>::loopReduce(X* x, Nd4jLong* xShapeInfo,
-        Z* z, Nd4jLong* zShapeInfo,
-        Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
-        E* extraParams, int64_t start, int64_t stop) {
+    void sd::ReductionLoops<X, Z, E>::loopReduce(const X* x, const Nd4jLong* xShapeInfo,
+                                                 Z* z, const Nd4jLong* zShapeInfo,
+                                                 const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                                                 E* extraParams,
+                                                 int64_t start, int64_t stop) {
 
         const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
 
@@ -492,9 +493,10 @@ namespace sd {
     //////////////////////////////////////////////////////////////////////////////
     template <typename X, typename Z, typename E>
     template <typename OpType>
-    void sd::TransformLoops<X, Z, E>::loopTransform(X* x, Nd4jLong* xShapeInfo,
-        Z* z, Nd4jLong* zShapeInfo,
-        E* extraParams, uint64_t threadId, uint64_t numThreads) {
+    void sd::TransformLoops<X, Z, E>::loopTransform(const X* x, const Nd4jLong* xShapeInfo,
+                                                    Z* z, const Nd4jLong* zShapeInfo,
+                                                    E* extraParams,
+                                                    uint64_t threadId, uint64_t numThreads) {
 
         const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
@@ -682,11 +684,11 @@ namespace sd {
     //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Z>
     template <typename OpType>
-    void sd::Reduction3Loops<X, Z>::loopReduce3(X* x, Nd4jLong* xShapeInfo,
-        X* y, Nd4jLong* yShapeInfo,
-        Z* z, Nd4jLong* zShapeInfo,
-        int* dims, int dimsLen,
-        Z* extraParameters, int64_t start, int64_t stop) {
+    void sd::Reduction3Loops<X, Z>::loopReduce3(const X* x, const Nd4jLong* xShapeInfo,
+                                                const X* y, const Nd4jLong* yShapeInfo,
+                                                Z* z, const Nd4jLong* zShapeInfo,
+                                                int* dims, int dimsLen,
+                                                Z* extraParameters, int64_t start, int64_t stop) {
 
         // both tads have same shape, however strides and ews may differ
 
@@ -695,26 +697,26 @@ namespace sd {
         const Nd4jLong xLen = shape::length(xShapeInfo);
         const Nd4jLong yLen = shape::length(yShapeInfo);
 
-        Nd4jLong* xTadShapeInfo = nullptr, * yTadShapeInfo = nullptr, * xTadOffsets = nullptr, * yTadOffsets = nullptr;
+        const Nd4jLong* xTadShapeInfo = nullptr, * yTadShapeInfo = nullptr, * xTadOffsets = nullptr, * yTadOffsets = nullptr;
         TadPack tadPackX, tadPackY;
         std::vector<Nd4jLong> zeroOffsets;
 
         if (xLen == yLen) {
-            tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
-            tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
+            tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dims, dimsLen);
+            tadPackY = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dims, dimsLen);
             xTadShapeInfo = tadPackX.primaryShapeInfo();
             yTadShapeInfo = tadPackY.primaryShapeInfo();
             xTadOffsets = tadPackX.primaryOffsets();
             yTadOffsets = tadPackY.primaryOffsets();
         }
         else if (yLen > xLen) {
-            tadPackY = sd::ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dims, dimsLen);
+            tadPackY = sd::ConstantTadHelper::getInstance().tadForDimensions(yShapeInfo, dims, dimsLen);
             xTadShapeInfo = xShapeInfo;
             yTadShapeInfo = tadPackY.primaryShapeInfo();
             yTadOffsets = tadPackY.primaryOffsets();
         }
         else {
-            tadPackX = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dims, dimsLen);
+            tadPackX = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dims, dimsLen);
             yTadShapeInfo = yShapeInfo;
             xTadShapeInfo = tadPackX.primaryShapeInfo();
             xTadOffsets = tadPackX.primaryOffsets();
@@ -962,12 +964,13 @@ namespace sd {
     //////////////////////////////////////////////////////////////////////////////
     template<typename X, typename Z>
     template <typename OpType>
-    void sd::Reduction3Loops<X, Z>::loopReduce3All(X* x, Nd4jLong* xShapeInfo,
-        X* y, Nd4jLong* yShapeInfo,
-        Z* z, Nd4jLong* zShapeInfo,
-        Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets,
-        Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets,
-        Z* extraParameters, int64_t start, int64_t stop) {
+    void sd::Reduction3Loops<X, Z>::loopReduce3All(const X* x, const Nd4jLong* xShapeInfo,
+                                                   const X* y, const Nd4jLong* yShapeInfo,
+                                                   Z* z, const Nd4jLong* zShapeInfo,
+                                                   const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets,
+                                                   const Nd4jLong* yTadShapeInfo, const Nd4jLong* yTadOffsets,
+                                                   Z* extraParameters,
+                                                   int64_t start, int64_t stop) {
 
         // both tads have same shape, however strides and ews may differ
 

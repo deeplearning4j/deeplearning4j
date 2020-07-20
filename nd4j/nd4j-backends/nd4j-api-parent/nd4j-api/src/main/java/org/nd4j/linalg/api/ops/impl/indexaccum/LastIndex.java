@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.indexaccum;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -38,12 +39,16 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 @Data
+@NoArgsConstructor
 public class LastIndex extends BaseIndexAccumulation {
     protected Condition condition;
     protected double compare;
     protected double eps;
     protected int mode;
 
+    public LastIndex(SameDiff sameDiff, SDVariable i_v, boolean keepDims, Condition condition, int... dimensions) {
+        this(sameDiff, i_v, condition, keepDims, dimensions);
+    }
     public LastIndex(SameDiff sameDiff, SDVariable i_v, Condition condition, boolean keepDims, int... dimensions) {
         super(sameDiff, i_v, keepDims, dimensions);
         this.condition = condition;
@@ -53,11 +58,17 @@ public class LastIndex extends BaseIndexAccumulation {
         this.extraArgs = new Object[] {compare, eps, (double) mode};
     }
 
-    public LastIndex() {}
-
+    public LastIndex(SameDiff sameDiff, SDVariable x, @NonNull Condition condition, int... dimensions) {
+        super(sameDiff, x, false, dimensions);
+        this.condition = condition;
+    }
 
     public LastIndex(INDArray x, @NonNull Condition condition, int... dimensions) {
         this(x, condition, Nd4j.EPS_THRESHOLD, dimensions);
+    }
+
+    public LastIndex(INDArray in, boolean keepDim, Condition condition, int... dimensions) {
+        this(in, condition, keepDim, dimensions);
     }
 
     public LastIndex(INDArray x, @NonNull Condition condition, boolean keepDim, int... dimensions) {

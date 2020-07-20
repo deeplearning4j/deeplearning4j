@@ -16,15 +16,17 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.MergeAddBp;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,12 +35,15 @@ import java.util.List;
  *
  * @author Max Pumperla
  */
+@NoArgsConstructor
 public class MergeAddOp extends BaseDynamicTransformOp {
-
-    public MergeAddOp() {}
 
     public MergeAddOp(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(sameDiff, args, inPlace);
+    }
+
+    public MergeAddOp(SameDiff sameDiff, SDVariable[] args) {
+        this(sameDiff, args, false);
     }
 
     public MergeAddOp(@NonNull INDArray... inputs){
@@ -66,11 +71,8 @@ public class MergeAddOp extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        List<SDVariable> ret = new ArrayList<>();
-        for (int i = 0; i < args().length; i++)
-            ret.add(gradient);
-        return ret;
+         return Arrays.asList(new MergeAddBp(sameDiff, args(), i_v.get(0)).outputVariables());
+
     }
 
 
@@ -78,7 +80,7 @@ public class MergeAddOp extends BaseDynamicTransformOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         DataType first = dataTypes.get(0);
         for( int i=1; i<dataTypes.size(); i++ ){
-            Preconditions.checkState(first == dataTypes.get(i), "Expected all input datatypes to be the same: first input is %s, input %s is %s", f(), i, dataTypes.get(i));
+            Preconditions.checkState(first == dataTypes.get(i), "Expected all input datatypes to be the same: first input is %s, input %s is %s", first, i, dataTypes.get(i));
         }
         return Collections.singletonList(first);
     }

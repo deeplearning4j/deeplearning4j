@@ -19,8 +19,10 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
@@ -70,13 +72,13 @@ public class InputTypeUtil {
         if (convolutionMode == ConvolutionMode.Same) {
             long hOut = stride[0] * hIn;
             long wOut = stride[1] * wIn;
-            return InputType.convolutional(hOut, wOut, outputDepth);
+            return InputType.convolutional(hOut, wOut, outputDepth, i.getFormat());
         }
 
         long hOut = sH * (hIn - 1) + kH - 2 * padH;
         long wOut = sW * (wIn - 1) + kW - 2 * padW;
 
-        return InputType.convolutional(hOut, wOut, outputDepth);
+        return InputType.convolutional(hOut, wOut, outputDepth, i.getFormat());
     }
 
     public static InputType getOutputTypeDeconv3dLayer(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
@@ -332,10 +334,20 @@ public class InputTypeUtil {
         return InputType.recurrent(outputDepth, outH);
     }
 
+    /**
+     * @deprecated Use {@link #getOutputTypeCnnLayers(InputType, int[], int[], int[], int[], ConvolutionMode, long, long, String, CNN2DFormat, Class)}
+     */
+    @Deprecated
+    public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
+                                                   int[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
+                                                   Class<?> layerClass) {
+        return getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode, outputDepth,
+                layerIdx, layerName, CNN2DFormat.NCHW, layerClass);
+    }
 
     public static InputType getOutputTypeCnnLayers(InputType inputType, int[] kernelSize, int[] stride, int[] padding,
                     int[] dilation, ConvolutionMode convolutionMode, long outputDepth, long layerIdx, String layerName,
-                    Class<?> layerClass) {
+                    CNN2DFormat format, Class<?> layerClass) {
 
         if (convolutionMode == null) {
             String name = layerName == null ? "(not named)" : layerName;
@@ -424,12 +436,12 @@ public class InputTypeUtil {
             int outH = (int) Math.ceil(inHeight / ((double) stride[0]));
             int outW = (int) Math.ceil(inWidth / ((double) stride[1]));
 
-            return InputType.convolutional(outH, outW, outputDepth);
+            return InputType.convolutional(outH, outW, outputDepth, format);
         }
 
         long hOut = (inHeight - kH + 2 * padH) / sH + 1;
         long wOut = (inWidth - kW + 2 * padW) / sW + 1;
-        return InputType.convolutional(hOut, wOut, outputDepth);
+        return InputType.convolutional(hOut, wOut, outputDepth, format);
     }
 
     private static String getConfigErrorCommonLine(long layerIdx, String layerName, Class<?> layerClass,
@@ -517,25 +529,31 @@ public class InputTypeUtil {
         }
     }
 
-    public static InputPreProcessor getPreprocessorForInputTypeRnnLayers(InputType inputType, String layerName) {
+    public static InputPreProcessor getPreprocessorForInputTypeRnnLayers(InputType inputType, RNNFormat rnnDataFormat, String layerName) {
         if (inputType == null) {
             throw new IllegalStateException(
                             "Invalid input for RNN layer (layer name = \"" + layerName + "\"): input type is null");
         }
 
         switch (inputType.getType()) {
-            case FF:
             case CNNFlat:
                 //FF -> RNN or CNNFlat -> RNN
                 //In either case, input data format is a row vector per example
-                return new FeedForwardToRnnPreProcessor();
+                return new FeedForwardToRnnPreProcessor(rnnDataFormat);
+            case FF:
+                //If time distributed format is defined, use that. Otherwise use the layer-defined rnnDataFormat, which may be default
+                InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward)inputType;
+                if(ff.getTimeDistributedFormat() != null && ff.getTimeDistributedFormat() instanceof RNNFormat){
+                    return new FeedForwardToRnnPreProcessor((RNNFormat) ff.getTimeDistributedFormat());
+                }
+                return new FeedForwardToRnnPreProcessor(rnnDataFormat);
             case RNN:
                 //RNN -> RNN: No preprocessor necessary
                 return null;
             case CNN:
                 //CNN -> RNN
                 InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
-                return new CnnToRnnPreProcessor(c.getHeight(), c.getWidth(), c.getChannels());
+                return new CnnToRnnPreProcessor(c.getHeight(), c.getWidth(), c.getChannels(), rnnDataFormat);
             default:
                 throw new RuntimeException("Unknown input type: " + inputType);
         }

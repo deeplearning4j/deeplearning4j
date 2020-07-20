@@ -16,18 +16,17 @@
 
 package org.deeplearning4j.spark.impl.graph.evaluation;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.util.SerializableHadoopConfig;
-import org.deeplearning4j.api.loader.DataSetLoader;
-import org.deeplearning4j.api.loader.MultiDataSetLoader;
-import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
+import org.deeplearning4j.core.loader.DataSetLoader;
+import org.deeplearning4j.core.loader.MultiDataSetLoader;
 import org.deeplearning4j.datasets.iterator.loader.DataSetLoaderIterator;
 import org.deeplearning4j.datasets.iterator.loader.MultiDataSetLoaderIterator;
 import org.deeplearning4j.spark.data.loader.RemoteFileSourceFactory;
 import org.deeplearning4j.spark.impl.evaluation.EvaluationRunner;
 import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 

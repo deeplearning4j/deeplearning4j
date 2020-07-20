@@ -44,9 +44,9 @@ static  void usualGemm(const NDArray* vA, const NDArray* vB, NDArray* vC,
 
     const bool betaPersent = beta;
 
-    const Nd4jLong* aShapeInfo = vA->getShapeInfo();
-    const Nd4jLong* bShapeInfo = vB->getShapeInfo();
-    const Nd4jLong* cShapeInfo = vC->getShapeInfo();
+    const Nd4jLong* aShapeInfo = vA->shapeInfo();
+    const Nd4jLong* bShapeInfo = vB->shapeInfo();
+    const Nd4jLong* cShapeInfo = vC->shapeInfo();
 
     const int aRank = vA->rankOf();
     const int bRank = vB->rankOf();
@@ -111,9 +111,9 @@ static  void usualGemv(const NDArray* vA, const NDArray* vX, NDArray* vY, const 
 
     const bool betaPersent = beta;
 
-    const Nd4jLong* aShapeInfo = vA->getShapeInfo();
-    const Nd4jLong* xShapeInfo = vX->getShapeInfo();
-    const Nd4jLong* yShapeInfo = vY->getShapeInfo();
+    const Nd4jLong* aShapeInfo = vA->shapeInfo();
+    const Nd4jLong* xShapeInfo = vX->shapeInfo();
+    const Nd4jLong* yShapeInfo = vY->shapeInfo();
 
     const int N = vX->lengthOf();
     const int M = vY->lengthOf();
@@ -162,7 +162,7 @@ static void usualDot(const Nd4jLong length, const double alpha, const void* vX, 
     const bool betaPersent = beta;
 
     T3 sum = 0;
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(length > Environment::getInstance()->elementwiseThreshold()) schedule(guided) reduction(OMP_SUMT:sum))
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(length > Environment::getInstance().elementwiseThreshold()) schedule(guided) reduction(OMP_SUMT:sum))
     for(Nd4jLong i = 0; i < length; ++i)
             sum += X[i * incx] * Y[i * incy];
 
@@ -210,7 +210,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     const auto cType = C->dataType();
 
     const bool AB(aType == bType), AC(aType == cType), ABC(AB && AC);
-    const bool hasGemm = BlasHelper::getInstance()->hasGEMM(aType);
+    const bool hasGemm = BlasHelper::getInstance().hasGEMM(aType);
 
     const bool typeDouble = hasGemm && ABC &&  aType == DataType::DOUBLE;
     const bool typeFloat  = hasGemm && ABC &&  aType == DataType::FLOAT32;
@@ -261,10 +261,10 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
         const int ldc = (cMcont && cNcont) ? M : !cMcont ? pC->strideAt(0) : pC->strideAt(1);
 
         if(typeFloat) {
-            BlasHelper::getInstance()->sgemm()(blasOrder, transAblas, transBblas, M, N, K, (float) alpha, pA->bufferAsT<float>(), lda, pB->bufferAsT<float>(), ldb, (float) beta, pC->bufferAsT<float>(), ldc);
+            BlasHelper::getInstance().sgemm()(blasOrder, transAblas, transBblas, M, N, K, (float) alpha, pA->bufferAsT<float>(), lda, pB->bufferAsT<float>(), ldb, (float) beta, pC->bufferAsT<float>(), ldc);
         }
         else if(typeDouble) {
-            BlasHelper::getInstance()->dgemm()(blasOrder, transAblas, transBblas, M, N, K, (double) alpha, pA->bufferAsT<double>(), lda, pB->bufferAsT<double>(), ldb, (double) beta, pC->bufferAsT<double>(), ldc);
+            BlasHelper::getInstance().dgemm()(blasOrder, transAblas, transBblas, M, N, K, (double) alpha, pA->bufferAsT<double>(), lda, pB->bufferAsT<double>(), ldb, (double) beta, pC->bufferAsT<double>(), ldc);
         }
 
         if(pC != C) {
@@ -294,13 +294,13 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 
     if(A->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxV: rank of A array is not equal 2 !");
-    if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
+    if(!shape::isCommonVector(X->shapeInfo(), xLenDim))
         throw std::runtime_error("MmulHelper::mmulMxV: X array must be vector !");
 
     const auto M = A->sizeAt(0);
     const auto N = A->sizeAt(1);
 
-    if(Y != nullptr && !shape::isCommonVector(Y->getShapeInfo(), yLenDim))
+    if(Y != nullptr && !shape::isCommonVector(Y->shapeInfo(), yLenDim))
         throw std::runtime_error("MmulHelper::mmulMxV: Y array must be vector !");
     if(X->lengthOf() != N)
         throw std::runtime_error("MmulHelper::mmulMxV: X vector has wrong length !");
@@ -321,7 +321,7 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
     const auto yType = Y->dataType();
 
     const bool AX(aType == xType), AY(aType == yType), AXY(AX && AY);
-    const bool hasGemv = BlasHelper::getInstance()->hasGEMV(aType);
+    const bool hasGemv = BlasHelper::getInstance().hasGEMV(aType);
 
     const bool typeDouble = hasGemv && AXY && aType == DataType::DOUBLE;
     const bool typeFloat  = hasGemv && AXY && aType == DataType::FLOAT32;
@@ -347,10 +347,10 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, sd::NDArray* Y,
 
         // choose appropriate cuda gemm api depending on data types
         if(typeDouble) {
-            BlasHelper::getInstance()->dgemv()(blasOrder, CblasNoTrans, M, N, alpha, (double*)pA->getBuffer(), lda, (double*)X->getBuffer(), incx, beta, (double*)Y->getBuffer(), incy);
+            BlasHelper::getInstance().dgemv()(blasOrder, CblasNoTrans, M, N, alpha, (double*)pA->buffer(), lda, (double*)X->buffer(), incx, beta, (double*)Y->buffer(), incy);
         }
         else if(typeFloat) {
-            BlasHelper::getInstance()->sgemv()(blasOrder, CblasNoTrans, M, N, (float)alpha, (float*)pA->getBuffer(), lda, (float*)X->getBuffer(), incx, (float)beta, (float*)Y->getBuffer(), incy);
+            BlasHelper::getInstance().sgemv()(blasOrder, CblasNoTrans, M, N, (float)alpha, (float*)pA->buffer(), lda, (float*)X->buffer(), incx, (float)beta, (float*)Y->buffer(), incy);
         }
 
         if(pA != A)
@@ -371,17 +371,17 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
 
     int xLenDim(0), yLenDim(0);
 
-    if(!shape::isCommonVector(X->getShapeInfo(), xLenDim))
-        throw std::runtime_error("MmulHelper::dot cuda: X array must be vector !");
-    if(!shape::isCommonVector(Y->getShapeInfo(), yLenDim))
-        throw std::runtime_error("MmulHelper::dot cuda: Y array must be vector !");
+    if(!shape::isCommonVector(X->shapeInfo(), xLenDim))
+        throw std::runtime_error("MmulHelper::dot: X array must be vector !");
+    if(!shape::isCommonVector(Y->shapeInfo(), yLenDim))
+        throw std::runtime_error("MmulHelper::dot: Y array must be vector !");
     if(Z != nullptr && !Z->isScalar())
-        throw std::runtime_error("MmulHelper::dot cuda: Z array must be scalar !");
+        throw std::runtime_error("MmulHelper::dot: Z array must be scalar !");
 
     const auto length = X->lengthOf();
 
     if(Y->lengthOf() != length)
-        throw std::runtime_error("MmulHelper::dot cuda: lengths of input vectors are different !");
+        throw std::runtime_error("MmulHelper::dot: lengths of input vectors are different !");
 
     if(Z == nullptr)
         Z = new NDArray(DataTypeUtils::pickPairwiseResultType(X->dataType(), Y->dataType()), X->getContext());
@@ -393,8 +393,8 @@ NDArray* MmulHelper::dot(const NDArray* X, const NDArray* Y, sd::NDArray* Z, con
     const auto yType = Y->dataType();
     const auto zType = Z->dataType();
 
-    BUILD_SINGLE_SELECTOR_THRICE(xType, usualDot, (length, alpha, X->getBuffer(), incx, Y->getBuffer(), incy, beta, Z->getBuffer()), NUMERIC_TYPES);
-        //BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (length, alpha, X->getBuffer(), incx, Y->getBuffer(), incy, beta, Z->getBuffer()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta, Z->buffer()), NUMERIC_TYPES);
+        //BUILD_TRIPLE_SELECTOR(xType, yType, zType, usualDot, (length, alpha, X->buffer(), incx, Y->buffer(), incy, beta, Z->buffer()), LIBND4J_TYPES, FLOAT_TYPES, FLOAT_TYPES);
 
     return Z;
 }
@@ -419,9 +419,9 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB,  NDArray* vC,
 
     const bool betaPersent = beta;
 
-    const Nd4jLong* aShapeInfo = vA->getShapeInfo();
-    const Nd4jLong* bShapeInfo = vB->getShapeInfo();
-    const Nd4jLong* cShapeInfo = vC->getShapeInfo();
+    const Nd4jLong* aShapeInfo = vA->shapeInfo();
+    const Nd4jLong* bShapeInfo = vB->shapeInfo();
+    const Nd4jLong* cShapeInfo = vC->shapeInfo();
 
     const int aRank = vA->rankOf();
     const int bRank = vB->rankOf();
@@ -576,13 +576,13 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
 
     // multiplication
     const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(C->rankOf(), {-2, -1});
-    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(C->getShapeInfo(), dimsToExclude);
+    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(C->shapeInfo(), dimsToExclude);
     std::vector<Nd4jLong> idxRanges(2 * C->rankOf());
 
 // #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
         for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
 
-            ShapeUtils::evalIdxRangesForSubArr(i, C->getShapeInfo(), dimsToExclude, idxRanges.data());
+            ShapeUtils::evalIdxRangesForSubArr(i, C->shapeInfo(), dimsToExclude, idxRanges.data());
             NDArray cSubArr = (*C)(idxRanges);
 
             if(aRank > bRank) {
@@ -617,7 +617,7 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
     const bool flagA = (flagC && transA) || (!flagC && !transA);
     const bool flagB = (flagC && transB) || (!flagC && !transB);
 
-    // PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(M*N > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
+    // PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(M*N > Environment::getInstance().elementwiseThreshold()) schedule(guided))
     // for(uint row = 0; row < M; ++row) {
 
     //     T3* c = flagC ? (C + row) : (C + row * ldc);

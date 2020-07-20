@@ -28,11 +28,9 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.layers.BaseLayer;
-import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -44,7 +42,7 @@ import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -54,8 +52,8 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 /**
  *
- * RNN tutorial: <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent">https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent</a>
- * READ THIS FIRST if you want to understand what the heck is happening here.
+ * RNN tutorial: <a href="https://deeplearning4j.konduit.ai/models/recurrent">https://deeplearning4j.konduit.ai/models/recurrent</a>
+ * READ THIS FIRST if you want to understand this code.
  *
  * Shared code for the standard "forwards" LSTM RNN and the bidirectional LSTM RNN
  * This was extracted from GravesLSTM and refactored into static helper functions.  The general reasoning for this was
@@ -465,7 +463,6 @@ public class LSTMHelpers {
         val miniBatchSize = epsilon.size(0);
         boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
         val timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
-
         INDArray wFFTranspose = null;
         INDArray wOOTranspose = null;
         INDArray wGGTranspose = null;
@@ -573,14 +570,14 @@ public class LSTMHelpers {
                     nablaCellState = Nd4j.create(inputWeights.dataType(), new long[]{miniBatchSize, hiddenLayerSize}, 'f');
                 }
 
-                INDArray prevMemCellState = (iTimeIndex == 0 ? fwdPass.prevMemCell : fwdPass.memCellState[(int) (time - inext)]);
+                INDArray prevMemCellState = (iTimeIndex == 0 ? fwdPass.prevMemCell : fwdPass.memCellState[(time - inext)]);
                 INDArray prevHiddenUnitActivation =
-                        (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[(int) (time - inext)]);
-                INDArray currMemCellState = fwdPass.memCellState[(int) time];
+                        (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[(time - inext)]);
+                INDArray currMemCellState = fwdPass.memCellState[time];
 
                 //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
-                INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension((int) time, 1, 0)); //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
 
+                INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension(time, 1, 0)); //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
                 INDArray nablaOut = Shape.toOffsetZeroCopy(epsilonSlice, 'f'); //Shape: [m,n^L]
                 if (iTimeIndex != timeSeriesLength - 1) {
                     //if t == timeSeriesLength-1 then deltaiNext etc are zeros
@@ -666,7 +663,7 @@ public class LSTMHelpers {
                     //Mask array is present: bidirectional RNN -> need to zero out these errors to avoid using errors from a masked time step
                     // to calculate the parameter gradients.  Mask array has shape [minibatch, timeSeriesLength] -> get column(this time step)
                     timeStepMaskColumn = maskArray.getColumn(time, true);
-                    deltaifogNext.muliColumnVector(timeStepMaskColumn);
+                    deltaifogNext.muli(timeStepMaskColumn);
                     //Later, the deltaifogNext is used to calculate: input weight gradients, recurrent weight gradients, bias gradients
                 }
 
@@ -737,7 +734,7 @@ public class LSTMHelpers {
                 if (maskArray != null) {
                     //Mask array is present: bidirectional RNN -> need to zero out these errors to avoid sending anything
                     // but 0s to the layer below at this time step (for the given example)
-                    epsilonNextSlice.muliColumnVector(timeStepMaskColumn);
+                    epsilonNextSlice.muli(timeStepMaskColumn);
                 }
             }
         }

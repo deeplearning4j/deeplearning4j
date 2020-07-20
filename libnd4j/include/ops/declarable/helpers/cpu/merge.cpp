@@ -29,7 +29,7 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-template<typename T>
+template<typename X, typename Z>
 static void mergeMaxIndex_(const std::vector<const NDArray*>& inArrs, NDArray& output) {
 
     const Nd4jLong numArgs = inArrs.size();
@@ -37,17 +37,18 @@ static void mergeMaxIndex_(const std::vector<const NDArray*>& inArrs, NDArray& o
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto e = start; e < stop; e++) {
-            T max = -DataTypeUtils::max<T>();
-            Nd4jLong idx = 0;
+            X max = -DataTypeUtils::max<X>();
+            Z idx = static_cast<Z>(0);
 
             for (Nd4jLong i = 0; i < numArgs; i++) {
-                T v = inArrs[i]->e<T>(e);
+                X v = inArrs[i]->t<X>(e);
                 if (v > max) {
                     max = v;
-                    idx = i;
+                    idx = static_cast<Z>(i);
                 }
             }
-            output.p(e, idx);
+
+            output.r<Z>(e) = static_cast<Z>(idx);
         }
     };
 
@@ -55,14 +56,14 @@ static void mergeMaxIndex_(const std::vector<const NDArray*>& inArrs, NDArray& o
 }
 
 void mergeMaxIndex(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output) {
-    BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), mergeMaxIndex_, (inArrs, output), LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(inArrs[0]->dataType(), output.dataType(), mergeMaxIndex_, (inArrs, output), LIBND4J_TYPES, INDEXING_TYPES);
 }
 
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mergeMax_(const std::vector<const NDArray*>& inArrs, NDArray& output) {
-    
+
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
 
@@ -89,15 +90,15 @@ void mergeMax(sd::LaunchContext * context, const std::vector<const NDArray*>& in
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<NDArray*>& outArrs) {
-    
+
     // outArrs.size() == inArrs.size() - 1
     const Nd4jLong numArgs = outArrs.size();
     // last array is gradient
     const auto gradient = inArrs[numArgs]->bufferAsT<T>();
     auto length = inArrs[numArgs]->lengthOf();
-    
+
     bool bSameOrderAndEws1 = (1 == inArrs[numArgs]->ews());
-    
+
     if (bSameOrderAndEws1) {
         auto gradOrdering = inArrs[numArgs]->ordering();
 
@@ -108,8 +109,8 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
             bSameOrderAndEws1 &= (1 == outArrs[i]->ews());
         }
     }
-    
-    
+
+
     if(bSameOrderAndEws1){
         auto func = PRAGMA_THREADS_FOR{
             for (auto e = start; e < stop; e++) {
@@ -130,11 +131,11 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
         samediff::Threads::parallel_for(func, 0, length);
         return;
     }
-    
-    auto gradShape = inArrs[numArgs]->getShapeInfo();
+
+    auto gradShape = inArrs[numArgs]->shapeInfo();
     std::vector<bool> vbSameShaepeAndStrides(numArgs);
     for (int i = 0; i < numArgs; ++i) {
-        vbSameShaepeAndStrides[i] = shape::haveSameShapeAndStrides(gradShape, inArrs[i]->getShapeInfo());
+        vbSameShaepeAndStrides[i] = shape::haveSameShapeAndStrides(gradShape, inArrs[i]->shapeInfo());
     }
 
     auto func = PRAGMA_THREADS_FOR{
@@ -145,13 +146,13 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
                  shape::index2coordsCPU(start, e, gradShape, coords);
 
                  const auto gradOffset =  shape::getOffset(gradShape, coords);
-                 
+
                  T max = -DataTypeUtils::max<T>();
                  Nd4jLong nMaxIndex = 0;
 
                  for (Nd4jLong i = 0; i < numArgs; i++) {
-                     
-                     const auto xOffset = vbSameShaepeAndStrides[i] ? gradOffset : shape::getOffset(inArrs[i]->getShapeInfo(), coords);
+
+                     const auto xOffset = vbSameShaepeAndStrides[i] ? gradOffset : shape::getOffset(inArrs[i]->shapeInfo(), coords);
                      const T* v = inArrs[i]->bufferAsT<T>();
                      if (v[xOffset] > max) {
                          max = v[xOffset];
@@ -159,8 +160,8 @@ static void mergeMaxBp_(const std::vector<const NDArray*>& inArrs, std::vector<N
                      }
                  }
 
-                const auto zOffset = vbSameShaepeAndStrides[nMaxIndex] ? gradOffset : shape::getOffset(outArrs[nMaxIndex]->getShapeInfo(), coords);
-                
+                const auto zOffset = vbSameShaepeAndStrides[nMaxIndex] ? gradOffset : shape::getOffset(outArrs[nMaxIndex]->shapeInfo(), coords);
+
                 T* z = outArrs[nMaxIndex]->bufferAsT<T>();
                 z[zOffset] = gradient[gradOffset];
             }

@@ -35,6 +35,7 @@ limitations under the License.
 
 #include <ops/declarable/helpers/image_resize.h>
 #include <exceptions/cuda_exception.h>
+#include <array/NDArrayFactory.h>
 
 namespace sd {
 namespace ops {
@@ -128,7 +129,7 @@ namespace helpers {
 //
     template <typename T, typename Z>
     static __global__ void resizeImageKernel(T const* input, Nd4jLong const* inputShape, Z* outputYptr,
-            Nd4jLong* outputShape, Nd4jLong batchSize, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels,
+            Nd4jLong const* outputShape, Nd4jLong batchSize, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels,
             Nd4jLong inRowSize, Nd4jLong outRowSize, Nd4jLong inBatchNumValues,
             BilinearInterpolationData* xs_, BilinearInterpolationData* ys_) {
 
@@ -171,11 +172,11 @@ namespace helpers {
         Nd4jLong inBatchNumValues = inHeight * inRowSize;
         Nd4jLong outRowSize = outWidth * channels;
         auto stream = context->getCudaStream();
-        T const* pInput = images->getDataBuffer()->specialAsT<T>(); //reinterpret_cast<T const *>(images->getSpecialBuffer()); // this works only with 'c' direction
+        T const* pInput = images->getDataBuffer()->specialAsT<T>(); //reinterpret_cast<T const *>(images->specialBuffer()); // this works only with 'c' direction
         F* pOutput = output->dataBuffer()->specialAsT<F>();//reinterpret_cast<F *>(output->specialBuffer());
         dim3 batchSizeBlock(batchSize, 1, 1);
         dim3 pictureBlock(outHeight, outWidth, channels);
-        resizeImageKernel<T,F><<<256, 256, 256, *stream>>>(pInput, images->getSpecialShapeInfo(), pOutput,
+        resizeImageKernel<T,F><<<256, 256, 256, *stream>>>(pInput, images->specialShapeInfo(), pOutput,
                 output->specialShapeInfo(), batchSize, outWidth, outHeight, channels, inRowSize, outRowSize,
                 inBatchNumValues, xs_, ys_);
 
@@ -255,7 +256,7 @@ namespace helpers {
 // resize by interpolation nearest neighbor algorithm kernel
 //
     template <typename T>
-    static __global__ void resizeNeighborKernel(T const* input, Nd4jLong* inputShape, T* output, Nd4jLong* outputShape,
+    static __global__ void resizeNeighborKernel(T const* input, Nd4jLong const* inputShape, T* output, Nd4jLong const* outputShape,
             Nd4jLong batchSize, Nd4jLong inWidth, Nd4jLong inHeight, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, double widthScale, double heightScale, bool alignCorners, bool halfPixelCenters) {
 
         //for (int b = blockIdx.x; b < batchSize; b += gridDim.x)
@@ -325,12 +326,12 @@ namespace helpers {
         float heightScale = calculateResizeScale(inHeight, outHeight, alignCorners);
         float widthScale = calculateResizeScale(inWidth, outWidth, alignCorners);
 
-        auto imagesBuffer = images->getDataBuffer()->specialAsT<T>();//reinterpret_cast<T const*>(images->getSpecialBuffer());
+        auto imagesBuffer = images->getDataBuffer()->specialAsT<T>();//reinterpret_cast<T const*>(images->specialBuffer());
         auto outputBuffer = output->dataBuffer()->specialAsT<T>();//reinterpret_cast<T*>(output->specialBuffer());
         auto stream = context->getCudaStream();
 
         NDArray::prepareSpecialUse({output}, {images});
-        resizeNeighborKernel<T><<<batchSize, outHeight * outWidth, 512, *stream>>>(imagesBuffer, images->getSpecialShapeInfo(), outputBuffer, output->specialShapeInfo(),
+        resizeNeighborKernel<T><<<batchSize, outHeight * outWidth, 512, *stream>>>(imagesBuffer, images->specialShapeInfo(), outputBuffer, output->specialShapeInfo(),
                 batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, alignCorners, halfPixelCenters);
         NDArray::registerSpecialUse({output}, {images});
 
@@ -1055,7 +1056,7 @@ namespace helpers {
 
     template <typename T>
     static __global__ void resizeAreaKernel(ImageResizerState const* pSt, CachedInterpolation const* caches, float scale,
-            T const* inputPtr, Nd4jLong* inputShape, float* outputPtr, Nd4jLong* outputShape, ScaleCache<T>* cachePool) { //batch * outWidth * outHeight
+            T const* inputPtr, Nd4jLong const* inputShape, float* outputPtr, Nd4jLong const* outputShape, ScaleCache<T>* cachePool) { //batch * outWidth * outHeight
 
         for (auto batch = blockIdx.x; batch < pSt->batchSize; batch += gridDim.x) {
             for (auto y = threadIdx.x; y < pSt->outHeight; y += blockDim.x) {
@@ -1066,7 +1067,7 @@ namespace helpers {
                 const Nd4jLong yStart = math::nd4j_floor<float, Nd4jLong>(inY);
                 const Nd4jLong yEnd = math::nd4j_ceil<float, Nd4jLong>(inY1);
                 auto scalesDim = yEnd - yStart;
-                auto yScaleCache = cachePool + (batch * pSt->outWidth + y) * scalesDim * sizeof(ScaleCache<T>);
+                auto yScaleCache = cachePool + (batch * pSt->outHeight + y) * pSt->outWidth;
 
                 //auto startPtr = sharedPtr + y * scalesDim * sizeof(float);
                 //float* yScales = yScalesShare + y * sizeof(float) * scalesDim;//reinterpret_cast<float*>(startPtr); //shared + y * scalesDim * y + scalesDim * sizeof(T const *) [scalesDim];
@@ -1106,21 +1107,41 @@ namespace helpers {
     static void resizeArea(cudaStream_t* stream, ImageResizerState const& st, CachedInterpolation* cache,
             NDArray const* input, NDArray* output) {
 
-        T const* inputPtr = reinterpret_cast<T const*>(input->getSpecialBuffer());
+        T const* inputPtr = reinterpret_cast<T const*>(input->specialBuffer());
 //        float* yScales;
 //        T const** yPtrs;
         float scale = 1.f / (st.heightScale * st.widthScale);
         auto outputPtr = reinterpret_cast<float*>(output->specialBuffer()); // output is always float. TO DO: provide another float types also with  template <typename X, typename Z> declaration
         ImageResizerState* pSt;
         auto err = cudaMalloc(&pSt, sizeof(ImageResizerState));
+        if (err != 0) {
+            throw cuda_exception::build("helpers::resizeArea: Cannot allocate memory for ImageResizerState", err);
+        }
+
         err = cudaMemcpyAsync(pSt, &st, sizeof(ImageResizerState), cudaMemcpyHostToDevice, *stream);
+        if (err != 0) {
+            throw cuda_exception::build("helpers::resizeArea: Cannot copy to device memory", err);
+        }
         ScaleCache<T>* cachePool;
-        err = cudaMalloc(&cachePool, sizeof(ScaleCache<T>) * st.batchSize * st.outWidth * st.outHeight);
-        resizeAreaKernel<T><<<128, 2, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->getSpecialShapeInfo(), outputPtr,
+        auto cachePoolSize = sizeof(ScaleCache<T>) * st.batchSize * st.outWidth * st.outHeight;
+        err = cudaMalloc(&cachePool, cachePoolSize);
+        if (err != 0) {
+            throw cuda_exception::build("helpers::resizeArea: Cannot allocate memory for cache", err);
+        }
+        resizeAreaKernel<T><<<128, 128, 2048, *stream>>>(pSt, cache, scale, inputPtr, input->specialShapeInfo(), outputPtr,
                 output->specialShapeInfo(), cachePool);
         err = cudaStreamSynchronize(*stream);
+        if (err != 0) {
+            throw cuda_exception::build("helpers::resizeArea: An error occured with kernel running", err);
+        }
         err = cudaFree(cachePool);
+        if (err != 0) {
+            throw cuda_exception::build("helpers::resizeArea: Cannot deallocate memory for cache", err);
+        }
         err = cudaFree(pSt);
+        if (err != 0) {
+            throw cuda_exception::build("helpers::resizeArea: Cannot deallocate memory for ImageResizeState", err);
+        }
     }
 // ------------------------------------------------------------------------------------------------------------------ //
     template <typename T>
@@ -1134,11 +1155,20 @@ namespace helpers {
             CachedInterpolation* xCached;
             //(st.outWidth);
             auto err = cudaMalloc(&xCached, sizeof(CachedInterpolation) * st.outWidth);
+            if (err != 0) {
+                throw cuda_exception::build("helpers::resizeAreaFunctor_: Cannot allocate memory for cached interpolations", err);
+            }
             NDArray::prepareSpecialUse({output}, {image});
             fillInterpolationCache<<<128, 128, 256, *stream>>>(xCached, st.outWidth, st.inWidth, st.widthScale);
             resizeArea<T>(stream, st, xCached, image, output);
             err = cudaStreamSynchronize(*stream);
+            if (err != 0) {
+                throw cuda_exception::build("helpers::resizeAreaFunctor_: Error occured when kernel was running", err);
+            }
             err = cudaFree(xCached);
+            if (err != 0) {
+                throw cuda_exception::build("helpers::resizeAreaFunctor_: Cannot deallocate memory for cached interpolations", err);
+            }
             NDArray::registerSpecialUse({output}, {image});
         }
 
@@ -1174,20 +1204,22 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template int resizeBicubicFunctorA_, (sd::LaunchContext * context,
             NDArray const* image, int width, int height, bool const alignCorners, bool const halfPixelCenters, NDArray* output), NUMERIC_TYPES);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    int resizeFunctor(sd::LaunchContext * context, NDArray const* image, int width, int height,
-                      ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output) {
+
+// ------------------------------------------------------------------------------------------------------------------ //
+    int resizeImagesFunctor(sd::LaunchContext * context, NDArray const* image, int const width, int const height,
+                            ImageResizeMethods method, bool alignCorners, NDArray* output) {
         switch (method) {
-            case kResizeBilinear: return resizeBilinearFunctor(context, image, width, height, false, false, output); break;
-            case kResizeNearest:  return resizeNeighborFunctor(context, image, width, height, false, false, output); break;
-            case kResizeBicubic:  return resizeBicubicFunctor(context, image, width, height, preserveAspectRatio, antialias, output); break;
-            case kResizeLanczos5:
-            case kResizeGaussian:
+            case kResizeBilinear:
+                return resizeBilinearFunctor(context, image, width, height, alignCorners, false, output);
+            case kResizeNearest:
+                return resizeNeighborFunctor(context, image, width, height, alignCorners, false, output);
+            case kResizeBicubic:
+                return resizeBicubicFunctor(context, image, width, height, alignCorners, false, output);
             case kResizeArea:
-            case kResizeMitchelcubic:
-                 throw std::runtime_error("helper::resizeFunctor: Non implemented yet.");
+                return resizeAreaFunctor(context, image, width, height, alignCorners, output);
+            default:
+                throw std::runtime_error("helper::resizeImagesFunctor: Wrong resize method.");
         }
-        return ND4J_STATUS_OK;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1197,9 +1229,9 @@ namespace helpers {
     // cropAndResize kernel   type of input(images) and output should be the same
     //
     template <typename T, typename Z, typename I>
-    static __global__ void cropAndResizeKernel(T const *images, Nd4jLong* imagesShape, Z const* boxes, Nd4jLong* boxesShape,
-            I const* indices, Nd4jLong* indexShape, I const* cropSize, Nd4jLong* cropShape, int method,
-            double extrapolationVal, T* output, Nd4jLong* outputShape, int numBoxes, int cropHeight, int cropWidth,
+    static __global__ void cropAndResizeKernel(T const *images, Nd4jLong const* imagesShape, Z const* boxes, Nd4jLong const* boxesShape,
+            I const* indices, Nd4jLong const* indexShape, I const* cropSize, Nd4jLong const* cropShape, int method,
+            double extrapolationVal, T* output, Nd4jLong const* outputShape, int numBoxes, int cropHeight, int cropWidth,
             int batchSize, int imageHeight, int imageWidth, int depth) {
 
         for (int b = blockIdx.x; b < numBoxes; b += gridDim.x)
@@ -1337,10 +1369,10 @@ namespace helpers {
         const int cropWidth = crops->sizeAt(2);
         const int depth = crops->sizeAt(3);
         auto stream = context->getCudaStream();
-        T const* imagesBuf = reinterpret_cast<T const*>(images->getSpecialBuffer());
-        Z const* boxesBuf = reinterpret_cast<Z const*>(boxes->getSpecialBuffer());
-        I const* indexBuf = reinterpret_cast<I const*>(indices->getSpecialBuffer());
-        I const* cropSizes = reinterpret_cast<I const*>(cropSize->getSpecialBuffer());
+        T const* imagesBuf = reinterpret_cast<T const*>(images->specialBuffer());
+        Z const* boxesBuf = reinterpret_cast<Z const*>(boxes->specialBuffer());
+        I const* indexBuf = reinterpret_cast<I const*>(indices->specialBuffer());
+        I const* cropSizes = reinterpret_cast<I const*>(cropSize->specialBuffer());
         T* outBuf = reinterpret_cast<T*>(crops->specialBuffer());
 
         int threadsPerBlock = math::nd4j_max(imageHeight * imageWidth, cropHeight * cropWidth);
@@ -1348,8 +1380,8 @@ namespace helpers {
             threadsPerBlock = MAX_NUM_THREADS/4;
 
         NDArray::prepareSpecialUse({crops}, {images, boxes, indices, cropSize});
-        cropAndResizeKernel<T,Z,I><<<batchSize, threadsPerBlock, 256, *stream>>>(imagesBuf, images->getSpecialShapeInfo(), boxesBuf, boxes->getSpecialShapeInfo(), indexBuf, indices->getSpecialShapeInfo(),
-                cropSizes, cropSize->getSpecialShapeInfo(), method, extrapolationVal, outBuf, crops->specialShapeInfo(), numBoxes, cropHeight, cropWidth, batchSize, imageHeight, imageWidth, depth);
+        cropAndResizeKernel<T,Z,I><<<batchSize, threadsPerBlock, 256, *stream>>>(imagesBuf, images->specialShapeInfo(), boxesBuf, boxes->specialShapeInfo(), indexBuf, indices->specialShapeInfo(),
+                cropSizes, cropSize->specialShapeInfo(), method, extrapolationVal, outBuf, crops->specialShapeInfo(), numBoxes, cropHeight, cropWidth, batchSize, imageHeight, imageWidth, depth);
         NDArray::registerSpecialUse({crops}, {images, boxes, indices, cropSize});
     }
 

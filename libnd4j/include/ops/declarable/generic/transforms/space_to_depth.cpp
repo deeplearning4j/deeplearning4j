@@ -51,7 +51,10 @@ namespace ops {
 
         auto output = OUTPUT_VARIABLE(0);
 
-        helpers::_spaceTodepth(block.launchContext(), input, output, block_size, isNHWC);
+        if (shape::strideDescendingCAscendingF(input->shapeInfo()))
+            helpers::_spaceTodepth(block.launchContext(), *input, output, block_size, isNHWC);
+        else
+            helpers::_spaceTodepth(block.launchContext(), input->dup(), output, block_size, isNHWC);
 
         return Status::OK();
     }
@@ -77,7 +80,7 @@ namespace ops {
         else 
             shape = {{bS, oD, oH, oW }};
 
-        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
+        auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
 }

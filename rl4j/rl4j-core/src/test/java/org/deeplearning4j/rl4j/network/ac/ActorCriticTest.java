@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,6 +17,7 @@
 
 package org.deeplearning4j.rl4j.network.ac;
 
+import org.deeplearning4j.rl4j.network.configuration.ActorCriticDenseNetworkConfiguration;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,30 +31,31 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- *
  * @author saudet
  */
 public class ActorCriticTest {
 
-    public static ActorCriticFactorySeparateStdDense.Configuration NET_CONF =
-            new ActorCriticFactorySeparateStdDense.Configuration(
-                    4,         //number of layers
-                    32,        //number of hidden nodes
-                    0.001,     //l2 regularization
-                    new RmsProp(0.0005), null, false
-            );
+    public static ActorCriticDenseNetworkConfiguration NET_CONF =
+            ActorCriticDenseNetworkConfiguration.builder()
+                    .numLayers(4)
+                    .numHiddenNodes(32)
+                    .l2(0.001)
+                    .updater(new RmsProp(0.0005))
+                    .useLSTM(false)
+                    .build();
 
-    public static ActorCriticFactoryCompGraphStdDense.Configuration NET_CONF_CG =
-            new ActorCriticFactoryCompGraphStdDense.Configuration(
-                    2,         //number of layers
-                    128,       //number of hidden nodes
-                    0.00001,   //l2 regularization
-                    new RmsProp(0.005), null, true
-            );
+    public static ActorCriticDenseNetworkConfiguration NET_CONF_CG =
+            ActorCriticDenseNetworkConfiguration.builder()
+                    .numLayers(2)
+                    .numHiddenNodes(128)
+                    .l2(0.00001)
+                    .updater(new RmsProp(0.005))
+                    .useLSTM(true)
+                    .build();
 
     @Test
     public void testModelLoadSave() throws IOException {
-        ActorCriticSeparate acs = new ActorCriticFactorySeparateStdDense(NET_CONF).buildActorCritic(new int[] {7}, 5);
+        ActorCriticSeparate acs = new ActorCriticFactorySeparateStdDense(NET_CONF).buildActorCritic(new int[]{7}, 5);
 
         File fileValue = File.createTempFile("rl4j-value-", ".model");
         File filePolicy = File.createTempFile("rl4j-policy-", ".model");
@@ -63,7 +66,7 @@ public class ActorCriticTest {
         assertEquals(acs.valueNet, acs2.valueNet);
         assertEquals(acs.policyNet, acs2.policyNet);
 
-        ActorCriticCompGraph accg = new ActorCriticFactoryCompGraphStdDense(NET_CONF_CG).buildActorCritic(new int[] {37}, 43);
+        ActorCriticCompGraph accg = new ActorCriticFactoryCompGraphStdDense(NET_CONF_CG).buildActorCritic(new int[]{37}, 43);
 
         File file = File.createTempFile("rl4j-cg-", ".model");
         accg.save(file.getAbsolutePath());
@@ -83,15 +86,15 @@ public class ActorCriticTest {
 
         for (double i = eps; i < n; i++) {
             for (double j = eps; j < n; j++) {
-                INDArray labels = Nd4j.create(new double[] {i / n, 1 - i / n}, new long[]{1,2});
-                INDArray output = Nd4j.create(new double[] {j / n, 1 - j / n}, new long[]{1,2});
+                INDArray labels = Nd4j.create(new double[]{i / n, 1 - i / n}, new long[]{1, 2});
+                INDArray output = Nd4j.create(new double[]{j / n, 1 - j / n}, new long[]{1, 2});
                 INDArray gradient = loss.computeGradient(labels, output, activation, null);
 
-                output = Nd4j.create(new double[] {j / n, 1 - j / n}, new long[]{1,2});
+                output = Nd4j.create(new double[]{j / n, 1 - j / n}, new long[]{1, 2});
                 double score = loss.computeScore(labels, output, activation, null, false);
-                INDArray output1 = Nd4j.create(new double[] {j / n + eps, 1 - j / n}, new long[]{1,2});
+                INDArray output1 = Nd4j.create(new double[]{j / n + eps, 1 - j / n}, new long[]{1, 2});
                 double score1 = loss.computeScore(labels, output1, activation, null, false);
-                INDArray output2 = Nd4j.create(new double[] {j / n, 1 - j / n + eps}, new long[]{1,2});
+                INDArray output2 = Nd4j.create(new double[]{j / n, 1 - j / n + eps}, new long[]{1, 2});
                 double score2 = loss.computeScore(labels, output2, activation, null, false);
 
                 double gradient1 = (score1 - score) / eps;

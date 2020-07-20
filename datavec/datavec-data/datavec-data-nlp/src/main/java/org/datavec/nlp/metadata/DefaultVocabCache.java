@@ -16,11 +16,11 @@
 
 package org.datavec.nlp.metadata;
 
-import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.common.primitives.Counter;
 import org.datavec.api.conf.Configuration;
 import org.datavec.nlp.vectorizer.TextVectorizer;
-import org.nd4j.linalg.util.MathUtils;
-import org.nd4j.util.Index;
+import org.nd4j.common.util.MathUtils;
+import org.nd4j.common.util.Index;
 
 /**
  * Vocab cache used for storing information

@@ -30,11 +30,14 @@ public class NadamUpdater extends DynamicCustomOp {
         //
     }
 
-    public NadamUpdater(@NonNull INDArray gradients, @NonNull INDArray stateV, @NonNull INDArray stateM, double lr, double beta1, double beta2, double epsilon, int iteration) {
+    public NadamUpdater(@NonNull INDArray gradients, @NonNull INDArray stateV, @NonNull INDArray stateM, double lr,
+                        double beta1, double beta2, double epsilon, int iteration) {
         this(gradients, stateV, stateM, gradients, stateV, stateM, lr, beta1, beta2, epsilon, iteration);
     }
 
-    public NadamUpdater(@NonNull INDArray gradients, @NonNull INDArray stateV, @NonNull INDArray stateM, @NonNull INDArray updates, @NonNull INDArray updatedStateV, @NonNull INDArray updatedStateM, double lr, double beta1, double beta2, double epsilon, int iteration) {
+    public NadamUpdater(@NonNull INDArray gradients, @NonNull INDArray stateV, @NonNull INDArray stateM, @NonNull INDArray updates,
+                        @NonNull INDArray updatedStateV, @NonNull INDArray updatedStateM, double lr, double beta1, double beta2,
+                        double epsilon, int iteration) {
         addInputArgument(gradients, stateV, stateM);
         addOutputArgument(updates, updatedStateV, updatedStateM);
         addTArgument(lr, beta1, beta2, epsilon);

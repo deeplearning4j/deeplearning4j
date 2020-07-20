@@ -17,12 +17,12 @@
 package org.nd4j.serde.json;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.AtomicDouble;
-import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicBoolean;
-import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicDouble;
-import org.nd4j.linalg.primitives.serde.JsonSerializerAtomicBoolean;
-import org.nd4j.linalg.primitives.serde.JsonSerializerAtomicDouble;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.AtomicDouble;
+import org.nd4j.common.primitives.serde.JsonDeserializerAtomicBoolean;
+import org.nd4j.common.primitives.serde.JsonDeserializerAtomicDouble;
+import org.nd4j.common.primitives.serde.JsonSerializerAtomicBoolean;
+import org.nd4j.common.primitives.serde.JsonSerializerAtomicDouble;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;

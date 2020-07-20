@@ -29,7 +29,6 @@
 namespace sd {
     class ND4J_EXPORT CublasHelper {
     private:
-        static CublasHelper *_INSTANCE;
         static std::mutex _mutex;
 
         std::vector<void*> _cache;
@@ -37,9 +36,9 @@ namespace sd {
         std::vector<void*> _cudnn;
 
         CublasHelper();
-        ~CublasHelper();
     public:
-        static CublasHelper* getInstance();
+      ~CublasHelper();
+      static CublasHelper& getInstance();
 
         void* cudnn();
         void* solver();

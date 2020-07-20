@@ -23,7 +23,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
@@ -66,8 +66,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Data
-@JsonIgnoreProperties({"mask", "helper", "helperCountFail"})
-@EqualsAndHashCode(exclude = {"mask", "helper", "helperCountFail"})
+@JsonIgnoreProperties({"mask", "helper", "helperCountFail", "initializedHelper"})
+@EqualsAndHashCode(exclude = {"mask", "helper", "helperCountFail", "initializedHelper"})
 @Slf4j
 public class Dropout implements IDropout {
 
@@ -134,7 +134,7 @@ public class Dropout implements IDropout {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
-                helper = Class.forName("org.deeplearning4j.nn.layers.dropout.CudnnDropoutHelper")
+                helper = Class.forName("org.deeplearning4j.cuda.dropout.CudnnDropoutHelper")
                         .asSubclass(DropoutHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnDropoutHelper successfully initialized");
                 if (!helper.checkSupported()) {

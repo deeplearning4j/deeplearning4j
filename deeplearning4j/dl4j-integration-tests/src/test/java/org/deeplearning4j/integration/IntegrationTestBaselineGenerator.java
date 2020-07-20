@@ -20,7 +20,9 @@ package org.deeplearning4j.integration;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
+import org.deeplearning4j.integration.testcases.samediff.SameDiffCNNCases;
 import org.deeplearning4j.integration.testcases.samediff.SameDiffMLPTestCases;
+import org.deeplearning4j.integration.testcases.samediff.SameDiffRNNTestCases;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -32,14 +34,14 @@ import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.guava.io.Files;
 
 import java.io.*;
@@ -66,14 +68,36 @@ public class IntegrationTestBaselineGenerator {
         }
 
         runGeneration(
-                SameDiffMLPTestCases.getMLPMnist()
+
+                //  DL4J integration test cases.
+
+//                CNN1DTestCases.getCnn1dTestCaseCharRNN(),
+//                CNN2DTestCases.testLenetTransferDropoutRepeatability(),
+////                CNN2DTestCases.getCnn2DSynthetic(),
+//                CNN2DTestCases.getLenetMnist(),
+//                CNN2DTestCases.getVGG16TransferTinyImagenet(),
+//                CNN2DTestCases.getYoloHouseNumbers(),
+//                CNN3DTestCases.getCnn3dTestCaseSynthetic(),
+//                MLPTestCases.getMLPMnist(),
+//                MLPTestCases.getMLPMoon(),
+//                RNNTestCases.getRnnCharacterTestCase(),
+//                RNNTestCases.getRnnCsvSequenceClassificationTestCase1(),
+//                RNNTestCases.getRnnCsvSequenceClassificationTestCase2(),
+//                UnsupervisedTestCases.getVAEMnistAnomaly(),
+
+                //   Samediff test cases done
+                SameDiffMLPTestCases.getMLPMnist(),
+                SameDiffMLPTestCases.getMLPMoon(),
+                SameDiffCNNCases.getLenetMnist(),
+                SameDiffCNNCases.getCnn3dSynthetic(),
+                SameDiffRNNTestCases.getRnnCsvSequenceClassificationTestCase1()
         );
 
     }
 
     private static void runGeneration(TestCase... testCases) throws Exception {
 
-        for( TestCase tc : testCases ) {
+        for (TestCase tc : testCases) {
             final ModelType modelType = tc.modelType();
 
             //Basic validation:
@@ -122,18 +146,18 @@ public class IntegrationTestBaselineGenerator {
                     mln = new MultiLayerNetwork(mlc);
                     mln.init();
                     m = mln;
-                } else if (config instanceof ComputationGraphConfiguration){
+                } else if (config instanceof ComputationGraphConfiguration) {
                     ComputationGraphConfiguration cgc = (ComputationGraphConfiguration) config;
                     json = cgc.toJson();
                     cg = new ComputationGraph(cgc);
                     cg.init();
                     m = cg;
                 } else {
-                    sd = (SameDiff)config;
+                    sd = (SameDiff) config;
                 }
 
                 File savedModel = new File(testBaseDir, IntegrationTestRunner.RANDOM_INIT_UNTRAINED_MODEL_FILENAME);
-                if(modelType != ModelType.SAMEDIFF) {
+                if (modelType != ModelType.SAMEDIFF) {
                     File configFile = new File(testBaseDir, "config." + (modelType == ModelType.MLN ? "mlc.json" : "cgc.json"));
                     FileUtils.writeStringToFile(configFile, json, StandardCharsets.UTF_8);
                     log.info("RANDOM_INIT test - saved configuration: {}", configFile.getAbsolutePath());
@@ -147,10 +171,10 @@ public class IntegrationTestBaselineGenerator {
                 m = tc.getPretrainedModel();
                 if (m instanceof MultiLayerNetwork) {
                     mln = (MultiLayerNetwork) m;
-                } else if(m instanceof ComputationGraph){
+                } else if (m instanceof ComputationGraph) {
                     cg = (ComputationGraph) m;
                 } else {
-                    sd = (SameDiff)m;
+                    sd = (SameDiff) m;
                 }
             }
 
@@ -158,7 +182,7 @@ public class IntegrationTestBaselineGenerator {
             //Generate predictions to compare against
             if (tc.isTestPredictions()) {
                 List<Pair<INDArray[], INDArray[]>> inputs = modelType != ModelType.SAMEDIFF ? tc.getPredictionsTestData() : null;
-                List<Map<String,INDArray>> inputsSd = modelType == ModelType.SAMEDIFF ? tc.getPredictionsTestDataSameDiff() : null;
+                List<Map<String, INDArray>> inputsSd = modelType == ModelType.SAMEDIFF ? tc.getPredictionsTestDataSameDiff() : null;
 //                Preconditions.checkState(inputs != null && inputs.size() > 0, "Input data is null or length 0 for test: %s", tc.getTestName());
 
 
@@ -178,7 +202,7 @@ public class IntegrationTestBaselineGenerator {
                             Nd4j.write(out, dos);
                         }
                     }
-                } else if(modelType == ModelType.CG) {
+                } else if (modelType == ModelType.CG) {
                     for (Pair<INDArray[], INDArray[]> p : inputs) {
                         INDArray[] out = cg.output(false, p.getFirst(), p.getSecond(), null);
 
@@ -192,11 +216,11 @@ public class IntegrationTestBaselineGenerator {
                     }
                 } else {
                     List<String> outNames = tc.getPredictionsNamesSameDiff();
-                    for( Map<String,INDArray> ph : inputsSd ){
-                        Map<String,INDArray> out = sd.output(ph, outNames);
+                    for (Map<String, INDArray> ph : inputsSd) {
+                        Map<String, INDArray> out = sd.output(ph, outNames);
 
                         //Save the output...
-                        for(String s : outNames){
+                        for (String s : outNames) {
                             File f = new File(predictionsTestDir, "output_" + (count++) + "_" + s + ".bin");
                             try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(f))) {
                                 Nd4j.write(out.get(s), dos);
@@ -211,7 +235,7 @@ public class IntegrationTestBaselineGenerator {
             //Compute and save gradients:
             if (tc.isTestGradients()) {
                 INDArray gradientFlat = null;
-                Map<String,INDArray> grad;
+                Map<String, INDArray> grad;
                 if (modelType == ModelType.MLN) {
                     MultiDataSet data = tc.getGradientsTestData();
                     mln.setInput(data.getFeatures(0));
@@ -220,7 +244,7 @@ public class IntegrationTestBaselineGenerator {
                     mln.computeGradientAndScore();
                     gradientFlat = mln.getFlattenedGradients();
                     grad = m.gradient().gradientForVariable();
-                } else if(modelType == ModelType.CG) {
+                } else if (modelType == ModelType.CG) {
                     MultiDataSet data = tc.getGradientsTestData();
                     cg.setInputs(data.getFeatures());
                     cg.setLabels(data.getLabels());
@@ -229,17 +253,17 @@ public class IntegrationTestBaselineGenerator {
                     gradientFlat = cg.getFlattenedGradients();
                     grad = m.gradient().gradientForVariable();
                 } else {
-                    Map<String,INDArray> ph = tc.getGradientsTestDataSameDiff();
+                    Map<String, INDArray> ph = tc.getGradientsTestDataSameDiff();
                     List<String> allVars = new ArrayList<>();
-                    for(SDVariable v : sd.variables()){
-                        if(v.getVariableType() == VariableType.VARIABLE){
+                    for (SDVariable v : sd.variables()) {
+                        if (v.getVariableType() == VariableType.VARIABLE) {
                             allVars.add(v.name());
                         }
                     }
                     grad = sd.calculateGradients(ph, allVars);
                 }
 
-                if(modelType != ModelType.SAMEDIFF) {
+                if (modelType != ModelType.SAMEDIFF) {
                     File gFlatFile = new File(testBaseDir, IntegrationTestRunner.FLAT_GRADIENTS_FILENAME);
                     IntegrationTestRunner.write(gradientFlat, gFlatFile);
                 }
@@ -254,25 +278,25 @@ public class IntegrationTestBaselineGenerator {
             }
 
             //Test pretraining
-            if(tc.isTestUnsupervisedTraining()){
+            if (tc.isTestUnsupervisedTraining()) {
                 log.info("Performing layerwise pretraining");
                 MultiDataSetIterator iter = tc.getUnsupervisedTrainData();
 
                 INDArray paramsPostTraining;
-                if(modelType == ModelType.MLN){
+                if (modelType == ModelType.MLN) {
                     int[] layersToTrain = tc.getUnsupervisedTrainLayersMLN();
                     Preconditions.checkState(layersToTrain != null, "Layer indices must not be null");
                     DataSetIterator dsi = new MultiDataSetWrapperIterator(iter);
 
-                    for( int i : layersToTrain){
+                    for (int i : layersToTrain) {
                         mln.pretrainLayer(i, dsi);
                     }
                     paramsPostTraining = mln.params();
-                } else if(modelType == ModelType.CG) {
+                } else if (modelType == ModelType.CG) {
                     String[] layersToTrain = tc.getUnsupervisedTrainLayersCG();
                     Preconditions.checkState(layersToTrain != null, "Layer names must not be null");
 
-                    for( String i : layersToTrain){
+                    for (String i : layersToTrain) {
                         cg.pretrainLayer(i, iter);
                     }
                     paramsPostTraining = cg.params();
@@ -290,20 +314,20 @@ public class IntegrationTestBaselineGenerator {
                 MultiDataSetIterator trainData = tc.getTrainingData();
 
                 CollectScoresListener l = new CollectScoresListener(1);
-                if(modelType != ModelType.SAMEDIFF)
+                if (modelType != ModelType.SAMEDIFF)
                     m.setListeners(l);
 
                 History h = null;
                 if (modelType == ModelType.MLN) {
                     mln.fit(trainData);
-                } else if(modelType == ModelType.CG) {
+                } else if (modelType == ModelType.CG) {
                     cg.fit(trainData);
                 } else {
                     h = sd.fit(trainData, 1);
                 }
 
                 double[] scores;
-                if(modelType != ModelType.SAMEDIFF){
+                if (modelType != ModelType.SAMEDIFF) {
                     scores = l.getListScore().toDoubleArray();
                 } else {
                     scores = h.lossCurve().getLossValues().toDoubleVector();
@@ -314,11 +338,11 @@ public class IntegrationTestBaselineGenerator {
                 FileUtils.writeStringToFile(f, String.join(",", s), StandardCharsets.UTF_8);
 
                 if (tc.isTestParamsPostTraining()) {
-                    if(modelType == ModelType.SAMEDIFF){
+                    if (modelType == ModelType.SAMEDIFF) {
                         File p = new File(testBaseDir, IntegrationTestRunner.PARAMS_POST_TRAIN_SAMEDIFF_DIR);
                         p.mkdirs();
-                        for(SDVariable v : sd.variables()){
-                            if(v.getVariableType() == VariableType.VARIABLE){
+                        for (SDVariable v : sd.variables()) {
+                            if (v.getVariableType() == VariableType.VARIABLE) {
                                 INDArray arr = v.getArr();
                                 File p2 = new File(p, v.name() + ".bin");
                                 IntegrationTestRunner.write(arr, p2);
@@ -331,7 +355,6 @@ public class IntegrationTestBaselineGenerator {
                 }
             }
 
-
             if (tc.isTestEvaluation()) {
                 IEvaluation[] evals = tc.getNewEvaluations();
                 MultiDataSetIterator iter = tc.getEvaluationTestData();
@@ -339,7 +362,7 @@ public class IntegrationTestBaselineGenerator {
                 if (modelType == ModelType.MLN) {
                     DataSetIterator dsi = new MultiDataSetWrapperIterator(iter);
                     mln.doEvaluation(dsi, evals);
-                } else if(modelType == ModelType.CG){
+                } else if (modelType == ModelType.CG) {
                     cg.doEvaluation(iter, evals);
                 } else {
                     evals = tc.doEvaluationSameDiff(sd, iter, evals);

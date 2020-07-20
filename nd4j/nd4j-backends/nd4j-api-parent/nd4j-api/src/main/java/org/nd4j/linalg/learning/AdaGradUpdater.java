@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -18,15 +19,13 @@ package org.nd4j.linalg.learning;
 
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.AdaGrad;
 
 import java.util.Collections;
 import java.util.Map;
-
-import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 
 /**
@@ -98,10 +97,6 @@ public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
         double learningRate = config.getLearningRate(iteration, epoch);
         double epsilon = config.getEpsilon();
 
-        historicalGradient.addi(gradient.mul(gradient));
-
-        INDArray sqrtHistory = sqrt(historicalGradient.dup(gradientReshapeOrder), false).addi(epsilon);
-        // lr * gradient / (sqrt(sumSquaredGradients) + epsilon)
-        gradient.muli(sqrtHistory.rdivi(learningRate));
+        Nd4j.exec(new org.nd4j.linalg.api.ops.impl.updaters.AdaGradUpdater(gradient, historicalGradient, learningRate, epsilon));
     }
 }

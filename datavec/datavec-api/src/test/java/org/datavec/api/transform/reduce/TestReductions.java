@@ -21,13 +21,14 @@ import org.datavec.api.transform.reduce.impl.GeographicMidpointReduction;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestReductions {
+public class TestReductions extends BaseND4JTest {
 
     @Test
     public void testGeographicMidPointReduction(){

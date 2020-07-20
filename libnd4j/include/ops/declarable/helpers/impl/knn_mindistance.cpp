@@ -53,7 +53,7 @@ namespace sd {
             void knn_mindistance(const NDArray &input, const NDArray &lowest, const NDArray &highest, NDArray &output) {
                 NDArray::preparePrimaryUse({&output}, {&input, &lowest, &highest});
 
-                BUILD_SINGLE_SELECTOR(input.dataType(), mindistance_, (input.getBuffer(), lowest.getBuffer(), highest.getBuffer(), input.lengthOf(), output.buffer()), FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR(input.dataType(), mindistance_, (input.buffer(), lowest.buffer(), highest.buffer(), input.lengthOf(), output.buffer()), FLOAT_TYPES);
 
                 NDArray::registerPrimaryUse({&output}, {&input, &lowest, &highest});
             }

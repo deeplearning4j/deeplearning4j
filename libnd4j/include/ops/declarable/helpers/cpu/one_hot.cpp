@@ -27,11 +27,11 @@ namespace sd {
     namespace ops {
         namespace helpers {
             template <typename Z, typename I>
-            static void onehot_(void *voutput, Nd4jLong *zShapeInfo, void *vindices, Nd4jLong *iShapeInfo, int axis, double on, double off) {
+            static void onehot_(void *voutput, Nd4jLong const* zShapeInfo, void const* vindices, Nd4jLong const* iShapeInfo, int axis, double on, double off) {
                 auto output = reinterpret_cast<Z*>(voutput);
-                auto indices = reinterpret_cast<I*>(vindices);
+                auto indices = reinterpret_cast<I const*>(vindices);
 
-                auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(zShapeInfo, {axis});
+                auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(zShapeInfo, {axis});
 
                 auto iLen = static_cast<unsigned int>(shape::length(iShapeInfo));
                 auto tLen = static_cast<unsigned int>(shape::length(tadPack.primaryShapeInfo()));
@@ -96,7 +96,7 @@ namespace sd {
                 auto zType = output->dataType();
                 auto iType = indices->dataType();
 
-                BUILD_DOUBLE_SELECTOR(zType, iType, onehot_, (output->buffer(), output->shapeInfo(), indices->getBuffer(), indices->getShapeInfo(), axis, on, off), LIBND4J_TYPES, LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(zType, iType, onehot_, (output->buffer(), output->shapeInfo(), indices->buffer(), indices->shapeInfo(), axis, on, off), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
     }

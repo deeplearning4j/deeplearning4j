@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.SDLayerParams;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
@@ -27,7 +28,7 @@ import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -92,7 +93,7 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, RNNFormat.NCW, getLayerName());
     }
 
     @Override
@@ -185,7 +186,9 @@ public class RecurrentAttentionLayer extends SameDiffLayer {
         final val R = paramTable.get(RECURRENT_WEIGHT_KEY);
         final val b = paramTable.get(BIAS_KEY);
 
-        SDVariable[] inputSlices = sameDiff.unstack(layerInput, 2);
+        long[] shape = layerInput.getShape();
+        Preconditions.checkState(shape != null, "Null shape for input placeholder");
+        SDVariable[] inputSlices = sameDiff.unstack(layerInput, 2, (int)shape[2]);
         this.timeSteps = inputSlices.length;
         SDVariable[] outputSlices = new SDVariable[timeSteps];
         SDVariable prev = null;

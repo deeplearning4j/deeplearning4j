@@ -364,8 +364,6 @@ namespace sd {
 
     class BlasHelper {
     private:
-        static BlasHelper* _instance;
-
 		bool _hasHgemv = false;
 		bool _hasHgemm = false;
 		bool _hasHgemmBatch = false;
@@ -404,7 +402,7 @@ namespace sd {
         CusolverDnDgesvd cusolverDnDgesvd;
 
     public:
-        static BlasHelper* getInstance();
+        static BlasHelper& getInstance();
 
         void initializeFunctions(Nd4jPointer *functions);
 		void initializeDeviceFunctions(Nd4jPointer *functions);

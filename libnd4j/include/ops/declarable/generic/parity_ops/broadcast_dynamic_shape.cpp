@@ -55,7 +55,7 @@ CUSTOM_OP_IMPL(broadcast_dynamic_shape, 2, 1, false, 0, 0) {
     for (Nd4jLong i = 0; i < y->lengthOf(); ++i)
         yShapeInfo[i + 1] = y->e<Nd4jLong>(i);
 
-    Nd4jLong* poinerOnOutShapeInfo = nullptr;
+    const Nd4jLong* poinerOnOutShapeInfo = nullptr;
 
     const bool isBroadcastPossible = ShapeUtils::evalBroadcastShapeInfo(xShapeInfo.data(), yShapeInfo.data(), true, poinerOnOutShapeInfo, block.launchContext()->getWorkspace());
 
@@ -82,7 +82,7 @@ DECLARE_SHAPE_FN(broadcast_dynamic_shape) {
 
     const int maxRank = xRank > yRank ? xRank : yRank;
 
-    auto outputShapeInfo = ConstantShapeHelper::getInstance()->vectorShapeInfo(maxRank, ArrayOptions::dataType(inputShape->at(0)));
+    auto outputShapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(maxRank, ArrayOptions::dataType(inputShape->at(0)));
 
     return SHAPELIST(outputShapeInfo);
 }

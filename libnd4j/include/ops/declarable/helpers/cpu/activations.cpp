@@ -64,9 +64,9 @@ namespace helpers {
         const int rank = input.rankOf();
         int temp;
 
-        if(shape::isCommonVector(input.getShapeInfo(), temp)) {
+        if(shape::isCommonVector(input.shapeInfo(), temp)) {
 
-            BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxDerivForVector, (context, input.getBuffer(), input.getShapeInfo(), output.buffer()), FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR(input.dataType(), _softMaxDerivForVector, (context, input.buffer(), input.shapeInfo(), output.buffer()), FLOAT_TYPES);
         }
         else {
             auto maxAlongDim = const_cast<NDArray&>(input).reduceAlongDimension(reduce::Max, {dimension}, true);
@@ -79,8 +79,8 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
     template <typename T>
-    void logSoftMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
-        auto inBuff  = reinterpret_cast<T *>(input);
+    void logSoftMaxForVector_(void const* input, Nd4jLong const* inShapeInfo, void *output, Nd4jLong const* outShapeInfo) {
+        auto inBuff  = reinterpret_cast<T const*>(input);
         auto outBuff = reinterpret_cast<T *>(output);
 
         T max = -DataTypeUtils::max<T>();
@@ -126,21 +126,21 @@ namespace helpers {
     }
 
     ///////////////////////////////////////////////////////////////////
-    void logSoftMaxForVector(sd::LaunchContext * context, const NDArray& input, NDArray& output) {
+    void logSoftMaxForVector(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
 
         if(!input.isVector() || !output.isVector())
             throw std::runtime_error("ops::helpers::logSoftMaxForVector function input and output arrays must be vectors !");
 
         auto xType = input.dataType();
-        BUILD_SINGLE_SELECTOR(xType, logSoftMaxForVector_, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, logSoftMaxForVector_, (input.buffer(), input.shapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
     }
 
 
 //////////////////////////////////////////////////////////////////////////
 void prelu(sd::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
     const Nd4jLong inputLen = input.lengthOf();
-    const Nd4jLong* inputShapeInfo = input.getShapeInfo();
-    const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
+    const Nd4jLong* inputShapeInfo = input.shapeInfo();
+    const Nd4jLong* alphaShapeInfo = alpha.shapeInfo();
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto i = start; i < stop; i++) {
@@ -161,8 +161,8 @@ void prelu(sd::LaunchContext * context, const NDArray& input, const NDArray& alp
 void preluBP(sd::LaunchContext * context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
 
     const Nd4jLong inputLen = input.lengthOf();
-    const Nd4jLong* inputShapeInfo = input.getShapeInfo();
-    const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
+    const Nd4jLong* inputShapeInfo = input.shapeInfo();
+    const Nd4jLong* alphaShapeInfo = alpha.shapeInfo();
 
     dLdA.assign(0.0f);
 
@@ -219,7 +219,7 @@ void preluBP(sd::LaunchContext * context, const NDArray& input, const NDArray& a
         if(input.isVector()) {
 
             if(rank == 1 || input.sizeAt(dimension) != 1) {
-                BUILD_SINGLE_SELECTOR(input.dataType(), logSoftMaxForVector_, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR(input.dataType(), logSoftMaxForVector_, (input.buffer(), input.shapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
             }
             else
                 output = 0.;
@@ -235,7 +235,7 @@ void preluBP(sd::LaunchContext * context, const NDArray& input, const NDArray& a
     }
 
     BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (sd::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
-    BUILD_SINGLE_TEMPLATE(template void logSoftMaxForVector_, (void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void logSoftMaxForVector_, (void const* input, Nd4jLong const* inShapeInfo, void *output, Nd4jLong const* outShapeInfo), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template void _softMaxDerivForVector, (sd::LaunchContext * context, const void *input, const Nd4jLong *inShapeInfo, void *output), FLOAT_TYPES);
 
 }

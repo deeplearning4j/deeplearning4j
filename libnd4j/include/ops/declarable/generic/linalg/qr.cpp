@@ -44,8 +44,8 @@ namespace sd {
         DECLARE_SHAPE_FN(qr) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong* shapeQ;
-            Nd4jLong* shapeR;
+            Nd4jLong const* shapeQ;
+            Nd4jLong const* shapeR;
             int targetRank = shape::rank(inShape); // last two dimensions will be reduced to scalar
 
             auto fullMatricies = false;
@@ -57,20 +57,20 @@ namespace sd {
             if (!fullMatricies) { // outputs are: Q is MxN and R is NxN
                 shape[targetRank - 1] = shape::sizeAt(inShape, -1);
                 shape[targetRank - 2] = shape[targetRank - 1];
-                shapeQ = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape),
+                shapeQ = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape),
                                                                              shape::order(inShape), targetRank,
                                                                              shape::shapeOf(inShape));
-                shapeR = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape),
+                shapeR = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape),
                                                                              shape::order(inShape), shape);
 
             }
             else {// otherwise outputs are Q is MxM and R is MxN with zero filled rows
                 shape[targetRank - 1] = shape::sizeAt(inShape, -2);
                 shape[targetRank - 2] = shape[targetRank - 1];
-                shapeR = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape),
+                shapeR = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape),
                                                                              shape::order(inShape), targetRank,
                                                                              shape::shapeOf(inShape));
-                shapeQ = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape),
+                shapeQ = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape),
                                                                              shape::order(inShape), shape);
             }
 

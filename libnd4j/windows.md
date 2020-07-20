@@ -28,6 +28,7 @@ There's few additional arguments for `buildnativeoperations.sh` script you could
  -b release OR -b debug // enables/desables debug builds. release is considered by default
  -j XX // this argument defines how many threads will be used to binaries on your box. i.e. -j 8
  -cc // CUDA-only argument, builds only binaries for target GPU architecture. use this for fast builds
+ -h cudnn // (EXPERIMENTAL: enable cuDNN support)
 ```
 
 ### Building the CPU Backend
@@ -41,7 +42,7 @@ Now clone this repository, and in that directory run the following to build the 
 The CUDA Backend has some additional requirements before it can be built:
 
 * [CUDA SDK](https://developer.nvidia.com/cuda-downloads)
-* [Visual Studio 2015 or 2017](https://www.visualstudio.com/) (Please note: Visual Studio 2017 is *NOT SUPPORTED* by CUDA 8.0 and below)
+* [Visual Studio 2015 or 2017 or 2019](https://www.visualstudio.com/) (Please note: Visual Studio 2017 is *NOT SUPPORTED* by CUDA 8.0 and below, Visual Studio 2019 is supported since CUDA 10.2)
 
 In order to build the CUDA backend you will have to setup some more environment variables first, by calling `vcvars64.bat`.
 But first, set the system environment variable `SET_FULL_PATH` to `true`, so all of the variables that `vcvars64.bat` sets up, are passed to the mingw shell.

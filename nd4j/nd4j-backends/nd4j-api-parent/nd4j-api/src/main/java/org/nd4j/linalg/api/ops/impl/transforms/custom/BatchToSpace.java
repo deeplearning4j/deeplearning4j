@@ -53,6 +53,14 @@ public class BatchToSpace extends DynamicCustomOp {
     public BatchToSpace() {
     }
 
+    public BatchToSpace(SameDiff sameDiff, SDVariable x, int[] blocks, int[] croppingTop, int... croppingBottom) {
+        this(sameDiff, x, blocks, new int[][]{croppingTop, croppingBottom}, false);
+    }
+
+    public BatchToSpace(SameDiff sameDiff, SDVariable x, int[] blocks, int[][] crops, boolean inPlace) {
+        this(sameDiff, new SDVariable[]{x}, blocks, crops, inPlace);
+    }
+
     public BatchToSpace(SameDiff sameDiff, SDVariable[] args, int[] blocks, int[][] crops, boolean inPlace) {
         super(null, sameDiff, new SDVariable[]{args[0], sameDiff.constant(Nd4j.createFromArray(crops))}, inPlace);
 
@@ -63,15 +71,14 @@ public class BatchToSpace extends DynamicCustomOp {
             addIArgument(b);
     }
 
-    public BatchToSpace(INDArray x, int[] blocks, int[] croppingTop, int[] croppingBottom) {
-        super(null,x,null,null,null);
+    public BatchToSpace(INDArray x, int[] blocks, int[] croppingTop, int... croppingBottom) {
+        addInputArgument(x);
+        int[][] crops = new int[][]{croppingTop, croppingBottom};
         this.blocks = blocks;
-        this.crops = new int[][]{croppingTop,croppingBottom};
+        this.crops = crops;
+
         for (val b : blocks)
             addIArgument(b);
-
-        for (int e = 0; e < crops.length; e++)
-            addIArgument(crops[e][0], crops[e][1]);
     }
 
 
@@ -94,7 +101,7 @@ public class BatchToSpace extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // Inverse of batch to space is space to batch with same blocks and padding as crops
         SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        return Arrays.asList(sameDiff.cnn().spaceToBatch(gradient, blocks, crops));
+        return Arrays.asList(sameDiff.cnn().spaceToBatch(gradient, blocks, crops[0], crops[1]));
     }
 
     @Override

@@ -16,9 +16,10 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -39,13 +40,15 @@ import java.util.List;
  *
  * @author Max Pumperla
  */
+@NoArgsConstructor
 public class Cross extends DynamicCustomOp {
-
-    public Cross() {
-    }
 
     public Cross(SameDiff sameDiff, SDVariable[] args) {
         super(null, sameDiff, args, false);
+    }
+
+    public Cross(SameDiff sameDiff, SDVariable a, SDVariable b) {
+        this(sameDiff, new SDVariable[]{a,b});
     }
 
     public Cross(INDArray a, INDArray b){

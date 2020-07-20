@@ -34,18 +34,18 @@ namespace scalar    {
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template<typename OpType>
-void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
-                                                void *vextraParams,
-                                                void *vz, Nd4jLong *zShapeInfo,
-                                                void *vscalars,
-                                                int *dimension, int dimensionLength,
-                                                Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
-                                                Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets,
-                                                const uint64_t start, const uint64_t stop) {
+void ScalarTransform<X, Y, Z>::transform(const void *vx, const Nd4jLong *xShapeInfo,
+                                         void *vextraParams,
+                                         void *vz, const Nd4jLong *zShapeInfo,
+                                         const void *vscalars,
+                                         int *dimension, int dimensionLength,
+                                         const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffsets,
+                                         const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffsets,
+                                         const uint64_t start, const uint64_t stop) {
 
-    auto x = reinterpret_cast<X *>(vx);
+    auto x = reinterpret_cast<const X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
-    auto scalars = reinterpret_cast<Y *>(vscalars);
+    auto scalars = reinterpret_cast<const Y *>(vscalars);
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
     if (zTadShapeInfo == nullptr) {
@@ -65,7 +65,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
         return;
     }
 
-    int num_threads = sd::math::nd4j_min<int>(numTads, sd::Environment::getInstance()->maxThreads());
+    int num_threads = sd::math::nd4j_min<int>(numTads, sd::Environment::getInstance().maxThreads());
 
     if (kindOfLoop == sd::LoopKind::EWS1) {
         for (auto r = start; r < stop; r++) {
@@ -92,14 +92,14 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 void ScalarTransform<X,Y,Z>::transform(int opNum,
-                              void *x, Nd4jLong *xShapeInfo,
-                              void *extraParams,
-                              void *z, Nd4jLong *zShapeInfo,
-                              void *scalars,
-                              int *dimension, int dimensionLength,
-                              Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
-                              Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets,
-                              const uint64_t start, const uint64_t stop) {
+                                       const void *x, const Nd4jLong *xShapeInfo,
+                                       void *extraParams,
+                                       void *z, const Nd4jLong *zShapeInfo,
+                                       const void *scalars,
+                                       int *dimension, int dimensionLength,
+                                       const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffsets,
+                                       const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffsets,
+                                       const uint64_t start, const uint64_t stop) {
 
     DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop), SCALAR_OPS);
 }
@@ -107,12 +107,12 @@ void ScalarTransform<X,Y,Z>::transform(int opNum,
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::transform(const int opNum,
-                                        void *x, Nd4jLong xStride,
-                                        void *z, Nd4jLong zStride,
-                                        void *scalar,
-                                        void *extraParams,
-                                        const uint64_t n,
-                                        const uint64_t start, const uint64_t stop) {
+                                         const void *x, Nd4jLong xStride,
+                                         void *z, Nd4jLong zStride,
+                                         const void *scalar,
+                                         void *extraParams,
+                                         const uint64_t n,
+                                         const uint64_t start, const uint64_t stop) {
 
     DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xStride, z, zStride, scalar, extraParams, n, start, stop), SCALAR_OPS);
 }
@@ -120,11 +120,11 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum,
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 void ScalarTransform<X, Y, Z>::transform(const int opNum,
-                                        void *x, Nd4jLong *xShapeInfo,
-                                        void *z, Nd4jLong *zShapeInfo,
-                                        void *scalar,
-                                        void *extraParams,
-                                        const uint64_t start, const uint64_t stop) {
+                                         const void *x, const Nd4jLong *xShapeInfo,
+                                         void *z, const Nd4jLong *zShapeInfo,
+                                         const void *scalar,
+                                         void *extraParams,
+                                         const uint64_t start, const uint64_t stop) {
 
     DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, start, stop), SCALAR_OPS);
 }
@@ -132,15 +132,15 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum,
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template<typename OpType>
-void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
-                                        void *vz, Nd4jLong *zShapeInfo,
-                                        void *vscalar,
-                                        void *vextraParams,
-                                        const uint64_t start, const uint64_t stop) {
+void ScalarTransform<X, Y, Z>::transform(const void *vx, const Nd4jLong *xShapeInfo,
+                                         void *vz, const Nd4jLong *zShapeInfo,
+                                         const void *vscalar,
+                                         void *vextraParams,
+                                         const uint64_t start, const uint64_t stop) {
 
-    auto x = reinterpret_cast<X *>(vx);
+    auto x = reinterpret_cast<const X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
-    auto scalar = reinterpret_cast<Y *>(vscalar)[0];
+    auto scalar = reinterpret_cast<const Y *>(vscalar)[0];
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
     const auto len = shape::length(xShapeInfo);
@@ -181,15 +181,15 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template<typename OpType>
-void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
-                                        void *vz, Nd4jLong zEws,
-                                        void *vscalar,
-                                        void *vextraParams,
-                                        const uint64_t len, const uint64_t start, const uint64_t stop) {
+void ScalarTransform<X, Y, Z>::transform(const void *vx, Nd4jLong xEws,
+                                         void *vz, Nd4jLong zEws,
+                                         const void *vscalar,
+                                         void *vextraParams,
+                                         const uint64_t len, const uint64_t start, const uint64_t stop) {
 
-    auto x = reinterpret_cast<X *>(vx);
+    auto x = reinterpret_cast<const X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
-    auto scalar = reinterpret_cast<Y *>(vscalar)[0];
+    auto scalar = reinterpret_cast<const Y *>(vscalar)[0];
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
     if (xEws == 1 && zEws == 1) {

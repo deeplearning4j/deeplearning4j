@@ -18,7 +18,8 @@ package org.nd4j.linalg.api.ops.impl.shape;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -36,10 +37,19 @@ public class Squeeze extends DynamicCustomOp {
     public Squeeze() {
     }
 
+    public Squeeze(SameDiff sameDiff, SDVariable arg, int squeezeDims) {
+        this(sameDiff, arg, new int[] {squeezeDims});
+    }
+
     public Squeeze(SameDiff sameDiff, SDVariable arg, int[] squeezeDims) {
         super(null, sameDiff, new SDVariable[]{arg});
         this.squeezeDims = squeezeDims;
         addIArgument(squeezeDims);
+    }
+
+    public Squeeze(INDArray x, int axis) {
+        addInputArgument(x);
+        addIArgument(axis);
     }
 
     @Override

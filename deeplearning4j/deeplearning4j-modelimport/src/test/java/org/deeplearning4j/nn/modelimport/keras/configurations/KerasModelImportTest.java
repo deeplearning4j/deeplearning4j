@@ -23,7 +23,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.IOException;
 
@@ -69,7 +69,7 @@ public class KerasModelImportTest extends BaseDL4JTest {
             network = KerasModelImport.importKerasSequentialModelAndWeights(Resources.asFile(modelJsonFilename).getAbsolutePath(),
                     Resources.asFile(modelWeightFilename).getAbsolutePath(), false);
         } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return network;
@@ -80,7 +80,7 @@ public class KerasModelImportTest extends BaseDL4JTest {
         try {
             model = KerasModelImport.importKerasSequentialModelAndWeights(Resources.asFile(modelFilename).getAbsolutePath());
         } catch (IOException | InvalidKerasConfigurationException | UnsupportedKerasConfigurationException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return model;

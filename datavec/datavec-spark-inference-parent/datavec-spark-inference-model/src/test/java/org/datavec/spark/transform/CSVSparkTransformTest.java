@@ -23,19 +23,18 @@ import org.datavec.api.transform.transform.nlp.TextToCharacterIndexTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchCSVRecord;
-import org.datavec.spark.transform.model.SequenceBatchCSVRecord;
-import org.datavec.spark.transform.model.SingleCSVRecord;
+import org.datavec.spark.inference.model.CSVSparkTransform;
+import org.datavec.spark.inference.model.model.Base64NDArrayBody;
+import org.datavec.spark.inference.model.model.BatchCSVRecord;
+import org.datavec.spark.inference.model.model.SequenceBatchCSVRecord;
+import org.datavec.spark.inference.model.model.SingleCSVRecord;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.serde.base64.Nd4jBase64;
 
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNotNull;
 
 /**
  * Created by agibsonccc on 12/24/16.

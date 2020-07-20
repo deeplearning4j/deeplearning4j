@@ -51,9 +51,9 @@ namespace sd {
             ExtraArguments extras(*block.getTArguments());
         PointersManager manager(block.launchContext(), "LegacyPairwiseTransformBoolOp");
 
-            NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->getSpecialBuffer(), x->getSpecialShapeInfo(),
-                    y->getBuffer(), y->getShapeInfo(), y->getSpecialBuffer(), y->getSpecialShapeInfo(),
-                    z->getBuffer(), z->getShapeInfo(), z->getSpecialBuffer(), z->getSpecialShapeInfo(),
+            NativeOpExecutioner::execPairwiseTransform(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    y->buffer(), y->shapeInfo(), y->specialBuffer(), y->specialShapeInfo(),
+                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                     extras.argumentsAsT(x->dataType()));
 
             manager.synchronize();
@@ -67,7 +67,7 @@ namespace sd {
         */
         ShapeList *LegacyPairwiseTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
         }
     }
 }

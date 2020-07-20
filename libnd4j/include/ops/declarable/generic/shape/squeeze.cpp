@@ -93,13 +93,13 @@ namespace sd {
         DECLARE_SHAPE_FN(squeeze) {
             auto shapeList = SHAPELIST();
 
-            Nd4jLong* newShape;
+//            Nd4jLong* newShape;
             auto in = inputShape->at(0);
             auto rank = shape::rank(in);
             auto length = shape::length(in);
 
             if (rank == 0 || (rank == 1 && length == 1)) {
-                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
                 return shapeList;
             }
 
@@ -144,11 +144,11 @@ namespace sd {
             }
 
             if (shape.size() == 0) {
-                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in)));
+                shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in)));
                 return shapeList;
             }
 
-            newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), order, shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(in), order, shape);
             shapeList->push_back(newShape);
             return shapeList;
         }

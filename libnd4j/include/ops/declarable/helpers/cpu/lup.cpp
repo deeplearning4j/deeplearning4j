@@ -34,13 +34,13 @@ namespace helpers {
 
         if (theFirst != theSecond)
             for (int i = 0; i < matrix->columns(); i++) {
-                math::nd4j_swap(matrix->t<T>(theFirst, i), matrix->t<T>(theSecond, i));
+                math::nd4j_swap(matrix->r<T>(theFirst, i), matrix->r<T>(theSecond, i));
             }
     }
     BUILD_SINGLE_TEMPLATE(template void swapRows_, (NDArray* matrix, int theFirst, int theSecond), FLOAT_TYPES);
 
     template <typename T>
-    static void swapRows(T* matrixBuf, Nd4jLong* matrixShape, Nd4jLong theFirst, Nd4jLong theSecond) {
+    static void swapRows(T* matrixBuf, Nd4jLong const* matrixShape, Nd4jLong theFirst, Nd4jLong theSecond) {
         if (theFirst != theSecond) {
             auto n = shape::sizeAt(matrixShape, -1);
 
@@ -71,12 +71,12 @@ namespace helpers {
 
         auto invertDiagonals = PRAGMA_THREADS_FOR {
             for (int i = start; i < stop; i += increment)
-                invertedMatrix->t<T>(i, i) /= inputMatrix->t<T>(i, i);
+                invertedMatrix->r<T>(i, i) /= inputMatrix->t<T>(i, i);
         };
 
         auto invertSubDiagonals = PRAGMA_THREADS_FOR {
             for (int i = start; i < stop; i += increment)
-                invertedMatrix->t<T>(i, i - 1) -= (inputMatrix->t<T>(i, i - 1) * invertedMatrix->t<T>(i - 1, i - 1) / inputMatrix->t<T>(i, i));
+                invertedMatrix->r<T>(i, i - 1) -= (inputMatrix->t<T>(i, i - 1) * invertedMatrix->t<T>(i - 1, i - 1) / inputMatrix->t<T>(i, i));
         };
 
         samediff::Threads::parallel_for(invertDiagonals, 0, n, 1);
@@ -86,7 +86,7 @@ namespace helpers {
         for (int i = 1; i < n; i++) {
             for (int j = 0; j < i - 1 ; j++)
                 for (int k = 0; k < i; k++)
-                    invertedMatrix->t<T>(i, j) -= ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
+                    invertedMatrix->r<T>(i, j) -= ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
         }
 
     }
@@ -108,13 +108,13 @@ namespace helpers {
 
         auto invertDiagonals = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i += increment)
-                invertedMatrix->t<T>(i, i) /= inputMatrix->t<T>(i, i);
+                invertedMatrix->r<T>(i, i) /= inputMatrix->t<T>(i, i);
         };
 
-        //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
+        //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance().elementwiseThreshold())
         auto invertUpDiagonals = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i += increment)
-                invertedMatrix->t<T>(i, i + 1) -= (inputMatrix->t<T>(i, i + 1) * invertedMatrix->t<T>(i + 1, i + 1) /
+                invertedMatrix->r<T>(i, i + 1) -= (inputMatrix->t<T>(i, i + 1) * invertedMatrix->t<T>(i + 1, i + 1) /
                                                    inputMatrix->t<T>(i, i));
         };
 
@@ -125,7 +125,7 @@ namespace helpers {
         for (auto i = n - 2; i >= 0; i--) {
             for (auto j = i + 2; j < n; j++)
                 for (auto k = i; k < n; k++)
-                    invertedMatrix->t<T>(i, j) -= ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
+                    invertedMatrix->r<T>(i, j) -= ((invertedMatrix->t<T>(k, j) * inputMatrix->t<T>(i, k) / inputMatrix->t<T>(i, i)));
         }
     }
 
@@ -142,7 +142,7 @@ namespace helpers {
         const int rowNum = input->rows();
         const int columnNum = input->columns();
 
-        NDArray determinant = NDArrayFactory::create<T>(1.f);
+        NDArray determinant = NDArrayFactory::create<T>(1.f, context);
         NDArray compoundMatrix = *input; // copy
         NDArray permutationMatrix(input, false, context); // has same shape as input and contiguous strides
         permutationMatrix.setIdentity();
@@ -169,10 +169,10 @@ namespace helpers {
                     swapCount++;
 
                 for( int j = i + 1; j < rowNum; j++ ) {
-                    compoundMatrix.t<T>(j, i) /= compoundMatrix.t<T>(i, i);
+                    compoundMatrix.r<T>(j, i) /= compoundMatrix.t<T>(i, i);
                     //PRAGMA_OMP_PARALLEL_FOR
                     for( int k = i + 1; k < rowNum; k++ ) {
-                        compoundMatrix.t<T>(j, k) -= compoundMatrix.t<T>(j, i) * compoundMatrix.t<T>(i, k);
+                        compoundMatrix.r<T>(j, k) -= compoundMatrix.t<T>(j, i) * compoundMatrix.t<T>(i, k);
                     }
                 }
             }
@@ -190,7 +190,7 @@ namespace helpers {
             for (auto i = 0; i < rowNum; i++) {
                 for (auto j = 0; j < columnNum; j++) {
                     if (permutationMatrix.t<T>(i, j) != 0) {
-                        permutaionVector.template t<I>(i) = j;
+                        permutaionVector.template r<I>(i) = j;
                     }
                 }
             }
@@ -208,14 +208,16 @@ namespace helpers {
      * lu decomposition with naive algorithm with partial pivoting
      * */
     template <typename T, typename I>
-    static I argmaxCol(I column, T* compoundBuffer, Nd4jLong* compoundShape) {
+    static I argmaxCol(I column, T* compoundBuffer, Nd4jLong const* compoundShape) {
         auto rowNum = shape::sizeAt(compoundShape, 0);
         Nd4jLong xInitial[] = {column, column};
         auto xInitialIndex = shape::getOffset(compoundShape, xInitial, 0);
         auto maxValue = T(0); //sd::math::nd4j_abs(compoundBuffer[xInitialIndex]);
         auto result = -1;
         //auto loop = PRAGMA_THREADS_FOR {
-            auto start = column, stop = rowNum, increment = 1;
+            auto start = column;
+	    auto stop = rowNum;
+	    auto increment = 1;
             for (auto rowCounter = start; rowCounter < stop; rowCounter++) {
                 Nd4jLong xPos[] = {rowCounter, column};
                 auto xIndex = shape::getOffset(compoundShape, xPos, 0);
@@ -230,7 +232,7 @@ namespace helpers {
     }
 
     template <typename T>
-    void processColumns(int currentRow, int rowNum, T* compoundBuf, Nd4jLong* compoundShape) {
+    void processColumns(int currentRow, int rowNum, T* compoundBuf, Nd4jLong const* compoundShape) {
         Nd4jLong xDiag[] = {currentRow, currentRow};
         auto diagIndex = shape::getOffset(compoundShape, xDiag, 0);
         auto loop = PRAGMA_THREADS_FOR {
@@ -268,7 +270,7 @@ namespace helpers {
                     sum += compound->t<T>(i,j) * compound->t<T>(j,k);
 
                 // Evaluating U(i, k)
-                compound->t<T>(i, k) = input.t<T>(i, k) - sum;
+                compound->r<T>(i, k) = input.t<T>(i, k) - sum;
             }
 
             // Lower Triangular
@@ -279,7 +281,7 @@ namespace helpers {
                     sum += compound->t<T>(k,j) * compound->t<T>(j, i);
 
                 // Evaluating L(k, i)
-                compound->t<T>(k, i) = (input.t<T>(k, i) - sum) / compound->t<T>(i,i);
+                compound->r<T>(k, i) = (input.t<T>(k, i) - sum) / compound->t<T>(i,i);
             }
         }
     }
@@ -412,12 +414,12 @@ template <typename T>
             lowerMatrix.setIdentity(); // set up U to identity matrix
             for (int k = 1; k < n; k++) {  // and then put all values under main diagonal on to it
                 for (int j = 0; j < k; j++)
-                    lowerMatrix.template t<T>(k, j) = compound.template t<T>(k, j);
+                    lowerMatrix.template r<T>(k, j) = compound.template t<T>(k, j);
             }
             upperMatrix.setIdentity(); // set up U to identity matrix
             for (int k = 0; k < n; k++) {  // and then put all values under main diagonal on to it
                 for (int j = k; j < n; j++)
-                    upperMatrix.template t<T>(k, j) = compound.template e<T>(k, j);
+                    upperMatrix.template r<T>(k, j) = compound.template t<T>(k, j);
             }
             invertUpperMatrix(&upperMatrix, &matrix);
 
@@ -426,7 +428,7 @@ template <typename T>
             sd::MmulHelper::mmul(&matrix, &upperMatrix, &compound, 1.0, 0.0);
             sd::MmulHelper::mmul(&compound, &permutation, &matrix, 1.0, 0.0);
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-                output->t<T>(k) = matrix.template t<T>(row++);
+                output->r<T>(k) = matrix.template t<T>(row++);
             }
         }
 
@@ -470,7 +472,7 @@ template <typename T>
             invertLowerMatrix(&matrix, &lowerMatrix);
 
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
-                output->t<T>(k) = lowerMatrix.template t<T>(row++);
+                output->r<T>(k) = lowerMatrix.template t<T>(row++);
             }
         }
 
@@ -597,7 +599,7 @@ template <typename T>
 
         for (Nd4jLong e = 0; e < totalCount; e++) {
             for (size_t i = 0; i < n; ++i)
-                output->t<T>(e) += sd::math::nd4j_log<T,T>(sd::math::nd4j_pow<T,T,T>(matricies.at(e)->t<T>(i, i), T(2)));
+                output->r<T>(e) += sd::math::nd4j_log<T,T>(sd::math::nd4j_pow<T,T,T>(matricies.at(e)->t<T>(i, i), T(2)));
         }
         return ND4J_STATUS_OK;
     }

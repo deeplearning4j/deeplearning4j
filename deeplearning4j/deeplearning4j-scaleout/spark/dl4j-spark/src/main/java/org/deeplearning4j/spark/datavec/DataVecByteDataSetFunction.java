@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.datavec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.spark.api.java.function.PairFunction;
@@ -35,6 +36,7 @@ import java.util.List;
 
 /**
  */
+@Slf4j
 public class DataVecByteDataSetFunction implements PairFunction<Tuple2<Text, BytesWritable>, Double, DataSet> {
 
     private int labelIndex = 0;
@@ -104,7 +106,7 @@ public class DataVecByteDataSetFunction implements PairFunction<Tuple2<Text, Byt
                 featureVector = Nd4j.create(lenFeatureVector);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         List<INDArray> inputs = new ArrayList<>();

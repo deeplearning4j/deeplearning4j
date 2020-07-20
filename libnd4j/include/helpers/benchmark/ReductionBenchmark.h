@@ -88,10 +88,10 @@ namespace sd {
                 else
                     NativeOpExecutioner::execReduceSameScalar(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo());
             else {
-                auto pack = ConstantTadHelper::getInstance()->tadForDimensions(_x->shapeInfo(), _axis);
+                auto pack = ConstantTadHelper::getInstance().tadForDimensions(_x->shapeInfo(), _axis);
 
-                auto tadOnlyShapeInfo = Environment::getInstance()->isCPU() ? pack.primaryShapeInfo() : pack.specialShapeInfo();
-                auto tadOffsets = Environment::getInstance()->isCPU() ? pack.primaryOffsets() : pack.specialOffsets();
+                auto tadOnlyShapeInfo = Environment::getInstance().isCPU() ? pack.primaryShapeInfo() : pack.specialShapeInfo();
+                auto tadOffsets = Environment::getInstance().isCPU() ? pack.primaryOffsets() : pack.specialOffsets();
 
                 if (_opType == 0)
                     NativeOpExecutioner::execReduceFloat(LaunchContext::defaultContext(), _opNum, _x->buffer(), _x->shapeInfo(), _x->specialBuffer(), _x->specialShapeInfo(), nullptr, _z->buffer(), _z->shapeInfo(), _z->specialBuffer(), _z->specialShapeInfo(), nullptr, _axis.size(), tadOnlyShapeInfo, tadOffsets);

@@ -21,8 +21,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.MaximumBp;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -56,9 +56,7 @@ public class Max extends BaseTransformSameOp  {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable sgn = sameDiff.math().sign(arg());
-        SDVariable minBp = f().minBp(sameDiff.math().abs(arg()), f1.get(0), false, dimensions);
-        return Collections.singletonList(sgn.mul(minBp));
+        return new MaximumBp(sameDiff, larg(), rarg(), f1.get(0)).outputs();
     }
 
 

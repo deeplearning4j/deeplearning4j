@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -17,35 +18,28 @@
 package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 
 import lombok.Getter;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
-import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
-import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
-import org.deeplearning4j.rl4j.learning.async.MiniTrans;
+import org.deeplearning4j.rl4j.learning.async.*;
+import org.deeplearning4j.rl4j.learning.configuration.A3CLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.api.rng.Random;
-
-import java.util.Stack;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.rng.Random;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/23/16.
- *
+ * <p>
  * Local thread as described in the https://arxiv.org/abs/1602.01783 paper.
  */
-public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<O, IActorCritic> {
+public class A3CThreadDiscrete<OBSERVATION extends Encodable> extends AsyncThreadDiscrete<OBSERVATION, IActorCritic> {
 
     @Getter
-    final protected A3CDiscrete.A3CConfiguration conf;
+    final protected A3CLearningConfiguration configuration;
     @Getter
     final protected IAsyncGlobal<IActorCritic> asyncGlobal;
     @Getter
@@ -53,72 +47,34 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
 
     final private Random rnd;
 
-    public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IAsyncGlobal<IActorCritic> asyncGlobal,
-                             A3CDiscrete.A3CConfiguration a3cc, int deviceNum, TrainingListenerList listeners,
+    public A3CThreadDiscrete(MDP<OBSERVATION, Integer, DiscreteSpace> mdp, IAsyncGlobal<IActorCritic> asyncGlobal,
+                             A3CLearningConfiguration a3cc, int deviceNum, TrainingListenerList listeners,
                              int threadNumber) {
         super(asyncGlobal, mdp, listeners, threadNumber, deviceNum);
-        this.conf = a3cc;
+        this.configuration = a3cc;
         this.asyncGlobal = asyncGlobal;
         this.threadNumber = threadNumber;
 
-        Integer seed = conf.getSeed();
+        Long seed = configuration.getSeed();
         rnd = Nd4j.getRandom();
-        if(seed != null) {
+        if (seed != null) {
             rnd.setSeed(seed + threadNumber);
         }
+
+        setUpdateAlgorithm(buildUpdateAlgorithm());
     }
 
     @Override
-    protected Policy<O, Integer> getPolicy(IActorCritic net) {
+    protected Policy<Integer> getPolicy(IActorCritic net) {
         return new ACPolicy(net, rnd);
     }
 
     /**
-     *  calc the gradients based on the n-step rewards
+     * calc the gradients based on the n-step rewards
      */
     @Override
-    public Gradient[] calcGradient(IActorCritic iac, Stack<MiniTrans<Integer>> rewards) {
-        MiniTrans<Integer> minTrans = rewards.pop();
-
-        int size = rewards.size();
-
-        //if recurrent then train as a time serie with a batch size of 1
-        boolean recurrent = getAsyncGlobal().getCurrent().isRecurrent();
-
-        int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
-                        : getHistoryProcessor().getConf().getShape();
-        int[] nshape = recurrent ? Learning.makeShape(1, shape, size)
-                        : Learning.makeShape(size, shape);
-
-        INDArray input = Nd4j.create(nshape);
-        INDArray targets = recurrent ? Nd4j.create(1, 1, size) : Nd4j.create(size, 1);
-        INDArray logSoftmax = recurrent ? Nd4j.zeros(1, getMdp().getActionSpace().getSize(), size)
-                        : Nd4j.zeros(size, getMdp().getActionSpace().getSize());
-
-        double r = minTrans.getReward();
-        for (int i = size - 1; i >= 0; i--) {
-            minTrans = rewards.pop();
-
-            r = minTrans.getReward() + conf.getGamma() * r;
-            if (recurrent) {
-                input.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(i)).assign(minTrans.getObs());
-            } else {
-                input.putRow(i, minTrans.getObs());
-            }
-
-            //the critic
-            targets.putScalar(i, r);
-
-            //the actor
-            double expectedV = minTrans.getOutput()[0].getDouble(0);
-            double advantage = r - expectedV;
-            if (recurrent) {
-                logSoftmax.putScalar(0, minTrans.getAction(), i, advantage);
-            } else {
-                logSoftmax.putScalar(i, minTrans.getAction(), advantage);
-            }
-        }
-
-        return iac.gradient(input, new INDArray[] {targets, logSoftmax});
+    protected UpdateAlgorithm<IActorCritic> buildUpdateAlgorithm() {
+        int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape() : getHistoryProcessor().getConf().getShape();
+        return new AdvantageActorCriticUpdateAlgorithm(asyncGlobal.getTarget().isRecurrent(), shape, getMdp().getActionSpace().getSize(), configuration.getGamma());
     }
 }

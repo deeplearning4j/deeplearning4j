@@ -24,17 +24,22 @@ import org.junit.rules.Timeout;
 import java.io.File;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 /**
  * @author saudet
  */
 public class SvhnDataFetcherTest extends BaseDL4JTest {
 
-    @Rule
-    public Timeout timeout = Timeout.seconds(600);
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 480_000L;    //Shouldn't take this long but slow download or drive access on CI machines may need extra time.
+    }
 
     @Test
     public void testSvhnDataFetcher() throws Exception {
+        assumeTrue(isIntegrationTests());   //Ignore unless integration tests - CI can get caught up on slow disk access
+
         SvhnDataFetcher fetch = new SvhnDataFetcher();
         File path = fetch.getDataSetPath(DataSetType.TRAIN);
         File path2 = fetch.getDataSetPath(DataSetType.TEST);

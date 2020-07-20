@@ -52,6 +52,7 @@ public class NDArrayRecordBatch extends AbstractWritableRecordBatch {
     public NDArrayRecordBatch(@NonNull List<INDArray> arrays){
         Preconditions.checkArgument(arrays.size() > 0, "Input list must not be empty");
         this.arrays = arrays;
+        this.size = arrays.get(0).size(0);
 
         //Check that dimension 0 matches:
         if(arrays.size() > 1){

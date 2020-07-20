@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -46,6 +46,9 @@ public class MatrixInverse extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{in}, inPlace);
     }
 
+    public MatrixInverse(SameDiff sameDiff, SDVariable in) {
+        this(sameDiff, in, false);
+    }
 
     @Override
     public String opName() {

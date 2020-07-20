@@ -159,7 +159,7 @@ DECLARE_SHAPE_FN(deconv2d) {
         outputShape[3] = oC;
     }
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(weightsShapeInfo), shape::order(inputShapeInfo), outputShape, 4)));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(weightsShapeInfo), shape::order(inputShapeInfo), outputShape, 4)));
 }
 
     DECLARE_TYPES(deconv2d_bp) {
@@ -264,8 +264,8 @@ DECLARE_SHAPE_FN(deconv2d_bp) {
 
     auto inputShapeInfo   = inputShape->at(0);                                                // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCDHW)
     auto weightsShapeInfo = inputShape->at(1);                                                // [kH, kW, oC, iC], [iC, oC, kH, kW], [iC, kH, kW, oC]
-    Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;             // [oC]
-    Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
+    Nd4jLong const* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;             // [oC]
+    auto gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);   // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCDHW), epsilon_next
 
     const int rank = 4;
     REQUIRE_TRUE(shape::rank(inputShapeInfo)   == rank, 0, "CUSTOM DECONV2D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, shape::rank(inputShapeInfo));

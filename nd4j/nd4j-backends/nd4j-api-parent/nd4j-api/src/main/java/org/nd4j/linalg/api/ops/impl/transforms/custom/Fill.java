@@ -20,13 +20,14 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -55,7 +56,14 @@ public class Fill extends DynamicCustomOp {
         super(null,sameDiff, new SDVariable[] {shape}, false);
         this.value = value;
         this.outputDataType = outputDataType;
+        this.outputDataType = outputDataType;
         addArgs();
+    }
+
+    public Fill(INDArray shape, DataType outputDataType, double value) {
+        super(new INDArray[]{shape, Nd4j.scalar(outputDataType, value)}, null);
+        this.value = value;
+        this.outputDataType = outputDataType;
     }
 
     public Fill(INDArray shape, INDArray result, double value) {

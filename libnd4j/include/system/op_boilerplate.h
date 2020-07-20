@@ -118,8 +118,8 @@
 #endif
 
 
-#define ELEMENT_THRESHOLD sd::Environment::getInstance()->elementwiseThreshold()
-#define TAD_THRESHOLD sd::Environment::getInstance()->tadThreshold()
+#define ELEMENT_THRESHOLD sd::Environment::getInstance().elementwiseThreshold()
+#define TAD_THRESHOLD sd::Environment::getInstance().tadThreshold()
 
 #define SHAPELIST(...)  new ShapeList({__VA_ARGS__}, block.workspace() != nullptr)
 
@@ -129,8 +129,8 @@
 #define PRINT_FIRST(...)    printf(__VA_ARGS__); fflush(stdout)
 #endif
 
-#define DEBUG_CALL(STREAM)      if (sd::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
-#define DEBUG_KERNEL(STREAM, OP_NUM)       if (sd::Environment::getInstance()->isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tFile(__FILE__); std::string tOp = "Kernel OpNum failed: [" + sd::StringUtils::valueToString<int>(OP_NUM) + std::string("]; File: ") + tFile + std::string(":") + sd::StringUtils::valueToString<int>(__LINE__); throw std::runtime_error(tOp.c_str()); }; }
+#define DEBUG_CALL(STREAM)      if (sd::Environment::getInstance().isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) { throw std::runtime_error(); }; }
+#define DEBUG_KERNEL(STREAM, OP_NUM)       if (sd::Environment::getInstance().isDebug()) { cudaError_t tRes = cudaStreamSynchronize(*STREAM); checkCudaErrors(tRes); if (tRes != 0) {std::string tFile(__FILE__); std::string tOp = "Kernel OpNum failed: [" + sd::StringUtils::valueToString<int>(OP_NUM) + std::string("]; File: ") + tFile + std::string(":") + sd::StringUtils::valueToString<int>(__LINE__); throw std::runtime_error(tOp.c_str()); }; }
 
 
 #define LAUNCH(A, B, C, D) <<<A, B, C, D>>>
@@ -1112,7 +1112,7 @@
 
 #define _EXPAND_OP_CALL_1(NAME, TYPE, PARAMZ, NUM_A, TYPE_A) NAME<TYPE_A<TYPE>>PARAMZ;
 #define _EXPAND_OP_DIRECT(PARAMZ, NUM_A, TYPE_A)  case NUM_A: { z = TYPE_A<T>::op PARAMZ; break; }
-#define _EXPAND_OP_CALL_T(TYPE, NUM_A, TYPE_A) OpTracker::getInstance()->storeOperation(TYPE, #TYPE_A, NUM_A);
+#define _EXPAND_OP_CALL_T(TYPE, NUM_A, TYPE_A) OpTracker::getInstance().storeOperation(TYPE, #TYPE_A, NUM_A);
 
 #define _EXPAND_FACTORY_CALL(TYPE, LAYER_ID, LAYER_NAME, ACTIVATION_ID, ACTIVATION_NAME) if (activationNum == ACTIVATION_ID && layerNum == LAYER_ID) { return new LAYER_NAME<TYPE, ACTIVATION_NAME<TYPE>>(); };
 
@@ -1256,7 +1256,7 @@
                         struct __registrator_##NAME {\
                             __registrator_##NAME() {\
                                 OpName *ptr = new OpName(); \
-                                OpRegistrator::getInstance()->registerOperation(ptr); \
+                                OpRegistrator::getInstance().registerOperation(ptr); \
                             }\
                         };\
                         static sd::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
@@ -1269,7 +1269,7 @@
                         struct __registrator_##NAME {\
                             __registrator_##NAME() {\
                                 OpName *ptr = new OpName(); \
-                                OpRegistrator::getInstance()->registerOperation(ptr); \
+                                OpRegistrator::getInstance().registerOperation(ptr); \
                             }\
                         };\
                         static sd::ops::__registrator_##NAME<NAME> zzz_register_opd_##NAME;
@@ -1332,7 +1332,7 @@
                                                     auto shapeList = SHAPELIST(); \
                                                     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width() : this->getOpDescriptor()->getNumberOfOutputs(); \
                                                     for (int e = 0; e < opLimit; e++) { \
-                                                        auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e))); \
+                                                        auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e))); \
                                                         shapeList->push_back(newshape); \
                                                     } \
                                                     return shapeList; \
@@ -1343,14 +1343,14 @@
 #define DECLARE_SYN(NAME, ORIGINAL) template <typename OpName>  \
                                     struct __registratorSynonym_##NAME {\
                                         __registratorSynonym_##NAME(const char *name, const char *oname) {\
-                                            auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance()->getOperation(oname)); \
+                                            auto ptr = reinterpret_cast<OpName *>(OpRegistrator::getInstance().getOperation(oname)); \
                                             if (ptr == nullptr) { \
                                                 std::string newName(name); \
                                                 std::string oldName(oname); \
-                                                OpRegistrator::getInstance()->updateMSVC(sd::ops::HashHelper::getInstance()->getLongHash(newName), oldName);\
+                                                OpRegistrator::getInstance().updateMSVC(sd::ops::HashHelper::getInstance().getLongHash(newName), oldName);\
                                                 return;\
                                             }\
-                                            OpRegistrator::getInstance()->registerOperation(name, ptr);\
+                                            OpRegistrator::getInstance().registerOperation(name, ptr);\
                                             }\
                                         };\
                                         static sd::ops::__registratorSynonym_##NAME<ORIGINAL> zzz_register_opd_##NAME(#NAME, #ORIGINAL)
@@ -1394,7 +1394,7 @@
                                                                                     auto shapeList = SHAPELIST(); \
                                                                                     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width() : this->getOpDescriptor()->getNumberOfOutputs(); \
                                                                                     for (int e = 0; e < opLimit; e++) { \
-                                                                                        auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e))); \
+                                                                                        auto newshape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e))); \
                                                                                         shapeList->push_back(newshape); \
                                                                                     } \
                                                                                     return shapeList; \
@@ -1446,7 +1446,21 @@
                                                                                 };\
                                                                                 REGISTER_H(NAME)
 
+#define DECLARE_BROADCASTABLE_BOOL_OP(NAME,TARGS, IARGS)                        class ND4J_EXPORT NAME: public sd::ops::BroadcastableBoolOp { \
+                                                                                protected: \
+                                                                                    void registerTypes(); \
+                                                                                    Nd4jStatus validateAndExecute(Context& block); \
+                                                                                public:\
+                                                                                    NAME(); \
+                                                                                };\
+                                                                                REGISTER_H(NAME)
+
+
 #define BROADCASTABLE_OP_IMPL(NAME, TARGS, IARGS)                               NAME::NAME(): sd::ops::BroadcastableOp(#NAME, TARGS, IARGS) { }; \
+                                                                                REGISTER_C(NAME) \
+                                                                                Nd4jStatus sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
+
+#define BROADCASTABLE_BOOL_OP_IMPL(NAME, TARGS, IARGS)                          NAME::NAME(): sd::ops::BroadcastableBoolOp(#NAME, TARGS, IARGS) { }; \
                                                                                 REGISTER_C(NAME) \
                                                                                 Nd4jStatus sd::ops::NAME::validateAndExecute(sd::graph::Context& block)
 
@@ -1470,8 +1484,8 @@
 #else
 
 // we intentionally add 8 tail bytes here to avoid problems with atomic operations
-#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) if (WORKSPACE == nullptr) {auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT) + 8); if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);} else { sd::memory::MemoryTracker::getInstance()->countIn(sd::memory::MemoryType::DEVICE, VARIABLE, LENGTH * sizeof(TT)); }; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, LENGTH * sizeof(TT) + 8)); }
-#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (VARIABLE != nullptr) {if (WORKSPACE == nullptr) { sd::memory::MemoryTracker::getInstance()->countOut(VARIABLE); auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; }; };
+#define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) if (WORKSPACE == nullptr) {auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT) + 8); if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);} else { sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::DEVICE, VARIABLE, LENGTH * sizeof(TT)); }; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(sd::memory::MemoryType::DEVICE, LENGTH * sizeof(TT) + 8)); }
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (VARIABLE != nullptr) {if (WORKSPACE == nullptr) { sd::memory::MemoryTracker::getInstance().countOut(VARIABLE); auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; }; };
 
 #endif
 
@@ -1489,12 +1503,12 @@
 
 #else
 
-#define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; sd::memory::MemoryTracker::getInstance()->countIn(sd::memory::MemoryType::HOST, VARIABLE, LENGTH * sizeof(TT)); } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
-#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { sd::memory::MemoryTracker::getInstance()->countOut(VARIABLE); delete[] VARIABLE;};
+#define ALLOCATE(VARIABLE, WORKSPACE, LENGTH, TT)   if (WORKSPACE == nullptr) {VARIABLE = new TT[LENGTH]; sd::memory::MemoryTracker::getInstance().countIn(sd::memory::MemoryType::HOST, VARIABLE, LENGTH * sizeof(TT)); } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(LENGTH * sizeof(TT))); }; memset(VARIABLE, 0, LENGTH * sizeof(TT));
+#define RELEASE(VARIABLE, WORKSPACE)    if (WORKSPACE == nullptr) { sd::memory::MemoryTracker::getInstance().countOut(VARIABLE); delete[] VARIABLE;};
 
 #endif
 
-#define CONSTANT(SHAPE) ConstantShapeHelper::getInstance()->createFromExisting(SHAPE, block.workspace())
+#define CONSTANT(SHAPE) ConstantShapeHelper::getInstance().createFromExisting(SHAPE, block.workspace())
 
 
 

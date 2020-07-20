@@ -24,6 +24,7 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +38,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 21/03/2016.
  */
-public class TestFilters {
+public class TestFilters  extends BaseND4JTest {
 
 
     @Test

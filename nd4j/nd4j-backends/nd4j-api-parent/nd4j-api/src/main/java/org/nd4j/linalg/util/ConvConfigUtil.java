@@ -18,7 +18,7 @@ package org.nd4j.linalg.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 /**
  * Class with utility methods for validating convolution op configurations like {@link org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig}

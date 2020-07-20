@@ -27,8 +27,8 @@ import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.enums.WeightsFormat;
 import org.nd4j.imports.TFGraphs.NodeReader;
-import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -52,10 +52,11 @@ import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThan;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgAmin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
@@ -95,11 +96,11 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.common.util.MathUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -107,7 +108,6 @@ import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertArrayEquals;
@@ -3765,10 +3765,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.ALL);
 
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
-        IMax iMax = new IMax(arr);
-        IAMax iaMax = new IAMax(arr.dup());
-        val imax = Nd4j.getExecutioner().execAndReturn(iMax).getFinalResult().intValue();
-        val iamax = Nd4j.getExecutioner().execAndReturn(iaMax).getFinalResult().intValue();
+        val iMax = new ArgMax(arr);
+        val iaMax = new ArgAmax(arr.dup());
+        val imax = Nd4j.getExecutioner().exec(iMax)[0].getInt(0);
+        val iamax = Nd4j.getExecutioner().exec(iaMax)[0].getInt(0);
 //        System.out.println("IMAX: " + imax);
 //        System.out.println("IAMAX: " + iamax);
         assertEquals(1, iamax);
@@ -3780,10 +3780,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testIMinIAMin() {
         INDArray arr = Nd4j.create(new double[] {-0.24, -0.26, -0.07, -0.01});
         INDArray abs = Transforms.abs(arr);
-        IAMin iaMin = new IAMin(abs);
-        IMin iMin = new IMin(arr.dup());
-        double imin = Nd4j.getExecutioner().execAndReturn(iMin).getFinalResult().doubleValue();
-        double iamin = Nd4j.getExecutioner().execAndReturn(iaMin).getFinalResult().doubleValue();
+        val iaMin = new ArgAmin(abs);
+        val iMin = new ArgMin(arr.dup());
+        double imin = Nd4j.getExecutioner().exec(iMin)[0].getDouble(0);
+        double iamin = Nd4j.getExecutioner().exec(iaMin)[0].getDouble(0);
 //        System.out.println("IMin: " + imin);
 //        System.out.println("IAMin: " + iamin);
         assertEquals(3, iamin, 1e-12);
@@ -4077,7 +4077,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
             arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.all()).assign(Nd4j.create(slices[i]));
         }
 
-        INDArray out = Nd4j.getExecutioner().exec(new IMax(arr, 1,2));
+        INDArray out = Nd4j.exec(new ArgMax(arr, 1,2))[0];
 
         assertEquals(DataType.LONG, out.dataType());
 
@@ -4119,8 +4119,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
 
-        INDArray actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c'), 0,1));
-        INDArray actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f'),  0,1));
+        INDArray actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), 0,1))[0];
+        INDArray actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'),  0,1))[0];
         //
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -4153,8 +4153,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
 
-        actC = Nd4j.getExecutioner().exec(new IMax(arr.dup('c'), 2, 3));
-        actF = Nd4j.getExecutioner().exec(new IMax(arr.dup('f'), 2, 3));
+        actC = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('c'), 2, 3))[0];
+        actF = Nd4j.getExecutioner().exec(new ArgMax(arr.dup('f'), 2, 3))[0];
 
         assertEquals(exp, actC);
         assertEquals(exp, actF);
@@ -5608,6 +5608,13 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testPercentile5() {
+        val array = Nd4j.createFromArray(new int[]{1, 1982});
+        val perc = array.percentileNumber(75);
+        assertEquals(1982.f, perc.floatValue(), 1e-5f);
+    }
+
+    @Test
     public void testTadPercentile1() {
         INDArray array = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
         Transforms.reverse(array, false);
@@ -6191,24 +6198,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(exp, output);
     }
-
-    @Test
-    public void testVectorGemv() {
-        val vectorL = Nd4j.create(new float[]{1, 2, 3}, new long[]{3, 1});
-        val vectorN = Nd4j.create(new float[]{1, 2, 3}, new long[]{3});
-        val matrix = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6, 7, 8, 9}, new long[] {3, 3});
-
-//        log.info("vectorN: {}", vectorN);
-//        log.info("vectorL: {}", vectorL);
-
-        val outN = matrix.mmul(vectorN);
-        val outL = matrix.mmul(vectorL);
-
-        assertEquals(outL, outN.reshape(3,1));
-
-        assertEquals(1, outN.rank());
-    }
-
 
     @Test
     public void testMatrixReshape() {
@@ -8255,13 +8244,252 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr0 = Nd4j.create(DataType.FLOAT, 2, 0);
         INDArray arr1 = Nd4j.create(DataType.FLOAT, 0, 1, 2);
 
-        INDArray out0 = Nd4j.exec(new Reshape(arr0, Nd4j.createFromArray(2, 0, -1), Nd4j.create(DataType.FLOAT, 2, 0, 0)))[0];
-        INDArray out1 = Nd4j.exec(new Reshape(arr1, Nd4j.createFromArray(-1, 1), Nd4j.create(DataType.FLOAT, 0, 1)))[0];
-        INDArray out2 = Nd4j.exec(new Reshape(arr1, Nd4j.createFromArray(10, -1), Nd4j.create(DataType.FLOAT, 10, 0)))[0];
+        INDArray out0 = Nd4j.exec(new Reshape(arr0, Nd4j.createFromArray(2, 0, -1)))[0];
+        INDArray out1 = Nd4j.exec(new Reshape(arr1, Nd4j.createFromArray(-1, 1)))[0];
+        INDArray out2 = Nd4j.exec(new Reshape(arr1, Nd4j.createFromArray(10, -1)))[0];
 
-        assertArrayEquals(new long[]{2, 0, 0}, out0.shape());
+        assertArrayEquals(new long[]{2, 0, 1}, out0.shape());
         assertArrayEquals(new long[]{0, 1}, out1.shape());
         assertArrayEquals(new long[]{10, 0}, out2.shape());
+    }
+
+    @Test
+    public void testConv2DWeightsFormat1() {
+        int bS = 2, iH = 4, iW = 3, iC = 4, oC = 3, kH = 3, kW = 2, sH = 1, sW = 1, pH = 0, pW = 0, dH = 1, dW = 1;
+        int       oH=2,oW=2;
+        // Weights format tip :
+        // 0 - kH, kW, iC, oC
+        // 1 - oC, iC, kH, kW
+        // 2 - oC, kH, kW, iC
+        WeightsFormat format = WeightsFormat.OIYX;
+
+        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iC, iH, iW});
+        INDArray weights = Nd4j.createFromArray(new float[]{
+                -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
+                2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
+                2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
+                reshape(new long[]{oC, iC, kH, kW});
+
+        INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});
+
+        Conv2DConfig c = Conv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(pH).pW(pW)
+                .sH(sH).sW(sW)
+                .dH(dH).dW(dW)
+                .isSameMode(false)
+                .weightsFormat(format)
+                .build();
+
+        INDArray[] ret = Nd4j.exec(new Conv2D(inArr, weights, bias, c));
+        assertArrayEquals(new long[]{bS, oC, oH, oW}, ret[0].shape());
+    }
+
+    @Test
+    public void testConv2DWeightsFormat2() {
+        int bS=2, iH=4,iW=3,  iC=4,oC=3,  kH=3,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+        int oH=4,oW=3;
+        WeightsFormat format = WeightsFormat.OYXI;
+
+        INDArray inArr = Nd4j.linspace(DataType.FLOAT, 25, -0.5, 96).reshape(new long[]{bS, iH, iW, iC});
+        INDArray weights = Nd4j.createFromArray(new float[]{
+                -3.f, -1.8f, -0.6f, 0.6f, 1.8f, 3.f, -2.7f, -1.5f, -0.3f, 0.9f, 2.1f, 3.3f, -2.4f, -1.2f, 0.f, 1.2f, 2.4f, 3.6f, -2.1f, -0.9f, 0.3f, 1.5f,
+                2.7f, 3.9f, -2.9f, -1.7f, -0.5f, 0.7f, 1.9f, 3.1f, -2.6f, -1.4f, -0.2f, 1.f, 2.2f, 3.4f, -2.3f, -1.1f, 0.1f, 1.3f, 2.5f, 3.7f, -2.f, -0.8f, 0.4f, 1.6f,
+                2.8f, 4.f, -2.8f, -1.6f, -0.4f, 0.8f, 2.f, 3.2f, -2.5f, -1.3f, -0.1f, 1.1f, 2.3f, 3.5f, -2.2f, -1.f, 0.2f, 1.4f, 2.6f, 3.8f, -1.9f, -0.7f, 0.5f, 1.7f, 2.9f, 4.1f}).
+                reshape(new long[]{oC, kH, kW, iC});
+
+        INDArray bias = Nd4j.createFromArray(new float[]{-1, 2, 0.5f});
+
+        Conv2DConfig c = Conv2DConfig.builder()
+                .kH(kH).kW(kW)
+                .pH(pH).pW(pW)
+                .sH(sH).sW(sW)
+                .dH(dH).dW(dW)
+                .isSameMode(true)
+                .dataFormat("NHWC")
+                .weightsFormat(format)
+                .build();
+
+        INDArray[] ret = Nd4j.exec(new Conv2D(inArr, weights, bias, c));
+        System.out.println(Arrays.toString(ret[0].shape()));
+        assertArrayEquals(new long[]{bS, oH, oW, oC}, ret[0].shape());
+    }
+
+    @Test
+    public void testMatmulMethod_8() {
+        val x = Nd4j.create(DataType.INT8, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.INT8, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.INT8, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_7() {
+        val x = Nd4j.create(DataType.INT16, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.INT16, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.INT16, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_1() {
+        val x = Nd4j.create(DataType.INT32, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.INT32, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.INT32, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_2() {
+        val x = Nd4j.create(DataType.INT64, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.INT64, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.INT64, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_6() {
+        val x = Nd4j.create(DataType.UINT8, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.UINT8, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.UINT8, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_5() {
+        val x = Nd4j.create(DataType.UINT16, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.UINT16, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.UINT16, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_3() {
+        val x = Nd4j.create(DataType.UINT32, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.UINT32, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.UINT32, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testMatmulMethod_4() {
+        val x = Nd4j.create(DataType.UINT64, 3, 5).assign(1);
+        val y = Nd4j.create(DataType.UINT64, 5, 3).assign(1);
+        val e = Nd4j.create(DataType.UINT64, 3, 3).assign(5);
+
+        val z = x.mmul(y);
+        assertEquals(e, z);
+    }
+
+    @Test
+    public void testCreateBufferFromByteBuffer(){
+
+        for(DataType dt : DataType.values()){
+            if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
+                continue;
+//            System.out.println(dt);
+
+            int lengthBytes = 256;
+            int lengthElements = lengthBytes / dt.width();
+            ByteBuffer bb = ByteBuffer.allocateDirect(lengthBytes);
+
+            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements, 0);
+            INDArray arr = Nd4j.create(db, new long[]{lengthElements});
+
+            arr.toStringFull();
+            arr.toString();
+
+            for(DataType dt2 : DataType.values()) {
+                if (dt2 == DataType.COMPRESSED || dt2 == DataType.UTF8 || dt2 == DataType.UNKNOWN)
+                    continue;
+                INDArray a2 = arr.castTo(dt2);
+                a2.toStringFull();
+            }
+        }
+    }
+
+    @Test
+    public void testCreateBufferFromByteBufferViews(){
+
+        for(DataType dt : DataType.values()){
+            if(dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
+                continue;
+//            System.out.println(dt);
+
+            int lengthBytes = 256;
+            int lengthElements = lengthBytes / dt.width();
+            ByteBuffer bb = ByteBuffer.allocateDirect(lengthBytes);
+
+            DataBuffer db = Nd4j.createBuffer(bb, dt, lengthElements, 0);
+            INDArray arr = Nd4j.create(db, new long[]{lengthElements/2, 2});
+
+            arr.toStringFull();
+
+            INDArray view = arr.get(NDArrayIndex.all(), NDArrayIndex.point(0));
+            INDArray view2 = arr.get(NDArrayIndex.point(1), NDArrayIndex.all());
+
+            view.toStringFull();
+            view2.toStringFull();
+        }
+    }
+
+    @Test
+    public void testTypeCastingToString(){
+
+        for(DataType dt : DataType.values()) {
+            if (dt == DataType.COMPRESSED || dt == DataType.UTF8 || dt == DataType.UNKNOWN)
+                continue;
+            INDArray a1 = Nd4j.create(dt, 10);
+            for(DataType dt2 : DataType.values()) {
+                if (dt2 == DataType.COMPRESSED || dt2 == DataType.UTF8 || dt2 == DataType.UNKNOWN)
+                    continue;
+
+                INDArray a2 = a1.castTo(dt2);
+                a2.toStringFull();
+            }
+        }
+    }
+
+
+    @Test
+    public void testShape0Casts(){
+        for(DataType dt : DataType.values()){
+            if(!dt.isNumerical())
+                continue;
+
+            INDArray a1 = Nd4j.create(dt, 1,0,2);
+
+            for(DataType dt2 : DataType.values()){
+                if(!dt2.isNumerical())
+                    continue;
+                INDArray a2 = a1.castTo(dt2);
+
+                assertArrayEquals(a1.shape(), a2.shape());
+                assertEquals(dt2, a2.dataType());
+            }
+        }
+    }
+
+    @Test
+    public void testSmallSort(){
+        INDArray arr = Nd4j.createFromArray(0.5, 0.4, 0.1, 0.2);
+        INDArray expected = Nd4j.createFromArray(0.1, 0.2, 0.4, 0.5);
+        INDArray sorted = Nd4j.sort(arr, true);
+        assertEquals(expected, sorted);
     }
 
     @Override

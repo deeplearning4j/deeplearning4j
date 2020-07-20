@@ -22,11 +22,12 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp;
 
 /**
  * Threshold ReLU op.  The genral case of {@link RectifiedLinear}.
@@ -72,6 +73,6 @@ public class ThresholdRelu extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().thresholdReluBp(arg(), f1.get(0), cutoff));
+        return new ThresholdReluBp(sameDiff, arg(), f1.get(0), cutoff).outputs();
     }
 }

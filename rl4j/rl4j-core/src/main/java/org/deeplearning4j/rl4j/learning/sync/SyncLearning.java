@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -24,6 +25,7 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.listener.*;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
@@ -34,8 +36,8 @@ import org.deeplearning4j.rl4j.util.IDataManager;
  * @author Alexandre Boulanger
  */
 @Slf4j
-public abstract class SyncLearning<O, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-        extends Learning<O, A, AS, NN> implements IEpochTrainer {
+public abstract class SyncLearning<OBSERVATION extends Encodable, ACTION, ACTION_SPACE extends ActionSpace<ACTION>, NN extends NeuralNet>
+        extends Learning<OBSERVATION, ACTION, ACTION_SPACE, NN> implements IEpochTrainer {
 
     private final TrainingListenerList listeners = new TrainingListenerList();
 
@@ -63,7 +65,7 @@ public abstract class SyncLearning<O, A, AS extends ActionSpace<A>, NN extends N
     /**
      * This method will train the model<p>
      * The training stop when:<br>
-     * - the number of steps reaches the maximum defined in the configuration (see {@link LConfiguration#getMaxStep() LConfiguration.getMaxStep()})<br>
+     * - the number of steps reaches the maximum defined in the configuration (see {@link ILearningConfiguration#getMaxStep() LConfiguration.getMaxStep()})<br>
      * OR<br>
      * - a listener explicitly stops it<br>
      * <p>
@@ -84,7 +86,7 @@ public abstract class SyncLearning<O, A, AS extends ActionSpace<A>, NN extends N
 
         boolean canContinue = listeners.notifyTrainingStarted();
         if (canContinue) {
-            while (getStepCounter() < getConfiguration().getMaxStep()) {
+            while (this.getStepCount() < getConfiguration().getMaxStep()) {
                 preEpoch();
                 canContinue = listeners.notifyNewEpoch(this);
                 if (!canContinue) {
@@ -99,14 +101,14 @@ public abstract class SyncLearning<O, A, AS extends ActionSpace<A>, NN extends N
 
                 postEpoch();
 
-                if(getEpochCounter() % progressMonitorFrequency == 0) {
+                if(getEpochCount() % progressMonitorFrequency == 0) {
                     canContinue = listeners.notifyTrainingProgress(this);
                     if (!canContinue) {
                         break;
                     }
                 }
 
-                log.info("Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
+                log.info("Epoch: " + getEpochCount() + ", reward: " + statEntry.getReward());
                 incrementEpoch();
             }
         }

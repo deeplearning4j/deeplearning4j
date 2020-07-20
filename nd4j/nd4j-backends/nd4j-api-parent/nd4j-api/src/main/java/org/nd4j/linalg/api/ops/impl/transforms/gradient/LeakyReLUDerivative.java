@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -31,6 +32,7 @@ import java.util.List;
 
 /**Leaky ReLU derivative. Default alpha = 0.01. Cutoff = 0
  */
+@NoArgsConstructor
 public class LeakyReLUDerivative extends BaseScalarOp {
     private double alpha = 0.01;
 
@@ -40,13 +42,15 @@ public class LeakyReLUDerivative extends BaseScalarOp {
         this.extraArgs = new Object[] {alpha};
     }
 
+    public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, double alpha) {
+        this(sameDiff, i_v, false, alpha);
+    }
+
     public LeakyReLUDerivative(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs, double alpha) {
         super(sameDiff, i_v, alpha, extraArgs);
         this.alpha = alpha;
         this.extraArgs = new Object[] {alpha};
     }
-
-    public LeakyReLUDerivative() {}
 
     public LeakyReLUDerivative(INDArray x, INDArray z) {
         this(x, z, 0.01);

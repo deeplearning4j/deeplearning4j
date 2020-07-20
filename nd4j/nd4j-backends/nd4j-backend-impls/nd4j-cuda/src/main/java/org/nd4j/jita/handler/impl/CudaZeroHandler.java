@@ -17,6 +17,8 @@
 package org.nd4j.jita.handler.impl;
 
 import lombok.var;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.nativeblas.OpaqueLaunchContext;
 import org.nd4j.shade.guava.collect.HashBasedTable;
 import org.nd4j.shade.guava.collect.Table;
@@ -325,6 +327,11 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void memcpyAsync(DataBuffer dstBuffer, Pointer srcPointer, long length, long dstOffset) {
+        if (length < 1)
+            return;
+
+        Preconditions.checkArgument(length <= (dstBuffer.length() * Nd4j.sizeOfDataType(dstBuffer.dataType())), "Length requested is bigger than target DataBuffer length");
+
         val point = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
         CudaContext tContext = null;
 
@@ -1039,6 +1046,11 @@ public class CudaZeroHandler implements MemoryHandler {
             return ctx;
         } else
             return ctx;
+    }
+
+    @Override
+    public void resetCachedContext() {
+        tlContext.remove();
     }
 
     /**

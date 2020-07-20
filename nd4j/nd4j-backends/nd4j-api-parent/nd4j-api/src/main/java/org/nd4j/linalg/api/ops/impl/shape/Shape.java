@@ -21,7 +21,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -48,12 +48,20 @@ public class Shape extends DynamicCustomOp {
 
     public Shape() {}
 
+    public Shape(SameDiff sameDiff, SDVariable input) {
+        this(sameDiff, input, false);
+    }
+
     public Shape(SameDiff sameDiff, SDVariable input, boolean inPlace) {
         super(null, sameDiff, new SDVariable[] {input}, inPlace);
     }
 
     public Shape(INDArray in, INDArray out){
         super(null, in, out, null, null);
+    }
+
+    public Shape(INDArray in){
+        this(in, null);
     }
 
     @Override

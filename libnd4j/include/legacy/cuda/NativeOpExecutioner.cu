@@ -87,12 +87,12 @@ extern "C" __global__ void prepareShapeBuffer(int *dimension, int *maxDimension,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext  *lc,
                                     int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hY, Nd4jLong *hYShapeInfo,
-                                    void *dY, Nd4jLong *dYShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                    void const* hX, Nd4jLong const* hXShapeInfo,
+                                    void const* dX, Nd4jLong const* dXShapeInfo,
+                                    void const* hY, Nd4jLong const* hYShapeInfo,
+                                    void const* dY, Nd4jLong const* dYShapeInfo,
+                                    void *hZ, Nd4jLong const* hZShapeInfo,
+                                    void *dZ, Nd4jLong const* dZShapeInfo,
                                     void *extraParams) {
 
     auto stream = lc->getCudaStream();
@@ -128,12 +128,12 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execPairwiseBoolTransform( sd::LaunchContext  *lc,
                                                     int opNum,
-                                                    void *hX, Nd4jLong *hXShapeInfo,
-                                                    void *dX, Nd4jLong *dXShapeInfo,
-                                                    void *hY, Nd4jLong *hYShapeInfo,
-                                                    void *dY, Nd4jLong *dYShapeInfo,
-                                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                                    void const* hX, Nd4jLong const* hXShapeInfo,
+                                                    void const* dX, Nd4jLong const* dXShapeInfo,
+                                                    void const* hY, Nd4jLong const* hYShapeInfo,
+                                                    void const* dY, Nd4jLong const* dYShapeInfo,
+                                                    void *hZ, Nd4jLong const* hZShapeInfo,
+                                                    void *dZ, Nd4jLong const* dZShapeInfo,
                                                     void *extraParams) {
 
 	auto stream = lc->getCudaStream();
@@ -164,12 +164,12 @@ void NativeOpExecutioner::execPairwiseBoolTransform( sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execPairwiseIntTransform( sd::LaunchContext  *lc,
                                                      int opNum,
-                                                     void *hX, Nd4jLong *hXShapeInfo,
-                                                     void *dX, Nd4jLong *dXShapeInfo,
-                                                     void *hY, Nd4jLong *hYShapeInfo,
-                                                     void *dY, Nd4jLong *dYShapeInfo,
-                                                     void *hZ, Nd4jLong *hZShapeInfo,
-                                                     void *dZ, Nd4jLong *dZShapeInfo,
+                                                     void const* hX, Nd4jLong const* hXShapeInfo,
+                                                     void const* dX, Nd4jLong const* dXShapeInfo,
+                                                     void const* hY, Nd4jLong const* hYShapeInfo,
+                                                     void const* dY, Nd4jLong const* dYShapeInfo,
+                                                     void * hZ, Nd4jLong const* hZShapeInfo,
+                                                     void * dZ, Nd4jLong const* dZShapeInfo,
                                                      void *extraParams) {
 
     auto stream = lc->getCudaStream();
@@ -200,11 +200,11 @@ void NativeOpExecutioner::execPairwiseIntTransform( sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext  *lc,
                                     int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
+                                    void const* hX, Nd4jLong const* hXShapeInfo,
+                                    void const* dX, Nd4jLong const* dXShapeInfo,
                                     void *extraParams,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                    void *hZ, Nd4jLong const* hZShapeInfo,
+                                    void *dZ, Nd4jLong const* dZShapeInfo,
                                     bool biasCorrected) {
 
 	auto stream = lc->getCudaStream();
@@ -226,16 +226,16 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
+                            void const* hX, Nd4jLong const* hXShapeInfo,
+                            void const* dX, Nd4jLong const* dXShapeInfo,
+                            void const* hY, Nd4jLong const* hYShapeInfo,
+                            void const* dY, Nd4jLong const* dYShapeInfo,
+                            void *hZ, Nd4jLong const* hZShapeInfo,
+                            void *dZ, Nd4jLong const* dZShapeInfo,
                             void *extraParams,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                            Nd4jLong const* tadOnlyShapeInfo,  Nd4jLong const* tadOffsets,
+                            Nd4jLong const* tadOnlyShapeInfoZ, Nd4jLong const* tadOffsetsZ) {
 
 	auto stream = lc->getCudaStream();
 
@@ -252,7 +252,7 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext  *lc,
     if (yType != xType)
         throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
 
-	if (sd::Environment::getInstance()->isDebugAndVerbose())
+	if (sd::Environment::getInstance().isDebugAndVerbose())
 		printf("F3B opNum:[%i]\n", opNum);
 
 	dim3 launchDims(256, 256, 1024);
@@ -300,16 +300,16 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, const int opN
 
 void NativeOpExecutioner::execInverseBroadcastBool(sd::LaunchContext  *lc,
                                                    int opNum,
-                                                   void *hX, Nd4jLong *hXShapeInfo,
-                                                   void *dX, Nd4jLong *dXShapeInfo,
-                                                   void *hY, Nd4jLong *hYShapeInfo,
-                                                   void *dY, Nd4jLong *dYShapeInfo,
-                                                   void *hZ, Nd4jLong *hZShapeInfo,
-                                                   void *dZ, Nd4jLong *dZShapeInfo,
+                                                   void const* hX, Nd4jLong const* hXShapeInfo,
+                                                   void const* dX, Nd4jLong const* dXShapeInfo,
+                                                   void const* hY, Nd4jLong const* hYShapeInfo,
+                                                   void const* dY, Nd4jLong const* dYShapeInfo,
+                                                   void* hZ, Nd4jLong const* hZShapeInfo,
+                                                   void *dZ, Nd4jLong const* dZShapeInfo,
                                                    void *extraParams,
                                                    int *dimension, int dimensionLength,
-                                                   Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                                   Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                                   Nd4jLong const* tadOnlyShapeInfo,  Nd4jLong const* tadOffsets,
+                                                   Nd4jLong const* tadOnlyShapeInfoZ, Nd4jLong const* tadOffsetsZ) {
     auto stream = lc->getCudaStream();
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -338,15 +338,15 @@ void NativeOpExecutioner::execInverseBroadcastBool(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext  *lc,
                                             int opNum,
-                                            void *hX, Nd4jLong *hXShapeInfo,
-                                            void *dX, Nd4jLong *dXShapeInfo,
-                                            void *hY, Nd4jLong *hYShapeInfo,
-                                            void *dY, Nd4jLong *dYShapeInfo,
-                                            void *hZ, Nd4jLong *hZShapeInfo,
-                                            void *dZ, Nd4jLong *dZShapeInfo,
+                                            void const* hX, Nd4jLong const* hXShapeInfo,
+                                            void const* dX, Nd4jLong const* dXShapeInfo,
+                                            void const* hY, Nd4jLong const* hYShapeInfo,
+                                            void const* dY, Nd4jLong const* dYShapeInfo,
+                                            void *hZ, Nd4jLong const* hZShapeInfo,
+                                            void *dZ, Nd4jLong const* dZShapeInfo,
                                             int *dimension, int dimensionLength,
-                                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                            Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                            Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets,
+                                            Nd4jLong const* tadOnlyShapeInfoZ,Nd4jLong const* tadOffsetsZ) {
 
     auto stream = lc->getCudaStream();
 
@@ -413,15 +413,15 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext* lc, const int opNu
 
 void NativeOpExecutioner::execInverseBroadcastInt(sd::LaunchContext  *lc,
                                                    int opNum,
-                                                   void *hX, Nd4jLong *hXShapeInfo,
-                                                   void *dX, Nd4jLong *dXShapeInfo,
-                                                   void *hY, Nd4jLong *hYShapeInfo,
-                                                   void *dY, Nd4jLong *dYShapeInfo,
-                                                   void *hZ, Nd4jLong *hZShapeInfo,
-                                                   void *dZ, Nd4jLong *dZShapeInfo,
+                                                   void const* hX, Nd4jLong const* hXShapeInfo,
+                                                   void const* dX, Nd4jLong const* dXShapeInfo,
+                                                   void const* hY, Nd4jLong const* hYShapeInfo,
+                                                   void const* dY, Nd4jLong const* dYShapeInfo,
+                                                   void *hZ, Nd4jLong const* hZShapeInfo,
+                                                   void *dZ, Nd4jLong const* dZShapeInfo,
                                                    int *dimension, int dimensionLength,
-                                                   Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                                   Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                                   Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets,
+                                                   Nd4jLong const* tadOnlyShapeInfoZ,Nd4jLong const* tadOffsetsZ) {
     auto stream = lc->getCudaStream();
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -437,7 +437,7 @@ void NativeOpExecutioner::execInverseBroadcastInt(sd::LaunchContext  *lc,
     if (yType != xType || zType != xType)
         throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
 
-    if (sd::Environment::getInstance()->isDebugAndVerbose())
+    if (sd::Environment::getInstance().isDebugAndVerbose())
         printf("F3BI opNum:[%i]\n", opNum);
 
     dim3 launchDims(256, 256, 1024);
@@ -465,15 +465,15 @@ void NativeOpExecutioner::execInverseBroadcastInt(sd::LaunchContext  *lc,
  */
 void NativeOpExecutioner::execBroadcast(sd::LaunchContext  *lc,
 		                              int opNum,
-		                              void *hX, Nd4jLong *hXShapeInfo,
-		                              void *dX, Nd4jLong *dXShapeInfo,
-		                              void *hY, Nd4jLong *hYShapeInfo,
-		                              void *dY, Nd4jLong *dYShapeInfo,
-		                              void *hZ, Nd4jLong *hZShapeInfo,
-		                              void *dZ, Nd4jLong *dZShapeInfo,
+		                              void const* hX, Nd4jLong const* hXShapeInfo,
+		                              void const* dX, Nd4jLong const* dXShapeInfo,
+		                              void const* hY, Nd4jLong const* hYShapeInfo,
+		                              void const* dY, Nd4jLong const* dYShapeInfo,
+		                              void *hZ, Nd4jLong const* hZShapeInfo,
+		                              void *dZ, Nd4jLong const* dZShapeInfo,
 		                              int *dimension, int dimensionLength,
-		                              Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-		                              Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+		                              Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets,
+		                              Nd4jLong const* tadOnlyShapeInfoZ,Nd4jLong const* tadOffsetsZ) {
 
 	auto stream = lc->getCudaStream();
 
@@ -536,15 +536,15 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext  *lc, const int opNum,
 
 void NativeOpExecutioner::execInverseBroadcast(sd::LaunchContext  *lc,
                                                int opNum,
-                                               void *hX, Nd4jLong *hXShapeInfo,
-                                               void *dX, Nd4jLong *dXShapeInfo,
-                                               void *hY, Nd4jLong *hYShapeInfo,
-                                               void *dY, Nd4jLong *dYShapeInfo,
-                                               void *hZ, Nd4jLong *hZShapeInfo,
-                                               void *dZ, Nd4jLong *dZShapeInfo,
+                                               void const* hX, Nd4jLong const* hXShapeInfo,
+                                               void const* dX, Nd4jLong const* dXShapeInfo,
+                                               void const* hY, Nd4jLong const* hYShapeInfo,
+                                               void const* dY, Nd4jLong const* dYShapeInfo,
+                                               void *hZ, Nd4jLong const* hZShapeInfo,
+                                               void *dZ, Nd4jLong const* dZShapeInfo,
                                                int *dimension, int dimensionLength,
-                                               Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                               Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                               Nd4jLong const* tadOnlyShapeInfo, Nd4jLong const* tadOffsets,
+                                               Nd4jLong const* tadOnlyShapeInfoZ,Nd4jLong const* tadOffsetsZ) {
 
     auto stream = lc->getCudaStream();
 
@@ -572,18 +572,18 @@ void NativeOpExecutioner::execInverseBroadcast(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceSame(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            void const* hX, Nd4jLong const* hXShapeInfo,
+                            void const* dX, Nd4jLong const* dXShapeInfo,
                             void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
+                            void *hZ, Nd4jLong const* hZShapeInfo,
+                            void *dZ, Nd4jLong const* dZShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                            Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
 	auto stream = lc->getCudaStream();
 	auto reductionPointer = lc->getReductionPointer();
 
-    if (sd::Environment::getInstance()->isDebugAndVerbose())
+    if (sd::Environment::getInstance().isDebugAndVerbose())
         printf("SF7 opNum:[%i]\n", opNum);
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -607,18 +607,18 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceLong(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            void const* hX, Nd4jLong const* hXShapeInfo,
+                            void const* dX, Nd4jLong const* dXShapeInfo,
                             void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
+                            void *hZ, Nd4jLong const* hZShapeInfo,
+                            void *dZ, Nd4jLong const* dZShapeInfo,
                             int *dimension,int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                            Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
 	auto stream = lc->getCudaStream();
 	auto reductionPointer = lc->getReductionPointer();
 
-    if (sd::Environment::getInstance()->isDebugAndVerbose())
+    if (sd::Environment::getInstance().isDebugAndVerbose())
         printf("LF7 opNum:[%i]\n", opNum);
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -643,18 +643,18 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceBool(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            void const* hX, Nd4jLong const* hXShapeInfo,
+                            void const* dX, Nd4jLong const* dXShapeInfo,
                             void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
+                            void *hZ, Nd4jLong const* hZShapeInfo,
+                            void *dZ, Nd4jLong const* dZShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                            Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
 	auto stream = lc->getCudaStream();
 	auto reductionPointer = lc->getReductionPointer();
 
-    if (sd::Environment::getInstance()->isDebugAndVerbose())
+    if (sd::Environment::getInstance().isDebugAndVerbose())
         printf("BF7 opNum:[%i]\n", opNum);
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -689,19 +689,19 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext  *lc,
  */
 void NativeOpExecutioner::execIndexReduce(sd::LaunchContext  *lc,
                                 int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
+                                void const* hX, Nd4jLong const* hXShapeInfo,
+                                void const* dX, Nd4jLong const* dXShapeInfo,
                                 void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
+                                void *hZ, Nd4jLong const* hZShapeInfo,
+                                void *dZ, Nd4jLong const* dZShapeInfo,
                                 int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
 	auto stream = lc->getCudaStream();
 	auto reductionPointer = lc->getReductionPointer();
 	auto allocationPointer = lc->getAllocationPointer();
 
-	if (sd::Environment::getInstance()->isDebugAndVerbose())
+	if (sd::Environment::getInstance().isDebugAndVerbose())
 		printf("F2 opNum:[%i]\n", opNum);
 
 	auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -734,18 +734,18 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext  *lc,
  */
 void  NativeOpExecutioner::execReduceFloat(sd::LaunchContext  *lc,
 										int opNum,
-										void *hX, Nd4jLong *hXShapeInfo,
-        								void *dX, Nd4jLong *dXShapeInfo,
+										void const* hX, Nd4jLong const* hXShapeInfo,
+        								void const* dX, Nd4jLong const* dXShapeInfo,
         								void *extraParams,
-        								void *hZ, Nd4jLong *hZShapeInfo,
-										void *dZ, Nd4jLong *dZShapeInfo,
+        								void *hZ, Nd4jLong const* hZShapeInfo,
+										void *dZ, Nd4jLong const* dZShapeInfo,
 										int *dimension,int dimensionLength,
-										Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+										Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
 	auto stream = lc->getCudaStream();
 	auto reductionPointer = lc->getReductionPointer();
 
-	if (sd::Environment::getInstance()->isDebugAndVerbose())
+	if (sd::Environment::getInstance().isDebugAndVerbose())
 		printf("F8 opNum:[%i]\n", opNum);
 
 	auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -774,13 +774,13 @@ void  NativeOpExecutioner::execReduceFloat(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext  *lc,
 											int opNum,
-											void *hX, Nd4jLong *hXShapeInfo,
-        									void *dX, Nd4jLong *dXShapeInfo,
+											void const* hX, Nd4jLong const* hXShapeInfo,
+        									void const* dX, Nd4jLong const* dXShapeInfo,
         									void *extraParams,
-        									void *hZ, Nd4jLong *hZShapeInfo,
-											void *dZ, Nd4jLong *dZShapeInfo){
+        									void *hZ, Nd4jLong const* hZShapeInfo,
+											void *dZ, Nd4jLong const* dZShapeInfo){
 
-	if (sd::Environment::getInstance()->isDebug())
+	if (sd::Environment::getInstance().isDebug())
 		printf("F1 opNum:[%i]\n", opNum);
 
 	auto stream = lc->getCudaStream();
@@ -792,7 +792,7 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext  *lc,
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks == 0 ? 1 : numBlocks, blockWidth, 32768);
 
-	if (sd::Environment::getInstance()->isDebugAndVerbose() && launchDims.x == 1)
+	if (sd::Environment::getInstance().isDebugAndVerbose() && launchDims.x == 1)
 		printf("AF1 opNum:[%i]\n", opNum);
 
 	auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -825,11 +825,11 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext  *lc,
                                                 int opNum,
-                                                void *hX, Nd4jLong *hXShapeInfo,
-                                                void *dX, Nd4jLong *dXShapeInfo,
+                                                void const* hX, Nd4jLong const* hXShapeInfo,
+                                                void const* dX, Nd4jLong const* dXShapeInfo,
                                                 void *extraParams,
-                                                void *hZ, Nd4jLong *hZShapeInfo,
-                                                void *dZ, Nd4jLong *dZShapeInfo) {
+                                                void *hZ, Nd4jLong const* hZShapeInfo,
+                                                void *dZ, Nd4jLong const* dZShapeInfo) {
 
     auto stream = lc->getCudaStream();
     auto reductionPointer = lc->getReductionPointer();
@@ -854,11 +854,11 @@ void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext  *lc,
                                         int opNum,
-                                        void *hX, Nd4jLong *hXShapeInfo,
-                                        void *dX, Nd4jLong *dXShapeInfo,
+                                        void const* hX, Nd4jLong const* hXShapeInfo,
+                                        void const* dX, Nd4jLong const* dXShapeInfo,
                                         void *extraParams,
-                                        void *hZ, Nd4jLong *hZShapeInfo,
-                                        void *dZ, Nd4jLong *dZShapeInfo) {
+                                        void *hZ, Nd4jLong const* hZShapeInfo,
+                                        void *dZ, Nd4jLong const* dZShapeInfo) {
 
     auto stream = lc->getCudaStream();
     auto reductionPointer = lc->getReductionPointer();
@@ -885,11 +885,11 @@ void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceSameScalar(sd::LaunchContext  *lc,
                                         int opNum,
-                                        void *hX, Nd4jLong *hXShapeInfo,
-                                        void *dX, Nd4jLong *dXShapeInfo,
+                                        void const* hX, Nd4jLong const* hXShapeInfo,
+                                        void const* dX, Nd4jLong const* dXShapeInfo,
                                         void *extraParams,
-                                        void *hZ, Nd4jLong *hZShapeInfo,
-                                        void *dZ, Nd4jLong *dZShapeInfo) {
+                                        void *hZ, Nd4jLong const* hZShapeInfo,
+                                        void *dZ, Nd4jLong const* dZShapeInfo) {
 
     auto stream = lc->getCudaStream();
     auto reductionPointer = lc->getReductionPointer();
@@ -916,11 +916,11 @@ void NativeOpExecutioner::execReduceSameScalar(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext  *lc,
                                     int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
+                                    void const* hX, Nd4jLong const* hXShapeInfo,
+                                    void const* dX, Nd4jLong const* dXShapeInfo,
                                     void *extraParams,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo) {
+                                    void *hZ, Nd4jLong const* hZShapeInfo,
+                                    void *dZ, Nd4jLong const* dZShapeInfo) {
 
     auto stream = lc->getCudaStream();
     auto reductionPointer = lc->getReductionPointer();
@@ -947,12 +947,12 @@ void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformSame(sd::LaunchContext  *lc,
 									int opNum,
-                                   	void *hX, Nd4jLong *hXShapeInfo,
-                                   	void *dX, Nd4jLong *dXShapeInfo,
-                                   	void *hZ, Nd4jLong *hZShapeInfo,
-                                   	void *dZ, Nd4jLong *dZShapeInfo,
+                                   	void const* hX, Nd4jLong const* hXShapeInfo,
+                                   	void const* dX, Nd4jLong const* dXShapeInfo,
+                                   	void *hZ, Nd4jLong const* hZShapeInfo,
+                                   	void *dZ, Nd4jLong const* dZShapeInfo,
                                    	void *extraParams,
-                                   	Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                   	Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
     auto stream = lc->getCudaStream();
 
@@ -981,12 +981,12 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformBool(sd::LaunchContext  *lc,
                                 int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
+                                void const* hX, Nd4jLong const* hXShapeInfo,
+                                void const* dX, Nd4jLong const* dXShapeInfo,
+                                void *hZ, Nd4jLong const* hZShapeInfo,
+                                void *dZ, Nd4jLong const* dZShapeInfo,
                                 void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
 	auto stream = lc->getCudaStream();
 
@@ -1015,12 +1015,12 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformAny(sd::LaunchContext  *lc,
                                 		int opNum,
-                                		void *hX, Nd4jLong *hXShapeInfo,
-                                		void *dX, Nd4jLong *dXShapeInfo,
-                                		void *hZ, Nd4jLong *hZShapeInfo,
-                                		void *dZ, Nd4jLong *dZShapeInfo,
+                                		void const* hX, Nd4jLong const* hXShapeInfo,
+                                		void const* dX, Nd4jLong const* dXShapeInfo,
+                                		void *hZ, Nd4jLong const* hZShapeInfo,
+                                		void *dZ, Nd4jLong const* dZShapeInfo,
                                 		void *extraParams,
-                                		Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism) {
+                                		Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets, bool allowParallelism) {
 
 	auto stream = lc->getCudaStream();
 
@@ -1050,12 +1050,12 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformStrict(sd::LaunchContext  *lc,
                                     int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                    void const* hX, Nd4jLong const* hXShapeInfo,
+                                    void const* dX, Nd4jLong const* dXShapeInfo,
+                                    void *hZ, Nd4jLong const* hZShapeInfo,
+                                    void *dZ, Nd4jLong const* dZShapeInfo,
                                     void *extraParams,
-                                    Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                    Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
     auto stream = lc->getCudaStream();
 
@@ -1084,12 +1084,12 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformFloat(sd::LaunchContext  *lc,
                                 int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
+                                void const* hX, Nd4jLong const* hXShapeInfo,
+                                void const* dX, Nd4jLong const* dXShapeInfo,
+                                void *hZ, Nd4jLong const* hZShapeInfo,
+                                void *dZ, Nd4jLong const* dZShapeInfo,
                                 void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets) {
 
     auto stream = lc->getCudaStream();
     auto reductionPointer = lc->getReductionPointer();
@@ -1118,11 +1118,11 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execSummaryStats(sd::LaunchContext  *lc,
                                 int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
+                                void const* hX, Nd4jLong const* hXShapeInfo,
+                                void const* dX, Nd4jLong const* dXShapeInfo,
                                 void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
+                                void *hZ, Nd4jLong const* hZShapeInfo,
+                                void *dZ, Nd4jLong const* dZShapeInfo,
                                 bool biasCorrected) {
 
     auto stream = lc->getCudaStream();
@@ -1147,13 +1147,13 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execSummaryStats(sd::LaunchContext  *lc,
                                 			int opNum,
-                                			void *hX, Nd4jLong *hXShapeInfo,
-                                			void *dX, Nd4jLong *dXShapeInfo,
+                                			void const* hX, Nd4jLong const* hXShapeInfo,
+                                			void const* dX, Nd4jLong const* dXShapeInfo,
                                 			void *extraParams,
-                                			void *hZ, Nd4jLong *hZShapeInfo,
-                                			void *dZ, Nd4jLong *dZShapeInfo,
+                                			void *hZ, Nd4jLong const* hZShapeInfo,
+                                			void *dZ, Nd4jLong const* dZShapeInfo,
                                 			int *dimension, int dimensionLength,
-                                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                            Nd4jLong const* tadShapeInfo, Nd4jLong const* tadOffsets,
                                 			bool biasCorrected) {
 	auto stream = lc->getCudaStream();
 	auto reductionPointer = lc->getReductionPointer();
@@ -1178,13 +1178,13 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            void const* hX, Nd4jLong const* hXShapeInfo,
+                            void const* dX, Nd4jLong const* dXShapeInfo,
                             void *extraParams,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo) {
+                            void const* hY, Nd4jLong const* hYShapeInfo,
+                            void const* dY, Nd4jLong const* dYShapeInfo,
+                            void *hZ, Nd4jLong const* hZShapeInfo,
+                            void *dZ, Nd4jLong const* dZShapeInfo) {
 
 	auto stream = lc->getCudaStream();
     auto reductionPointer = lc->getReductionPointer();
@@ -1215,16 +1215,16 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            void const* hX, Nd4jLong const* hXShapeInfo,
+                            void const* dX, Nd4jLong const* dXShapeInfo,
                             void *extraParams,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
+                            void const* hY, Nd4jLong const* hYShapeInfo,
+                            void const* dY, Nd4jLong const* dYShapeInfo,
+                            void *hZ, Nd4jLong const* hZShapeInfo,
+                            void *dZ, Nd4jLong const* dZShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong* tadOnlyShapeInfo, Nd4jLong* tadOffsets,
-                            Nd4jLong* yTadOnlyShapeInfo, Nd4jLong* yTadOffsets) {
+                            Nd4jLong const*  tadOnlyShapeInfo,  Nd4jLong const* tadOffsets,
+                            Nd4jLong const*  yTadOnlyShapeInfo, Nd4jLong const* yTadOffsets) {
 
     if(shape::isScalar(hZShapeInfo)) {
         NativeOpExecutioner::execReduce3(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
@@ -1268,13 +1268,13 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext  *lc,
 								  int opNum,
-                                  void *hX, Nd4jLong *hXShapeInfo,
-                                  void *dX, Nd4jLong *dXShapeInfo,
+                                  void const* hX, Nd4jLong const* hXShapeInfo,
+                                  void const* dX, Nd4jLong const* dXShapeInfo,
                                   void *extraParams,
-                                  void *hY, Nd4jLong *hYShapeInfo,
-                                  void *dY, Nd4jLong *dYShapeInfo,
-                                  void *hZ, Nd4jLong *hZShapeInfo,
-                                  void *dZ, Nd4jLong *dZShapeInfo) {
+                                  void const* hY, Nd4jLong const* hYShapeInfo,
+                                  void const* dY, Nd4jLong const* dYShapeInfo,
+                                  void *hZ, Nd4jLong const* hZShapeInfo,
+                                  void *dZ, Nd4jLong const* dZShapeInfo) {
 
 
 	auto stream 		   = lc->getCudaStream();
@@ -1308,12 +1308,12 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalarBool(sd::LaunchContext  *lc,
 										int opNum,
-										void *hX, Nd4jLong *hXShapeInfo,
-										void *dX, Nd4jLong *dXShapeInfo,
-										void *hZ, Nd4jLong *hZShapeInfo,
-										void *dZ, Nd4jLong *dZShapeInfo,
-										void *hScalar, Nd4jLong *hScalarShapeInfo,
-										void *dScalar, Nd4jLong *dScalarShapeInfo,
+										void const* hX, Nd4jLong const* hXShapeInfo,
+										void const* dX, Nd4jLong const* dXShapeInfo,
+										void *hZ, Nd4jLong const* hZShapeInfo,
+										void *dZ, Nd4jLong const* dZShapeInfo,
+										void const* hScalar, Nd4jLong const* hScalarShapeInfo,
+										void const* dScalar, Nd4jLong const* dScalarShapeInfo,
 										void *extraParams, bool allowParallelism) {
 
 	auto stream = lc->getCudaStream();
@@ -1344,16 +1344,16 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalarBool(sd::LaunchContext  *lc,
 						   				int opNum,
-						   				void *hX, Nd4jLong *hXShapeInfo,
-						   				void *dX, Nd4jLong *dXShapeInfo,
+						   				void const* hX, Nd4jLong const* hXShapeInfo,
+						   				void const* dX, Nd4jLong const* dXShapeInfo,
                                         void *extraParams,
-						   				void *hZ, Nd4jLong *hZShapeInfo,
-						   				void *dZ, Nd4jLong *dZShapeInfo,
-						   				void *hScalars, Nd4jLong *hScalarShapeInfo,
-						   				void *dScalars, Nd4jLong *dScalarShapeInfo,
+						   				void *hZ, Nd4jLong const* hZShapeInfo,
+						   				void *dZ, Nd4jLong const* dZShapeInfo,
+						   				void const* hScalars, Nd4jLong const* hScalarShapeInfo,
+						   				void const* dScalars, Nd4jLong const* dScalarShapeInfo,
 						   				int *dimension, int dimensionLength,
-                           				Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                           				Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                           				Nd4jLong const* tadShapeInfo,  Nd4jLong const* tadOffsets,
+                           				Nd4jLong const* tadShapeInfoZ, Nd4jLong const* tadOffsetsZ) {
 
 	auto stream = lc->getCudaStream();
 
@@ -1383,12 +1383,12 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalarInt(sd::LaunchContext  *lc,
                                          int opNum,
-                                         void *hX, Nd4jLong *hXShapeInfo,
-                                         void *dX, Nd4jLong *dXShapeInfo,
-                                         void *hZ, Nd4jLong *hZShapeInfo,
-                                         void *dZ, Nd4jLong *dZShapeInfo,
-                                         void *hScalar, Nd4jLong *hScalarShapeInfo,
-                                         void *dScalar, Nd4jLong *dScalarShapeInfo,
+                                         void const* hX, Nd4jLong const* hXShapeInfo,
+                                         void const* dX, Nd4jLong const* dXShapeInfo,
+                                         void *hZ, Nd4jLong const* hZShapeInfo,
+                                         void *dZ, Nd4jLong const* dZShapeInfo,
+                                         void const* hScalar, Nd4jLong const* hScalarShapeInfo,
+                                         void const* dScalar, Nd4jLong const* dScalarShapeInfo,
                                          void *extraParams, bool allowParallelism) {
 
     auto stream = lc->getCudaStream();
@@ -1419,16 +1419,16 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalarInt(sd::LaunchContext  *lc,
                                          int opNum,
-                                         void *hX, Nd4jLong *hXShapeInfo,
-                                         void *dX, Nd4jLong *dXShapeInfo,
+                                         void const* hX, Nd4jLong const* hXShapeInfo,
+                                         void const* dX, Nd4jLong const* dXShapeInfo,
                                          void *extraParams,
-                                         void *hZ, Nd4jLong *hZShapeInfo,
-                                         void *dZ, Nd4jLong *dZShapeInfo,
-                                         void *hScalars, Nd4jLong *hScalarShapeInfo,
-                                         void *dScalars, Nd4jLong *dScalarShapeInfo,
+                                         void *hZ, Nd4jLong const* hZShapeInfo,
+                                         void *dZ, Nd4jLong const* dZShapeInfo,
+                                         void const* hScalars, Nd4jLong const* hScalarShapeInfo,
+                                         void const* dScalars, Nd4jLong const* dScalarShapeInfo,
                                          int *dimension, int dimensionLength,
-                                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                         Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                                         Nd4jLong const* tadShapeInfo,  Nd4jLong const* tadOffsets,
+                                         Nd4jLong const* tadShapeInfoZ, Nd4jLong const* tadOffsetsZ) {
 
     auto stream = lc->getCudaStream();
 
@@ -1458,12 +1458,12 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalar(sd::LaunchContext  *lc,
 									int opNum,
-									void *hX, Nd4jLong *hXShapeInfo,
-									void *dX, Nd4jLong *dXShapeInfo,
-									void *hZ, Nd4jLong *hZShapeInfo,
-									void *dZ, Nd4jLong *dZShapeInfo,
-									void *hScalar, Nd4jLong *hScalarShapeInfo,
-									void *dScalar, Nd4jLong *dScalarShapeInfo,
+									void const* hX, Nd4jLong const* hXShapeInfo,
+									void const* dX, Nd4jLong const* dXShapeInfo,
+									void* hZ, Nd4jLong const* hZShapeInfo,
+									void* dZ, Nd4jLong const* dZShapeInfo,
+									void const* hScalar, Nd4jLong const* hScalarShapeInfo,
+									void const* dScalar, Nd4jLong const* dScalarShapeInfo,
 									void *extraParams, bool allowParallelism) {
 
 	auto stream = lc->getCudaStream();
@@ -1493,16 +1493,16 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalar(sd::LaunchContext  *lc,
 					 				int opNum,
-					 				void *hX, Nd4jLong *hXShapeInfo,
-                     				void *dX, Nd4jLong *dXShapeInfo,
+					 				void const* hX, Nd4jLong const* hXShapeInfo,
+                     				void const* dX, Nd4jLong const* dXShapeInfo,
                                     void *extraParams,
-                     				void *hZ, Nd4jLong *hZShapeInfo,
-                     				void *dZ, Nd4jLong *dZShapeInfo,
-                     				void *hScalars, Nd4jLong *hScalarShapeInfo,
-                     				void *dScalars, Nd4jLong *dScalarShapeInfo,
+                     				void *hZ, Nd4jLong const* hZShapeInfo,
+                     				void *dZ, Nd4jLong const* dZShapeInfo,
+                     				void const* hScalars, Nd4jLong const* hScalarShapeInfo,
+                     				void const* dScalars, Nd4jLong const* dScalarShapeInfo,
 					 				int *dimension, int dimensionLength,
-                     				Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                     				Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                     				Nd4jLong const* tadShapeInfo,  Nd4jLong const* tadOffsets,
+                     				Nd4jLong const* tadShapeInfoZ, Nd4jLong const* tadOffsetsZ) {
 
     auto stream = lc->getCudaStream();
 
@@ -1531,8 +1531,8 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext  *lc,
 void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
 						  int opNum,
                           Nd4jPointer stateHost,
-                          void *hZ, Nd4jLong *hZShapeInfo,
-                          void *dZ, Nd4jLong *dZShapeInfo,
+                          void *hZ, Nd4jLong const* hZShapeInfo,
+                          void *dZ, Nd4jLong const* dZShapeInfo,
                           void *extraArguments) {
 
     auto stream = lc->getCudaStream();
@@ -1564,10 +1564,10 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
 void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
 							int opNum,
 							Nd4jPointer stateHost,
-						   	void *hX, Nd4jLong *hXShapeInfo,
-						   	void *dX, Nd4jLong *dXShapeInfo,
-						   	void *hZ, Nd4jLong *hZShapeInfo,
-						   	void *dZ, Nd4jLong *dZShapeInfo,
+						   	void const* hX, Nd4jLong const* hXShapeInfo,
+						   	void const* dX, Nd4jLong const* dXShapeInfo,
+						   	void *hZ, Nd4jLong const* hZShapeInfo,
+						   	void *dZ, Nd4jLong const* dZShapeInfo,
 						   	void *extraArguments) {
 
     auto stream = lc->getCudaStream();
@@ -1599,12 +1599,12 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
 void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
 							int opNum,
 							Nd4jPointer stateHost,
-							void *hX, Nd4jLong *hXShapeInfo,
-							void *dX, Nd4jLong *dXShapeInfo,
-							void *hY, Nd4jLong *hYShapeInfo,
-							void *dY, Nd4jLong *dYShapeInfo,
-							void *hZ, Nd4jLong *hZShapeInfo,
-							void *dZ, Nd4jLong *dZShapeInfo,
+							void const* hX, Nd4jLong const* hXShapeInfo,
+							void const* dX, Nd4jLong const* dXShapeInfo,
+							void const* hY, Nd4jLong const* hYShapeInfo,
+							void const* dY, Nd4jLong const* dYShapeInfo,
+							void *hZ, Nd4jLong const* hZShapeInfo,
+							void *dZ, Nd4jLong const* dZShapeInfo,
 							void *extraArguments) {
 
     auto stream = lc->getCudaStream();
@@ -1634,27 +1634,27 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3All(sd::LaunchContext  *lc,
 									int opNum,
-									void *hX, Nd4jLong *hXShapeInfo,
-                            		void *dX, Nd4jLong *dXShapeInfo,
+									void const* hX, Nd4jLong const* hXShapeInfo,
+                            		void const* dX, Nd4jLong const* dXShapeInfo,
                             		void *extraParamsVals,
-									void *hY, Nd4jLong *hYShapeInfo,
-                            		void *dY, Nd4jLong *dYShapeInfo,
-                            		void *hZ, Nd4jLong *hZShapeInfo,
-                            		void *dZ, Nd4jLong *dZShapeInfo,
+									void const* hY, Nd4jLong const* hYShapeInfo,
+                            		void const* dY, Nd4jLong const* dYShapeInfo,
+                            		void *hZ, Nd4jLong const* hZShapeInfo,
+                            		void *dZ, Nd4jLong const* dZShapeInfo,
 									int *dimension, int dimensionLength,
-									Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
-									Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
+									Nd4jLong const* xTadShapeInfo, Nd4jLong const* xOffsets,
+									Nd4jLong const* yTadShapeInfo, Nd4jLong const* yOffsets) {
 
     auto stream = lc->getCudaStream();
     auto allocationPointer = lc->getAllocationPointer();
 	auto reductionPointer  = lc->getReductionPointer();
 
-    if (sd::Environment::getInstance()->isDebugAndVerbose())
+    if (sd::Environment::getInstance().isDebugAndVerbose())
         printf("D119 opNum:[%i]\n", opNum);
 
     dim3 launchDims(shape::length(hZShapeInfo), 256, 32768);
 
-    if (sd::Environment::getInstance()->isVerbose() && launchDims.x == 1)
+    if (sd::Environment::getInstance().isVerbose() && launchDims.x == 1)
         printf("AD119 opNum:[%i]\n", opNum);
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -1676,16 +1676,16 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext  *lc,
                                             int opNum,
-                                            void *hX, Nd4jLong *hXShapeInfo,
-                                            void *dX, Nd4jLong *dXShapeInfo,
+                                            void const* hX, Nd4jLong const* hXShapeInfo,
+                                            void const* dX, Nd4jLong const* dXShapeInfo,
                                             void *extraParams,
-                                            void *hY, Nd4jLong *hYShapeInfo,
-                                            void *dY, Nd4jLong *dYShapeInfo,
-                                            void *hZ, Nd4jLong *hZShapeInfo,
-                                            void *dZ, Nd4jLong *dZShapeInfo,
+                                            void const* hY, Nd4jLong const* hYShapeInfo,
+                                            void const* dY, Nd4jLong const* dYShapeInfo,
+                                            void *hZ, Nd4jLong const* hZShapeInfo,
+                                            void *dZ, Nd4jLong const* dZShapeInfo,
                                             int *dimension, int dimensionLength,
-                                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                            Nd4jLong *yTadShapeInfo, Nd4jLong *yTadOffsets) {
+                                            Nd4jLong const* tadShapeInfo,  Nd4jLong const* tadOffsets,
+                                            Nd4jLong const* yTadShapeInfo, Nd4jLong const* yTadOffsets) {
 
     if(shape::isScalar(hZShapeInfo)) {
         NativeOpExecutioner::execReduce3(lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);

@@ -18,7 +18,7 @@ package org.deeplearning4j.spark.text.functions;
 
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.broadcast.Broadcast;
-import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.common.primitives.Counter;
 
 import java.util.ArrayList;
 import java.util.Iterator;

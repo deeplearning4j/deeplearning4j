@@ -98,7 +98,7 @@ DECLARE_SHAPE_FN(conv1d) {
 
     auto inputShapeInfo   = inputShape->at(0);
     auto weightsShapeInfo = inputShape->at(1);
-    Nd4jLong* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;
+    Nd4jLong const* biasShapeInfo    = block.width() > 2 ? inputShape->at(2) : nullptr;
 
     int kW = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(shape::sizeAt(weightsShapeInfo, 0)); // filter(kernel) width
     int sW = INT_ARG(1);                                                        // strides width
@@ -240,8 +240,8 @@ DECLARE_SHAPE_FN(conv1d_bp) {
 
     auto inputShapeInfo   = inputShape->at(0);                                               // [bS, iW, iC] (NWC) or [bS, iC, iW] (NCW)
     auto weightsShapeInfo = inputShape->at(1);                                               // [kW, iC, oC], [oC, iC, kW], [oC, kW, iC]
-    Nd4jLong* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;            // [oC]
-    Nd4jLong* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);  // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
+    Nd4jLong const* biasShapeInfo    = block.width() > 3 ? inputShape->at(2) : nullptr;            // [oC]
+    Nd4jLong const* gradOShapeInfo   = block.width() > 3 ? inputShape->at(3) : inputShape->at(2);  // [bS, oW, oC] (NWC) or [bS, oC, oW] (NCW), epsilon_next
 
     const int rank = 3;
     REQUIRE_TRUE(inputShapeInfo[0]   == rank, 0, "CUSTOM CONV1D_BP OP: rank of input array must be equal to %i, but got %i instead !", rank, inputShapeInfo[0]);

@@ -16,26 +16,21 @@
 
 package org.deeplearning4j.rl4j.util;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.bytedeco.opencv.global.opencv_core;
-import org.bytedeco.opencv.global.opencv_imgproc;
-import org.bytedeco.opencv.opencv_core.Mat;
-import org.bytedeco.opencv.opencv_core.Rect;
-import org.bytedeco.opencv.opencv_core.Size;
-import org.opencv.imgproc.Imgproc;
+import org.datavec.image.loader.NativeImageLoader;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
-import static org.bytedeco.ffmpeg.global.avcodec.*;
-import static org.bytedeco.opencv.global.opencv_core.*;
+import static org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_ID_H264;
+import static org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_ID_MPEG4;
+import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_RGB0;
+import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_RGB24;
+import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_RGB8;
 
 /**
- * VideoRecorder is used to create a video from a sequence of individual frames. If using 3 channels
- * images, it expects B-G-R order. A RGB order can be used by calling isRGBOrder(true).<br>
+ * VideoRecorder is used to create a video from a sequence of INDArray frames. INDArrays are assumed to be in CHW format where C=3 and pixels are RGB encoded<br>
  * Example:<br>
  * <pre>
  * {@code
@@ -45,11 +40,8 @@ import static org.bytedeco.opencv.global.opencv_core.*;
  *             .build();
  *         recorder.startRecording("myVideo.mp4");
  *         while(...) {
- *             byte[] data = new byte[160*100*3];
- *             // Todo: Fill data
- *             VideoRecorder.VideoFrame frame = recorder.createFrame(data);
- *             // Todo: Apply cropping or resizing to frame
- *             recorder.record(frame);
+ *             INDArray chwData = Nd4j.create()
+ *             recorder.record(chwData);
  *         }
  *         recorder.stopRecording();
  * }
@@ -60,16 +52,13 @@ import static org.bytedeco.opencv.global.opencv_core.*;
 @Slf4j
 public class VideoRecorder implements AutoCloseable {
 
-    public enum FrameInputTypes { BGR, RGB, Float }
+    private final NativeImageLoader nativeImageLoader = new NativeImageLoader();
 
     private final int height;
     private final int width;
-    private final int imageType;
-    private final OpenCVFrameConverter openCVFrameConverter = new OpenCVFrameConverter.ToMat();
     private final int codec;
     private final double framerate;
     private final int videoQuality;
-    private final FrameInputTypes frameInputType;
 
     private FFmpegFrameRecorder fmpegFrameRecorder = null;
 
@@ -83,11 +72,9 @@ public class VideoRecorder implements AutoCloseable {
     private VideoRecorder(Builder builder) {
         this.height = builder.height;
         this.width = builder.width;
-        imageType = CV_8UC(builder.numChannels);
         codec = builder.codec;
         framerate = builder.frameRate;
         videoQuality = builder.videoQuality;
-        frameInputType = builder.frameInputType;
     }
 
     /**
@@ -119,59 +106,11 @@ public class VideoRecorder implements AutoCloseable {
 
     /**
      * Add a frame to the video
-     * @param frame the VideoFrame to add to the video
+     * @param imageArray the INDArray that contains the data to be recorded, the data must be in CHW format
      * @throws Exception
      */
-    public void record(VideoFrame frame) throws Exception {
-        Size size = frame.getMat().size();
-        if(size.height() != height || size.width() != width) {
-            throw new IllegalArgumentException(String.format("Wrong frame size. Got (%dh x %dw) expected (%dh x %dw)", size.height(), size.width(), height, width));
-        }
-        Frame cvFrame = openCVFrameConverter.convert(frame.getMat());
-        fmpegFrameRecorder.record(cvFrame);
-    }
-
-    /**
-     * Create a VideoFrame from a byte array.
-     * @param data A byte array. Expect the index to be of the form [(Y*Width + X) * NumChannels + channel]
-     * @return An instance of VideoFrame
-     */
-    public VideoFrame createFrame(byte[] data) {
-        return createFrame(new BytePointer(data));
-    }
-
-    /**
-     * Create a VideoFrame from a byte array with different height and width than the video
-     * the frame will need to be cropped or resized before being added to the video)
-     *
-     * @param data A byte array Expect the index to be of the form [(Y*customWidth + X) * NumChannels + channel]
-     * @param customHeight The actual height of the data
-     * @param customWidth The actual width of the data
-     * @return A VideoFrame instance
-     */
-    public VideoFrame createFrame(byte[] data, int customHeight, int customWidth) {
-        return createFrame(new BytePointer(data), customHeight, customWidth);
-    }
-
-    /**
-     * Create a VideoFrame from a Pointer (to use for example with a INDarray).
-     * @param data A Pointer (for example myINDArray.data().pointer())
-     * @return An instance of VideoFrame
-     */
-    public VideoFrame createFrame(Pointer data) {
-        return new VideoFrame(height, width, imageType, frameInputType, data);
-    }
-
-    /**
-     *  Create a VideoFrame from a Pointer with different height and width than the video
-     * the frame will need to be cropped or resized before being added to the video)
-     * @param data
-     * @param customHeight The actual height of the data
-     * @param customWidth The actual width of the data
-     * @return A VideoFrame instance
-     */
-    public VideoFrame createFrame(Pointer data, int customHeight, int customWidth) {
-        return new VideoFrame(customHeight, customWidth, imageType, frameInputType, data);
+    public void record(INDArray imageArray) throws Exception {
+        fmpegFrameRecorder.record(nativeImageLoader.asFrame(imageArray, Frame.DEPTH_UBYTE));
     }
 
     /**
@@ -193,68 +132,11 @@ public class VideoRecorder implements AutoCloseable {
     }
 
     /**
-     * An individual frame for the video
-     */
-    public static class VideoFrame {
-
-        private final int height;
-        private final int width;
-        private final int imageType;
-        @Getter
-        private Mat mat;
-
-        private VideoFrame(int height, int width, int imageType, FrameInputTypes frameInputType, Pointer data) {
-            this.height = height;
-            this.width = width;
-            this.imageType = imageType;
-
-            switch(frameInputType) {
-                case RGB:
-                    Mat src = new Mat(height, width, imageType, data);
-                    mat = new Mat(height, width, imageType);
-                    opencv_imgproc.cvtColor(src, mat, Imgproc.COLOR_RGB2BGR);
-                    break;
-
-                case BGR:
-                    mat = new Mat(height, width, imageType, data);
-                    break;
-
-                case Float:
-                    Mat tmpMat = new Mat(height, width, CV_32FC(3), data);
-                    mat = new Mat(height, width, imageType);
-                    tmpMat.convertTo(mat, CV_8UC(3), 255.0, 0.0);
-            }
-        }
-
-        /**
-         * Crop the video to a specified size
-         * @param newHeight The new height of the frame
-         * @param newWidth The new width of the frame
-         * @param heightOffset The starting height offset in the uncropped frame
-         * @param widthOffset The starting weight offset in the uncropped frame
-         */
-        public void crop(int newHeight, int newWidth, int heightOffset, int widthOffset) {
-            mat = mat.apply(new Rect(widthOffset, heightOffset, newWidth, newHeight));
-        }
-
-        /**
-         * Resize the frame to a specified size
-         * @param newHeight The new height of the frame
-         * @param newWidth The new width of the frame
-         */
-        public void resize(int newHeight, int newWidth) {
-            mat = new Mat(newHeight, newWidth, imageType);
-        }
-    }
-
-    /**
      * A builder class for the VideoRecorder
      */
     public static class Builder {
         private final int height;
         private final int width;
-        private int numChannels = 3;
-        private FrameInputTypes frameInputType = FrameInputTypes.BGR;
         private int codec = AV_CODEC_ID_H264;
         private double frameRate = 30.0;
         private int videoQuality = 30;
@@ -266,24 +148,6 @@ public class VideoRecorder implements AutoCloseable {
         public Builder(int height, int width) {
             this.height = height;
             this.width = width;
-        }
-
-        /**
-         * Specify the number of channels. Default is 3
-         * @param numChannels
-         */
-        public Builder numChannels(int numChannels) {
-            this.numChannels = numChannels;
-            return this;
-        }
-
-        /**
-         * Tell the VideoRecorder what data it will receive (default is BGR)
-         * @param frameInputType (See {@link FrameInputTypes}}
-         */
-        public Builder frameInputType(FrameInputTypes frameInputType) {
-            this.frameInputType = frameInputType;
-            return this;
         }
 
         /**

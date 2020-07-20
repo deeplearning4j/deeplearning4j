@@ -5,6 +5,16 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 public class MockObservationSpace implements ObservationSpace {
 
+    private final int[] shape;
+
+    public MockObservationSpace() {
+        this(new int[] { 1 });
+    }
+
+    public MockObservationSpace(int[] shape) {
+        this.shape = shape;
+    }
+
     @Override
     public String getName() {
         return null;
@@ -12,7 +22,7 @@ public class MockObservationSpace implements ObservationSpace {
 
     @Override
     public int[] getShape() {
-        return new int[] { 1 };
+        return shape;
     }
 
     @Override

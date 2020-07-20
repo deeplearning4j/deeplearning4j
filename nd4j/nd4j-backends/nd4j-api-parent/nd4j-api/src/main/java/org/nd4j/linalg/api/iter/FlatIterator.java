@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.iter;
 
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Iterator;
 

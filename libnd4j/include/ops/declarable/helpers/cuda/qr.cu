@@ -60,9 +60,9 @@ namespace helpers {
         m({col, m.rows(), col, m.columns()}).assign(in({col, m.rows(), col, m.columns()}));
 
 //        auto stream = context->getCudaStream();
-//        matrixMinorKernel<T><<<128, 128, 256, *stream>>>(m.dataBuffer()->specialAsT<T>(), m.specialShapeInfo(),
-//        matrixMinorKernel<T><<<128, 128, 256, *stream>>>(m.dataBuffer()->specialAsT<T>(), m.specialShapeInfo(),
-//                reinterpret_cast<T*>(in.specialBuffer()), in.specialShapeInfo(), col, in.rows(), in.columns());
+//        matrixMinorKernel<T><<<128, 128, 256, *stream>>>(m.dataBuffer()->specialAsT<T>(), m.special(),
+//        matrixMinorKernel<T><<<128, 128, 256, *stream>>>(m.dataBuffer()->specialAsT<T>(), m.special(),
+//                reinterpret_cast<T*>(in.specialBuffer()), in.special(), col, in.rows(), in.columns());
 //
         m.tickWriteDevice();
         return m;
@@ -70,7 +70,7 @@ namespace helpers {
 
 /* m = I - v v^T */
     template <typename T>
-    static __global__ void vmulKernel(T* resBuf, Nd4jLong* resShape, T const* vBuff, Nd4jLong const* vShape, Nd4jLong n) {
+    static __global__ void vmulKernel(T* resBuf, const Nd4jLong* resShape, T const* vBuff, Nd4jLong const* vShape, Nd4jLong n) {
         for (auto i = blockIdx.x; i < n; i += gridDim.x)
             for (auto j = threadIdx.x; j < n; j += blockDim.x) {
                 Nd4jLong posR[] = {i, j};
@@ -89,7 +89,7 @@ namespace helpers {
 
         auto stream = context->getCudaStream();
         vmulKernel<T><<<128, 128, 128, *stream>>>(res.dataBuffer()->specialAsT<T>(), res.specialShapeInfo(),
-                reinterpret_cast<T const*>(v.getSpecialBuffer()), v.getSpecialShapeInfo(), n);
+                reinterpret_cast<T const*>(v.specialBuffer()), v.specialShapeInfo(), n);
         return res;
     }
 
@@ -110,7 +110,7 @@ namespace helpers {
         auto resR = fullMatricies?R->ulike():matrix->ulike();
         std::vector<NDArray> q(M);
         NDArray z = *matrix;
-        NDArray e('c', {M}, DataTypeUtils::fromT<T>()); // two internal buffers and scalar for squared norm
+        NDArray e('c', {M}, DataTypeUtils::fromT<T>(), context); // two internal buffers and scalar for squared norm
         for (auto k = 0; k < N && k < M - 1; k++) { // loop for columns, but not further then row number
             e.nullify();
             z = matrixMinor<T>(context, z, k); // minor computing for current column with given matrix z (initally is a input matrix)
@@ -177,4 +177,3 @@ namespace helpers {
 }
 }
 }
-

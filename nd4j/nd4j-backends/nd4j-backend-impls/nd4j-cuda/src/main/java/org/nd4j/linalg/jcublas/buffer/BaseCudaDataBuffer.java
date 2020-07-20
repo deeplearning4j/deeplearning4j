@@ -21,7 +21,7 @@ import lombok.NonNull;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -42,7 +42,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.util.LongUtils;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
@@ -85,6 +85,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public OpaqueDataBuffer getOpaqueDataBuffer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return ptrDataBuffer;
     }
 
@@ -101,11 +104,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
         initTypeAndSize();
 
-        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, this.type, false);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, this.type,  pointer, specialPointer);
         this.allocationPoint = new AllocationPoint(ptrDataBuffer, this.type.width() * length);
-        this.allocationPoint.setPointers(pointer, specialPointer, length);
 
-        Nd4j.getDeallocatorService().pickObject(this);
+        Nd4j.getDeallocatorService().pickObject(this);if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
     }
 
     /**
@@ -325,6 +328,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = FloatIndexer.create((FloatPointer) pointer);
                 break;
             case UINT32:
+                this.pointer = new CudaPointer(hostPointer, length, 0).asIntPointer();
+                indexer = UIntIndexer.create((IntPointer) pointer);
+                break;
             case INT:
                 this.pointer = new CudaPointer(hostPointer, length, 0).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
@@ -337,7 +343,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(hostPointer, length, 0).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
-            case UINT64:
+            case UINT64:    //Fall through
             case LONG:
                 this.pointer = new CudaPointer(hostPointer, length, 0).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);
@@ -411,14 +417,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.offset = 0;
         this.originalOffset = 0;
 
-        // allocating empty databuffer
-        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, type, false);
-
         if (workspace.getWorkspaceConfiguration().getPolicyMirroring() == MirroringPolicy.FULL) {
             val devicePtr = workspace.alloc(length * elementSize, MemoryKind.DEVICE, type, initialize);
 
             // allocate from workspace, and pass it  to native DataBuffer
-            ptrDataBuffer.setSpecialBuffer(devicePtr, this.length);
+            ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
 
             if (initialize) {
                 val ctx = AtomicAllocator.getInstance().getDeviceContext();
@@ -428,7 +431,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }  else {
             // we can register this pointer as device, because it's pinned memory
             val devicePtr = workspace.alloc(length * elementSize, MemoryKind.HOST, type, initialize);
-            ptrDataBuffer.setSpecialBuffer(devicePtr, this.length);
+            ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(this.length, type, null, devicePtr);
 
             if (initialize) {
                 val ctx = AtomicAllocator.getInstance().getDeviceContext();
@@ -474,6 +477,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     public BaseCudaDataBuffer(@NonNull DataBuffer underlyingBuffer, long length, long offset) {
+        if (underlyingBuffer.wasClosed())
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         //this(length, underlyingBuffer.getElementSize(), offset);
         this.allocationMode = AllocationMode.MIXED_DATA_TYPES;
         initTypeAndSize();
@@ -505,6 +511,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 indexer = FloatIndexer.create((FloatPointer) pointer);
                 break;
             case UINT32:
+                this.pointer = new CudaPointer(hostPointer, originalBuffer.length()).asIntPointer();
+                indexer = UIntIndexer.create((IntPointer) pointer);
+                break;
             case INT:
                 this.pointer = new CudaPointer(hostPointer, originalBuffer.length()).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
@@ -517,7 +526,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(hostPointer, originalBuffer.length()).asShortPointer();
                 indexer = HalfIndexer.create((ShortPointer) pointer);
                 break;
-            case UINT64:
+            case UINT64: //Fall through
             case LONG:
                 this.pointer = new CudaPointer(hostPointer, originalBuffer.length()).asLongPointer();
                 indexer = LongIndexer.create((LongPointer) pointer);
@@ -1628,7 +1637,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             setIndexer(ShortIndexer.create((ShortPointer) pointer));
         } else if (t == DataType.UINT32) {
             pointer = new PagedPointer(cptr, length).asIntPointer();
-            setIndexer(IntIndexer.create((IntPointer) pointer));
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
         } else if (t == DataType.INT) {
             pointer = new PagedPointer(cptr, length).asIntPointer();
             setIndexer(IntIndexer.create((IntPointer) pointer));
@@ -1697,6 +1706,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                         indexer = ShortIndexer.create((ShortPointer) pointer);
                         break;
                     case UINT32:
+                        pointer = nPtr.asIntPointer();
+                        indexer = UIntIndexer.create((IntPointer) pointer);
+                        break;
                     case INT:
                         pointer = nPtr.asIntPointer();
                         indexer = IntIndexer.create((IntPointer) pointer);
@@ -1748,6 +1760,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     indexer = ShortIndexer.create((ShortPointer) pointer);
                     break;
                 case UINT32:
+                    pointer = nPtr.asIntPointer();
+                    indexer = UIntIndexer.create((IntPointer) pointer);
+                    break;
                 case INT:
                     pointer = nPtr.asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
@@ -1792,11 +1807,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     protected void release() {
         if (!released) {
-            //AtomicAllocator.getInstance().freeMemory(allocationPoint);n
-            NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(allocationPoint.getPtrDataBuffer());
+            ptrDataBuffer.closeBuffer();
             allocationPoint.setReleased(true);
         }
-        released = true;
+
+        super.release();
     }
 
     /*

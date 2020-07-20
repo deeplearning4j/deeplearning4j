@@ -24,14 +24,12 @@ import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
 import org.deeplearning4j.arbiter.evaluator.multilayer.ClassificationEvaluator;
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
-import org.deeplearning4j.arbiter.multilayernetwork.MnistDataSetIteratorFactory;
 import org.deeplearning4j.arbiter.multilayernetwork.TestDL4JLocalExecution;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSource;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultReference;
-import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
@@ -46,11 +44,8 @@ import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
 import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.arbiter.util.TestDataFactoryProviderMnist;
-import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.datasets.iterator.MultipleEpochsIterator;
-import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculatorCG;
@@ -60,16 +55,16 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.Supplier;
+import org.nd4j.common.function.Supplier;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -94,6 +89,11 @@ public class TestGraphLocalExecution extends BaseDL4JTest {
     @BeforeClass
     public static void before(){
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
+    }
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120_000L;
     }
 
     @Test
@@ -151,7 +151,7 @@ public class TestGraphLocalExecution extends BaseDL4JTest {
                     .dataSource(ds, dsP)
                     .modelSaver(new FileModelSaver(modelSave))
                     .scoreFunction(new TestSetLossScoreFunction())
-                    .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
+                    .terminationConditions(new MaxTimeCondition(20, TimeUnit.SECONDS),
                             new MaxCandidatesCondition(3))
                     .build();
 
@@ -204,7 +204,7 @@ public class TestGraphLocalExecution extends BaseDL4JTest {
         OptimizationConfiguration configuration = new OptimizationConfiguration.Builder()
                 .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
                 .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
-                .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
+                .terminationConditions(new MaxTimeCondition(30, TimeUnit.SECONDS),
                         new MaxCandidatesCondition(3))
                 .build();
 
@@ -251,7 +251,7 @@ public class TestGraphLocalExecution extends BaseDL4JTest {
                 .candidateGenerator(candidateGenerator)
                 .dataProvider(new TestMdsDataProvider(1, 32))
                 .modelSaver(new FileModelSaver(modelSavePath)).scoreFunction(ScoreFunctions.testSetLoss(true))
-                .terminationConditions(new MaxTimeCondition(5, TimeUnit.SECONDS),
+                .terminationConditions(new MaxTimeCondition(30, TimeUnit.SECONDS),
                         new MaxCandidatesCondition(3))
                 .scoreFunction(ScoreFunctions.testSetAccuracy())
                 .build();

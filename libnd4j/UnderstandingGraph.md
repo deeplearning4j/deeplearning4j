@@ -77,7 +77,7 @@ If you're adding new ops, and want to make sure they run ok on your specific dev
 Despite being simple - it still provides you with time spent in various parts of Graph.
 
 ```c++
-Environment::getInstance()->setProfiling(true);
+Environment::getInstance().setProfiling(true);
 auto graph = GraphExecutioner::importFromFlatBuffers("./resources/ae_00.fb");
 
 auto profile = GraphProfilingHelper::profile(graph, 1000);

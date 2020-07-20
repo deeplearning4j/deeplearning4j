@@ -3,6 +3,8 @@
 
 #cmakedefine HAVE_MKLDNN
 
+#cmakedefine HAVE_ARMCOMPUTE
+
 #cmakedefine MKLDNN_PATH "@MKLDNN_PATH@"
 
 #cmakedefine HAVE_OPENBLAS

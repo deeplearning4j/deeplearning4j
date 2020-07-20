@@ -32,7 +32,7 @@ namespace ops       {
 namespace platforms {
 
 //////////////////////////////////////////////////////////////////////////
-static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const bool transX, const bool transY) {
+static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const bool transX, const bool transY, float alpha = 1.f, float beta = 0.f) {
 
     // mkl works with following
     // [M,K]     x [K,N]     = [M,N]
@@ -69,16 +69,14 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
           NDArray* zR =  xRank <= 3 ? z  : new NDArray(z->reshape(z->ordering(), {z->lengthOf() / (z->sizeAt(-2) * z->sizeAt(-1)), z->sizeAt(-2),  z->sizeAt(-1)})/*, false*/);
 
     // [M,K] x [K,N] = [M,N]
-    const int M  = (xRank > 1) ? xTR->sizeAt(-2) : 1;
-    const int K  = (xRank > 1) ? xTR->sizeAt(-1) : xTR->lengthOf();
-    const int N  = (yRank > 1) ? yTR->sizeAt(-1) : 1;
-    const int bS = (xRank > 2) ? xTR->sizeAt(0)  : 1;                   // [bS, M,K] x [bS, K,N] = [bS, M,N]
+    const int64_t M  = (xRank > 1) ? xTR->sizeAt(-2) : 1;
+    const int64_t K  = (xRank > 1) ? xTR->sizeAt(-1) : xTR->lengthOf();
+    const int64_t N  = (yRank > 1) ? yTR->sizeAt(-1) : 1;
+    const int64_t bS = (xRank > 2) ? xTR->sizeAt(0)  : 1;                   // [bS, M,K] x [bS, K,N] = [bS, M,N]
 
     dnnl::memory::dims xShape = xRank < 3 ? dnnl::memory::dims({M, K}) : dnnl::memory::dims({bS, M, K});
     dnnl::memory::dims yShape = xRank < 3 ? dnnl::memory::dims({K, N}) : dnnl::memory::dims({bS, K, N});
     dnnl::memory::dims zShape = xRank < 3 ? dnnl::memory::dims({M, N}) : dnnl::memory::dims({bS, M, N});
-
-    dnnl::memory::format_tag format = xRank < 3 ? dnnl::memory::format_tag::ab : dnnl::memory::format_tag::abc;
 
     // x type
     dnnl::memory::data_type xType;
@@ -111,12 +109,17 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     else if(z->dataType() == DataType::INT8)
         zType = dnnl::memory::data_type::s8;
 
+
+    const auto xFormat = xRank == 1 ? dnnl::memory::format_tag::ab : mkldnnUtils::getFormat(*xTR);
+    const auto yFormat = yRank == 1 ? dnnl::memory::format_tag::ab : mkldnnUtils::getFormat(*yTR);
+    const auto zFormat = zRank == 1 ? dnnl::memory::format_tag::ab : mkldnnUtils::getFormat(*zR);
+
     // memory descriptors for arrays
+    dnnl::memory::desc x_mkl_md, x_user_md, y_mkl_md, y_user_md, z_mkl_md, z_user_md;
 
     // x
-    dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xShape, xType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc x_user_md = dnnl::memory::desc(xShape, xType, format);
-    if(xTR->ews() != 1 || xTR->ordering() != 'c') {
+    x_user_md = x_mkl_md = dnnl::memory::desc(xShape, xType, xFormat);
+    if(xTR->ews() != 1) {
         x_user_md.data.format_kind = dnnl_blocked;    // overrides format
         x_user_md.data.format_desc.blocking.strides[0] = xRank == 1 ? 1 : xTR->strideAt(0);
         x_user_md.data.format_desc.blocking.strides[1] = xRank == 1 ? xTR->strideAt(0) : xTR->strideAt(1);
@@ -125,9 +128,8 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     }
 
     // y
-    dnnl::memory::desc y_mkl_md  = dnnl::memory::desc(yShape, yType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc y_user_md = dnnl::memory::desc(yShape, yType, format);
-    if(yTR->ews() != 1 || yTR->ordering() != 'c') {
+    y_user_md = y_mkl_md = dnnl::memory::desc(yShape, yType, yFormat);
+    if(yTR->ews() != 1) {
         y_user_md.data.format_kind = dnnl_blocked;    // overrides format
         y_user_md.data.format_desc.blocking.strides[0] = yRank == 1 ? 1 : yTR->strideAt(0);
         y_user_md.data.format_desc.blocking.strides[1] = yRank == 1 ? yTR->strideAt(0) : yTR->strideAt(1);
@@ -136,9 +138,8 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     }
 
     // z
-    dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zShape, zType, dnnl::memory::format_tag::any);
-    dnnl::memory::desc z_user_md = dnnl::memory::desc(zShape, zType, format);
-    if(zR->ews() != 1 || zR->ordering() != 'c') {
+    z_user_md = z_mkl_md = dnnl::memory::desc(zShape, zType, zFormat);
+    if(zR->ews() != 1) {
         z_user_md.data.format_kind = dnnl_blocked;    // overrides format
         z_user_md.data.format_desc.blocking.strides[0] = zRank == 1 ? 1 : zR->strideAt(0);
         z_user_md.data.format_desc.blocking.strides[1] = zRank == 1 ? zR->strideAt(0) : zR->strideAt(1);
@@ -150,6 +151,12 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
 
     // Create attributes (to handle alpha and beta if necessary)
     dnnl::primitive_attr attr; // it is empty since we have usual values for alpha (=1) and beta (=0)
+    if (alpha != 1.f) attr.set_output_scales(0, {alpha});
+    if (beta != 0.f) {
+        dnnl::post_ops po;
+        po.append_sum(beta);
+        attr.set_post_ops(po);
+    }
 
     // operation primitive description
     dnnl::matmul::desc op_desc(x_mkl_md, y_mkl_md, z_mkl_md);
@@ -163,41 +170,24 @@ static void matmulMKLDNN(const NDArray* x, const NDArray* y, NDArray* z, const b
     // provide memory buffers and check whether reorder is required
 
     // input
-    mkldnnUtils::loadDataToMklStream(xTR, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
-    /*
-    auto x_user_mem = dnnl::memory(x_user_md, engine, xTR->getBuffer());
-    const bool xReorder = op_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? dnnl::memory(op_prim_desc.src_desc(), engine) : x_user_mem;
-    if (xReorder)
-        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[DNNL_ARG_SRC] = x_mkl_mem;
-*/
+    mkldnnUtils::loadDataToMklStream(*xTR, engine, stream, x_user_md, op_prim_desc.src_desc(), args[DNNL_ARG_SRC]);
+
     // y
-    mkldnnUtils::loadDataToMklStream(yTR, engine, stream, y_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
-    /*
-    auto y_user_mem = dnnl::memory(y_user_md, engine, yTR->getBuffer());
-    const bool yReorder = op_prim_desc.weights_desc() != y_user_mem.get_desc();
-    auto y_mkl_mem = yReorder ? dnnl::memory(op_prim_desc.weights_desc(), engine) : y_user_mem;
-    if (yReorder)
-        dnnl::reorder(y_user_mem, y_mkl_mem).execute(stream, y_user_mem, y_mkl_mem);
-    args[DNNL_ARG_WEIGHTS] = y_mkl_mem;
-*/
+    mkldnnUtils::loadDataToMklStream(*yTR, engine, stream, y_user_md, op_prim_desc.weights_desc(), args[DNNL_ARG_WEIGHTS]);
+
     // z
-    auto z_user_mem = dnnl::memory(z_user_md, engine, zR->getBuffer());
-    const bool zReorder = op_prim_desc.dst_desc() != z_user_mem.get_desc();
-    auto z_mkl_mem = zReorder ? dnnl::memory(op_prim_desc.dst_desc(), engine) : z_user_mem;
-    args[DNNL_ARG_DST] = z_mkl_mem;
+    auto z_user_mem = mkldnnUtils::loadDataToMklStream(*zR, engine, stream, z_user_md, op_prim_desc.dst_desc(), args[DNNL_ARG_DST]);
 
     // run calculations
     dnnl::matmul(op_prim_desc).execute(stream, args);
 
     // reorder outputs if necessary
-    if (zReorder)
-        dnnl::reorder(z_mkl_mem, z_user_mem).execute(stream, z_mkl_mem, z_user_mem);
+    if (op_prim_desc.dst_desc() != z_user_mem.get_desc())
+        dnnl::reorder(args[DNNL_ARG_DST], z_user_mem).execute(stream, args[DNNL_ARG_DST], z_user_mem);
 
     stream.wait();
 
-    if(zR->getBuffer() != z->getBuffer())
+    if(zR->buffer() != z->buffer())
         z->assign(zR);
 
     if(zR != z)
@@ -224,10 +214,15 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     if(x->isEmpty() || y->isEmpty())
         return Status::OK();
 
-    const int iSize = (int) block.getIArguments()->size();
+    int iSize = (int) block.getIArguments()->size();
     int transX = iSize > 0 ? INT_ARG(0) : 0;
     int transY = iSize > 1 ? INT_ARG(1) : 0;
     const int transZ = iSize > 2 ? INT_ARG(2) : 0;
+
+    // optional use alpha nad beta
+    iSize = (int)block.getTArguments()->size();
+    float alpha = iSize > 0 ? T_ARG(0) : 1.0;
+    float beta = iSize > 1 ? T_ARG(1) : 0.0;
 
     const int xRank = x->rankOf();
     const int yRank = y->rankOf();
@@ -265,7 +260,7 @@ PLATFORM_IMPL(matmul, ENGINE_CPU) {
     }
     // ******* end of input validation ******* //
 
-    matmulMKLDNN(x, y, z, transX, transY);
+    matmulMKLDNN(x, y, z, transX, transY, alpha, beta);
 
     return Status::OK();
 }
@@ -276,14 +271,22 @@ PLATFORM_CHECK(matmul, ENGINE_CPU) {
     auto x = INPUT_VARIABLE(0);
     auto y = INPUT_VARIABLE(1);
 
-    auto z = INPUT_VARIABLE(0);
+    auto z = OUTPUT_VARIABLE(0);
 
-    const DataType xType = x->dataType();
-    const DataType yType = y->dataType();
-    const DataType zType = z->dataType();
+    const auto xType = x->dataType();
+    const auto yType = y->dataType();
+    const auto zType = z->dataType();
 
+    float alpha = block.numT() > 0 ? T_ARG(0) : 1.0f;
+    float beta = block.numT() > 1 ? T_ARG(1) : 0.0f;
 
-    return block.isUseMKLDNN() && x->rankOf() < 3 &&
+    // we're skipping if result order is F or arrays are not continuous
+    bool skip2D = z->rankOf() == 2 && (z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+
+    // we're skipping 3D cases if they are not C continuoys
+    bool skip3D = z->rankOf() == 3 && (x->ordering() == 'f' || y->ordering() == 'f' || z->ordering() == 'f' || x->ews() != 1 || y->ews() != 1 || z->ews() != 1);
+
+    return !skip2D && !skip3D && block.isUseMKLDNN() && x->rankOf() < 3 &&
           (
             (xType==DataType::FLOAT32  && yType==DataType::FLOAT32  && zType==DataType::FLOAT32)  ||
             (xType==DataType::HALF     && yType==DataType::HALF     && zType==DataType::FLOAT32)  ||

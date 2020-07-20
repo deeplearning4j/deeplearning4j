@@ -16,16 +16,16 @@
 
 package org.datavec.spark.transform;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchCSVRecord;
-import org.datavec.spark.transform.model.SingleCSVRecord;
+import org.datavec.spark.inference.server.CSVSparkTransformServer;
+import org.datavec.spark.inference.model.model.Base64NDArrayBody;
+import org.datavec.spark.inference.model.model.BatchCSVRecord;
+import org.datavec.spark.inference.model.model.SingleCSVRecord;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

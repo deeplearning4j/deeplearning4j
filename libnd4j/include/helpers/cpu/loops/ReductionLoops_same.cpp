@@ -26,16 +26,16 @@ namespace sd {
 
     template<typename X>
     template <typename OpType>
-    void ReductionSameLoops<X>::innerloopReduce(X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop) {
+    void ReductionSameLoops<X>::innerloopReduce(const X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop) {
 #ifndef INLINE_LOOPS
         ReductionLoops<X,X,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams, start, stop);
 #endif
     }
 
     template<typename X>
-    void ReductionSameLoops<X>::wrapper(const int opNum, X *vx, Nd4jLong *xShapeInfo, X *vz,
-                                           Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
-                                           Nd4jLong *tadOffsets,
+    void ReductionSameLoops<X>::wrapper(const int opNum, const X *vx, const Nd4jLong *xShapeInfo, X *vz,
+                                        const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo,
+                                        const Nd4jLong *tadOffsets,
                                            X *vextraParams, int64_t start, int64_t stop) {
 #ifndef INLINE_LOOPS
         auto x = reinterpret_cast<X *>(vx);

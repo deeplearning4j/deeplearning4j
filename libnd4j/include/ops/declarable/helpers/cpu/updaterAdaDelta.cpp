@@ -67,23 +67,23 @@ static void adaDeltaUpdater_(const NDArray& gradient, const NDArray& initStateMs
     }
     
 
-    bool bXZsame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), update.getShapeInfo());
-    bool bXInMsgSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), initStateMsg.getShapeInfo());
-    bool bXStMsgSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), stateMsg.getShapeInfo());
-    bool bXInMsdxSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), initStateMsdx.getShapeInfo());
-    bool bXStMsdxSame = shape::haveSameShapeAndStrides(gradient.getShapeInfo(), stateMsdx.getShapeInfo());
+    bool bXZsame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), update.shapeInfo());
+    bool bXInMsgSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateMsg.shapeInfo());
+    bool bXStMsgSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateMsg.shapeInfo());
+    bool bXInMsdxSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), initStateMsdx.shapeInfo());
+    bool bXStMsdxSame = shape::haveSameShapeAndStrides(gradient.shapeInfo(), stateMsdx.shapeInfo());
 
     auto func = PRAGMA_THREADS_FOR{
 
         int coords[MAX_RANK];
         for (auto i = start; i < gradient.lengthOf(); i++) {
-            shape::index2coordsCPU(start, i, gradient.getShapeInfo(), coords);
-            const auto xOffset =  shape::getOffset(gradient.getShapeInfo(), coords);
-            const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.getShapeInfo(), coords);
-            const auto initMsgOffset = bXInMsgSame ? xOffset : shape::getOffset(initStateMsg.getShapeInfo(), coords);
-            const auto stMsgOffset = bXStMsgSame ? xOffset : shape::getOffset(stateMsg.getShapeInfo(), coords);
-            const auto initMsdxOffset = bXInMsdxSame ? xOffset : shape::getOffset(initStateMsdx.getShapeInfo(), coords);
-            const auto stMsdxOffset = bXStMsdxSame ? xOffset : shape::getOffset(stateMsdx.getShapeInfo(), coords);
+            shape::index2coordsCPU(start, i, gradient.shapeInfo(), coords);
+            const auto xOffset =  shape::getOffset(gradient.shapeInfo(), coords);
+            const auto zOffset = bXZsame ? xOffset : shape::getOffset(update.shapeInfo(), coords);
+            const auto initMsgOffset = bXInMsgSame ? xOffset : shape::getOffset(initStateMsg.shapeInfo(), coords);
+            const auto stMsgOffset = bXStMsgSame ? xOffset : shape::getOffset(stateMsg.shapeInfo(), coords);
+            const auto initMsdxOffset = bXInMsdxSame ? xOffset : shape::getOffset(initStateMsdx.shapeInfo(), coords);
+            const auto stMsdxOffset = bXStMsdxSame ? xOffset : shape::getOffset(stateMsdx.shapeInfo(), coords);
             
             
             stMsg[stMsgOffset] = rho * initMsg[initMsgOffset] + grad[xOffset] * grad[xOffset] * rhoT;

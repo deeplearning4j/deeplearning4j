@@ -49,8 +49,8 @@ namespace sd {
             bool disposable = false;
 
             if (min == nullptr && max == nullptr && block.numT() >= 2) {
-                min = NDArrayFactory::create_(dtype);
-                max = NDArrayFactory::create_(dtype);
+                min = NDArrayFactory::create_(dtype, block.launchContext());
+                max = NDArrayFactory::create_(dtype, block.launchContext());
                 min->p(0, T_ARG(0));
                 max->p(0, T_ARG(1));
                 disposable = true;
@@ -80,7 +80,7 @@ namespace sd {
             if (block.width() > 1)
                 REQUIRE_TRUE(dtype == INPUT_VARIABLE(1)->dataType(), 0, "RandomUniform: data type of output and min/max args should be the same");
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
             return SHAPELIST(newShape);
         }
 

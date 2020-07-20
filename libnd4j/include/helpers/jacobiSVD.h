@@ -31,13 +31,13 @@ namespace helpers {
 template <typename T>
 class JacobiSVD {
 
-    public:                
+    public:
 
         NDArray _m;
         NDArray _s;          // vector with singular values
         NDArray _u;
         NDArray _v;
-    
+
         int _diagSize;
         int _rows;
         int _cols;
@@ -52,7 +52,8 @@ class JacobiSVD {
         bool isBlock2x2NotDiag(NDArray& block, int p, int q, T& maxElem);
 
         static bool createJacobiRotation(const T& x, const T& y, const T& z, NDArray& rotation);
-        
+        static void createJacobiRotationGivens(const T& p, const T& q, NDArray& rotation);
+
         static void svd2x2(const NDArray& block, int p, int q, NDArray& left, NDArray& right);
 
         static void mulRotationOnLeft(const int i, const int j, NDArray& block, const NDArray& rotation);

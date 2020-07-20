@@ -16,6 +16,7 @@
 
 package org.datavec.arrow;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
@@ -40,9 +41,10 @@ import org.datavec.arrow.recordreader.ArrowWritableRecordBatch;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -55,8 +57,8 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-
-public class ArrowConverterTest {
+@Slf4j
+public class ArrowConverterTest extends BaseND4JTest {
 
     private static BufferAllocator bufferAllocator = new RootAllocator(Long.MAX_VALUE);
 
@@ -342,7 +344,7 @@ public class ArrowConverterTest {
         try(ArrowFileWriter arrowFileWriter = new ArrowFileWriter(schemaRoot1,null,newChannel(byteArrayOutputStream))) {
             arrowFileWriter.writeBatch();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         byte[] arr = byteArrayOutputStream.toByteArray();

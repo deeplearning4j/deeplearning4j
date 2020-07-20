@@ -24,7 +24,9 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.ui.storage.FileStatsStorage;
+import org.deeplearning4j.ui.model.stats.StatsListener;
+import org.deeplearning4j.ui.model.storage.FileStatsStorage;
+import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -35,15 +37,16 @@ import org.nd4j.linalg.learning.config.Sgd;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 
 /**
  * Created by Alex on 07/04/2017.
  */
 public class TestTransferStatsCollection extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90_000L;
+    }
 
     @Test
     public void test() throws IOException {
@@ -62,13 +65,9 @@ public class TestTransferStatsCollection extends BaseDL4JTest {
                                                         new FineTuneConfiguration.Builder().updater(new Sgd(0.01)).build())
                                         .setFeatureExtractor(0).build();
 
-        File f = testDir.newFile("dl4jTestTransferStatsCollection.bin");
-        f.delete();
-        net2.setListeners(new StatsListener(new FileStatsStorage(f)));
+        net2.setListeners(new StatsListener(new InMemoryStatsStorage()));
 
         //Previosuly: failed on frozen layers
         net2.fit(new DataSet(Nd4j.rand(8, 10), Nd4j.rand(8, 10)));
-
-        f.deleteOnExit();
     }
 }

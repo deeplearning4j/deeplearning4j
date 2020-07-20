@@ -18,7 +18,7 @@ package org.nd4j.autodiff.listeners.profiler.comparison;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 
 import java.io.File;
 

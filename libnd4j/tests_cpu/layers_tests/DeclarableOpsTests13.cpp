@@ -77,7 +77,7 @@ TEST_F(DeclarableOpsTests13, test_empty_range_1) {
     auto z = result.at(0);
     ASSERT_TRUE(z->isEmpty());
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests13, test_empty_range_2) {
@@ -262,7 +262,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
     ASSERT_EQ(result.status(), Status::OK());
     //result.at(0)->printBuffer("Output");
     ASSERT_TRUE(exp1.equalsTo(result.at(0)));
-    
+
 }
 
 TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_2) {
@@ -286,7 +286,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_2) {
     ASSERT_EQ(result.status(), Status::OK());
     //result.at(0)->printBuffer("Output");
     ASSERT_TRUE(exp.equalsTo(result.at(0)));
-    
+
 }
 
 TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_3) {
@@ -312,7 +312,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_3) {
     //exp.printBuffer("Expect");
     //result.at(0)->printShapeInfo("Shape output");
     ASSERT_TRUE(exp.equalsTo(result.at(0)));
-    
+
 }
 
 TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_1) {
@@ -349,7 +349,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_2) {
     //result.at(2)->printBuffer("Symmetrized2");
     //    ASSERT_TRUE(exp[i]->equalsTo(result.at(i)));
     ASSERT_TRUE(exp.equalsTo(result.at(2)));
-    
+
 }
 
 TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_3) {
@@ -369,7 +369,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_3) {
     //exp.printBuffer("EXPect symm3");
     //    ASSERT_TRUE(exp[i]->equalsTo(result.at(i)));
     //ASSERT_TRUE(exp.equalsTo(result.at(0)));
-    
+
 }
 
 TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
@@ -398,7 +398,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
     //exp.printBuffer("EXPect symm3");
     //    ASSERT_TRUE(exp[i]->equalsTo(result.at(i)));
     ASSERT_TRUE(exp4.equalsTo(res));
-    
+
 }
 
 TEST_F(DeclarableOpsTests13, CellContains_test_1) {
@@ -420,7 +420,7 @@ TEST_F(DeclarableOpsTests13, CellContains_test_1) {
     //exp.printBuffer("EXPect symm3");
     //    ASSERT_TRUE(exp[i]->equalsTo(result.at(i)));
     //ASSERT_TRUE(exp.equalsTo(result.at(0)));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -712,7 +712,7 @@ TEST_F(DeclarableOpsTests13, rshift_bits_2) {
 
     ASSERT_EQ(e, *z);
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests13, cyclic_shift_bits_2) {
@@ -1109,6 +1109,7 @@ TEST_F(DeclarableOpsTests13, mergeavg_bp_1) {
     }
 
 }
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_1) {
 
@@ -1200,7 +1201,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_2) {
     const auto hasInitC   = true;   // initial cell state is provided
     const auto hasPH      = false;  // peephole connections are absent
     const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
-    const auto retLastH   = true;  // do not return output at last time step
+    const auto retLastH   = true;   // return output at last time step
     const auto retLastC   = true;   // return cells state at last time step
 
     const double cellClip = 0;       // do not apply clipping
@@ -1398,7 +1399,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_4) {
 
     ASSERT_TRUE(expCL.isSameShape(cL));
     ASSERT_TRUE(expCL.equalsTo(cL));
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1640,7 +1641,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_7) {
     ASSERT_TRUE(expCL.isSameShape(cL));
     ASSERT_TRUE(expCL.equalsTo(cL));
 
-    
+
     #endif
 }
 
@@ -1718,7 +1719,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_8) {
     ASSERT_TRUE(expCL.isSameShape(cL));
     ASSERT_TRUE(expCL.equalsTo(cL));
 
-    
+
     #endif
 }
 
@@ -1805,7 +1806,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_9) {
     ASSERT_TRUE(expCL.isSameShape(cL));
     ASSERT_TRUE(expCL.equalsTo(cL));
 
-    
+
     #endif
 }
 
@@ -1890,7 +1891,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_10) {
     ASSERT_TRUE(expCL.isSameShape(cL));
     ASSERT_TRUE(expCL.equalsTo(cL));
 
-    
+
     #endif
 }
 
@@ -1970,7 +1971,7 @@ TEST_F(DeclarableOpsTests13, lstmLayer_11) {
     ASSERT_TRUE(expCL.isSameShape(cL));
     ASSERT_TRUE(expCL.equalsTo(cL));
 
-    
+
     #endif
 }
 
@@ -2061,10 +2062,8 @@ TEST_F(DeclarableOpsTests13, lstmLayer_12) {
     ASSERT_TRUE(expCL.isSameShape(cL));
     ASSERT_TRUE(expCL.equalsTo(cL));
 
-    
     #endif
 }
-
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, batchnorm_test1) {
@@ -2091,7 +2090,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test1) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2233,7 +2232,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test6) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2345,7 +2344,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_test9) {
     ASSERT_TRUE(expected.isSameShape(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2387,7 +2386,7 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test1) {
     ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
-    
+
 }
 
 
@@ -2642,7 +2641,7 @@ return;
     ASSERT_TRUE(expdLdB.isSameShapeStrict(*dLdB));
     ASSERT_TRUE(expdLdB.equalsTo(dLdB));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -2718,8 +2717,8 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test9) {
     int* dims = reinterpret_cast<int*>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int)));
     input.reduceAlongDimension(sd::reduce::Mean, mean, dimensions);
     NDArray::prepareSpecialUse({&variance}, {&input});
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
-    NativeOpExecutioner::execSummaryStats(input.getContext(), 0,input.getBuffer(), input.getShapeInfo(),input.getSpecialBuffer(), input.getSpecialShapeInfo(),nullptr,variance.getBuffer(), variance.getShapeInfo(),variance.getSpecialBuffer(), variance.getSpecialShapeInfo(), dims, dimensions.size(),packX.platformShapeInfo(), packX.platformOffsets(),false);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
+    NativeOpExecutioner::execSummaryStats(input.getContext(), 0,input.buffer(), input.shapeInfo(),input.specialBuffer(), input.specialShapeInfo(),nullptr,variance.buffer(), variance.shapeInfo(),variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),packX.platformShapeInfo(), packX.platformOffsets(),false);
     manager.synchronize();
     NDArray::registerSpecialUse({&variance}, {&input});
 
@@ -2769,8 +2768,8 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test10) {
     int* dims = reinterpret_cast<int*>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int)));
     input.reduceAlongDimension(sd::reduce::Mean, mean, dimensions);
     NDArray::prepareSpecialUse({&variance}, {&input});
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
-    NativeOpExecutioner::execSummaryStats(input.getContext(), 0,input.getBuffer(), input.getShapeInfo(),input.getSpecialBuffer(), input.getSpecialShapeInfo(),nullptr,variance.getBuffer(), variance.getShapeInfo(),variance.getSpecialBuffer(), variance.getSpecialShapeInfo(), dims, dimensions.size(),packX.platformShapeInfo(), packX.platformOffsets(),false);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
+    NativeOpExecutioner::execSummaryStats(input.getContext(), 0,input.buffer(), input.shapeInfo(),input.specialBuffer(), input.specialShapeInfo(),nullptr,variance.buffer(), variance.shapeInfo(),variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),packX.platformShapeInfo(), packX.platformOffsets(),false);
     manager.synchronize();
     NDArray::registerSpecialUse({&variance}, {&input});
 
@@ -2832,8 +2831,8 @@ TEST_F(DeclarableOpsTests13, batchnorm_bp_test11) {
     int* dims = reinterpret_cast<int*>(manager.replicatePointer(dimensions.data(), dimensions.size() * sizeof(int)));
     input.reduceAlongDimension(sd::reduce::Mean, mean, dimensions, true);
     NDArray::prepareSpecialUse({&variance}, {&input});
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
-    NativeOpExecutioner::execSummaryStats(input.getContext(), 0,input.getBuffer(), input.getShapeInfo(),input.getSpecialBuffer(), input.getSpecialShapeInfo(),nullptr,variance.getBuffer(), variance.getShapeInfo(),variance.getSpecialBuffer(), variance.getSpecialShapeInfo(), dims, dimensions.size(),packX.platformShapeInfo(), packX.platformOffsets(),false);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimensions);
+    NativeOpExecutioner::execSummaryStats(input.getContext(), 0,input.buffer(), input.shapeInfo(),input.specialBuffer(), input.specialShapeInfo(),nullptr,variance.buffer(), variance.shapeInfo(),variance.specialBuffer(), variance.specialShapeInfo(), dims, dimensions.size(),packX.platformShapeInfo(), packX.platformOffsets(),false);
     manager.synchronize();
     NDArray::registerSpecialUse({&variance}, {&input});
 

@@ -19,15 +19,12 @@ package org.deeplearning4j.models.sequencevectors;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.val;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.deeplearning4j.BaseDL4JTest;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.datavec.api.writable.Writable;
+import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
-import org.deeplearning4j.models.embeddings.learning.impl.elements.GloVe;
 import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
@@ -56,6 +53,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.slf4j.Logger;
@@ -269,65 +267,6 @@ public class SequenceVectorsTest extends BaseDL4JTest {
                                         .sequenceLearningAlgorithm(
                                                         "org.deeplearning4j.models.embeddings.learning.impl.sequence.DBOW")
                                         .epochs(1).resetModel(false).trainElementsRepresentation(false).build();
-    }
-
-    @Ignore
-    @Test
-    public void testGlove1() throws Exception {
-        logger.info("Max available memory: " + Runtime.getRuntime().maxMemory());
-        ClassPathResource resource = new ClassPathResource("big/raw_sentences.txt");
-        File file = resource.getFile();
-
-        BasicLineIterator underlyingIterator = new BasicLineIterator(file);
-
-        TokenizerFactory t = new DefaultTokenizerFactory();
-        t.setTokenPreProcessor(new CommonPreprocessor());
-
-        SentenceTransformer transformer =
-                        new SentenceTransformer.Builder().iterator(underlyingIterator).tokenizerFactory(t).build();
-
-        AbstractSequenceIterator<VocabWord> sequenceIterator =
-                        new AbstractSequenceIterator.Builder<>(transformer).build();
-
-        VectorsConfiguration configuration = new VectorsConfiguration();
-        configuration.setWindow(5);
-        configuration.setLearningRate(0.06);
-        configuration.setLayersSize(100);
-
-
-        SequenceVectors<VocabWord> vectors = new SequenceVectors.Builder<VocabWord>(configuration)
-                        .iterate(sequenceIterator).iterations(1).epochs(45)
-                        .elementsLearningAlgorithm(new GloVe.Builder<VocabWord>().shuffle(true).symmetric(true)
-                                        .learningRate(0.05).alpha(0.75).xMax(100.0).build())
-                        .resetModel(true).trainElementsRepresentation(true).trainSequencesRepresentation(false).build();
-
-        vectors.fit();
-
-        double sim = vectors.similarity("day", "night");
-        logger.info("Day/night similarity: " + sim);
-
-
-        sim = vectors.similarity("day", "another");
-        logger.info("Day/another similarity: " + sim);
-
-        sim = vectors.similarity("night", "year");
-        logger.info("Night/year similarity: " + sim);
-
-        sim = vectors.similarity("night", "me");
-        logger.info("Night/me similarity: " + sim);
-
-        sim = vectors.similarity("day", "know");
-        logger.info("Day/know similarity: " + sim);
-
-        sim = vectors.similarity("best", "police");
-        logger.info("Best/police similarity: " + sim);
-
-        Collection<String> labels = vectors.wordsNearest("day", 10);
-        logger.info("Nearest labels to 'day': " + labels);
-
-
-        sim = vectors.similarity("day", "night");
-        assertTrue(sim > 0.6d);
     }
 
     @Test

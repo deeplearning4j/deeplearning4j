@@ -16,11 +16,6 @@
 
 package org.nd4j.autodiff.samediff.listeners;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.*;
-
 import org.junit.Test;
 import org.nd4j.autodiff.listeners.*;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;
@@ -48,6 +43,13 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.weightinit.impl.XavierInitScheme;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 public class ListenerTest extends BaseNd4jTest {
 
@@ -85,7 +87,7 @@ public class ListenerTest extends BaseNd4jTest {
         SDVariable z1 = a0.mmul(w1).add(b1);
         SDVariable predictions = sd.nn().softmax("predictions", z1, 1);
 
-        SDVariable loss = sd.loss.softmaxCrossEntropy("loss", label, predictions);
+        SDVariable loss = sd.loss.softmaxCrossEntropy("loss", label, predictions, null);
 
         sd.setLossVariables("loss");
 
@@ -260,6 +262,42 @@ public class ListenerTest extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testCustomListener() {
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("input", DataType.FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 3));
+        SDVariable z = sd.nn().linear("z", in, w, b);
+        SDVariable out = sd.nn().softmax("out", z, 1);
+        SDVariable loss = sd.loss().softmaxCrossEntropy("loss", label, out, null);
+
+        //Create and set the training configuration
+        double learningRate = 1e-3;
+        TrainingConfig config = new TrainingConfig.Builder()
+                .l2(1e-4)                               //L2 regularization
+                .updater(new Adam(learningRate))        //Adam optimizer with specified learning rate
+                .dataSetFeatureMapping("input")         //DataSet features array should be associated with variable "input"
+                .dataSetLabelMapping("label")           //DataSet label array should be associated with variable "label
+                .addEvaluations(false,"out",0,new Evaluation())
+                .build();
+        sd.setTrainingConfig(config);
+
+        CustomListener listener = new CustomListener();
+        Map<String,INDArray> m = sd.output()
+                .data(new IrisDataSetIterator(150, 150))
+                .output("out")
+                .listeners(listener)
+                .exec();
+
+        assertEquals(1, m.size());
+        assertTrue(m.containsKey("out"));
+        assertNotNull(listener.z);
+        assertNotNull(listener.out);
+
+    }
+
     private static class TestListener implements Listener {
 
         public TestListener(Operation operation){
@@ -355,5 +393,39 @@ public class ListenerTest extends BaseNd4jTest {
         public void preUpdate(SameDiff sd, At at, Variable v, INDArray update) {
             preUpdateCount++;
         }
+    }
+
+    private static class CustomListener extends BaseListener {
+
+        public INDArray z;
+        public INDArray out;
+
+        // Specify that this listener is active during inference operations
+        @Override
+        public boolean isActive(Operation operation) {
+            return operation == Operation.INFERENCE;
+        }
+
+        // Specify that this listener requires the activations of "z" and "out"
+        @Override
+        public ListenerVariables requiredVariables(SameDiff sd) {
+            return new ListenerVariables.Builder().inferenceVariables("z", "out").build();
+        }
+
+        // Called when the activation of a variable becomes available
+        @Override
+        public void activationAvailable(SameDiff sd, At at,
+                                        MultiDataSet batch, SameDiffOp op,
+                                        String varName, INDArray activation) {
+            System.out.println("activation:" + varName);
+
+            // if the variable is z or out, store its activation
+            if (varName.equals("z")) {
+                z = activation.detach().dup();
+            } else if (varName.equals("out")) {
+                out = activation.detach().dup();
+            }
+        }
+
     }
 }

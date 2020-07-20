@@ -38,14 +38,13 @@ import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 
@@ -65,6 +64,12 @@ public class RegressionTest071 extends BaseDL4JTest {
     public DataType getDataType(){
         return DataType.FLOAT;
     }
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
+    }
+
     @Test
     public void regressionTestMLP1() throws Exception {
 
@@ -162,7 +167,7 @@ public class RegressionTest071 extends BaseDL4JTest {
         assertArrayEquals(new int[] {2, 2}, l0.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l0.getStride());
         assertArrayEquals(new int[] {0, 0}, l0.getPadding());
-        assertEquals(l0.getConvolutionMode(), ConvolutionMode.Same);
+        assertEquals(ConvolutionMode.Same, l0.getConvolutionMode());
 
         SubsamplingLayer l1 = (SubsamplingLayer) conf.getConf(1).getLayer();
         assertArrayEquals(new int[] {2, 2}, l1.getKernelSize());

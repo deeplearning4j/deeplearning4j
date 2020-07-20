@@ -19,12 +19,12 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.PowBp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -68,8 +68,7 @@ public class Pow extends DynamicCustomOp {
         SDVariable dldb = outputVariable().mul(sameDiff.math().log(a)).mul(f1.get(0));
         return Arrays.asList(dlda, dldb);*/
 
-        SDVariable[] g = f().powBp(arg(0), arg(1), f1.get(0));
-        return Arrays.asList(g);
+        return new PowBp(sameDiff, arg(0), arg(1), f1.get(0)).outputs();
     }
 
     @Override

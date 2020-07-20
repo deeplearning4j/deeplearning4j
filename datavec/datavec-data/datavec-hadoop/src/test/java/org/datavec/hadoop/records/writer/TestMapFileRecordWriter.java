@@ -33,7 +33,7 @@ import org.datavec.hadoop.records.reader.mapfile.MapFileSequenceRecordReader;
 import org.datavec.hadoop.records.writer.mapfile.MapFileRecordWriter;
 import org.datavec.hadoop.records.writer.mapfile.MapFileSequenceRecordWriter;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;

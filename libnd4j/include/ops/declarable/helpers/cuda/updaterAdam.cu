@@ -108,7 +108,7 @@ linkage void adamUpdaterCudaLauncher(const int blocksPerGrid, const int threadsP
     const T beta2 = static_cast<T>(dBeta2);
     const T epsilon = static_cast<T>(dEpsilon);
     const T iteration = static_cast<T>(nIteration);
-    adamUpdaterCuda<T> << <blocksPerGrid, threadsPerBlock, 256, * stream >> > (vx, xShapeInfo, vinv, invShapeInfo, vinm, inmShapeInfo, 
+    adamUpdaterCuda<T><<<blocksPerGrid, threadsPerBlock, 256, * stream>>>(vx, xShapeInfo, vinv, invShapeInfo, vinm, inmShapeInfo,
         vz, zShapeInfo, vstV, stvShapeInfo, vstM, stmShapeInfo, lr, beta1, beta2, epsilon, iteration);
 }
 
@@ -124,10 +124,10 @@ void updaterAdam(sd::LaunchContext* context, const NDArray& gradient, const NDAr
 
     NDArray::prepareSpecialUse({ &update, &stateU, &stateM }, { &gradient, &initStateU, &initStateM });
 
-    BUILD_SINGLE_SELECTOR(gradient.dataType(), adamUpdaterCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.getSpecialBuffer(), gradient.getSpecialShapeInfo(),
-        initStateU.getSpecialBuffer(), initStateU.getSpecialShapeInfo(), initStateM.getSpecialBuffer(), initStateM.getSpecialShapeInfo(),
-        update.getSpecialBuffer(), update.getSpecialShapeInfo(), stateU.getSpecialBuffer(), stateU.getSpecialShapeInfo(), 
-        stateM.getSpecialBuffer(), stateM.getSpecialShapeInfo(),  dLr, dBeta1, dBeta2, dEpsilon, nIteration), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(gradient.dataType(), adamUpdaterCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
+        initStateU.specialBuffer(), initStateU.specialShapeInfo(), initStateM.specialBuffer(), initStateM.specialShapeInfo(),
+        update.specialBuffer(), update.specialShapeInfo(), stateU.specialBuffer(), stateU.specialShapeInfo(),
+        stateM.specialBuffer(), stateM.specialShapeInfo(),  dLr, dBeta1, dBeta2, dEpsilon, nIteration), FLOAT_TYPES);
 
     NDArray::registerSpecialUse({ &update, &stateU, &stateM }, { &gradient, &initStateU, &initStateM });
 

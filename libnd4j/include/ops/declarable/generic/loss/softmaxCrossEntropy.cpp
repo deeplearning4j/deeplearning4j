@@ -80,7 +80,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss, 3, 1, false, 1, 1) {
 		if(E.rankOf() == 1 && weights->isVector() && weights->rankOf() > 1)
     		weightsBroad = new NDArray(weights->reshape(weights->ordering(), {weights->lengthOf()}));
     	else
-			weightsBroad = new NDArray(weights->tileToShape(E.getShapeInfo()));
+			weightsBroad = new NDArray(weights->tileToShape(E.shapeInfo()));
 	}
 
     // multiply E on weights
@@ -158,10 +158,10 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss) {
     REQUIRE_TRUE(shape::shapeEquals(logitsShapeInfo, labelsShapeInfo), 0, "SOFTMAX_CROSS_ENTROPY_LOSS OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly!", ShapeUtils::shapeAsString(labelsShapeInfo).c_str(), ShapeUtils::shapeAsString(logitsShapeInfo).c_str());
 
 	DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
-	Nd4jLong* outShapeInfo = nullptr;
+	Nd4jLong const* outShapeInfo = nullptr;
 
     if(INT_ARG(0) != 0) 			// in this case output is scalar
-    	outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
+    	outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
     else { 							// in this case output has the shape as labels and logits minus last dimension
     	std::vector<int> dimensions = {-1};
     	outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(logitsShapeInfo), dimensions, logitsShapeInfo, false, true, block.getWorkspace());
@@ -207,11 +207,11 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
     REQUIRE_TRUE(labels->isSameShape(logits), 0, "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: labels and logits arrays must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(labels).c_str(), ShapeUtils::shapeAsString(logits).c_str());
 	// only 4 possible reduction modes exist
     REQUIRE_TRUE(reductionMode==0 || reductionMode==1 || reductionMode==2 || reductionMode==3, 0, "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: reduction mode value is not acceptable, possible values are 0, 1, 2, 3, but got %i instead!", reductionMode);
-   	auto lossShapeInfo = ShapeUtils::evalReduceShapeInfo(logits->ordering(), dimensions, logits->getShapeInfo(), false, false, block.getWorkspace());
+   	auto lossShapeInfo = ShapeUtils::evalReduceShapeInfo(logits->ordering(), dimensions, logits->shapeInfo(), false, false, block.getWorkspace());
    	// weights array can be single scalar or has the same shape as loss, and must be broadcastable to loss shape
    	REQUIRE_TRUE(weights->isScalar() || weights->rankOf() == shape::rank(lossShapeInfo), 0, "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: weights array should be scalar or have the same rank as loss array, but got %i and %i correspondingly!", weights->rankOf(), shape::rank(lossShapeInfo));
    	// check whether broadcast operation is possible for weights array
-    REQUIRE_TRUE(weights->isScalar() || ShapeUtils::areShapesBroadcastable(weights->getShapeInfo(), lossShapeInfo), 0, "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: shapes of weights and loss arrays should be broadcastable, but got weights = %s and loss = %s instead!", ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(lossShapeInfo).c_str());
+    REQUIRE_TRUE(weights->isScalar() || ShapeUtils::areShapesBroadcastable(weights->shapeInfo(), lossShapeInfo), 0, "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: shapes of weights and loss arrays should be broadcastable, but got weights = %s and loss = %s instead!", ShapeUtils::shapeAsString(weights).c_str(), ShapeUtils::shapeAsString(lossShapeInfo).c_str());
     // smoothing is possible for rank of logits/labels > 1
     REQUIRE_TRUE(labels->rankOf() > 1 || (labels->rankOf() == 1 && labelsSmoothing == 0.), 0, "SOFTMAX_CROSS_ENTROPY_LOSS_GRAD OP: smoothing is not possible when rank of labels/ logits = 1 !");
 
@@ -220,7 +220,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 	NDArray* cLabels = new NDArray(labels->cast(weights->dataType()));
 	NDArray* newLabels = cLabels;
 	if(labelsSmoothing != 0.) {
-		newLabels = new NDArray(labels->getShapeInfo(), dLdl->dataType(), false, block.launchContext());
+		newLabels = new NDArray(labels->shapeInfo(), dLdl->dataType(), false, block.launchContext());
     	newLabels->assign((1.f - labelsSmoothing) * *cLabels + labelsSmoothing / cLabels->sizeAt(1));
 	}
 
@@ -240,7 +240,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 	// perform weights broadcasting/tile to E if it is necessary
 	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(&E))
-			weightsBroad = new NDArray(weights->tileToShape(E.getShapeInfo()));
+			weightsBroad = new NDArray(weights->tileToShape(E.shapeInfo()));
 
 	dimensions = ShapeUtils::evalDimsToExclude(dLdp->rankOf(), dimensions);
 
@@ -257,7 +257,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 				dLdl->applyBroadcast(sd::broadcast::Multiply, dimensions, *weightsBroad, *dLdl);
 
 				if(weights != weightsBroad) {
-					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 					E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 				}
 				else
@@ -293,7 +293,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 					dLdl->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdl);
 
 					if(weights != weightsBroad) {
-						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 						((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 					}
 					else
@@ -330,7 +330,7 @@ CUSTOM_OP_IMPL(softmax_cross_entropy_loss_grad, 3, 3, false, 1, 1) {
 					dLdl->applyBroadcast(sd::broadcast::Multiply, dimensions, temp, *dLdl);
 
 					if(weights != weightsBroad) {
-						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 						E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 						*dLdw /= numOfNonZeroWeights;
 					}
@@ -384,9 +384,9 @@ DECLARE_SHAPE_FN(softmax_cross_entropy_loss_grad) {
 
     auto outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(logitsShapeInfo));
 
-    auto dLdpShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outType, shape::order(logitsShapeInfo), shape::shapeOf(logitsShapeInfo), shape::rank(logitsShapeInfo)));
-    auto dLdwShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outType, shape::order(weightsShapeInfo), shape::shapeOf(weightsShapeInfo), shape::rank(weightsShapeInfo)));
-    auto dLdlShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
+    auto dLdpShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outType, shape::order(logitsShapeInfo), shape::shapeOf(logitsShapeInfo), shape::rank(logitsShapeInfo)));
+    auto dLdwShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outType, shape::order(weightsShapeInfo), shape::shapeOf(weightsShapeInfo), shape::rank(weightsShapeInfo)));
+    auto dLdlShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
 
     return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
 }

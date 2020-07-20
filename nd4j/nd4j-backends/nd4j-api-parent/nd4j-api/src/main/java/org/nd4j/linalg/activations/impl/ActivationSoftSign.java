@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignBp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftSign;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 /**
  * f_i(x) = x_i / (1+|x_i|)

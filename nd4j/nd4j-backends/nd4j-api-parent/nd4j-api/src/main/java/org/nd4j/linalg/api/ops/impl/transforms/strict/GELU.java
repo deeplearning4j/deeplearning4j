@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -33,12 +34,18 @@ import java.util.List;
  * use precise=false; otherwise, use precise = true for the slower but marginally more accurate tanh version.
  * @author raver119@gmail.com
  */
+@NoArgsConstructor
 public class GELU extends BaseTransformStrictOp {
     public GELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace, boolean precise) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public GELU() {
+    public GELU(SameDiff sameDiff, SDVariable i_v, boolean precise) {
+        this(sameDiff, i_v, false, precise);
+    }
+
+    public GELU(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false, false);
     }
 
     public GELU(INDArray x, INDArray z) {
@@ -61,7 +68,7 @@ public class GELU extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().geluDerivative(arg(), false).mul(i_v.get(0));
+        SDVariable ret = new GELUDerivative(sameDiff, arg(), false).outputVariable().mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
 

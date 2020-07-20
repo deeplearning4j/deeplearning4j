@@ -25,7 +25,6 @@ import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -41,14 +40,15 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.schedule.MapSchedule;
 import org.nd4j.linalg.schedule.ScheduleType;
 
@@ -77,6 +77,10 @@ public class MLPTestCases {
                 testOverfitting = true;
                 maxRelativeErrorOverfit = 2e-2;
                 minAbsErrorOverfit = 1e-2;
+                maxRelativeErrorGradients = 0.01;
+                minAbsErrorGradients = 0.05;
+                maxRelativeErrorParamsPostTraining = 0.01;
+                minAbsErrorParamsPostTraining = 0.05;
             }
 
             @Override
@@ -135,8 +139,7 @@ public class MLPTestCases {
             public IEvaluation[] getNewEvaluations(){
                 return new IEvaluation[]{
                         new Evaluation(),
-                        new ROCMultiClass(),
-                        new EvaluationCalibration()
+                        new ROCMultiClass()
                 };
             }
 

@@ -17,7 +17,7 @@
 package org.datavec.spark.transform.utils.adapter;
 
 import org.apache.spark.api.java.function.Function2;
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 
 public class BiFunctionAdapter<A,B,R> implements Function2<A,B,R> {
 

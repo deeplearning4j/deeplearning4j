@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.spark.impl.listeners;
 
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.StatsStorageRouterProvider;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.StatsStorageRouterProvider;
 
 /**
  * Returns a new instance of a {@link VanillaStatsStorageRouter}

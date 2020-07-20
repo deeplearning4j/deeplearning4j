@@ -16,13 +16,16 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.DynamicPartitionBp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -53,6 +56,10 @@ public class DynamicPartition extends DynamicCustomOp {
     public DynamicPartition() {
     }
 
+    public DynamicPartition(SameDiff sameDiff, SDVariable input,  SDVariable[] partitions, int numPartitions) {
+        this(sameDiff, input, partitions[0], numPartitions);
+    }
+
     public DynamicPartition(SameDiff sameDiff, SDVariable input,  SDVariable partitions, int numPartitions) {
         super(null, sameDiff,  new SDVariable[] {input, partitions}, false);
 
@@ -61,10 +68,23 @@ public class DynamicPartition extends DynamicCustomOp {
         addArgs();
     }
 
+    public DynamicPartition(@NonNull INDArray input, @NonNull INDArray partitions, int numPartitions) {
+        super(new INDArray[]{input, partitions}, null);
+        this.numPartitions = numPartitions;
+        addArgs();
+    }
+
+    public DynamicPartition(INDArray x, INDArray [] partitions, int numPartitions){
+        //TODO; This needs fixing.
+        super(new INDArray[]{x}, null);
+        // this.partitions = partitions;
+        this.numPartitions = numPartitions;
+        addArgs();
+    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Arrays.asList(f().dynamicPartitionBp(arg(0), arg(1), i_v.toArray(new SDVariable[i_v.size()]), numPartitions));
+        return new DynamicPartitionBp(sameDiff, arg(0), arg(1), i_v.toArray(new SDVariable[i_v.size()]), numPartitions).outputs();
     }
 
     protected void addArgs() {

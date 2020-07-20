@@ -18,6 +18,8 @@ package org.deeplearning4j.perf.listener;
 
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.core.listener.HardwareMetric;
+import org.deeplearning4j.core.listener.SystemPolling;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,7 +27,6 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
-import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

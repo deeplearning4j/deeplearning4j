@@ -110,7 +110,7 @@ DECLARE_SHAPE_FN(batched_gemm) {
     auto shapeList = SHAPELIST();
 
     if (!(M > 0 && N > 0 && K > 0 && ldA > 0 && ldB > 0 && ldC > 0 && batchSize > 0)) {
-        shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(0)), 'c', {1, 1}));
+        shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShape->at(0)), 'c', {1, 1}));
         return shapeList;
     }
 
@@ -118,7 +118,7 @@ DECLARE_SHAPE_FN(batched_gemm) {
     std::vector<Nd4jLong> shape({M, N});
 
     for (int e = 0; e < batchSize; e++) {
-        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(0)), 'f', shape);
+        auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShape->at(0)), 'f', shape);
         shapeList->push_back(newShape);
     }
 

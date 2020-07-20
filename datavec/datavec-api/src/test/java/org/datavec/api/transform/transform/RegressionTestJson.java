@@ -47,7 +47,8 @@ import org.datavec.api.writable.comparator.LongWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.util.Arrays;
@@ -58,7 +59,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class RegressionTestJson {
+public class RegressionTestJson extends BaseND4JTest {
 
     @Test
     public void regressionTestJson100a() throws Exception {

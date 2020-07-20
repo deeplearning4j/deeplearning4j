@@ -19,10 +19,11 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -42,6 +43,10 @@ public class ParallelStack extends DynamicCustomOp {
 
     public ParallelStack(SameDiff sameDiff, SDVariable[] values) {
         super(null, sameDiff, values, false);
+    }
+
+    public ParallelStack(INDArray[] inputs){
+        super(inputs, null);
     }
 
     @Override

@@ -31,7 +31,7 @@ import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.MemoryManager;
-import org.nd4j.linalg.util.ND4JFileUtils;
+import org.nd4j.common.util.ND4JFileUtils;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -297,9 +297,12 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     protected void init() {
-        //  we want params validation here
+        // in case of MMAP we don't want any learning applied
+        if (workspaceConfiguration.getPolicyLocation() == LocationPolicy.MMAP && workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE)
+            throw new IllegalArgumentException("Workspace backed by memory-mapped file can't have LearningPolicy defined");
 
-        if (currentSize.get() > 0) {
+        // we don't want overallocation in case of MMAP
+        if (currentSize.get() > 0 && workspaceConfiguration.getPolicyLocation() != LocationPolicy.MMAP) {
             if (!isOver.get()) {
                 if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE
                                 && workspaceConfiguration.getOverallocationLimit() > 0) {
@@ -310,7 +313,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             if (workspaceConfiguration.getMaxSize() > 0 && currentSize.get() > workspaceConfiguration.getMaxSize())
                 currentSize.set(workspaceConfiguration.getMaxSize());
-
         }
     }
 
@@ -580,6 +582,13 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     public void close() {
         // first we check if this workspace was borrowed. if yes - just close without reset.
         if (isBorrowed.get()) {
+            if (tagScope.get() > 0) {
+                if (tagScope.decrementAndGet() == 0) {
+                    Nd4j.getMemoryManager().setCurrentWorkspace(this);
+                }
+                return;
+            }
+
             isBorrowed.set(false);
             Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
             return;

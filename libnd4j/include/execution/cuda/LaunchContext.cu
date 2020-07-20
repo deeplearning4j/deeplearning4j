@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -15,7 +16,7 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 30.11.17.
+// @author raver119@gmail.com
 //
 
 #include <execution/LaunchContext.h>
@@ -75,36 +76,37 @@ LaunchContext::LaunchContext() {
     }
 
     LaunchContext* LaunchContext::defaultContext() {
-        /**
-        * This method returns LaunchContext, that has multiple entities within:
-        * 1) temporary buffers. they must be per-thread
-        * 2) CUDA stream. it must be either per-thread or per-device
-        * 3) cuBLAS handle. it must be per-device
-        */
-        auto deviceId = AffinityManager::currentDeviceId();
+      /**
+       * This method returns LaunchContext, that has multiple entities within:
+       * 1) temporary buffers. they must be per-thread
+       * 2) CUDA stream. it must be either per-thread or per-device
+       * 3) cuBLAS handle. it must be per-device
+       */
+      auto deviceId = AffinityManager::currentDeviceId();
 
+      {
         // we need this block synchronous, to avoid double initialization etc
-        _mutex.lock();
+        std::lock_guard<std::mutex> lock(_mutex);
         if (LaunchContext::_contexts.empty()) {
-            // create one context per device
-            auto numDevices = AffinityManager::numberOfDevices();
+          // create one context per device
+          auto numDevices = AffinityManager::numberOfDevices();
 
-            _contexts.resize(numDevices);
-            for (int e = 0; e < numDevices; e++) {
-                _deviceMutexes[e] = new std::mutex();
+          _contexts.resize(numDevices);
+          for (int e = 0; e < numDevices; e++) {
+            _deviceMutexes[e] = new std::mutex();
 
-                AffinityManager::setCurrentNativeDevice(e);
+            AffinityManager::setCurrentNativeDevice(e);
 
-                LaunchContext::_contexts[e] = std::make_shared<LaunchContext>();
-            }
+            LaunchContext::_contexts[e] = std::make_shared<LaunchContext>();
+          }
 
-            // don't forget to restore device back again
-            AffinityManager::setCurrentNativeDevice(deviceId);
+          // don't forget to restore device back again
+          AffinityManager::setCurrentNativeDevice(deviceId);
         }
-        _mutex.unlock();
+      }
 
-        // return context for current device
-        return LaunchContext::_contexts[deviceId].get();
+      // return context for current device
+      return LaunchContext::_contexts[deviceId].get();
     }
 
 
@@ -121,11 +123,11 @@ LaunchContext::LaunchContext() {
     };
 
     void* LaunchContext::getCublasHandle() const {
-        return CublasHelper::getInstance()->handle();
+        return CublasHelper::getInstance().handle();
     };
 
     void* LaunchContext::getCusolverHandle() const {
-        return CublasHelper::getInstance()->solver();
+        return CublasHelper::getInstance().solver();
     };
 
     cudaStream_t* LaunchContext::getCudaStream() const {
@@ -175,7 +177,7 @@ LaunchContext::LaunchContext() {
     }
 
     void* LaunchContext::getCuDnnHandle() const {
-        return CublasHelper::getInstance()->cudnn();
+        return CublasHelper::getInstance().cudnn();
     }
 
     sd::ErrorReference* LaunchContext::errorReference() {

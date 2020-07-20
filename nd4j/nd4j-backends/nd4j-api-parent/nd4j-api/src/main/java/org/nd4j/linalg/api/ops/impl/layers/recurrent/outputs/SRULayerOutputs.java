@@ -2,11 +2,11 @@ package org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs;
 
 import java.util.Arrays;
 import java.util.List;
-import lombok.AccessLevel;
+
 import lombok.Getter;
 import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 
 /**

@@ -29,8 +29,7 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,7 +47,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by agibsonccc on 11/17/14.
  */
-public class LineReaderTest {
+public class LineReaderTest extends BaseND4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

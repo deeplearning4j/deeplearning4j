@@ -18,8 +18,8 @@ package org.deeplearning4j.parallelism.trainer;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -450,6 +450,14 @@ public class DefaultTrainer extends Thread implements Trainer {
         } finally {
             log.debug("Terminating all workspaces for trainer_{}", threadId);
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+
+            if (!onRootModel) {
+                replicatedModel.close();
+            }
+
+            // let's try to enforce GC to actually clean all references now
+            replicatedModel.clear();
+            System.gc();
             isStopped.set(true);
         }
     }

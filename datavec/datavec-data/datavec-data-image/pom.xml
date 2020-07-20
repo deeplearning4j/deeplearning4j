@@ -99,6 +99,13 @@
             <artifactId>hdf5-platform</artifactId>
             <version>${hdf5.version}-${javacpp-presets.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

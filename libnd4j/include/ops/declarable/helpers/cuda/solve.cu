@@ -34,7 +34,7 @@ namespace sd {
         namespace helpers {
     
             template <typename T>
-            static __global__ void oneOnDiagonalKernel(T* ioBuf, Nd4jLong* ioShape, Nd4jLong* tadShape, Nd4jLong* tadOffsets, Nd4jLong batchNum, Nd4jLong rowNum) {
+            static __global__ void oneOnDiagonalKernel(T* ioBuf, Nd4jLong const*  ioShape, Nd4jLong const*  tadShape, Nd4jLong const*  tadOffsets, Nd4jLong batchNum, Nd4jLong rowNum) {
                 for (auto i = blockIdx.x; i < batchNum; i += gridDim.x) {
                     auto matrixPart = ioBuf + tadOffsets[i];
                     for (auto j = threadIdx.x; j < rowNum; j += blockDim.x) {
@@ -47,8 +47,8 @@ namespace sd {
             }
 
             template <typename T>
-            static __global__ void restorePermutationsKernel(T* PBuf, Nd4jLong* PShapeInfo, int const* permutationsBuf,
-            Nd4jLong* PTadShapeInfo, Nd4jLong* PTadSOffsets, Nd4jLong* permutationsTadShapeInfo, Nd4jLong* permutationsTadOffsets, Nd4jLong batchNum, Nd4jLong rowNum) {
+            static __global__ void restorePermutationsKernel(T* PBuf, Nd4jLong const*  PShapeInfo, int const* permutationsBuf,
+            Nd4jLong const*  PTadShapeInfo, Nd4jLong const*  PTadSOffsets, Nd4jLong const*  permutationsTadShapeInfo, Nd4jLong const*  permutationsTadOffsets, Nd4jLong batchNum, Nd4jLong rowNum) {
                 for (auto batch = blockIdx.x; batch < batchNum; batch += gridDim.x) {
                     auto permutations = permutationsBuf + permutationsTadOffsets[batch];
                     auto P = PBuf + PTadSOffsets[batch];
@@ -73,12 +73,12 @@ namespace sd {
                 helpers::lu(context, leftInput, &leftOutput, &permutations);
                 auto leftLower = leftOutput.dup();
                 auto rightOutput = rightInput->ulike();
-                auto leftLowerTad = ConstantTadHelper::getInstance()->tadForDimensions(leftLower.getShapeInfo(), {-2, -1});
+                auto leftLowerTad = ConstantTadHelper::getInstance().tadForDimensions(leftLower.shapeInfo(), {-2, -1});
                 auto stream = context->getCudaStream();
                 oneOnDiagonalKernel<T><<<128, 256, 256, *stream>>>(leftLower.dataBuffer()->specialAsT<T>(), leftLower.specialShapeInfo(), leftLowerTad.specialShapeInfo(), leftLowerTad.specialOffsets(), leftLowerTad.numberOfTads(), leftLower.sizeAt(-1));
                 auto P = leftOutput.ulike(); P.nullify();
-                auto PTad = ConstantTadHelper::getInstance()->tadForDimensions(P.getShapeInfo(), {-2, -1});
-                auto permutationsTad = ConstantTadHelper::getInstance()->tadForDimensions(permutations.getShapeInfo(), {-1});
+                auto PTad = ConstantTadHelper::getInstance().tadForDimensions(P.shapeInfo(), {-2, -1});
+                auto permutationsTad = ConstantTadHelper::getInstance().tadForDimensions(permutations.shapeInfo(), {-1});
                 restorePermutationsKernel<T><<<128, 256, 256, *stream>>>(P.dataBuffer()->specialAsT<T>(), P.specialShapeInfo(), permutations.dataBuffer()->specialAsT<int>(),
                         PTad.specialShapeInfo(), PTad.specialOffsets(), permutationsTad.specialShapeInfo(), permutationsTad.specialOffsets(), permutationsTad.numberOfTads(), permutations.sizeAt(-1));
                 P.tickWriteDevice();
@@ -99,8 +99,8 @@ namespace sd {
             }
 
             template <typename T>
-            static __global__ void adjointKernel(T* output, Nd4jLong batchSize, Nd4jLong rows, Nd4jLong columns, Nd4jLong* outputTads, 
-                                                 Nd4jLong* outputOffsets) {
+            static __global__ void adjointKernel(T* output, Nd4jLong batchSize, Nd4jLong rows, Nd4jLong columns, Nd4jLong const*  outputTads, 
+                                                 Nd4jLong const*  outputOffsets) {
 
                 for (auto b = blockIdx.x; b < batchSize; b += gridDim.x) {
                     auto outputPart = output + outputOffsets[b];
@@ -120,8 +120,8 @@ namespace sd {
             template <typename T>
             static void adjointMatrix_(sd::LaunchContext* context, NDArray const* input, NDArray* output) {
                 NDArray::prepareSpecialUse({output}, {input});
-                auto inputTads = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {-2, -1});
-                auto outputTads = ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {-2, -1});
+                auto inputTads = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {-2, -1});
+                auto outputTads = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {-2, -1});
                 auto stream = context->getCudaStream();
                 auto outputBuf = reinterpret_cast<T*>(output->specialBuffer());
                 auto rows = input->sizeAt(-2);

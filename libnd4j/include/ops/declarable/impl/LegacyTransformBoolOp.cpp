@@ -48,8 +48,8 @@ namespace sd {
             ExtraArguments extras(*block.getTArguments());
             PointersManager manager(block.launchContext(),"LegacyTransformBoolOp");
 
-            NativeOpExecutioner::execTransformBool(block.launchContext(), opNum, input->getBuffer(), input->getShapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
-                    z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+            NativeOpExecutioner::execTransformBool(block.launchContext(), opNum, input->buffer(), input->shapeInfo(), input->specialBuffer(), input->specialShapeInfo(),
+                    z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
                     extras.argumentsAsT(input->dataType()), nullptr, nullptr);
 
             manager.synchronize();
@@ -65,7 +65,7 @@ namespace sd {
         */
         ShapeList *LegacyTransformBoolOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
             auto inShape = inputShape->at(0);
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape, DataType::BOOL)));
         }
     }
 }

@@ -23,6 +23,11 @@ import org.junit.Test;
 
 public class TestDataSets extends BaseDL4JTest {
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;
+    }
+
     @Test
     public void testTinyImageNetExists() throws Exception {
         //Simple sanity check on extracting

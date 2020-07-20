@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -234,7 +235,7 @@ public class EmptyTests extends BaseNd4jTest {
         assertEquals(e, reduced);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = ND4JIllegalStateException.class)
     public void testEmptyReduction_4() {
         val x = Nd4j.create(DataType.FLOAT, 2, 0);
         val e = Nd4j.create(DataType.FLOAT, 0);

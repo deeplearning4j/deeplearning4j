@@ -31,7 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -85,7 +85,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     public DynamicCustomOp(SameDiff sameDiff, SDVariable arg) {
-        this(sameDiff, new SDVariable[]{arg});
+        this(sameDiff, wrapOrNull(arg));
     }
 
     public DynamicCustomOp(SameDiff sameDiff, SDVariable[] args) {
@@ -653,6 +653,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     public void clearArrays(){
         inputArguments.clear();
         outputArguments.clear();
+    }
+
+    protected static SDVariable[] wrapOrNull(SDVariable in){
+        return in == null ? null : new SDVariable[]{in};
     }
 
     protected static INDArray[] wrapOrNull(INDArray in){

@@ -19,9 +19,8 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -73,12 +72,8 @@ public class XwPlusB extends DynamicCustomOp {
         SDVariable dLdOut = gradient.get(0);
 
         SDVariable dLdb = dLdOut.sum(0);
-        SDVariable dLdIn = sameDiff.mmul(dLdOut, w, MMulTranspose.builder()
-                .transposeB(true)
-                .build());
-        SDVariable dLdW = sameDiff.mmul(in, dLdOut, MMulTranspose.builder()
-                .transposeA(true)
-                .build());
+        SDVariable dLdIn = sameDiff.mmul(dLdOut, w, false, true, false);
+        SDVariable dLdW = sameDiff.mmul(in, dLdOut, true, false, false);
 
         return Arrays.asList(dLdIn, dLdW, dLdb);
     }

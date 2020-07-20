@@ -98,8 +98,6 @@ namespace ops {
         std::vector<int> strides(4);
         std::vector<int> rates(4);
 
-        Nd4jLong *newShape;
-
         if (block.width() > 2) {
             auto r = INPUT_VARIABLE(2);
             auto s = INPUT_VARIABLE(3);
@@ -109,7 +107,7 @@ namespace ops {
             rates = r->template asVectorT<int>();
         } else {
             if (block.numI() < 9) {
-                newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(block.dataType());
+                auto newShape = ConstantShapeHelper::getInstance().scalarShapeInfo(block.dataType());
                 return SHAPELIST(newShape);
             }
 
@@ -129,7 +127,7 @@ namespace ops {
         helpers::dilation_hw(block.launchContext(), input, weights, strides, rates, isSameShape, &sH, &sW, &pH, &pW, &dH, &dW, &oH, &oW);
 
         std::array<Nd4jLong, 4> shape = {{bS, oH, oW, iC}};
-        newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
+        auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weights), 'c', 4, shape.data());
         return SHAPELIST(newShape);
     }
 }

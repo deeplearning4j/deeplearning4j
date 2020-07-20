@@ -1,5 +1,5 @@
-/* ******************************************************************************
- * Copyright (c) 2019 Konduit K.K.
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -18,7 +18,10 @@
 
 package org.nd4j.linalg.factory.ops;
 
-import org.nd4j.base.Preconditions;
+import static org.nd4j.linalg.factory.NDValidation.isSameType;
+
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.enums.PartitionMode;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;
@@ -27,6 +30,59 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 
 public class NDMath {
   public NDMath() {
+  }
+
+  /**
+   * Clips tensor values to a maximum average L2-norm.<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param clipValue Value for clipping
+   * @param dimensions Dimensions to reduce over (Size: AtLeast(min=0))
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray clipByAvgNorm(INDArray x, double clipValue, int... dimensions) {
+    NDValidation.validateNumerical("ClipByAvgNorm", "x", x);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm(x, clipValue, dimensions))[0];
+  }
+
+  /**
+   * Looks up ids in a list of embedding tensors.<br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param indices A Tensor containing the ids to be looked up. (INT type)
+   * @param PartitionMode partition_mode == 0 - i.e. 'mod' , 1 - 'div'
+   * @return output Shifted output (NUMERIC type)
+   */
+  public INDArray embeddingLookup(INDArray x, INDArray indices, PartitionMode PartitionMode) {
+    NDValidation.validateNumerical("EmbeddingLookup", "x", x);
+    NDValidation.validateInteger("EmbeddingLookup", "indices", indices);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup(x, indices, PartitionMode))[0];
+  }
+
+  /**
+   * Return array of max elements indices with along tensor dimensions <br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param dataType Data type
+   * @return output Array max elements indices with along dimensions. (INT type)
+   */
+  public INDArray mergeMaxIndex(INDArray[] x, DataType dataType) {
+    NDValidation.validateNumerical("MergeMaxIndex", "x", x);
+    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex(x, dataType))[0];
+  }
+
+  /**
+   * Return array of max elements indices with along tensor dimensions <br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @return output Array max elements indices with along dimensions. (INT type)
+   */
+  public INDArray mergeMaxIndex(INDArray... x) {
+    NDValidation.validateNumerical("MergeMaxIndex", "x", x);
+    Preconditions.checkArgument(x.length >= 1, "x has incorrect size/length. Expected: x.length >= 1, got %s", x.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex(x, DataType.INT))[0];
   }
 
   /**
@@ -63,15 +119,44 @@ public class NDMath {
   }
 
   /**
+   * Pairwise addition operation, out = x + y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray add(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("add", "x", x);
+    NDValidation.validateNumerical("add", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp(x, y))[0];
+  }
+
+  /**
+   * Scalar add operation, out = in + scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray add(INDArray x, double value) {
+    NDValidation.validateNumerical("add", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd(x, value));
+  }
+
+  /**
    * Absolute max array reduction operation, optionally along specified dimensions: out = max(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray amax(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("amax", "in", in);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.AMax(in, dimensions));
   }
 
@@ -79,12 +164,12 @@ public class NDMath {
    * Absolute mean array reduction operation, optionally along specified dimensions: out = mean(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray amean(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("amean", "in", in);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.AMean(in, dimensions));
   }
 
@@ -92,12 +177,12 @@ public class NDMath {
    * Absolute min array reduction operation, optionally along specified dimensions: out = min(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray amin(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("amin", "in", in);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.AMin(in, dimensions));
   }
 
@@ -143,12 +228,12 @@ public class NDMath {
    * Absolute sum array reduction operation, optionally along specified dimensions: out = sum(abs(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray asum(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("asum", "in", in);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.same.ASum(in, dimensions));
   }
 
@@ -186,6 +271,58 @@ public class NDMath {
   public INDArray atanh(INDArray x) {
     NDValidation.validateNumerical("atanh", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.ATanh(x));
+  }
+
+  /**
+   * Bit shift operation<br>
+   *
+   * @param x input (NUMERIC type)
+   * @param shift shift value (NUMERIC type)
+   * @return output shifted output (NUMERIC type)
+   */
+  public INDArray bitShift(INDArray x, INDArray shift) {
+    NDValidation.validateNumerical("bitShift", "x", x);
+    NDValidation.validateNumerical("bitShift", "shift", shift);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits(x, shift))[0];
+  }
+
+  /**
+   * Right bit shift operation<br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param shift shift argument (NUMERIC type)
+   * @return output shifted output (NUMERIC type)
+   */
+  public INDArray bitShiftRight(INDArray x, INDArray shift) {
+    NDValidation.validateNumerical("bitShiftRight", "x", x);
+    NDValidation.validateNumerical("bitShiftRight", "shift", shift);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits(x, shift))[0];
+  }
+
+  /**
+   * Cyclic bit shift operation<br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param shift shift argy=ument (NUMERIC type)
+   * @return output shifted output (NUMERIC type)
+   */
+  public INDArray bitShiftRotl(INDArray x, INDArray shift) {
+    NDValidation.validateNumerical("bitShiftRotl", "x", x);
+    NDValidation.validateNumerical("bitShiftRotl", "shift", shift);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits(x, shift))[0];
+  }
+
+  /**
+   * Cyclic right shift operation<br>
+   *
+   * @param x Input tensor (NUMERIC type)
+   * @param shift Shift argument (NUMERIC type)
+   * @return output Shifted output (NUMERIC type)
+   */
+  public INDArray bitShiftRotr(INDArray x, INDArray shift) {
+    NDValidation.validateNumerical("bitShiftRotr", "x", x);
+    NDValidation.validateNumerical("bitShiftRotr", "shift", shift);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits(x, shift))[0];
   }
 
   /**
@@ -344,13 +481,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate cosineDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate cosineDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray cosineDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("cosineDistance", "x", x);
     NDValidation.validateNumerical("cosineDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.CosineDistance(x, y, dimensions));
   }
 
@@ -361,13 +498,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate cosineSimilarity over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate cosineSimilarity over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray cosineSimilarity(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("cosineSimilarity", "x", x);
     NDValidation.validateNumerical("cosineSimilarity", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity(x, y, dimensions));
   }
 
@@ -375,12 +512,12 @@ public class NDMath {
    * Count non zero array reduction operation, optionally along specified dimensions: out = count(x != 0)<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray countNonZero(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("countNonZero", "in", in);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.CountNonZero(in, dimensions));
   }
 
@@ -388,12 +525,12 @@ public class NDMath {
    * Count zero array reduction operation, optionally along specified dimensions: out = count(x == 0)<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray countZero(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("countZero", "in", in);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.longer.CountZero(in, dimensions));
   }
 
@@ -458,15 +595,44 @@ public class NDMath {
   }
 
   /**
+   * Pairwise division operation, out = x / y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray div(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("div", "x", x);
+    NDValidation.validateNumerical("div", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp(x, y))[0];
+  }
+
+  /**
+   * Scalar division operation, out = in / scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray div(INDArray x, double value) {
+    NDValidation.validateNumerical("div", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision(x, value));
+  }
+
+  /**
    * Entropy reduction: -sum(x * log(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray entropy(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("entropy", "in", in);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.Entropy(in, dimensions));
   }
 
@@ -499,13 +665,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate euclideanDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate euclideanDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray euclideanDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("euclideanDistance", "x", x);
     NDValidation.validateNumerical("euclideanDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance(x, y, dimensions));
   }
 
@@ -566,10 +732,12 @@ public class NDMath {
    * @param rows Number of rows
    * @param cols Number of columns
    * @param dataType Data type
+   * @param dimensions  (Size: AtLeast(min=0))
    * @return output Identity matrix (NUMERIC type)
    */
-  public INDArray eye(int rows, int cols, DataType dataType) {
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Eye(rows, cols, dataType))[0];
+  public INDArray eye(int rows, int cols, DataType dataType, int... dimensions) {
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Eye(rows, cols, dataType, dimensions))[0];
   }
 
   /**
@@ -615,7 +783,7 @@ public class NDMath {
   public INDArray firstIndex(INDArray in, Condition condition, int... dimensions) {
     NDValidation.validateNumerical("firstIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex(in, condition, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex(in, false, condition, dimensions));
   }
 
   /**
@@ -639,7 +807,7 @@ public class NDMath {
       int... dimensions) {
     NDValidation.validateNumerical("firstIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex(in, condition, keepDims, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.FirstIndex(in, keepDims, condition, dimensions));
   }
 
   /**
@@ -655,19 +823,65 @@ public class NDMath {
   }
 
   /**
+   * Pairwise floor division operation, out = floor(x / y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray floorDiv(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("floorDiv", "x", x);
+    NDValidation.validateNumerical("floorDiv", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorDivOp(x, y))[0];
+  }
+
+  /**
+   * Pairwise Modulus division operation<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray floorMod(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("floorMod", "x", x);
+    NDValidation.validateNumerical("floorMod", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp(x, y))[0];
+  }
+
+  /**
+   * Scalar floor modulus operation<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray floorMod(INDArray x, double value) {
+    NDValidation.validateNumerical("floorMod", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod(x, value));
+  }
+
+  /**
    * Hamming distance reduction operation. The output contains the cosine distance for each<br>
    * tensor/subset along the specified dimensions:<br>
    * out = count( x[i] != y[i] )<br>
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate hammingDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate hammingDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray hammingDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("hammingDistance", "x", x);
     NDValidation.validateNumerical("hammingDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.HammingDistance(x, y, dimensions));
   }
 
@@ -682,7 +896,7 @@ public class NDMath {
   public INDArray iamax(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("iamax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.IAMax(in, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, false, dimensions))[0];
   }
 
   /**
@@ -697,7 +911,7 @@ public class NDMath {
   public INDArray iamax(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("iamax", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.IAMax(in, keepDims, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -711,7 +925,7 @@ public class NDMath {
   public INDArray iamin(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("iamin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.IAMin(in, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, false, dimensions))[0];
   }
 
   /**
@@ -726,7 +940,7 @@ public class NDMath {
   public INDArray iamin(INDArray in, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("iamin", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.IAMin(in, keepDims, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin(in, keepDims, dimensions))[0];
   }
 
   /**
@@ -813,13 +1027,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate jaccardDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate jaccardDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray jaccardDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("jaccardDistance", "x", x);
     NDValidation.validateNumerical("jaccardDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.JaccardDistance(x, y, dimensions));
   }
 
@@ -842,7 +1056,7 @@ public class NDMath {
   public INDArray lastIndex(INDArray in, Condition condition, int... dimensions) {
     NDValidation.validateNumerical("lastIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex(in, condition, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex(in, false, condition, dimensions));
   }
 
   /**
@@ -865,7 +1079,19 @@ public class NDMath {
   public INDArray lastIndex(INDArray in, Condition condition, boolean keepDims, int... dimensions) {
     NDValidation.validateNumerical("lastIndex", "in", in);
     Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex(in, condition, keepDims, dimensions));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex(in, keepDims, condition, dimensions));
+  }
+
+  /**
+   * Calculates difference between inputs X and Y.<br>
+   *
+   * @param x Input variable X (NUMERIC type)
+   * @param y Input variable Y (NUMERIC type)
+   */
+  public INDArray[] listDiff(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("listDiff", "x", x);
+    NDValidation.validateNumerical("listDiff", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.ListDiff(x, y));
   }
 
   /**
@@ -883,13 +1109,12 @@ public class NDMath {
    * Element-wise logarithm function (with specified base): out = log_{base}(x)<br>
    *
    * @param x Input variable (NUMERIC type)
-   * @param base Logarithm base (NUMERIC type)
+   * @param base Logarithm base
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray log(INDArray x, INDArray base) {
+  public INDArray log(INDArray x, double base) {
     NDValidation.validateNumerical("log", "x", x);
-    NDValidation.validateNumerical("log", "base", base);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.Log(x, base));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.LogX(x, base));
   }
 
   /**
@@ -907,12 +1132,12 @@ public class NDMath {
    * Log entropy reduction: log(-sum(x * log(x)))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray logEntropy(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("logEntropy", "in", in);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.LogEntropy(in, dimensions));
   }
 
@@ -937,13 +1162,13 @@ public class NDMath {
    *
    * @param x Input variable x (NUMERIC type)
    * @param y Input variable y (NUMERIC type)
-   * @param dimensions Dimensions to calculate manhattanDistance over (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to calculate manhattanDistance over (Size: AtLeast(min=0))
    * @return output Output variable (NUMERIC type)
    */
   public INDArray manhattanDistance(INDArray x, INDArray y, int... dimensions) {
     NDValidation.validateNumerical("manhattanDistance", "x", x);
     NDValidation.validateNumerical("manhattanDistance", "y", y);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance(x, y, dimensions));
   }
 
@@ -974,13 +1199,30 @@ public class NDMath {
   }
 
   /**
+   * Pairwise max operation, out = max(x, y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x First input variable, x (NUMERIC type)
+   * @param y Second input variable, y (NUMERIC type)
+   * @return out Output (NUMERIC type)
+   */
+  public INDArray max(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("max", "x", x);
+    NDValidation.validateNumerical("max", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(x, y))[0];
+  }
+
+  /**
    * Merge add function: merges an arbitrary number of equal shaped arrays using element-wise addition:<br>
    * out = sum_i in[i]<br>
    *
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray mergeAdd(INDArray[] inputs) {
+  public INDArray mergeAdd(INDArray... inputs) {
     NDValidation.validateNumerical("mergeAdd", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp(inputs))[0];
@@ -993,7 +1235,7 @@ public class NDMath {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray mergeAvg(INDArray[] inputs) {
+  public INDArray mergeAvg(INDArray... inputs) {
     NDValidation.validateNumerical("mergeAvg", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MergeAvg(inputs))[0];
@@ -1006,10 +1248,56 @@ public class NDMath {
    * @param inputs Input variables (NUMERIC type)
    * @return output Output variable (NUMERIC type)
    */
-  public INDArray mergeMax(INDArray[] inputs) {
+  public INDArray mergeMax(INDArray... inputs) {
     NDValidation.validateNumerical("mergeMax", "inputs", inputs);
     Preconditions.checkArgument(inputs.length >= 1, "inputs has incorrect size/length. Expected: inputs.length >= 1, got %s", inputs.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MergeMax(inputs))[0];
+  }
+
+  /**
+   * Broadcasts parameters for evaluation on an N-D grid.<br>
+   *
+   * @param inputs  (NUMERIC type)
+   * @param cartesian 
+   */
+  public INDArray[] meshgrid(INDArray[] inputs, boolean cartesian) {
+    NDValidation.validateNumerical("meshgrid", "inputs", inputs);
+    Preconditions.checkArgument(inputs.length >= 0, "inputs has incorrect size/length. Expected: inputs.length >= 0, got %s", inputs.length);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.MeshGrid(inputs, cartesian));
+  }
+
+  /**
+   * Pairwise max operation, out = min(x, y)<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x First input variable, x (NUMERIC type)
+   * @param y Second input variable, y (NUMERIC type)
+   * @return out Output (NUMERIC type)
+   */
+  public INDArray min(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("min", "x", x);
+    NDValidation.validateNumerical("min", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(x, y))[0];
+  }
+
+  /**
+   * Pairwise modulus (remainder) operation, out = x % y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray mod(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("mod", "x", x);
+    NDValidation.validateNumerical("mod", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp(x, y))[0];
   }
 
   /**
@@ -1017,12 +1305,40 @@ public class NDMath {
    *
    * @param input Input to calculate moments for (NUMERIC type)
    * @param axes Dimensions to perform calculation over (Size: AtLeast(min=0))
-   * @return output Mean and variance variables (NUMERIC type)
    */
-  public INDArray moments(INDArray input, int... axes) {
+  public INDArray[] moments(INDArray input, int... axes) {
     NDValidation.validateNumerical("moments", "input", input);
     Preconditions.checkArgument(axes.length >= 0, "axes has incorrect size/length. Expected: axes.length >= 0, got %s", axes.length);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Moments(input, axes))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.Moments(input, axes));
+  }
+
+  /**
+   * Pairwise multiplication operation, out = x * y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray mul(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("mul", "x", x);
+    NDValidation.validateNumerical("mul", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp(x, y))[0];
+  }
+
+  /**
+   * Scalar multiplication operation, out = in * scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray mul(INDArray x, double value) {
+    NDValidation.validateNumerical("mul", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication(x, value));
   }
 
   /**
@@ -1043,14 +1359,13 @@ public class NDMath {
    * @param means Mean-value sufficient statistics: this is the SUM of all data values (NUMERIC type)
    * @param variances Variaance sufficient statistics: this is the squared sum of all data values (NUMERIC type)
    * @param shift Shift value, possibly 0, used when calculating the sufficient statistics (for numerical stability)
-   * @return output Output variables: mean and population variance (NUMERIC type)
    */
-  public INDArray normalizeMoments(INDArray counts, INDArray means, INDArray variances,
+  public INDArray[] normalizeMoments(INDArray counts, INDArray means, INDArray variances,
       double shift) {
     NDValidation.validateNumerical("normalizeMoments", "counts", counts);
     NDValidation.validateNumerical("normalizeMoments", "means", means);
     NDValidation.validateNumerical("normalizeMoments", "variances", variances);
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments(counts, means, variances, shift))[0];
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.NormalizeMoments(counts, means, variances, shift));
   }
 
   /**
@@ -1095,6 +1410,48 @@ public class NDMath {
   }
 
   /**
+   * Rational Tanh Approximation elementwise function, as described in the paper:<br>
+   * Compact Convolutional Neural Network Cascade for Face Detection<br>
+   * This is a faster Tanh approximation<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rationalTanh(INDArray x) {
+    NDValidation.validateNumerical("rationalTanh", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh(x));
+  }
+
+  /**
+   * Pairwise reverse division operation, out = y / x<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rdiv(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("rdiv", "x", x);
+    NDValidation.validateNumerical("rdiv", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RDivOp(x, y))[0];
+  }
+
+  /**
+   * Scalar reverse division operation, out = scalar / in<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rdiv(INDArray x, double value) {
+    NDValidation.validateNumerical("rdiv", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseDivision(x, value));
+  }
+
+  /**
    * Element-wise reciprocal (inverse) function: out[i] = 1 / in[i]<br>
    *
    * @param x Input variable (NUMERIC type)
@@ -1103,6 +1460,17 @@ public class NDMath {
   public INDArray reciprocal(INDArray x) {
     NDValidation.validateNumerical("reciprocal", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.same.Reciprocal(x));
+  }
+
+  /**
+   * Rectified tanh operation: max(0, tanh(in))<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rectifiedTanh(INDArray x) {
+    NDValidation.validateNumerical("rectifiedTanh", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh(x));
   }
 
   /**
@@ -1126,6 +1494,35 @@ public class NDMath {
   public INDArray rsqrt(INDArray x) {
     NDValidation.validateNumerical("rsqrt", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt(x));
+  }
+
+  /**
+   * Pairwise reverse subtraction operation, out = y - x<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rsub(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("rsub", "x", x);
+    NDValidation.validateNumerical("rsub", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RSubOp(x, y))[0];
+  }
+
+  /**
+   * Scalar reverse subtraction operation, out = scalar - in<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray rsub(INDArray x, double value) {
+    NDValidation.validateNumerical("rsub", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction(x, value));
   }
 
   /**
@@ -1153,12 +1550,12 @@ public class NDMath {
    * Shannon Entropy reduction: -sum(x * log2(x))<br>
    *
    * @param in Input variable (NUMERIC type)
-   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=1))
+   * @param dimensions Dimensions to reduce over. If dimensions are not specified, full array reduction is performed (Size: AtLeast(min=0))
    * @return output Reduced array of rank (input rank - num dimensions) (NUMERIC type)
    */
   public INDArray shannonEntropy(INDArray in, int... dimensions) {
     NDValidation.validateNumerical("shannonEntropy", "in", in);
-    Preconditions.checkArgument(dimensions.length >= 1, "dimensions has incorrect size/length. Expected: dimensions.length >= 1, got %s", dimensions.length);
+    Preconditions.checkArgument(dimensions.length >= 0, "dimensions has incorrect size/length. Expected: dimensions.length >= 0, got %s", dimensions.length);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.reduce.floating.ShannonEntropy(in, dimensions));
   }
 
@@ -1221,6 +1618,23 @@ public class NDMath {
   }
 
   /**
+   * Pairwise squared difference operation.<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray squaredDifference(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("squaredDifference", "x", x);
+    NDValidation.validateNumerical("squaredDifference", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SquaredDifferenceOp(x, y))[0];
+  }
+
+  /**
    * Standardize input variable along given axis<br>
    * <p><br>
    * out = (x - mean) / stdev<br>
@@ -1256,6 +1670,35 @@ public class NDMath {
   public INDArray step(INDArray x, double value) {
     NDValidation.validateNumerical("step", "x", x);
     return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.Step(x, value));
+  }
+
+  /**
+   * Pairwise subtraction operation, out = x - y<br>
+   *
+   * Note: supports broadcasting if x and y have different shapes and are broadcastable.<br>
+   * For example, if X has shape [1,10] and Y has shape [5,10] then op(X,Y) has output shape [5,10]<br>
+   * Broadcast rules are the same as NumPy: https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param y Input variable (NUMERIC type)
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray sub(INDArray x, INDArray y) {
+    NDValidation.validateNumerical("sub", "x", x);
+    NDValidation.validateNumerical("sub", "y", y);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp(x, y))[0];
+  }
+
+  /**
+   * Scalar subtraction operation, out = in - scalar<br>
+   *
+   * @param x Input variable (NUMERIC type)
+   * @param value Scalar value for op
+   * @return output Output variable (NUMERIC type)
+   */
+  public INDArray sub(INDArray x, double value) {
+    NDValidation.validateNumerical("sub", "x", x);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction(x, value));
   }
 
   /**

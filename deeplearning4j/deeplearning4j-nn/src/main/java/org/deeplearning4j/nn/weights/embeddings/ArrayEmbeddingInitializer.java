@@ -18,7 +18,7 @@ package org.deeplearning4j.nn.weights.embeddings;
 
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**

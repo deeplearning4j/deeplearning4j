@@ -97,7 +97,7 @@ namespace sd {
         public:
             ~OpRegistrator();
 
-            static OpRegistrator* getInstance();
+            static OpRegistrator& getInstance();
 
             static void exitHandler();
             static void sigIntHandler(int sig);

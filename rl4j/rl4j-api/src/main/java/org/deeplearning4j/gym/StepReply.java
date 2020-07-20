@@ -19,15 +19,15 @@ package org.deeplearning4j.gym;
 import lombok.Value;
 
 /**
- * @param <T> type of observation
+ * @param <OBSERVATION> type of observation
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/6/16.
  *
  *  StepReply is the container for the data returned after each step(action).
  */
 @Value
-public class StepReply<T> {
+public class StepReply<OBSERVATION> {
 
-    T observation;
+    OBSERVATION observation;
     double reward;
     boolean done;
     Object info;

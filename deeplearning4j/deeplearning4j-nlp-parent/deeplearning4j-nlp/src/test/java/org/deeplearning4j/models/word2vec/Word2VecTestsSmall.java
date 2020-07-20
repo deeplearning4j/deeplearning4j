@@ -28,29 +28,29 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.text.documentiterator.FileLabelAwareIterator;
 import org.deeplearning4j.text.documentiterator.LabelAwareIterator;
-import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.util.Collection;
+import java.util.concurrent.Callable;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 
 @Slf4j
@@ -192,22 +192,20 @@ public class Word2VecTestsSmall extends BaseDL4JTest {
                         .nOut(4).build())
                 .build();
 
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        final MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
         INDArray w0 = net.getParam("0_W");
         assertEquals(w, w0);
-
-
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         ModelSerializer.writeModel(net, baos, true);
         byte[] bytes = baos.toByteArray();
 
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
+        final MultiLayerNetwork restored = ModelSerializer.restoreMultiLayerNetwork(bais, true);
 
         assertEquals(net.getLayerWiseConfigurations(), restored.getLayerWiseConfigurations());
-        assertEquals(net.params(), restored.params());
+        assertTrue(net.params().equalsWithEps(restored.params(), 2e-3));
     }
 }

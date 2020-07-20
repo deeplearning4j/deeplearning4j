@@ -17,7 +17,7 @@
 package org.deeplearning4j.datasets;
 
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.base.MnistFetcher;
+import org.deeplearning4j.datasets.base.MnistFetcher;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.junit.*;

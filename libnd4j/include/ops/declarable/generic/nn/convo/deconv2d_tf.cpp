@@ -144,7 +144,7 @@ DECLARE_SHAPE_FN(deconv2d_tf) {
         shape[3] = iC;
     }
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(weightsShapeInfo), shape::order(gradOShapeInfo), 4, shape));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(weightsShapeInfo), shape::order(gradOShapeInfo), 4, shape));
 }
 
 }

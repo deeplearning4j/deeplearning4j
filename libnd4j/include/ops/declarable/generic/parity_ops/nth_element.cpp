@@ -49,24 +49,25 @@ namespace sd {
 
             auto in = inputShape->at(0);
             int outRank = shape::rank(in) - 1;
-            Nd4jLong *outputShape = nullptr;
+            Nd4jLong const* outShape = nullptr;
             if (outRank > 1) {
+                Nd4jLong *outputShape = nullptr;
                 ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
                 outputShape[0] = outRank;
                 for (Nd4jLong e = 0; e < outRank; e++)
                 outputShape[e + 1] = in[e + 1];
 
                 ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
-                outputShape = CONSTANT(outputShape);
+                outShape = CONSTANT(outputShape);
             }
             else if (outRank == 1) {
-                outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(in, 0), ArrayOptions::dataType(in));
+                outShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(in, 0), ArrayOptions::dataType(in));
             }
             else {
                 //outputShape = shape::createScalarShapeInfo();
-                outputShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(in));
+                outShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(in));
             }
-            return SHAPELIST(outputShape);
+            return SHAPELIST(outShape);
         }
         DECLARE_TYPES(nth_element) {
             getOpDescriptor()

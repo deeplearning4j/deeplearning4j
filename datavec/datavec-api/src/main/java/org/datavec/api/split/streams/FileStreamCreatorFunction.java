@@ -16,8 +16,8 @@
 
 package org.datavec.api.split.streams;
 
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.function.Function;
 
 import java.io.*;
 import java.net.URI;

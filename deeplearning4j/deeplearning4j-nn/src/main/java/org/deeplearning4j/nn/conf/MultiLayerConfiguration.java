@@ -663,7 +663,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     BaseRecurrentLayer brl = (BaseRecurrentLayer) firstLayer;
                     val nIn = brl.getNIn();
                     if (nIn > 0) {
-                        inputType = InputType.recurrent(nIn);
+                        inputType = InputType.recurrent(nIn, brl.getRnnDataFormat());
                     }
                 } else if (firstLayer instanceof DenseLayer || firstLayer instanceof EmbeddingLayer
                         || firstLayer instanceof OutputLayer) {

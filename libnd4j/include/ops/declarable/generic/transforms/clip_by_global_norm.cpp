@@ -55,7 +55,7 @@ DECLARE_SHAPE_FN(clip_by_global_norm) {
         shapeList->push_back(CONSTANT(newShape));
     }
 
-    shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
+    shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
     return shapeList;
 }
 

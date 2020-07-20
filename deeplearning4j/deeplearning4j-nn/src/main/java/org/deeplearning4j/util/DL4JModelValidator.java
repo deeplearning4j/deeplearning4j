@@ -7,8 +7,8 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.validation.Nd4jCommonValidator;
-import org.nd4j.validation.ValidationResult;
+import org.nd4j.common.validation.Nd4jCommonValidator;
+import org.nd4j.common.validation.ValidationResult;
 
 import java.io.BufferedReader;
 import java.io.File;

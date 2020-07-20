@@ -16,12 +16,14 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -60,6 +62,10 @@ public class DynamicStitch extends DynamicCustomOp {
         this.numPartitions = inputs.length;
     }
 
+    public DynamicStitch(@NonNull INDArray[] indices, @NonNull INDArray[] inputs) {
+        super(ArrayUtils.addAll(indices, inputs), null);
+    }
+
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // DynamicPartition and DynamicStitch are mutually inverse
@@ -72,7 +78,7 @@ public class DynamicStitch extends DynamicCustomOp {
         SDVariable[] partition = sameDiff.dynamicPartition(gradient, partitions, numPartitions);
         List<SDVariable> ret = new ArrayList<>();
         for (SDVariable i : indices)
-            ret.add(f().zerosLike(i));
+            ret.add(sameDiff.zerosLike(i));
         Collections.addAll(ret, partition);
         return ret;
     }

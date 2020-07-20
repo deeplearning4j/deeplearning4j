@@ -21,12 +21,12 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.parallelism.ParallelWrapper;
-import org.deeplearning4j.util.ModelGuesser;
+import org.deeplearning4j.core.util.ModelGuesser;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -135,7 +135,7 @@ public class ParallelWrapperMain {
                 StatsStorageRouter remoteUIRouter = new RemoteUIStatsStorageRouter("http://" + uiUrl);
                 TrainingListener l;
                 try {
-                    l = (TrainingListener) Class.forName("org.deeplearning4j.ui.stats.StatsListener").getConstructor(StatsStorageRouter.class)
+                    l = (TrainingListener) Class.forName("org.deeplearning4j.ui.model.stats.StatsListener").getConstructor(StatsStorageRouter.class)
                             .newInstance(new Object[]{null});
                 } catch (ClassNotFoundException e){
                     throw new IllegalStateException("deeplearning4j-ui module must be on the classpath to use ParallelWrapperMain with the UI", e);
@@ -157,7 +157,7 @@ public class ParallelWrapperMain {
                 remoteUIRouter = new RemoteUIStatsStorageRouter("http://" + uiUrl);
                 TrainingListener l;
                 try {
-                    l = (TrainingListener) Class.forName("org.deeplearning4j.ui.stats.StatsListener").getConstructor(StatsStorageRouter.class)
+                    l = (TrainingListener) Class.forName("org.deeplearning4j.ui.model.stats.StatsListener").getConstructor(StatsStorageRouter.class)
                             .newInstance(new Object[]{null});
                 } catch (ClassNotFoundException e){
                     throw new IllegalStateException("deeplearning4j-ui module must be on the classpath to use ParallelWrapperMain with the UI", e);

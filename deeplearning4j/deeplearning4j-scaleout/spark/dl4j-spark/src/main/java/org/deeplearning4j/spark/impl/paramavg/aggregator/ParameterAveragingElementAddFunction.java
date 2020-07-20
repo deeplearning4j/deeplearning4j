@@ -17,8 +17,8 @@
 package org.deeplearning4j.spark.impl.paramavg.aggregator;
 
 import org.apache.spark.api.java.function.Function2;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StorageMetaData;
+import org.deeplearning4j.core.storage.Persistable;
+import org.deeplearning4j.core.storage.StorageMetaData;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
 import org.nd4j.linalg.api.ndarray.INDArray;

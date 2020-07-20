@@ -17,10 +17,11 @@
 package org.nd4j.linalg.api.ops.impl.shape;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -64,12 +65,22 @@ public class SequenceMask extends DynamicCustomOp {
         addDArgument(dataType);
     }
 
-    public SequenceMask(INDArray input, int maxLen, DataType dataType) {
+    public SequenceMask(@NonNull INDArray input, int maxLen, DataType dataType) {
         addInputArgument(input);
         addIArgument(maxLen);
         this.dataType = dataType;
         addDArgument(dataType);
-    } 
+    }
+
+    public SequenceMask(@NonNull INDArray input, @NonNull DataType dataType) {
+        this(input, null, dataType);
+    }
+
+    public SequenceMask(@NonNull INDArray input, INDArray maxLength, @NonNull DataType dataType) {
+        super(wrapFilterNull(input, maxLength), null);
+        this.dataType = dataType;
+        addDArgument(dataType);
+    }
 
 
     @Override
@@ -109,7 +120,7 @@ public class SequenceMask extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //Input is integer indices
-        return Collections.singletonList(f().zerosLike(arg()));
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
     @Override

@@ -1,10 +1,10 @@
 package org.nd4j.linalg.api.ops.impl.layers.recurrent.weights;
 
 import java.lang.reflect.Array;
-import java.util.Arrays;
+
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 public abstract class RNNWeights {
     public abstract SDVariable[] args();

@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,6 +34,10 @@ import java.util.List;
 public class RectifiedLinear extends BaseScalarOp {
     public RectifiedLinear(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, cutoff, inPlace);
+    }
+
+    public RectifiedLinear(SameDiff sameDiff, SDVariable i_v, double cutoff) {
+        this(sameDiff, i_v, false, cutoff);
     }
 
     public RectifiedLinear() {
@@ -77,6 +82,6 @@ public class RectifiedLinear extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().thresholdReluBp(arg(), i_v.get(0), scalarValue.getDouble(0)));
+        return new ThresholdReluBp(sameDiff, arg(), i_v.get(0), scalarValue.getDouble(0)).outputs();
     }
 }

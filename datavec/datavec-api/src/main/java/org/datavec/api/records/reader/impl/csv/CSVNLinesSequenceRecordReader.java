@@ -25,7 +25,7 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.primitives.Triple;
 
 import java.io.DataInputStream;
 import java.io.IOException;

@@ -43,7 +43,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.DataInputStream;
 import java.io.File;
@@ -53,6 +53,11 @@ import static org.junit.Assert.*;
 
 @Slf4j
 public class RegressionTest100a extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;  //Most tests should be fast, but slow download may cause timeout on slow connections
+    }
 
     @Override
     public DataType getDataType(){

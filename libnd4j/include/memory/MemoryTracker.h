@@ -35,7 +35,6 @@ namespace sd {
          */
         class ND4J_EXPORT MemoryTracker {
         private:
-            static MemoryTracker* _INSTANCE;
             std::map<Nd4jLong, AllocationEntry> _allocations;
             std::map<Nd4jLong, AllocationEntry> _released;
             std::mutex _locker;
@@ -43,7 +42,7 @@ namespace sd {
             MemoryTracker();
             ~MemoryTracker() = default;
         public:
-            static MemoryTracker* getInstance();
+            static MemoryTracker& getInstance();
 
             void countIn(MemoryType type, Nd4jPointer ptr, Nd4jLong numBytes);
             void countOut(Nd4jPointer ptr);

@@ -16,11 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NonNull;
 import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -62,6 +63,13 @@ public class Unstack extends DynamicCustomOp {
 
     public Unstack(SameDiff sameDiff, SDVariable value, int axis, int num) {
         super(null, sameDiff, new SDVariable[]{value}, false);
+        this.jaxis = axis;
+        this.num = num;
+        addArgs();
+    }
+
+    public Unstack(@NonNull INDArray value, int axis, int num){
+        super(new INDArray[]{value}, null);
         this.jaxis = axis;
         this.num = num;
         addArgs();
@@ -136,7 +144,8 @@ public class Unstack extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(sameDiff.stack(jaxis, f1.toArray(new SDVariable[f1.size()])));
+        return Collections.singletonList(sameDiff.stack(jaxis, f1.toArray(new SDVariable[0])));
+
     }
 
     @Override

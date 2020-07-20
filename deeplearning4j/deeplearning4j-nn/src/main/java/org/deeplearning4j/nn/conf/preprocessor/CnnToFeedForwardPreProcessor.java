@@ -19,11 +19,12 @@ package org.deeplearning4j.nn.conf.preprocessor;
 import lombok.Data;
 import lombok.val;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
@@ -38,11 +39,13 @@ import java.util.Arrays;
  * For example, CNN -> Denselayer <br>
  * This does two things:<br>
  * (b) Reshapes 4d activations out of CNN layer, with shape
- * [numExamples, numChannels, inputHeight, inputWidth]) into 2d activations (with shape
- * [numExamples, inputHeight*inputWidth*numChannels]) for use in feed forward layer
+ * [numExamples, numChannels, inputHeight, inputWidth]) (for {@link CNN2DFormat#NCHW} format activations) or shape
+ * [numExamples, inputHeight, inputWidth, numChannels] (for {@link CNN2DFormat#NHWC}) format activations) into 2d activations
+ * (with shape [numExamples, inputHeight*inputWidth*numChannels]) for use in feed forward layer.
  * (a) Reshapes epsilons (weights*deltas) out of FeedFoward layer (which is 2D or 3D with shape
  * [numExamples, inputHeight*inputWidth*numChannels]) into 4d epsilons (with shape
- * [numExamples, numChannels, inputHeight, inputWidth]) suitable to feed into CNN layers.<br>
+ * [numExamples, numChannels, inputHeight, inputWidth] or [numExamples, inputHeight, inputWidth, numChannels]) suitable to
+ * feed into CNN layers.<br>
  * Note: numChannels is equivalent to channels or featureMaps referenced in different literature
  * @author Adam Gibson
  * @see FeedForwardToCnnPreProcessor for opposite case (i.e., DenseLayer -> CNNetc)
@@ -52,6 +55,7 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     protected long inputHeight;
     protected long inputWidth;
     protected long numChannels;
+    protected CNN2DFormat format = CNN2DFormat.NCHW;    //Default for legacy JSON deserialization
 
     /**
      * @param inputHeight the columns
@@ -61,16 +65,21 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
     @JsonCreator
     public CnnToFeedForwardPreProcessor(@JsonProperty("inputHeight") long inputHeight,
-                    @JsonProperty("inputWidth") long inputWidth, @JsonProperty("numChannels") long numChannels) {
+                    @JsonProperty("inputWidth") long inputWidth, @JsonProperty("numChannels") long numChannels,
+                        @JsonProperty("format") CNN2DFormat format) {
         this.inputHeight = inputHeight;
         this.inputWidth = inputWidth;
         this.numChannels = numChannels;
+        if(format != null)
+            this.format = format;
     }
 
     public CnnToFeedForwardPreProcessor(long inputHeight, long inputWidth) {
-        this.inputHeight = inputHeight;
-        this.inputWidth = inputWidth;
-        this.numChannels = 1;
+        this(inputHeight, inputWidth, 1, CNN2DFormat.NCHW);
+    }
+
+    public CnnToFeedForwardPreProcessor(long inputHeight, long inputWidth, long numChannels) {
+        this(inputHeight, inputWidth, numChannels, CNN2DFormat.NCHW);
     }
 
     public CnnToFeedForwardPreProcessor() {}
@@ -80,15 +89,32 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         if (input.rank() == 2)
             return input; //Should usually never happen
-        if(input.size(1) != numChannels || input.size(2) != inputHeight || input.size(3) != inputWidth){
-            throw new IllegalStateException("Invalid input, does not match configuration: expected [minibatch, numChannels="
-                    + numChannels + ", inputHeight=" + inputHeight + ", inputWidth=" + inputWidth + "] but got input array of" +
-                    "shape " + Arrays.toString(input.shape()));
+
+        int chDim = 1;
+        int hDim = 2;
+        int wDim = 3;
+        if(format == CNN2DFormat.NHWC){
+            chDim = 3;
+            hDim = 1;
+            wDim = 2;
+        }
+
+        if(inputHeight == 0 && inputWidth == 0 && numChannels == 0){
+            this.inputHeight = input.size(hDim);
+            this.inputWidth = input.size(wDim);
+            this.numChannels = input.size(chDim);
+        }
+
+        if(input.size(chDim) != numChannels || input.size(hDim) != inputHeight || input.size(wDim) != inputWidth){
+            throw new IllegalStateException("Invalid input, does not match configuration: expected " +
+                    (format == CNN2DFormat.NCHW ? "[minibatch, numChannels=" + numChannels + ", inputHeight=" + inputHeight + ", inputWidth=" + inputWidth + "] " :
+                            "[minibatch, inputHeight=" + inputHeight + ", inputWidth=" + inputWidth + ", numChannels=" + numChannels + "]") +
+                            " but got input array of shape " + Arrays.toString(input.shape()));
         }
 
         //Check input: nchw format
-        if(input.size(1) != numChannels || input.size(2) != inputHeight ||
-                input.size(3) != inputWidth){
+        if(input.size(chDim) != numChannels || input.size(hDim) != inputHeight ||
+                input.size(wDim) != inputWidth){
             throw new IllegalStateException("Invalid input array: expected shape [minibatch, channels, height, width] = "
                     + "[minibatch, " + numChannels + ", " + inputHeight + ", " + inputWidth + "] - got "
                     + Arrays.toString(input.shape()));
@@ -98,6 +124,8 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
         //First: we require input to be in c order. But c order (as declared in array order) isn't enough; also need strides to be correct
         if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input))
             input = workspaceMgr.dup(ArrayType.ACTIVATIONS, input, 'c');
+
+        //Note that to match Tensorflow/Keras, we do a simple "c order reshape" for both NCHW and NHWC
 
         val inShape = input.shape(); //[miniBatch,depthOut,outH,outW]
         val outShape = new long[]{inShape[0], inShape[1] * inShape[2] * inShape[3]};
@@ -119,7 +147,13 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
                             + inputHeight + " x columns " + inputWidth + " x channels " + numChannels + " but was instead "
                             + Arrays.toString(epsilons.shape()));
 
-        INDArray ret = epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+        INDArray ret;
+        if(format == CNN2DFormat.NCHW){
+            ret = epsilons.reshape('c', epsilons.size(0), numChannels, inputHeight, inputWidth);
+        } else {
+            ret = epsilons.reshape('c', epsilons.size(0), inputHeight, inputWidth, numChannels);
+        }
+
         return workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, ret); //Move if required to specified workspace
     }
 

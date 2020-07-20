@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.ui.module;
 
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageEvent;
+import org.deeplearning4j.core.storage.StatsStorage;
+import org.deeplearning4j.core.storage.StatsStorageEvent;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;

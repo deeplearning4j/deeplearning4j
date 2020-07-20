@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -351,6 +352,10 @@ public class KerasBatchNormalization extends KerasLayer {
     private int getBatchNormAxis(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
-        return (int) innerConfig.get(LAYER_FIELD_AXIS);
+        Object batchNormAxis = innerConfig.get(LAYER_FIELD_AXIS);
+        if (batchNormAxis instanceof List){
+            return ((Number)((List)batchNormAxis).get(0)).intValue();
+        }
+        return ((Number)innerConfig.get(LAYER_FIELD_AXIS)).intValue();
     }
 }

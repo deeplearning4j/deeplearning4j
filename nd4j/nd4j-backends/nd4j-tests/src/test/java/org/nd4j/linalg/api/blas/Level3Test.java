@@ -60,7 +60,7 @@ public class Level3Test extends BaseNd4jTest {
         INDArray array1 = Nd4j.linspace(1, 1000, 1000).reshape(10, 100);
         INDArray array2 = Nd4j.linspace(1, 1000, 1000).reshape(100, 10);
 
-        INDArray array3 = array1.mmul(array2);
+        INDArray array3 = array1.mmul(array2, Nd4j.createUninitialized(new long[]{10, 10}, 'f'));
 
 
         //System.out.println("Array3: " + Arrays.toString(array3.data().asFloat()));

@@ -20,8 +20,8 @@ package org.datavec.local.transforms.functions.data;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.writable.BytesWritable;
 import org.datavec.api.writable.Text;
-import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.function.Function;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.IOException;
 import java.io.InputStream;

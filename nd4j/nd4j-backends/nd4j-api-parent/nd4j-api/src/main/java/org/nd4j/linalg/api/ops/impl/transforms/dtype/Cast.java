@@ -21,13 +21,14 @@ import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -55,24 +56,11 @@ public class Cast extends BaseDynamicTransformOp {
         addArgs();
     }
 
-/*
-    @Override
-    public void setValueFor(Field target, Object value) {
-        if(value == null) {
-            throw new ND4JIllegalStateException("Unable to set field " + target + " using null value!");
-        }
-
-        // FIXME!
-        if (!(value instanceof DataType))
-            return;
-
-        try {
-            target.set(this, (DataType) value);
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
+    public Cast(@NonNull INDArray arg, @NonNull DataType dataType){
+        super(new INDArray[]{arg}, null);
+        this.typeDst = dataType;
+        addArgs();
     }
-    */
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
@@ -141,7 +129,7 @@ public class Cast extends BaseDynamicTransformOp {
         if(arg().dataType().isFPType()){
             return Collections.singletonList(i_v.get(0).castTo(arg().dataType()));
         } else {
-            return Collections.singletonList(f().zerosLike(arg()));
+            return Collections.singletonList(sameDiff.zerosLike(arg()));
         }
     }
 

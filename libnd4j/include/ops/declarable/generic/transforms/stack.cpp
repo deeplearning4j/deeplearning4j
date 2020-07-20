@@ -41,7 +41,7 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
 	// input validation
 	// check whether shapes of all input array are the same
 	for (int i = 0; i < (int) block.width() - 1; ++i)
-		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "STACK op: the shapes of all input arrays must be the same !");
+		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->shapeInfo(), (INPUT_VARIABLE(i+1))->shapeInfo()), 0, "STACK op: the shapes of all input arrays must be the same !");
 
 	REQUIRE_TRUE(dim <= input->rankOf(), 0, "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !", input->shapeOf(), dim);
 
@@ -82,16 +82,16 @@ DECLARE_SHAPE_FN(stack) {
              case 0: {
                  // we're going to return rank 1 here
                  if (block.width() == 1) {
-                     return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, ArrayOptions::dataType(inShapeInfo)));
+                     return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(0, ArrayOptions::dataType(inShapeInfo)));
                  } else {
-                     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShapeInfo), 'c', {(Nd4jLong) block.width(), 0}));
+                     return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShapeInfo), 'c', {(Nd4jLong) block.width(), 0}));
                  }
              }
 	     }
 	 }
 
 	if(rank == 0) {
-	    return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(block.width(), ArrayOptions::dataType(inShapeInfo)));
+	    return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(block.width(), ArrayOptions::dataType(inShapeInfo)));
 	}
 
 	//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
@@ -99,7 +99,7 @@ DECLARE_SHAPE_FN(stack) {
 
 	// insert (int) block.width() at dim position of input shape to get output shape
 	outShape.insert(outShape.begin() + Nd4jLong(dim), (Nd4jLong) block.width());
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape)));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape)));
 }
 
 

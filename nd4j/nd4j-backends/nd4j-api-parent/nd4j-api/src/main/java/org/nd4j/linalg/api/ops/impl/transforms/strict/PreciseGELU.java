@@ -37,6 +37,10 @@ public class PreciseGELU extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
+    public PreciseGELU(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false, true);
+    }
+
     public PreciseGELU() {
     }
 
@@ -72,7 +76,7 @@ public class PreciseGELU extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().geluDerivative(arg(), true).mul(i_v.get(0));
+        SDVariable ret = new PreciseGELUDerivative(sameDiff, arg(), false, true).outputVariable().mul(i_v.get(0));
         return Collections.singletonList(ret);
     }
 

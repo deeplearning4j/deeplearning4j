@@ -19,6 +19,8 @@ package org.deeplearning4j.gradientcheck;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
+import org.deeplearning4j.gradientcheck.sdlosscustom.SDLossMAE;
+import org.deeplearning4j.gradientcheck.sdlosscustom.SDLossMSE;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -41,8 +43,8 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -71,6 +73,11 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
     private static final double DEFAULT_MAX_REL_ERROR = 1e-5;
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void lossFunctionGradientCheck() {
         ILossFunction[] lossFunctions = new ILossFunction[] {new LossBinaryXENT(), new LossBinaryXENT(),
@@ -83,7 +90,8 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                         new LossMultiLabel(), new LossWasserstein(),
-                        new LossSparseMCXENT()
+                        new LossSparseMCXENT(),
+                        new SDLossMAE(), new SDLossMSE()
         };
 
         Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
@@ -119,6 +127,12 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         Activation.TANH, // MultiLabel, doesn't require any special activation, but tanh was used in paper
                         Activation.IDENTITY, // Wasserstein
                         Activation.SOFTMAX, //sparse MCXENT
+                        Activation.SOFTMAX, // SDLossMAE
+                        Activation.SIGMOID, // SDLossMAE
+                        Activation.TANH, // SDLossMAE
+                        Activation.SOFTMAX, // SDLossMSE
+                        Activation.SIGMOID, // SDLossMSE
+                        Activation.TANH //SDLossMSE
         };
 
         int[] nOut = new int[] {1, //xent
@@ -154,6 +168,12 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         10, // MultiLabel
                         2, // Wasserstein
                         4,  //sparse MCXENT
+                        3, // SDLossMAE
+                        3, // SDLossMAE
+                        3, // SDLossMAE
+                        3, // SDLossMSE
+                        3, // SDLossMSE
+                        3, // SDLossMSE
         };
 
         int[] minibatchSizes = new int[] {1, 3};
@@ -196,7 +216,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                     gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                     failed.add(testName + "\t" + "EXCEPTION");
                     continue;
                 }
@@ -363,7 +383,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                     gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                     DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                     failed.add(testName + "\t" + "EXCEPTION");
                     continue;
                 }
@@ -520,6 +540,8 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 break;
             case "LossMAE":
             case "LossMSE":
+            case "SDLossMAE":
+            case "SDLossMSE":
             case "LossL1":
             case "LossL2":
                 ret[1] = Nd4j.rand(labelsShape).muli(2).subi(1);
@@ -671,7 +693,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         gradOK = GradientCheckUtil.checkGradients(net, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
                     } catch (Exception e) {
-                        e.printStackTrace();
+                        log.error("",e);
                         failed.add(testName + "\t" + "EXCEPTION");
                         continue;
                     }

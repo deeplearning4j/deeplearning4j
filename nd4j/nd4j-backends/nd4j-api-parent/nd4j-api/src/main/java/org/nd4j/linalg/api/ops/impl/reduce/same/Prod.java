@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceSameOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.ProdBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -82,6 +83,6 @@ public class Prod extends BaseReduceSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().prodBp(arg(), grad.get(0), keepDims, dimensions));
+        return new ProdBp(sameDiff, arg(), grad.get(0), keepDims, dimensions).outputs();
     }
 }

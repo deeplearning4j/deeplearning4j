@@ -28,8 +28,8 @@ namespace helpers {
     Nd4jLong barnes_row_count(const NDArray* rowP, const NDArray* colP, Nd4jLong N, NDArray& rowCounts) {
 
         int* pRowCounts = reinterpret_cast<int*>(rowCounts.buffer());
-        int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
-        int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
+        int const* pRows = reinterpret_cast<int const*>(rowP->buffer());
+        int const* pCols = reinterpret_cast<int const*>(colP->buffer());
         for (Nd4jLong n = 0; n < N; n++) {
             int begin = pRows[n];//->e<int>(n);
             int end = pRows[n + 1];//rowP->e<int>(n + 1);
@@ -69,7 +69,7 @@ namespace helpers {
         //NDArray symValP = NDArrayFactory::create<double>('c', {numElements});
         //symRowP.insert(symRowP.begin(),0);
         //symRowP(1, {0}) = *rowCounts;
-        int const* pRows = reinterpret_cast<int const*>(rowP->getBuffer());
+        int const* pRows = reinterpret_cast<int const*>(rowP->buffer());
         int* symRowP = reinterpret_cast<int*>(outputRows->buffer());
         symRowP[0] = 0;
         for (Nd4jLong n = 0; n < N; n++)
@@ -79,8 +79,8 @@ namespace helpers {
         int* symColP = reinterpret_cast<int*>(outputCols->buffer());
 //            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n))
 //        outputRows->printBuffer("SymRows are");
-        int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
-        T const* pVals = reinterpret_cast<T const*>(valP->getBuffer());
+        int const* pCols = reinterpret_cast<int const*>(colP->buffer());
+        T const* pVals = reinterpret_cast<T const*>(valP->buffer());
         T* pOutput = reinterpret_cast<T*>(outputVals->buffer());
         //std::vector<int> rowCountsV = rowCounts->getBufferAsVector<int>();
         std::vector<int> offset(N);// = NDArrayFactory::create<int>('c', {N});
@@ -143,8 +143,8 @@ namespace helpers {
 
     template <typename T>
     static void barnes_edge_forces_(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray const* data, NDArray* output) {
-        T const* dataP = reinterpret_cast<T const*>(data->getBuffer());
-        T const* vals  = reinterpret_cast<T const*>(valP->getBuffer());
+        T const* dataP = reinterpret_cast<T const*>(data->buffer());
+        T const* vals  = reinterpret_cast<T const*>(valP->buffer());
         T* outputP = reinterpret_cast<T*>(output->buffer());
         int colCount = data->columns();
 

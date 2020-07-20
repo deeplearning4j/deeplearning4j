@@ -29,12 +29,12 @@
 using namespace simdOps;
 
 template <typename X, typename OpType>
-__global__ void transformStrictSimple(void *x, Nd4jLong *xShapeInfo, int xRank,
-								void *params,
-								void *z, Nd4jLong *zShapeInfo, int zRank,
-								int *allocationPointer,
-								void *reductionPointer,
-								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+__global__ void transformStrictSimple(const void *x, const Nd4jLong *xShapeInfo, int xRank,
+                                      void *params,
+								      void *z, const Nd4jLong *zShapeInfo, int zRank,
+								      int *allocationPointer,
+								      void *reductionPointer,
+                                      const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
 	functions::transform::TransformStrict<X>::template transformCuda<OpType>(x,xShapeInfo,params,z,zShapeInfo,allocationPointer,reductionPointer,tadShapeInfo, tadOffsets);
 }
@@ -44,7 +44,13 @@ namespace functions {
     namespace transform {
 
         template<typename X>
-        _CUDA_H void TransformStrict<X>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+        _CUDA_H void TransformStrict<X>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream,
+                                                                const int opNum,
+                                                                const void *x, const Nd4jLong *xShape, int xRank,
+                                                                void *extraParams,
+                                                                void *z, const Nd4jLong *zShape, int zRank,
+                                                                int *allocationPointer, void *reductionPointer,
+                                                                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 			DISPATCH_BY_OPNUM_T(intermediateShaped, PARAMS(launchDims, stream, x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), TRANSFORM_STRICT_OPS);
 
             DEBUG_KERNEL(stream, opNum);
@@ -53,13 +59,13 @@ namespace functions {
 
         template<typename X>
         template <typename OpType>
-        __device__ void TransformStrict<X>::transformCuda(void *vx, Nd4jLong *xShapeInfo,
+        __device__ void TransformStrict<X>::transformCuda(const void *vx, const Nd4jLong *xShapeInfo,
         												void *vparams,
-        												void *vz, Nd4jLong *zShapeInfo,
+        												void *vz, const Nd4jLong *zShapeInfo,
         												int *allocationPointer, void *vreductionPointer,
-        												Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                                          const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
-        	auto x = static_cast<X*>(vx);
+        	auto x = static_cast<const X*>(vx);
 		    auto z = static_cast<X*>(vz);
 		    auto params = static_cast<X*>(vparams);
 		    auto reductionPointer = static_cast<X*>(vreductionPointer);
@@ -114,7 +120,13 @@ namespace functions {
 
 		template<typename X>
 		template <typename OpType>
-		_CUDA_H void TransformStrict<X>::intermediateShaped(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+		_CUDA_H void TransformStrict<X>::intermediateShaped(dim3 launchDims, cudaStream_t *stream,
+                                                            const void *x, const Nd4jLong *xShape, int xRank,
+                                                            void *extraParams,
+                                                            void *z, const Nd4jLong *zShape, int zRank,
+                                                            int *allocationPointer, void *reductionPointer,
+                                                            const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
+
 			transformStrictSimple<X, OpType><<<launchDims.x, launchDims.x, launchDims.z, *stream>>>(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
             sd::DebugHelper::checkErrorCode(stream, "transformStrict(...) failed");
 		}

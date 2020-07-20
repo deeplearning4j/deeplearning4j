@@ -80,7 +80,7 @@ namespace sd {
             if (block.width() > 1) {
                 dataType = INPUT_VARIABLE(1)->dataType();
             } else if (block.numT() > 0) {
-                dataType = Environment::getInstance()->defaultFloatDataType();
+                dataType = Environment::getInstance().defaultFloatDataType();
             } else if (block.numI() > 0) {
                 dataType = sd::DataType::INT32;
             } else if (block.numB() > 0) {

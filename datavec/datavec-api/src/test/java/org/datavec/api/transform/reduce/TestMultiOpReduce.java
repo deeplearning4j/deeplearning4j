@@ -29,6 +29,7 @@ import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.*;
 
@@ -38,7 +39,7 @@ import static org.junit.Assert.fail;
 /**
  * Created by Alex on 21/03/2016.
  */
-public class TestMultiOpReduce {
+public class TestMultiOpReduce extends BaseND4JTest {
 
     @Test
     public void testMultiOpReducerDouble() {

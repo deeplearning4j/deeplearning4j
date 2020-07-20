@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,14 +17,11 @@
 
 package org.deeplearning4j.rl4j.learning;
 
-import java.util.Arrays;
 import org.junit.Test;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -32,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 public class HistoryProcessorTest {
 
     @Test
-    public void testHistoryProcessor() throws Exception {
+    public void testHistoryProcessor() {
         HistoryProcessor.Configuration conf = HistoryProcessor.Configuration.builder()
                 .croppingHeight(2).croppingWidth(2).rescaledHeight(2).rescaledWidth(2).build();
         IHistoryProcessor hp = new HistoryProcessor(conf);
@@ -43,8 +41,6 @@ public class HistoryProcessorTest {
         hp.add(a);
         INDArray[] h = hp.getHistory();
         assertEquals(4, h.length);
-//        System.out.println(Arrays.toString(a.shape()));
-//        System.out.println(Arrays.toString(h[0].shape()));
         assertEquals(           1, h[0].shape()[0]);
         assertEquals(a.shape()[0], h[0].shape()[1]);
         assertEquals(a.shape()[1], h[0].shape()[2]);

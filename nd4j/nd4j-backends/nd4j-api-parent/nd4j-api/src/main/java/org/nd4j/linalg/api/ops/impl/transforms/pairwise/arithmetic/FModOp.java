@@ -22,6 +22,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.FloorModBpOp;
 
 import java.util.List;
 
@@ -83,6 +84,6 @@ public class FModOp extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return f().floorModBp(larg(), rarg(), f1.get(0));
+        return new FloorModBpOp(sameDiff, larg(), rarg(), f1.get(0)).outputs();
     }
 }

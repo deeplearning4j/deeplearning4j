@@ -91,7 +91,7 @@ int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const
 
     PointersManager manager(context, "in_top_k");
 
-    const auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(predictions->getShapeInfo(), {1});
+    const auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(predictions->shapeInfo(), {1});
 
     const int threadsPerBlock = MAX_NUM_THREADS;
     const int blocksPerGrid = static_cast<int>(packX.numberOfTads());
@@ -101,7 +101,7 @@ int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const
     const auto yType = targets->dataType();
 
     NDArray::prepareSpecialUse({output}, {predictions, targets});
-    BUILD_DOUBLE_SELECTOR(xType, yType, inTopKCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), predictions->getSpecialBuffer(), predictions->getSpecialShapeInfo(), targets->getSpecialBuffer(), targets->getSpecialShapeInfo(), output->getSpecialBuffer(), output->getSpecialShapeInfo(), packX.specialShapeInfo(), packX.specialOffsets(), k), FLOAT_TYPES, INDEXING_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, inTopKCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), predictions->specialBuffer(), predictions->specialShapeInfo(), targets->specialBuffer(), targets->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), packX.specialShapeInfo(), packX.specialOffsets(), k), FLOAT_TYPES, INDEXING_TYPES);
     NDArray::registerSpecialUse({output}, {predictions, targets});
 
     manager.synchronize();
@@ -110,10 +110,10 @@ int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const
 }
 
     template <typename X, typename Y>
-    static _CUDA_G void topValuesMover(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, void *vi, Nd4jLong *iTadShapeInfo, Nd4jLong *iTadOffsets, void *vz, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets, Nd4jLong tadLength, int numTads, int k) {
+    static _CUDA_G void topValuesMover(void const* vx, Nd4jLong const* xTadShapeInfo, Nd4jLong const* xTadOffsets, void const* vi, Nd4jLong const* iTadShapeInfo, Nd4jLong const* iTadOffsets, void *vz, Nd4jLong const* zTadShapeInfo, Nd4jLong const* zTadOffsets, Nd4jLong tadLength, int numTads, int k) {
         for (int t = blockIdx.x; t < numTads; t += gridDim.x) {
-            auto x = reinterpret_cast<X*>(vx) + xTadOffsets[t];
-            auto i = reinterpret_cast<Y*>(vi) + iTadOffsets[t];
+            auto x = reinterpret_cast<X const*>(vx) + xTadOffsets[t];
+            auto i = reinterpret_cast<Y const*>(vi) + iTadOffsets[t];
             auto z = reinterpret_cast<X*>(vz) + zTadOffsets[t];
 
             for (int e = threadIdx.x; e < k; e += blockDim.x) {
@@ -126,7 +126,7 @@ int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const
 
 
     template <typename X, typename Y>
-    static _CUDA_G void indicesAlongDimension(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, void *vi, Nd4jLong *iTadShapeInfo, Nd4jLong *iTadOffsets, void *vz, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets, Nd4jLong tadLength, int numTads, int k, int scanWidth, bool needSort) {
+    static _CUDA_G void indicesAlongDimension(void const* vx, Nd4jLong const* xTadShapeInfo, Nd4jLong const* xTadOffsets, void* vi, Nd4jLong const* iTadShapeInfo, Nd4jLong const* iTadOffsets, void *vz, Nd4jLong const* zTadShapeInfo, Nd4jLong const* zTadOffsets, Nd4jLong tadLength, int numTads, int k, int scanWidth, bool needSort) {
         extern __shared__ char _shmem[];
 
         X* tempValues = reinterpret_cast<X*>(_shmem) + threadIdx.x * scanWidth;
@@ -138,8 +138,8 @@ int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const
         __syncthreads();
 
         for (int t = blockIdx.x; t < numTads; t += gridDim.x) {
-            auto x = reinterpret_cast<X *>(vx) + xTadOffsets[t];
-            auto i = reinterpret_cast<Y *>(vi) + iTadOffsets[t];
+            auto x = reinterpret_cast<X const*>(vx) + xTadOffsets[t];
+            auto i = reinterpret_cast<Y*>(vi) + iTadOffsets[t];
             auto z = reinterpret_cast<X *>(vz) + zTadOffsets[t];
 
             // we'll do multiple reads here
@@ -243,9 +243,9 @@ int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const
     template <typename X, typename Y>
     static int topKFunctor_(sd::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
 
-        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {input->rankOf() - 1});
-        auto packI = ConstantTadHelper::getInstance()->tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
-        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(values->shapeInfo(), {input->rankOf() - 1});
+        auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {input->rankOf() - 1});
+        auto packI = ConstantTadHelper::getInstance().tadForDimensions(indices->shapeInfo(), {input->rankOf() - 1});
+        auto packZ = ConstantTadHelper::getInstance().tadForDimensions(values->shapeInfo(), {input->rankOf() - 1});
 
         auto tadLength = shape::length(packX.primaryShapeInfo());
 
@@ -254,13 +254,13 @@ int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const
             input->applyIndexReduce(indexreduce::IndexMax, *indices, {input->rankOf() - 1});
 
             // copy values on specified indices
-            topValuesMover<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input->getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), indices->specialBuffer(), packI.platformShapeInfo(), packI.platformOffsets(), values->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), tadLength, packX.numberOfTads(), k);
+            topValuesMover<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), indices->specialBuffer(), packI.platformShapeInfo(), packI.platformOffsets(), values->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), tadLength, packX.numberOfTads(), k);
         } else {
             int scanWidth = 1;
             int numTreads = 256;
             int shMemSize = (numTreads * sizeof(X) * scanWidth) + (numTreads * sizeof(Y) * scanWidth) + 512;
 
-            indicesAlongDimension<X,Y><<<256, numTreads, shMemSize, *context->getCudaStream()>>>(input->getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), indices->specialBuffer(), packI.platformShapeInfo(), packI.platformOffsets(), values->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), tadLength, packX.numberOfTads(), k, scanWidth, needSort);
+            indicesAlongDimension<X,Y><<<256, numTreads, shMemSize, *context->getCudaStream()>>>(input->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), indices->specialBuffer(), packI.platformShapeInfo(), packI.platformOffsets(), values->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), tadLength, packX.numberOfTads(), k, scanWidth, needSort);
         }
 
         return Status::OK();

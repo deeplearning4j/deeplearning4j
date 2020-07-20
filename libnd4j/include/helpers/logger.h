@@ -32,9 +32,9 @@
 
 #ifndef __CUDA_ARCH__
 
-#define nd4j_debug(FORMAT, ...) if (sd::Environment::getInstance()->isDebug() && sd::Environment::getInstance()->isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
-#define nd4j_logger(FORMAT, ...) if (sd::Environment::getInstance()->isDebug() && sd::Environment::getInstance()->isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
-#define nd4j_verbose(FORMAT, ...) if (sd::Environment::getInstance()->isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_debug(FORMAT, ...) if (sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_logger(FORMAT, ...) if (sd::Environment::getInstance().isDebug() && sd::Environment::getInstance().isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
+#define nd4j_verbose(FORMAT, ...) if (sd::Environment::getInstance().isVerbose()) sd::Logger::info(FORMAT, __VA_ARGS__);
 #define nd4j_printf(FORMAT, ...) sd::Logger::info(FORMAT, __VA_ARGS__);
 #define nd4j_printv(FORMAT, VECTOR)     sd::Logger::printv(FORMAT, VECTOR);
 

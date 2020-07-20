@@ -17,6 +17,10 @@ option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OF
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 
 set(CMAKE_CXX_STANDARD 11)
+
+
+include(GenCompilation)
+
 if (SD_CUDA)
     enable_language(CUDA)
     set(CMAKE_CUDA_STANDARD 11)
@@ -49,12 +53,12 @@ elseif(WIN32)
         set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
     else()
-        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -fmax-errors=2 -D_RELEASE=true")
-        set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC -fmax-errors=2")
+        set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+        set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC")
     endif()
 else()
-    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -fmax-errors=2 -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC -fmax-errors=2")
+    set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
 
     if (SD_CPU)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
@@ -127,6 +131,23 @@ if(NOT SD_CUDA)
     endif()
 endif()
 
+#arm-compute entry
+if(${HELPERS_armcompute})
+ find_package(ARMCOMPUTE REQUIRED)
+
+ if(ARMCOMPUTE_FOUND)
+    message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
+    set(HAVE_ARMCOMPUTE 1)
+    # Add preprocessor definition for ARM Compute NEON 
+    add_definitions(-DARMCOMPUTENEON_ENABLED)
+    #build our library with neon support
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
+    include_directories(${ARMCOMPUTE_INCLUDE})
+    message("----${ARMCOMPUTE_INCLUDE}---")
+ endif()
+
+endif()
+ 
 
 # new mkl-dnn entry
 if (${HELPERS_mkldnn})
@@ -167,10 +188,7 @@ if (${HELPERS_cudnn})
 
     set(CUDNN_ROOT_DIR "" CACHE PATH "Folder contains NVIDIA cuDNN")
 
-    # FIXME: we don't want static library in master
     SET(CUDNN_LIBNAME "cudnn")
-    SET(CULIBOS_LIBNAME "culibos")
-
     find_path(CUDNN_INCLUDE_DIR cudnn.h
             HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
             PATH_SUFFIXES cuda/include include)
@@ -179,14 +197,14 @@ if (${HELPERS_cudnn})
             HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
             PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
 
-    find_library(CULIBOS_LIBRARY ${CULIBOS_LIBNAME}
-            HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
-            PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
+    #find_library(CULIBOS_LIBRARY ${CULIBOS_LIBNAME}
+    #        HINTS ${CUDNN_ROOT_DIR} ${CUDA_TOOLKIT_ROOT_DIR}
+    #        PATH_SUFFIXES lib lib64 cuda/lib cuda/lib64 lib/x64)
 
 
     if (CUDNN_LIBRARY)
         set(HAVE_CUDNN true)
-        set(CUDNN ${CUDNN_LIBRARY} ${CULIBOS_LIBRARY})
+        set(CUDNN ${CUDNN_LIBRARY})
     else()
         message(FATAL_ERROR "Unable to find cuDNN")
     endif()
@@ -221,21 +239,16 @@ include_directories(${FLATBUFFERS_PATH}/include)
 configure_file(include/config.h.in include/config.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 
-if (NOT DEFINED ENV{CLION_IDE})
-    message("NOT CLION")
-    include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-    add_subdirectory(blas)
-    if(SD_BUILD_TESTS)
-        # tests are always compiled with all ops included
-        set(SD_ALL_OPS true)
-        set(SD_BUILD_MINIFIER true)
-        add_subdirectory(tests_cpu)
-    endif()
-endif ()
 
-if ($ENV{CLION_IDE})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_subdirectory(blas)
+if(SD_BUILD_TESTS)
+    # tests are always compiled with all ops included
+    set(SD_ALL_OPS true)
+    set(SD_BUILD_MINIFIER true)
     add_subdirectory(tests_cpu)
-endif ()
+endif()
+
 
 if (MSVC_DEV)
     set(SD_BUILD_MINIFIER false)
@@ -256,7 +269,6 @@ set(CPACK_PACKAGE_VERSION_MINOR "8")
 set(CPACK_PACKAGE_VERSION_PATCH "0")
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "libnd4j")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 
 # Determine distribution and release — may require redhat-lsb-core installed on CentOS / RH

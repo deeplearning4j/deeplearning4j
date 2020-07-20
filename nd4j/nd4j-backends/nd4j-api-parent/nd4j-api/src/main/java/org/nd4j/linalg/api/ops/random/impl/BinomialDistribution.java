@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.random.impl;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,6 +43,11 @@ public class BinomialDistribution extends BaseRandomOp {
         this.trials = trials;
         this.probability = probability;
         this.extraArgs = new Object[] {(double) this.trials, this.probability};
+    }
+
+    public BinomialDistribution(SameDiff sd, int trials, double probability, DataType dataType, long[] shape){
+        this(sd, trials, probability, shape);
+        super.dataType = dataType;
     }
 
     public BinomialDistribution(int trials, double probability, DataType dt, long[] shape){

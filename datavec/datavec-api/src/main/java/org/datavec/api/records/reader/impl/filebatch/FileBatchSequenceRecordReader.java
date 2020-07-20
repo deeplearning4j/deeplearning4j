@@ -24,8 +24,8 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
-import org.nd4j.api.loader.FileBatch;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.loader.FileBatch;
+import org.nd4j.common.base.Preconditions;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;

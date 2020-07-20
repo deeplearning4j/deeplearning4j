@@ -27,7 +27,7 @@
 #include <mutex>
 #include <vector>
 #include <array/ShapeDescriptor.h>
-#include <array/ConstantDataBuffer.h>
+#include <array/ConstantShapeBuffer.h>
 #include <memory/Workspace.h>
 #include <system/op_boilerplate.h>
 
@@ -35,36 +35,34 @@ namespace sd {
 
     class ND4J_EXPORT ConstantShapeHelper {
     private:
-        static ConstantShapeHelper *_INSTANCE;
-
         std::mutex _mutex;
-        std::vector<MAP_IMPL<ShapeDescriptor, ConstantDataBuffer>> _cache;
+        std::vector<MAP_IMPL<ShapeDescriptor, ConstantShapeBuffer>> _cache;
 
 
         ConstantShapeHelper();
     public:
         ~ConstantShapeHelper() = default;
 
-        static ConstantShapeHelper* getInstance();
+        static ConstantShapeHelper & getInstance();
 
 
-        ConstantDataBuffer bufferForShapeInfo(sd::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
-        ConstantDataBuffer bufferForShapeInfo(const ShapeDescriptor &descriptor);
-        ConstantDataBuffer bufferForShapeInfo(const Nd4jLong *shapeInfo);
-        ConstantDataBuffer bufferForShapeInfo(const sd::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
-        ConstantDataBuffer createShapeInfoWithUnitiesForBroadcast(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, sd::memory::Workspace* workspace = nullptr, const std::vector<int> dimensions = {});
+      ConstantShapeBuffer& bufferForShapeInfo(sd::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
+      ConstantShapeBuffer& bufferForShapeInfo(const ShapeDescriptor &descriptor);
+      ConstantShapeBuffer& bufferForShapeInfo(const Nd4jLong *shapeInfo);
+      ConstantShapeBuffer& bufferForShapeInfo(sd::DataType dataType, char order, int rank, const Nd4jLong* shape);
+      ConstantShapeBuffer& createShapeInfoWithUnitiesForBroadcast(const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, sd::memory::Workspace* workspace = nullptr, const std::vector<int> &dimensions = {});
 
 
-        Nd4jLong* emptyShapeInfo(const sd::DataType dataType);
-        Nd4jLong* scalarShapeInfo(const sd::DataType dataType);
-        Nd4jLong* vectorShapeInfo(const Nd4jLong length, const sd::DataType dataType);
-        Nd4jLong* createShapeInfo(const ShapeDescriptor &descriptor);
-        Nd4jLong* createShapeInfo(const sd::DataType dataType, const char order, const std::vector<Nd4jLong> &shape);
-        Nd4jLong* createShapeInfo(const sd::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
-        Nd4jLong* createShapeInfo(const sd::DataType dataType, const Nd4jLong* shapeInfo);
+        const Nd4jLong* emptyShapeInfo(sd::DataType dataType);
+        const Nd4jLong* scalarShapeInfo(sd::DataType dataType);
+        const Nd4jLong* vectorShapeInfo(Nd4jLong length, sd::DataType dataType);
+        const Nd4jLong* createShapeInfo(const ShapeDescriptor &descriptor);
+        const Nd4jLong* createShapeInfo(sd::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
+        const Nd4jLong* createShapeInfo(sd::DataType dataType, char order, int rank, const Nd4jLong* shape);
+        const Nd4jLong* createShapeInfo(sd::DataType dataType, const Nd4jLong* shapeInfo);
 
-        Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, sd::memory::Workspace *workspace);
-        Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, bool destroyOriginal = true);
+        const Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, sd::memory::Workspace *workspace);
+        const Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, bool destroyOriginal = true);
 
         bool checkBufferExistenceForShapeInfo(ShapeDescriptor &descriptor);
 

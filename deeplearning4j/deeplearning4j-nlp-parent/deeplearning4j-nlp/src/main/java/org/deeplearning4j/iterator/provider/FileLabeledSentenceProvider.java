@@ -19,9 +19,9 @@ package org.deeplearning4j.iterator.provider;
 import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.iterator.LabeledSentenceProvider;
-import org.nd4j.linalg.collection.CompactHeapStringList;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.collection.CompactHeapStringList;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.MathUtils;
 
 import java.io.File;
 import java.io.IOException;

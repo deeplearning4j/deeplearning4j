@@ -29,10 +29,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 /**
- * @deprecated Use {@link org.nd4j.util.ReflectionUtils}
+ * @deprecated Use {@link org.nd4j.common.util.ReflectionUtils}
  */
 @Deprecated
-public class ReflectionUtils extends org.nd4j.util.ReflectionUtils {
+public class ReflectionUtils extends org.nd4j.common.util.ReflectionUtils {
 
     private static final Class<?>[] EMPTY_ARRAY = new Class[] {};
     private static SerializationFactory serialFactory = null;

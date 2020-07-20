@@ -22,7 +22,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.SpTree;
@@ -43,8 +42,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.legacy.AdaGrad;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -687,9 +685,7 @@ public class BarnesHutTsne implements Model {
      * @throws IOException
      */
     public void saveAsFile(List<String> labels, String path) throws IOException {
-        BufferedWriter write = null;
-        try {
-            write = new BufferedWriter(new FileWriter(new File(path)));
+        try (BufferedWriter write = new BufferedWriter(new FileWriter(new File(path)))) {
             for (int i = 0; i < Y.rows(); i++) {
                 if (i >= labels.size())
                     break;
@@ -711,17 +707,11 @@ public class BarnesHutTsne implements Model {
 
             }
             write.flush();
-            write.close();
-        } finally {
-            if (write != null)
-                write.close();
         }
     }
 
     public void saveAsFile(String path) throws IOException {
-        BufferedWriter write = null;
-        try {
-            write = new BufferedWriter(new FileWriter(new File(path)));
+        try (BufferedWriter write = new BufferedWriter(new FileWriter(new File(path)))) {
             for (int i = 0; i < Y.rows(); i++) {
                 StringBuilder sb = new StringBuilder();
                 INDArray wordVector = Y.getRow(i);
@@ -734,10 +724,6 @@ public class BarnesHutTsne implements Model {
                 write.write(sb.toString());
             }
             write.flush();
-            write.close();
-        } finally {
-            if (write != null)
-                write.close();
         }
     }
     /**
@@ -1069,4 +1055,9 @@ public class BarnesHutTsne implements Model {
 
     }
 
+
+    @Override
+    public void close(){
+        //No-op
+    }
 }

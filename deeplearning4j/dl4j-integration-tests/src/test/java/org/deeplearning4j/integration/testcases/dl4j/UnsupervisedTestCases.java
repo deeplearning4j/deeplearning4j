@@ -20,7 +20,6 @@ package org.deeplearning4j.integration.testcases.dl4j;
 
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.integration.ModelType;
 import org.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -30,10 +29,11 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,12 +72,12 @@ public class UnsupervisedTestCases {
                 return new NeuralNetConfiguration.Builder()
                         .dataType(DataType.FLOAT)
                         .seed(12345)
-                        .updater(new Adam(0.05))
+                        .updater(new Adam(1e-3))
                         .weightInit(WeightInit.XAVIER)
                         .l2(1e-4)
                         .list()
                         .layer(0, new VariationalAutoencoder.Builder()
-                                .activation(Activation.LEAKYRELU)
+                                .activation(Activation.TANH)
                                 .encoderLayerSizes(256, 256)                    //2 encoder layers, each of size 256
                                 .decoderLayerSizes(256, 256)                    //2 decoder layers, each of size 256
                                 .pzxActivationFunction(Activation.IDENTITY)     //p(z|data) activation function

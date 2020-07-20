@@ -36,10 +36,14 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     auto y = INPUT_VARIABLE(1);
     auto z = OUTPUT_VARIABLE(0);
 
-    const int iSize = (int) block.getIArguments()->size();
+    int iSize = (int) block.getIArguments()->size();
     int transX = iSize > 0 ? INT_ARG(0) : 0;
     int transY = iSize > 1 ? INT_ARG(1) : 0;
     const int transZ = iSize > 2 ? INT_ARG(2) : 0;
+    // optional use alpha nad beta
+    iSize = (int)block.getTArguments()->size();
+    double alpha = iSize > 0 ? T_ARG(0) : 1.0;
+    double beta = iSize > 1 ? T_ARG(1) : 0.0;
 
     const int xRank = x->rankOf();
     const int yRank = y->rankOf();
@@ -77,7 +81,7 @@ CUSTOM_OP_IMPL(matmul, 2, 1, false, 0, -2) {
     }
     // ******* end of input validation ******* //
 
-    MmulHelper::matmul(x, y, z, transX, transY);
+    MmulHelper::matmul(x, y, z, transX, transY, alpha, beta);
 
     return Status::OK();
 }
@@ -127,16 +131,16 @@ DECLARE_SHAPE_FN(matmul) {
     // we just pick the higher data type out of X and Y
     auto dtypeZ = dtypeX > dtypeY ? dtypeX : dtypeY;
 
-    auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtypeZ, zOrder, zShapeOnly);
+    auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtypeZ, zOrder, zShapeOnly);
     return SHAPELIST(newShape);
 }
 
 //////////////////////////////////////////////////////////////////////
 DECLARE_TYPES(matmul) {
     getOpDescriptor()
-            ->setAllowedInputTypes(0, {ALL_FLOATS})
-            ->setAllowedInputTypes(1, {ALL_FLOATS})
-            ->setAllowedOutputTypes(0, {ALL_FLOATS});
+            ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+            ->setAllowedInputTypes(1, {ALL_FLOATS, ALL_INTS})
+            ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS});
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -147,10 +151,16 @@ CUSTOM_OP_IMPL(matmul_bp, 3, 2, false, 0, -2) {
     auto dldx = OUTPUT_VARIABLE(0);
     auto dldy = OUTPUT_VARIABLE(1);
 
-    const int iSize = (int) block.getIArguments()->size();
+    int iSize = (int) block.getIArguments()->size();
     int transX = iSize > 0 ? INT_ARG(0) : 0;
     int transY = iSize > 1 ? INT_ARG(1) : 0;
     const int transZ = iSize > 2 ? INT_ARG(2) : 0;
+
+    // optional use alpha nad beta
+    iSize = (int)block.getTArguments()->size();
+
+    double alpha = iSize > 0 ? T_ARG(0) : 1.0;
+    double beta = iSize > 1 ? T_ARG(1) : 0.0;
 
 /*
 In: x=[a,b], y=[b,c]
@@ -164,8 +174,8 @@ F   F   T   [a,b]   [b,c]   [c,a]   [c,a]
 
 
     sd::ops::matmul op;
-    op.execute({eps, y}, {dldx}, {}, {transZ, !transY, transX}, {});
-    op.execute({x, eps}, {dldy}, {}, {!transX, transZ, transY}, {});
+    op.execute({eps, y}, {dldx}, {alpha, beta}, {transZ, !transY, transX}, {});
+    op.execute({x, eps}, {dldy}, {alpha, beta}, {!transX, transZ, transY}, {});
 
     return Status::OK();
 }

@@ -36,7 +36,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
-__global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jLong* zShapeInfo, const int axis) {
+__global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int axis) {
 
     T* z = reinterpret_cast<T*>(vz);
     __shared__ Nd4jLong zLen, totalThreads;
@@ -53,7 +53,7 @@ __global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jL
 
     int coords[MAX_RANK];
 
-    for (uint64_t i = tid; i < zLen; i += totalThreads) {
+    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
         shape::index2coords(i, zShapeInfo, coords);
 
         const auto zOffset = shape::getOffset(zShapeInfo, coords);
@@ -76,11 +76,10 @@ __global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jL
 ///////////////////////////////////////////////////////////////////
 template<typename T>
 __host__ static void concatCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
-                                        void* pVx, void* pxShapeInfo, void* vz, Nd4jLong* zShapeInfo, const int axis) {
+                                        void* pVx, void* pxShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int axis) {
 
     concatCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(pVx, pxShapeInfo, vz, zShapeInfo, axis);
 }
-BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* vz, Nd4jLong* zShapeInfo, const int axis), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray& output, const int axis) {
@@ -102,11 +101,11 @@ void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inAr
 
     if(luckCase1) {     // for example {1,10} + {2,10} + {3,10} = {6, 10} order c; or {10,1} + {10,2} + {10,3} = {10, 6} order f
 
-        void* z = static_cast<int8_t*>(output.getSpecialBuffer());
+        void* z = static_cast<int8_t*>(output.specialBuffer());
 
         for (uint i = 0; i < numOfInArrs; ++i) {
             const auto memAmountToCopy = inArrs[i]->lengthOf() * sizeofT;
-            cudaMemcpyAsync(z, static_cast<int8_t*>(inArrs[i]->getSpecialBuffer()), memAmountToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
+            cudaMemcpyAsync(z, reinterpret_cast<const int8_t*>(inArrs[i]->specialBuffer()), memAmountToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
             z = static_cast<int8_t*>(z) + memAmountToCopy;
         }
 
@@ -134,7 +133,7 @@ void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inAr
     //         if(!areInputsContin || !allSameOrder)
     //             break;
 
-    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->getShapeInfo());
+    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, inArrs[i]->shapeInfo());
     //     }
     // }
 
@@ -142,16 +141,16 @@ void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inAr
 
     // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and output array
 
-    //     const auto zStep = shape::strideOverContigAxis(axis, output.getShapeInfo());
+    //     const auto zStep = shape::strideOverContigAxis(axis, output.shapeInfo());
 
     //     for (uint i = 0; i < output.lengthOf() / output.sizeAt(axis); ++i) {
 
     //         const auto iShift = i * sizeofT;
-    //         void* z = static_cast<int8_t*>(output.getSpecialBuffer()) + zStep * iShift;
+    //         void* z = static_cast<int8_t*>(output.specialBuffer()) + zStep * iShift;
 
     //         for (uint j = 0; j < numOfInArrs; ++j) {
     //             const auto xDim = inArrs[j]->sizeAt(axis);
-    //             void* x = static_cast<int8_t*>(inArrs[j]->getSpecialBuffer()) + strideOfContigStride[j] * iShift;
+    //             void* x = static_cast<int8_t*>(inArrs[j]->specialBuffer()) + strideOfContigStride[j] * iShift;
     //             const auto memSizeToCopy = xDim * sizeofT;
     //             cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
     //             z = static_cast<int8_t*>(z) + memSizeToCopy;
@@ -163,17 +162,17 @@ void concat(sd::LaunchContext * context, const std::vector<const NDArray*>& inAr
     // }
     // else {      // general (slower) case
 
-        const int threadsPerBlock = 256;
-        const int blocksPerGrid = 512;
-        const int sharedMem = 512;
+        const int threadsPerBlock = MAX_NUM_THREADS / 2;
+        const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+        const int sharedMem = 256;
 
         // prepare arrays of pointers on buffers and shapes
-        std::vector<void*> hInBuffers(numOfInArrs);
-        std::vector<Nd4jLong*> hInShapeInfo(numOfInArrs);
+        std::vector<const void*> hInBuffers(numOfInArrs);
+        std::vector<const Nd4jLong*> hInShapeInfo(numOfInArrs);
 
         for(int i = 0; i < numOfInArrs; ++i) {
-            hInBuffers[i]   = inArrs[i]->getSpecialBuffer();
-            hInShapeInfo[i] = inArrs[i]->getSpecialShapeInfo();
+            hInBuffers[i]   = inArrs[i]->specialBuffer();
+            hInShapeInfo[i] = inArrs[i]->specialShapeInfo();
         }
 
         PointersManager manager(context, "helpers::concat");

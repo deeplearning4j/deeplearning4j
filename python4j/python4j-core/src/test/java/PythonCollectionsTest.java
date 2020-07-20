@@ -1,0 +1,62 @@
+/*******************************************************************************
+ * Copyright (c) 2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+
+import org.nd4j.python4j.PythonException;
+import org.nd4j.python4j.PythonObject;
+import org.nd4j.python4j.PythonTypes;
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.*;
+
+
+@javax.annotation.concurrent.NotThreadSafe
+public class PythonCollectionsTest {
+
+
+    @Test
+    public void testPythonDictFromMap() throws PythonException {
+        Map map = new HashMap();
+        map.put("a", 1);
+        map.put(1, "a");
+        map.put("list1", Arrays.asList(1, 2.0, 3, 4f));
+        Map innerMap = new HashMap();
+        innerMap.put("b", 2);
+        innerMap.put(2, "b");
+        map.put("innermap", innerMap);
+        map.put("list2", Arrays.asList(4, "5", innerMap, false, true));
+        PythonObject dict = PythonTypes.convert(map);
+        Map map2 = PythonTypes.DICT.toJava(dict);
+        Assert.assertEquals(map.toString(), map2.toString());
+    }
+
+    @Test
+    public void testPythonListFromList() throws PythonException{
+        List<Object> list = new ArrayList<>();
+        list.add(1);
+        list.add("2");
+        list.add(Arrays.asList("a", 1.0, 2f, 10, true, false));
+        Map map = new HashMap();
+        map.put("a", 1);
+        map.put(1, "a");
+        map.put("list1", Arrays.asList(1, 2.0, 3, 4f));
+        list.add(map);
+        PythonObject dict = PythonTypes.convert(list);
+        List list2 = PythonTypes.LIST.toJava(dict);
+        Assert.assertEquals(list.toString(), list2.toString());
+    }
+}

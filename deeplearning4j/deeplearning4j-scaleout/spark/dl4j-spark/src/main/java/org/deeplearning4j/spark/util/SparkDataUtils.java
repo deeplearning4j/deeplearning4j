@@ -26,8 +26,8 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.datavec.spark.util.SerializableHadoopConfig;
-import org.deeplearning4j.api.loader.impl.RecordReaderFileBatchLoader;
-import org.nd4j.api.loader.FileBatch;
+import org.deeplearning4j.core.loader.impl.RecordReaderFileBatchLoader;
+import org.nd4j.common.loader.FileBatch;
 
 import java.io.*;
 import java.util.*;

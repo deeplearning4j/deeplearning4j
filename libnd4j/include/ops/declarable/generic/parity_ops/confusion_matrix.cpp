@@ -45,8 +45,8 @@ namespace sd {
                 weights = INPUT_VARIABLE(2);
                 REQUIRE_TRUE(weights->isSameShape(predictions),0, "CONFUSION_MATRIX: Weights and predictions should have equal shape");
             }
-            auto output = OUTPUT_VARIABLE(0);
-            output->assign(0.);
+            auto output = OUTPUT_NULLIFIED(0);
+
             int minPrediction = predictions->reduceNumber(reduce::Min).e<int>(0);
             int minLabel = labels->reduceNumber(reduce::Min).e<int>(0);
 
@@ -64,11 +64,7 @@ namespace sd {
         DECLARE_SHAPE_FN(confusion_matrix) {
             auto labels = INPUT_VARIABLE(0);
             auto predictions = INPUT_VARIABLE(1);
-            auto dtype = block.dataType();
-            dtype = sd::DataType::INT64; // dtype - should be a param with int argument
-            if (block.numI() > 1)
-                dtype = (sd::DataType)INT_ARG(1);
-
+            auto dtype = block.numD() ? D_ARG(0) : sd::DataType::INT64;
             int numClasses = 0;
 
             if (block.getIArguments()->size() > 0) {
@@ -81,7 +77,7 @@ namespace sd {
             }
             
             std::array<Nd4jLong, 2> shape = {{numClasses,numClasses}};
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', 2, shape.data());
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', 2, shape.data());
             return SHAPELIST(newShape);
         }
     }

@@ -54,6 +54,11 @@ public class LSTMGradientCheckTests extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testLSTMBasicMultiLayer() {
         //Basic test of GravesLSTM layer

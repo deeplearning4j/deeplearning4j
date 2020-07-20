@@ -17,6 +17,7 @@
 package org.nd4j.linalg.compression;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,7 +45,6 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
-@Ignore
 @Slf4j
 @RunWith(Parameterized.class)
 public class CompressionTests extends BaseNd4jTest {
@@ -137,40 +137,6 @@ public class CompressionTests extends BaseNd4jTest {
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compressed);
 
         assertEquals(exp, decomp);
-    }
-
-
-    @Test
-    public void testThresholdCompressionZ() {
-        INDArray initial = Nd4j.create(1, 16384);
-        for (int i = 0; i < 96; i++)
-            initial.putScalar(i * 20, 1.0f);
-
-
-        INDArray exp = Nd4j.create(1, 16384);
-        for (int i = 0; i < 96; i++)
-            exp.putScalar(i * 20, 0.1f);
-
-        INDArray exp_d = Nd4j.create(1, 16384);
-        for (int i = 0; i < 96; i++)
-            exp_d.putScalar(i * 20, 0.9f);
-
-        NDArrayCompressor compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
-        compressor.configure(0.9);
-
-        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 0.9);
-
-        assertEquals(exp, initial);
-
-        log.info("Compressed length: {}", compressed.data().length());
-        //        log.info("Compressed: {}", Arrays.toString(compressed.data().asInt()));
-
-        INDArray decompressed = Nd4j.create(1, initial.length());
-        Nd4j.getExecutioner().thresholdDecode(compressed, decompressed);
-
-        log.info("Decompressed length: {}", decompressed.length());
-
-        assertEquals(exp_d, decompressed);
     }
 
 
@@ -296,6 +262,23 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testThresholdCompression5() {
+        INDArray initial = Nd4j.ones(10);
+        INDArray exp_0 = initial.dup();
+
+        Nd4j.getExecutioner().commit();
+
+        //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1.0f, 3);
+
+        assertEquals(7, compressed.data().length());
+
+        assertNotEquals(exp_0, initial);
+
+        assertEquals(7, initial.sumNumber().doubleValue(), 0.01);
+    }
+
+    @Test
+    public void testThresholdCompression5_1() {
         INDArray initial = Nd4j.ones(1000);
         INDArray exp_0 = initial.dup();
 
@@ -435,8 +418,8 @@ public class CompressionTests extends BaseNd4jTest {
         INDArray exp_0 = Nd4j.create(new float[] {0.0f, -1e-4f, 0.0f, 0.0f, 0.0f, 0.0f});
         INDArray exp_1 = Nd4j.create(new float[] {0.0f, -5e-4f, 1e-3f, -1e-3f, 0.0f, 0.0f});
 
-        DataBuffer ib = Nd4j.getDataBufferFactory().createInt(5);
-        INDArray enc = Nd4j.createArrayFromShapeBuffer(ib, initial.shapeInfoDataBuffer());
+
+        INDArray enc = Nd4j.create(DataType.INT32, initial.length() / 16 + 5);
 
         long elements = Nd4j.getExecutioner().bitmapEncode(initial, enc, 1e-3);
         log.info("Encoded: {}", Arrays.toString(enc.data().asInt()));
@@ -471,7 +454,7 @@ public class CompressionTests extends BaseNd4jTest {
     @Test
     public void testBitmapEncoding5() {
         Nd4j.getRandom().setSeed(119);
-        INDArray initial = Nd4j.rand(new int[]{1, 10000}, -1, -0.5, Nd4j.getRandom());
+        INDArray initial = Nd4j.rand(new int[]{10000}, -1, -0.5, Nd4j.getRandom());
         INDArray exp_0 = initial.dup().addi(1e-1);
         INDArray exp_1 = initial.dup();
 
@@ -486,13 +469,18 @@ public class CompressionTests extends BaseNd4jTest {
     @Test
     public void testBitmapEncoding6() {
         Nd4j.getRandom().setSeed(119);
-        INDArray initial = Nd4j.rand(new int[]{1, 100000}, -1, 1, Nd4j.getRandom());
+        INDArray initial = Nd4j.rand(new int[]{10000}, -1, 1, Nd4j.getRandom());
         INDArray exp_1 = initial.dup();
 
         INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
         //assertEquals(exp_0, initial);
 
         Nd4j.getExecutioner().bitmapDecode(enc, initial);
+
+        val f0 = exp_1.toFloatVector();
+        val f1 = initial.toFloatVector();
+
+        assertArrayEquals(f0, f1, 1e-5f);
 
         assertEquals(exp_1, initial);
     }

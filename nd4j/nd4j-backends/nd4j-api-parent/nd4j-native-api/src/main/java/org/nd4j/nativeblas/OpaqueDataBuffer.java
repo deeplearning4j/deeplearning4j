@@ -35,6 +35,11 @@ public class OpaqueDataBuffer extends Pointer {
 
     public OpaqueDataBuffer(Pointer p) { super(p); }
 
+
+    public static OpaqueDataBuffer externalizedDataBuffer(long numElements, @NonNull DataType dataType, Pointer primary, Pointer special) {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().dbCreateExternalDataBuffer(numElements, dataType.toInt(), primary, special);
+    }
+
     /**
      * This method allocates new InteropDataBuffer and returns pointer to it
      * @param numElements
@@ -208,5 +213,12 @@ public class OpaqueDataBuffer extends Pointer {
      */
     public void syncToPrimary() {
         NativeOpsHolder.getInstance().getDeviceNativeOps().dbSyncToPrimary(this);
+    }
+
+    /**
+     * This method releases underlying buffer
+     */
+    public void closeBuffer() {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().dbClose(this);
     }
 }

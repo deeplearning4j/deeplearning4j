@@ -1,5 +1,5 @@
-/* ******************************************************************************
- * Copyright (c) 2019 Konduit K.K.
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -18,7 +18,9 @@
 
 package org.nd4j.linalg.factory.ops;
 
-import org.nd4j.base.Preconditions;
+import static org.nd4j.linalg.factory.NDValidation.isSameType;
+
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -67,11 +69,12 @@ public class NDRandom {
    * @param lambda lambda parameter
    * @param datatype Data type of the output variable
    * @param shape Shape of the new random INDArray, as a 1D array (Size: AtLeast(min=0))
+   * @return output Tensor with the given shape where values are randomly sampled according to a %OP_NAME% distribution (NUMERIC type)
    */
-  public INDArray[] exponential(double lambda, DataType datatype, long... shape) {
+  public INDArray exponential(double lambda, DataType datatype, long... shape) {
     Preconditions.checkArgument(shape.length >= 0, "shape has incorrect size/length. Expected: shape.length >= 0, got %s", shape.length);
     Preconditions.checkArgument(lambda > 0, "Must be positive");
-    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.custom.RandomExponential(lambda, datatype, shape));
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.random.custom.RandomExponential(lambda, datatype, shape))[0];
   }
 
   /**

@@ -24,6 +24,7 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * @author raver119@gmail.com
  */
-public class CSVRecordWriterTest {
+public class CSVRecordWriterTest extends BaseND4JTest {
 
     @Before
     public void setUp() throws Exception {

@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.impl.image;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -46,6 +46,12 @@ public class ExtractImagePatches extends DynamicCustomOp {
 
     public ExtractImagePatches(){ }
 
+    public ExtractImagePatches(@NonNull SameDiff samediff, @NonNull SDVariable input,
+                               int kH, int kW, int sH, int sW, int rH, int rW,
+                               boolean sameMode) {
+        this(samediff, input, new int[]{kH, kW}, new int[]{sH, sW}, new int[]{rH,rW}, sameMode);
+
+    }
     public ExtractImagePatches(@NonNull SameDiff samediff, @NonNull SDVariable input, @NonNull int[] kSizes,
                                @NonNull int[] strides, @NonNull int[] rates, boolean sameMode){
         super(samediff, input);
@@ -72,16 +78,8 @@ public class ExtractImagePatches extends DynamicCustomOp {
         addArgs();
     }
 
-    public ExtractImagePatches(INDArray input, int kH, int kW, int sH, int sW, int rH, int rW, boolean sameMode) {
-        super(new INDArray[]{input},null);
-        int[] kSises = {kH,kW};
-        int[] strides = {sH,sW};
-        int[] rates = {rH, rW};
-        this.kSizes = kSises;
-        this.strides = strides;
-        this.rates = rates;
-        this.isSameMode = sameMode;
-        addArgs();
+    public ExtractImagePatches(INDArray input, int kH, int kW, int sH, int sW, int rH,  int rW, boolean sameMode) {
+        this(input, new int[]{kH, kW}, new int[]{sH, sW}, new int[]{rH, rW}, sameMode);
     }
 
 

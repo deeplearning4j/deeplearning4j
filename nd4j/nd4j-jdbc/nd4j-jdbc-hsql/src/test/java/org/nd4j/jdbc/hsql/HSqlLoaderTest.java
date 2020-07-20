@@ -16,11 +16,12 @@
 
 package org.nd4j.jdbc.hsql;
 
+import lombok.extern.slf4j.Slf4j;
 import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,6 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
+@Slf4j
 public class HSqlLoaderTest extends BaseND4JTest {
     private static HsqlLoader hsqlLoader;
     private static DataSource dataSource;
@@ -114,7 +116,7 @@ public class HSqlLoaderTest extends BaseND4JTest {
                 return result.getInt("total");
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return 0;
     }

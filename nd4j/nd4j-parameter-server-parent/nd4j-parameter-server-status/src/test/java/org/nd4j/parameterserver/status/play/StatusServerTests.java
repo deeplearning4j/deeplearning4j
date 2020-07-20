@@ -17,7 +17,7 @@
 package org.nd4j.parameterserver.status.play;
 
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import play.server.Server;
 
 /**

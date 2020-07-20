@@ -21,11 +21,14 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -36,9 +39,17 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
-
+@RunWith(Parameterized.class)
 public class MaskZeroLayerTest extends BaseDL4JTest {
+    private RNNFormat rnnDataFormat;
 
+    public MaskZeroLayerTest(RNNFormat rnnDataFormat){
+        this.rnnDataFormat = rnnDataFormat;
+    }
+    @Parameterized.Parameters
+    public static Object[] params(){
+        return RNNFormat.values();
+    }
     @Test
     public void activate() {
 
@@ -57,7 +68,7 @@ public class MaskZeroLayerTest extends BaseDL4JTest {
                 .activation(Activation.IDENTITY)
                 .gateActivationFunction(Activation.IDENTITY)
                 .nIn(2)
-                .nOut(1)
+                .nOut(1).dataFormat(rnnDataFormat)
                 .build();
         NeuralNetConfiguration conf = new NeuralNetConfiguration();
         conf.setLayer(underlying);
@@ -72,20 +83,25 @@ public class MaskZeroLayerTest extends BaseDL4JTest {
 
         MaskZeroLayer l = new MaskZeroLayer(lstm, maskingValue);
         INDArray input = Nd4j.create(Arrays.asList(ex1, ex2), new int[]{2, 2, 3});
+        if (rnnDataFormat == RNNFormat.NWC){
+            input = input.permute(0, 2, 1);
+        }
         //WHEN
         INDArray out = l.activate(input, true, LayerWorkspaceMgr.noWorkspaces());
-
+        if (rnnDataFormat == RNNFormat.NWC){
+            out = out.permute(0, 2,1);
+        }
         //THEN output should only be incremented for the non-zero timesteps
         INDArray firstExampleOutput = out.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all());
         INDArray secondExampleOutput = out.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all());
 
-        assertEquals(firstExampleOutput.getDouble(0), 0.0, 1e-6);
-        assertEquals(firstExampleOutput.getDouble(1), 1.0, 1e-6);
-        assertEquals(firstExampleOutput.getDouble(2), 2.0, 1e-6);
+        assertEquals(0.0, firstExampleOutput.getDouble(0),  1e-6);
+        assertEquals(1.0, firstExampleOutput.getDouble(1), 1e-6);
+        assertEquals(2.0, firstExampleOutput.getDouble(2), 1e-6);
 
-        assertEquals(secondExampleOutput.getDouble(0), 0.0, 1e-6);
-        assertEquals(secondExampleOutput.getDouble(1), 0.0, 1e-6);
-        assertEquals(secondExampleOutput.getDouble(2), 1.0, 1e-6);
+        assertEquals(0.0, secondExampleOutput.getDouble(0), 1e-6);
+        assertEquals(0.0, secondExampleOutput.getDouble(1),  1e-6);
+        assertEquals(1.0, secondExampleOutput.getDouble(2), 1e-6);
 
     }
 
@@ -94,7 +110,7 @@ public class MaskZeroLayerTest extends BaseDL4JTest {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
                 .layer(new org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer.Builder()
-                        .setMaskValue(0.0).setUnderlying(new LSTM.Builder().nIn(4).nOut(5).build()).build())
+                        .setMaskValue(0.0).setUnderlying(new LSTM.Builder().nIn(4).nOut(5).dataFormat(rnnDataFormat).build()).build())
                 .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();

@@ -43,18 +43,17 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.models.word2vec.wordstore.inmemory.AbstractCache;
 import org.deeplearning4j.text.documentiterator.*;
 import org.deeplearning4j.text.documentiterator.interoperability.DocumentIteratorConverter;
-import org.deeplearning4j.text.invertedindex.InvertedIndex;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.util.ThreadUtils;
+import org.nd4j.common.util.ThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Counter;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Counter;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -764,7 +763,7 @@ public class ParagraphVectors extends Word2Vec {
 
 
         /**
-         * This method allows you to use pre-built WordVectors model (Word2Vec or GloVe) for ParagraphVectors.
+         * This method allows you to use pre-built WordVectors model (e.g. Word2Vec) for ParagraphVectors.
          * Existing model will be transferred into new model before training starts.
          *
          * PLEASE NOTE: Non-normalized model is recommended to use here.

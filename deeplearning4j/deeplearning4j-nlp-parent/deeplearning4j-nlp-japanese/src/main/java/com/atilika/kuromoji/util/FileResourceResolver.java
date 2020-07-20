@@ -33,7 +33,6 @@ public class FileResourceResolver implements ResourceResolver {
             try {
                 KuromojiBinFilesFetcher.downloadAndUntar();
             } catch (IOException e) {
-                e.printStackTrace();
                 log.error("IOException : ", e);
             }
         }

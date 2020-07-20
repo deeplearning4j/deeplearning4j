@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -22,17 +23,30 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.rl4j.learning.NeuralNetFetchable;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.rl4j.learning.ILearning;
-import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.NeuralNetFetchable;
+import org.deeplearning4j.rl4j.learning.configuration.ILearningConfiguration;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.util.ModelSerializer;
+import org.nd4j.common.primitives.Pair;
 
-import java.io.*;
-import java.nio.file.*;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -264,7 +278,7 @@ public class DataManager implements IDataManager {
         Path infoPath = Paths.get(getInfo());
 
         Info info = new Info(iLearning.getClass().getSimpleName(), iLearning.getMdp().getClass().getSimpleName(),
-                        iLearning.getConfiguration(), iLearning.getStepCounter(), System.currentTimeMillis());
+                        iLearning.getConfiguration(), iLearning.getStepCount(), System.currentTimeMillis());
         String toWrite = toJson(info);
 
         Files.write(infoPath, toWrite.getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
@@ -286,12 +300,12 @@ public class DataManager implements IDataManager {
         if (!saveData)
             return;
 
-        save(getModelDir() + "/" + learning.getStepCounter() + ".training", learning);
+        save(getModelDir() + "/" + learning.getStepCount() + ".training", learning);
         if(learning instanceof  NeuralNetFetchable) {
             try {
-                ((NeuralNetFetchable)learning).getNeuralNet().save(getModelDir() + "/" + learning.getStepCounter() + ".model");
+                ((NeuralNetFetchable)learning).getNeuralNet().save(getModelDir() + "/" + learning.getStepCount() + ".model");
             } catch (UnsupportedOperationException e) {
-                String path = getModelDir() + "/" + learning.getStepCounter();
+                String path = getModelDir() + "/" + learning.getStepCount();
                 ((IActorCritic)((NeuralNetFetchable)learning).getNeuralNet()).save(path + "_value.model", path + "_policy.model");
             }
         }
@@ -304,7 +318,7 @@ public class DataManager implements IDataManager {
     public static class Info {
         String trainingName;
         String mdpName;
-        ILearning.LConfiguration conf;
+        ILearningConfiguration conf;
         int stepCounter;
         long millisTime;
     }

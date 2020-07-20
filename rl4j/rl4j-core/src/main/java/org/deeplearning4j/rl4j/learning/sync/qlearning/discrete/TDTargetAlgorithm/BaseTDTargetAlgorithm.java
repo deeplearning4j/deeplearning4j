@@ -17,7 +17,7 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm;
 
 import org.deeplearning4j.rl4j.learning.sync.Transition;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.QNetworkSource;
+import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 
@@ -30,7 +30,7 @@ import java.util.List;
  */
 public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Integer> {
 
-    protected final QNetworkSource qNetworkSource;
+    protected final IOutputNeuralNet qNetwork;
     protected final double gamma;
 
     private final double errorClamp;
@@ -38,12 +38,12 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
 
     /**
      *
-     * @param qNetworkSource The source of the Q-Network
+     * @param qNetwork The Q-Network
      * @param gamma The discount factor
      * @param errorClamp Will prevent the new Q-Value from being farther than <i>errorClamp</i> away from the previous value. Double.NaN will disable the clamping.
      */
-    protected BaseTDTargetAlgorithm(QNetworkSource qNetworkSource, double gamma, double errorClamp) {
-        this.qNetworkSource = qNetworkSource;
+    protected BaseTDTargetAlgorithm(IOutputNeuralNet qNetwork, double gamma, double errorClamp) {
+        this.qNetwork = qNetwork;
         this.gamma = gamma;
 
         this.errorClamp = errorClamp;
@@ -52,12 +52,12 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
 
     /**
      *
-     * @param qNetworkSource The source of the Q-Network
+     * @param qNetwork The Q-Network
      * @param gamma The discount factor
      * Note: Error clamping is disabled with this ctor
      */
-    protected BaseTDTargetAlgorithm(QNetworkSource qNetworkSource, double gamma) {
-        this(qNetworkSource, gamma, Double.NaN);
+    protected BaseTDTargetAlgorithm(IOutputNeuralNet qNetwork, double gamma) {
+        this(qNetwork, gamma, Double.NaN);
     }
 
     /**
@@ -80,7 +80,7 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
     protected abstract double computeTarget(int batchIdx, double reward, boolean isTerminal);
 
     @Override
-    public DataSet computeTDTargets(List<Transition<Integer>> transitions) {
+    public DataSet compute(List<Transition<Integer>> transitions) {
 
         int size = transitions.size();
 
@@ -89,8 +89,7 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
 
         initComputation(observations, nextObservations);
 
-        INDArray updatedQValues = qNetworkSource.getQNetwork().output(observations);
-
+        INDArray updatedQValues = qNetwork.output(observations);
         for (int i = 0; i < size; ++i) {
             Transition<Integer> transition = transitions.get(i);
             double yTarget = computeTarget(i, transition.getReward(), transition.isTerminal());

@@ -20,7 +20,7 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -48,6 +48,16 @@ public class Stack extends DynamicCustomOp {
         super(null, inputs, output == null ? null : new INDArray[]{output}, null, (List<Integer>)null);
         this.jaxis = axis;
         addArgs();
+    }
+
+    public Stack(INDArray[] input, int axis) {
+        addInputArgument(input);
+        this.jaxis = axis;
+        addArgs();
+    }
+
+    public Stack(SameDiff sameDiff, SDVariable values, int axis) {
+        this(sameDiff, new SDVariable[]{values}, axis);
     }
 
     public Stack(SameDiff sameDiff, SDVariable[] values, int axis) {
@@ -119,7 +129,7 @@ public class Stack extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Arrays.asList(f().unstack(f1.get(0), jaxis, args().length));
+        return Arrays.asList(sameDiff.unstack(f1.get(0), jaxis, args().length));
     }
 
     @Override

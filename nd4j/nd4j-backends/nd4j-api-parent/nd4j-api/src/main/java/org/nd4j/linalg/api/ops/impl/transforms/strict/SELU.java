@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SeluBp;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,6 +42,10 @@ public class SELU extends BaseTransformStrictOp {
 
     public SELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
+    }
+
+    public SELU(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
     }
 
     public SELU() {
@@ -77,7 +82,7 @@ public class SELU extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().seluBp(arg(), i_v.get(0)));
+        return new SeluBp(sameDiff, arg(), i_v.get(0)).outputs();
     }
 
 }

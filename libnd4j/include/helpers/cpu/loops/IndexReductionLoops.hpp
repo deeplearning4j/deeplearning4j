@@ -26,10 +26,10 @@ using namespace simdOps;
 //////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-void sd::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
-                           Z* z, Nd4jLong* zShapeInfo,
-                           Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
-                           X* extraParams) {
+void sd::IndexReductionLoops<X,Z>::loopIndexReduce(const X* x, const Nd4jLong* xShapeInfo,
+                                                   Z* z, const Nd4jLong* zShapeInfo,
+                                                   const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets,
+                                                   X* extraParams) {
 
     sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
     if(kindOfLoop == sd::LoopKind::SMALLARR2DX)
@@ -305,8 +305,8 @@ void sd::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
 }
 
 template <typename X, typename Y>
-void sd::IndexReductionLoops<X, Y>::wrapIndexReduce(const int opNum, void* vx, Nd4jLong* xShapeInfo, void* vz, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, void* vextraParams) {
-    auto x = reinterpret_cast<X *>(vx);
+void sd::IndexReductionLoops<X, Y>::wrapIndexReduce(const int opNum, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, void* vextraParams) {
+    auto x = reinterpret_cast<const X *>(vx);
     auto z = reinterpret_cast<Y *>(vz);
     auto extraParams = reinterpret_cast<X *>(vextraParams);
 

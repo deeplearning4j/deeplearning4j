@@ -1,213 +1,276 @@
+/*******************************************************************************
+ * Copyright (c) 2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
 package org.deeplearning4j.rl4j.learning.async;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
+import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
-import org.deeplearning4j.rl4j.policy.Policy;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.support.*;
+import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Box;
+import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.deeplearning4j.rl4j.util.IDataManager;
+import org.junit.Before;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.MockitoJUnitRunner;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.guava.base.Preconditions;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class AsyncThreadTest {
 
-    @Test
-    public void when_newEpochStarted_expect_neuralNetworkReset() {
-        // Arrange
-        int numberOfEpochs = 5;
-        TestContext context = new TestContext(numberOfEpochs);
+    @Mock
+    ActionSpace<INDArray> mockActionSpace;
 
-        // Act
-        context.sut.run();
+    @Mock
+    ObservationSpace<Box> mockObservationSpace;
 
-        // Assert
-        assertEquals(numberOfEpochs, context.neuralNet.resetCallCount);
+    @Mock
+    IAsyncLearningConfiguration mockAsyncConfiguration;
+
+    @Mock
+    NeuralNet mockNeuralNet;
+
+    @Mock
+    IAsyncGlobal<NeuralNet> mockAsyncGlobal;
+
+    @Mock
+    MDP<Box, INDArray, ActionSpace<INDArray>> mockMDP;
+
+    @Mock
+    TrainingListenerList mockTrainingListeners;
+
+    int[] observationShape = new int[]{3, 10, 10};
+    int actionSize = 4;
+
+    AsyncThread<Box, INDArray, ActionSpace<INDArray>, NeuralNet> thread;
+
+    @Before
+    public void setup() {
+        setupMDPMocks();
+        setupThreadMocks();
+    }
+
+    private void setupThreadMocks() {
+
+        thread = mock(AsyncThread.class, Mockito.withSettings()
+                .useConstructor(mockMDP, mockTrainingListeners, 0, 0)
+                .defaultAnswer(Mockito.CALLS_REAL_METHODS));
+
+        when(thread.getAsyncGlobal()).thenReturn(mockAsyncGlobal);
+        when(thread.getCurrent()).thenReturn(mockNeuralNet);
+    }
+
+    private void setupMDPMocks() {
+
+        when(mockObservationSpace.getShape()).thenReturn(observationShape);
+        when(mockActionSpace.noOp()).thenReturn(Nd4j.zeros(actionSize));
+
+        when(mockMDP.getObservationSpace()).thenReturn(mockObservationSpace);
+        when(mockMDP.getActionSpace()).thenReturn(mockActionSpace);
+
+        int dataLength = 1;
+        for (int d : observationShape) {
+            dataLength *= d;
+        }
+
+        when(mockMDP.reset()).thenReturn(new Box(new double[dataLength]));
+    }
+
+    private void mockTrainingListeners() {
+        mockTrainingListeners(false, false);
+    }
+
+    private void mockTrainingListeners(boolean stopOnNotifyNewEpoch, boolean stopOnNotifyEpochTrainingResult) {
+        when(mockTrainingListeners.notifyNewEpoch(eq(thread))).thenReturn(!stopOnNotifyNewEpoch);
+        when(mockTrainingListeners.notifyEpochTrainingResult(eq(thread), any(IDataManager.StatEntry.class))).thenReturn(!stopOnNotifyEpochTrainingResult);
+    }
+
+    private void mockTrainingContext() {
+        mockTrainingContext(1000, 100, 10);
+    }
+
+    private void mockTrainingContext(int maxSteps, int maxStepsPerEpisode, int nstep) {
+
+        // Some conditions of this test harness
+        Preconditions.checkArgument(maxStepsPerEpisode >= nstep, "episodeLength must be greater than or equal to nstep");
+        Preconditions.checkArgument(maxStepsPerEpisode % nstep == 0, "episodeLength must be a multiple of nstep");
+
+        Observation mockObs = new Observation(Nd4j.zeros(observationShape));
+
+        when(mockAsyncConfiguration.getMaxEpochStep()).thenReturn(maxStepsPerEpisode);
+        when(mockAsyncConfiguration.getNStep()).thenReturn(nstep);
+        when(thread.getConfiguration()).thenReturn(mockAsyncConfiguration);
+
+        // if we hit the max step count
+        when(mockAsyncGlobal.isTrainingComplete()).thenAnswer(invocation -> thread.getStepCount() >= maxSteps);
+
+        when(thread.trainSubEpoch(any(Observation.class), anyInt())).thenAnswer(invocationOnMock -> {
+            int steps = invocationOnMock.getArgument(1);
+            thread.stepCount += steps;
+            thread.currentEpisodeStepCount += steps;
+            boolean isEpisodeComplete = thread.getCurrentEpisodeStepCount() % maxStepsPerEpisode == 0;
+            return new AsyncThread.SubEpochReturn(steps, mockObs, 0.0, 0.0, isEpisodeComplete);
+        });
     }
 
     @Test
-    public void when_onNewEpochReturnsStop_expect_threadStopped() {
+    public void when_episodeComplete_expect_neuralNetworkReset() {
+
         // Arrange
-        int stopAfterNumCalls = 1;
-        TestContext context = new TestContext(100000);
-        context.listener.setRemainingOnNewEpochCallCount(stopAfterNumCalls);
+        mockTrainingContext(100, 10, 10);
+        mockTrainingListeners();
 
         // Act
-        context.sut.run();
+        thread.run();
 
         // Assert
-        assertEquals(stopAfterNumCalls + 1, context.listener.onNewEpochCallCount); // +1: The call that returns stop is counted
-        assertEquals(stopAfterNumCalls, context.listener.onEpochTrainingResultCallCount);
+        verify(mockNeuralNet, times(10)).reset(); // there are 10 episodes so the network should be reset between each
+        assertEquals(10, thread.getEpochCount()); // We are performing a training iteration every 10 steps, so there should be 10 epochs
+        assertEquals(10, thread.getEpisodeCount()); // There should be 10 completed episodes
+        assertEquals(100, thread.getStepCount()); // 100 steps overall
     }
 
     @Test
-    public void when_epochTrainingResultReturnsStop_expect_threadStopped() {
+    public void when_notifyNewEpochReturnsStop_expect_threadStopped() {
         // Arrange
-        int stopAfterNumCalls = 1;
-        TestContext context = new TestContext(100000);
-        context.listener.setRemainingOnEpochTrainingResult(stopAfterNumCalls);
+        mockTrainingContext();
+        mockTrainingListeners(true, false);
 
         // Act
-        context.sut.run();
+        thread.run();
 
         // Assert
-        assertEquals(stopAfterNumCalls + 1, context.listener.onEpochTrainingResultCallCount); // +1: The call that returns stop is counted
-        assertEquals(stopAfterNumCalls + 1, context.listener.onNewEpochCallCount); // +1: onNewEpoch is called on the epoch that onEpochTrainingResult() will stop
+        assertEquals(0, thread.getEpochCount());
+        assertEquals(1, thread.getEpisodeCount());
+        assertEquals(0, thread.getStepCount());
     }
 
     @Test
-    public void when_run_expect_preAndPostEpochCalled() {
+    public void when_notifyEpochTrainingResultReturnsStop_expect_threadStopped() {
         // Arrange
-        int numberOfEpochs = 5;
-        TestContext context = new TestContext(numberOfEpochs);
+        mockTrainingContext();
+        mockTrainingListeners(false, true);
 
         // Act
-        context.sut.run();
+        thread.run();
 
         // Assert
-        assertEquals(numberOfEpochs, context.sut.preEpochCallCount);
-        assertEquals(numberOfEpochs, context.sut.postEpochCallCount);
+        assertEquals(1, thread.getEpochCount());
+        assertEquals(1, thread.getEpisodeCount());
+        assertEquals(10, thread.getStepCount()); // one epoch is by default 10 steps
+    }
+
+    @Test
+    public void when_run_expect_preAndPostEpisodeCalled() {
+        // Arrange
+        mockTrainingContext(100, 10, 5);
+        mockTrainingListeners(false, false);
+
+        // Act
+        thread.run();
+
+        // Assert
+        assertEquals(20, thread.getEpochCount());
+        assertEquals(10, thread.getEpisodeCount());
+        assertEquals(100, thread.getStepCount());
+
+        verify(thread, times(10)).preEpisode(); // over 100 steps there will be 10 episodes
+        verify(thread, times(10)).postEpisode();
     }
 
     @Test
     public void when_run_expect_trainSubEpochCalledAndResultPassedToListeners() {
         // Arrange
-        int numberOfEpochs = 5;
-        TestContext context = new TestContext(numberOfEpochs);
+        mockTrainingContext(100, 10, 5);
+        mockTrainingListeners(false, false);
 
         // Act
-        context.sut.run();
+        thread.run();
 
         // Assert
-        assertEquals(numberOfEpochs, context.listener.statEntries.size());
-        int[] expectedStepCounter = new int[] { 10, 20, 30, 40, 50 };
-        double expectedReward = (1.0 + 2.0 + 3.0 + 4.0 + 5.0 + 6.0 + 7.0 + 8.0) // reward from init
-            + 1.0; // Reward from trainSubEpoch()
-        for(int i = 0; i < numberOfEpochs; ++i) {
-            IDataManager.StatEntry statEntry = context.listener.statEntries.get(i);
-            assertEquals(expectedStepCounter[i], statEntry.getStepCounter());
-            assertEquals(i, statEntry.getEpochCounter());
-            assertEquals(expectedReward, statEntry.getReward(), 0.0001);
-        }
+        assertEquals(20, thread.getEpochCount());
+        assertEquals(10, thread.getEpisodeCount());
+        assertEquals(100, thread.getStepCount());
+
+        // Over 100 steps there will be 20 training iterations, so there will be 20 calls to notifyEpochTrainingResult
+        verify(mockTrainingListeners, times(20)).notifyEpochTrainingResult(eq(thread), any(IDataManager.StatEntry.class));
     }
 
     @Test
     public void when_run_expect_trainSubEpochCalled() {
         // Arrange
-        int numberOfEpochs = 5;
-        TestContext context = new TestContext(numberOfEpochs);
+        mockTrainingContext(100, 10, 5);
+        mockTrainingListeners(false, false);
 
         // Act
-        context.sut.run();
+        thread.run();
 
         // Assert
-        assertEquals(numberOfEpochs, context.sut.trainSubEpochParams.size());
-        double[] expectedObservation = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0 };
-        for(int i = 0; i < context.sut.trainSubEpochParams.size(); ++i) {
-            MockAsyncThread.TrainSubEpochParams params = context.sut.trainSubEpochParams.get(i);
-            assertEquals(2, params.nstep);
-            assertEquals(expectedObservation.length, params.obs.getData().shape()[1]);
-            for(int j = 0; j < expectedObservation.length; ++j){
-                assertEquals(expectedObservation[j], 255.0 * params.obs.getData().getDouble(j), 0.00001);
+        assertEquals(20, thread.getEpochCount());
+        assertEquals(10, thread.getEpisodeCount());
+        assertEquals(100, thread.getStepCount());
+
+        // There should be 20 calls to trainsubepoch with 5 steps per epoch
+        verify(thread, times(20)).trainSubEpoch(any(Observation.class), eq(5));
+    }
+
+    @Test
+    public void when_remainingEpisodeLengthSmallerThanNSteps_expect_trainSubEpochCalledWithMinimumValue() {
+
+        int currentEpisodeSteps = 95;
+        mockTrainingContext(1000, 100, 10);
+        mockTrainingListeners(false, true);
+
+        // want to mock that we are 95 steps into the episode
+        doAnswer(invocationOnMock -> {
+            for (int i = 0; i < currentEpisodeSteps; i++) {
+                thread.incrementSteps();
             }
-        }
-    }
-
-    private static class TestContext {
-        public final MockAsyncGlobal asyncGlobal = new MockAsyncGlobal();
-        public final MockNeuralNet neuralNet = new MockNeuralNet();
-        public final MockObservationSpace observationSpace = new MockObservationSpace();
-        public final MockMDP mdp = new MockMDP(observationSpace);
-        public final MockAsyncConfiguration config = new MockAsyncConfiguration(5, 10, 0, 0, 10, 0, 0, 0, 0, 0);
-        public final TrainingListenerList listeners = new TrainingListenerList();
-        public final MockTrainingListener listener = new MockTrainingListener();
-        public final IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);
-        public final MockHistoryProcessor historyProcessor = new MockHistoryProcessor(hpConf);
-
-        public final MockAsyncThread sut = new MockAsyncThread(asyncGlobal, 0, neuralNet, mdp, config, listeners);
-
-        public TestContext(int numEpochs) {
-            asyncGlobal.setMaxLoops(numEpochs);
-            listeners.add(listener);
-            sut.setHistoryProcessor(historyProcessor);
-            sut.getLegacyMDPWrapper().setTransformProcess(MockMDP.buildTransformProcess(observationSpace.getShape(), hpConf.getSkipFrame(), hpConf.getHistoryLength()));
-        }
-    }
-
-    public static class MockAsyncThread extends AsyncThread<MockEncodable, Integer, DiscreteSpace, MockNeuralNet> {
-
-        public int preEpochCallCount = 0;
-        public int postEpochCallCount = 0;
-
-        private final MockAsyncGlobal asyncGlobal;
-        private final MockNeuralNet neuralNet;
-        private final AsyncConfiguration conf;
-
-        private final List<TrainSubEpochParams> trainSubEpochParams = new ArrayList<TrainSubEpochParams>();
-
-        public MockAsyncThread(MockAsyncGlobal asyncGlobal, int threadNumber, MockNeuralNet neuralNet, MDP mdp, AsyncConfiguration conf, TrainingListenerList listeners) {
-            super(asyncGlobal, mdp, listeners, threadNumber, 0);
-
-            this.asyncGlobal = asyncGlobal;
-            this.neuralNet = neuralNet;
-            this.conf = conf;
-        }
-
-        @Override
-        protected void preEpoch() {
-            ++preEpochCallCount;
-            super.preEpoch();
-        }
-
-        @Override
-        protected void postEpoch() {
-            ++postEpochCallCount;
-            super.postEpoch();
-        }
-
-        @Override
-        protected MockNeuralNet getCurrent() {
-            return neuralNet;
-        }
-
-        @Override
-        protected IAsyncGlobal getAsyncGlobal() {
-            return asyncGlobal;
-        }
-
-        @Override
-        protected AsyncConfiguration getConf() {
-            return conf;
-        }
-
-        @Override
-        protected Policy getPolicy(MockNeuralNet net) {
             return null;
-        }
+        }).when(thread).preEpisode();
 
-        @Override
-        protected SubEpochReturn trainSubEpoch(Observation obs, int nstep) {
-            asyncGlobal.increaseCurrentLoop();
-            trainSubEpochParams.add(new TrainSubEpochParams(obs, nstep));
-            for(int i = 0; i < nstep; ++i) {
-                incrementStep();
-            }
-            return new SubEpochReturn(nstep, null, 1.0, 1.0);
-        }
+        mockTrainingListeners(false, true);
 
-        @AllArgsConstructor
-        @Getter
-        public static class TrainSubEpochParams {
-            Observation obs;
-            int nstep;
-        }
+        // Act
+        thread.run();
+
+        // Assert
+        assertEquals(1, thread.getEpochCount());
+        assertEquals(1, thread.getEpisodeCount());
+        assertEquals(100, thread.getStepCount());
+
+        // There should be 1 call to trainsubepoch with 5 steps as this is the remaining episode steps
+        verify(thread, times(1)).trainSubEpoch(any(Observation.class), eq(5));
     }
+
 }

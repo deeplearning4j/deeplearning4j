@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm;
 
-import org.deeplearning4j.rl4j.learning.sync.qlearning.TargetQNetworkSource;
+import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,12 +32,12 @@ public class StandardDQN extends BaseDQNAlgorithm {
     // In litterature, this corresponds to: max_{a}Q_{tar}(s_{t+1}, a)
     private INDArray maxActionsFromQTargetNextObservation;
 
-    public StandardDQN(TargetQNetworkSource qTargetNetworkSource, double gamma) {
-        super(qTargetNetworkSource, gamma);
+    public StandardDQN(IOutputNeuralNet qNetwork, IOutputNeuralNet targetQNetwork, double gamma) {
+        super(qNetwork, targetQNetwork, gamma);
     }
 
-    public StandardDQN(TargetQNetworkSource qTargetNetworkSource, double gamma, double errorClamp) {
-        super(qTargetNetworkSource, gamma, errorClamp);
+    public StandardDQN(IOutputNeuralNet qNetwork, IOutputNeuralNet targetQNetwork, double gamma, double errorClamp) {
+        super(qNetwork, targetQNetwork, gamma, errorClamp);
     }
 
     @Override

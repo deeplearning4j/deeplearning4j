@@ -182,22 +182,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-jackson</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nd4j</groupId>
         <artifactId>nd4j-kryo_2.11</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-kafka_2.11</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-gson</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>

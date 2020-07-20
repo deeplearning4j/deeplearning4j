@@ -159,7 +159,7 @@ public class BooleanIndexing {
         if (to.length() != from.length())
             throw new IllegalStateException("Mis matched length for to and from");
 
-        Nd4j.getExecutioner().exec(new CompareAndSet(to, from, condition));
+        Nd4j.getExecutioner().exec(new CompareAndSet(to, from, to, condition));
     }
 
 
@@ -177,7 +177,7 @@ public class BooleanIndexing {
         if (to.length() != from.length())
             throw new IllegalStateException("Mis matched length for to and from");
 
-        Nd4j.getExecutioner().exec(new CompareAndReplace(to, from, condition));
+        Nd4j.getExecutioner().exec(new CompareAndReplace(to, from, to, condition));
     }
 
     /**

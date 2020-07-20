@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
@@ -48,6 +48,10 @@ public class DiagPart extends DynamicCustomOp {
 
     public DiagPart(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(null, sameDiff, args, inPlace);
+    }
+
+    public DiagPart(SameDiff sameDiff, SDVariable in) {
+        this(sameDiff, new SDVariable[]{in}, false);
     }
 
     public DiagPart(INDArray in){

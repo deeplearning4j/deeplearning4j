@@ -109,8 +109,8 @@ DECLARE_SHAPE_FN(dynamic_rnn) {
     auto WhShapeInfo = inputShape->at(2);               // hidden-to-hidden weights, [numUnits x numUnits]
     auto bShapeInfo  = inputShape->at(3);               // biases for, [2*numUnits]
 
-    Nd4jLong* h0ShapeInfo          = nullptr;                // initial cell output (at time step = 0) [bS x numUnits]
-    Nd4jLong* maxTimeStepShapeInfo = nullptr;                // vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
+    Nd4jLong const* h0ShapeInfo          = nullptr;                // initial cell output (at time step = 0) [bS x numUnits]
+    Nd4jLong const* maxTimeStepShapeInfo = nullptr;                // vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
 
     const int timeMajor = block.getIArguments()->size() > 0 ? INT_ARG(0) : 0;       // if true then [time, bS, ...], else [bS, time, ...]
 

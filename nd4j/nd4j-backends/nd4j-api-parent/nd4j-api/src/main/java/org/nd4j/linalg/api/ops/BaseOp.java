@@ -24,10 +24,11 @@ import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -348,7 +349,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         if (dimensions == null || dimensions.length == 0)
             dimensions = new int[]{Integer.MAX_VALUE};
 
-        this.dimensionz = Shape.ndArrayDimFromInt(dimensions);
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            this.dimensionz = Shape.ndArrayDimFromInt(dimensions);
+        }
     }
 
     public INDArray dimensions() {

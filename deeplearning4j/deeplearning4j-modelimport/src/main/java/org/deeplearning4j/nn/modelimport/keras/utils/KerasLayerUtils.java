@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
+import org.deeplearning4j.nn.modelimport.keras.layers.local.KerasLocallyConnected1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasAlphaDropout;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasGaussianDropout;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasGaussianNoise;
@@ -43,7 +44,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
@@ -319,6 +320,8 @@ public class KerasLayerUtils {
             layer = new KerasELU(layerConfig, enforceTrainingConfig);
         } else if(layerClassName.equals(conf.getLAYER_CLASS_NAME_SOFTMAX())){
             layer = new KerasSoftmax(layerConfig, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_LOCALLY_CONNECTED_1D())){
+            layer = new KerasLocallyConnected1D(layerConfig, enforceTrainingConfig);
         } else if (conf instanceof Keras2LayerConfiguration){
             Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration)conf;
             if (layerClassName.equals(k2conf.getTENSORFLOW_OP_LAYER())){

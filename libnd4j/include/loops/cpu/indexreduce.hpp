@@ -33,27 +33,27 @@ namespace indexreduce {
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-Nd4jLong IndexReduce<X,Y>::execScalar( const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams) {
+Nd4jLong IndexReduce<X,Y>::execScalar( const int opNum, const void *x, const Nd4jLong *xShapeInfo, void *extraParams) {
     RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 void IndexReduce<X,Y>::exec(const int opNum,
-                        void *x,  Nd4jLong *xShapeInfo,
-                        void *extraParams,
-                        void *z, Nd4jLong *zShapeInfo,
-                        int *dimension, int dimensionLength,
-                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
+                            const void *x, const Nd4jLong *xShapeInfo,
+                            void *extraParams,
+                            void *z, const Nd4jLong *zShapeInfo,
+                            int *dimension, int dimensionLength,
+                            const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset) {
     DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
 template<typename OpType>
-Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextraParams) {
+Nd4jLong IndexReduce<X, Y>::execScalar(const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams) {
 
-    auto x = reinterpret_cast<X *>(vx);
+    auto x = reinterpret_cast<const X *>(vx);
     auto extraParams = reinterpret_cast<X *>(vextraParams);
 
     //T startingVal = OpType::startingValue(x);
@@ -64,12 +64,12 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
 
     uint xShapeInfoCast[MAX_RANK];
     bool canCastX = sd::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-    int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance()->maxThreads());
+    int maxThreads = sd::math::nd4j_min<int>(64, sd::Environment::getInstance().maxThreads());
     IndexValue<X> intermediatery[64];
     for (int e = 0; e < maxThreads; e++)
         intermediatery[e].index = -1;
 
-    if (xEws == 1) {
+    if (xEws == 1 && shape::order(xShapeInfo) == 'c') {
         auto func = PRAGMA_THREADS_FOR {
             intermediatery[thread_id] = OpType::startingIndexValue(x);
 
@@ -107,13 +107,13 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-void IndexReduce<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
-                        void *vextraParams,
-                        void *vz, Nd4jLong *zShapeInfo,
-                        int *dimension, int dimensionLength,
-                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
+void IndexReduce<X, Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
+                             void *vextraParams,
+                             void *vz, const Nd4jLong *zShapeInfo,
+                             int *dimension, int dimensionLength,
+                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset) {
 
-    auto x = reinterpret_cast<X *>(vx);
+    auto x = reinterpret_cast<const X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<X *>(vextraParams);
 
@@ -136,13 +136,13 @@ void IndexReduce<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
     }
 
     auto tadOnlyShapeInfo = tadShapeInfo;
-    Nd4jLong *tadOffsets = tadOffset;
+    auto tadOffsets = tadOffset;
 
     if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
         if (dimensionLength < 1)
             return;
 
-        auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
         tadOnlyShapeInfo = tadPack.primaryShapeInfo();
         tadOffsets = tadPack.primaryOffsets();

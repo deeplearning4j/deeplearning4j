@@ -34,8 +34,12 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                 value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
                         "array/DataType.h",
                         "array/DataBuffer.h",
+                        "array/PointerDeallocator.h",
+                        "array/PointerWrapper.h",
                         "array/ConstantDescriptor.h",
                         "array/ConstantDataBuffer.h",
+                        "array/ConstantShapeBuffer.h",
+                        "array/ConstantOffsetsBuffer.h",
                         "array/TadPack.h",
                         "execution/ErrorReference.h",
                         "execution/Engine.h",
@@ -76,7 +80,8 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "ops/InputType.h",
                         "ops/declarable/OpDescriptor.h",
                         "ops/declarable/PlatformHelper.h",
-                        "ops/declarable/BroadcastableOp.h",                        
+                        "ops/declarable/BroadcastableOp.h",
+                        "ops/declarable/BroadcastableBoolOp.h",
                         "helpers/OpArgsHolder.h",
                         "ops/declarable/DeclarableOp.h",
                         "ops/declarable/DeclarableListOp.h",
@@ -165,6 +170,8 @@ public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
                 .put(new Info("OpaqueVariablesSet").pointerTypes("OpaqueVariablesSet"))
                 .put(new Info("OpaqueVariable").pointerTypes("OpaqueVariable"))
                 .put(new Info("OpaqueConstantDataBuffer").pointerTypes("OpaqueConstantDataBuffer"))
+                .put(new Info("OpaqueConstantShapeBuffer").pointerTypes("OpaqueConstantShapeBuffer"))
+                .put(new Info("OpaqueConstantOffsetsBuffer").pointerTypes("OpaqueConstantOffsetsBuffer"))
                 .put(new Info("OpaqueContext").pointerTypes("OpaqueContext"))
                 .put(new Info("OpaqueRandomGenerator").pointerTypes("OpaqueRandomGenerator"))
                 .put(new Info("OpaqueLaunchContext").pointerTypes("OpaqueLaunchContext"))
@@ -186,7 +193,7 @@ public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
         infoMap.put(new Info("__CUDACC__", "MAX_UINT", "HAVE_MKLDNN").define(false))
                .put(new Info("__JAVACPP_HACK__", "LIBND4J_ALL_OPS","__CUDABLAS__").define(true))
                .put(new Info("std::initializer_list", "cnpy::NpyArray", "sd::NDArray::applyLambda", "sd::NDArray::applyPairwiseLambda",
-                             "sd::graph::FlatResult", "sd::graph::FlatVariable", "sd::NDArray::subarray").skip())
+                             "sd::graph::FlatResult", "sd::graph::FlatVariable", "sd::NDArray::subarray", "std::shared_ptr", "sd::PointerWrapper", "sd::PointerDeallocator").skip())
                .put(new Info("std::string").annotations("@StdString").valueTypes("BytePointer", "String")
                                            .pointerTypes("@Cast({\"char*\", \"std::string*\"}) BytePointer"))
                 .put(new Info("std::pair<int,int>").pointerTypes("IntIntPair").define())

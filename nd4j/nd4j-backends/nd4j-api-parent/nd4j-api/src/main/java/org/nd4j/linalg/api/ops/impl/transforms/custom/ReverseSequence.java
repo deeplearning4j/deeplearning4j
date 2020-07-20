@@ -23,6 +23,7 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -56,6 +57,17 @@ public class ReverseSequence extends DynamicCustomOp {
         this.seqDim = 1;
         this.batchDim = 0;
         addArguments();
+    }
+
+    public ReverseSequence(INDArray x, INDArray seq_lengths, int seqDim, int batchDim){
+        super(new INDArray[]{x, seq_lengths}, null);
+        this.seqDim = seqDim;
+        this.batchDim = batchDim;
+        addArguments();
+    }
+
+    public ReverseSequence(INDArray x, INDArray seq_lengths){
+        this(x, seq_lengths, 1, 0);
     }
 
     private void addArguments(){
@@ -109,8 +121,8 @@ public class ReverseSequence extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable ret = f().reverseSequence(f1.get(0), arg(1), seqDim, batchDim);
-        return Arrays.asList(ret, f().zerosLike(arg(1)));
+        SDVariable ret = sameDiff.reverseSequence(f1.get(0), arg(1), seqDim, batchDim);
+        return Arrays.asList(ret, sameDiff.zerosLike(arg(1)));
     }
 
     @Override

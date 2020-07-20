@@ -26,6 +26,7 @@ import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +38,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 16/04/2016.
  */
-public class TestWindowFunctions {
+public class TestWindowFunctions extends BaseND4JTest {
 
     @Test
     public void testTimeWindowFunction() {

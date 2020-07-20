@@ -191,7 +191,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 // spill
                 if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
                     //log.info("End of space reached. Current offset: {}; requiredMemory: {}", deviceOffset.get(), requiredMemory);
-                    reset();
+                    deviceOffset.set(0);
                     resetPlanned.set(true);
                     return alloc(requiredMemory, kind, type, initialize);
                 }
@@ -204,7 +204,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 if (isDebug.get()) {
                     log.info("Workspace [{}] device_{}: spilled DEVICE array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
                 }
-                //Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
 
                 val shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 
@@ -258,6 +257,12 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 return ptr;
             } else {
            //     log.info("Spilled HOST array of {} bytes, capacity of {} elements", requiredMemory, numElements);
+                if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer && Nd4j.getWorkspaceManager().getDebugMode() != DebugMode.SPILL_EVERYTHING) {
+                    //log.info("End of space reached. Current offset: {}; requiredMemory: {}", deviceOffset.get(), requiredMemory);
+                    hostOffset.set(0);
+                    //resetPlanned.set(true);
+                    return alloc(requiredMemory, kind, type, initialize);
+                }
 
                 val shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 
@@ -413,7 +418,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     public String getUniqueId() {
-        return "Workspace_" + getId();
+        return "Workspace_" + getId() + "_" + Nd4j.getDeallocatorService().nextValue();
     }
 
     @Override

@@ -24,8 +24,9 @@ import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.aeron.ipc.AeronUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -63,7 +64,7 @@ public class RemoteParameterServerClientTests extends BaseND4JTest {
                 masterStatus.set(
                                 BackgroundDaemonStarter.startMaster(parameterLength, mediaDriver.aeronDirectoryName()));
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         });
 
@@ -73,7 +74,7 @@ public class RemoteParameterServerClientTests extends BaseND4JTest {
             try {
                 slaveStatus.set(BackgroundDaemonStarter.startSlave(parameterLength, mediaDriver.aeronDirectoryName()));
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         });
         t2.start();
@@ -90,7 +91,7 @@ public class RemoteParameterServerClientTests extends BaseND4JTest {
         CloseHelper.close(aeron);
     }
 
-    @Test(timeout = 60000L)
+    @Test(timeout = 60000L) @Ignore //AB 20200425 https://github.com/eclipse/deeplearning4j/issues/8882
     public void remoteTests() throws Exception {
         if (masterStatus.get() != 0 || slaveStatus.get() != 0)
             throw new IllegalStateException("Master or slave failed to start. Exiting");

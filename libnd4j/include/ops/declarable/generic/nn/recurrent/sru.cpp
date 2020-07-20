@@ -67,7 +67,7 @@ CUSTOM_OP_IMPL(sru, 5, 2, false, 0, 0) {
     //  xm = x * mask
     auto xm = x;
     if(mask) {
-        xm = new NDArray(x->getShapeInfo(), true, block.launchContext());
+        xm = new NDArray(x->shapeInfo(), true, block.launchContext());
         x->applyBroadcast(broadcast::Multiply, {0, 1}, *mask, *xm);
     }
 
@@ -92,7 +92,7 @@ DECLARE_SHAPE_FN(sru) {
     auto wShapeInfo    = inputShape->at(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
     auto bShapeInfo    = inputShape->at(2);                                   // B, row of biases with twice length [2*inSize]
     auto c0ShapeInfo   = inputShape->at(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
-    Nd4jLong* maskShapeInfo = block.width() > 4 ? inputShape->at(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
+    auto maskShapeInfo = block.width() > 4 ? inputShape->at(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
 
     const int rank   = xShapeInfo[0];              // = 3
     const int bS     = xShapeInfo[1];
@@ -127,7 +127,7 @@ DECLARE_SHAPE_FN(sru) {
     ShapeUtils::updateStridesAndType(newShapeInfo1, xShapeInfo, shape::order(xShapeInfo));
     ShapeDescriptor descriptor(newShapeInfo1);
     RELEASE(newShapeInfo1, block.getWorkspace());
-    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(descriptor);
+    auto result = ConstantShapeHelper::getInstance().createShapeInfo(descriptor);
     return SHAPELIST(result, result);
 }
 
@@ -311,7 +311,7 @@ DECLARE_SHAPE_FN(sru_bp) {
     ShapeDescriptor descriptor3(ArrayOptions::dataType(inShape), order, {1, 2 * inSize});
     ShapeDescriptor descriptor4(ArrayOptions::dataType(inShape), order, {bS, inSize});
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor1), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor2), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor3), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor4));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor1), ConstantShapeHelper::getInstance().createShapeInfo(descriptor2), ConstantShapeHelper::getInstance().createShapeInfo(descriptor3), ConstantShapeHelper::getInstance().createShapeInfo(descriptor4));
 }
 
 
@@ -367,7 +367,7 @@ DECLARE_SHAPE_FN(sru_bi) {
     auto wShapeInfo    = inputShape->at(1);
     auto bShapeInfo    = inputShape->at(2);
     auto c0ShapeInfo   = inputShape->at(3);
-    Nd4jLong* maskShapeInfo = block.width() > 4 ? inputShape->at(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
+    auto maskShapeInfo = block.width() > 4 ? inputShape->at(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
 
     const int      rank   = xShapeInfo[0];              // = 3
     const Nd4jLong time   = xShapeInfo[1];
@@ -396,7 +396,7 @@ DECLARE_SHAPE_FN(sru_bi) {
     char order = shape::order(xShapeInfo);
 
     ShapeDescriptor descriptor(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
-    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(descriptor);
+    auto result = ConstantShapeHelper::getInstance().createShapeInfo(descriptor);
     return SHAPELIST(result, result);
 }
 
@@ -465,7 +465,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     auto ctShapeInfo       = inputShape->at(4);
     auto inGradC0ShapeInfo = inputShape->at(5);
     auto inGradHtShapeInfo = inputShape->at(6);
-    Nd4jLong* maskShapeInfo = block.width() > 7 ? inputShape->at(7) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
+    auto maskShapeInfo = block.width() > 7 ? inputShape->at(7) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
 
     // input shapes validation
     const int rank        = xShapeInfo[0];
@@ -505,7 +505,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     ShapeDescriptor descriptor3(ArrayOptions::dataType(xShapeInfo), order, {4 * inSize});
     ShapeDescriptor descriptor4(ArrayOptions::dataType(xShapeInfo), order, {bS, 2 * inSize});
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor1), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor2), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor3), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor4));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor1), ConstantShapeHelper::getInstance().createShapeInfo(descriptor2), ConstantShapeHelper::getInstance().createShapeInfo(descriptor3), ConstantShapeHelper::getInstance().createShapeInfo(descriptor4));
 }
 
 }
@@ -771,13 +771,13 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 //     ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
 
-//     auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(newShapeInfo1));
+//     auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(newShapeInfo1));
 //     RELEASE(newShapeInfo1, block.getWorkspace());
 //     return SHAPELIST(result, result);
 // }
 
 // static NDArray sigmoid_(const NDArray& arr) {
-//     NDArray result(arr.getShapeInfo(), false, arr.getContext());
+//     NDArray result(arr.shapeInfo(), false, arr.getContext());
 //     (const_cast<NDArray&>(arr)).applyTransform(transform::Sigmoid, &result);
 //     return result;
 // }
@@ -935,5 +935,5 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 //     ShapeDescriptor descriptor3(ArrayOptions::dataType(inShape), order, {1, 2 * inSize});
 //     ShapeDescriptor descriptor4(ArrayOptions::dataType(inShape), order, {bS, inSize});
 
-//     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor1), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor2), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor3), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor4));
+//     return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(descriptor1), ConstantShapeHelper::getInstance().createShapeInfo(descriptor2), ConstantShapeHelper::getInstance().createShapeInfo(descriptor3), ConstantShapeHelper::getInstance().createShapeInfo(descriptor4));
 // }

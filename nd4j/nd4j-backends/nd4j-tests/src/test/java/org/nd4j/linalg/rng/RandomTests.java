@@ -30,6 +30,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.reduce.floating.Mean;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.random.custom.*;
 import org.nd4j.linalg.api.ops.random.impl.*;
@@ -1479,14 +1480,22 @@ public class RandomTests extends BaseNd4jTest {
     @Test
     public void testGamma(){
         Nd4j.getRandom().setSeed(12345);
-        INDArray shape = Nd4j.createFromArray(new int[] {1,3});
-        INDArray alpha = Nd4j.rand(1,3);
-        val randomGamma = new RandomGamma(shape, alpha, null);
+        INDArray shape = Nd4j.createFromArray(new int[] {1000,1000});
+        INDArray alpha = Nd4j.createFromArray(new float[]{2.f});
+        INDArray beta = Nd4j.createFromArray(new float[]{2.f});
+        val randomGamma = new RandomGamma(shape, alpha, beta);
         INDArray[] res = Nd4j.exec(randomGamma);
 
-        val randomGamma1 = new RandomGamma(shape, alpha, null);
+        val randomGamma1 = new RandomGamma(shape, alpha, beta);
         INDArray[] res1 = Nd4j.exec(randomGamma1);
-        assertEquals(res[0], res1[0]);
+
+        val meanOp0 = new Mean(res[0]);
+        val meanOp1 = new Mean(res1[0]);
+
+        INDArray mean0 = Nd4j.exec(meanOp0);
+        INDArray mean1 = Nd4j.exec(meanOp1);
+
+        assertArrayEquals(mean0.toFloatVector(), mean1.toFloatVector(), 1e-2f);
     }
 
     @Test
@@ -1512,6 +1521,28 @@ public class RandomTests extends BaseNd4jTest {
         val randomShuffle1 = new RandomShuffle(alpha);
         INDArray[] res1 = Nd4j.exec(randomShuffle1);
         assertEquals(res[0], res1[0]);
+    }
+
+
+    @Test
+    public void testRandom() {
+        val r1 = new java.util.Random(119);
+        val r2 = Nd4j.getRandom();
+        r2.setSeed(119);
+        float jmax = 0.0f;
+        float nmax = 0.0f;
+        for (int e = 0; e < 100_000_000; e++) {
+            val f = r1.nextFloat();
+            val n = r2.nextFloat();
+            if (f > jmax)
+                jmax = f;
+
+            if (n > nmax)
+                nmax = n;
+        }
+
+        assertTrue(jmax < 1.0);
+        assertTrue(nmax < 1.0);
     }
 
     @Override

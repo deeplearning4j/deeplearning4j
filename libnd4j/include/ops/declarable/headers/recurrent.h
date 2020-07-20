@@ -149,6 +149,13 @@ namespace ops  {
         DECLARE_CUSTOM_OP(lstmCell, 8, 2, false, 3, 2);
         #endif
 
+        #if NOT_EXCLUDED(OP_lstmLayerCell)
+        DECLARE_CUSTOM_OP(lstmLayerCell, 5, 2, false, 1, 3);
+        #endif
+        #if NOT_EXCLUDED(OP_lstmLayerCell)
+        DECLARE_CUSTOM_OP(lstmLayerCellBp, 7, 5, false, 1, 3);
+        #endif
+
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -234,6 +241,11 @@ namespace ops  {
         //////////////////////////////////////////////////////////////////////////
         #if NOT_EXCLUDED(OP_lstmLayer)
         DECLARE_CUSTOM_OP(lstmLayer, 3, 1, false, 1, 5);
+        #endif
+
+        //////////////////////////////////////////////////////////////////////////
+        #if NOT_EXCLUDED(OP_lstmLayer)
+        DECLARE_CUSTOM_OP(lstmLayer_bp, 4, 1, false, 1, 5);
         #endif
 
 
@@ -331,6 +343,10 @@ namespace ops  {
        */
         #if NOT_EXCLUDED(OP_gru)
         DECLARE_CUSTOM_OP(gru, 5, 1, false, 0, 0);
+        #endif
+
+        #if NOT_EXCLUDED(OP_gru)
+        DECLARE_CUSTOM_OP(gru_bp, 6, 5, false, 0, 0);
         #endif
 
     //////////////////////////////////////////////////////////////////////////

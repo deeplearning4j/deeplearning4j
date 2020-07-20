@@ -2,11 +2,13 @@ package org.deeplearning4j.rl4j.support;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.dataset.api.DataSet;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -19,6 +21,7 @@ public class MockDQN implements IDQN {
     public final List<INDArray> outputParams = new ArrayList<>();
     public final List<Pair<INDArray, INDArray>> fitParams = new ArrayList<>();
     public final List<Pair<INDArray, INDArray>> gradientParams = new ArrayList<>();
+    public final List<INDArray> outputAllParams = new ArrayList<>();
 
     @Override
     public NeuralNetwork[] getNeuralNetworks() {
@@ -58,7 +61,18 @@ public class MockDQN implements IDQN {
 
     @Override
     public INDArray[] outputAll(INDArray batch) {
-        return new INDArray[0];
+        outputAllParams.add(batch);
+        return new INDArray[] { batch.mul(-1.0) };
+    }
+
+    @Override
+    public void fit(DataSet featuresLabels) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void copy(ITrainableNeuralNet from) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -67,16 +81,6 @@ public class MockDQN implements IDQN {
         clone.hasBeenReset = hasBeenReset;
 
         return clone;
-    }
-
-    @Override
-    public void copy(NeuralNet from) {
-
-    }
-
-    @Override
-    public void copy(IDQN from) {
-
     }
 
     @Override

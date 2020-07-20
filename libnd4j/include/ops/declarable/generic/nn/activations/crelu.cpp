@@ -61,7 +61,7 @@ namespace sd {
                 shape.emplace_back(shape::shapeOf(inShape)[e]);
 
             shape[shape.size()-1] *= 2;
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), shape);
 
             return SHAPELIST(newShape);
         }
@@ -106,7 +106,7 @@ namespace sd {
 
         DECLARE_SHAPE_FN(crelu_bp) {
             auto inShape = inputShape->at(0);
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(inShape)));
+            return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(inShape)));
         }
     }
 }

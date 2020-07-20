@@ -33,7 +33,7 @@ public class BalancedPartitionerTest {
         // the 10 first elements should go in the 1st partition
         for (int i = 0; i < 10; i++) {
             int p = bp.getPartition(i);
-            assertEquals("Found wrong partition output " + p + ", not 0", p, 0);
+            assertEquals("Found wrong partition output " + p + ", not 0", 0, p);
         }
     }
 
@@ -43,7 +43,7 @@ public class BalancedPartitionerTest {
         // the 10 first elements should go in the 1st partition
         for (int i = 0; i < 10; i++) {
             int p = bp.getPartition(i);
-            assertEquals("Found wrong partition output " + p + ", not 0", p, 0);
+            assertEquals("Found wrong partition output " + p + ", not 0", 0, p);
         }
     }
 
@@ -56,7 +56,7 @@ public class BalancedPartitionerTest {
             countPerPartition[p] += 1;
         }
         for (int i = 0; i < 10; i++) {
-            assertEquals(countPerPartition[i], 10);
+            assertEquals(10, countPerPartition[i]);
         }
     }
 
@@ -70,9 +70,9 @@ public class BalancedPartitionerTest {
         }
         for (int i = 0; i < 10; i++) {
             if (i < 7)
-                assertEquals(countPerPartition[i], 10 + 1);
+                assertEquals(10 + 1, countPerPartition[i]);
             else
-                assertEquals(countPerPartition[i], 10);
+                assertEquals(10, countPerPartition[i]);
         }
     }
 

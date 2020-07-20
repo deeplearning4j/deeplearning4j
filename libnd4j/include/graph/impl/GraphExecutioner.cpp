@@ -88,7 +88,7 @@ namespace graph {
 
     Context context(node->getContextPrototype(), variableSpace);
 
-    if (sd::Environment::getInstance()->isDebugAndVerbose()) {
+    if (sd::Environment::getInstance().isDebugAndVerbose()) {
         //nd4j_debug("Input variables: %i\n", node->input()->size());
         printf("       Inputs: {");
         for (int e = 0; e < node->input()->size(); e++) {
@@ -215,10 +215,10 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
     }
     auto flowPath = __variableSpace->flowPath();
 
-    Nd4jLong tb0 = Environment::getInstance()->isProfiling() ? GraphProfile::currentTime() : 0L;
+    Nd4jLong tb0 = Environment::getInstance().isProfiling() ? GraphProfile::currentTime() : 0L;
     graph->buildGraph();
 
-    auto footprintForward = sd::memory::MemoryRegistrator::getInstance()->getGraphMemoryFootprint(graph->hashCode());
+    auto footprintForward = sd::memory::MemoryRegistrator::getInstance().getGraphMemoryFootprint(graph->hashCode());
     if (footprintForward > 0) {
         if (__variableSpace->launchContext()->getWorkspace() != nullptr) {
             // this method will work only if current workspace size is smaller then proposed value
@@ -228,10 +228,10 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
     }
 
     // optionally saving graph build time
-    if (Environment::getInstance()->isProfiling())
+    if (Environment::getInstance().isProfiling())
         flowPath->profile()->setBuildTime(GraphProfile::relativeTime(tb0));
 
-    Nd4jLong timeStart = Environment::getInstance()->isProfiling() ? GraphProfile::currentTime() : 0L;
+    Nd4jLong timeStart = Environment::getInstance().isProfiling() ? GraphProfile::currentTime() : 0L;
 
     bool pe = graph->getExecutorConfiguration()->_executionMode == ExecutionMode_AUTO;
 
@@ -259,10 +259,10 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
 
             Node* node = graph->getOnion()->at(l)->at(n);
 
-            if (Environment::getInstance()->isProfiling())
+            if (Environment::getInstance().isProfiling())
                 flowPath->profile()->nodeById(node->id(), node->name()->c_str());
 
-            if (lastId != node->id() && Environment::getInstance()->isProfiling()) {
+            if (lastId != node->id() && Environment::getInstance().isProfiling()) {
                 if (lastId != -10000000)
                     flowPath->profile()->nodeById(lastId)->setTotalTime(GraphProfile::relativeTime(nodeTime));
 
@@ -458,7 +458,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
                     // now we skip all branches except of this active one
                 }
 
-                if (sd::Environment::getInstance()->isDebugAndVerbose()) {
+                if (sd::Environment::getInstance().isDebugAndVerbose()) {
 
                     if (__variableSpace->getVariable(node->id())->hasNDArray()) {
                         auto array = __variableSpace->getVariable(node->id())->getNDArray();
@@ -481,7 +481,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
     }
 
     // optionally saving execution time
-    if (Environment::getInstance()->isProfiling()) {
+    if (Environment::getInstance().isProfiling()) {
         flowPath->profile()->nodeById(lastId)->setTotalTime(GraphProfile::relativeTime(nodeTime));
         flowPath->profile()->setExecutionTime(GraphProfile::relativeTime(timeStart));
         //flowPath->profile().printOut();
@@ -491,7 +491,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
     if (__variableSpace->launchContext()->getWorkspace() != nullptr) {
         auto m = __variableSpace->launchContext()->getWorkspace()->getAllocatedSize();
         auto h = graph->hashCode();
-        sd::memory::MemoryRegistrator::getInstance()->setGraphMemoryFootprintIfGreater(h, m);
+        sd::memory::MemoryRegistrator::getInstance().setGraphMemoryFootprintIfGreater(h, m);
     }
 
     if (tempFlow) {
@@ -523,7 +523,7 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
     // converting FlatGraph to internal representation
     auto nativeGraph = new Graph(restoredGraph);
 
-    if (Environment::getInstance()->isDebugAndVerbose()) {
+    if (Environment::getInstance().isDebugAndVerbose()) {
         nativeGraph->printOut();
     }
 
@@ -742,7 +742,7 @@ Graph* GraphExecutioner::importFromTensorFlow(const char *fileName) {
             nd4j_verbose("Node id: [%i]; name: [%s]; opName: [%s]\n", n + 1, node.name().c_str(),
                          node.op().c_str());
 
-            sd::ops::DeclarableOp *op = sd::ops::OpRegistrator::getInstance()->getOperationFloat(node.op().c_str());
+            sd::ops::DeclarableOp *op = sd::ops::OpRegistrator::getInstance().getOperationFloat(node.op().c_str());
 
             if (op == nullptr) {
                 nd4j_verbose("Op wasn't found: %s\n", node.op().c_str());
@@ -859,7 +859,7 @@ flatbuffers::Offset<FlatResult> GraphExecutioner::execute(Graph *graph, flatbuff
         }
     }
 
-    if (Environment::getInstance()->isDebugAndVerbose())
+    if (Environment::getInstance().isDebugAndVerbose())
         graph->printOut();
 
     auto status = GraphExecutioner::execute(graph);

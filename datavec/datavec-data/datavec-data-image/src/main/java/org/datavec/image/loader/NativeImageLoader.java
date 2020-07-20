@@ -24,7 +24,6 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.Image;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
-import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,14 +31,14 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.io.*;
 import java.nio.ByteOrder;
 
 import org.bytedeco.leptonica.*;
 import org.bytedeco.opencv.opencv_core.*;
-import org.bytedeco.opencv.opencv_imgproc.*;
+
 import static org.bytedeco.leptonica.global.lept.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgcodecs.*;
@@ -249,17 +248,27 @@ public class NativeImageLoader extends BaseImageLoader {
 
     @Override
     public INDArray asMatrix(File f) throws IOException {
+        return asMatrix(f, true);
+    }
+
+    @Override
+    public INDArray asMatrix(File f, boolean nchw) throws IOException {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
-            return asMatrix(bis);
+            return asMatrix(bis, nchw);
         }
     }
 
     @Override
     public INDArray asMatrix(InputStream is) throws IOException {
-        Mat mat = streamToMat(is);
+        return asMatrix(is, true);
+    }
+
+    @Override
+    public INDArray asMatrix(InputStream inputStream, boolean nchw) throws IOException {
+        Mat mat = streamToMat(inputStream);
         INDArray a;
         if (this.multiPageMode != null) {
-             a = asMatrix(mat.data(), mat.cols());
+            a = asMatrix(mat.data(), mat.cols());
         }else{
             Mat image = imdecode(mat, IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
             if (image == null || image.empty()) {
@@ -273,7 +282,11 @@ public class NativeImageLoader extends BaseImageLoader {
             a = asMatrix(image);
             image.deallocate();
         }
-        return a;
+        if(nchw) {
+            return a;
+        } else {
+            return a.permute(0, 2, 3, 1);       //NCHW to NHWC
+        }
     }
 
     /**
@@ -332,19 +345,29 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     public Image asImageMatrix(String filename) throws IOException {
-        return asImageMatrix(filename);
+        return asImageMatrix(new File(filename));
     }
 
     @Override
     public Image asImageMatrix(File f) throws IOException {
+        return asImageMatrix(f, true);
+    }
+
+    @Override
+    public Image asImageMatrix(File f, boolean nchw) throws IOException {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
-            return asImageMatrix(bis);
+            return asImageMatrix(bis, nchw);
         }
     }
 
     @Override
     public Image asImageMatrix(InputStream is) throws IOException {
-        Mat mat = streamToMat(is);
+        return asImageMatrix(is, true);
+    }
+
+    @Override
+    public Image asImageMatrix(InputStream inputStream, boolean nchw) throws IOException {
+        Mat mat = streamToMat(inputStream);
         Mat image = imdecode(mat, IMREAD_ANYDEPTH | IMREAD_ANYCOLOR);
         if (image == null || image.empty()) {
             PIX pix = pixReadMem(mat.data(), mat.cols());
@@ -355,6 +378,8 @@ public class NativeImageLoader extends BaseImageLoader {
             pixDestroy(pix);
         }
         INDArray a = asMatrix(image);
+        if(!nchw)
+            a = a.permute(0,2,3,1);     //NCHW to NHWC
         Image i = new Image(a, image.channels(), image.rows(), image.cols());
 
         image.deallocate();

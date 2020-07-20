@@ -39,7 +39,7 @@ namespace sd {
         DECLARE_SHAPE_FN(zeros_as) {
             auto in = inputShape->at(0);
             auto dtype = block.numD() ? D_ARG(0) : ArrayOptions::dataType(in);
-            auto shape = sd::ConstantShapeHelper::getInstance()->createShapeInfo(dtype, in);
+            auto shape = sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, in);
 
             return SHAPELIST(shape);
         }

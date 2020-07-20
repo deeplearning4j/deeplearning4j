@@ -36,19 +36,17 @@ namespace sd {
             }
 
             // setting initial values for limits
-            _groupLimits[sd::memory::MemoryType::HOST] = sd::Environment::getInstance()->maxPrimaryMemory();
-            _groupLimits[sd::memory::MemoryType::DEVICE] = sd::Environment::getInstance()->maxSpecialMemory();
+            _groupLimits[sd::memory::MemoryType::HOST] = sd::Environment::getInstance().maxPrimaryMemory();
+            _groupLimits[sd::memory::MemoryType::DEVICE] = sd::Environment::getInstance().maxSpecialMemory();
 
             // setting initial counter values
             _groupCounters[sd::memory::MemoryType::HOST] = 0;
             _groupCounters[sd::memory::MemoryType::DEVICE] = 0;
         }
 
-        MemoryCounter* MemoryCounter::getInstance() {
-            if (_INSTANCE == 0)
-                _INSTANCE = new MemoryCounter();
-
-            return _INSTANCE;
+        MemoryCounter& MemoryCounter::getInstance() {
+          static MemoryCounter instance;
+          return instance;
         }
 
         void MemoryCounter::countIn(int deviceId, Nd4jLong numBytes) {
@@ -127,7 +125,5 @@ namespace sd {
             std::lock_guard<std::mutex> lock(_locker);
             return _groupLimits[group];
         }
-
-        MemoryCounter* MemoryCounter::_INSTANCE = 0;
     }
 }

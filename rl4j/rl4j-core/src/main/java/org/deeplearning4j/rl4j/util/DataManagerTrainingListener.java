@@ -40,7 +40,7 @@ public class DataManagerTrainingListener implements TrainingListener {
             if (trainer instanceof AsyncThread) {
                 filename += ((AsyncThread) trainer).getThreadNumber() + "-";
             }
-            filename += trainer.getEpochCounter() + "-" + trainer.getStepCounter() + ".mp4";
+            filename += trainer.getEpochCount() + "-" + trainer.getStepCount() + ".mp4";
             hp.startMonitor(filename, shape);
         }
 
@@ -66,7 +66,7 @@ public class DataManagerTrainingListener implements TrainingListener {
     @Override
     public ListenerResponse onTrainingProgress(ILearning learning) {
         try {
-            int stepCounter = learning.getStepCounter();
+            int stepCounter = learning.getStepCount();
             if (stepCounter - lastSave >= Constants.MODEL_SAVE_FREQ) {
                 dataManager.save(learning);
                 lastSave = stepCounter;

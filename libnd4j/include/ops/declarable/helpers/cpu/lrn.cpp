@@ -35,13 +35,13 @@ static int lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray* outpu
 
     const int rank = input->rankOf();
 
-    TadPack inTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), {rank - 1});
+    TadPack inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), {rank - 1});
     TadPack outTadPack;
 
-    if(shape::haveSameShapeAndStrides(input->getShapeInfo(), output->getShapeInfo()))
+    if(shape::haveSameShapeAndStrides(input->shapeInfo(), output->shapeInfo()))
         outTadPack = inTadPack;
     else
-        outTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {rank - 1});
+        outTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {rank - 1});
 
     const Nd4jLong numOfTads = inTadPack.numberOfTads();
     const Nd4jLong tadLen    = input->sizeAt(-1); 
@@ -52,8 +52,8 @@ static int lrnFunctor_(sd::graph::Context& block, NDArray* input, NDArray* outpu
     const Nd4jLong inTadEws    = shape::elementWiseStride(inTadPack.primaryShapeInfo());
     const Nd4jLong outTadEws = shape::elementWiseStride(outTadPack.primaryShapeInfo());
     
-    const T* inBuff  = reinterpret_cast<T*>(input->getBuffer());
-          T* outBuff = reinterpret_cast<T*>(output->getBuffer());
+    const T* inBuff  = reinterpret_cast<T*>(input->buffer());
+          T* outBuff = reinterpret_cast<T*>(output->buffer());
 
     const T tbias  = static_cast<T>(bias);
     const T tbeta  = static_cast<T>(beta);
@@ -151,13 +151,13 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     
     const int rank = input.rankOf();
 
-    TadPack inTadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {rank - 1});
+    TadPack inTadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {rank - 1});
     TadPack gradITadPack;
 
-    if(shape::haveSameShapeAndStrides(input.getShapeInfo(), gradI.getShapeInfo()))
+    if(shape::haveSameShapeAndStrides(input.shapeInfo(), gradI.shapeInfo()))
         gradITadPack = inTadPack;
     else
-        gradITadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), {rank - 1});
+        gradITadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(gradI.shapeInfo(), {rank - 1});
 
     const Nd4jLong numOfTads = inTadPack.numberOfTads();
     const Nd4jLong tadLen    = input.sizeAt(-1); 
@@ -168,8 +168,8 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     const Nd4jLong inTadEws    = shape::elementWiseStride(inTadPack.primaryShapeInfo());
     const Nd4jLong gradITadEws = shape::elementWiseStride(gradITadPack.primaryShapeInfo());
     
-    const X* inBuff    = reinterpret_cast<X*>(input.getBuffer());
-          Y* gradIBuff = reinterpret_cast<Y*>(gradI.getBuffer());    
+    const X* inBuff    = reinterpret_cast<X const*>(input.buffer());
+          Y* gradIBuff = reinterpret_cast<Y*>(gradI.buffer());
 
     const Y tbias  = static_cast<Y>(bias);
     const Y tbeta  = static_cast<Y>(beta);

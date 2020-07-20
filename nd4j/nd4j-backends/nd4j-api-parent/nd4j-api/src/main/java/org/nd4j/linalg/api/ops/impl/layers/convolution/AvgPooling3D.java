@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
@@ -47,10 +47,6 @@ public class AvgPooling3D extends Pooling3D {
         super(sameDiff, new SDVariable[]{input}, null, null, false, config, Pooling3DType.AVG);
     }
 
-    public AvgPooling3D(SameDiff sameDiff,INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
-        super(sameDiff, null, new INDArray[]{arrayInput}, wrapOrNull(arrayOutput), false, config, Pooling3DType.AVG);
-    }
-
     public AvgPooling3D(@NonNull INDArray input, Pooling3DConfig pooling3DConfig) {
         super(null,null,new INDArray[]{input},null,false, pooling3DConfig, Pooling3DType.AVG);
     }
@@ -72,7 +68,7 @@ public class AvgPooling3D extends Pooling3D {
         return config.toProperties();
     }
 
-
+    @Override
     public String getPoolingPrefix() {
         return "avg";
     }

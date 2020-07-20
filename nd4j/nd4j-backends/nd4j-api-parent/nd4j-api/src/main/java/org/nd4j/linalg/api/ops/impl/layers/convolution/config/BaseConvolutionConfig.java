@@ -18,11 +18,14 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.lang.reflect.Field;
 
+@Slf4j
 public abstract class BaseConvolutionConfig {
 
     public abstract Map<String, Object> toProperties();
@@ -61,7 +64,7 @@ public abstract class BaseConvolutionConfig {
         try {
             target.set(this, value);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 

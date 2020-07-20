@@ -18,7 +18,7 @@ package org.deeplearning4j.arbiter.ui.data;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.compress.utils.IOUtils;
-import org.deeplearning4j.api.storage.Persistable;
+import org.deeplearning4j.core.storage.Persistable;
 import org.deeplearning4j.arbiter.ui.module.ArbiterModule;
 
 import java.io.*;

@@ -77,7 +77,7 @@ __host__ static void histogramFixedWidthCudaLauncher(const cudaStream_t *stream,
     const X leftEdge  = range.e<X>(0);
     const X rightEdge = range.e<X>(1);
 
-    histogramFixedWidthCuda<X, Z><<<256, 256, 1024, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftEdge, rightEdge);
+    histogramFixedWidthCuda<X, Z><<<256, 256, 1024, *stream>>>(input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftEdge, rightEdge);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -164,9 +164,9 @@ void histogramFixedWidth(sd::LaunchContext* context, const NDArray& input, const
 //         cudaError_t err = cudaMalloc(&outputBuffer, output.lengthOf() * sizeof(Nd4jLong));
 //         if (err != 0)
 //             throw cuda_exception::build("helpers::histogramFixedWidth: Cannot allocate memory for output", err);
-//         copyBuffers<Nd4jLong ><<<256, 512, 8192, *stream>>>(outputBuffer, output.getSpecialBuffer(), output.getSpecialShapeInfo(), output.lengthOf());
-//         histogramFixedWidthKernel<T><<<256, 512, 8192, *stream>>>(outputBuffer, output.lengthOf(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), input.lengthOf(), leftEdge, binWidth, secondEdge, lastButOneEdge);
-//         returnBuffers<Nd4jLong><<<256, 512, 8192, *stream>>>(output.specialBuffer(), outputBuffer, output.specialShapeInfo(), output.lengthOf());
+//         copyBuffers<Nd4jLong ><<<256, 512, 8192, *stream>>>(outputBuffer, output.specialBuffer(), output.special(), output.lengthOf());
+//         histogramFixedWidthKernel<T><<<256, 512, 8192, *stream>>>(outputBuffer, output.lengthOf(), input.specialBuffer(), input.special(), input.lengthOf(), leftEdge, binWidth, secondEdge, lastButOneEdge);
+//         returnBuffers<Nd4jLong><<<256, 512, 8192, *stream>>>(output.specialBuffer(), outputBuffer, output.special(), output.lengthOf());
 //         //cudaSyncStream(*stream);
 //         err = cudaFree(outputBuffer);
 //         if (err != 0)

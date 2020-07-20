@@ -25,7 +25,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -153,6 +153,7 @@ public abstract class DifferentialFunction {
     public Map<String,Object> propertiesForFunction() {
         Map<String,Field> fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
         Map<String,Object> ret = new LinkedHashMap<>();
+        Preconditions.checkNotNull(fields, "DifferentialFunctionClassHolder returned null fields for %s - op has not been added to ImportClassMapping?", getClass());
 
         for(val entry : fields.entrySet()) {
             try {
@@ -188,7 +189,7 @@ public abstract class DifferentialFunction {
         try {
             return property.get(this);
         } catch (IllegalAccessException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return null;
@@ -259,6 +260,10 @@ public abstract class DifferentialFunction {
                 //Edge case: we store float fields as doubles, rather than introduce an extra property
                 if(target.getType() == float.class && value instanceof Double){
                     value = ((Double) value).floatValue();
+                }
+                //Edge case: we store char fields as integers, rather than introduce an extra property
+                if(target.getType() == char.class && value instanceof Integer){
+                    value = (char)((Integer)value).intValue();
                 }
 
                 target.set(this,value);
@@ -446,7 +451,7 @@ public abstract class DifferentialFunction {
         this.sameDiff = sameDiff;
         this.inPlace = inPlace;
         setInstanceId();
-        if(sameDiff != null) {
+        if(sameDiff != null && args != null) {
             sameDiff.addArgsFor(args, this);
         }
     }
@@ -472,6 +477,11 @@ public abstract class DifferentialFunction {
      */
     public SDVariable outputVariable(){
         return outputVariables()[0];
+    }
+
+    public List<SDVariable> outputs(){
+        SDVariable[] out = outputVariables();
+        return out == null ? null : Arrays.asList(out);
     }
 
 
@@ -500,14 +510,6 @@ public abstract class DifferentialFunction {
      * @return
      */
     public abstract List<SDVariable> doDiff(List<SDVariable> f1);
-
-    /**
-     * Shortcut for the {@link DifferentialFunctionFactory}
-     * @return
-     */
-    public DifferentialFunctionFactory f() {
-        return sameDiff.f();
-    }
 
 
     /**
@@ -575,7 +577,7 @@ public abstract class DifferentialFunction {
                     copied = true;
                 }
 
-                SDVariable gradVar =  f().add(grad, vals.get(i));
+                SDVariable gradVar =  var.getSameDiff().math.add(grad, vals.get(i));
                 vals.set(i, gradVar);
                 sameDiff.setGradientForVariableName(var.name(), gradVar);
             } else {

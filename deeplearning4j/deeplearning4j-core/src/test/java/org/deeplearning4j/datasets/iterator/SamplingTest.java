@@ -33,7 +33,7 @@ public class SamplingTest extends BaseDL4JTest {
         DataSetIterator iter = new MnistDataSetIterator(10, 10);
         //batch size and total
         DataSetIterator sampling = new SamplingDataSetIterator(iter.next(), 10, 10);
-        assertEquals(sampling.next().numExamples(), 10);
+        assertEquals(10, sampling.next().numExamples());
     }
 
 }

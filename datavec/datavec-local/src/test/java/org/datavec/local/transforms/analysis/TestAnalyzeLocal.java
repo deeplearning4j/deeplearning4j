@@ -28,8 +28,9 @@ import org.datavec.local.transforms.AnalyzeLocal;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +64,7 @@ public class TestAnalyzeLocal {
             list.add(rr.next());
         }
 
-        INDArray arr = RecordConverter.toMatrix(list);
+        INDArray arr = RecordConverter.toMatrix(DataType.DOUBLE, list);
         INDArray mean = arr.mean(0);
         INDArray std = arr.std(0);
 

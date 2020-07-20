@@ -18,9 +18,10 @@ package org.deeplearning4j.arbiter.ui.data;
 
 import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
+import org.deeplearning4j.core.storage.Persistable;
 
 /**
- * A {@link org.deeplearning4j.api.storage.Persistable} implemention for model results - i.e., results for
+ * A {@link Persistable} implemention for model results - i.e., results for
  * each model
  *
  * @author Alex BLack

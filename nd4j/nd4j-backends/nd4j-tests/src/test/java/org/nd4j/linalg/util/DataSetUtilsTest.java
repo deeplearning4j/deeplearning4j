@@ -26,7 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.tools.SIS;
+import org.nd4j.common.tools.SIS;
 
 import static org.junit.Assert.assertTrue;
 

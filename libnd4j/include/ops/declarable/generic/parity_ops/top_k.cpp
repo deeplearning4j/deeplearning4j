@@ -76,7 +76,7 @@ namespace sd {
                 aShape[shapeRank] = k;
 
                 shape::updateStrides(aShape, shape::order(in));
-                shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(aShape, (e == 0?ArrayOptions::dataType(in):sd::DataType::INT64))));
+                shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(aShape, (e == 0?ArrayOptions::dataType(in):sd::DataType::INT64))));
 
                 RELEASE(aShape, block.getWorkspace());
             }

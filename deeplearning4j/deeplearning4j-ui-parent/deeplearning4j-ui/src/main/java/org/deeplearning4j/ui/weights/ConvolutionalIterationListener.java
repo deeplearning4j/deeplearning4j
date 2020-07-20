@@ -17,23 +17,25 @@
 package org.deeplearning4j.ui.weights;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.datavec.image.loader.ImageLoader;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.Persistable;
+import org.deeplearning4j.core.storage.StatsStorage;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.UiConnectionInfo;
-import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
-import org.deeplearning4j.util.UIDProvider;
+import org.deeplearning4j.core.ui.UiConnectionInfo;
+import org.deeplearning4j.ui.model.storage.mapdb.MapDBStatsStorage;
+import org.deeplearning4j.core.util.UIDProvider;
+import org.deeplearning4j.ui.model.weights.ConvolutionListenerPersistable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +51,7 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class ConvolutionalIterationListener extends BaseTrainingListener {
 
     private enum Orientation {
@@ -140,7 +143,7 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
                 ComputationGraph l = (ComputationGraph) model;
                 Layer[] layers = l.getLayers();
                 if(layers.length != activations.size())
-                    throw new RuntimeException();
+                    throw new RuntimeException("layers.length != activations.size(). Got layers.length="+layers.length+", activations.size()="+activations.size());
                 for( int i=0; i<layers.length; i++ ){
                     if(layers[i].type() == Layer.Type.CONVOLUTIONAL){
                         String layerName = layers[i].conf().getLayer().getLayerName();
@@ -661,7 +664,7 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         try {
             ImageIO.write(renderImageGrayscale(array), "png", file);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 
@@ -670,7 +673,7 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
         try {
             ImageIO.write(image, "png", file);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
     }

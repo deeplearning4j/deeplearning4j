@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -59,10 +60,12 @@ public class Upsampling2D extends BaseUpsamplingLayer {
 
     @JsonDeserialize(using = LegacyIntArrayDeserializer.class)
     protected int[] size;
+    protected CNN2DFormat format = CNN2DFormat.NCHW;
 
     protected Upsampling2D(UpsamplingBuilder builder) {
         super(builder);
         this.size = builder.size;
+        this.format = ((Builder)builder).format;
     }
 
     @Override
@@ -97,7 +100,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
         val inWidth = i.getWidth();
         val inDepth = i.getChannels();
 
-        return InputType.convolutional(size[0] * inHeight, size[1] * inWidth, inDepth);
+        return InputType.convolutional(size[0] * inHeight, size[1] * inWidth, inDepth, i.getFormat());
     }
 
     @Override
@@ -131,12 +134,33 @@ public class Upsampling2D extends BaseUpsamplingLayer {
                         .build();
     }
 
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        if (inputType == null || inputType.getType() != InputType.Type.CNN) {
+            throw new IllegalStateException("Invalid input for Upsampling 2D layer (layer name=\"" + getLayerName()
+                    + "\"): Expected CNN input, got " + inputType);
+        }
+        this.format = ((InputType.InputTypeConvolutional)inputType).getFormat();
+    }
 
     @NoArgsConstructor
     public static class Builder extends UpsamplingBuilder<Builder> {
 
+        protected CNN2DFormat format = CNN2DFormat.NCHW;
+
         public Builder(int size) {
             super(new int[] {size, size});
+        }
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public Builder dataFormat(CNN2DFormat format){
+            this.format = format;
+            return this;
         }
 
         /**
@@ -146,7 +170,7 @@ public class Upsampling2D extends BaseUpsamplingLayer {
          */
         public Builder size(int size) {
 
-            this.setSize(new int[] {size, size});
+            this.setSize(size, size);
             return this;
         }
 

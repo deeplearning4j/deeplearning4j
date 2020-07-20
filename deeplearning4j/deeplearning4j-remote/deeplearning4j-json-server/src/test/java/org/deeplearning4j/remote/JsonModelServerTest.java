@@ -495,7 +495,7 @@ public class JsonModelServerTest extends BaseDL4JTest {
         SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 28*28);
         SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 28*28, 10));
         SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 1, 10));
-        SDVariable sm = sd.nn.softmax("softmax", in.mmul(w).add(b));
+        SDVariable sm = sd.nn.softmax("softmax", in.mmul(w).add(b), -1);
 
         val server = new JsonModelServer.Builder<float[], Integer>(sd)
                 .outputSerializer( new IntSerde())
@@ -585,7 +585,7 @@ public class JsonModelServerTest extends BaseDL4JTest {
                 assertEquals(exp.argMax().getInt(0), out);
             }
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();
@@ -640,7 +640,7 @@ public class JsonModelServerTest extends BaseDL4JTest {
             server.start();
             //client.predict(new float[]{0.0f, 1.0f, 2.0f});
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();
@@ -700,7 +700,7 @@ public class JsonModelServerTest extends BaseDL4JTest {
             val result = client.predict(new float[]{0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f});
             assertNotNull(result);
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();

@@ -47,11 +47,11 @@ namespace sd {
             auto in = INPUT_VARIABLE(0);
             auto shape = in->template asVectorT<Nd4jLong>();
             auto lambdaShape = inputShape->at(1);
-            auto dtype = ArrayOptions::dataType(lambdaShape);
+            auto dtype = block.numD() > 0? D_ARG(0) : ArrayOptions::dataType(lambdaShape);
             for (auto d = 0; d < shape::rank(lambdaShape); ++d ) {
                 shape.emplace_back(shape::sizeAt(lambdaShape, d));
             }
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);
             return SHAPELIST(newShape);
         }
 

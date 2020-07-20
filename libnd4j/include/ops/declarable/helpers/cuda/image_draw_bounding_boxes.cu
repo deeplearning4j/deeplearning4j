@@ -25,7 +25,7 @@ namespace ops {
 namespace helpers {
 
     typedef NDArray ColorTable_t;
-    static NDArray DefaultColorTable(int depth) {
+    static NDArray DefaultColorTable(int depth, sd::LaunchContext* context) {
         //std::vector<std::vector<float>> colorTable;
         const Nd4jLong kDefaultTableLength = 10;
         const Nd4jLong kDefaultChannelLength = 4;
@@ -40,7 +40,7 @@ namespace helpers {
                 0, 0, 0.5, 1,    // 7: navy blue
                 0, 1, 1, 1,      // 8: aqua
                 1, 0, 1, 1       // 9: fuchsia
-        }, DataType::FLOAT32);
+        }, DataType::FLOAT32, context);
 
         if (depth == 1) {
             colorTable.assign(1.f); // all to white when black and white colors
@@ -49,9 +49,12 @@ namespace helpers {
     }
 
     template <typename T>
-    static __global__ void drawBoundingBoxesKernel(T const* images, Nd4jLong* imagesShape, float const* boxes,
-            Nd4jLong* boxesShape, float const* colorTable, Nd4jLong* colorTableShape, T* output, Nd4jLong* outputShape,
-            Nd4jLong batchSize, Nd4jLong width, Nd4jLong height, Nd4jLong channels, Nd4jLong boxSize, Nd4jLong colorTableLen) {
+    static __global__ void drawBoundingBoxesKernel(T const* images, const Nd4jLong* imagesShape,
+                                                   float const* boxes, const Nd4jLong* boxesShape,
+                                                   float const* colorTable, const Nd4jLong* colorTableShape,
+                                                   T* output, const Nd4jLong* outputShape,
+                                                   Nd4jLong batchSize, Nd4jLong width, Nd4jLong height,
+                                                   Nd4jLong channels, Nd4jLong boxSize, Nd4jLong colorTableLen) {
 
         for (auto batch = blockIdx.x; batch < (int)batchSize; batch += gridDim.x) { // loop by batch
             for (auto boxIndex = 0; boxIndex < boxSize; ++boxIndex) {
@@ -144,7 +147,7 @@ namespace helpers {
         auto channels = images->sizeAt(3);
         auto stream = context->getCudaStream();
         auto boxSize = boxes->sizeAt(1);
-        NDArray colorsTable = DefaultColorTable(channels);
+        NDArray colorsTable = DefaultColorTable(channels, context);
         if ((colors != nullptr && colors->lengthOf() > 0)) {
             colorsTable = *colors;
         }
@@ -153,8 +156,8 @@ namespace helpers {
         auto boxesBuf = boxes->getDataBuffer()->specialAsT<float>(); // boxes should be float32
         auto colorsTableBuf = colorsTable.getDataBuffer()->specialAsT<float>(); // color table is float32
         auto outputBuf = output->dataBuffer()->specialAsT<T>();
-        drawBoundingBoxesKernel<<<128, 128, 1024, *stream>>>(imagesBuf, images->getSpecialShapeInfo(),
-                boxesBuf, boxes->getSpecialShapeInfo(), colorsTableBuf, colorsTable.getSpecialShapeInfo(),
+        drawBoundingBoxesKernel<<<128, 128, 1024, *stream>>>(imagesBuf, images->specialShapeInfo(),
+                boxesBuf, boxes->specialShapeInfo(), colorsTableBuf, colorsTable.specialShapeInfo(),
                 outputBuf, output->specialShapeInfo(), batchSize, width, height, channels, boxSize, colorsTable.lengthOf());
     }
 
@@ -171,7 +174,7 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(output->dataType(), drawBoundingBoxesH, (context, images, boxes, colors, output), FLOAT_TYPES);
         NDArray::registerSpecialUse({output}, {images, boxes, colors});
     }
-    BUILD_SINGLE_TEMPLATE(template void drawBoundingBoxesH, (sd::LaunchContext* context, NDArray const* images, NDArray const* boxes, NDArray const* colors, NDArray* output), FLOAT_TYPES);
+
 }
 }
 }

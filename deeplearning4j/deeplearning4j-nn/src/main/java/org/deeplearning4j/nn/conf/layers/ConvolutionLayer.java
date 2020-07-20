@@ -19,10 +19,7 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.CacheMode;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -30,7 +27,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.ValidationUtils;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -58,6 +55,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
     protected boolean cudnnAllowFallback = true;
+    protected CNN2DFormat cnn2dDataFormat = CNN2DFormat.NCHW;
 
     /**
      * The "PREFER_FASTEST" mode will pick the fastest algorithm for the specified parameters from the {@link FwdAlgo},
@@ -139,6 +137,9 @@ public class ConvolutionLayer extends FeedForwardLayer {
         this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
         this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
         this.cudnnAllowFallback = builder.cudnnAllowFallback;
+        if(builder instanceof Builder) {
+            this.cnn2dDataFormat = ((Builder)builder).dataFormat;
+        }
 
         initializeConstraints(builder);
     }
@@ -191,7 +192,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                        nOut, layerIndex, getLayerName(), ConvolutionLayer.class);
+                        nOut, layerIndex, getLayerName(), cnn2dDataFormat, ConvolutionLayer.class);
     }
 
     @Override
@@ -205,6 +206,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
             InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
             this.nIn = c.getChannels();
         }
+        this.cnn2dDataFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
     }
 
     @Override
@@ -285,6 +287,8 @@ public class ConvolutionLayer extends FeedForwardLayer {
             super();
         }
 
+        protected CNN2DFormat dataFormat = CNN2DFormat.NCHW;
+
         @Override
         protected boolean allowCausal() {
             //Causal convolution - allowed for 1D only
@@ -308,6 +312,17 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         public Builder padding(int... padding) {
             this.setPadding(padding);
+            return this;
+        }
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public Builder dataFormat(CNN2DFormat format){
+            this.dataFormat = format;
             return this;
         }
 
@@ -358,6 +373,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
         @Override
         public void setDilation(int... dilation) {
             this.dilation = ValidationUtils.validate2NonNegative(dilation, false, "dilation");
+        }
+
+        public void setDataFormat(CNN2DFormat dataFormat){
+            this.dataFormat = dataFormat;
         }
     }
 

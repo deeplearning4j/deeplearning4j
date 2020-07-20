@@ -47,7 +47,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -771,7 +771,7 @@ public class MultiLayerTestRNN extends BaseDL4JTest {
                     .build();
             fail("Exception expected");
         } catch (IllegalStateException e){
-//            e.printStackTrace();
+            log.info(e.toString());
             assertTrue(e.getMessage().contains("TBPTT") && e.getMessage().contains("validateTbpttConfig"));
         }
     }

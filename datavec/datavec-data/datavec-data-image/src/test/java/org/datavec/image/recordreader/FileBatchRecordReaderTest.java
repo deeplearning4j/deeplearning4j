@@ -27,9 +27,9 @@ import org.datavec.image.loader.NativeImageLoader;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.api.loader.FileBatch;
+import org.nd4j.common.loader.FileBatch;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.util.*;

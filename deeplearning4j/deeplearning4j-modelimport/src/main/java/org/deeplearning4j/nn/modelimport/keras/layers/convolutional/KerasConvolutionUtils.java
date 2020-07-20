@@ -21,7 +21,7 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -360,8 +360,19 @@ public class KerasConvolutionUtils {
             }
 
         } else if (dimension == 1) {
-            int paddingInt = (int) innerConfig.get(layerField);
-            padding = new int[]{paddingInt, paddingInt};
+            Object paddingObj  = innerConfig.get(layerField);
+            if (paddingObj instanceof List){
+                List<Integer> paddingList = (List)paddingObj;
+                padding = new int[]{
+                        paddingList.get(0),
+                        paddingList.get(1)
+                };
+            }
+            else{
+                int paddingInt = (int) innerConfig.get(layerField);
+                padding = new int[]{paddingInt, paddingInt};
+            }
+
         } else {
             throw new UnsupportedKerasConfigurationException(
                     "Keras padding layer not supported");

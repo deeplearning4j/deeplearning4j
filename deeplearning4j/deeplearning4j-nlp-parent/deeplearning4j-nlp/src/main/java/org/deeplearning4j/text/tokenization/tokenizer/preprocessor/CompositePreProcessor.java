@@ -2,7 +2,7 @@ package org.deeplearning4j.text.tokenization.tokenizer.preprocessor;
 
 import lombok.NonNull;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 import java.util.ArrayList;
 import java.util.Arrays;

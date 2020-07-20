@@ -24,10 +24,7 @@ import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
 import org.deeplearning4j.earlystopping.scorecalc.DataSetLossCalculator;
 import org.deeplearning4j.earlystopping.termination.MaxEpochsTerminationCondition;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingGraphTrainer;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
@@ -45,6 +42,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -54,19 +53,29 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
+import static org.deeplearning4j.nn.conf.RNNFormat.NCW;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
+@RunWith(Parameterized.class)
 public class BidirectionalTest extends BaseDL4JTest {
 
+    private RNNFormat rnnDataFormat;
 
+    public BidirectionalTest(RNNFormat rnnDataFormat){
+        this.rnnDataFormat = rnnDataFormat;
+    }
+    @Parameterized.Parameters
+    public static Object[] params(){
+        return RNNFormat.values();
+    }
     @Test
     public void compareImplementations(){
         for(WorkspaceMode wsm : WorkspaceMode.values()) {
@@ -82,9 +91,9 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(wsm)
                     .updater(new Adam())
                     .list()
-                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
-                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
-                    .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
+                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
+                    .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).dataFormat(rnnDataFormat)
                             .nIn(10).nOut(10).build())
                     .build();
 
@@ -95,9 +104,9 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(wsm)
                     .updater(new Adam())
                     .list()
-                    .layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
-                    .layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).build())
-                    .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                    .layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())
+                    .layer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())
+                    .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).dataFormat(rnnDataFormat)
                             .nIn(10).nOut(10).build())
                     .build();
 
@@ -116,15 +125,24 @@ public class BidirectionalTest extends BaseDL4JTest {
 
             net2.setParams(net1.params());  //Assuming exact same layout here...
 
-            INDArray in = Nd4j.rand(new int[]{3, 10, 5});
+            INDArray in;
+            if (rnnDataFormat == NCW){
+                in = Nd4j.rand(new int[]{3, 10, 5});
+            }else{
+                in = Nd4j.rand(new int[]{3, 5, 10});
+            }
 
             INDArray out1 = net1.output(in);
             INDArray out2 = net2.output(in);
 
             assertEquals(out1, out2);
 
-            INDArray labels = Nd4j.rand(new int[]{3, 10, 5});
-
+            INDArray labels;
+            if (rnnDataFormat == NCW){
+                labels = Nd4j.rand(new int[]{3, 10, 5});
+            }else{
+                labels = Nd4j.rand(new int[]{3, 5, 10});
+            }
             net1.setInput(in);
             net1.setLabels(labels);
 
@@ -276,17 +294,22 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .inferenceWorkspaceMode(wsm)
                     .updater(new Adam())
                     .list()
-                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
-                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()))
+                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
+                    .layer(new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
                     .layer(new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                            .nIn(10).nOut(10).build())
+                            .nIn(10).nOut(10).dataFormat(rnnDataFormat).build())
                     .build();
 
             MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
             net1.init();
 
-            INDArray in = Nd4j.rand(new int[]{3, 10, 5});
-            INDArray labels = Nd4j.rand(new int[]{3, 10, 5});
+            INDArray in;
+            INDArray labels;
+
+            long[] inshape = rnnDataFormat == NCW ? new long[]{3, 10, 5} : new long[]{3, 5, 10};
+
+            in = Nd4j.rand(inshape);
+            labels = Nd4j.rand(inshape);
 
             net1.fit(in, labels);
 
@@ -300,8 +323,8 @@ public class BidirectionalTest extends BaseDL4JTest {
             MultiLayerNetwork net2 = ModelSerializer.restoreMultiLayerNetwork(new ByteArrayInputStream(bytes), true);
 
 
-            in = Nd4j.rand(new int[]{3, 10, 5});
-            labels = Nd4j.rand(new int[]{3, 10, 5});
+            in = Nd4j.rand(inshape);
+            labels = Nd4j.rand(inshape);
 
             INDArray out1 = net1.output(in);
             INDArray out2 = net2.output(in);
@@ -338,18 +361,18 @@ public class BidirectionalTest extends BaseDL4JTest {
                     .updater(new Adam())
                     .graphBuilder()
                     .addInputs("in")
-                    .layer("0", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()), "in")
-                    .layer("1", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).build()), "0")
-                    .layer("2", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                    .layer("0", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()), "in")
+                    .layer("1", new Bidirectional(Bidirectional.Mode.ADD, new GravesLSTM.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()), "0")
+                    .layer("2", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).dataFormat(rnnDataFormat)
                             .nIn(10).nOut(10).build(), "1")
                     .setOutputs("2")
                     .build();
 
             ComputationGraph net1 = new ComputationGraph(conf1);
             net1.init();
-
-            INDArray in = Nd4j.rand(new int[]{3, 10, 5});
-            INDArray labels = Nd4j.rand(new int[]{3, 10, 5});
+            long[] inshape = (rnnDataFormat == NCW)? new long[]{3, 10, 5}: new long[]{3, 5, 10};
+            INDArray in = Nd4j.rand(inshape);
+            INDArray labels = Nd4j.rand(inshape);
 
             net1.fit(new DataSet(in, labels));
 
@@ -363,8 +386,8 @@ public class BidirectionalTest extends BaseDL4JTest {
             ComputationGraph net2 = ModelSerializer.restoreComputationGraph(new ByteArrayInputStream(bytes), true);
 
 
-            in = Nd4j.rand(new int[]{3, 10, 5});
-            labels = Nd4j.rand(new int[]{3, 10, 5});
+            in = Nd4j.rand(inshape);
+            labels = Nd4j.rand(inshape);
 
             INDArray out1 = net1.outputSingle(in);
             INDArray out2 = net2.outputSingle(in);
@@ -394,8 +417,8 @@ public class BidirectionalTest extends BaseDL4JTest {
             Bidirectional.Mode[] modes = new Bidirectional.Mode[]{Bidirectional.Mode.CONCAT, Bidirectional.Mode.ADD,
                     Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL};
 
-
-            INDArray in = Nd4j.rand(new int[]{3, 10, 6});
+            long[] inshape = rnnDataFormat == NCW ? new long[]{3, 10, 6} : new long[]{3, 6, 10};
+            INDArray in = Nd4j.rand(inshape);
 
             for (Bidirectional.Mode m : modes) {
                 MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
@@ -406,7 +429,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .inferenceWorkspaceMode(wsm)
                         .updater(new Adam())
                         .list()
-                        .layer(new Bidirectional(m, new SimpleRnn.Builder().nIn(10).nOut(10).build()))
+                        .layer(new Bidirectional(m, new SimpleRnn.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()))
                         .build();
 
                 MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
@@ -418,7 +441,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .weightInit(WeightInit.XAVIER)
                         .updater(new Adam())
                         .list()
-                        .layer(new SimpleRnn.Builder().nIn(10).nOut(10).build())
+                        .layer(new SimpleRnn.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build())
                         .build();
 
                 MultiLayerNetwork net2 = new MultiLayerNetwork(conf2.clone());
@@ -434,11 +457,10 @@ public class BidirectionalTest extends BaseDL4JTest {
                 net3.setParam("0_RW", net1.getParam("0_bRW"));
                 net3.setParam("0_b", net1.getParam("0_bb"));
 
-                INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
-
+                INDArray inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat);
                 INDArray out1 = net1.output(in);
                 INDArray out2 = net2.output(in);
-                INDArray out3 = TimeSeriesUtils.reverseTimeSeries(net3.output(inReverse), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+                INDArray out3 = TimeSeriesUtils.reverseTimeSeries(net3.output(inReverse), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat);
 
                 INDArray outExp;
                 switch (m) {
@@ -452,7 +474,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         outExp = out2.add(out3).muli(0.5);
                         break;
                     case CONCAT:
-                        outExp = Nd4j.concat(1, out2, out3);
+                        outExp = Nd4j.concat((rnnDataFormat == NCW)?1:2, out2, out3);
                         break;
                     default:
                         throw new RuntimeException();
@@ -464,25 +486,25 @@ public class BidirectionalTest extends BaseDL4JTest {
                 //Check gradients:
                 if (m == Bidirectional.Mode.ADD || m == Bidirectional.Mode.CONCAT) {
 
-                    INDArray eps = Nd4j.rand(new int[]{3, 10, 6});
+                    INDArray eps = Nd4j.rand(inshape);
 
                     INDArray eps1;
                     if (m == Bidirectional.Mode.CONCAT) {
-                        eps1 = Nd4j.concat(1, eps, eps);
+                        eps1 = Nd4j.concat((rnnDataFormat == NCW)?1:2, eps, eps);
                     } else {
                         eps1 = eps;
                     }
 
                     net1.setInput(in);
                     net2.setInput(in);
-                    net3.setInput(TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT));
+                    net3.setInput(TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat));
                     net1.feedForward(true, false);
                     net2.feedForward(true, false);
                     net3.feedForward(true, false);
 
                     Pair<Gradient, INDArray> p1 = net1.backpropGradient(eps1, LayerWorkspaceMgr.noWorkspaces());
                     Pair<Gradient, INDArray> p2 = net2.backpropGradient(eps, LayerWorkspaceMgr.noWorkspaces());
-                    Pair<Gradient, INDArray> p3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT), LayerWorkspaceMgr.noWorkspaces());
+                    Pair<Gradient, INDArray> p3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT, rnnDataFormat), LayerWorkspaceMgr.noWorkspaces());
                     Gradient g1 = p1.getFirst();
                     Gradient g2 = p2.getFirst();
                     Gradient g3 = p3.getFirst();
@@ -520,7 +542,9 @@ public class BidirectionalTest extends BaseDL4JTest {
                     Bidirectional.Mode.AVERAGE, Bidirectional.Mode.MUL};
 
 
-            INDArray in = Nd4j.rand(new int[]{3, 10, 6});
+            long[] inshape = rnnDataFormat == NCW ? new long[]{3, 10, 6} : new long[]{3, 6, 10};
+            INDArray in = Nd4j.rand(inshape);
+
 
             for (Bidirectional.Mode m : modes) {
                 ComputationGraphConfiguration conf1 = new NeuralNetConfiguration.Builder()
@@ -532,7 +556,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .updater(new Adam())
                         .graphBuilder()
                         .addInputs("in")
-                        .layer("0", new Bidirectional(m, new SimpleRnn.Builder().nIn(10).nOut(10).build()), "in")
+                        .layer("0", new Bidirectional(m, new SimpleRnn.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build()), "in")
                         .setOutputs("0")
                         .build();
 
@@ -546,7 +570,7 @@ public class BidirectionalTest extends BaseDL4JTest {
                         .updater(new Adam())
                         .graphBuilder()
                         .addInputs("in")
-                        .layer("0", new SimpleRnn.Builder().nIn(10).nOut(10).build(), "in")
+                        .layer("0", new SimpleRnn.Builder().nIn(10).nOut(10).dataFormat(rnnDataFormat).build(), "in")
                         .setOutputs("0")
                         .build();
 
@@ -566,9 +590,20 @@ public class BidirectionalTest extends BaseDL4JTest {
 
                 INDArray out1 = net1.outputSingle(in);
                 INDArray out2 = net2.outputSingle(in);
-                INDArray out3 = TimeSeriesUtils.reverseTimeSeries(net3.outputSingle(
-                        TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT)),
-                        LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+                INDArray out3;
+                INDArray inReverse;
+                if (rnnDataFormat == RNNFormat.NWC){
+                    inReverse = TimeSeriesUtils.reverseTimeSeries(in.permute(0, 2, 1), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT).permute(0, 2, 1);
+                    out3 = net3.outputSingle(inReverse);
+                    out3 = TimeSeriesUtils.reverseTimeSeries(out3.permute(0, 2, 1), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT).permute(0, 2, 1);
+
+                }
+                else{
+                    inReverse = TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+                    out3 = net3.outputSingle(inReverse);
+                    out3 = TimeSeriesUtils.reverseTimeSeries(out3, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT);
+
+                }
 
                 INDArray outExp;
                 switch (m) {
@@ -582,7 +617,9 @@ public class BidirectionalTest extends BaseDL4JTest {
                         outExp = out2.add(out3).muli(0.5);
                         break;
                     case CONCAT:
-                        outExp = Nd4j.concat(1, out2, out3);
+                        System.out.println(out2.shapeInfoToString());
+                        System.out.println(out3.shapeInfoToString());
+                        outExp = Nd4j.concat((rnnDataFormat == NCW)?1:2, out2, out3);
                         break;
                     default:
                         throw new RuntimeException();
@@ -594,22 +631,26 @@ public class BidirectionalTest extends BaseDL4JTest {
                 //Check gradients:
                 if (m == Bidirectional.Mode.ADD || m == Bidirectional.Mode.CONCAT) {
 
-                    INDArray eps = Nd4j.rand(new int[]{3, 10, 6});
+                    INDArray eps = Nd4j.rand(inshape);
 
                     INDArray eps1;
                     if (m == Bidirectional.Mode.CONCAT) {
-                        eps1 = Nd4j.concat(1, eps, eps);
+                        eps1 = Nd4j.concat((rnnDataFormat == NCW)?1:2, eps, eps);
                     } else {
                         eps1 = eps;
                     }
 
+                    INDArray epsReversed = (rnnDataFormat == NCW)?
+                           TimeSeriesUtils.reverseTimeSeries(eps, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT):
+                           TimeSeriesUtils.reverseTimeSeries(eps.permute(0, 2, 1), LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT)
+                           .permute(0, 2, 1);
                     net1.outputSingle(true, false, in);
                     net2.outputSingle(true, false, in);
-                    net3.outputSingle(true, false, TimeSeriesUtils.reverseTimeSeries(in, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT));
+                    net3.outputSingle(true, false, inReverse);
 
                     Gradient g1 = net1.backpropGradient(eps1);
                     Gradient g2 = net2.backpropGradient(eps);
-                    Gradient g3 = net3.backpropGradient(TimeSeriesUtils.reverseTimeSeries(eps, LayerWorkspaceMgr.noWorkspaces(), ArrayType.INPUT));
+                    Gradient g3 = net3.backpropGradient(epsReversed);
 
                     for (boolean updates : new boolean[]{false, true}) {
                         if (updates) {

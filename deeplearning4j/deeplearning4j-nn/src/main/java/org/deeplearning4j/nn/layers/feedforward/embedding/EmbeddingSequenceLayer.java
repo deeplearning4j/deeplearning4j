@@ -20,19 +20,18 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.Arrays;
 
@@ -64,8 +63,14 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         INDArray z = preOutput(true, workspaceMgr);
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //Shape: [mb, vector, seqLength]
 
+        boolean ncw = layerConf().getOutputFormat() == RNNFormat.NCW;
+
         if (maskArray != null) {
-            delta = Broadcast.mul(delta, maskArray, delta, 0, 2);
+            if(ncw){
+                delta = Broadcast.mul(delta, maskArray, delta, 0, 2);
+            } else {
+                delta = Broadcast.mul(delta, maskArray, delta, 0, 1);
+            }
         }
 
         int inputLength = layerConf().getInputLength();
@@ -76,7 +81,10 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
             delta = delta.dup('c');
         }
 
-        delta = delta.permute(0, 2, 1); //From [minibatch, nOut, length] to [minibatch, length, nOut]
+        if(ncw){
+            delta = delta.permute(0, 2, 1);     //From [minibatch, nOut, length] to [minibatch, length, nOut]
+        }
+
         delta = delta.reshape('c',inputLength * numSamples, nOut);
 
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
@@ -159,7 +167,10 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
         }
 
         val shape = new long[]{minibatch, inputLength, nOut};
-        INDArray ret = rows.reshape('c', shape).permute(0, 2, 1);
+        INDArray ret = rows.reshape('c', shape);
+        if(layerConf().getOutputFormat() == RNNFormat.NCW){
+            ret = ret.permute(0, 2, 1); //[minibatch, seqLen, nOut] -> [minibatch, nOut, seqLen] i.e., NWC -> NCW
+        }
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);
     }
 
@@ -177,8 +188,14 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
                         " 2 (when input is rank 3, shape [mb,1,tsLength]). Input shape: " + Arrays.toString(input.shape()) +
                         ", mask shape: " + Arrays.toString(maskArray.shape()));
             }
-            //Returned array: rank 3, shape [mb, vector, seqLength]. mask shape: [mb, seqLength]
-            Broadcast.mul(ret, maskArray.castTo(ret.dataType()), ret, 0, 2);
+            boolean ncw = layerConf().getOutputFormat() == RNNFormat.NCW;
+            if(ncw){
+                //Returned array: rank 3, shape [mb, vector, seqLength]. mask shape: [mb, seqLength]
+                Broadcast.mul(ret, maskArray.castTo(ret.dataType()), ret, 0, 2);
+            } else {
+                //Returned array: rank 3, shape [mb, seqLength, vector]. mask shape: [mb, seqLength]
+                Broadcast.mul(ret, maskArray.castTo(ret.dataType()), ret, 0, 1);
+            }
         }
         return ret;
     }

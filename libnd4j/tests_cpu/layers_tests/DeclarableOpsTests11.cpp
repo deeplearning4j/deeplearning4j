@@ -25,6 +25,7 @@
 #include <ops/ops.h>
 #include <helpers/GradCheck.h>
 #include <helpers/MmulHelper.h>
+#include <ops/declarable/helpers/image_resize.h>
 
 using namespace sd;
 
@@ -47,7 +48,7 @@ TEST_F(DeclarableOpsTests11, test_listdiff_1) {
     auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result.status());
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -392,10 +393,10 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test12) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
-    weights.t<double>(3) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
+    weights.r<double>(3) = 0.;
 
 
     sd::ops::log_loss_grad op;
@@ -431,9 +432,9 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test13) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
 
     sd::ops::log_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {1e-7}, {3});
@@ -1054,6 +1055,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeBicubic_Test8) {
     ASSERT_TRUE(testData.equalsTo(result));
 }
 
+
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test1) {
 
     NDArray input    = NDArrayFactory::create<double>('c', {1, 3, 3, 4});
@@ -1113,6 +1115,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 }
+
 
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test2) {
 
@@ -1344,6 +1347,34 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test8) {
     ASSERT_TRUE(expected.equalsTo(result));
 }
 
+TEST_F(DeclarableOpsTests11, ResizeImages_Test8) {
+
+    NDArray input    = NDArrayFactory::create<int>('c', {1, 3, 3, 1}, {
+            1, 2, 3, 4, 5, 6, 7, 8, 9
+    });
+
+    NDArray expected = NDArrayFactory::create<float>('c', {1, 6, 6, 1}, {
+//            1.f, 1.f, 2.f, 2.f, 3.f, 3.f, 1.f, 1.f, 2.f, 2.f, 3.f, 3.f, 4.f, 4.f, 5.f, 5.f, 6.f, 6.f, 4.f, 4.f, 5.f, 5.f,
+//            6.f, 6.f, 7.f, 7.f, 8.f, 8.f, 9.f, 9.f, 7.f, 7.f, 8.f, 8.f, 9.f, 9.f
+       1.f       , 1.f       , 1.5f, 2.f       , 2.f, 3.f,       1.f      , 1.f       , 1.5f, 2.f       , 2.f, 3.f,
+       2.5f, 2.5f, 3.f, 3.5f, 3.5f, 4.5f,       4.f       , 4.f       , 4.5f      , 5.f, 5.f, 6.f ,
+       4.f, 4.f, 4.5f      , 5.f, 5.f, 6.f,       7.f , 7.f , 7.5f , 8.f , 8.f , 9.f
+    });
+    //input.linspace(1);
+//    auto size = NDArrayFactory::create<int>({6, 6});
+    sd::ops::resize_images op;
+    auto results = op.evaluate({&input}, {}, {6, 8, ops::helpers::kResizeArea}, {true, true}); // resize_area to 6x8 with align corners and preserve aspect ratio of input image
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    NDArray* result = results.at(0);
+
+//    result->printBuffer("Area Resized to 6x6");
+//    expected.printBuffer("Area Expect for 6x6");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+}
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, ImageResizeArea_Test9) {
 
@@ -1352,7 +1383,10 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test9) {
     });
 
     NDArray expected = NDArrayFactory::create<float>('c', {1, 10, 10, 4}, {
-            1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333337f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 8.999998f, 9.999998f, 10.999998f, 11.999998f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333337f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 8.999998f, 9.999998f, 10.999998f, 11.999998f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333337f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 8.999998f, 9.999998f, 10.999998f, 11.999998f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333337f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 8.999998f, 9.999998f, 10.999998f, 11.999998f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333336f, 8.999999f, 9.999999f, 11.000000f, 11.999999f, 8.999999f, 9.999999f, 11.000000f, 11.999999f, 8.999998f, 9.999997f, 10.999997f, 11.999997f, 13.000003f, 14.000004f, 15.000003f, 16.000004f, 13.000003f, 14.000004f, 15.000003f, 16.000004f, 13.000003f, 14.000004f, 15.000003f, 16.000004f, 15.666671f, 16.666672f, 17.666672f, 18.666672f, 17.000006f, 18.000004f, 19.000006f, 20.000004f, 17.000006f, 18.000004f, 19.000006f, 20.000004f, 18.333344f, 19.333344f, 20.333345f, 21.333344f, 21.000006f, 22.000006f, 23.000006f, 24.000006f, 21.000006f, 22.000006f, 23.000006f, 24.000006f, 21.000002f, 22.000000f, 23.000002f, 24.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 15.666667f, 16.666668f, 17.666668f, 18.666668f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 18.333340f, 19.333340f, 20.333342f, 21.333340f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 20.999996f, 21.999996f, 22.999994f, 23.999996f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 15.666667f, 16.666668f, 17.666668f, 18.666668f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 18.333340f, 19.333340f, 20.333342f, 21.333340f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 20.999996f, 21.999996f, 22.999994f, 23.999996f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 15.666667f, 16.666668f, 17.666668f, 18.666668f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 18.333340f, 19.333340f, 20.333342f, 21.333340f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 20.999996f, 21.999996f, 22.999994f, 23.999996f, 12.999995f, 13.999995f, 14.999994f, 15.999994f, 12.999995f, 13.999995f, 14.999994f, 15.999994f, 12.999995f, 13.999995f, 14.999994f, 15.999994f, 15.666661f, 16.666662f, 17.666660f, 18.666660f, 16.999994f, 17.999994f, 18.999992f, 19.999992f, 16.999994f, 17.999994f, 18.999992f, 19.999992f, 18.333334f, 19.333332f, 20.333334f, 21.333332f, 20.999992f, 21.999992f, 22.999990f, 23.999992f, 20.999992f, 21.999992f, 22.999990f, 23.999992f, 20.999989f, 21.999989f, 22.999987f, 23.999987f
+        1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f,  2.000000f,
+        3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f,  8.000000f,
+        5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333337f, 9.000000f, 10.000000f,
+       11.000000f, 12.000000f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 8.999998f, 9.999998f, 10.999998f, 11.999998f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333337f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 8.999998f, 9.999998f, 10.999998f, 11.999998f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333337f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 8.999998f, 9.999998f, 10.999998f, 11.999998f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333337f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 9.000000f, 10.000000f, 11.000000f, 12.000000f, 8.999998f, 9.999998f, 10.999998f, 11.999998f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 1.000000f, 2.000000f, 3.000000f, 4.000000f, 3.666667f, 4.666667f, 5.666667f, 6.666667f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 5.000000f, 6.000000f, 7.000000f, 8.000000f, 6.333336f, 7.333336f, 8.333336f, 9.333336f, 8.999999f, 9.999999f, 11.000000f, 11.999999f, 8.999999f, 9.999999f, 11.000000f, 11.999999f, 8.999998f, 9.999997f, 10.999997f, 11.999997f, 13.000003f, 14.000004f, 15.000003f, 16.000004f, 13.000003f, 14.000004f, 15.000003f, 16.000004f, 13.000003f, 14.000004f, 15.000003f, 16.000004f, 15.666671f, 16.666672f, 17.666672f, 18.666672f, 17.000006f, 18.000004f, 19.000006f, 20.000004f, 17.000006f, 18.000004f, 19.000006f, 20.000004f, 18.333344f, 19.333344f, 20.333345f, 21.333344f, 21.000006f, 22.000006f, 23.000006f, 24.000006f, 21.000006f, 22.000006f, 23.000006f, 24.000006f, 21.000002f, 22.000000f, 23.000002f, 24.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 15.666667f, 16.666668f, 17.666668f, 18.666668f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 18.333340f, 19.333340f, 20.333342f, 21.333340f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 20.999996f, 21.999996f, 22.999994f, 23.999996f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 15.666667f, 16.666668f, 17.666668f, 18.666668f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 18.333340f, 19.333340f, 20.333342f, 21.333340f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 20.999996f, 21.999996f, 22.999994f, 23.999996f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 13.000000f, 14.000001f, 15.000000f, 16.000000f, 15.666667f, 16.666668f, 17.666668f, 18.666668f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 17.000002f, 18.000000f, 19.000002f, 20.000000f, 18.333340f, 19.333340f, 20.333342f, 21.333340f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 21.000002f, 22.000000f, 22.999998f, 24.000000f, 20.999996f, 21.999996f, 22.999994f, 23.999996f, 12.999995f, 13.999995f, 14.999994f, 15.999994f, 12.999995f, 13.999995f, 14.999994f, 15.999994f, 12.999995f, 13.999995f, 14.999994f, 15.999994f, 15.666661f, 16.666662f, 17.666660f, 18.666660f, 16.999994f, 17.999994f, 18.999992f, 19.999992f, 16.999994f, 17.999994f, 18.999992f, 19.999992f, 18.333334f, 19.333332f, 20.333334f, 21.333332f, 20.999992f, 21.999992f, 22.999990f, 23.999992f, 20.999992f, 21.999992f, 22.999990f, 23.999992f, 20.999989f, 21.999989f, 22.999987f, 23.999987f
 
     });
     //input.linspace(1);
@@ -1531,6 +1565,7 @@ TEST_F(DeclarableOpsTests11, ImageResizeArea_Test15) {
     ASSERT_TRUE(expected.equalsTo(result));
 }
 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, summaryStatsData_test1) {
 
@@ -1605,7 +1640,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_2) {
 //    z->printIndexedBuffer("Solve 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_3) {
@@ -1642,7 +1677,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_3) {
 //    z->printIndexedBuffer("Solve 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1675,7 +1710,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4) {
 //    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_4_1) {
@@ -1704,7 +1739,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_1) {
 //    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_4_2) {
@@ -1737,7 +1772,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_2) {
 //    exp.printBuffer("4_2 Triangular_Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1771,7 +1806,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_3) {
 //    exp.printBuffer("4_3 Triangular_Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1805,7 +1840,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_4) {
 //    exp.printBuffer("4_4 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1839,7 +1874,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_5) {
 //    exp.printBuffer("4_5 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1873,7 +1908,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_6) {
 //    exp.printBuffer("4_6 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, Solve_Test_4_7) {
@@ -1910,7 +1945,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_4_7) {
 //    exp.printBuffer("4_7 Expec 3x3");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1944,7 +1979,7 @@ TEST_F(DeclarableOpsTests11, Solve_Test_5) {
 //    exp.printBuffer("4 Expec 4x4");
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, SolveLS_Test_1) {
@@ -2396,10 +2431,10 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test12) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
-    weights.t<double>(3) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
+    weights.r<double>(3) = 0.;
 
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
@@ -2433,9 +2468,9 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test13) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
 
     sd::ops::mean_sqerr_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
@@ -2464,7 +2499,7 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test1) {
     ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(exp.equalsTo(result.at(0)));
 
-    
+
 }
 
 TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test2) {
@@ -2475,7 +2510,7 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test2) {
     auto result = op.evaluate({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(exp.equalsTo(result.at(0)));
-    
+
 }
 
 TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test3) {
@@ -2487,7 +2522,7 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test3) {
     auto result = op.evaluate({&x, &y, &eps}, {}, {});
     ASSERT_EQ(Status::OK(), result.status());
     ASSERT_TRUE(exp.equalsTo(result.at(0)));
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2827,10 +2862,10 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test12) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
-    weights.t<double>(3) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
+    weights.r<double>(3) = 0.;
 
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
@@ -2864,9 +2899,9 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test13) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
 
     sd::ops::absolute_difference_loss_grad op;
     auto results = op.evaluate({&predictions, &weights, &labels}, {}, {3});
@@ -3302,10 +3337,10 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test12) {
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
-    weights.t<double>(3) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
+    weights.r<double>(3) = 0.;
 
 
     sd::ops::sigm_cross_entropy_loss_grad op;
@@ -3341,9 +3376,9 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test13) {
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    weights.t<double>(0) = 0.;
-    weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;
+    weights.r<double>(0) = 0.;
+    weights.r<double>(1) = 0.;
+    weights.r<double>(2) = 0.;
 
     sd::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.evaluate({&logits, &weights, &labels}, {0.3}, {3});
@@ -3677,7 +3712,7 @@ TEST_F(DeclarableOpsTests11, SafeDivideMixed_Test1) {
     NDArray labels('c', {2, 3}, {1.0, 2.0, 3.0, -1.0, 2.0, 1.0});
     auto sumDiff = labels.reduceAlongDimension(reduce::Sum, {1}, true);
 
-    NDArray numOfNonZero(sumDiff.getShapeInfo(), sd::DataType::INT64, false);
+    NDArray numOfNonZero(sumDiff.shapeInfo(), sd::DataType::INT64, false);
     numOfNonZero.assign(1);
     sumDiff.applyPairwiseTransform(pairwise::SafeDivide, numOfNonZero, sumDiff);
 }

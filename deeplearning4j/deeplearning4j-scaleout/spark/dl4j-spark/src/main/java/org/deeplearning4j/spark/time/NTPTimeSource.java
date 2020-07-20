@@ -18,7 +18,7 @@ package org.deeplearning4j.spark.time;
 
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
-import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.common.config.DL4JSystemProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

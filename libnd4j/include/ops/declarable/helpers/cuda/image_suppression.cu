@@ -38,7 +38,7 @@ namespace helpers {
 //      return value: true, if threshold is overcome, false otherwise
 //
     template <typename T>
-    static __device__ bool needToSuppressWithThreshold(T* boxes, Nd4jLong* boxesShape, int previousIndex, int nextIndex, T threshold) {
+    static __device__ bool needToSuppressWithThreshold(T* boxes, Nd4jLong const* boxesShape, int previousIndex, int nextIndex, T threshold) {
         Nd4jLong previous0[] = {previousIndex, 0};
         Nd4jLong previous1[] = {previousIndex, 1};
         Nd4jLong previous2[] = {previousIndex, 2};
@@ -80,7 +80,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static __device__ T similirityV3(T* boxes, Nd4jLong* boxesShape, int previousIndex, int nextIndex) {
+    static __device__ T similirityV3(T* boxes, Nd4jLong const* boxesShape, int previousIndex, int nextIndex) {
         Nd4jLong previous0[] = {previousIndex, 0};
         Nd4jLong previous1[] = {previousIndex, 1};
         Nd4jLong previous2[] = {previousIndex, 2};
@@ -127,7 +127,7 @@ namespace helpers {
 // we compute boolean flag as shared uint32 and return it on final only for the first thread
 //
     template <typename T, typename I>
-    static __global__ void shouldSelectKernel(T* boxesBuf, Nd4jLong* boxesShape, I* indexBuf, I* selectedIndicesData, double threshold, int numSelected, int i, bool* shouldSelect) {
+    static __global__ void shouldSelectKernel(T* boxesBuf, Nd4jLong const* boxesShape, I* indexBuf, I* selectedIndicesData, double threshold, int numSelected, int i, bool* shouldSelect) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = gridDim.x * blockDim.x;
         __shared__ unsigned int shouldSelectShared;
@@ -188,7 +188,7 @@ namespace helpers {
     static void nonMaxSuppressionV2_(sd::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {boxes, scales});
-        std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>('c', {scales->lengthOf()})); // - 1, scales->lengthOf()); //, scales->getContext());
+        std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>('c', {scales->lengthOf()}, context)); // - 1, scales->lengthOf()); //, scales->getContext());
 
         NDArray scores(*scales);
         Nd4jPointer extras[2] = {nullptr, stream};
@@ -198,7 +198,7 @@ namespace helpers {
         indices->tickWriteDevice();
         sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
         indices->tickWriteDevice();
-        NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()});
+        NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()}, context);
         int numSelected = 0;
         int numBoxes = boxes->sizeAt(0);
         auto boxesBuf = reinterpret_cast<T*>(boxes->specialBuffer());
@@ -242,7 +242,7 @@ namespace helpers {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T, typename I>
-    static __device__ bool checkOverlapBoxes(T* boxes, Nd4jLong* shape, T* scores, I* indices, I* selectedIndices, I* startIndices, I selectedSize, I nextCandidateIndex, T overlapThreshold, T scoreThreshold, bool simple) {
+    static __device__ bool checkOverlapBoxes(T* boxes, Nd4jLong const* shape, T* scores, I* indices, I* selectedIndices, I* startIndices, I selectedSize, I nextCandidateIndex, T overlapThreshold, T scoreThreshold, bool simple) {
         bool shouldHardSuppress = false;
         T& nextCandidateScore = scores[nextCandidateIndex];
         I selectedIndex = indices[nextCandidateIndex];
@@ -276,8 +276,8 @@ namespace helpers {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T, typename I>
     static __global__ void
-    suppressNonMaxOverlapKernel(T* boxes, Nd4jLong* boxesShape, T* scoresData, I* indices, I* startIndices, Nd4jLong length, I maxOutputLen,
-    T overlapThreshold, T scoreThreshold, I* output, Nd4jLong* outputShape, I* outputLength, bool simple) {
+    suppressNonMaxOverlapKernel(T* boxes, Nd4jLong const* boxesShape, T* scoresData, I* indices, I* startIndices, Nd4jLong length, I maxOutputLen,
+    T overlapThreshold, T scoreThreshold, I* output, Nd4jLong const* outputShape, I* outputLength, bool simple) {
 
         __shared__ I selectedSize;
         __shared__ I* tempOutput;
@@ -347,8 +347,8 @@ namespace helpers {
                 scores->syncToDevice();
         }
 
-        NDArray indices = NDArrayFactory::create<I>('c', {scores->lengthOf()}); // - 1, scales->lengthOf()); //, scales->getContext());
-        NDArray startPositions = NDArrayFactory::create<I>('c', {scores->lengthOf()});
+        NDArray indices = NDArrayFactory::create<I>('c', {scores->lengthOf()}, context); // - 1, scales->lengthOf()); //, scales->getContext());
+        NDArray startPositions = NDArrayFactory::create<I>('c', {scores->lengthOf()}, context);
         NDArray selectedScores(*scores);
         Nd4jPointer extras[2] = {nullptr, stream};
         auto indexBuf = indices.dataBuffer()->specialAsT<I>();///reinterpret_cast<I*>(indices->specialBuffer());

@@ -17,6 +17,7 @@
 package org.datavec.image.loader;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.io.labels.PatternPathLabelGenerator;
@@ -48,6 +49,7 @@ import java.util.Random;
  *      most images are in color, although a few are grayscale
  *
  */
+@Slf4j
 public class LFWLoader extends BaseImageLoader implements Serializable {
 
     public final static int NUM_IMAGES = 13233;
@@ -72,11 +74,11 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
     protected File fullDir;
 
     protected boolean useSubset = false;
-    InputSplit[] inputSplit;
+    protected InputSplit[] inputSplit;
 
-    public static Map<String, String> lfwData = new HashMap<>();
-    public static Map<String, String> lfwLabel = new HashMap<>();
-    public static Map<String, String> lfwSubsetData = new HashMap<>();
+    public Map<String, String> lfwData = new HashMap<>();
+    public Map<String, String> lfwLabel = new HashMap<>();
+    public Map<String, String> lfwSubsetData = new HashMap<>();
 
     public LFWLoader() {
         this(false);
@@ -235,7 +237,7 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
             InputSplit data = train ? inputSplit[0] : inputSplit[1];
             recordReader.initialize(data);
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return recordReader;
     }
@@ -250,7 +252,7 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
             InputSplit data = train ? inputSplit[0] : inputSplit[1];
             recordReader.initialize(data);
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return recordReader;
     }
@@ -271,7 +273,17 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
     }
 
     @Override
+    public INDArray asMatrix(File f, boolean nchw) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public INDArray asMatrix(InputStream inputStream) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray asMatrix(InputStream inputStream, boolean nchw) throws IOException {
         throw new UnsupportedOperationException();
     }
 
@@ -281,7 +293,17 @@ public class LFWLoader extends BaseImageLoader implements Serializable {
     }
 
     @Override
+    public Image asImageMatrix(File f, boolean nchw) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Image asImageMatrix(InputStream inputStream) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Image asImageMatrix(InputStream inputStream, boolean nchw) throws IOException {
         throw new UnsupportedOperationException();
     }
 

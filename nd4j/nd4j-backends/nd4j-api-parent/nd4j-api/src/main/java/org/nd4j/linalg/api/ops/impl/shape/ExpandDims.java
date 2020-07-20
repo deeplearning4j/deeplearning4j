@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -46,6 +46,10 @@ public class ExpandDims extends DynamicCustomOp {
     public ExpandDims() {
     }
 
+    public ExpandDims(SameDiff sameDiff, SDVariable args, int axis) {
+        this(sameDiff, new SDVariable[]{args}, axis);
+    }
+
     public ExpandDims(SameDiff sameDiff, SDVariable[] args, int axis) {
         super(null, sameDiff, args);
         if (axis == Integer.MAX_VALUE) {
@@ -65,6 +69,12 @@ public class ExpandDims extends DynamicCustomOp {
 
     public ExpandDims(SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(null, sameDiff, args, inPlace);
+    }
+
+    public ExpandDims(INDArray x, int axis){
+        super(new INDArray[]{x}, null);
+        this.jaxis = axis;
+        addIArgument(axis);
     }
 
     @Override

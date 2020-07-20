@@ -16,12 +16,11 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.bool;
 
-import org.nd4j.autodiff.functions.DifferentialFunction;
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 
 import java.util.Collections;
 import java.util.List;
@@ -31,12 +30,15 @@ import java.util.List;
  *
  * @author raver119@gmail.com
   */
+@NoArgsConstructor
 public class IsNaN extends BaseTransformBoolOp {
     public IsNaN(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public IsNaN() {}
+    public IsNaN(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
 
     public IsNaN(INDArray x, INDArray z) {
         super(x, z);
@@ -70,7 +72,7 @@ public class IsNaN extends BaseTransformBoolOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().zerosLike(arg()));
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
 }

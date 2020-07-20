@@ -19,13 +19,13 @@ package org.nd4j.linalg.api.ops.impl.transforms.segment;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentSqrtNBp;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -38,14 +38,14 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
 
     private int numSegments;
 
-    public UnsortedSegmentSqrtN(INDArray data, INDArray segmentIds, int numSegments) {
-        addInputArgument(data, segmentIds);
-        addIArgument(numSegments);
-        this.numSegments = numSegments;
-    }
-
     public UnsortedSegmentSqrtN(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, int numSegments) {
         super(null, sameDiff,  new SDVariable[] {data, segmentIds}, false);
+        this.numSegments = numSegments;
+        addIArgument(numSegments);
+    }
+
+    public UnsortedSegmentSqrtN(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
         this.numSegments = numSegments;
         addIArgument(numSegments);
     }
@@ -56,13 +56,8 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "UnsortedSegmentSqrtN";
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentSqrtNBp(arg(0), arg(1), gradients.get(0), numSegments));
+        return new UnsortedSegmentSqrtNBp(sameDiff, arg(0), arg(1), gradients.get(0), numSegments).outputs();
     }
 
     @Override

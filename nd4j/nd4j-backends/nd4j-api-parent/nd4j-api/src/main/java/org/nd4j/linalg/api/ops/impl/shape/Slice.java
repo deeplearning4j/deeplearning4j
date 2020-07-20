@@ -20,10 +20,12 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 
 import java.util.*;
 
@@ -52,6 +54,17 @@ public class Slice extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{input, begin, end});
     }
 
+    public Slice(INDArray input, int[] begin, int... size){
+        super(new INDArray[] {input}, null);
+        this.begin = begin;
+        this.size = size;
+        addIArgument(begin);
+        addIArgument(size);
+    }
+
+    public Slice(@NonNull INDArray input, @NonNull INDArray begin, @NonNull INDArray end){
+        super(new INDArray[]{input, begin, end}, null);
+    }
 
     @Override
     public String opName() {
@@ -72,10 +85,10 @@ public class Slice extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         if(args().length == 1) {
-            return Collections.singletonList(f().sliceBp(arg(), grad.get(0), begin, size));
+            return new SliceBp(sameDiff, arg(), grad.get(0), begin, size).outputs();
         } else {
             //Dynamic begin/size
-            return Collections.singletonList(f().sliceBp(arg(0), grad.get(0), arg(1), arg(2)));
+            return new SliceBp(sameDiff, arg(0), grad.get(0), arg(1), arg(2)).outputs();
         }
     }
 

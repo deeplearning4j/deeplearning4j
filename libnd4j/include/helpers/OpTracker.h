@@ -32,8 +32,6 @@
 namespace sd {
     class ND4J_EXPORT OpTracker {
     private:
-        static OpTracker* _INSTANCE;        
-
         std::string _export;
 
         int _operations = 0;
@@ -45,7 +43,7 @@ namespace sd {
         template <typename T>
         std::string local_to_string(T value);
     public:
-        static OpTracker* getInstance();
+        static OpTracker& getInstance();
 
         int totalGroups();
         int totalOperations();

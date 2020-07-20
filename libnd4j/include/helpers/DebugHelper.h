@@ -44,7 +44,7 @@ namespace sd {
     // cuda-specific debug functions
 #ifdef __CUDACC__
         static FORCEINLINE void checkErrorCode(cudaStream_t *stream, int opNum = 0) {
-            if (Environment::getInstance()->isDebug()) {
+            if (Environment::getInstance().isDebug()) {
                 cudaError_t res = cudaStreamSynchronize(*stream);
 
                 if (res != 0) {

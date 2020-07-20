@@ -56,6 +56,7 @@ import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -72,7 +73,7 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 21/03/2016.
  */
-public class TestTransforms {
+public class TestTransforms extends BaseND4JTest {
 
     public static Schema getSchema(ColumnType type, String... colNames) {
 

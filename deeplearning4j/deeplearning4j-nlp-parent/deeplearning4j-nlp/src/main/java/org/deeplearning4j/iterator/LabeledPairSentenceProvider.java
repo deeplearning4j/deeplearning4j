@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.iterator;
 
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.primitives.Triple;
 
 import java.util.List;
 

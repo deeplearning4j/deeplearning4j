@@ -13,7 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.validation.ValidationResult;
+import org.nd4j.common.validation.ValidationResult;
 
 import java.io.BufferedOutputStream;
 import java.io.File;

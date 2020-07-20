@@ -24,6 +24,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.TestTransforms;
 import org.datavec.api.writable.*;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.*;
 
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by Alex on 24/03/2016.
  */
-public class TestConditions {
+public class TestConditions extends BaseND4JTest {
 
     @Test
     public void testIntegerCondition() {

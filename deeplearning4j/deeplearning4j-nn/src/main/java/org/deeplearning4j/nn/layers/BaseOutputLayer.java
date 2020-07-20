@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.Solver;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -32,7 +33,7 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -79,7 +80,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
         ILossFunction lossFunction = layerConf().getLossFn();
 
-        double score = lossFunction.computeScore(getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM), preOut,
+        INDArray labels2d = getLabels2d(workspaceMgr, ArrayType.FF_WORKING_MEM);
+        double score = lossFunction.computeScore(labels2d, preOut,
                 layerConf().getActivationFn(), maskArray,false);
 
         if(conf().isMiniBatch())
@@ -246,10 +248,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public int[] predict(INDArray input) {
         INDArray output = activate(input, false, LayerWorkspaceMgr.noWorkspacesImmutable());
-        int[] ret = new int[input.rows()];
-        for (int i = 0; i < ret.length; i++)
-            ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
-        return ret;
+        Preconditions.checkState(output.rank() == 2, "predict(INDArray) method can only be used on rank 2 output - got array with rank %s", output.rank());
+        return output.argMax(1).toIntVector();
     }
 
     /**

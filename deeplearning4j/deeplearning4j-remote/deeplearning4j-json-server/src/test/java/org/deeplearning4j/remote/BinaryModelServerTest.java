@@ -1,9 +1,9 @@
 package org.deeplearning4j.remote;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.datavec.image.loader.Java2DNativeImageLoader;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.remote.helpers.ImageConversionUtils;
 import org.deeplearning4j.util.ModelSerializer;
@@ -12,25 +12,24 @@ import org.junit.Test;
 import org.nd4j.adapters.InferenceAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.remote.clients.JsonRemoteInference;
 import org.nd4j.remote.clients.serde.BinaryDeserializer;
 import org.nd4j.remote.clients.serde.BinarySerializer;
-import org.nd4j.remote.clients.serde.JsonDeserializer;
-import org.nd4j.remote.clients.serde.JsonSerializer;
 import org.nd4j.remote.clients.serde.impl.IntegerSerde;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.nio.Buffer;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import static org.deeplearning4j.parallelism.inference.InferenceMode.SEQUENTIAL;
 import static org.junit.Assert.*;
 
+@Slf4j
 public class BinaryModelServerTest extends BaseDL4JTest {
     private final int PORT = 18080;
 
@@ -65,7 +64,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
     @Test
     public void testMlnMnist_ImageInput() throws Exception {
 
-        val modelFile = new ClassPathResource("models/mnist/mnist-model.zip").getFile();
+        val modelFile = Resources.asFile("models/mnist/mnist-model.zip");
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(modelFile);
 
         val server = new JsonModelServer.Builder<BufferedImage, Integer>(net)
@@ -119,7 +118,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
             assertEquals(new Integer(1), result);
 
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();
@@ -129,7 +128,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
     @Test
     public void testMlnMnist_ImageInput_Async() throws Exception {
 
-        val modelFile = new ClassPathResource("models/mnist/mnist-model.zip").getFile();
+        val modelFile = Resources.asFile("models/mnist/mnist-model.zip");
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(modelFile);
 
         val server = new JsonModelServer.Builder<BufferedImage, Integer>(net)
@@ -188,7 +187,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
             assertEquals(new Integer(1), results[2].get());
 
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();
@@ -198,7 +197,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
     @Test
     public void testBinaryIn_BinaryOut() throws Exception {
 
-        val modelFile = new ClassPathResource("models/mnist/mnist-model.zip").getFile();
+        val modelFile = Resources.asFile("models/mnist/mnist-model.zip");
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(modelFile);
 
         val server = new JsonModelServer.Builder<BufferedImage, BufferedImage>(net)
@@ -243,7 +242,7 @@ public class BinaryModelServerTest extends BaseDL4JTest {
             assertEquals(28, result.getWidth());
 
         } catch (Exception e){
-            e.printStackTrace();
+            log.error("",e);
             throw e;
         } finally {
             server.stop();

@@ -26,7 +26,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Updater;
@@ -60,7 +59,7 @@ import org.deeplearning4j.util.CrashReportingUtil;
 import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.deeplearning4j.util.OutputLayerUtil;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
@@ -74,6 +73,7 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -89,12 +89,12 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
-import org.nd4j.util.OneTimeLogger;
+import org.nd4j.common.util.OneTimeLogger;
 
 import java.io.*;
 import java.util.*;
@@ -1540,8 +1540,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * (not) clearing the layer input arrays.<br>
      * Note: this method should NOT be used with clearInputs = true, unless you know what you are doing. Specifically:
      * when using clearInputs=false, in combination with workspaces, the layer input fields may leak outside of the
-     * workspaces in which they were defined - potentially causing a crash. See <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-config-workspaces">
-     *     https://deeplearning4j.org/docs/latest/deeplearning4j-config-workspaces</a>
+     * workspaces in which they were defined - potentially causing a crash. See <a href="https://deeplearning4j.konduit.ai/config/config-memory/config-workspaces">
+     *     https://deeplearning4j.konduit.ai/config/config-memory/config-workspaces</a>
      * for more details
      *
      * @param input An array of ComputationGraph inputs
@@ -4823,5 +4823,29 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (cg.getUpdater() != null && cg.getUpdater(false).getStateViewArray() != null)
             this.getUpdater(true).getStateViewArray().assign(cg.getUpdater(false).getStateViewArray());
+    }
+
+    /**
+     * Close the network and deallocate all native memory, including: parameters, gradients, updater memory and workspaces
+     * Note that the network should not be used again for any purpose after it has been closed
+     */
+    @Override
+    public void close(){
+        //Close the INDArray and dealloc
+        if(flattenedParams.closeable())
+            flattenedParams.close();
+
+        if(flattenedGradients != null && flattenedGradients.closeable())
+            flattenedGradients.close();
+
+        Updater u = getUpdater(false);
+        if(u != null && u.getStateViewArray() != null) {
+            INDArray state = u.getStateViewArray();
+            if(state.closeable())
+                state.close();
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
     }
 }

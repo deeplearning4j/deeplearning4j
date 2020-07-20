@@ -61,6 +61,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     }
 
     public OpaqueDataBuffer getOpaqueDataBuffer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return ptrDataBuffer;
     }
 
@@ -121,6 +124,24 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBytePointer();
 
             setIndexer(ByteIndexer.create((BytePointer) pointer));
+        } else if(dataType() == DataType.FLOAT16){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
+            setIndexer(HalfIndexer.create((ShortPointer) pointer));
+        } else if(dataType() == DataType.BFLOAT16){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
+            setIndexer(Bfloat16Indexer.create((ShortPointer) pointer));
+        } else if(dataType() == DataType.BOOL){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asBoolPointer();
+            setIndexer(BooleanIndexer.create((BooleanPointer) pointer));
+        } else if(dataType() == DataType.UINT16){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asShortPointer();
+            setIndexer(UShortIndexer.create((ShortPointer) pointer));
+        } else if(dataType() == DataType.UINT32){
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asIntPointer();
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
+        } else if (dataType() == DataType.UINT64) {
+            pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer();
+            setIndexer(LongIndexer.create((LongPointer) pointer));
         }
 
         Nd4j.getDeallocatorService().pickObject(this);
@@ -336,15 +357,13 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         } else if (dataType() == DataType.UINT32) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asIntPointer();
 
-            // FIXME: we need unsigned indexer here
-            setIndexer(IntIndexer.create((IntPointer) pointer));
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
         } else if (dataType() == DataType.UINT64) {
             pointer = new PagedPointer(ptrDataBuffer.primaryBuffer(), length).asLongPointer();
 
-            // FIXME: we need unsigned indexer here
             setIndexer(LongIndexer.create((LongPointer) pointer));
 
             if (initialize)
@@ -395,7 +414,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             setIndexer(ShortIndexer.create((ShortPointer) pointer));
         } else if (t == DataType.UINT32) {
             pointer = new PagedPointer(cptr, length).asIntPointer();
-            setIndexer(IntIndexer.create((IntPointer) pointer));
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
         } else if (t == DataType.INT) {
             pointer = new PagedPointer(cptr, length).asIntPointer();
             setIndexer(IntIndexer.create((IntPointer) pointer));
@@ -460,9 +479,6 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         if (length < 0)
             throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
 
-        // creating empty native DataBuffer
-        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-
         if (dataType() == DataType.DOUBLE) {
             attached = true;
             parentWorkspace = workspace;
@@ -501,9 +517,8 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
             attached = true;
             parentWorkspace = workspace;
 
-            // FIXME: need unsigned indexer here
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new IntPointer(length());
-            setIndexer(IntIndexer.create((IntPointer) pointer));
+            setIndexer(UIntIndexer.create((IntPointer) pointer));
 
         } else if (dataType() == DataType.UINT64) {
             attached = true;
@@ -559,7 +574,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         }
 
         // storing pointer into native DataBuffer
-        ptrDataBuffer.setPrimaryBuffer(pointer, length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
 
         // adding deallocator reference
         Nd4j.getDeallocatorService().pickObject(this);
@@ -570,8 +585,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
     public BaseCpuDataBuffer(Pointer pointer, Indexer indexer, long length) {
         super(pointer, indexer, length);
 
-        ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, type, false);
-        ptrDataBuffer.setPrimaryBuffer(this.pointer, length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);;
     }
 
@@ -633,8 +647,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asFloatPointer().put(data);
 
-        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-        this.ptrDataBuffer.setPrimaryBuffer(pointer, this.length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();
@@ -655,8 +668,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asDoublePointer().put(data);
 
-        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-        this.ptrDataBuffer.setPrimaryBuffer(pointer, this.length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();
@@ -678,8 +690,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asIntPointer().put(data);
 
-        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-        this.ptrDataBuffer.setPrimaryBuffer(pointer, this.length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();
@@ -700,8 +711,7 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asLongPointer().put(data);
 
-        this.ptrDataBuffer = OpaqueDataBuffer.allocateDataBuffer(0, dataType(), false);
-        this.ptrDataBuffer.setPrimaryBuffer(pointer, this.length);
+        ptrDataBuffer = OpaqueDataBuffer.externalizedDataBuffer(length, dataType(), this.pointer, null);
         Nd4j.getDeallocatorService().pickObject(this);
 
         workspaceGenerationId = workspace.getGenerationId();
@@ -837,6 +847,12 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
         this(data, true, workspace);
     }
 
+    @Override
+    protected void release() {
+        ptrDataBuffer.closeBuffer();
+        super.release();
+    }
+
     /**
      * Reallocate the native memory of the buffer
      * @param length the new length of the buffer
@@ -868,6 +884,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                     indexer = ShortIndexer.create((ShortPointer) pointer);
                     break;
                 case UINT32:
+                    pointer = nPtr.asIntPointer();
+                    indexer = UIntIndexer.create((IntPointer) pointer);
+                    break;
                 case INT:
                     pointer = nPtr.asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
@@ -918,6 +937,9 @@ public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallo
                     indexer = ShortIndexer.create((ShortPointer) pointer);
                     break;
                 case UINT32:
+                    pointer = nPtr.asIntPointer();
+                    indexer = UIntIndexer.create((IntPointer) pointer);
+                    break;
                 case INT:
                     pointer = nPtr.asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);

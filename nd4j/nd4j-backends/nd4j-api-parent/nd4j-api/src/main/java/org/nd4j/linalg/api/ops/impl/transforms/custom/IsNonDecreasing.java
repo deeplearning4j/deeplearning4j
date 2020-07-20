@@ -16,10 +16,11 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -32,11 +33,19 @@ import java.util.List;
  * and returns true if for every adjacent pair we have x[i] <= x[i+1].
  *
  */
+@NoArgsConstructor
 public class IsNonDecreasing extends DynamicCustomOp {
-    public IsNonDecreasing() {}
 
     public IsNonDecreasing( SameDiff sameDiff, SDVariable[] args, boolean inPlace) {
         super(null, sameDiff, args, inPlace);
+    }
+
+    public IsNonDecreasing( SameDiff sameDiff, SDVariable[] args) {
+        super(null, sameDiff, args, false);
+    }
+
+    public IsNonDecreasing( SameDiff sameDiff, SDVariable input) {
+        super(null, sameDiff, new SDVariable[]{input}, false);
     }
 
     public IsNonDecreasing(@NonNull INDArray input){
@@ -51,12 +60,6 @@ public class IsNonDecreasing extends DynamicCustomOp {
     @Override
     public String opName() {
         return "is_non_decreasing";
-    }
-
-
-    @Override
-    public String tensorflowName() {
-        return "IsNonDecreasing";
     }
 
     @Override

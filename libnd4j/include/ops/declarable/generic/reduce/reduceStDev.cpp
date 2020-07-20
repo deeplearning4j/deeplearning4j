@@ -83,7 +83,7 @@ DECLARE_SHAPE_FN(reduce_stdev) {
     for(const auto& item : dimensions)
         REQUIRE_TRUE(item >= -inputShape->at(0)[0] && item < inputShape->at(0)[0], 0, "REDUCE_STDEV OP: the input dimension to reduce along must be in range [-%i, %i), but got %i instead !" , inputShape->at(0)[0], inputShape->at(0)[0], item);
 
-    Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace());
+    auto outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(in), dimensions, in, keepDims, false, block.getWorkspace());
 
     return SHAPELIST(outShapeInfo);
 }
@@ -132,7 +132,7 @@ CUSTOM_OP_IMPL(reduce_stdev_bp, 2, 1, false, 0, 0) {
 
     auto mean = input->reduceAlongDimension(reduce::Mean, dimensions, true);
 
-    NDArray variance(mean.getShapeInfo(), true, block.launchContext());                    // create empty array with shape matching shape of mean array
+    NDArray variance(mean.shapeInfo(), true, block.launchContext());                    // create empty array with shape matching shape of mean array
     input->varianceAlongDimension(variance::SummaryStatsStandardDeviation, variance, biasCorrected, dimensions);
 
     gradI->assign( (*input - mean) / (variance * NminusOne));                              // automatic broadcasting happens here
@@ -165,6 +165,7 @@ DECLARE_SHAPE_FN(reduce_stdev_bp) {
     COPY_SHAPE(in, gradIshapeInfo);
 
     return SHAPELIST(CONSTANT(gradIshapeInfo));
+//    return SHAPELIST(in);
 }
 
 DECLARE_TYPES(reduce_stdev_bp) {

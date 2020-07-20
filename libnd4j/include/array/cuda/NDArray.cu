@@ -50,16 +50,16 @@
 namespace sd {
 
 void* NDArray::platformBuffer()             { return specialBuffer();    }
-void* NDArray::getPlatformBuffer() const    { return getSpecialBuffer(); }
+void const* NDArray::platformBuffer() const    { return specialBuffer(); }
 
-Nd4jLong* NDArray::getPlatformShapeInfo() const { return getSpecialShapeInfo(); }
-Nd4jLong* NDArray::platformShapeInfo()          { return specialShapeInfo(); }
+Nd4jLong const* NDArray::platformShapeInfo() const { return specialShapeInfo(); }
+//Nd4jLong const* NDArray::platform()          { return special(); }
 
 void NDArray::syncToDevice() const          {
     auto currentDeviceId = AffinityManager::currentDeviceId();
     if (currentDeviceId != _deviceId) {
         // first of all we update shapeInfo
-        const_cast<NDArray*>(this)->setShapeInfo(this->getShapeInfo());
+        const_cast<NDArray*>(this)->setShapeInfo(this->shapeInfo());
 
         // now we actually migrate data buffer
         _buffer->migrate();
@@ -142,7 +142,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, NDArray& t
     PointersManager manager(getContext(), "NDArray::fillAsTriangular");
 
     NDArray::prepareSpecialUse({&target}, {this});
-    fillAsTriangularCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *getContext()->getCudaStream()>>>(getPlatformBuffer(), getPlatformShapeInfo(), target.getPlatformBuffer(), target.getPlatformShapeInfo(), static_cast<T>(val), lower, upper);
+    fillAsTriangularCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *getContext()->getCudaStream()>>>(platformBuffer(), platformShapeInfo(), target.platformBuffer(), target.platformShapeInfo(), static_cast<T>(val), lower, upper);
     NDArray::registerSpecialUse({&target}, {this});
 
     manager.synchronize();
@@ -206,7 +206,7 @@ void NDArray::setIdentity() {
     PointersManager manager(getContext(), "NDArray::setIdentity");
 
     syncToDevice();
-    BUILD_SINGLE_SELECTOR(dataType(), identityMatrixCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), getPlatformBuffer(), getPlatformShapeInfo(), 1.f), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(dataType(), identityMatrixCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), platformBuffer(), platformShapeInfo(), 1.f), LIBND4J_TYPES);
     tickWriteDevice();
 
     manager.synchronize();
@@ -225,7 +225,13 @@ void NDArray::swapUnsafe(NDArray& other) {
     if(lengthOf() != other.lengthOf())
         throw std::runtime_error("NDArray::swapUnsafe method: input arrays should have the same length!");
 
+    PointersManager manager(getContext(), "NDArray::swapUnsafe");
+
+    prepareSpecialUse({&other, this}, {&other, this});
     BUILD_SINGLE_SELECTOR(xType, templatedSwapUnsafe, (specialBuffer(), specialShapeInfo(), other.specialBuffer(), other.specialShapeInfo(), getContext()->getCudaStream()), LIBND4J_TYPES);
+    registerSpecialUse({&other, this}, {&other, this});
+
+    manager.synchronize();
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -293,12 +299,16 @@ void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList, c
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::syncShape() const {
-    cudaMemcpy(getSpecialShapeInfo(), getShapeInfo(), shape::shapeInfoByteLength(getShapeInfo()), cudaMemcpyHostToDevice);
+    cudaMemcpy(const_cast<Nd4jLong*>(specialShapeInfo()), shapeInfo(), shape::shapeInfoByteLength(shapeInfo()), cudaMemcpyHostToDevice);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
-    return getSpecialBuffer() != nullptr ? static_cast<int8_t*>(getSpecialBuffer()) + (offset * sizeOfT()) : nullptr;
+void const* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
+    return specialBuffer() != nullptr ? static_cast<int8_t const*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
+}
+
+void* NDArray::specialBufferWithOffset(Nd4jLong offset){
+    return specialBuffer() != nullptr ? static_cast<int8_t*>(specialBuffer()) + (offset * sizeOfT()) : nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -318,7 +328,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
         NDArray result(*this);
         if(diff < 0) {      // reshape to higher dimension
             std::vector<Nd4jLong> shapeNew = reps;               // need to have unities at first "diff" positions of new shape
-            memcpy(&shapeNew[-diff], result.getShapeInfo()+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
+            memcpy(&shapeNew[-diff], result.shapeInfo()+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
             result.reshapei(ordering(), shapeNew);
         }
         return result;             // nothing to do, if diff >= 0 -> identity tile
@@ -332,13 +342,13 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     NDArray result(newBuff, ShapeDescriptor(newShapeInfo), getContext());
 
     // fill newBuff, loop through all elements of newBuff
-    // looping through getBuffer() goes automatically by means of getSubArrayIndex applying
+    // looping through buffer() goes automatically by means of getSubArrayIndex applying
     const auto resultLen = result.lengthOf();
     auto xType = this->dataType();
     auto stream = getContext()->getCudaStream();
 
     prepareSpecialUse({&result}, {this});
-    BUILD_SINGLE_SELECTOR(xType, tileKernelH, (this->getSpecialBuffer(), this->getSpecialShapeInfo(), result.getSpecialBuffer(), result.getSpecialShapeInfo(), resultLen, stream), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, tileKernelH, (this->specialBuffer(), this->specialShapeInfo(), result.specialBuffer(), result.specialShapeInfo(), resultLen, stream), LIBND4J_TYPES);
     registerSpecialUse({&result}, {this});
 
     return result;
@@ -354,18 +364,18 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
 
     // evaluate true tile shapeInfo for comparison with target shapeInfo
     auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
-    if(!shape::equalsSoft(newShapeInfo, target.getShapeInfo()))  {
+    if(!shape::equalsSoft(newShapeInfo, target.shapeInfo()))  {
         throw std::runtime_error("NDArray::tile method - shapeInfo of target array is not suitable for tile operation !");
     }
 
     // fill newBuff, loop through all elements of newBuff
-    // looping through getBuffer() goes automatically by means of getSubArrayIndex applying
+    // looping through buffer() goes automatically by means of getSubArrayIndex applying
     const int ews = target.ews();
     const int targetLen = target.lengthOf();
     auto stream = getContext()->getCudaStream();
 
     prepareSpecialUse({&target}, {this});
-    BUILD_SINGLE_SELECTOR_TWICE(target.dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(target.dataType(), tileKernelHH, (specialBuffer(), specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES);
     registerSpecialUse({&target}, {this});
 }
 
@@ -384,7 +394,7 @@ void NDArray::tile(NDArray& target) const {
     auto stream = getContext()->getCudaStream();
 
     prepareSpecialUse({&target}, {this});
-    BUILD_SINGLE_SELECTOR_TWICE(target.dataType(),  tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(target.dataType(),  tileKernelHH, (specialBuffer(), specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES);
     registerSpecialUse({&target}, {this});
 }
 
@@ -467,7 +477,7 @@ NDArray NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
     const int* reps = reinterpret_cast<int*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(int)));
 
     prepareSpecialUse({&output}, {this});
-    BUILD_SINGLE_SELECTOR_TWICE(dataType(), repeatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), getSpecialBuffer(), getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), reps, repeats.size(), axis), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(dataType(), repeatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), specialBuffer(), specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), reps, repeats.size(), axis), LIBND4J_TYPES);
     prepareSpecialUse({&output}, {this});
 
     manager.synchronize();
@@ -491,7 +501,7 @@ void NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& t
     const int* reps = reinterpret_cast<int*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(int)));
 
     prepareSpecialUse({&target}, {this});
-    BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), repeatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), getSpecialBuffer(), getSpecialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), reps, repeats.size(), axis), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), repeatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), specialBuffer(), specialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), reps, repeats.size(), axis), LIBND4J_TYPES, LIBND4J_TYPES);
     prepareSpecialUse({&target}, {this});
 
     manager.synchronize();
@@ -501,16 +511,20 @@ void NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& t
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {
 
-    if (_buffer->special() == nullptr)
-        return getBuffer();
+    if (_buffer->special() == nullptr) {
+        syncToDevice();
+        tickReadHost();
+    }
     // FIXME: this should be fixed once CUDA backend added
     return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
 ////////////////////////////////////////////////////////////////////////
-void* NDArray::getSpecialBuffer() const {
-    if (_buffer->special() == nullptr)
-        return getBuffer();
+void const* NDArray::specialBuffer() const {
+    if (_buffer->special() == nullptr) {
+        syncToDevice();
+        tickReadHost();
+    }
     // FIXME: this should be fixed once CUDA backend added
     return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
@@ -526,7 +540,7 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
         printf("%s", msg);
 
     if(host) {
-        if(getBuffer() == nullptr || _length == 0)
+        if(buffer() == nullptr || _length == 0)
             { printf("NDArray::printActualBuffer: host buffer is nullptr !\n"); return; }
 
         const T* buff = bufferAsT<T>();
@@ -535,24 +549,21 @@ void NDArray::printCurrentBuffer(const bool host, const char* msg, const int pre
         printf("\n");
     }
     else {
-        if(getSpecialBuffer() == nullptr || _length == 0)
+        if(specialBuffer() == nullptr || _length == 0)
             { printf("NDArray::printSpecialBuffer: special buffer is nullptr !\n"); return; }
 
-        void* pHost = operator new(sizeof(T) * _length);
+        const auto sizeOfBuffer = sizeOfT() * (getOffset(_length - 1) + 1);
 
-        if (ews() != 1) {
-            for (uint i = 0; i < _length; i++)
-                cudaMemcpyAsync(reinterpret_cast<T*>(pHost) + i, specialBufferWithOffset(i), sizeof(T), cudaMemcpyDeviceToHost, *(getContext()->getCudaStream()));
-        }
-        else
-            cudaMemcpyAsync(pHost, getSpecialBuffer(), sizeOfT() * _length, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
+        void* pHost = operator new(sizeOfBuffer);
+
+        cudaMemcpyAsync(pHost, specialBuffer(), sizeOfBuffer, cudaMemcpyDeviceToHost, *getContext()->getCudaStream());
 
         cudaError_t cudaResult = cudaStreamSynchronize(*getContext()->getCudaStream());
         if(cudaResult != 0)
             throw std::runtime_error("NDArray::printSpecialBuffer: cudaStreamSynchronize failed!");
 
         for (uint i = 0; i < _length; i++)
-            printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[i]);
+            printf("%.*f, ", precision, (double)reinterpret_cast<T*>(pHost)[getOffset(i)]);
         printf("\n");
 
         operator delete(pHost);

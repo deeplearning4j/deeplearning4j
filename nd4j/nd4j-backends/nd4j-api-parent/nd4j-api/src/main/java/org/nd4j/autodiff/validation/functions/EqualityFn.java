@@ -18,7 +18,7 @@ package org.nd4j.autodiff.validation.functions;
 
 import lombok.AllArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
 @AllArgsConstructor
 public class EqualityFn implements Function<INDArray,String> {

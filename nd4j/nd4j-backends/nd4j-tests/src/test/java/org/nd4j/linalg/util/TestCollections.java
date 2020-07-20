@@ -18,7 +18,7 @@ package org.nd4j.linalg.util;
 
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.collection.CompactHeapStringList;
+import org.nd4j.common.collection.CompactHeapStringList;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.*;

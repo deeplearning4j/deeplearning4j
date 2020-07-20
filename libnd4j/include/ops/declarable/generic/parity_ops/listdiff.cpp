@@ -54,8 +54,8 @@ namespace sd {
 
             REQUIRE_TRUE(saved > 0, 0, "ListDiff: no matches found");
 
-            auto shapeX = ConstantShapeHelper::getInstance()->vectorShapeInfo(saved, values->dataType());
-            auto shapeY = ConstantShapeHelper::getInstance()->vectorShapeInfo(saved, DataType::INT64);
+            auto shapeX = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, values->dataType());
+            auto shapeY = ConstantShapeHelper::getInstance().vectorShapeInfo(saved, DataType::INT64);
             return SHAPELIST(shapeX, shapeY);
         }
 

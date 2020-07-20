@@ -28,7 +28,6 @@ import org.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.datasets.fetchers.DataSetType;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
 import org.deeplearning4j.datasets.iterator.impl.TinyImageNetDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -53,6 +52,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
@@ -62,7 +62,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
 import java.util.*;
@@ -194,6 +194,8 @@ public class CNN2DTestCases {
                 testParamsPostTraining = false;     //Skip - requires saving all params (approx 500mb)
                 testEvaluation = false;
                 testOverfitting = false;
+                maxRelativeErrorOutput = 0.2;
+                minAbsErrorOutput = 0.05;       //Max value is around 0.22
             }
 
             @Override
@@ -314,6 +316,7 @@ public class CNN2DTestCases {
                 ComputationGraph model = new TransferLearning.GraphBuilder(pretrained)
                         .fineTuneConfiguration(fineTuneConf)
                         .removeVertexKeepConnections("conv2d_9")
+                        .removeVertexAndConnections("outputs")
                         .addLayer("convolution2d_9",
                                 new ConvolutionLayer.Builder(1,1)
                                         .nIn(1024)
@@ -393,7 +396,7 @@ public class CNN2DTestCases {
 
             @Override
             public ModelType modelType() {
-                return ModelType.CG;
+                return ModelType.MLN;
             }
 
             @Override

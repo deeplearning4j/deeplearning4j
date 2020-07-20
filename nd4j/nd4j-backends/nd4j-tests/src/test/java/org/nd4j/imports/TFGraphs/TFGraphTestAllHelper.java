@@ -39,7 +39,7 @@ import org.nd4j.autodiff.samediff.internal.memory.ArrayCloseMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.CloseValidationMemoryMgr;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.TFGraphs.listener.OpExecOrderListener;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.listeners.ExecPrintListener;
@@ -50,17 +50,17 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.resources.strumpf.ResourceFile;
-import org.nd4j.resources.strumpf.StrumpfResolver;
+import org.nd4j.common.resources.strumpf.ResourceFile;
+import org.nd4j.common.resources.strumpf.StrumpfResolver;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -851,7 +851,68 @@ public class TFGraphTestAllHelper {
             return (t, s) -> Nd4j.sort(t, true).equals(Nd4j.sort(s, true));
         }
 
-        if(modelName.startsWith("alpha_dropout") || modelName.startsWith("layers_dropout") || modelName.equals("dropout"))
+        if(modelName.startsWith("empty")){
+            return (t, s) -> {
+                boolean areEqualShapes = t.equalShapes(s);
+                boolean areEqualDataTypes = t.dataType() == s.dataType();
+                return areEqualShapes && areEqualDataTypes;
+            };        }
+
+        // sum of all elements along dimesions before and after shuffle has to be the same
+        if(modelName.startsWith("random_shuffle")){
+            return (t, s) -> Nd4j.sort(t, true).equals(Nd4j.sort(s, true));
+        }
+
+        if(modelName.startsWith("random_normal")){
+            return (t, s) -> {
+                boolean areEqualShapes = t.equalShapes(s);
+                double meanS = s.meanNumber().doubleValue();
+                double meanT = t.meanNumber().doubleValue();
+                double stdS = s.stdNumber().doubleValue();
+                double stdT = t.stdNumber().doubleValue();
+                double eps = 1;
+                return areEqualShapes && (Math.abs(meanS-meanT) < eps) && (Math.abs(stdS-stdT) < eps);
+            };        }
+
+        if(modelName.startsWith("random_gamma")){
+            return (t, s) -> {
+                boolean areEqualShapes = t.equalShapes(s);
+                boolean nonNegativeValues = (t.minNumber().doubleValue() > 0) && (t.minNumber().doubleValue() > 0);
+                double meanS = s.meanNumber().doubleValue();
+                double meanT = t.meanNumber().doubleValue();
+                double stdS = s.stdNumber().doubleValue();
+                double stdT = t.stdNumber().doubleValue();
+                double eps = 1;
+                return areEqualShapes && nonNegativeValues && (Math.abs(meanS-meanT) < eps) && (Math.abs(stdS-stdT) < eps);
+            };
+         }
+
+        if(modelName.startsWith("random_poisson") || modelName.startsWith("random_poisson_v2")){
+            return (t, s) -> {
+                boolean areEqualShapes = t.equalShapes(s);
+                boolean nonNegativeValues = (t.minNumber().doubleValue() >= 0) && (t.minNumber().doubleValue() >= 0);
+                double meanS = s.meanNumber().doubleValue();
+                double meanT = t.meanNumber().doubleValue();
+                double stdS = s.stdNumber().doubleValue();
+                double stdT = t.stdNumber().doubleValue();
+                double eps = 1;
+                return areEqualShapes && nonNegativeValues && (Math.abs(meanS-meanT) < eps) && (Math.abs(stdS-stdT) < eps);
+            };
+        }
+
+        if(modelName.startsWith("random_uniform")|| modelName.startsWith("random_uniform_int")){
+            return (t, s) -> {
+                boolean areEqualShapes = t.equalShapes(s);
+                double meanS = s.meanNumber().doubleValue();
+                double meanT = t.meanNumber().doubleValue();
+                double stdS = s.stdNumber().doubleValue();
+                double stdT = t.stdNumber().doubleValue();
+                double eps = 1;
+                return areEqualShapes && (Math.abs(stdS-stdT) < eps) && (Math.abs(meanS-meanT) < eps);
+            };
+        }
+
+        if(modelName.startsWith("alpha_dropout") || modelName.startsWith("layers_dropout") || modelName.startsWith("dropout"))
             //We can't compare dropout using simple equality due to randomness
             return (t, s) -> {
                 double[] tfNums = t.ravel().toDoubleVector();

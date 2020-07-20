@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -34,10 +35,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossL2;
+import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
-import org.nd4j.shade.serde.jackson.VectorDeSerializer;
-import org.nd4j.shade.serde.jackson.VectorSerializer;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -77,9 +77,11 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     private double lambdaNoObj;
     private ILossFunction lossPositionScale;
     private ILossFunction lossClassPredictions;
-    @JsonSerialize(using = VectorSerializer.class)
-    @JsonDeserialize(using = VectorDeSerializer.class)
+    @JsonSerialize(using = NDArrayTextSerializer.class)
+    @JsonDeserialize(using = BoundingBoxesDeserializer.class)
     private INDArray boundingBoxes;
+
+    private CNN2DFormat format = CNN2DFormat.NCHW;  //Default for serialization of old formats
 
     private Yolo2OutputLayer() {
         //No-arg constructor for Jackson JSON
@@ -120,7 +122,8 @@ public class Yolo2OutputLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        //No op
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
+        this.format = c.getFormat();
     }
 
     @Override

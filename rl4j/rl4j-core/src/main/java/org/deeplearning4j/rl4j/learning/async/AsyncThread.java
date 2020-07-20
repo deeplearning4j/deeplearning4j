@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -22,7 +23,11 @@ import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.rl4j.learning.*;
+import org.deeplearning4j.rl4j.learning.HistoryProcessor;
+import org.deeplearning4j.rl4j.learning.IEpochTrainer;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
+import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.configuration.IAsyncLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -30,6 +35,7 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.factory.Nd4j;
@@ -45,39 +51,63 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alexandre Boulanger
  */
 @Slf4j
-public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+public abstract class AsyncThread<OBSERVATION extends Encodable, ACTION, ACTION_SPACE extends ActionSpace<ACTION>, NN extends NeuralNet>
                 extends Thread implements IEpochTrainer {
 
     @Getter
     private int threadNumber;
+
     @Getter
     protected final int deviceNum;
+
+    /**
+     * The number of steps that this async thread has produced
+     */
     @Getter @Setter
-    private int stepCounter = 0;
+    protected int stepCount = 0;
+
+    /**
+     * The number of epochs (updates) that this thread has sent to the global learner
+     */
     @Getter @Setter
-    private int epochCounter = 0;
+    protected int epochCount = 0;
+
+    /**
+     * The number of environment episodes that have been played out
+     */
+    @Getter @Setter
+    protected int episodeCount = 0;
+
+    /**
+     * The number of steps in the current episode
+     */
+    @Getter
+    protected int currentEpisodeStepCount = 0;
+
+    /**
+     * If the current episode needs to be reset
+     */
+    boolean episodeComplete = true;
+
     @Getter @Setter
     private IHistoryProcessor historyProcessor;
 
-    @Getter
-    private int currentEpochStep = 0;
-
-    private boolean isEpochStarted = false;
-    private final LegacyMDPWrapper<O, A, AS> mdp;
+    private boolean isEpisodeStarted = false;
+    private final LegacyMDPWrapper<OBSERVATION, ACTION, ACTION_SPACE> mdp;
 
     private final TrainingListenerList listeners;
 
-    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, MDP<O, A, AS> mdp, TrainingListenerList listeners, int threadNumber, int deviceNum) {
-        this.mdp = new LegacyMDPWrapper<O, A, AS>(mdp, null,  this);
+    public AsyncThread(MDP<OBSERVATION, ACTION, ACTION_SPACE> mdp, TrainingListenerList listeners, int threadNumber, int deviceNum) {
+        this.mdp = new LegacyMDPWrapper<OBSERVATION, ACTION, ACTION_SPACE>(mdp, null);
         this.listeners = listeners;
         this.threadNumber = threadNumber;
         this.deviceNum = deviceNum;
     }
 
-    public MDP<O, A, AS> getMdp() {
+    public MDP<OBSERVATION, ACTION, ACTION_SPACE> getMdp() {
         return mdp.getWrappedMDP();
     }
-    protected LegacyMDPWrapper<O, A, AS> getLegacyMDPWrapper() {
+    protected LegacyMDPWrapper<OBSERVATION, ACTION, ACTION_SPACE> getLegacyMDPWrapper() {
         return mdp;
     }
 
@@ -90,13 +120,13 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
         mdp.setHistoryProcessor(historyProcessor);
     }
 
-    protected void postEpoch() {
+    protected void postEpisode() {
         if (getHistoryProcessor() != null)
             getHistoryProcessor().stopMonitor();
 
     }
 
-    protected void preEpoch() {
+    protected void preEpisode() {
         // Do nothing
     }
 
@@ -123,111 +153,106 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
      */
     @Override
     public void run() {
-        try {
-            RunContext context = new RunContext();
-            Nd4j.getAffinityManager().unsafeSetDevice(deviceNum);
+        RunContext context = new RunContext();
+        Nd4j.getAffinityManager().unsafeSetDevice(deviceNum);
 
-            log.info("ThreadNum-" + threadNumber + " Started!");
+        log.info("ThreadNum-" + threadNumber + " Started!");
 
-            while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
-                if (!isEpochStarted) {
-                    boolean canContinue = startNewEpoch(context);
-                    if (!canContinue) {
-                        break;
-                    }
-                }
+        while (!getAsyncGlobal().isTrainingComplete()) {
 
-                handleTraining(context);
-
-                if (currentEpochStep >= getConf().getMaxEpochStep() || getMdp().isDone()) {
-                    boolean canContinue = finishEpoch(context);
-                    if (!canContinue) {
-                        break;
-                    }
-
-                    ++epochCounter;
-                }
+            if (episodeComplete) {
+                startEpisode(context);
             }
-        }
-        finally {
-            terminateWork();
+
+            if(!startEpoch(context)) {
+                break;
+            }
+
+            episodeComplete = handleTraining(context);
+
+            if(!finishEpoch(context)) {
+                break;
+            }
+
+            if(episodeComplete) {
+                finishEpisode(context);
+            }
         }
     }
 
-    private void handleTraining(RunContext context) {
-        int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - currentEpochStep);
-        SubEpochReturn subEpochReturn = trainSubEpoch(context.obs, maxSteps);
+    private boolean finishEpoch(RunContext context) {
+        epochCount++;
+        IDataManager.StatEntry statEntry = new AsyncStatEntry(stepCount, epochCount, context.rewards, currentEpisodeStepCount, context.score);
+        return listeners.notifyEpochTrainingResult(this, statEntry);
+    }
+
+    private boolean startEpoch(RunContext context) {
+        return listeners.notifyNewEpoch(this);
+    }
+
+    private boolean handleTraining(RunContext context) {
+        int maxTrainSteps = Math.min(getConfiguration().getNStep(), getConfiguration().getMaxEpochStep() - currentEpisodeStepCount);
+        SubEpochReturn subEpochReturn = trainSubEpoch(context.obs, maxTrainSteps);
 
         context.obs = subEpochReturn.getLastObs();
         context.rewards += subEpochReturn.getReward();
         context.score = subEpochReturn.getScore();
+
+        return subEpochReturn.isEpisodeComplete();
     }
 
-    private boolean startNewEpoch(RunContext context) {
+    private void startEpisode(RunContext context) {
         getCurrent().reset();
         Learning.InitMdp<Observation>  initMdp = refacInitMdp();
 
         context.obs = initMdp.getLastObs();
         context.rewards = initMdp.getReward();
 
-        isEpochStarted = true;
-        preEpoch();
-
-        return listeners.notifyNewEpoch(this);
+        preEpisode();
+        episodeCount++;
     }
 
-    private boolean finishEpoch(RunContext context) {
-        isEpochStarted = false;
-        postEpoch();
-        IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, context.rewards, currentEpochStep, context.score);
+    private void finishEpisode(RunContext context) {
+        postEpisode();
 
-        log.info("ThreadNum-" + threadNumber + " Epoch: " + getCurrentEpochStep() + ", reward: " + context.rewards);
-
-        return listeners.notifyEpochTrainingResult(this, statEntry);
-    }
-
-    private void terminateWork() {
-        getAsyncGlobal().terminate();
-        if(isEpochStarted) {
-            postEpoch();
-        }
+        log.info("ThreadNum-{} Episode step: {}, Episode: {}, Epoch: {}, reward: {}", threadNumber, currentEpisodeStepCount, episodeCount, epochCount, context.rewards);
     }
 
     protected abstract NN getCurrent();
 
     protected abstract IAsyncGlobal<NN> getAsyncGlobal();
 
-    protected abstract AsyncConfiguration getConf();
+    protected abstract IAsyncLearningConfiguration getConfiguration();
 
-    protected abstract IPolicy<O, A> getPolicy(NN net);
+    protected abstract IPolicy<ACTION> getPolicy(NN net);
 
     protected abstract SubEpochReturn trainSubEpoch(Observation obs, int nstep);
 
     private Learning.InitMdp<Observation> refacInitMdp() {
-        currentEpochStep = 0;
+        currentEpisodeStepCount = 0;
 
         double reward = 0;
 
-        LegacyMDPWrapper<O, A, AS> mdp = getLegacyMDPWrapper();
+        LegacyMDPWrapper<OBSERVATION, ACTION, ACTION_SPACE> mdp = getLegacyMDPWrapper();
         Observation observation = mdp.reset();
 
-        A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
+        ACTION action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
         while (observation.isSkipped() && !mdp.isDone()) {
             StepReply<Observation> stepReply = mdp.step(action);
 
             reward += stepReply.getReward();
             observation = stepReply.getObservation();
 
-            incrementStep();
+            incrementSteps();
         }
 
         return new Learning.InitMdp(0, observation, reward);
 
     }
 
-    public void incrementStep() {
-        ++stepCounter;
-        ++currentEpochStep;
+    public void incrementSteps() {
+        stepCount++;
+        currentEpisodeStepCount++;
     }
 
     @AllArgsConstructor
@@ -237,6 +262,7 @@ public abstract class AsyncThread<O, A, AS extends ActionSpace<A>, NN extends Ne
         Observation lastObs;
         double reward;
         double score;
+        boolean episodeComplete;
     }
 
     @AllArgsConstructor

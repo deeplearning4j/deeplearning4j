@@ -18,14 +18,12 @@ package org.deeplearning4j.eval;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.AtomicDouble;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicBoolean;
-import org.nd4j.linalg.primitives.serde.JsonDeserializerAtomicDouble;
-import org.nd4j.linalg.primitives.serde.JsonSerializerAtomicBoolean;
-import org.nd4j.linalg.primitives.serde.JsonSerializerAtomicDouble;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.AtomicDouble;
+import org.nd4j.common.primitives.serde.JsonDeserializerAtomicBoolean;
+import org.nd4j.common.primitives.serde.JsonDeserializerAtomicDouble;
+import org.nd4j.common.primitives.serde.JsonSerializerAtomicBoolean;
+import org.nd4j.common.primitives.serde.JsonSerializerAtomicDouble;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -34,10 +32,6 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
-
-import java.io.IOException;
-import java.io.Serializable;
-import java.util.List;
 
 /**
  * @deprecated Use {@link org.nd4j.evaluation.BaseEvaluation}

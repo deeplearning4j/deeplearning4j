@@ -19,10 +19,11 @@ package org.deeplearning4j.util;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.text.movingwindow.ContextLabelRetriever;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-import org.deeplearning4j.text.tokenization.tokenizerfactory.UimaTokenizerFactory;
+import org.deeplearning4j.nlp.uima.tokenization.tokenizerfactory.UimaTokenizerFactory;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.collection.MultiDimensionalMap;
+import org.nd4j.common.primitives.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,7 @@ public class ContextLabelTest extends BaseDL4JTest {
     @Test
     public void testBasicLabel() {
         String labeledSentence = "<NEGATIVE> This sucks really bad </NEGATIVE> .";
-        Pair<String, org.nd4j.linalg.collection.MultiDimensionalMap<Integer, Integer, String>> ret =
+        Pair<String, MultiDimensionalMap<Integer, Integer, String>> ret =
                         ContextLabelRetriever.stringWithLabels(labeledSentence, tokenizerFactory);
         //positive and none
         assertEquals(2, ret.getSecond().size());

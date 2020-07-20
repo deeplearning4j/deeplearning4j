@@ -103,12 +103,12 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
 
     if(luckCase1) {     // for example {1,10} + {2,10} + {3,10} = {6, 10} order c; or {10,1} + {10,2} + {10,3} = {10, 6} order f
 
-        void* x = static_cast<int8_t*>(input.getSpecialBuffer());
+        auto x = static_cast<const int8_t*>(input.specialBuffer());
 
         for (uint i = 0; i < numOfSubArrs; ++i) {
             const auto memAmountToCopy = outArrs[i]->lengthOf() * sizeofT;
-            cudaMemcpyAsync(static_cast<int8_t*>(outArrs[i]->getSpecialBuffer()), x, memAmountToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
-            x = static_cast<int8_t*>(x) + memAmountToCopy;
+            cudaMemcpyAsync(static_cast<int8_t*>(outArrs[i]->specialBuffer()), x, memAmountToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
+            x = static_cast<const int8_t*>(x) + memAmountToCopy;
         }
 
         if(cudaStreamSynchronize(*context->getCudaStream()) != 0)
@@ -135,7 +135,7 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
     //         if(!areOutputsContin || !allSameOrder)
     //             break;
 
-    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, outArrs[i]->getShapeInfo());
+    //         strideOfContigStride[i] = shape::strideOverContigAxis(axis, outArrs[i]->shapeInfo());
     //     }
     // }
 
@@ -143,16 +143,16 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
 
     // if(luckCase2) {     // for example {2,1,3} + {2,5,3} + {2,10,3} = {2,16,3}, here axis 1 shoud have stride = 1 for all inputs arrays and input array
 
-    //     const auto xStep = shape::strideOverContigAxis(axis, input.getShapeInfo());
+    //     const auto xStep = shape::strideOverContigAxis(axis, input.shapeInfo());
     //     const auto zDim = outArrs[0]->sizeAt(axis);     // same for all outArrs
 
     //     for (uint i = 0; i < input.lengthOf() / input.sizeAt(axis); ++i) {
 
     //         const auto iShift = i * sizeofT;
-    //         void* x = static_cast<int8_t*>(input.getSpecialBuffer()) + xStep * iShift;
+    //         void* x = static_cast<int8_t*>(input.specialBuffer()) + xStep * iShift;
 
     //         for (uint j = 0; j < numOfSubArrs; ++j) {
-    //             void* z = static_cast<int8_t*>(outArrs[j]->getSpecialBuffer()) + strideOfContigStride[j] * iShift;
+    //             void* z = static_cast<int8_t*>(outArrs[j]->specialBuffer()) + strideOfContigStride[j] * iShift;
     //             const auto memSizeToCopy = zDim * sizeofT;
     //             cudaMemcpyAsync(z, x, memSizeToCopy, cudaMemcpyDeviceToDevice, *context->getCudaStream());
     //             x = static_cast<int8_t*>(x) + memSizeToCopy;
@@ -171,13 +171,13 @@ void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray
         std::vector<void*> hOutBuffers(numOfSubArrs);
 
         for(int i = 0; i < numOfSubArrs; ++i)
-            hOutBuffers[i]   = outArrs[i]->getSpecialBuffer();
+            hOutBuffers[i]   = outArrs[i]->specialBuffer();
 
         PointersManager manager(context, "helpers::split");
 
         void* dOutBuffers = manager.replicatePointer(hOutBuffers.data(), hOutBuffers.size() * sizeof(void*));
 
-        BUILD_SINGLE_SELECTOR(input.dataType(), splitCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), dOutBuffers, outArrs[0]->specialShapeInfo(), axis), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input.dataType(), splitCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), dOutBuffers, outArrs[0]->specialShapeInfo(), axis), LIBND4J_TYPES);
 
         manager.synchronize();
     // }

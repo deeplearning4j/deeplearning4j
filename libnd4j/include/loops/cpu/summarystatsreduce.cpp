@@ -34,54 +34,46 @@ namespace functions {
 
         template <typename X, typename Y>
         Y SummaryStatsReduce<X,Y>::execScalar(const int opNum,
-                const bool biasCorrected,
-                void *x,
-                Nd4jLong *xShapeInfo,
-                void *extraParams) {
+                                              const bool biasCorrected,
+                                              const void *x, const Nd4jLong *xShapeInfo,
+                                              void *extraParams) {
             RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams), SUMMARY_STATS_OPS);
         }
 
         template <typename X, typename Y>
         void SummaryStatsReduce<X,Y>::execScalar(const int opNum,
-                                              const bool biasCorrected,
-                                              void *x,
-                                              Nd4jLong *xShapeInfo,
-                                              void *extraParams,
-                                              void *z,
-                                              Nd4jLong *zShapeInfo) {
+                                                 const bool biasCorrected,
+                                                 const void *x, const Nd4jLong *xShapeInfo,
+                                                 void *extraParams,
+                                                 void *z, const Nd4jLong *zShapeInfo) {
             DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo), SUMMARY_STATS_OPS);
         }
 
         template <typename X, typename Y>
         void SummaryStatsReduce<X,Y>::exec(const int opNum,
-                const bool biasCorrected,
-                void *x,
-                Nd4jLong *xShapeInfo,
-                void *extraParams,
-                void *z,
-                Nd4jLong *zShapeInfo,
-                int *dimension,
-                int dimensionLength) {
+                                           const bool biasCorrected,
+                                           const void *x, const Nd4jLong *xShapeInfo,
+                                           void *extraParams,
+                                           void *z, const Nd4jLong *zShapeInfo,
+                                           int *dimension, int dimensionLength) {
             DISPATCH_BY_OPNUM_TT(exec, PARAMS(biasCorrected, x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength), SUMMARY_STATS_OPS);
         }
 
         template <typename X, typename Z>
         template <typename OpType >
         void SummaryStatsReduce<X,Z>::execScalar(const bool biasCorrected,
-                                              void *vx,
-                                              Nd4jLong *xShapeInfo,
-                                              void *vextraParams,
-                                              void *vz,
-                                              Nd4jLong *zShapeInfo) {
+                                                 const void *vx, const Nd4jLong *xShapeInfo,
+                                                 void *vextraParams,
+                                                 void *vz, const Nd4jLong *zShapeInfo) {
             auto z = reinterpret_cast<Z*>(vz);
             z[0] = execScalar<OpType>(biasCorrected, vx, xShapeInfo, vextraParams);
         }
 
         template <typename X, typename Z>
         template <typename OpType >
-        Z SummaryStatsReduce<X,Z>::execScalar(const bool biasCorrected, void *vx, Nd4jLong *xShapeInfo, void *vextraParams) {
+        Z SummaryStatsReduce<X,Z>::execScalar(const bool biasCorrected, const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams) {
 
-            auto x = reinterpret_cast<X *>(vx);
+            auto x = reinterpret_cast<const X *>(vx);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             SummaryStatsData<X> startingIndex;
@@ -105,15 +97,12 @@ namespace functions {
         template <typename X, typename Z>
         template <typename OpType >
         void SummaryStatsReduce<X,Z>::exec(const bool biasCorrected,
-                void *vx,
-                Nd4jLong *xShapeInfo,
-                void *vextraParams,
-                void *vz,
-                Nd4jLong *zShapeInfo,
-                int *dimension,
-                int dimensionLength) {
+                                           const void *vx, const Nd4jLong *xShapeInfo,
+                                           void *vextraParams,
+                                           void *vz, const Nd4jLong *zShapeInfo,
+                                           int *dimension, int dimensionLength) {
 
-            auto x = reinterpret_cast<X *>(vx);
+            auto x = reinterpret_cast<const X *>(vx);
             auto z = reinterpret_cast<Z *>(vz);
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
             auto resultLength = shape::length(zShapeInfo);
@@ -138,7 +127,7 @@ namespace functions {
             if (dimensionLength < 1)
                 return;
 
-            auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+            auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
 
             //pre squeezed: this is for keeping the pointer to the original
             //shape information for tad offset

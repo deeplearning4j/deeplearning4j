@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce;
 
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
@@ -32,14 +32,14 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-import static org.nd4j.linalg.util.ArrayUtil.*;
+import static org.nd4j.common.util.ArrayUtil.*;
 
 /**
  * TensorMmul
@@ -50,6 +50,35 @@ public class TensorMmul extends DynamicCustomOp {
     private int[][] axes;
     protected boolean addedEdges;
     protected MMulTranspose mMulTranspose;
+
+
+    public TensorMmul(INDArray x, INDArray y, int[][] axes) {
+        this(x,y,axes[0], axes[1], false, false, false);
+    }
+
+    /**
+     * Initialize with the given
+     * input, pairwise transform, result, and number
+     * of elements
+     *
+     * @param x the input
+     * @param y the pairwise transform
+     * @param z the result
+     */
+    public TensorMmul(INDArray x, INDArray y, INDArray z, int[][] axes) {
+        this(x, y, axes[0], axes[1], false, false, false);
+    }
+
+    public TensorMmul(INDArray x, INDArray y, int[] dimensionsX, int[] dimensionsY,
+                      boolean transposeX, boolean transposeY, boolean transposeZ) {
+        super(null,new INDArray[]{x, y},null);
+        this.axes = new int[][]{dimensionsX, dimensionsY};
+        addIArgument(dimensionsX.length);
+        addIArgument(dimensionsX);
+        addIArgument(dimensionsY.length);
+        addIArgument(dimensionsY);
+        addBArgument(transposeX, transposeY, transposeZ);
+    }
 
     public TensorMmul(SameDiff sameDiff,
                       SDVariable i_v1,
@@ -75,6 +104,18 @@ public class TensorMmul extends DynamicCustomOp {
         addIArgument(dimensions[0]);
         addIArgument(dimensions[1].length);
         addIArgument(dimensions[1]);
+    }
+
+    public TensorMmul(SameDiff sameDiff, SDVariable x, SDVariable y, int[] dimensionsX,
+                      int[] dimensionsY, boolean transposeX, boolean transposeY, boolean transposeZ) {
+        super(null, sameDiff, new SDVariable[]{x,y});
+        this.sameDiff = sameDiff;
+        this.axes = new int[][]{dimensionsX, dimensionsY};
+        addIArgument(dimensionsX.length);
+        addIArgument(dimensionsX[0]);
+        addIArgument(dimensionsY.length);
+        addIArgument(dimensionsY[0]);
+        addBArgument(transposeX, transposeY, transposeZ);
     }
 
     @Override
@@ -126,13 +167,13 @@ public class TensorMmul extends DynamicCustomOp {
         //tensor matrix multiply gradient wrt second variable
         int[] firstPerm = argsort(combine(deletedAxes[0],keep(argsort(sumAxes[1]),sumAxes[0])));
         SDVariable firstResult = doTensorMmul(i_v1.get(0), rarg(), firstAxes);
-        SDVariable permuted = f().permute(firstResult,firstPerm);
+        SDVariable permuted = sameDiff.permute(firstResult,firstPerm);
         ret.add(permuted);
 
         //tensor matrix multiply gradient wrt first variable
         int[] secondPerm = argsort(combine(keep(argsort(sumAxes[0]),sumAxes[1]),deletedAxes[1]));
         SDVariable secondResult = doTensorMmul(i_v1.get(0), larg(), secondAxes);
-        SDVariable secondPermuted = f().permute(secondResult,secondPerm);
+        SDVariable secondPermuted = sameDiff.permute(secondResult,secondPerm);
         ret.add(secondPermuted);
         return ret;
     }
@@ -198,7 +239,7 @@ public class TensorMmul extends DynamicCustomOp {
         }
 
 
-        int[] newShapeB = {n3, -1};
+        long[] newShapeB = {n3, -1};
         long[] oldShapeB;
         if (listB.size() == 0) {
             oldShapeB = new long[] {1};
@@ -209,37 +250,12 @@ public class TensorMmul extends DynamicCustomOp {
         }
 
 
-        SDVariable at = f()
-                .reshape(f().permute
-                        (a,newAxesA),newShapeA);
-        SDVariable bt = f()
-                .reshape(f()
-                        .permute(b,newAxesB),newShapeB);
+        SDVariable at = sameDiff.reshape(sameDiff.permute(a,newAxesA),newShapeA);
+        SDVariable bt = sameDiff.reshape(sameDiff.permute(b,newAxesB),newShapeB);
 
-        SDVariable ret = f().mmul(at,bt);
+        SDVariable ret = sameDiff.mmul(at,bt);
         long[] aPlusB = Longs.concat(oldShapeA, oldShapeB);
-        return f().reshape(ret, aPlusB);
-    }
-
-
-    public TensorMmul(INDArray x, INDArray y, int[][] axes) {
-        super(null,new INDArray[]{x, y},null);
-        this.axes = axes;
-        this.extraArgs = new Object[] {axes};
-    }
-
-    /**
-     * Initialize with the given
-     * input, pairwise transform, result, and number
-     * of elements
-     *
-     * @param x the input
-     * @param y the pairwise transform
-     * @param z the result
-     */
-    public TensorMmul(INDArray x, INDArray y, INDArray z, int[][] axes) {
-        super(null,new INDArray[]{x, y, z},null);
-        this.axes = axes;
+        return sameDiff.reshape(ret, aPlusB);
     }
 
     @Override

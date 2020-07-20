@@ -27,7 +27,7 @@ namespace sd {
             PlatformHelper::PlatformHelper(const char *name, samediff::Engine engine) {
                 // we just store name/hash of target operation
                 _name = std::string(name);
-                _hash = HashHelper::getInstance()->getLongHash(_name);
+                _hash = HashHelper::getInstance().getLongHash(_name);
                 _engine = engine;
             }
 

@@ -16,8 +16,7 @@
 
 package org.deeplearning4j.util;
 
-import java.util.Arrays;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 
 /**
  * Validation methods for array sizes/shapes and value non-negativeness

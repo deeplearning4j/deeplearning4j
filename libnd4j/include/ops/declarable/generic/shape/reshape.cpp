@@ -35,111 +35,19 @@ CUSTOM_OP_IMPL(reshape, 1, 1, false, 0, -2) {
     auto z = OUTPUT_VARIABLE(0);
 
     //Special case: empty.reshape(<other empty shape>) -> return empty
-        if (x->isEmpty()) {
-            REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
-            return Status::OK();    //No op
-        }
-
-    if (block.width() == 1) {
-
-        auto arguments = block.getIArguments();
-        int argsSize = arguments->size();
-
-
-
-        int e = 1;
-        char order = (char) -(*arguments)[0];
-        if (order != 'c' && order != 'f') {
-            order = 'c'; //x->ordering();
-            e = 0;
-        }
-
-        REQUIRE_TRUE(argsSize - e >= 1, 0, "Reshape arguments should have at least 1 dimension");
-
-        std::vector<Nd4jLong> shapeNew;
-        int e2 = e;
-        for (; e < (int) arguments->size(); e++) {
-            if (arguments->at(e) == -1){
-                Nd4jLong shapeLength = 1;
-                for(; e2 < e; e2++){
-                    shapeLength *= arguments->at(e2);
-                }
-                for(e2 = e + 1; e2 < arguments->size(); e2++){
-                    shapeLength *= arguments->at(e2);
-                }
-                Nd4jLong realShape = x->lengthOf() / shapeLength;
-                shapeNew.push_back(realShape);
-            }
-            else{
-                shapeNew.push_back(arguments->at(e));
-            }
-
-        }
-
-        auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
-        REQUIRE_TRUE(len == x->lengthOf(), 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), len);
-
-        if (Environment::getInstance()->isDebugAndVerbose()) {
-            nd4j_printv("Reshape: new shape", shapeNew);
-        }
-
-        auto xr = x->reshape(order, shapeNew);
-        z->assign(xr);
-        STORE_RESULT(*z);
-
-        return Status::OK();
-
-    } else if (block.width() == 2) {
-
-        auto s = INPUT_VARIABLE(1);
-
-        char order = 'c';
-        if (block.numI() > 0)
-            order = (char) -INT_ARG(0);
-
-        std::vector<Nd4jLong> shapeNew(s->lengthOf());
-
-        for (int e = 0; e < (int) s->lengthOf(); e++) {
-            auto dim = s->e<Nd4jLong >(e);
-            if (dim == -1){
-                Nd4jLong shapeLength = 1;
-                for(int e2 = 0; e2 < e; e2++){
-                    shapeLength *= s->e<Nd4jLong>(e2);
-                }
-                for(int e2 = e + 1; e2 < (int) s->lengthOf(); e2++){
-                    REQUIRE_TRUE(s->e<Nd4jLong>(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                    shapeLength *= s->e<Nd4jLong>(e2);
-                }
-                Nd4jLong realShape = x->lengthOf() / shapeLength;
-                shapeNew[e] = realShape;
-            }
-            else{
-                shapeNew[e] = dim;
-            }
-        }
-
-        if (Environment::getInstance()->isDebugAndVerbose()) {
-            nd4j_printv("Reshape: new shape", shapeNew);
-        }
-
-        if (s->isScalar()) {
-            // just a scalar
-            z->assign(x);
-        } else {
-            // in some cases we might go away with simple memcpy call instead of assign call
-            if (x->ordering() == 'c' && z->ordering() == x->ordering() && shape::reshapeC(x->shapeInfo(), z->shapeInfo())) {
-                z->dataBuffer()->copyBufferFrom(*x->dataBuffer().get(), z->lengthOf() * DataTypeUtils::sizeOfElement(z->dataType()), 0, x->bufferOffset());
-            } else {
-                auto xr = x->reshape(order, shapeNew);
-                z->assign(xr);
-            }
-        }
-
-        return Status::OK();
-
+    if (x->isEmpty()) {
+        REQUIRE_TRUE(z->isEmpty(), 0, "Reshape: when input is empty, output must also be empty");
+        return Status::OK();    //No op
     }
 
-    return ND4J_STATUS_BAD_INPUT;
+    REQUIRE_TRUE(x->lengthOf() == z->lengthOf(), 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), z->lengthOf());
+
+    if (Environment::getInstance().isDebugAndVerbose())
+        nd4j_printv("Reshape: new shape", z->getShapeAsVector());
+
+    z->assign(x->reshape(z->ordering(), z->getShapeAsVector()));
+
+    return Status::OK();
 }
 
 
@@ -151,117 +59,111 @@ DECLARE_TYPES(reshape) {
 }
 
 DECLARE_SHAPE_FN(reshape) {
-    auto inp = inputShape->at(0);
 
-    // we can launch op using Int arguments
-    if (inputShape->size() == 1) {
-        REQUIRE_TRUE(block.numI() > 0, 0, "Reshape: new shape should be provided as NDArray or int arguments, but nothing was defined");
-        std::vector<int> *arguments = block.getIArguments();
+    const auto x = INPUT_VARIABLE(0);
 
-        int e = 1;
-        char order = (char) -(*arguments)[0];
-        if (order != 'c' && order != 'f') {
-            order = shape::order(inp);
-            e = 0;
+    std::vector<int> reshapeArgs;
+    std::vector<Nd4jLong> shapeNew;
+    char orderNew = 'c';
+
+    if (block.width() == 1) {
+        reshapeArgs = *block.getIArguments();
+        if(!reshapeArgs.empty()) {
+            orderNew = (char) -reshapeArgs[0];
+            if(orderNew == 'c' || orderNew == 'f')
+                reshapeArgs.erase(reshapeArgs.begin());   // remove first element being order in this case
         }
-
-        std::vector<Nd4jLong> shapeNew;
-
-        int e2 = e;
-        for (; e < (int) arguments->size(); e++) {
-            if ((int) arguments->at(e) == -1){
-
-                Nd4jLong shapeLength = 1;
-                for(; e2 < e; e2 ++){
-                    shapeLength *= arguments->at(e2);
-                }
-                for(e2 = e + 1; e2 < arguments->size(); e2++){
-                    REQUIRE_TRUE(arguments->at(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                    shapeLength *= arguments->at(e2);
-                }
-
-                if(shapeLength == 0){
-                    //Edge case for empty:
-                    shapeNew.push_back(0);
-                } else {
-                    //Standard case
-                    Nd4jLong realShape = shape::length(inp) / shapeLength;
-                    shapeNew.push_back(realShape);
-                }
-            }
-            else{
-                shapeNew.push_back(arguments->at(e));
-            }
-        }
-
-        return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inp), order, shapeNew)));
-    } else {
-        // or, with second input "as shape"
-        auto x = INPUT_VARIABLE(0);
-        auto y = INPUT_VARIABLE(1);
-
-        // special case here
-        if (y->isEmpty()) {
-            REQUIRE_TRUE(x->lengthOf() == 1, 0, "Reshape: new length doesn't match existing array");
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inp)));
-        }
-        //Special case: empty.reshape(-1) -> return empty
-        if (x->isEmpty()) {
-            //REQUIRE_TRUE(y->lengthOf() == 1 && y->e<Nd4jLong>(0) == -1, 0, "Reshape: when input is empty, shape must be [-1]");
-            auto shapeOf = y->getBufferAsVector<Nd4jLong>();
-            Nd4jLong prod = 1;
-            bool hasNegs = false;
-            for (auto v:shapeOf) {
-                if (v < 0) {
-                    hasNegs = true;
-                    v = 0;
-                }
-
-                prod *= v;
-            }
-
-            REQUIRE_TRUE(prod == 0, 0, "Reshape: in case of empty arrays reshape must return empty array as well");
-
-            // if there are -1s - we turn them into zeros
-            if (hasNegs) {
-                for (int e = 0; e < shapeOf.size(); e++)
-                    if (shapeOf[e] < 0)
-                        shapeOf[e] = 0;
-            }
-
-            auto newShape = ShapeBuilders::createShapeInfo(ArrayOptions::dataType(inp), shape::order(inp), y->lengthOf(), shapeOf.data());
-            return SHAPELIST(CONSTANT(newShape));
-        }
-
-        std::vector<Nd4jLong> shapeNew(y->lengthOf());
-
-        for (int e = 0; e < (int) y->lengthOf(); e++) {
-            auto dim = y->e<Nd4jLong>(e);
-            if (dim == -1){
-                Nd4jLong shapeLength = 1;
-                for(int e2 = 0; e2 < e; e2++){
-                    shapeLength *= y->e<Nd4jLong>(e2);
-                }
-                for(int e2 = e + 1; e2 < (int)y->lengthOf(); e2++){
-                    REQUIRE_TRUE(y->e<Nd4jLong>(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                    shapeLength *= y->e<Nd4jLong>(e2);
-                }
-
-                if(shapeLength == 0){
-                    //Edge case for empty:
-                    shapeNew[e] = 0;
-                } else {
-                    Nd4jLong realShape = shape::length(inp) / shapeLength;
-                    shapeNew[e] = realShape;
-                }
-            }else {
-                shapeNew[e] = dim;
-            }
-        }
-
-        return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inp), 'c', shapeNew));
     }
+    else {
+        reshapeArgs = INPUT_VARIABLE(1)->getBufferAsVector<int>();
+        orderNew = block.numI() > 0 ? (char) -INT_ARG(0) : 'c';
+    }
+
+    REQUIRE_TRUE(!reshapeArgs.empty() || x->lengthOf() == 1, 0, "Reshape buffer should have at least 1 dimension !");
+
+    // Nd4jLong xLen = x->lengthOf();
+    // if(x->isEmpty()) {
+    //     xLen = 1;
+    //     for (uint i = 0; i < x->rankOf(); ++i)                            // take into account possible empty shapes
+    //         if(x->sizeAt(i) != 0)
+    //             xLen *= x->sizeAt(i);
+    // }
+
+    // for (uint i = 0; i < reshapeArgs.size(); ++i) {
+
+    //     if (reshapeArgs[i] == -1) {
+
+    //         uint shapeLength = 1, numOfZeros = 0;
+
+    //         for(uint j = 0; j < i; ++j)
+    //             if(reshapeArgs[j] != 0)
+    //                 shapeLength *= reshapeArgs[j];
+    //             else
+    //                 ++numOfZeros;
+
+    //         for(uint j = i + 1; j < reshapeArgs.size(); ++j) {
+    //             REQUIRE_TRUE(reshapeArgs[j] != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+    //             if(reshapeArgs[j] != 0)
+    //                 shapeLength *= reshapeArgs[j];
+    //             else
+    //                 ++numOfZeros;
+    //         }
+
+    //         const auto dim = xLen / shapeLength;
+
+    //         if(x->isEmpty() && (1 == dim || 0 == numOfZeros))
+    //             shapeNew.push_back(0);
+    //         else
+    //             shapeNew.push_back(dim);
+    //     }
+    //     else
+    //         shapeNew.push_back(reshapeArgs[i]);
+    // }
+
+    Nd4jLong newShapeLen = 1;
+    int pos = -1;
+    bool newShapeEmpty = false;
+
+    for (int i = 0; i < reshapeArgs.size(); ++i) {
+
+        const int dim = reshapeArgs[i];
+
+        if (dim == -1) {
+            REQUIRE_TRUE(pos == -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
+            pos = i;
+            shapeNew.push_back(1);
+        }
+        else if (dim == 0) {
+            shapeNew.push_back(0);
+            newShapeEmpty = true;
+        }
+        else {
+            shapeNew.push_back(dim);
+            newShapeLen *= dim;
+        }
+    }
+
+    if (pos != -1) {
+
+        Nd4jLong xLen = x->lengthOf();
+        if(x->isEmpty()) {
+            xLen = 1;
+            for (uint i = 0; i < x->rankOf(); ++i)                            // take into account possible empty shapes
+                if(x->sizeAt(i) > 0 || !newShapeEmpty)
+                    xLen *= x->sizeAt(i);
+        }
+
+        shapeNew[pos] = xLen / newShapeLen;
+    }
+
+    auto len = shape::prodLong(shapeNew.data(), shapeNew.size());
+    REQUIRE_TRUE(x->lengthOf() == len, 0, "Reshape: lengths before and after reshape should match, but got %i vs %i", x->lengthOf(), len);
+
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(x->dataType(), orderNew, shapeNew));
 }
+
+
+
 }
 }
 

@@ -25,6 +25,7 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -34,7 +35,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class CSVLineSequenceRecordReaderTest {
+public class CSVLineSequenceRecordReaderTest extends BaseND4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

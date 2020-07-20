@@ -40,6 +40,11 @@ public class CheckpointListenerTest extends BaseNd4jTest {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     public static SameDiff getModel(){
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
@@ -151,7 +156,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
 
         CheckpointListener l = new CheckpointListener.Builder(dir)
                 .keepLast(2)
-                .saveEvery(1, TimeUnit.SECONDS)
+                .saveEvery(4, TimeUnit.SECONDS)
                 .build();
         sd.setListeners(l);
 
@@ -159,7 +164,7 @@ public class CheckpointListenerTest extends BaseNd4jTest {
 
         for(int i=0; i<5; i++ ){   //10 iterations total
             sd.fit(iter, 1);
-            Thread.sleep(1000);
+            Thread.sleep(5000);
         }
 
         //Expect models saved at iterations: 10, 20, 30, 40

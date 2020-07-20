@@ -50,11 +50,11 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 	// perform weights broadcasting/tile to predictions if needed
 	auto weightsBroad = weights;
 	if(!weights->isScalar() && !weights->isSameShape(predictions))
-		weightsBroad = new NDArray(weights->tileToShape(predictions->getShapeInfo()));
+		weightsBroad = new NDArray(weights->tileToShape(predictions->shapeInfo()));
 
 	auto error = *predictions - *labels;
 	error.applyTransform(transform::Abs, error);
-	NDArray quadratic(error.getShapeInfo(), block.getWorkspace());
+	NDArray quadratic(error.shapeInfo(), block.getWorkspace());
 	error.applyScalar(scalar::MinPairwise, delta, quadratic);
 
     NDArray E = quadratic * quadratic * 0.5f + (error - quadratic)*delta;
@@ -73,6 +73,7 @@ CUSTOM_OP_IMPL(huber_loss, 3, 1, false, 1, 1) {
 		}
 		case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
 			NDArray sum;
+			sum.setContext(block.launchContext());
 			if (weights->isScalar())
 				sum = *weights * E.lengthOf();
 			else
@@ -129,12 +130,12 @@ DECLARE_SHAPE_FN(huber_loss) {
     REQUIRE_TRUE(shape::isScalar(weightsShapeInfo) || ShapeUtils::areShapesBroadcastable(weightsShapeInfo, labelsShapeInfo), 0, "HUBER_LOSS OP: shapes of weights and labels arrays should be broadcastable, but got weights = %s and labels = %s instead!", ShapeUtils::shapeAsString(weightsShapeInfo).c_str(), ShapeUtils::shapeAsString(labelsShapeInfo).c_str());
 
     DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
-    Nd4jLong* outShapeInfo = nullptr;
+    Nd4jLong const* outShapeInfo = nullptr;
 
     if(INT_ARG(0) != 0) 			// in this case output is scalar
-    	outShapeInfo = ConstantShapeHelper::getInstance()->scalarShapeInfo(outType);
+    	outShapeInfo = ConstantShapeHelper::getInstance().scalarShapeInfo(outType);
     else 							// in this case output has the same shape as labels and predictions
-    	outShapeInfo = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
+    	outShapeInfo = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outType, shape::order(labelsShapeInfo), shape::shapeOf(labelsShapeInfo), shape::rank(labelsShapeInfo)));
 
     return SHAPELIST(outShapeInfo);
 }
@@ -169,7 +170,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 			// perform weights broadcasting/tile to labels if needed
 			auto weightsBroad = weights;
 			if(!weights->isScalar() && !weights->isSameShape(predictions))
-				weightsBroad = new NDArray(weights->tileToShape(predictions->getShapeInfo()));
+				weightsBroad = new NDArray(weights->tileToShape(predictions->shapeInfo()));
 
 			NDArray diff = *predictions - *labels;
 			NDArray absDiff(diff);
@@ -179,10 +180,10 @@ DECLARE_SHAPE_FN(huber_loss) {
 
 			NDArray E = quadratic * quadratic * 0.5f + (absDiff - quadratic)*delta;
 
-			NDArray lteMask(diff.getShapeInfo(), BOOL, true, block.launchContext());
+			NDArray lteMask(diff.shapeInfo(), BOOL, true, block.launchContext());
 			absDiff.applyScalar(scalar::LessThanOrEqual, delta, lteMask);
 
-            NDArray gtMask(diff.getShapeInfo(), BOOL, true, block.launchContext());
+            NDArray gtMask(diff.shapeInfo(), BOOL, true, block.launchContext());
 			absDiff.applyScalar(scalar::GreaterThan, delta, gtMask);
 
 			NDArray signDiff(diff);
@@ -206,7 +207,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 					if(weights->isScalar())
 						dLdw->assign(E.reduceNumber(reduce::Sum));
 					else if(weights != weightsBroad) {
-						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+						std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 						E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 					}
 					else
@@ -216,6 +217,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 				case 2: {											// 2 - "weighted_mean", output is scalar and equal to sum of all elements of E array divided by sum of all elements of weightsBroad array
 
 					NDArray sum;
+					sum.setContext(block.launchContext());
 					if (weights->isScalar())
 						sum = (*weights) * E.lengthOf();
 					else
@@ -234,7 +236,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 						if(weights->isScalar())
 							*dLdw = 0.;
 						else if(weights != weightsBroad) {
-							std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+							std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 							((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 						}
 						else
@@ -263,7 +265,7 @@ DECLARE_SHAPE_FN(huber_loss) {
 						if(weights->isScalar())
 							dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 						else if(weights != weightsBroad) {
-							std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->getShapeInfo(), weightsBroad->getShapeInfo());
+							std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
 							E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
 							*dLdw /= numOfNonZeroWeightsScalar;
 						}
@@ -304,9 +306,9 @@ DECLARE_SHAPE_FN(huber_loss) {
 
 			DataType outType = DataTypeUtils::pickFloatingType(ArrayOptions::dataType(predictionsShapeInfo));
 
-			Nd4jLong *dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(predictionsShapeInfo, outType, false, block.getWorkspace());
-			Nd4jLong *dLdwShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, outType, false, block.getWorkspace());
-			Nd4jLong *dLdlShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
+			auto dLdpShapeInfo = ShapeBuilders::copyShapeInfoAndType(predictionsShapeInfo, outType, false, block.getWorkspace());
+			auto dLdwShapeInfo = ShapeBuilders::copyShapeInfoAndType(weightsShapeInfo, outType, false, block.getWorkspace());
+			auto dLdlShapeInfo = ShapeBuilders::copyShapeInfoAndType(labelsShapeInfo, outType, false, block.getWorkspace());
 
 			return SHAPELIST(dLdpShapeInfo, dLdwShapeInfo, dLdlShapeInfo);
 		}

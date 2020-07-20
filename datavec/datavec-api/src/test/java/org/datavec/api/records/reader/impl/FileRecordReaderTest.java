@@ -23,7 +23,8 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertFalse;
 /**
  * Created by nyghtowl on 11/14/15.
  */
-public class FileRecordReaderTest {
+public class FileRecordReaderTest  extends BaseND4JTest {
 
     @Test
     public void testReset() throws Exception {

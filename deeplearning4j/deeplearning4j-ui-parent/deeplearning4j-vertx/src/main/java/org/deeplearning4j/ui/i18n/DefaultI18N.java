@@ -69,15 +69,19 @@ public class DefaultI18N implements I18N {
     }
 
     /**
-     * Get instance for session (used in multi-session mode)
-     * @param sessionId session
-     * @return instance for session
+     * Get instance for session
+     * @param sessionId session ID for multi-session mode, leave it {@code null} for global instance
+     * @return instance for session, or global instance
      */
     public static synchronized I18N getInstance(String sessionId) {
-        if (!sessionInstances.containsKey(sessionId)) {
-            sessionInstances.put(sessionId, new DefaultI18N());
+        if (sessionId == null) {
+            return getInstance();
+        } else {
+            if (!sessionInstances.containsKey(sessionId)) {
+                sessionInstances.put(sessionId, new DefaultI18N());
+            }
+            return sessionInstances.get(sessionId);
         }
-        return sessionInstances.get(sessionId);
     }
 
     /**

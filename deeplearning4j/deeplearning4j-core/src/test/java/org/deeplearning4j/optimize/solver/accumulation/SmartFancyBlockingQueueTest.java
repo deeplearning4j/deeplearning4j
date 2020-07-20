@@ -21,16 +21,14 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
-import org.deeplearning4j.util.ThreadUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.common.util.ThreadUtils;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.junit.Assert.*;
 

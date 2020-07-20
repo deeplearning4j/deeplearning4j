@@ -16,7 +16,7 @@
 
 package org.datavec.spark.transform;
 
-import org.datavec.spark.transform.model.BatchCSVRecord;
+import org.datavec.spark.inference.model.model.BatchCSVRecord;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;

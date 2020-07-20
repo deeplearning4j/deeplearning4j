@@ -18,9 +18,10 @@ package org.nd4j.linalg.api.ops.random.impl;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.tensorflow.framework.AttrValue;
@@ -69,6 +70,12 @@ public class Range extends DynamicCustomOp {
 
     public Range(SameDiff sd, SDVariable from, SDVariable to, SDVariable step, DataType dataType){
         super(null, sd, new SDVariable[]{from, to, step});
+        this.dataType = dataType;
+        addDArgument(dataType);
+    }
+
+    public Range(INDArray from, INDArray to, INDArray step, DataType dataType){
+        super(new INDArray[]{from, to, step}, null);
         this.dataType = dataType;
         addDArgument(dataType);
     }

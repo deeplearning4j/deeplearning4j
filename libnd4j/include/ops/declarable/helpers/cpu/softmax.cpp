@@ -30,10 +30,10 @@ namespace sd {
         namespace helpers {
 
             template <typename T>
-            static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
+            static void softMaxForVector_(void const* input, Nd4jLong const* inShapeInfo, void *output, Nd4jLong const* outShapeInfo) {
 
-                T* inBuff  = reinterpret_cast<T *>(input);
-                T* outBuff = reinterpret_cast<T *>(output);
+                auto inBuff  = reinterpret_cast<T const*>(input);
+                auto outBuff = reinterpret_cast<T *>(output);
 
                 T max = -DataTypeUtils::max<T>();
                 T sum = 0.;
@@ -80,15 +80,16 @@ namespace sd {
                     throw std::runtime_error("ops::helpers::softMaxForVector function: input and output arrays must be vectors !");
 
                 auto xType = input.dataType();
-                BUILD_SINGLE_SELECTOR(xType, softMaxForVector_, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR(xType, softMaxForVector_, (input.buffer(), input.shapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
             }
 
             template <typename T>
-            void softmax_loop(T *input, T *output, Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen);
+            void softmax_loop(const T* input, T *output, const Nd4jLong * offsets, Nd4jLong numOfSubArrs, uint32_t tadLen);
+
 #ifdef _OPENMP
             template <>
-            FORCEINLINE void softmax_loop(float *input, float *output, Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
-#pragma omp parallel for
+            FORCEINLINE void softmax_loop(const float* input, float *output, const Nd4jLong * offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
+#pragma omp parallel for default(shared)
                     for (Nd4jLong i = 0; i < numOfSubArrs; i++) {
                         auto inBuff = input + offsets[i];
                         auto outBuff = output + offsets[i];
@@ -113,7 +114,7 @@ namespace sd {
             }
 #else
             template <>
-            FORCEINLINE void softmax_loop(float *input, float *output, Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
+            FORCEINLINE void softmax_loop(const float *input, float *output, const Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
                 auto func = PRAGMA_THREADS_FOR {
                     for (auto i = start; i < stop; i++) {
                         auto inBuff = input + offsets[i];
@@ -143,7 +144,7 @@ namespace sd {
 
 
             template <typename T>
-            FORCEINLINE void softmax_loop(T *input, T *output, Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
+            FORCEINLINE void softmax_loop(const T *input, T *output, const Nd4jLong *offsets, Nd4jLong numOfSubArrs, uint32_t tadLen) {
                 auto func = PRAGMA_THREADS_FOR {
                     for (auto i = start; i < stop; i++) {
                         auto inBuff = input + offsets[i];
@@ -180,20 +181,20 @@ namespace sd {
                 if(input.isVector()) {
 
                     if(rank == 1 || input.sizeAt(dimension) != 1)
-                        softMaxForVector_<T>(input.getBuffer(), input.getShapeInfo(), output.buffer(), output.getShapeInfo());
+                        softMaxForVector_<T>(input.buffer(), input.shapeInfo(), output.buffer(), output.shapeInfo());
                     else
                         output = 1.;
                 }
                 else if(input.isSameShapeStrict(output)) {
 
-                    TadPack tadPack  = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimension);
-                    Nd4jLong* tadShapeInfo  = tadPack.primaryShapeInfo();
-                    Nd4jLong* tadOffsets    = tadPack.primaryOffsets();
+                    TadPack tadPack  = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), dimension);
+                    auto tadShapeInfo  = tadPack.primaryShapeInfo();
+                    auto tadOffsets    = tadPack.primaryOffsets();
                     const uint numOfSubArrs = tadPack.numberOfTads();
                     const uint tadLen       = shape::length(tadShapeInfo);
 
                     if(shape::elementWiseStride(tadShapeInfo) == 1){
-                        T *inBuff = input.bufferAsT<T>();
+                        auto inBuff = input.bufferAsT<T>();
                         T *outBuff = output.bufferAsT<T>();
 
                         softmax_loop(inBuff, outBuff, tadOffsets, numOfSubArrs, tadLen);

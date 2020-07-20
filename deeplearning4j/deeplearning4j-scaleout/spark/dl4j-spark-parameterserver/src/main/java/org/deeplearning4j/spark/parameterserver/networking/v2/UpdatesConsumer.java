@@ -120,7 +120,7 @@ public class UpdatesConsumer implements UpdatesHandler {
                     //log.info("Putting update to the queue, current size: [{}]", updatesBuffer.size());
                     updatesBuffer.put(array);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                     throw new RuntimeException(e);
                 }
             } else if (params != null && stepFunction != null) {

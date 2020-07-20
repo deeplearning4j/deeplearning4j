@@ -20,7 +20,7 @@ import org.apache.commons.io.LineIterator;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.util.SerializableHadoopConfig;
-import org.deeplearning4j.api.loader.MultiDataSetLoader;
+import org.deeplearning4j.core.loader.MultiDataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.iterator.PathSparkMultiDataSetIterator;

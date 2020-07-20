@@ -47,7 +47,7 @@ namespace helpers {
 //      - outputOffsets - output TAD offsets
 //
     template <typename T>
-    static __global__ void globalExtractPatchesKernel(bool theSame, int batchCount, int sizeRow, int sizeCol, int rowDim, int colDim, int outRowDim, int outColDim, int strideRow, int strideCol, int rateRow, int rateCol, int rowCast, int colCast, int lastDim, T* input, Nd4jLong* patchShape, Nd4jLong* inputOffsets, T* output, Nd4jLong* outTadShape, Nd4jLong* outputOffsets) {
+    static __global__ void globalExtractPatchesKernel(bool theSame, int batchCount, int sizeRow, int sizeCol, int rowDim, int colDim, int outRowDim, int outColDim, int strideRow, int strideCol, int rateRow, int rateCol, int rowCast, int colCast, int lastDim, const T* input, const Nd4jLong* patchShape, const Nd4jLong* inputOffsets, T* output, const Nd4jLong* outTadShape, const Nd4jLong* outputOffsets) {
 
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -114,8 +114,8 @@ namespace helpers {
         if (sizeCol * rateCol < 3)
             colCast = 0;
 
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(images->getShapeInfo(), restDims.data(), restDims.size());
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), restDims.data(), restDims.size());
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(images->shapeInfo(), restDims.data(), restDims.size());
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), restDims.data(), restDims.size());
         int batchCount = packX.numberOfTads();
 
         PointersManager manager(context, "helpers::extractPatches");

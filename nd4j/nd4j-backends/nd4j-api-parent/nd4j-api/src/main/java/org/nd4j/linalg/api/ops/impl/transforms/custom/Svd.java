@@ -21,7 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -69,6 +69,12 @@ public class Svd extends DynamicCustomOp {
         this.computeUv = computeUv;
         this.switchNum = switchNum;
         addIArgument(ArrayUtil.fromBoolean(fullUV), ArrayUtil.fromBoolean(computeUv), switchNum);
+    }
+
+    public Svd(INDArray input, boolean fullUV, boolean computeUV, int switchNum) {
+        addInputArgument(input);
+        addBArgument(fullUV, computeUV);
+        addIArgument(switchNum);
     }
 
     @Override

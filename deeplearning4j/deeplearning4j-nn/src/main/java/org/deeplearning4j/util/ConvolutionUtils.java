@@ -17,28 +17,26 @@
 package org.deeplearning4j.util;
 
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import lombok.NonNull;
 import lombok.val;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
-import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -50,12 +48,23 @@ import java.util.Arrays;
  */
 public class ConvolutionUtils {
 
+    public static final String NCHW_NHWC_ERROR_MSG = "Note: Convolution layers can be configured for either NCHW (channels first)" +
+            " or NHWC (channels last) format for input images and activations.\n" +
+            "Layers can be configured using .dataFormat(CNN2DFormat.NCHW/NHWC) when constructing the layer, or for the entire net using" +
+            " .setInputType(InputType.convolutional(height, width, depth, CNN2DForman.NCHW/NHWC)).\n" +
+            "ImageRecordReader and NativeImageLoader can also be configured to load image data in either NCHW or NHWC format which must match the network";
+
+
     private static final int[] ONES = new int[]{1, 1};
 
 
     private ConvolutionUtils() {
     }
 
+    /**
+     * Use {@link #getOutputSize(INDArray, int[], int[], int[], ConvolutionMode, int[], CNN2DFormat)}
+     */
+    @Deprecated
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                       ConvolutionMode convolutionMode) {
         return getOutputSize(inputData, kernel, strides, padding, convolutionMode, ONES);
@@ -74,12 +83,15 @@ public class ConvolutionUtils {
      * @return Output size: int[2] with output height/width
      */
     public static int[] getDeconvolutionOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
-                                                   ConvolutionMode convolutionMode, int[] dilation) {
+                                                   ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format) {
+        boolean nchw = format == CNN2DFormat.NCHW;
+        int hDim = nchw ? 2 : 1;
+        int wDim = nchw ? 3 : 2;
 
-        if (inputData.size(2) > Integer.MAX_VALUE || inputData.size(3) > Integer.MAX_VALUE)
+        if (inputData.size(hDim) > Integer.MAX_VALUE || inputData.size(wDim) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
-        int hIn = (int) inputData.size(2);
-        int wIn = (int) inputData.size(3);
+        int hIn = (int) inputData.size(hDim);
+        int wIn = (int) inputData.size(wDim);
         int[] eKernel = effectiveKernelSize(kernel, dilation);
 
         if (convolutionMode == ConvolutionMode.Same) {
@@ -139,6 +151,15 @@ public class ConvolutionUtils {
 
 
     /**
+     * @deprecated Use {@link #getOutputSize(INDArray, int[], int[], int[], ConvolutionMode, int[], CNN2DFormat)}
+     */
+    @Deprecated
+    public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
+                                      ConvolutionMode convolutionMode, int[] dilation) {
+        return getOutputSize(inputData, kernel, strides, padding, convolutionMode, dilation, CNN2DFormat.NCHW);
+    }
+
+    /**
      * Get the output size (height/width) for the given input data and CNN configuration
      *
      * @param inputData       Input data
@@ -147,14 +168,22 @@ public class ConvolutionUtils {
      * @param padding         Padding (height/width)
      * @param convolutionMode Convolution mode (Same, Strict, Truncate)
      * @param dilation        Kernel dilation (height/width)
+     * @param format          Format for input activations
      * @return Output size: int[2] with output height/width
      */
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
-                                      ConvolutionMode convolutionMode, int[] dilation) {
-        if (inputData.size(2) > Integer.MAX_VALUE || inputData.size(3) > Integer.MAX_VALUE)
+                                      ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format) {
+        int hDim = 2;
+        int wDim = 3;
+        if(format == CNN2DFormat.NHWC){
+            hDim = 1;
+            wDim = 2;
+        }
+
+        if (inputData.size(hDim) > Integer.MAX_VALUE || inputData.size(wDim) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
-        int inH = (int) inputData.size(2);
-        int inW = (int) inputData.size(3);
+        int inH = (int) inputData.size(hDim);
+        int inW = (int) inputData.size(wDim);
 
         //Determine the effective kernel size, accounting for dilation
         //http://deeplearning.net/software/theano/tutorial/conv_arithmetic.html#dilated-convolutions
@@ -491,18 +520,28 @@ public class ConvolutionUtils {
     }
 
 
-    public static INDArray reshape4dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+    public static INDArray reshape4dTo2d(INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType type) {
+        return reshape4dTo2d(in, CNN2DFormat.NCHW, workspaceMgr, type);
+    }
+
+    public static INDArray reshape4dTo2d(INDArray in, CNN2DFormat format, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if (in.rank() != 4)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 4, got rank " + in.rank()
                     + " with shape " + Arrays.toString(in.shape()));
         val shape = in.shape();
 
-        //Reshape: from [n,c,h,w] to [n*h*w,c]
-
-        INDArray out = in.permute(0, 2, 3, 1);
-        if (out.ordering() != 'c' || !Shape.strideDescendingCAscendingF(out))
-            out = out.dup('c');
-        return out.reshape('c', shape[0] * shape[2] * shape[3], shape[1]);
+        if(format == CNN2DFormat.NCHW){
+            //Reshape: from [n,c,h,w] to [n*h*w,c]
+            INDArray out = in.permute(0, 2, 3, 1);
+            if (out.ordering() != 'c' || !Shape.strideDescendingCAscendingF(out))
+                out = workspaceMgr.dup(type, out, 'c');
+            return workspaceMgr.leverageTo(type, out.reshape('c', shape[0] * shape[2] * shape[3], shape[1]));
+        } else {
+            //Reshape: from [n,h,w,c] to [n*h*w,c]
+            if (in.ordering() != 'c' || !Shape.strideDescendingCAscendingF(in))
+                in = workspaceMgr.dup(type, in, 'c');
+            return workspaceMgr.leverageTo(type, in.reshape('c', shape[0] * shape[1] * shape[2], shape[3]));
+        }
     }
 
     public static INDArray reshape5dTo2d(@NonNull Convolution3D.DataFormat format, INDArray in, LayerWorkspaceMgr workspaceMgr, ArrayType type){
@@ -541,18 +580,23 @@ public class ConvolutionUtils {
         }
     }
 
-    public static INDArray reshape2dTo4d(INDArray in2d, long[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+    public static INDArray reshape2dTo4d(INDArray in2d, long[] toShape, CNN2DFormat format, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if(in2d.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         if (toShape.length != 4)
             throw new IllegalArgumentException("Invalid input: expect toShape with 4 elements: got " + Arrays.toString(toShape));
 
-        //Reshape: from [n*h*w,c] to [n,h,w,c] to [n,c,h,w]
-        if(in2d.ordering() != 'c' || !Shape.hasDefaultStridesForShape(in2d))
+        if (in2d.ordering() != 'c' || !Shape.hasDefaultStridesForShape(in2d))
             in2d = workspaceMgr.dup(type, in2d, 'c');
 
-        INDArray out = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[1]);
-        return workspaceMgr.leverageTo(type, out.permute(0, 3, 1, 2));
+        if(format == CNN2DFormat.NCHW) {
+            //Reshape: from [n*h*w,c] to [n,h,w,c] to [n,c,h,w]
+            INDArray out = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[1]);
+            return workspaceMgr.leverageTo(type, out.permute(0, 3, 1, 2));
+        } else {
+            //Reshape: from [n*h*w,c] to [n,h,w,c]
+            return workspaceMgr.leverageTo(type, in2d.reshape('c', toShape));
+        }
     }
 
     public static INDArray reshape2dTo5d(Convolution3D.DataFormat format, INDArray in2d, long n, long d, long h, long w, long ch, LayerWorkspaceMgr workspaceMgr, ArrayType type){
@@ -563,7 +607,6 @@ public class ConvolutionUtils {
         if(in2d.ordering() != 'c' || !Shape.hasDefaultStridesForShape(in2d))
             in2d = workspaceMgr.dup(type, in2d, 'c');
 
-//        INDArray ndhwc = in2d.reshape('c', toShape[0], toShape[2], toShape[3], toShape[4], toShape[1]);
         INDArray ndhwc = in2d.reshape('c', n, d, h, w, ch);
         if(format == Convolution3D.DataFormat.NDHWC){
             return workspaceMgr.leverageTo(type, ndhwc);
@@ -572,11 +615,19 @@ public class ConvolutionUtils {
         }
     }
 
-    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+    /**
+     * @deprecated Use {@link #reshapeMaskIfRequired(INDArray, INDArray, CNN2DFormat, LayerWorkspaceMgr, ArrayType)}
+     */
+    @Deprecated
+    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, ArrayType type) {
+        return reshapeMaskIfRequired(mask, output, null, workspaceMgr, type);
+    }
+
+    public static INDArray reshapeMaskIfRequired(INDArray mask, INDArray output, CNN2DFormat format, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if (mask == null)
             return null;
         if (mask.rank() == 2) {
-            return adapt2dMask(mask, output, workspaceMgr, type);
+            return adapt2dMask(mask, output, format, workspaceMgr, type);
         } else if (mask.rank() == 3) {
             return reshape3dMask(mask, workspaceMgr, type);
         } else {
@@ -584,19 +635,30 @@ public class ConvolutionUtils {
         }
     }
 
-    public static INDArray adapt2dMask(INDArray mask, INDArray output, LayerWorkspaceMgr workspaceMgr, ArrayType type){
-        //Input in [n,c,h,w] which is reshaped to [n*h*w,c], mask is [n,1]
-        //So: We'll broadcast to [n,1,h,w] then reshape to [n*h*w,1] required for the current DL4J loss functions...
+    public static INDArray adapt2dMask(INDArray mask, INDArray output, @NonNull CNN2DFormat format, LayerWorkspaceMgr workspaceMgr, ArrayType type){
 
-        //Use workaround for: https://github.com/deeplearning4j/nd4j/issues/2066
+        if(format == CNN2DFormat.NCHW){
+            //Input in [n,c,h,w] which is reshaped to [n*h*w,c], mask is [n,1]
+            //So: We'll broadcast to [n,1,h,w] then reshape to [n*h*w,1] required for the current DL4J loss functions...
 
-        val s = output.shape();
-        INDArray bMask = workspaceMgr.create(type, mask.dataType(), new long[]{s[0], 1, s[2], s[3]}, 'c');
-        Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 0, 1));
+            //Use workaround for: https://github.com/deeplearning4j/nd4j/issues/2066
 
-        INDArray bMaskPermute = bMask.permute(0, 2, 3, 1).dup('c');  //Not sure if dup is strictly necessary...
+            val s = output.shape();
+            INDArray bMask = workspaceMgr.create(type, mask.dataType(), new long[]{s[0], 1, s[2], s[3]}, 'c');
+            Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 0, 1));
 
-        return workspaceMgr.leverageTo(type, bMaskPermute.reshape('c', s[0] * s[2] * s[3], 1));
+            INDArray bMaskPermute = bMask.permute(0, 2, 3, 1).dup('c');  //Not sure if dup is strictly necessary...
+
+            return workspaceMgr.leverageTo(type, bMaskPermute.reshape('c', s[0] * s[2] * s[3], 1));
+        } else {
+            //Input in [n,h,w,c] which is reshaped to [n*h*w,c], mask is [n,1]
+            //So: We'll broadcast to [n,h,w,1] then reshape to [n*h*w,1] required for the current DL4J loss functions...
+            val s = output.shape();
+            INDArray bMask = workspaceMgr.create(type, mask.dataType(), new long[]{s[0], s[2], s[3], 1}, 'c');
+            Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, 0, 3));
+
+            return workspaceMgr.leverageTo(type, bMask.reshape('c', s[0] * s[2] * s[3], 1));
+        }
     }
 
     public static INDArray reshape3dMask(INDArray mask, LayerWorkspaceMgr workspaceMgr, ArrayType type){
@@ -679,10 +741,10 @@ public class ConvolutionUtils {
         int[] s = new int[]{stride, 1};
         int[] d = new int[]{dilation, 1};
         if (cm == ConvolutionMode.Same || cm == ConvolutionMode.Causal) {
-            outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, null, cm, d); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, null, cm, d, CNN2DFormat.NCHW); //Also performs validation
         } else {
             pad = new int[]{padding, 0};
-            outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, pad, cm, d); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(reshaped4d, k, s, pad, cm, d, CNN2DFormat.NCHW); //Also performs validation
         }
         int outH = outSize[0];
 

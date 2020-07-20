@@ -36,7 +36,7 @@ namespace sd {
         }
 
         DECLARE_SHAPE_FN(matrix_diag_part) {
-            Nd4jLong* outShapeInfo = nullptr;
+            Nd4jLong const* outShapeInfo = nullptr;
             auto in = inputShape->at(0);
             int inRank = shape::rank(in);
 
@@ -46,17 +46,18 @@ namespace sd {
             int lastDimension = sd::math::nd4j_min(shape::sizeAt(in, -1), shape::sizeAt(in, -2));
             if(outRank == 1) {
                 //output shape is a vector with size min(sizeAt(0), sizeAt(1))
-                outShapeInfo = ConstantShapeHelper::getInstance()->vectorShapeInfo(lastDimension, ArrayOptions::dataType(in));
+                outShapeInfo = ConstantShapeHelper::getInstance().vectorShapeInfo(lastDimension, ArrayOptions::dataType(in));
             }
             else {
-                ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
-                outShapeInfo[0] = outRank;
+                Nd4jLong* anShapeInfo;
+                ALLOCATE(anShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+                anShapeInfo[0] = outRank;
                 for(int i = 0; i < outRank - 1; ++i)
-                    outShapeInfo[i + 1] = shape::sizeAt(in, i);
-                outShapeInfo[outRank] = lastDimension;
+                    anShapeInfo[i + 1] = shape::sizeAt(in, i);
+                anShapeInfo[outRank] = lastDimension;
 
-                ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
-                outShapeInfo = CONSTANT(outShapeInfo);
+                ShapeUtils::updateStridesAndType(anShapeInfo, in, shape::order(in));
+                outShapeInfo = CONSTANT(anShapeInfo);
             }
             return SHAPELIST(outShapeInfo);
     }

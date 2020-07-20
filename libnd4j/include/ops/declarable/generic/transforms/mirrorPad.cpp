@@ -79,23 +79,20 @@ DECLARE_SHAPE_FN(mirror_pad) {
             REQUIRE_TRUE( (paddings->e<Nd4jLong>(i,0) <= (input->sizeAt(i) - includeBorder)) && (paddings->e<Nd4jLong>(i,1) <= (input->sizeAt(i) - includeBorder)), 0, "MIRROR_PAD OP: wrong content of paddings array, its elements must be no grater then corresponding dimension of input array for symmetric mode (or dimension-1 for reflect mode) !");
     }
     
-    Nd4jLong* outShapeInfo(nullptr);
-
     if(rank == 1) {
         Nd4jLong len = input->lengthOf() + paddings->e<Nd4jLong>(0) + paddings->e<Nd4jLong>(1);
-        outShapeInfo = ConstantShapeHelper::getInstance()->vectorShapeInfo(len, input->dataType());
-    }
-    else {
-        ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
-        outShapeInfo[0] = rank;
-        for(int i = 0; i < rank; ++i)
-            outShapeInfo[i+1] = input->sizeAt(i) + paddings->e<Nd4jLong>(i,0) + paddings->e<Nd4jLong>(i,1);
-        ShapeUtils::updateStridesAndType(outShapeInfo, input->shapeInfo(), input->ordering());
-
-        outShapeInfo = CONSTANT(outShapeInfo);
+        return SHAPELIST(ConstantShapeHelper::getInstance().vectorShapeInfo(len, input->dataType()));
     }
 
-    return SHAPELIST(outShapeInfo);
+    Nd4jLong* outShapeInfo(nullptr);
+
+    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(rank), Nd4jLong);
+    outShapeInfo[0] = rank;
+    for(int i = 0; i < rank; ++i)
+        outShapeInfo[i+1] = input->sizeAt(i) + paddings->e<Nd4jLong>(i,0) + paddings->e<Nd4jLong>(i,1);
+    ShapeUtils::updateStridesAndType(outShapeInfo, input->shapeInfo(), input->ordering());
+
+    return SHAPELIST(CONSTANT(outShapeInfo));
 }
 
 

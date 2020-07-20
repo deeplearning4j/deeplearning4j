@@ -21,6 +21,7 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LSTM;
@@ -29,6 +30,8 @@ import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -42,14 +45,25 @@ import static org.nd4j.linalg.activations.Activation.IDENTITY;
 import static org.nd4j.linalg.activations.Activation.TANH;
 import static org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction.MSE;
 
+
+@RunWith(Parameterized.class)
 public class TestLastTimeStepLayer extends BaseDL4JTest {
+    private RNNFormat rnnDataFormat;
+
+    public TestLastTimeStepLayer(RNNFormat rnnDataFormat){
+        this.rnnDataFormat = rnnDataFormat;
+    }
+    @Parameterized.Parameters(name="{0}")
+    public static Object[] params(){
+        return RNNFormat.values();
+    }
 
     @Test
     public void testLastTimeStepVertex() {
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
                 .addLayer("lastTS", new LastTimeStep(new SimpleRnn.Builder()
-                        .nIn(5).nOut(6).build()), "in")
+                        .nIn(5).nOut(6).dataFormat(rnnDataFormat).build()), "in")
                 .setOutputs("lastTS")
                 .build();
 
@@ -59,9 +73,22 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
         //First: test without input mask array
         Nd4j.getRandom().setSeed(12345);
         Layer l = graph.getLayer("lastTS");
-        INDArray in = Nd4j.rand(new int[]{3, 5, 6});
+        INDArray in;
+        if (rnnDataFormat == RNNFormat.NCW){
+            in = Nd4j.rand(3, 5, 6);
+        }
+        else{
+            in = Nd4j.rand(3, 6, 5);
+        }
         INDArray outUnderlying = ((LastTimeStepLayer)l).getUnderlying().activate(in, false, LayerWorkspaceMgr.noWorkspaces());
-        INDArray expOut = outUnderlying.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(5));
+        INDArray expOut;
+        if (rnnDataFormat == RNNFormat.NCW){
+            expOut = outUnderlying.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(5));
+        }
+        else{
+            expOut = outUnderlying.get(NDArrayIndex.all(), NDArrayIndex.point(5), NDArrayIndex.all());
+        }
+
 
 
         //Forward pass:
@@ -76,9 +103,17 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
         graph.setLayerMaskArrays(new INDArray[]{inMask}, null);
 
         expOut = Nd4j.zeros(3, 6);
-        expOut.putRow(0, outUnderlying.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(2)));
-        expOut.putRow(1, outUnderlying.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.point(3)));
-        expOut.putRow(2, outUnderlying.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(4)));
+        if (rnnDataFormat == RNNFormat.NCW){
+            expOut.putRow(0, outUnderlying.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(2)));
+            expOut.putRow(1, outUnderlying.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.point(3)));
+            expOut.putRow(2, outUnderlying.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(4)));
+        }
+        else{
+            expOut.putRow(0, outUnderlying.get(NDArrayIndex.point(0), NDArrayIndex.point(2), NDArrayIndex.all()));
+            expOut.putRow(1, outUnderlying.get(NDArrayIndex.point(1), NDArrayIndex.point(3), NDArrayIndex.all()));
+            expOut.putRow(2, outUnderlying.get(NDArrayIndex.point(2), NDArrayIndex.point(4), NDArrayIndex.all()));
+        }
+
 
         outFwd = l.activate(in, false, LayerWorkspaceMgr.noWorkspaces());
         assertEquals(expOut, outFwd);
@@ -97,9 +132,9 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
                 .seed(1234)
                 .graphBuilder()
                 .addInputs("in")
-                .setInputTypes(InputType.recurrent(1))
+                .setInputTypes(InputType.recurrent(1, rnnDataFormat))
                 .addLayer("RNN", new LastTimeStep(new LSTM.Builder()
-                        .nOut(10)
+                        .nOut(10).dataFormat(rnnDataFormat)
                         .build()), "in")
                 .addLayer("dense", new DenseLayer.Builder()
                         .nOut(10)
@@ -120,7 +155,9 @@ public class TestLastTimeStepLayer extends BaseDL4JTest {
         INDArray fm2 = Nd4j.zeros(1,24);
         INDArray fm3 = Nd4j.zeros(1,24);
         fm3.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,5)).assign(1);
-
+        if (rnnDataFormat == RNNFormat.NWC){
+            f = f.permute(0, 2, 1);
+        }
         INDArray[] out1 = cg.output(false, new INDArray[]{f}, new INDArray[]{fm1});
         try {
             cg.output(false, new INDArray[]{f}, new INDArray[]{fm2});

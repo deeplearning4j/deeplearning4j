@@ -21,13 +21,14 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.loss.bp.SparseSoftmaxCrossEntropyLossWithLogitsBp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -96,7 +97,8 @@ public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //args: label, logits
-        SDVariable[] ret = f().lossSparseSoftmaxCrossEntropyBp(arg(1), arg(0));
-        return Arrays.asList(f().zerosLike(arg(0)), ret[0]);
+        SDVariable labelsGrad = sameDiff.zerosLike(arg(0));
+        SDVariable logitsGrad = new SparseSoftmaxCrossEntropyLossWithLogitsBp(sameDiff, arg(1), arg(0)).outputVariable();
+        return Arrays.asList(labelsGrad, logitsGrad);
     }
 }

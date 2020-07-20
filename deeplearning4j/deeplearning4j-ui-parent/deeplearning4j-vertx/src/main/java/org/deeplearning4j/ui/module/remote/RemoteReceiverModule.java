@@ -22,7 +22,8 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.api.storage.*;
+import org.deeplearning4j.core.storage.*;
+import org.deeplearning4j.core.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
@@ -38,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  *
  * Used to receive UI updates remotely.
- * Used in conjunction with {@link org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter}, which posts to the UI.
+ * Used in conjunction with {@link RemoteUIStatsStorageRouter}, which posts to the UI.
  * UI information is then deserialized and routed to the specified StatsStorageRouter, which may (or may not)
  * be attached to the UI
  *

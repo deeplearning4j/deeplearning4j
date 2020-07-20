@@ -23,6 +23,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.Relu6Derivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -40,6 +41,10 @@ import java.util.Map;
 public class Relu6 extends BaseScalarOp {
     public Relu6(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, cutoff, inPlace);
+    }
+
+    public Relu6(SameDiff sameDiff, SDVariable i_v, double cutoff) {
+        this(sameDiff, i_v, false, cutoff);
     }
 
     public Relu6() {
@@ -95,6 +100,6 @@ public class Relu6 extends BaseScalarOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable dLdOut = i_v.get(0);
-        return Collections.singletonList(f().relu6Derivative(arg(), dLdOut, scalarValue.getDouble(0)));
+        return new Relu6Derivative(sameDiff, arg(), dLdOut, scalarValue.getDouble(0)).outputs();
     }
 }

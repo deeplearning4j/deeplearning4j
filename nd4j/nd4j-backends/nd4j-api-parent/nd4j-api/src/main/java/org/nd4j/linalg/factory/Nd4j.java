@@ -16,6 +16,9 @@
 
 package org.nd4j.linalg.factory;
 
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.linalg.factory.ops.*;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
@@ -29,9 +32,9 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.base.Preconditions;
-import org.nd4j.config.ND4JEnvironmentVars;
-import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.config.ND4JEnvironmentVars;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -49,8 +52,6 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
@@ -83,11 +84,11 @@ import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.api.memory.BasicMemoryManager;
 import org.nd4j.linalg.api.memory.MemoryManager;
 import org.nd4j.linalg.api.memory.deallocation.DeallocatorService;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.util.LongUtils;
-import org.nd4j.tools.PropertyParser;
+import org.nd4j.common.tools.PropertyParser;
 import org.nd4j.versioncheck.VersionCheck;
 
 import java.io.*;
@@ -112,6 +113,7 @@ import java.util.logging.Logger;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class Nd4j {
 
     /**
@@ -625,16 +627,16 @@ public class Nd4j {
      * @return array of maximum values.
      */
     public static INDArray argMax(INDArray arr, @NonNull int... dimension) {
-        IMax imax = new IMax(arr, dimension);
-        return Nd4j.getExecutioner().exec(imax);
+        val imax = new ArgMax(arr, dimension);
+        return Nd4j.getExecutioner().exec(imax)[0];
     }
 
     /**
      * See {@link #argMax(INDArray, int...)} but return minimum values.
      */
     public static INDArray argMin(INDArray arr, @NonNull int... dimension) {
-        IMin imin = new IMin(arr, dimension);
-        return Nd4j.getExecutioner().exec(imin);
+        val imin = new ArgMin(arr, dimension);
+        return Nd4j.getExecutioner().exec(imin)[0];
     }
 
     /**
@@ -791,7 +793,7 @@ public class Nd4j {
                                 boolean transposeB) {
         long cRows = (transposeA ? a.columns() : a.rows());
         long cCols = (transposeB ? b.rows() : b.columns());
-        INDArray c = Nd4j.createUninitialized(a.dataType(), new long[] {cRows, cCols}, 'f');
+        INDArray c = Nd4j.createUninitialized(a.dataType(), new long[] {cRows, cCols}, a.ordering() == 'c' && b.ordering() == 'c' ? 'c' : 'f');
         return gemm(a, b, c, transposeA, transposeB, 1.0, 0.0);
     }
 
@@ -817,12 +819,9 @@ public class Nd4j {
                                 boolean transposeB,
                                 double alpha,
                                 double beta) {
-        //Note: some views have non-zero offset but 'default' strides (these are OK). And a 'c' order vector such as [10,1] is OK - same buffer as an 'f' order vector with same shape
-        Preconditions.checkState(c.length() == 1 || c.ordering() == 'f' && Shape.hasDefaultStridesForShape(c) ||
-                        c.isVectorOrScalar() && c.elementWiseStride() == 1,
-                "C (result) array is not F order or is a view. Nd4j.gemm requires the result array to be F order " +
-                        "and not a view. C (result) array: [%ndSInfo]", c);
-        getBlasWrapper().level3().gemm(a, b, c, transposeA, transposeB, alpha, beta);
+        Preconditions.checkArgument(c.elementWiseStride() == 1, "Nd4j.gemm() C array should NOT be a view");
+
+        Nd4j.exec(new Mmul(a, b, c, alpha, beta, MMulTranspose.builder().transposeA(transposeA).transposeB(transposeB).build()));
         return c;
     }
 
@@ -1132,6 +1131,7 @@ public class Nd4j {
             case LONG:
                 return LongIndexer.create((LongPointer) pointer);
             case UINT32:
+                return UIntIndexer.create((IntPointer) pointer);
             case INT:
                 return IntIndexer.create((IntPointer) pointer);
             case UINT16:
@@ -2009,10 +2009,9 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace(@NonNull DataType dataType, double lower, double step, long num) {
-        Preconditions.checkState(dataType.isFPType());
+        Preconditions.checkState(dataType.isFPType(), "Datatype must be a floating point type for linspace, got %s", dataType);
         if (num == 1)
             return Nd4j.scalar(dataType, lower);
-
         return Nd4j.getExecutioner().exec(new Linspace(lower, num, step, dataType));
     }
 
@@ -2025,10 +2024,9 @@ public class Nd4j {
      * @return the linearly spaced vector
      */
     public static INDArray linspace( double lower, double upper, long num, @NonNull DataType dataType) {
-        Preconditions.checkState(dataType.isFPType());
+        Preconditions.checkState(dataType.isFPType(), "Datatype must be a floating point type for linspace, got %s", dataType);
         if (num == 1)
             return Nd4j.scalar(dataType, lower);
-
         return Nd4j.getExecutioner().exec(new Linspace(lower, upper, num, dataType));
     }
 
@@ -2465,7 +2463,7 @@ public class Nd4j {
                             //noinspection ConstantConditions
                             newArr.addi((format.parse(entries[0])).doubleValue());
                         } catch (ParseException e) {
-                            e.printStackTrace();
+                            log.error("",e);
                         }
                     } else {
                         Preconditions.checkState(entries.length == theShape[rank-1], "Invalid number of entries - format does not match expected shape." +
@@ -2475,7 +2473,7 @@ public class Nd4j {
                                 BigDecimal number = (BigDecimal) format.parse(entries[i]);
                                 subsetArr[i] = number.doubleValue();
                             } catch (ParseException e) {
-                                e.printStackTrace();
+                                log.error("",e);
                             }
                         }
                         INDArray subTensor = Nd4j.create(subsetArr, new long[]{subsetArr.length}, Nd4j.defaultFloatingPointType());

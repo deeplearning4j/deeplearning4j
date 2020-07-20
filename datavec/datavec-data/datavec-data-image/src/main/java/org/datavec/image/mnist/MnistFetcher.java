@@ -17,7 +17,7 @@
 package org.datavec.image.mnist;
 
 import org.apache.commons.io.FileUtils;
-import org.nd4j.util.ArchiveUtils;
+import org.nd4j.common.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

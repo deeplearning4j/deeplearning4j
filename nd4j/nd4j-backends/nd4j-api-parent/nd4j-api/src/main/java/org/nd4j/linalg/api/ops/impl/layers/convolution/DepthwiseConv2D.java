@@ -16,12 +16,15 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -35,7 +38,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -49,10 +52,16 @@ import java.util.*;
  */
 @Slf4j
 @Getter
-@NoArgsConstructor
 public class DepthwiseConv2D extends DynamicCustomOp {
 
     protected Conv2DConfig config;
+
+
+    public DepthwiseConv2D(@NonNull SameDiff sameDiff, @NonNull SDVariable input,
+                           @NonNull SDVariable weights, SDVariable bias, @NonNull Conv2DConfig conv2DConfig) {
+        this(sameDiff, wrapFilterNull(input, weights, bias), conv2DConfig);
+
+    }
 
     @Builder(builderMethodName = "sameDiffBuilder")
     public DepthwiseConv2D(SameDiff sameDiff,
@@ -64,27 +73,22 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         addArgs();
     }
 
-    public DepthwiseConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
+    public DepthwiseConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config) {
         super(inputs, outputs);
 
         this.config = config;
         addArgs();
     }
 
-    public DepthwiseConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config){
+    public DepthwiseConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config) {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public DepthwiseConv2D(INDArray layerInput, INDArray depthWeights, Conv2DConfig conv2DConfig) {
-        this(wrapFilterNull(layerInput, depthWeights), null, conv2DConfig);
+    public DepthwiseConv2D(INDArray layerInput, INDArray depthWeights, INDArray bias, Conv2DConfig config) {
+        this(layerInput, depthWeights, bias, null, config);
     }
 
-    public DepthwiseConv2D(INDArray layerInput, INDArray depthWeights, INDArray bias, Conv2DConfig conv2DConfig) {
-        this(wrapFilterNull(layerInput, depthWeights, bias), null, conv2DConfig);
-    }
-
-    public DepthwiseConv2D(INDArray inputs, Conv2DConfig conv2DConfig) {
-        this(wrapFilterNull(inputs), null, conv2DConfig);
+    public DepthwiseConv2D() {
     }
 
     @Override
@@ -125,7 +129,7 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        if(config == null && !iArguments.isEmpty()){
+        if (config == null && !iArguments.isEmpty()) {
             config = Conv2DConfig.builder()
                     .kH(iArguments.get(0))
                     .kW(iArguments.get(1))
@@ -306,7 +310,9 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        SDVariable bias = args().length==2  ? null : arg(2);
+        return Arrays.asList(new DepthwiseConv2DBp(sameDiff, arg(0), arg(1), bias, f1.get(0), this.config).outputVariables());
+
     }
 
 
@@ -321,7 +327,7 @@ public class DepthwiseConv2D extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));

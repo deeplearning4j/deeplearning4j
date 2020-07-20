@@ -2,8 +2,11 @@ package org.deeplearning4j.rl4j.support;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -39,13 +42,18 @@ public class MockNeuralNet implements NeuralNet {
     }
 
     @Override
-    public NeuralNet clone() {
-        return this;
+    public void fit(DataSet featuresLabels) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public void copy(NeuralNet from) {
+    public void copy(ITrainableNeuralNet from) {
         ++copyCallCount;
+    }
+
+    @Override
+    public NeuralNet clone() {
+        return this;
     }
 
     @Override
@@ -76,5 +84,15 @@ public class MockNeuralNet implements NeuralNet {
     @Override
     public void save(String filename) throws IOException {
 
+    }
+
+    @Override
+    public INDArray output(Observation observation) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray output(INDArray batch) {
+        throw new UnsupportedOperationException();
     }
 }

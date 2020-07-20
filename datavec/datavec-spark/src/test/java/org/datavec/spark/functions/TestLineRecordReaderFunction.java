@@ -24,7 +24,7 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.BaseSparkTest;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.util.HashSet;

@@ -22,15 +22,14 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +47,14 @@ public class DeConv3D extends DynamicCustomOp {
 
     protected DeConv3DConfig config;
 
-    public DeConv3D(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull DeConv3DConfig config) {
+    public DeConv3D(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull DeConv3DConfig config) {
         super(sameDiff, toArr(input, weights, bias));
+        this.config = config;
+        addArgs();
+    }
+
+    public DeConv3D(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, @NonNull DeConv3DConfig config) {
+        super(sameDiff, toArr(input, weights, null));
         this.config = config;
         addArgs();
     }
@@ -65,12 +70,8 @@ public class DeConv3D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public DeConv3D(@NonNull INDArray input, @NonNull INDArray weights, @NonNull DeConv3DConfig deConv3DConfig) {
-        this(new INDArray[]{input, weights}, null, deConv3DConfig);
-    }
-
-    public DeConv3D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, @NonNull DeConv3DConfig deConv3DConfig) {
-        this(wrapFilterNull(input, weights, bias), null, deConv3DConfig);
+    public DeConv3D(INDArray input, INDArray weights, INDArray bias, DeConv3DConfig config) {
+        this(input, weights, bias, null, config);
     }
 
     private static SDVariable[] toArr(SDVariable input, SDVariable weights, SDVariable bias){
@@ -159,8 +160,7 @@ public class DeConv3D extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         SDVariable bias = args().length > 2 ? arg(2) : null;
-        SDVariable[] outVars = f().deconv3dDerivative(arg(0), arg(1), bias, f1.get(0), config);
-        return Arrays.asList(outVars);
+        return new DeConv3DDerivative(sameDiff, arg(0), arg(1), bias, f1.get(0), config).outputs();
     }
 
     @Override

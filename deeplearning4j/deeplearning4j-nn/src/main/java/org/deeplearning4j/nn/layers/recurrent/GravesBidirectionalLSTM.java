@@ -25,14 +25,14 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.GravesBidirectionalLSTMParamInitializer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 
 /**
  *
- * RNN tutorial: https://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent
+ * RNN tutorial: https://deeplearning4j.konduit.ai/models/recurrent
  * READ THIS FIRST
  *
  * Bdirectional LSTM layer implementation.
@@ -88,12 +88,12 @@ public class GravesBidirectionalLSTM
         }
 
         final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true, workspaceMgr);
-
+        fwdPass.fwdPassOutput = permuteIfNWC(fwdPass.fwdPassOutput);
         final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(this,
                         this.conf,
-                        this.layerConf().getGateActivationFn(), this.input,
+                        this.layerConf().getGateActivationFn(), permuteIfNWC(this.input),
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
-                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS), epsilon,
+                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS), permuteIfNWC(epsilon),
                         truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
@@ -106,16 +106,17 @@ public class GravesBidirectionalLSTM
 
         final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(this,
                         this.conf,
-                        this.layerConf().getGateActivationFn(), this.input,
+                        this.layerConf().getGateActivationFn(), permuteIfNWC(this.input),
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
-                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS), epsilon,
+                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS), permuteIfNWC(epsilon),
                         truncatedBPTT, tbpttBackwardLength, backPass, false,
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true,
                         null, workspaceMgr, layerConf().isHelperAllowFallback());
 
-
+        forwardsGradient.setSecond(permuteIfNWC(forwardsGradient.getSecond()));
+        backwardsGradient.setSecond(permuteIfNWC(backwardsGradient.getSecond()));
         //merge the gradient, which is key value pair of String,INDArray
         //the keys for forwards and backwards should be different
 
@@ -171,7 +172,7 @@ public class GravesBidirectionalLSTM
         } else {
 
             forwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                            this.input, getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
+                            permuteIfNWC(this.input), getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), true,
@@ -179,7 +180,7 @@ public class GravesBidirectionalLSTM
                             forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
             backwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
-                            this.input,
+                            permuteIfNWC(this.input),
                             getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
@@ -187,6 +188,8 @@ public class GravesBidirectionalLSTM
                             GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true, null,
                             forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
+            forwardsEval.fwdPassOutput = permuteIfNWC(forwardsEval.fwdPassOutput);
+            backwardsEval.fwdPassOutput = permuteIfNWC(backwardsEval.fwdPassOutput);
             cachedPassForward = forwardsEval;
             cachedPassBackward = backwardsEval;
         }
@@ -228,10 +231,12 @@ public class GravesBidirectionalLSTM
                 biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS;
             }
 
-            return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
+            FwdPassReturn ret = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), permuteIfNWC(this.input),
                             getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training,
                             prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
                             null, forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
+            ret.fwdPassOutput = permuteIfNWC(ret.fwdPassOutput);
+            return ret;
         }
     }
 

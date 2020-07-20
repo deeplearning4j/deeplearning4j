@@ -16,6 +16,7 @@
 
 package org.datavec.spark;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.junit.After;
@@ -23,6 +24,7 @@ import org.junit.Before;
 
 import java.io.Serializable;
 
+@Slf4j
 public abstract class BaseSparkTest implements Serializable {
     protected static JavaSparkContext sc;
 
@@ -40,7 +42,7 @@ public abstract class BaseSparkTest implements Serializable {
                 try {
                     Thread.sleep(100L);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
             } else {
                 break;

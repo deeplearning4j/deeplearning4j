@@ -35,8 +35,8 @@ namespace helpers {
 // put diagonals from input batched matricies to output batched vectors
     template <typename T>
     static __global__ void matrixDiagPartKernel(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
-                                            Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
-                                            Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets) {
+                                                const Nd4jLong* tadOnlyInputShapeInfo,  const Nd4jLong *tadInputOffsets,
+                                                const Nd4jLong* tadOnlyOutputShapeInfo, const Nd4jLong *tadOutputOffsets) {
         int totalThreads = blockDim.x;
         for (Nd4jLong i = blockIdx.x; i < numTads; i += gridDim.x) {
             auto yOffset = tadInputOffsets[i];
@@ -66,13 +66,13 @@ namespace helpers {
         Nd4jLong lastDimension = sd::math::nd4j_min(input->sizeAt(-2), input->sizeAt(-1));
 
         std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(output->rankOf(), {output->rankOf() - 1});
-        const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(input->getShapeInfo(), dimsToExclude); //this->tensorsAlongDimension({dimension});
+        const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(input->shapeInfo(), dimsToExclude); //this->tensorsAlongDimension({dimension});
         //printf("Repeat delta %lld, numTads %lld\n", repeatDelta, numTads);
         //tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets;
         std::vector<int> outputDims({output->rankOf() - 1});
         std::vector<int> inputDims({input->rankOf() - 2, input->rankOf() - 1});
-        auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), inputDims);
-        auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), outputDims);
+        auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), inputDims);
+        auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), outputDims);
 
 
         if (!output->isActualOnDeviceSide())
@@ -83,7 +83,7 @@ namespace helpers {
 
 
         dim3 launchDims(256, 512, 8192);
-        matrixDiagPartKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->getSpecialBuffer(), output->getSpecialBuffer(), numTads, lastDimension, packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets());
+        matrixDiagPartKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->specialBuffer(), output->specialBuffer(), numTads, lastDimension, packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets());
 
         return Status::OK();
     }

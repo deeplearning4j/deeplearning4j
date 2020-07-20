@@ -33,46 +33,48 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-__device__ void reduceSimpleGeneric(void *x,  Nd4jLong *xShapeInfo,
+__device__ void reduceSimpleGeneric(const void *x,  const Nd4jLong *xShapeInfo,
                                     void *extraParams,
-                                    void *z, Nd4jLong *zShapeInfo,
+                                    void *z, const Nd4jLong *zShapeInfo,
                                     int *dimension, int dimensionLength,
                                     void *reductionBuffer,
-                                    Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+                                    const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets) {
 
     functions::reduce::ReduceLongFunction<X,Z>::template transformCudaXD<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-__device__ void reduceScalarGeneric(void *x, Nd4jLong *xShapeInfo,
+__device__ void reduceScalarGeneric(const void *x, const Nd4jLong *xShapeInfo,
                                     void *extraParams,
-                                    void *z, Nd4jLong *zShapeInfo,
+                                    void *z, const Nd4jLong *zShapeInfo,
                                     int *dimension, int dimensionLength,
-                                    void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
+                                    void *reductionBuffer,
+                                    const Nd4jLong *tadOnlyShapeInfo) {
 
     functions::reduce::ReduceLongFunction<X, Z>::template execScalarCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, reductionBuffer, tadOnlyShapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-__global__ void simpleReduce(void *x, Nd4jLong *xShapeInfo,
+__global__ void simpleReduce(const void *x, const Nd4jLong *xShapeInfo,
                             void *extraParams,
-                            void *z, Nd4jLong *zShapeInfo,
+                            void *z, const Nd4jLong *zShapeInfo,
                             int *dimension, int dimensionLength,
                             void *reductionBuffer,
-                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+                             const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets) {
 
     reduceSimpleGeneric<X, Z, OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-__global__ void simpleScalar(void *x, Nd4jLong *xShapeInfo,
+__global__ void simpleScalar(const void *x, const Nd4jLong *xShapeInfo,
                             void *extraParams,
-                            void *z, Nd4jLong *zShapeInfo,
+                            void *z, const Nd4jLong *zShapeInfo,
                             int *dimension, int dimensionLength,
-                            void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
+                            void *reductionBuffer,
+                            const Nd4jLong *tadOnlyShapeInfo) {
 
     reduceScalarGeneric<X, Z, OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
 }
@@ -116,14 +118,14 @@ __device__ void ReduceLongFunction<X,Z>::aggregatePartials(void *vsPartials, Nd4
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-__device__ void ReduceLongFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xShapeInfo,
+__device__ void ReduceLongFunction<X,Z>::transformCudaXD(const void *vx, const Nd4jLong *xShapeInfo,
                                                         void *vextraParams,
-                                                        void *vz, Nd4jLong *zShapeInfo,
+                                                        void *vz, const Nd4jLong *zShapeInfo,
                                                         int *dimension,  int dimensionLength,
                                                         void *vreductionBuffer,
-                                                        Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+                                                         const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets) {
 
-    auto x = reinterpret_cast<X*>(vx);
+    auto x = reinterpret_cast<const X*>(vx);
     auto z = reinterpret_cast<Z*>(vz);
     auto extraParams = reinterpret_cast<X*>(vextraParams);
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
@@ -167,13 +169,13 @@ __device__ void ReduceLongFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-__device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xShapeInfo,
+__device__ void ReduceLongFunction<X,Z>::execScalarCuda(const void *vx, const Nd4jLong *xShapeInfo,
                                                         void *vextraParams,
-                                                        void *vz, Nd4jLong *zShapeInfo,
+                                                        void *vz, const Nd4jLong *zShapeInfo,
                                                         void *vreductionBuffer,
-                                                        Nd4jLong *tadOnlyShapeInfo) {
+                                                        const Nd4jLong *tadOnlyShapeInfo) {
 
-    auto x = reinterpret_cast<X*>(vx);
+    auto x = reinterpret_cast<const X*>(vx);
     auto z = reinterpret_cast<Z*>(vz);
     auto extraParams = reinterpret_cast<X*>(vextraParams);
     auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
@@ -254,14 +256,20 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-__host__ void ReduceLongFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hXShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, Nd4jLong *hZShapeInfo, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+__host__ void ReduceLongFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream,
+                                                      const void *x, const Nd4jLong *xShapeInfo, const Nd4jLong *hXShapeInfo,
+                                                      void *extraParams,
+                                                      void *z, const Nd4jLong *zShapeInfo, const Nd4jLong *hZShapeInfo,
+                                                      int *dimension, int dimensionLength,
+                                                      void *reductionPointer,
+                                                      const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
     if(shape::isEmpty(hXShapeInfo)) {
 
         if(shape::isEmpty(hZShapeInfo))
             return;
 
-        const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<X*>(x)));
+        const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X*>(x)));
 
         auto res = cudaMemcpyAsync(sd::LaunchContext::defaultContext()->getScalarPointer(), &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
         if (res != 0)
@@ -280,14 +288,20 @@ __host__ void ReduceLongFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStrea
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template<typename OpType>
-__host__ void ReduceLongFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, Nd4jLong *hXShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, Nd4jLong *hZShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
+__host__ void ReduceLongFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream,
+                                                          const void *x, const Nd4jLong *xShapeInfo, const Nd4jLong *hXShapeInfo,
+                                                          void *extraParams,
+                                                          void *z, const Nd4jLong *zShapeInfo, const Nd4jLong *hZShapeInfo,
+                                                          int *dimension, int dimensionLength,
+                                                          void *reductionBuffer,
+                                                          const Nd4jLong *tadOnlyShapeInfo) {
 
     if (shape::isEmpty(hXShapeInfo)) {
 
         if (shape::isEmpty(hZShapeInfo))
             return;
 
-        const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<X*>(x)));
+        const auto startingVal = static_cast<Z>(OpType::startingValue(reinterpret_cast<const X*>(x)));
 
         auto res = cudaMemcpyAsync(z, &startingVal, sizeof(Z), cudaMemcpyHostToDevice, *stream);
         if (res != 0)
@@ -300,7 +314,14 @@ __host__ void ReduceLongFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaS
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-_CUDA_H void ReduceLongFunction<X,Y>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, Nd4jLong* hXShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, Nd4jLong* hZShapeInfo, int *dimension, int dimensionLength, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
+_CUDA_H void ReduceLongFunction<X,Y>::execReduceScalar(dim3 launchDims, cudaStream_t *stream,
+                                                       const int opNum,
+                                                       const void *x, const Nd4jLong *xShapeInfo, const Nd4jLong* hXShapeInfo,
+                                                       void *extraParams,
+                                                       void *z, const Nd4jLong *zShapeInfo, const Nd4jLong* hZShapeInfo,
+                                                       int *dimension, int dimensionLength,
+                                                       void *reductionBuffer,
+                                                       const Nd4jLong *tadOnlyShapeInfo) {
 
         DISPATCH_BY_OPNUM_TT(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, hXShapeInfo, extraParams, z, zShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_LONG_OPS));
         sd::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
@@ -308,7 +329,14 @@ _CUDA_H void ReduceLongFunction<X,Y>::execReduceScalar(dim3 launchDims, cudaStre
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-_CUDA_H void ReduceLongFunction<X,Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, void *x, Nd4jLong *xShapeInfo, Nd4jLong* hXShapeInfo, void *extraParams, void *z, Nd4jLong *zShapeInfo, Nd4jLong* hZShapeInfo, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+_CUDA_H void ReduceLongFunction<X,Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream,
+                                                   const int opNum,
+                                                   int rank, const void *x, const Nd4jLong *xShapeInfo, const Nd4jLong* hXShapeInfo,
+                                                   void *extraParams,
+                                                   void *z, const Nd4jLong *zShapeInfo, const Nd4jLong* hZShapeInfo,
+                                                   int *dimension, int dimensionLength,
+                                                   void *reductionPointer,
+                                                   const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
     DISPATCH_BY_OPNUM_TT(intermediateXD, PARAMS(launchDims, stream, x, xShapeInfo, hXShapeInfo, extraParams, z, zShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_LONG_OPS));
     DEBUG_KERNEL(stream, opNum);

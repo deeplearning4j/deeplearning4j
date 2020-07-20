@@ -22,7 +22,8 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.autodiff.util.SameDiffUtils;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -57,8 +58,6 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
                            int[] dimension) {
         super(sameDiff, inPlace, new Object[]{i_v2});
         if (i_v1 != null && i_v2 != null) {
-            f().validateDifferentialFunctionsameDiff(i_v1);
-            f().validateDifferentialFunctionsameDiff(i_v2);
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
             this.dimension = dimension;
@@ -80,8 +79,8 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         super(sameDiff, extraArgs);
         this.dimension = dimension;
         if (i_v1 != null && i_v2 != null) {
-            f().validateDifferentialFunctionsameDiff(i_v1);
-            f().validateDifferentialFunctionsameDiff(i_v2);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v1, this);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v2, this);
 
             this.sameDiff = sameDiff;
             sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
@@ -107,7 +106,7 @@ public abstract class BaseBroadcastOp extends BaseOp implements BroadcastOp {
         super(sameDiff, inPlace, extraArgs);
         this.dimension = dimension;
         if (i_v != null) {
-            f().validateDifferentialFunctionsameDiff(i_v);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
             sameDiff.addArgsFor(new SDVariable[]{i_v},this);
 
 

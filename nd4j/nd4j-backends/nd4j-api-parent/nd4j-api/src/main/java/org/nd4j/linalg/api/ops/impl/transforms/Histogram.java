@@ -16,10 +16,9 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Histogram op wrapper

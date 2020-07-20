@@ -18,7 +18,7 @@ package org.nd4j.linalg.api.ops.custom;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -47,6 +47,11 @@ public class AdjustSaturation extends DynamicCustomOp {
 
     public AdjustSaturation(@NonNull SameDiff sameDiff, @NonNull SDVariable in, @NonNull SDVariable factor) {
         super(sameDiff, new SDVariable[]{in, factor});
+    }
+
+    public AdjustSaturation(@NonNull SameDiff sameDiff, @NonNull SDVariable in, double factor) {
+        super(sameDiff, new SDVariable[]{in});
+        addTArgument(factor);
     }
 
     @Override

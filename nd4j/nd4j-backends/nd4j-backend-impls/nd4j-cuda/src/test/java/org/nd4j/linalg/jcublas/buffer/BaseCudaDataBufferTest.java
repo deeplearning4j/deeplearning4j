@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -197,5 +197,28 @@ public class BaseCudaDataBufferTest extends BaseND4JTest {
 
         // there shoul dbe no exceptions during execution
         assertEquals(Nd4j.getAffinityManager().getNumberOfDevices(), cnt.get());
+    }
+
+    @Test
+    public void testClose_1() {
+        val x = Nd4j.createFromArray(1, 2, 3);
+
+        x.close();
+
+        assertTrue(x.wasClosed());
+        assertTrue(x.data().wasClosed());
+    }
+
+    @Test
+    public void testClose_2() {
+        val x = Nd4j.create(DataType.FLOAT, 5, 6);
+        val row = x.getRow(1);
+        x.close();
+
+        assertTrue(x.wasClosed());
+        assertTrue(x.data().wasClosed());
+
+        assertTrue(row.wasClosed());
+        assertTrue(row.data().wasClosed());
     }
 }

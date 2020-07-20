@@ -38,6 +38,10 @@ public class MatchCondition extends BaseReduceLongOp {
     private double eps;
     private int mode;
 
+    public MatchCondition(SameDiff sameDiff, SDVariable in, Condition condition) {
+        this(sameDiff, in, condition, false, null);
+    }
+
     public MatchCondition(SameDiff sameDiff, SDVariable in, Condition condition, boolean keepDims, int... dimensions) {
         super(sameDiff, in, dimensions, keepDims);
         this.compare = condition.getValue();
@@ -48,9 +52,13 @@ public class MatchCondition extends BaseReduceLongOp {
 
     public MatchCondition() {}
 
-
     public MatchCondition(INDArray x, Condition condition, int... dimensions) {
         this(x, Nd4j.EPS_THRESHOLD, condition, dimensions);
+    }
+
+    public MatchCondition(INDArray x, Condition condition, boolean keepDims, int... dimensions) {
+        this(x, Nd4j.EPS_THRESHOLD, condition, dimensions);
+        this.keepDims = keepDims;
     }
 
     public MatchCondition(INDArray x, double eps, Condition condition, int... dimensions) {

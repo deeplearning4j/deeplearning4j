@@ -74,7 +74,10 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
         REQUIRE_TRUE(outSpatialDim >= 0, 0, "BatchToSpaceND: crop left/right values are too big and cause negative output spatial dimension/dimensions !");
     }
 
-    helpers::batchToSpaceND(block.launchContext(), *input, *blockShape, *crop, *output);
+    if (shape::strideDescendingCAscendingF(input->shapeInfo()))
+        helpers::batchToSpaceND(block.launchContext(), *input, *blockShape, *crop, *output);
+    else
+        helpers::batchToSpaceND(block.launchContext(), input->dup(), *blockShape, *crop, *output);
 
     return Status::OK();
 }
@@ -115,7 +118,7 @@ DECLARE_SHAPE_FN(batch_to_space_nd) {
     for (uint i = 0; i < numOfSpatialDims; ++i)
         outShape[i + 1] = outShape[i + 1] * INPUT_VARIABLE(1)->e<Nd4jLong>(i) - INPUT_VARIABLE(2)->e<uint>(i,0) - INPUT_VARIABLE(2)->e<uint>(i,1);
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outShape));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outShape));
 }
 
 

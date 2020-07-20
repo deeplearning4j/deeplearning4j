@@ -19,8 +19,8 @@ package org.deeplearning4j.optimizer.listener;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
@@ -47,7 +47,7 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.primitives.Triple;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -69,6 +69,11 @@ public class TestListeners extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
 
     @Test
     public void testSettingListenersUnsupervised() {

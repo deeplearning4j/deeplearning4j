@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
@@ -36,8 +37,9 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.SimpleRnnParamInitializer;
 import org.deeplearning4j.nn.weights.IWeightInit;
+import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -155,7 +157,7 @@ public class KerasSimpleRnn extends KerasLayer {
                 .weightInitRecurrent(recurrentInit)
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
-                .l2(this.weightL2Regularization);
+                .l2(this.weightL2Regularization).dataFormat(RNNFormat.NWC);
         Integer nIn = KerasLayerUtils.getNInFromInputDim(layerConfig, conf);
         if(nIn != null)
             builder.setNIn(nIn);
@@ -227,7 +229,8 @@ public class KerasSimpleRnn extends KerasLayer {
             throw new InvalidKerasConfigurationException(
                     "Keras SimpleRnn layer accepts only one input (received " + inputType.length + ")");
 
-        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], layerName);
+        RNNFormat f = TimeSeriesUtils.getFormatFromRnnLayer(layer);
+        return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType[0], f, layerName);
     }
 
     /**

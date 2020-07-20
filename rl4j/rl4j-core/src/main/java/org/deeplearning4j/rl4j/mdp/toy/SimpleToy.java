@@ -24,6 +24,7 @@ import org.deeplearning4j.rl4j.learning.NeuralNetFetchable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
+import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,7 +41,6 @@ import org.nd4j.linalg.factory.Nd4j;
 public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
 
     final private int maxStep;
-    //TODO 10 steps toy (always +1 reward2 actions), toylong (1000 steps), toyhard (7 actions, +1 only if actiion = (step/100+step)%7, and toyStoch (like last but reward has 0.10 odd to be somewhere else).
     @Getter
     private DiscreteSpace actionSpace = new DiscreteSpace(2);
     @Getter

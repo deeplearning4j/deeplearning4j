@@ -47,7 +47,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
@@ -60,7 +60,7 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testMergeNode() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex mergeNode = new MergeVertex(null, "", -1, Nd4j.dataType());
+        GraphVertex mergeNode = new MergeVertex(null, "", -1, Nd4j.dataType(), 1);
 
         INDArray first = Nd4j.linspace(0, 11, 12, Nd4j.dataType()).reshape(3, 4);
         INDArray second = Nd4j.linspace(0, 17, 18, Nd4j.dataType()).reshape(3, 6).addi(100);
@@ -82,7 +82,7 @@ public class TestGraphNodes extends BaseDL4JTest {
     public void testMergeNodeRNN() {
 
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex mergeNode = new MergeVertex(null, "", -1, Nd4j.dataType());
+        GraphVertex mergeNode = new MergeVertex(null, "", -1, Nd4j.dataType(), 1);
 
         INDArray first = Nd4j.linspace(0, 59, 60, Nd4j.dataType()).reshape(3, 4, 5);
         INDArray second = Nd4j.linspace(0, 89, 90, Nd4j.dataType()).reshape(3, 6, 5).addi(100);
@@ -103,7 +103,7 @@ public class TestGraphNodes extends BaseDL4JTest {
     @Test
     public void testCnnDepthMerge() {
         Nd4j.getRandom().setSeed(12345);
-        GraphVertex mergeNode = new MergeVertex(null, "", -1, Nd4j.dataType());
+        GraphVertex mergeNode = new MergeVertex(null, "", -1, Nd4j.dataType(), 1);
 
         INDArray first = Nd4j.linspace(0, 3, 4, Nd4j.dataType()).reshape(1, 1, 2, 2);
         INDArray second = Nd4j.linspace(0, 3, 4, Nd4j.dataType()).reshape(1, 1, 2, 2).addi(10);

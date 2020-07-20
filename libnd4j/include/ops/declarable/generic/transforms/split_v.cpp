@@ -116,7 +116,7 @@ namespace ops {
                     shape[d] = c_size;
             }
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(input), shape::order(input), shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(input), shape::order(input), shape);
             shapeList->push_back(newShape);
         }
 

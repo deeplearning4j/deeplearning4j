@@ -56,7 +56,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.deeplearning4j.util.NetworkUtils;
 import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.adapters.OutputAdapter;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
@@ -85,13 +85,13 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 import org.nd4j.linalg.heartbeat.utils.TaskUtils;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Triple;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.primitives.Triple;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.linalg.util.FeatureUtil;
 import org.nd4j.linalg.workspace.ND4JWorkspaceException;
 import org.nd4j.linalg.workspace.WorkspaceUtils;
-import org.nd4j.util.OneTimeLogger;
+import org.nd4j.common.util.OneTimeLogger;
 
 import java.io.*;
 import java.util.*;
@@ -766,6 +766,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void setGradientsAccumulator(GradientsAccumulator accumulator) {
         if (!isInitCalled())
             init();
+
+        if (solver == null) {
+            try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
+                        .build();
+            }
+        }
 
         solver.getOptimizer().setGradientsAccumulator(accumulator);
     }
@@ -2220,14 +2227,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (d.size(0) > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
-        int[] ret = new int[(int) d.size(0)];
-        if (d.isRowVectorOrScalar())
-            ret[0] = Nd4j.getBlasWrapper().iamax(output);
-        else {
-            for (int i = 0; i < ret.length; i++)
-                ret[i] = Nd4j.getBlasWrapper().iamax(output.getRow(i));
-        }
-        return ret;
+        Preconditions.checkState(output.rank() == 2, "predict(INDArray) method can only be used on rank 2 output - got array with rank %s", output.rank());
+        return output.argMax(1).toIntVector();
     }
 
     /**
@@ -4091,4 +4092,27 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             this.getUpdater(true).getStateViewArray().assign(mln.getUpdater(false).getStateViewArray());
     }
 
+    /**
+     * Close the network and deallocate all native memory, including: parameters, gradients, updater memory and workspaces
+     * Note that the network should not be used again for any purpose after it has been closed
+     */
+    @Override
+    public void close(){
+        //Close the INDArray and dealloc
+        if(flattenedParams.closeable())
+            flattenedParams.close();
+
+        if(flattenedGradients != null && flattenedGradients.closeable())
+            flattenedGradients.close();
+
+        Updater u = getUpdater(false);
+        if(u != null && u.getStateViewArray() != null) {
+            INDArray state = u.getStateViewArray();
+            if(state.closeable())
+                state.close();
+        }
+
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+    }
 }

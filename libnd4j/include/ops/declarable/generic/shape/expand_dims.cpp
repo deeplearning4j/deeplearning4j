@@ -70,13 +70,13 @@ namespace sd {
             if (shape::rank(inShape) == 0) {
 
                 Nd4jLong x = 1;
-                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x);
+                auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 1, &x);
                 return SHAPELIST(newShape);
             }
 
             // FIXME: temp workaround for TF
             if (shape::isScalar(inShape)) {                
-                auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c', 2, shape::shapeOf(inShape));
+                auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), 'c', 2, shape::shapeOf(inShape));
                 return SHAPELIST(newShape);
             }
 
@@ -94,7 +94,7 @@ namespace sd {
 
             shape.insert(shape.begin() + axis, 1);
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), order, shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), order, shape);
             return SHAPELIST(newShape);
         }
     }

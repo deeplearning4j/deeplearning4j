@@ -52,7 +52,7 @@ namespace ops  {
         else {
             // check the consistency of input dimensions to reverse along
             shape::checkDimensions(input->rankOf(), axis);
-            helpers::reverse(block.launchContext(), input, output, &axis, false);
+            helpers::reverse(block.launchContext(), input, output, &axis);
         }
 
         return Status::OK();
@@ -85,7 +85,7 @@ namespace ops  {
             // check the consistency of input dimensions to reverse along
             shape::checkDimensions(input->rankOf(), axis);
             // we just reverse back original array
-            helpers::reverse(block.launchContext(), eps, output, &axis, true);
+            helpers::reverse(block.launchContext(), eps, output, &axis);
         }
 
         return Status::OK();

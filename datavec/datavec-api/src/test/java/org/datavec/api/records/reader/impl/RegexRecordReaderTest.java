@@ -32,7 +32,8 @@ import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.tests.BaseND4JTest;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ import static org.junit.Assert.assertFalse;
 /**
  * Created by Alex on 12/04/2016.
  */
-public class RegexRecordReaderTest {
+public class RegexRecordReaderTest  extends BaseND4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();

@@ -21,12 +21,10 @@ import lombok.Getter;
 import lombok.val;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SeluBp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Mish;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.MishDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SELU;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 /**
  * https://arxiv.org/ftp/arxiv/papers/1908/1908.08681.pdf

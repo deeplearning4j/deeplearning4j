@@ -16,15 +16,15 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,12 +32,14 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class ATan extends BaseTransformStrictOp {
     public ATan(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ATan() {
+    public ATan(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
     }
 
     public ATan(INDArray x, INDArray z) {
@@ -73,8 +75,8 @@ public class ATan extends BaseTransformStrictOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //d(atan(x))/dx = 1/(x^2+1)
-        SDVariable xSqPlus1 = f().square(arg()).add(1.0);
+        SDVariable xSqPlus1 = sameDiff.math.square(arg()).add(1.0);
         SDVariable ret = xSqPlus1.rdiv(1.0).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        return Collections.singletonList(ret);
     }
 }

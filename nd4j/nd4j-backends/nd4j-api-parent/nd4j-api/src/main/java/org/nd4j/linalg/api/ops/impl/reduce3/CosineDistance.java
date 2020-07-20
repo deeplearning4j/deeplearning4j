@@ -84,7 +84,7 @@ public class CosineDistance extends BaseReduce3Op {
         //Cosine distance = 1 - cosine similarity
         //Therefore: just need to negate gradients from cosine similarity...
 
-        List<SDVariable> diff = CosineSimilarity.doDiff(sameDiff, f(), larg(), rarg(), i_v1.get(0), keepDims, dimensions);
-        return Arrays.asList(f().neg(diff.get(0)), f().neg(diff.get(1)));
+        List<SDVariable> diff = CosineSimilarity.doDiff(sameDiff, larg(), rarg(), i_v1.get(0), keepDims, dimensions);
+        return Arrays.asList(sameDiff.math.neg(diff.get(0)), sameDiff.math.neg(diff.get(1)));
     }
 }

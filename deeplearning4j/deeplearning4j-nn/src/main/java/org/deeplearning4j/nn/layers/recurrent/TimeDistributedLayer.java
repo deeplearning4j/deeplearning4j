@@ -2,14 +2,15 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 
 /**
  * TimeDistributed wrapper layer.<br>
@@ -22,11 +23,11 @@ import org.nd4j.linalg.util.ArrayUtil;
  */
 public class TimeDistributedLayer extends BaseWrapperLayer {
 
-    private final int timeAxis;
+    private RNNFormat rnnDataFormat;
 
-    public TimeDistributedLayer(Layer underlying, int timeAxis) {
+    public TimeDistributedLayer(Layer underlying, RNNFormat rnnDataFormat) {
         super(underlying);
-        this.timeAxis = timeAxis;
+        this.rnnDataFormat = rnnDataFormat;
     }
 
 
@@ -56,7 +57,7 @@ public class TimeDistributedLayer extends BaseWrapperLayer {
     protected INDArray reshape(INDArray array){
         //Reshape the time axis to the minibatch axis
         //For example, for RNN -> FF (dense time distributed): [mb, size, seqLen] -> [mb x seqLen, size]
-        int axis = timeAxis;
+        int axis = (rnnDataFormat == RNNFormat.NCW) ? 2 : 1;
         if(axis < 0)
             axis += array.rank();
 
@@ -91,7 +92,7 @@ public class TimeDistributedLayer extends BaseWrapperLayer {
 
     protected INDArray revertReshape(INDArray toRevert, long minibatch){
 
-        int axis = timeAxis;
+        int axis = (rnnDataFormat == RNNFormat.NCW)? 2 : 1;
         if(axis < 0)
             axis += (toRevert.rank()+1);
 

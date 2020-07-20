@@ -46,7 +46,6 @@ public class HistoryProcessor implements IHistoryProcessor {
 
     @Getter
     final private Configuration conf;
-    final private OpenCVFrameConverter openCVFrameConverter = new OpenCVFrameConverter.ToMat();
     private CircularFifoQueue<INDArray> history;
     private VideoRecorder videoRecorder;
 
@@ -63,8 +62,7 @@ public class HistoryProcessor implements IHistoryProcessor {
 
     public void startMonitor(String filename, int[] shape) {
         if(videoRecorder == null) {
-            videoRecorder = VideoRecorder.builder(shape[0], shape[1])
-                    .frameInputType(VideoRecorder.FrameInputTypes.Float)
+            videoRecorder = VideoRecorder.builder(shape[1], shape[2])
                     .build();
         }
 
@@ -89,14 +87,13 @@ public class HistoryProcessor implements IHistoryProcessor {
         return videoRecorder != null && videoRecorder.isRecording();
     }
 
-    public void record(INDArray raw) {
+    public void record(INDArray pixelArray) {
         if(isMonitoring()) {
             // before accessing the raw pointer, we need to make sure that array is actual on the host side
-            Nd4j.getAffinityManager().ensureLocation(raw, AffinityManager.Location.HOST);
+            Nd4j.getAffinityManager().ensureLocation(pixelArray, AffinityManager.Location.HOST);
 
-            VideoRecorder.VideoFrame frame = videoRecorder.createFrame(raw.data().pointer());
             try {
-                videoRecorder.record(frame);
+                videoRecorder.record(pixelArray);
             } catch (Exception e) {
                 e.printStackTrace();
             }

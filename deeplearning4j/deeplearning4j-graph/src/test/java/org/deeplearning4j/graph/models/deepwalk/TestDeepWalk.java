@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.graph.models.deepwalk;
 
-import org.apache.commons.io.FilenameUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.api.IGraph;
@@ -34,11 +33,10 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -47,6 +45,11 @@ public class TestDeepWalk extends BaseDL4JTest {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120_000L;        //Increase timeout due to intermittently slow CI machines
+    }
 
     @Test(timeout = 60000L)
     public void testBasic() throws IOException {

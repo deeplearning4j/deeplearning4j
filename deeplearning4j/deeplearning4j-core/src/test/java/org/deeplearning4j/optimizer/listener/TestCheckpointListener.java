@@ -31,7 +31,7 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
 import java.util.Arrays;
@@ -43,6 +43,11 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
 
 public class TestCheckpointListener extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
 
     @Rule
     public TemporaryFolder tempDir = new TemporaryFolder();
@@ -57,7 +62,7 @@ public class TestCheckpointListener extends BaseDL4JTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        DataSetIterator iter = new IrisDataSetIterator(75,150);
+        DataSetIterator iter = new IrisDataSetIterator(25,50);
 
         return new Pair<>(net, iter);
     }
@@ -178,13 +183,13 @@ public class TestCheckpointListener extends BaseDL4JTest {
 
         CheckpointListener l = new CheckpointListener.Builder(f)
                 .keepLast(3)
-                .saveEvery(3, TimeUnit.SECONDS)
+                .saveEvery(4900, TimeUnit.MILLISECONDS)
                 .build();
         net.setListeners(l);
 
-        for(int i=0; i<5; i++ ){   //10 iterations total
+        for(int i=0; i<3; i++ ){   //10 iterations total
             net.fit(iter);
-            Thread.sleep(4000);
+            Thread.sleep(5000);
         }
 
         //Expect models saved at iterations: 2, 4, 6, 8 (iterations 0 and 1 shoud happen before first 3 seconds is up)
@@ -206,9 +211,10 @@ public class TestCheckpointListener extends BaseDL4JTest {
             ns.add(n.getIterationCount());
         }
 
-        assertEquals(3, l.availableCheckpoints().size());
-        assertEquals(ns.toString(), 3, ns.size());
-        assertTrue(ns.containsAll(Arrays.asList(4,6,8)));
+        assertEquals(2, l.availableCheckpoints().size());
+        assertEquals(ns.toString(), 2, ns.size());
+        System.out.println(ns);
+        assertTrue(ns.containsAll(Arrays.asList(2,4)));
     }
 
     @Test

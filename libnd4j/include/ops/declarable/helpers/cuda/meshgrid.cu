@@ -88,12 +88,12 @@ namespace helpers {
         }
 
         PointersManager pm(context, "meshgrid");
-        std::vector<void *> hInBuffers(rank);
+        std::vector<const void *> hInBuffers(rank);
         std::vector<void *> hOutBuffers(rank);
-        std::vector<Nd4jLong *> hInShapes(rank);
+        std::vector<const Nd4jLong *> hInShapes(rank);
 
-        std::vector<Nd4jLong *> hOutTadShapes(rank);
-        std::vector<Nd4jLong *> hOutTadOffsets(rank);
+        std::vector<const Nd4jLong *> hOutTadShapes(rank);
+        std::vector<const Nd4jLong *> hOutTadOffsets(rank);
 
         std::vector<Nd4jLong> hNumTads(rank);
 
@@ -104,7 +104,7 @@ namespace helpers {
             hOutBuffers[i] = outArrs[i]->specialBuffer();
 
 
-            auto pack = ConstantTadHelper::getInstance()->tadForDimensions(outArrs[i]->shapeInfo(), {inIndices[i]});
+            auto pack = ConstantTadHelper::getInstance().tadForDimensions(outArrs[i]->shapeInfo(), {inIndices[i]});
             hOutTadShapes[i] = pack.specialShapeInfo();
             hOutTadOffsets[i] = pack.specialOffsets();
             hNumTads[i] = pack.numberOfTads();

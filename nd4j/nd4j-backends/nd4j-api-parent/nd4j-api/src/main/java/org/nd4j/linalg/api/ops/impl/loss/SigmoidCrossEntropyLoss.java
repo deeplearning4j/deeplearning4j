@@ -27,6 +27,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.loss.bp.SigmoidCrossEntropyLossBp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -43,6 +44,11 @@ import java.util.*;
 public class SigmoidCrossEntropyLoss extends BaseLoss {
     public static final double DEFAULT_LABEL_SMOOTHING = 0.0;
     private double labelSmoothing = 0.0;
+
+    public SigmoidCrossEntropyLoss(SameDiff sameDiff, SDVariable labels, SDVariable logits, SDVariable weights,
+                                    LossReduce lossReduce, double labelSmoothing) {
+        this(sameDiff, lossReduce, logits, weights, labels, labelSmoothing);
+    }
 
     public SigmoidCrossEntropyLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable logits, SDVariable weights,
                                    SDVariable labels, double labelSmoothing) {
@@ -75,7 +81,6 @@ public class SigmoidCrossEntropyLoss extends BaseLoss {
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //No external gradient
         //Args are: predictions, weights, label
-        SDVariable[] grads = f().lossSigmoidCrossEntropyBp(arg(2), arg(0), arg(1), lossReduce, labelSmoothing);
-        return Arrays.asList(grads);
+        return new SigmoidCrossEntropyLossBp(sameDiff, lossReduce, arg(0), arg(1), arg(2), labelSmoothing).outputs();
     }
 }

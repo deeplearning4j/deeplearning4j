@@ -5,8 +5,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.validation.Nd4jCommonValidator;
-import org.nd4j.validation.ValidationResult;
+import org.nd4j.common.validation.Nd4jCommonValidator;
+import org.nd4j.common.validation.ValidationResult;
 
 import java.io.File;
 import java.util.Collections;

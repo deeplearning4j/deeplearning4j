@@ -32,8 +32,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
-import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Mean;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.NormMax;
@@ -63,8 +63,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -478,24 +478,24 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testIMax() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
-        IMax imax = new IMax(arr);
-        assertEquals(9, Nd4j.getExecutioner().execAndReturn(imax).getFinalResult().intValue());
+        ArgMax imax = new ArgMax(arr);
+        assertEquals(9, Nd4j.getExecutioner().exec(imax)[0].getInt(0));
 
         arr.muli(-1);
-        imax = new IMax(arr);
-        int maxIdx = Nd4j.getExecutioner().execAndReturn(imax).getFinalResult().intValue();
+        imax = new ArgMax(arr);
+        int maxIdx = Nd4j.getExecutioner().exec(imax)[0].getInt(0);
         assertEquals(0, maxIdx);
     }
 
     @Test
     public void testIMin() {
         INDArray arr = Nd4j.linspace(1, 10, 10, DataType.DOUBLE);
-        IMin imin = new IMin(arr);
-        assertEquals(0, Nd4j.getExecutioner().execAndReturn(imin).getFinalResult().intValue());
+        ArgMin imin = new ArgMin(arr);
+        assertEquals(0, Nd4j.getExecutioner().exec(imin)[0].getInt(0));
 
         arr.muli(-1);
-        imin = new IMin(arr);
-        int minIdx = Nd4j.getExecutioner().execAndReturn(imin).getFinalResult().intValue();
+        imin = new ArgMin(arr);
+        int minIdx = Nd4j.getExecutioner().exec(imin)[0].getInt(0);
         assertEquals(9, minIdx);
     }
 

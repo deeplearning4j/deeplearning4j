@@ -21,17 +21,15 @@ import EDU.oswego.cs.dl.util.concurrent.ReaderPreferenceReadWriteLock;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.AtomicBoolean;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This class provides additional functionality to FancyBlockingQueue: it tracks memory use of stored compressed INDArrays, and if their size becomes too big, it:

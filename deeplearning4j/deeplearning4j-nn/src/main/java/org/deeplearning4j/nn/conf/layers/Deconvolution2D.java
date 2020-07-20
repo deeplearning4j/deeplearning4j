@@ -22,6 +22,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -62,6 +63,9 @@ public class Deconvolution2D extends ConvolutionLayer {
     protected Deconvolution2D(BaseConvBuilder<?> builder) {
         super(builder);
         initializeConstraints(builder);
+        if(builder instanceof Builder){
+            this.cnn2dDataFormat = ((Builder) builder).format;
+        }
     }
 
     public boolean hasBias() {
@@ -131,6 +135,13 @@ public class Deconvolution2D extends ConvolutionLayer {
 
         public Builder() {
             super();
+        }
+
+        private CNN2DFormat format = CNN2DFormat.NCHW;
+
+        public Builder dataFormat(CNN2DFormat format){
+            this.format = format;
+            return this;
         }
 
         @Override

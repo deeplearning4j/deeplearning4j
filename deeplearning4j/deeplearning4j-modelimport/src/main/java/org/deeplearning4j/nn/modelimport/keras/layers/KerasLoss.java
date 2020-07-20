@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -28,6 +29,7 @@ import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.ArrayList;
@@ -45,7 +47,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLossUtils.mapLo
 public class KerasLoss extends KerasLayer {
 
     private final String KERAS_CLASS_NAME_LOSS = "Loss";
-    private LossFunctions.LossFunction loss;
+    private ILossFunction loss;
 
 
     /**
@@ -86,7 +88,7 @@ public class KerasLoss extends KerasLayer {
             if (enforceTrainingConfig)
                 throw e;
             log.warn("Unsupported Keras loss function. Replacing with MSE.");
-            loss = LossFunctions.LossFunction.SQUARED_LOSS;
+            loss = LossFunctions.LossFunction.SQUARED_LOSS.getILossFunction();
         }
     }
 

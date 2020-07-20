@@ -20,12 +20,13 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.layers.Convolution1D;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
-import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -36,7 +37,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Broadcast;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
@@ -74,6 +75,10 @@ public class Convolution1DLayer extends ConvolutionLayer {
                             + Arrays.toString(epsilon.shape())
                             + ". Expected rank 3 array with shape [minibatchSize, features, length]. " + layerId());
 
+        if (getRnnDataFormat() == RNNFormat.NWC){
+            epsilon = epsilon.permute(0, 2, 1);
+            this.input = input.permute(0, 2, 1);
+        }
         if(maskArray != null){
             INDArray maskOut = feedForwardMaskArray(maskArray, MaskState.Active, (int)epsilon.size(0)).getFirst();
             Preconditions.checkState(epsilon.size(0) == maskOut.size(0) && epsilon.size(2) == maskOut.size(1),
@@ -125,6 +130,10 @@ public class Convolution1DLayer extends ConvolutionLayer {
                 retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, gradientViews.get(ConvolutionParamInitializer.BIAS_KEY));
             }
             retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY), 'c');
+            if (getRnnDataFormat() == RNNFormat.NWC){
+                epsOut = epsOut.permute(0, 2, 1);
+                this.input = input.permute(0, 2, 1);
+            }
             return new Pair<>(retGradient, epsOut);
         }
 
@@ -140,7 +149,10 @@ public class Convolution1DLayer extends ConvolutionLayer {
         // remove singleton fourth dimension from input and current epsilon
         epsNext = epsNext.reshape(epsNext.size(0), epsNext.size(1), epsNext.size(2));
         input = origInput;
-
+        if (getRnnDataFormat() == RNNFormat.NWC){
+            epsNext = epsNext.permute(0, 2, 1);
+            this.input = input.permute(0, 2, 1);
+        }
         return new Pair<>(gradientEpsNext.getFirst(), epsNext);
     }
 
@@ -185,7 +197,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
                 .s(c.getStride()[0])
                 .d(c.getDilation()[0])
                 .p(c.getPadding()[0])
-                .dataFormat(Conv1DConfig.NCW)
+                .dataFormat((((org.deeplearning4j.nn.conf.layers.Convolution1DLayer)
+                        layerConf()).getRnnDataFormat()== RNNFormat.NCW)?Conv1DConfig.NCW: Conv1DConfig.NCW)
                 .paddingMode(PaddingMode.CAUSAL)
                 .build();
         INDArray w = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
@@ -209,6 +222,9 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     public INDArray activate(boolean training, LayerWorkspaceMgr workspaceMgr){
+        if (getRnnDataFormat() == RNNFormat.NWC){
+            this.input = input.permute(0, 2, 1);
+        }
         INDArray act4d = super.activate(training, workspaceMgr);
         INDArray act3d = act4d.reshape(act4d.size(0), act4d.size(1), act4d.size(2));
 
@@ -218,6 +234,10 @@ public class Convolution1DLayer extends ConvolutionLayer {
                     "Activations dimensions (0,2) and mask dimensions (0,1) don't match: Activations %s, Mask %s",
                     act3d.shape(), maskOut.shape());
             Broadcast.mul(act3d, maskOut, act3d, 0, 2);
+        }
+        if (getRnnDataFormat() == RNNFormat.NWC){
+            this.input = input.permute(0, 2, 1);
+            act3d = act3d.permute(0, 2, 1);
         }
 
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, act3d);   //Should be zero copy most of the time
@@ -230,5 +250,9 @@ public class Convolution1DLayer extends ConvolutionLayer {
                 layerConf().getStride()[0], layerConf().getPadding()[0], layerConf().getDilation()[0],
                 layerConf().getConvolutionMode());
         return new Pair<>(reduced, currentMaskState);
+    }
+
+    private RNNFormat getRnnDataFormat(){
+        return ((org.deeplearning4j.nn.conf.layers.Convolution1DLayer) layerConf()).getRnnDataFormat();
     }
 }

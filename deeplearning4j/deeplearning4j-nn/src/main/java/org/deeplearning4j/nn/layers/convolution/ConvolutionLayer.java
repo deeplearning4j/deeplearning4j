@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.layers.convolution;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -39,12 +40,10 @@ import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
-import org.nd4j.util.OneTimeLogger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.Arrays;
 
@@ -75,7 +74,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
             try {
-                helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
+                helper = Class.forName("org.deeplearning4j.cuda.convolution.CudnnConvolutionHelper")
                         .asSubclass(ConvolutionHelper.class).getConstructor(DataType.class).newInstance(dataType);
                 log.debug("CudnnConvolutionHelper successfully initialized");
                 if (!helper.checkSupported()) {
@@ -87,7 +86,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 } else {
                     OneTimeLogger.info(log, "cuDNN not found: "
                             + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn", t);
+                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
                 }
             }
         } else if("CPU".equalsIgnoreCase(backend)){
@@ -115,6 +114,14 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if(epsilon.dataType() != dataType)
             epsilon = epsilon.castTo(dataType);
 
+        INDArray origInput = input;
+        INDArray origEps = epsilon;
+        if(layerConf().getCnn2dDataFormat() != CNN2DFormat.NCHW){
+            input = input.permute(0,3,1,2); //NHWC to NCHW
+            epsilon = epsilon.permute(0,3,1,2); //NHWC to NCHW
+        }
+
+
         long miniBatch = input.size(0);
         int inH = (int) input.size(2);
         int inW = (int) input.size(3);
@@ -130,11 +137,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, CNN2DFormat.NCHW); //Also performs validation
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, CNN2DFormat.NCHW); //Also performs validation
         }
 
         int outH = outSize[0];
@@ -152,9 +159,17 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         IActivation afn = layerConf().getActivationFn();
 
         Pair<INDArray, INDArray> p = preOutput4d(true, true, workspaceMgr);
-        delta = afn.backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
+        INDArray z = p.getFirst();
+        CNN2DFormat f = layerConf().getCnn2dDataFormat();
+        if(f != CNN2DFormat.NCHW){
+            z = z.permute(0,3,1,2); //NHWC to NCHW
+        }
+        delta = afn.backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
+            INDArray helperDelta = delta;
+            if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC)
+                helperDelta = delta.permute(0,2,3,1); //NCHW to NHWC
 
             if(!hasBias() && !(helper instanceof MKLDNNConvHelper)){
                 //MKL-DNN supports no bias, CuDNN doesn't
@@ -168,10 +183,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
             Pair<Gradient, INDArray> ret = null;
             try {
-                ret = helper.backpropGradient(input, weights, bias, delta, kernel, strides,
+                ret = helper.backpropGradient(origInput, weights, bias, helperDelta, kernel, strides,
                         pad, biasGradView, weightGradView, afn,
                         layerConf().getCudnnAlgoMode(), layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(),
-                        convolutionMode, dilation, workspaceMgr);
+                        convolutionMode, dilation, layerConf().getCnn2dDataFormat(), workspaceMgr);
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
             } catch (Exception e){
@@ -254,6 +269,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         weightNoiseParams.clear();
 
         epsNext = backpropDropOutIfPresent(epsNext);
+
+        if(layerConf().getCnn2dDataFormat() != CNN2DFormat.NCHW){
+            epsNext = epsNext.permute(0,2,3,1); //NCHW to NHWC
+        }
+
         return new Pair<>(retGradient, epsNext);
     }
 
@@ -284,15 +304,27 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     protected void validateInputDepth(long inDepth) {
-        if (input.size(1) != inDepth) {
+        CNN2DFormat format = layerConf().getCnn2dDataFormat();
+        int dim = format == CNN2DFormat.NHWC ? 3 : 1;
+        if (input.size(dim) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";
-            throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName
+
+            String s = "Cannot do forward pass in Convolution layer (layer name = " + layerName
                     + ", layer index = " + index + "): input array channels does not match CNN layer configuration"
-                    + " (data input channels = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
-                    + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
-                    + layerId());
+                    + " (data format = " + format + ", data input channels = " + input.size(dim) + ", " + layerConf().getCnn2dDataFormat().dimensionNames()
+                    + "=" + Arrays.toString(input.shape()) + "; expected" + " input channels = " + inDepth + ") "
+                    + layerId();
+
+            int dimIfWrongFormat = format == CNN2DFormat.NHWC ? 1 : 3;
+            if(input.size(dimIfWrongFormat) == inDepth){
+                //User might have passed NCHW data to a NHWC net, or vice versa?
+                s += "\n" + ConvolutionUtils.NCHW_NHWC_ERROR_MSG;
+            }
+
+
+            throw new DL4JInvalidInputException(s);
         }
     }
 
@@ -313,6 +345,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         validateInputRank();
 
         INDArray input = this.input.castTo(dataType);
+        INDArray inputOrig = input;
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC){
+            input = input.permute(0,3,1,2).dup(); //NHWC to NCHW
+        }
+
 
         long miniBatch = input.size(0);
         long outDepth = weights.size(0);
@@ -329,7 +366,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, CNN2DFormat.NCHW); //Note: hardcoded to NCHW due to permute earlier in this method
 
             if (input.size(2) > Integer.MAX_VALUE ||  input.size(3) > Integer.MAX_VALUE)
                 throw new ND4JArraySizeException();
@@ -337,7 +374,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                             strides, dilation );
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
+            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, CNN2DFormat.NCHW); //Note: hardcoded to NCHW due to permute earlier in this method
         }
 
         int outH = outSize[0];
@@ -361,8 +398,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
             INDArray ret = null;
             try {
-                ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
-                        layerConf().getCudnnFwdAlgo(), convolutionMode, dilation, workspaceMgr);
+                ret = helper.preOutput(inputOrig, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
+                        layerConf().getCudnnFwdAlgo(), convolutionMode, dilation, layerConf().getCnn2dDataFormat(), workspaceMgr);
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
             } catch (Exception e){
@@ -428,6 +465,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             try (MemoryWorkspace wsB = workspaceMgr.notifyScopeBorrowed(ArrayType.FF_CACHE)) {
                 i2d = im2col2d.unsafeDuplication();
             }
+        }
+
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC){
+            z = z.permute(0,2,3,1); //NCHW to NHWC
+            z = workspaceMgr.dup(ArrayType.ACTIVATIONS, z);
         }
 
         return new Pair<>(z, forBackprop ? im2col2d : null);

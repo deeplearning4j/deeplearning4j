@@ -34,7 +34,7 @@ public:
 
 TEST_F(MmapTests, Test_Basic_Mmap_1) {
     // FIXME: we must adopt this for CUDA as well
-    if (!Environment::getInstance()->isCPU())
+    if (!Environment::getInstance().isCPU())
         return;
 
     // just 10GB

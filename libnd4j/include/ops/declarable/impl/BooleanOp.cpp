@@ -33,7 +33,7 @@ namespace sd {
         * Output shape of any BooleanOp is ALWAYS scalar
         */
         ShapeList *BooleanOp::calculateOutputShape(ShapeList *inputShape, sd::graph::Context &block) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::BOOL));
+            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(DataType::BOOL));
         }
 
         bool BooleanOp::verify(sd::graph::Context &block) {

@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -79,8 +80,8 @@ public class ScalarReverseSubtraction extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
-        SDVariable g = f().neg(i_v1.get(0));
-        return Arrays.asList(g);
+        SDVariable g = sameDiff.math.neg(i_v1.get(0));
+        return Collections.singletonList(g);
     }
 
 }

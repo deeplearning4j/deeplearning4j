@@ -20,13 +20,13 @@ import lombok.Getter;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.ui.module.ArbiterModule;
-import org.deeplearning4j.nn.conf.serde.JsonMappers;
+import org.deeplearning4j.core.storage.Persistable;
 
 import java.io.IOException;
 
 /**
  *
- * A {@link org.deeplearning4j.api.storage.Persistable} implemention for global settings
+ * A {@link Persistable} implemention for global settings
  * @author Alex Black
  */
 @Getter

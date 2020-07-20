@@ -73,10 +73,10 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
 
     if(inArrs[0]->rankOf() == 0) {
 
-        std::vector<void*> hInBuffers(numOfSubArrs);
+        std::vector<void const*> hInBuffers(numOfSubArrs);
 
         for(int i = 0; i < numOfSubArrs; ++i)
-            hInBuffers[i] = inArrs[i]->getSpecialBuffer();
+            hInBuffers[i] = inArrs[i]->specialBuffer();
 
         PointersManager manager(context, "helpers::stack cuda");
 
@@ -91,15 +91,15 @@ static void stack_(sd::LaunchContext* context, const std::vector<const NDArray*>
     }
     else {
 
-        auto zTadPack = ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
-        Nd4jLong* zTadShapeInfo  = zTadPack.primaryShapeInfo();
+        auto zTadPack = ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), ShapeUtils::evalDimsToExclude(output.rankOf(), {dim}));
+        auto zTadShapeInfo  = zTadPack.primaryShapeInfo();
 
         for (uint i = 0; i < numOfSubArrs; ++i) {
 
             void* zBuff = output.specialBufferWithOffset(zTadPack.primaryOffsets()[i]);
 
             NativeOpExecutioner::execTransformAny(context, transform::Assign,
-                                                 nullptr, inArrs[i]->getShapeInfo(), inArrs[i]->getSpecialBuffer(), inArrs[i]->getSpecialShapeInfo(),
+                                                 nullptr, inArrs[i]->shapeInfo(), inArrs[i]->specialBuffer(), inArrs[i]->specialShapeInfo(),
                                                  nullptr, zTadShapeInfo,             zBuff,                         zTadPack.specialShapeInfo(),
                                                  nullptr, nullptr, nullptr, false/*allowParallelism*/);
         }
@@ -164,7 +164,7 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
         std::vector<void*> hOutBuffers(numOfSubArrs);
 
         for(int i = 0; i < numOfSubArrs; ++i)
-            hOutBuffers[i] = outArrs[i]->getSpecialBuffer();
+            hOutBuffers[i] = outArrs[i]->specialBuffer();
 
         PointersManager manager(context, "helpers::unstack cuda");
 
@@ -173,22 +173,22 @@ static void unstack_(sd::LaunchContext* context, const NDArray& input, const std
         const int threadsPerBlock = MAX_NUM_THREADS / 2;
         const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
 
-        unstackScalarsCudaLauncher<T>(blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), dOutBuffers);
+        unstackScalarsCudaLauncher<T>(blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), dOutBuffers);
 
         manager.synchronize();
     }
     else {
 
-        auto xTadPack = ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
-        Nd4jLong* xTadShapeInfo  = xTadPack.primaryShapeInfo();
+        auto xTadPack = ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), ShapeUtils::evalDimsToExclude(input.rankOf(), {dim}));
+        auto xTadShapeInfo  = xTadPack.primaryShapeInfo();
 
         for (uint i = 0; i < numOfSubArrs; ++i) {
 
-            void* xBuff = input.specialBufferWithOffset(xTadPack.primaryOffsets()[i]);
+            auto xBuff = input.specialBufferWithOffset(xTadPack.primaryOffsets()[i]);
 
             NativeOpExecutioner::execTransformAny(input.getContext(), transform::Assign,
                                                  nullptr, xTadShapeInfo,              xBuff,                       xTadPack.specialShapeInfo(),
-                                                 nullptr, outArrs[i]->getShapeInfo(), outArrs[i]->specialBuffer(), outArrs[i]->specialShapeInfo(),
+                                                 nullptr, outArrs[i]->shapeInfo(), outArrs[i]->specialBuffer(), outArrs[i]->specialShapeInfo(),
                                                  nullptr, nullptr, nullptr, false/*allowParallelism*/);
         }
     }
@@ -262,7 +262,7 @@ BUILD_SINGLE_TEMPLATE(template void unstack_, (sd::LaunchContext* context, const
 //     std::vector<void*> hOutBuffers(numOfSubArrs);
 
 //     for(int i = 0; i < numOfSubArrs; ++i)
-//         hOutBuffers[i] = outArrs[i]->getSpecialBuffer();
+//         hOutBuffers[i] = outArrs[i]->specialBuffer();
 
 //     PointersManager manager(context, "helpers::unstack");
 
@@ -272,7 +272,7 @@ BUILD_SINGLE_TEMPLATE(template void unstack_, (sd::LaunchContext* context, const
 // 		outArrs[i]->syncToDevice();
 //     input.syncToDevice();
 
-//     BUILD_SINGLE_SELECTOR(input.dataType(), unstackCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), dOutBuffers, outArrs[0]->getSpecialShapeInfo(), axis), LIBND4J_TYPES);
+//     BUILD_SINGLE_SELECTOR(input.dataType(), unstackCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), dOutBuffers, outArrs[0]->special(), axis), LIBND4J_TYPES);
 
 //     manager.synchronize();
 
@@ -340,7 +340,7 @@ BUILD_SINGLE_TEMPLATE(template void unstack_, (sd::LaunchContext* context, const
 //     std::vector<void*> hInBuffers(numOfSubArrs);
 
 //     for(int i = 0; i < numOfSubArrs; ++i)
-//         hInBuffers[i] = inArrs[i]->getSpecialBuffer();
+//         hInBuffers[i] = inArrs[i]->specialBuffer();
 
 //     PointersManager manager(context, "helpers::stack");
 
@@ -350,7 +350,7 @@ BUILD_SINGLE_TEMPLATE(template void unstack_, (sd::LaunchContext* context, const
 // 		inArrs[i]->syncToDevice();
 //     output.syncToDevice();
 
-//     BUILD_SINGLE_SELECTOR(output.dataType(), stackCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), dInBuffers, inArrs[0]->getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), axis), LIBND4J_TYPES);
+//     BUILD_SINGLE_SELECTOR(output.dataType(), stackCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), dInBuffers, inArrs[0]->specialShapeInfo(), output.specialBuffer(), output.special(), axis), LIBND4J_TYPES);
 
 //     manager.synchronize();
 

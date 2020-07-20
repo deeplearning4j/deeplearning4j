@@ -16,15 +16,13 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
-import java.util.Collections;
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhBp;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -32,12 +30,14 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class HardTanh extends BaseTransformStrictOp {
     public HardTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
 
-    public HardTanh() {
+    public HardTanh(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
     }
 
     public HardTanh(INDArray x, INDArray z) {
@@ -71,6 +71,6 @@ public class HardTanh extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return Collections.singletonList(f().hardTanhBp(arg(), i_v.get(0)));
+        return new HardTanhBp(sameDiff, arg(), i_v.get(0)).outputs();
     }
 }

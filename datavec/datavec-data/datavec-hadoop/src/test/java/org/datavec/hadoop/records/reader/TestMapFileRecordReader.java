@@ -16,6 +16,7 @@
 
 package org.datavec.hadoop.records.reader;
 
+import org.nd4j.common.util.MathUtils;
 import org.nd4j.shade.guava.io.Files;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -36,7 +37,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.MathUtils;
 
 import java.io.File;
 import java.io.IOException;

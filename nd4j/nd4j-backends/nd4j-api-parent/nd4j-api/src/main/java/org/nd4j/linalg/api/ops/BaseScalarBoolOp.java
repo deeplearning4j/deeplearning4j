@@ -19,7 +19,8 @@ package org.nd4j.linalg.api.ops;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.autodiff.util.SameDiffUtils;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
@@ -73,7 +74,7 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
         if (i_v != null) {
             this.xVertexId = i_v.name();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
-            f().validateDifferentialFunctionsameDiff(i_v);
+            SameDiffUtils.validateDifferentialFunctionSameDiff(sameDiff, i_v, this);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }

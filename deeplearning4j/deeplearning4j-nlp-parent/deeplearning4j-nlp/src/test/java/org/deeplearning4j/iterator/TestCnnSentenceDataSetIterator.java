@@ -19,7 +19,7 @@ package org.deeplearning4j.iterator;
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.Before;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.common.io.ClassPathResource;
 import org.deeplearning4j.iterator.provider.CollectionLabeledSentenceProvider;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;

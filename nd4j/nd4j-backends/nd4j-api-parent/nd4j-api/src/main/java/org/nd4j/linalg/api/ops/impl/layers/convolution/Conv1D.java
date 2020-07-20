@@ -23,13 +23,13 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -45,6 +45,10 @@ public class Conv1D extends DynamicCustomOp {
 
     protected Conv1DConfig config;
     private static final String INVALID_CONFIGURATION = "Invalid Conv1D configuration : s = %s p = %s ";
+
+    public Conv1D(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull Conv1DConfig conv1DConfig) {
+        this(sameDiff, wrapFilterNull(input, weights, bias), conv1DConfig);
+    }
 
     @Builder(builderMethodName = "sameDiffBuilder")
     public Conv1D(SameDiff sameDiff,
@@ -64,12 +68,8 @@ public class Conv1D extends DynamicCustomOp {
         this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
-    public Conv1D( @NonNull INDArray input, @NonNull INDArray weights, INDArray bias, Conv1DConfig conv1DConfig) {
-        this(wrapFilterNull(input, weights, bias), null, conv1DConfig);
-    }
-
-    public Conv1D(@NonNull INDArray input, @NonNull INDArray weights, Conv1DConfig conv1DConfig) {
-        this(new INDArray[]{input, weights}, null, conv1DConfig);
+    public Conv1D(INDArray input, INDArray weights, INDArray bias, Conv1DConfig config) {
+        this(input, weights, bias, null, config);
     }
 
     private void initConfig(Conv1DConfig config){

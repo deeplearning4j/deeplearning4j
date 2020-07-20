@@ -23,6 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -40,6 +41,10 @@ public class Pow extends BaseScalarOp {
         super(sameDiff, i_v, pow, inPlace);
         this.pow = pow;
         this.extraArgs = new Object[]{pow};
+    }
+
+    public Pow(SameDiff sameDiff, SDVariable i_v, double pow) {
+        this(sameDiff, i_v, false, pow);
     }
 
 
@@ -83,7 +88,7 @@ public class Pow extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {        
-        SDVariable g = f().powDerivative(arg(), this.pow).mul(i_v1.get(0));
-        return Arrays.asList(g);
+        SDVariable g = new PowDerivative(sameDiff, arg(), false, this.pow).outputVariable().mul(i_v1.get(0));
+        return Collections.singletonList(g);
     }
 }

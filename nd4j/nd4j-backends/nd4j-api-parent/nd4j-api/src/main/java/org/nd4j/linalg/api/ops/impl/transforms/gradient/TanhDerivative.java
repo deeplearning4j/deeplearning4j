@@ -84,7 +84,7 @@ public class TanhDerivative extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().div(sameDiff.onesLike(outputVariables()[0]), f().pow(f().cosh(arg()), 2));
+        SDVariable ret = sameDiff.math.div(sameDiff.onesLike(outputVariables()[0]), sameDiff.math.pow(sameDiff.math.cosh(arg()), 2));
         return Collections.singletonList(ret);
     }
 

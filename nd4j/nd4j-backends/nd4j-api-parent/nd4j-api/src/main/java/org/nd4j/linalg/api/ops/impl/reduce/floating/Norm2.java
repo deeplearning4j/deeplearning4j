@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.Norm2Bp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Collections;
@@ -72,7 +73,7 @@ public class Norm2 extends BaseReduceFloatOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         //d norm2(in)/dx = x / norm2(in)
-        return Collections.singletonList(f().norm2Bp(arg(), grad.get(0), keepDims, dimensions));
+        return new Norm2Bp(sameDiff, arg(), grad.get(0), keepDims, dimensions).outputs();
     }
 
 

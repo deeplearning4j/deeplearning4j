@@ -44,13 +44,13 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
     const T* g = gamma == nullptr ? nullptr : gamma->bufferAsT<T>();
     const T* b = beta  == nullptr ? nullptr : beta->bufferAsT<T>();
 
-    const bool xzSameOffset = shape::haveSameShapeAndStrides(input->getShapeInfo(), output->getShapeInfo());
+    const bool xzSameOffset = shape::haveSameShapeAndStrides(input->shapeInfo(), output->shapeInfo());
 
-    bool paramSameOffset = shape::haveSameShapeAndStrides(mean->getShapeInfo(), variance->getShapeInfo());
+    bool paramSameOffset = shape::haveSameShapeAndStrides(mean->shapeInfo(), variance->shapeInfo());
     if(paramSameOffset && gamma != nullptr)
-        paramSameOffset &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), gamma->getShapeInfo());
+        paramSameOffset &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gamma->shapeInfo());
     if(paramSameOffset && beta != nullptr)
-        paramSameOffset &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), beta->getShapeInfo());
+        paramSameOffset &= shape::haveSameShapeAndStrides(mean->shapeInfo(), beta->shapeInfo());
 
     const Nd4jLong  lenBig        = input->lengthOf();
     const Nd4jLong  lenSmall      = mean->lengthOf();
@@ -73,27 +73,27 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
             if(!isOwner)
                 continue;
 
-            const auto meanOffset = shape::getIndexOffset(j, mean->getShapeInfo());
-            const auto varOffset  = paramSameOffset ? meanOffset : shape::getIndexOffset(j, variance->getShapeInfo());
+            const auto meanOffset = shape::getIndexOffset(j, mean->shapeInfo());
+            const auto varOffset  = paramSameOffset ? meanOffset : shape::getIndexOffset(j, variance->shapeInfo());
 
             const auto meanVal = m[meanOffset];
             auto sigmaInvGam   = static_cast<T>(1) / sd::math::nd4j_sqrt<T, T>(v[varOffset] + epsilon);
 
             if(g != nullptr) {
-                const auto gammaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, gamma->getShapeInfo());
+                const auto gammaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, gamma->shapeInfo());
                 sigmaInvGam *= g[gammaOffset];
             }
 
             T betaVal = static_cast<T>(0);
             if(b != nullptr) {
-                const auto betaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, beta->getShapeInfo());
+                const auto betaOffset = paramSameOffset ? meanOffset : shape::getIndexOffset(j, beta->shapeInfo());
                 betaVal = b[betaOffset];
             }
 
             // calculate offsets for input and output
-            shape::outerArrayOffsets(xOffsets, j, input->getShapeInfo(), mean->getShapeInfo(), auxBuff, dimsToExclude.data());
+            shape::outerArrayOffsets(xOffsets, j, input->shapeInfo(), mean->shapeInfo(), auxBuff, dimsToExclude.data());
             if(!xzSameOffset)
-                shape::outerArrayOffsets(zOffsets, j, output->getShapeInfo(), mean->getShapeInfo(), auxBuff, dimsToExclude.data());
+                shape::outerArrayOffsets(zOffsets, j, output->shapeInfo(), mean->shapeInfo(), auxBuff, dimsToExclude.data());
 
             PRAGMA_OMP_SIMD
             for (Nd4jLong i = 0; i < steps; ++i)
@@ -129,13 +129,13 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
     const uint minRank = mean->rankOf();
     const uint numAxes = axes.size();
 
-    const bool xzSameOffset = shape::haveSameShapeAndStrides(input->getShapeInfo(), output->getShapeInfo());
+    const bool xzSameOffset = shape::haveSameShapeAndStrides(input->shapeInfo(), output->shapeInfo());
 
-    bool paramSameOffset = shape::haveSameShapeAndStrides(mean->getShapeInfo(), variance->getShapeInfo());
+    bool paramSameOffset = shape::haveSameShapeAndStrides(mean->shapeInfo(), variance->shapeInfo());
     if(paramSameOffset && gamma != nullptr)
-        paramSameOffset &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), gamma->getShapeInfo());
+        paramSameOffset &= shape::haveSameShapeAndStrides(mean->shapeInfo(), gamma->shapeInfo());
     if(paramSameOffset && beta != nullptr)
-        paramSameOffset &= shape::haveSameShapeAndStrides(mean->getShapeInfo(), beta->getShapeInfo());
+        paramSameOffset &= shape::haveSameShapeAndStrides(mean->shapeInfo(), beta->shapeInfo());
 
     auto func = PRAGMA_THREADS_FOR {
 
@@ -149,10 +149,10 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
 
         for (auto i = start; i < stop; i++) {
 
-            shape::index2coordsCPU(start, i, input->getShapeInfo(), xzCoords);
+            shape::index2coordsCPU(start, i, input->shapeInfo(), xzCoords);
 
-            const auto xOffset = shape::getOffset(input->getShapeInfo(), xzCoords);
-            const auto zOffset = xzSameOffset ? xOffset : shape::getOffset(output->getShapeInfo(), xzCoords);
+            const auto xOffset = shape::getOffset(input->shapeInfo(), xzCoords);
+            const auto zOffset = xzSameOffset ? xOffset : shape::getOffset(output->shapeInfo(), xzCoords);
 
             if(minRank == xRank) {
                 for (uint j = 0; j < numAxes; ++j)
@@ -161,20 +161,20 @@ static void batchnorm2_(const NDArray* input, const NDArray* mean, const NDArray
             else    // minRank = numAxes = 1 in this case
                 minCoords[0] = xzCoords[axes[0]];
 
-            const auto meanOffset     = shape::getOffset(mean->getShapeInfo(), minCoords);
-            const auto varianceOffset = paramSameOffset ? meanOffset : shape::getOffset(variance->getShapeInfo(), minCoords);
+            const auto meanOffset     = shape::getOffset(mean->shapeInfo(), minCoords);
+            const auto varianceOffset = paramSameOffset ? meanOffset : shape::getOffset(variance->shapeInfo(), minCoords);
 
             T sigmaInvGam = 1. / sd::math::nd4j_sqrt<T, T>(v[varianceOffset] + epsilon);
 
             if(g != nullptr) {
-                const auto gammaOffset = paramSameOffset ? meanOffset : shape::getOffset(gamma->getShapeInfo(), minCoords);
+                const auto gammaOffset = paramSameOffset ? meanOffset : shape::getOffset(gamma->shapeInfo(), minCoords);
                 sigmaInvGam *= g[gammaOffset];
             }
 
             z[zOffset] = (x[xOffset] - m[meanOffset]) * sigmaInvGam;
 
             if(b != nullptr) {
-                const auto betaOffset = paramSameOffset ? meanOffset : shape::getOffset(beta->getShapeInfo(), minCoords);
+                const auto betaOffset = paramSameOffset ? meanOffset : shape::getOffset(beta->shapeInfo(), minCoords);
                 z[zOffset] += b[betaOffset];
             }
         }

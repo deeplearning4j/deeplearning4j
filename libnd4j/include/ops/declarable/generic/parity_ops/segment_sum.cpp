@@ -68,15 +68,15 @@ namespace sd {
             return helpers::segmentSumFunctorBP(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), OUTPUT_NULLIFIED(0));
         }
         DECLARE_SHAPE_FN(segment_sum_bp){
-            Nd4jLong* in = inputShape->at(0);
-            Nd4jLong* inIdx = inputShape->at(1);
+            auto in = inputShape->at(0);
+            auto inIdx = inputShape->at(1);
 
             Nd4jLong* outShape;
             Nd4jLong* outIndex;
             COPY_SHAPE(in, outShape);
             COPY_SHAPE(inIdx, outIndex);
             return SHAPELIST(CONSTANT(outShape), CONSTANT(outIndex));
-
+//             return SHAPELIST(in, inIdx);
         }
 
         DECLARE_TYPES(segment_sum) {

@@ -16,15 +16,13 @@
 
 package org.deeplearning4j.rl4j.policy;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.rl4j.learning.EpochStepCounter;
 import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
@@ -36,28 +34,27 @@ import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
  *
  * A Policy responsability is to choose the next action given a state
  */
-public abstract class Policy<O, A> implements IPolicy<O, A> {
+public abstract class Policy<A> implements INeuralNetPolicy<A> {
 
     public abstract NeuralNet getNeuralNet();
 
     public abstract A nextAction(Observation obs);
 
-    public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
+    public <O extends Encodable, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
         return play(mdp, (IHistoryProcessor)null);
     }
 
-    public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, HistoryProcessor.Configuration conf) {
+    public <O extends Encodable, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, HistoryProcessor.Configuration conf) {
         return play(mdp, new HistoryProcessor(conf));
     }
 
     @Override
-    public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
+    public <O extends Encodable, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
         resetNetworks();
 
-        RefacEpochStepCounter epochStepCounter = new RefacEpochStepCounter();
-        LegacyMDPWrapper<O, A, AS> mdpWrapper = new LegacyMDPWrapper<O, A, AS>(mdp, hp, epochStepCounter);
+        LegacyMDPWrapper<O, A, AS> mdpWrapper = new LegacyMDPWrapper<O, A, AS>(mdp, hp);
 
-        Learning.InitMdp<Observation> initMdp = refacInitMdp(mdpWrapper, hp, epochStepCounter);
+        Learning.InitMdp<Observation> initMdp = refacInitMdp(mdpWrapper, hp);
         Observation obs = initMdp.getLastObs();
 
         double reward = initMdp.getReward();
@@ -79,7 +76,6 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
             reward += stepReply.getReward();
 
             obs = stepReply.getObservation();
-            epochStepCounter.incrementEpochStep();
         }
 
         return reward;
@@ -88,9 +84,11 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
     protected void resetNetworks() {
         getNeuralNet().reset();
     }
+    public void reset() {
+        resetNetworks();
+    }
 
-    protected <AS extends ActionSpace<A>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<O, A, AS> mdpWrapper, IHistoryProcessor hp, RefacEpochStepCounter epochStepCounter) {
-        epochStepCounter.setCurrentEpochStep(0);
+    protected <O extends Encodable, AS extends ActionSpace<A>> Learning.InitMdp<Observation> refacInitMdp(LegacyMDPWrapper<O, A, AS> mdpWrapper, IHistoryProcessor hp) {
 
         double reward = 0;
 
@@ -104,21 +102,9 @@ public abstract class Policy<O, A> implements IPolicy<O, A> {
             reward += stepReply.getReward();
             observation = stepReply.getObservation();
 
-            epochStepCounter.incrementEpochStep();
         }
 
         return new Learning.InitMdp(0, observation, reward);
     }
 
-    public class RefacEpochStepCounter implements EpochStepCounter {
-
-        @Getter
-        @Setter
-        private int currentEpochStep = 0;
-
-        public void incrementEpochStep() {
-            ++currentEpochStep;
-        }
-
-    }
 }

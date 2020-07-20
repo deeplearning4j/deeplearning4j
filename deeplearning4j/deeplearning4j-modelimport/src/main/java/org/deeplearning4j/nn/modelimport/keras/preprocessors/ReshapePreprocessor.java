@@ -21,6 +21,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
+import org.deeplearning4j.nn.conf.DataFormat;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.preprocessor.BaseInputPreProcessor;
@@ -33,7 +36,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-import static org.nd4j.linalg.util.ArrayUtil.prodLong;
+import static org.nd4j.common.util.ArrayUtil.prodLong;
 
 /**
  * Generic reshape preprocessor.
@@ -54,25 +57,30 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     private final long[] inputShape;
     private final long[] targetShape;
     private boolean hasMiniBatchDimension;
-
-    /**
-     * @deprecated Use constructor {@link #ReshapePreprocessor(long[], long[], boolean)}
-     */
-    @Deprecated
-    public ReshapePreprocessor(long[] inputShape, long[] targetShape) {
-        this(inputShape, targetShape, false);
-    }
+    private DataFormat format;
 
     /**
      * @param inputShape            Input shape, with or without leading minibatch dimension, depending on value of hasMiniBatchDimension
      * @param targetShape           Target shape, with or without leading minibatch dimension, depending on value of hasMiniBatchDimension
      * @param hasMiniBatchDimension If true: shapes should be of the form [minibatch, x, y, ...]; if false: shapes should be of form [x, y, ...]
      */
+    public ReshapePreprocessor(long[] inputShape, long[] targetShape, boolean hasMiniBatchDimension) {
+        this(inputShape, targetShape, hasMiniBatchDimension, null);
+    }
+
+    /**
+     * @param inputShape            Input shape, with or without leading minibatch dimension, depending on value of hasMiniBatchDimension
+     * @param targetShape           Target shape, with or without leading minibatch dimension, depending on value of hasMiniBatchDimension
+     * @param hasMiniBatchDimension If true: shapes should be of the form [minibatch, x, y, ...]; if false: shapes should be of form [x, y, ...]
+     * @param dataFormat            May be null. If non-null:
+     */
     public ReshapePreprocessor(@JsonProperty("inputShape") long[] inputShape, @JsonProperty("targetShape") long[] targetShape,
-                               @JsonProperty("hasMiniBatchDimension") boolean hasMiniBatchDimension) {
+                               @JsonProperty("hasMiniBatchDimension") boolean hasMiniBatchDimension,
+                               @JsonProperty("dataFormat") DataFormat dataFormat) {
         this.inputShape = inputShape;
         this.targetShape = targetShape;
         this.hasMiniBatchDimension = hasMiniBatchDimension;
+        this.format = dataFormat;
     }
 
     private long[] getShape(long[] originalShape, long minibatch) {
@@ -140,13 +148,26 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
                 ret = InputType.feedForward(shape[1]);
                 break;
             case 3:
-                ret = InputType.recurrent(shape[2], shape[1]);
+                RNNFormat format = RNNFormat.NCW;
+                if(this.format != null && this.format instanceof RNNFormat)
+                    format = (RNNFormat)this.format;
+
+                ret = InputType.recurrent(shape[2], shape[1], format);
                 break;
             case 4:
                 if (inputShape.length == 1 || inputType.getType() == InputType.Type.RNN) {
                     ret = InputType.convolutional(shape[1], shape[2], shape[3]);
                 } else {
-                    ret = InputType.convolutional(shape[2], shape[3], shape[1]);
+
+                    CNN2DFormat cnnFormat = CNN2DFormat.NCHW;
+                    if (this.format != null && this.format instanceof CNN2DFormat)
+                        cnnFormat = (CNN2DFormat) this.format;
+
+                    if (cnnFormat == CNN2DFormat.NCHW) {
+                        ret = InputType.convolutional(shape[2], shape[3], shape[1], cnnFormat);
+                    } else {
+                        ret = InputType.convolutional(shape[1], shape[2], shape[3], cnnFormat);
+                    }
                 }
                 break;
             default:

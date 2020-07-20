@@ -77,11 +77,11 @@
 * @param hZShapeInfo
 */
 void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext  *lc, int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *extraParams,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo) {
+                                                const void *hX, const Nd4jLong *hXShapeInfo,
+                                                const void *dX, const Nd4jLong *dXShapeInfo,
+                                                void *extraParams,
+                                                void *hZ, const Nd4jLong *hZShapeInfo,
+                                                void *dZ, const Nd4jLong *dZShapeInfo) {
 
 
 
@@ -106,22 +106,21 @@ void NativeOpExecutioner::execIndexReduceScalar(sd::LaunchContext  *lc, int opNu
  */
 
 void NativeOpExecutioner::execIndexReduce(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                          int opNum,
+                                          const void *hX, const Nd4jLong *hXShapeInfo,
+                                          const void *dX, const Nd4jLong *dXShapeInfo,
+                                          void *extraParams,
+                                          void *hZ, const Nd4jLong *hZShapeInfo,
+                                          void *dZ, const Nd4jLong *dZShapeInfo,
+                                          int *dimension, int dimensionLength,
+                                          const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
-    Nd4jLong* hz = reinterpret_cast<Nd4jLong*>(hZ);
+    auto hz = reinterpret_cast<Nd4jLong*>(hZ);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, extraParams, hz, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES, INDEXING_TYPES);
-//    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -139,16 +138,16 @@ void NativeOpExecutioner::execIndexReduce(sd::LaunchContext  *lc,
  */
 
 void NativeOpExecutioner::execBroadcast(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                        int opNum,
+                                        const void *hX, const Nd4jLong *hXShapeInfo,
+                                        const void *dX, const Nd4jLong *dXShapeInfo,
+                                        const void *hY, const Nd4jLong *hYShapeInfo,
+                                        const void *dY, const Nd4jLong *dYShapeInfo,
+                                        void *hZ, const Nd4jLong *hZShapeInfo,
+                                        void *dZ, const Nd4jLong *dZShapeInfo,
+                                        int *dimension, int dimensionLength,
+                                        const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                        const Nd4jLong *tadOnlyShapeInfoZ,const Nd4jLong *tadOffsetsZ) {
 
 
 
@@ -230,15 +229,15 @@ void NativeOpExecutioner::execBroadcast(sd::LaunchContext* lc, const int opNum,
 
 void NativeOpExecutioner::execInverseBroadcast(sd::LaunchContext  *lc,
                                                int opNum,
-                                               void *hX, Nd4jLong *hXShapeInfo,
-                                               void *dX, Nd4jLong *dXShapeInfo,
-                                               void *hY, Nd4jLong *hYShapeInfo,
-                                               void *dY, Nd4jLong *dYShapeInfo,
-                                               void *hZ, Nd4jLong *hZShapeInfo,
-                                               void *dZ, Nd4jLong *dZShapeInfo,
+                                               const void *hX, const Nd4jLong *hXShapeInfo,
+                                               const void *dX, const Nd4jLong *dXShapeInfo,
+                                               const void *hY, const Nd4jLong *hYShapeInfo,
+                                               const void *dY, const Nd4jLong *dYShapeInfo,
+                                               void *hZ, const Nd4jLong *hZShapeInfo,
+                                               void *dZ, const Nd4jLong *dZShapeInfo,
                                                int *dimension, int dimensionLength,
-                                               Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                               Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                               const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                               const Nd4jLong *tadOnlyShapeInfoZ,const Nd4jLong *tadOffsetsZ) {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -246,7 +245,7 @@ void NativeOpExecutioner::execInverseBroadcast(sd::LaunchContext  *lc,
     if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
         return;
 
-    if (!sd::Environment::getInstance()->isExperimentalBuild())
+    if (!sd::Environment::getInstance().isExperimentalBuild())
         if ((yType != xType && yType != sd::DataType::BOOL) || xType != zType)
             throw sd::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType, yType);
 
@@ -269,17 +268,17 @@ void NativeOpExecutioner::execInverseBroadcast(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *extraParams,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                            int opNum,
+                                            const void *hX, const Nd4jLong *hXShapeInfo,
+                                            const void *dX, const Nd4jLong *dXShapeInfo,
+                                            const void *hY, const Nd4jLong *hYShapeInfo,
+                                            const void *dY, const Nd4jLong *dYShapeInfo,
+                                            void *hZ, const Nd4jLong *hZShapeInfo,
+                                            void *dZ, const Nd4jLong *dZShapeInfo,
+                                            void *extraParams,
+                                            int *dimension, int dimensionLength,
+                                            const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                            const Nd4jLong *tadOnlyShapeInfoZ,const Nd4jLong *tadOffsetsZ) {
 
 
     if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
@@ -320,17 +319,17 @@ void NativeOpExecutioner::execBroadcastBool(sd::LaunchContext* lc, const int opN
 
 
 void NativeOpExecutioner::execInverseBroadcastBool(sd::LaunchContext  *lc,
-                                                  int opNum,
-                                                  void *hX, Nd4jLong *hXShapeInfo,
-                                                  void *dX, Nd4jLong *dXShapeInfo,
-                                                  void *hY, Nd4jLong *hYShapeInfo,
-                                                  void *dY, Nd4jLong *dYShapeInfo,
-                                                  void *hZ, Nd4jLong *hZShapeInfo,
-                                                  void *dZ, Nd4jLong *dZShapeInfo,
-                                                  void *extraParams,
-                                                  int *dimension, int dimensionLength,
-                                                  Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                                  Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                                   int opNum,
+                                                   const void *hX, const Nd4jLong *hXShapeInfo,
+                                                   const void *dX, const Nd4jLong *dXShapeInfo,
+                                                   const void *hY, const Nd4jLong *hYShapeInfo,
+                                                   const void *dY, const Nd4jLong *dYShapeInfo,
+                                                   void *hZ, const Nd4jLong *hZShapeInfo,
+                                                   void *dZ, const Nd4jLong *dZShapeInfo,
+                                                   void *extraParams,
+                                                   int *dimension, int dimensionLength,
+                                                   const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                                   const Nd4jLong *tadOnlyShapeInfoZ,const Nd4jLong *tadOffsetsZ) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -339,7 +338,7 @@ void NativeOpExecutioner::execInverseBroadcastBool(sd::LaunchContext  *lc,
     if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
         return;
 
-    if (!sd::Environment::getInstance()->isExperimentalBuild())
+    if (!sd::Environment::getInstance().isExperimentalBuild())
         if (yType != xType || sd::DataType::BOOL != zType)
             throw sd::datatype_exception::build("NativeOps::execInverseBroadcastBool both operands must have same data type", xType, yType);
 
@@ -358,16 +357,16 @@ void NativeOpExecutioner::execInverseBroadcastBool(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext  *lc,
-                                            int opNum,
-                                            void *hX, Nd4jLong *hXShapeInfo,
-                                            void *dX, Nd4jLong *dXShapeInfo,
-                                            void *hY, Nd4jLong *hYShapeInfo,
-                                            void *dY, Nd4jLong *dYShapeInfo,
-                                            void *hZ, Nd4jLong *hZShapeInfo,
-                                            void *dZ, Nd4jLong *dZShapeInfo,
-                                            int *dimension, int dimensionLength,
-                                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                            Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                           int opNum,
+                                           const void *hX, const Nd4jLong *hXShapeInfo,
+                                           const void *dX, const Nd4jLong *dXShapeInfo,
+                                           const void *hY, const Nd4jLong *hYShapeInfo,
+                                           const void *dY, const Nd4jLong *dYShapeInfo,
+                                           void *hZ, const Nd4jLong *hZShapeInfo,
+                                           void *dZ, const Nd4jLong *dZShapeInfo,
+                                           int *dimension, int dimensionLength,
+                                           const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                           const Nd4jLong *tadOnlyShapeInfoZ,const Nd4jLong *tadOffsetsZ) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -422,16 +421,16 @@ void NativeOpExecutioner::execBroadcastInt(sd::LaunchContext  *lc, const int opN
 }
 
 void NativeOpExecutioner::execInverseBroadcastInt(sd::LaunchContext  *lc,
-                                                   int opNum,
-                                                   void *hX, Nd4jLong *hXShapeInfo,
-                                                   void *dX, Nd4jLong *dXShapeInfo,
-                                                   void *hY, Nd4jLong *hYShapeInfo,
-                                                   void *dY, Nd4jLong *dYShapeInfo,
-                                                   void *hZ, Nd4jLong *hZShapeInfo,
-                                                   void *dZ, Nd4jLong *dZShapeInfo,
-                                                   int *dimension, int dimensionLength,
-                                                   Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
-                                                   Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+                                                  int opNum,
+                                                  const void *hX, const Nd4jLong *hXShapeInfo,
+                                                  const void *dX, const Nd4jLong *dXShapeInfo,
+                                                  const void *hY, const Nd4jLong *hYShapeInfo,
+                                                  const void *dY, const Nd4jLong *dYShapeInfo,
+                                                  void *hZ, const Nd4jLong *hZShapeInfo,
+                                                  void *dZ, const Nd4jLong *dZShapeInfo,
+                                                  int *dimension, int dimensionLength,
+                                                  const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets,
+                                                  const Nd4jLong *tadOnlyShapeInfoZ,const Nd4jLong *tadOffsetsZ) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -471,14 +470,14 @@ void NativeOpExecutioner::execInverseBroadcastInt(sd::LaunchContext  *lc,
 * @param n
 */
 void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hY, Nd4jLong *hYShapeInfo,
-                                    void *dY, Nd4jLong *dYShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    void *extraParams) {
+                                                int opNum,
+                                                const void *hX, const Nd4jLong *hXShapeInfo,
+                                                const void *dX, const Nd4jLong *dXShapeInfo,
+                                                const void *hY, const Nd4jLong *hYShapeInfo,
+                                                const void *dY, const Nd4jLong *dYShapeInfo,
+                                                void *hZ, const Nd4jLong *hZShapeInfo,
+                                                void *dZ, const Nd4jLong *dZShapeInfo,
+                                                void *extraParams) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -497,21 +496,21 @@ void NativeOpExecutioner::execPairwiseTransform(sd::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 
 #endif
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *hY, Nd4jLong *hYShapeInfo,
-                                    void *dY, Nd4jLong *dYShapeInfo,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    void *extraParams) {
+                                                    int opNum,
+                                                    const void *hX, const Nd4jLong *hXShapeInfo,
+                                                    const void *dX, const Nd4jLong *dXShapeInfo,
+                                                    const void *hY, const Nd4jLong *hYShapeInfo,
+                                                    const void *dY, const Nd4jLong *dYShapeInfo,
+                                                    void *hZ, const Nd4jLong *hZShapeInfo,
+                                                    void *dZ, const Nd4jLong *dZShapeInfo,
+                                                    void *extraParams) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -532,20 +531,20 @@ void NativeOpExecutioner::execPairwiseBoolTransform(sd::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext  *lc,
-                                                    int opNum,
-                                                    void *hX, Nd4jLong *hXShapeInfo,
-                                                    void *dX, Nd4jLong *dXShapeInfo,
-                                                    void *hY, Nd4jLong *hYShapeInfo,
-                                                    void *dY, Nd4jLong *dYShapeInfo,
-                                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                                    void *extraParams) {
+                                                   int opNum,
+                                                   const void *hX, const Nd4jLong *hXShapeInfo,
+                                                   const void *dX, const Nd4jLong *dXShapeInfo,
+                                                   const void *hY, const Nd4jLong *hYShapeInfo,
+                                                   const void *dY, const Nd4jLong *dYShapeInfo,
+                                                   void *hZ, const Nd4jLong *hZShapeInfo,
+                                                   void *dZ, const Nd4jLong *dZShapeInfo,
+                                                   void *extraParams) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hYShapeInfo);
@@ -565,7 +564,7 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 
 }
 
@@ -580,14 +579,14 @@ void NativeOpExecutioner::execPairwiseIntTransform(sd::LaunchContext  *lc,
 * @param hZShapeInfo
 */
 void NativeOpExecutioner::execReduceFloat(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                          int opNum,
+                                          const void *hX, const Nd4jLong *hXShapeInfo,
+                                          const void *dX, const Nd4jLong *dXShapeInfo,
+                                          void *extraParams,
+                                          void *hZ, const Nd4jLong *hZShapeInfo,
+                                          void *dZ, const Nd4jLong *dZShapeInfo,
+                                          int *dimension, int dimensionLength,
+                                          const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
 
 
@@ -604,19 +603,19 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext  *lc,
 
     const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
 
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance()->maxMasterThreads());
+    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance().maxMasterThreads());
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceSame(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                         int opNum,
+                                         const void *hX, const Nd4jLong *hXShapeInfo,
+                                         const void *dX, const Nd4jLong *dXShapeInfo,
+                                         void *extraParams,
+                                         void *hZ, const Nd4jLong *hZShapeInfo,
+                                         void *dZ, const Nd4jLong *dZShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -632,19 +631,19 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext  *lc,
 
     const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
 
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance()->maxMasterThreads());
+    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance().maxMasterThreads());
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceBool(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                         int opNum,
+                                         const void *hX, const Nd4jLong *hXShapeInfo,
+                                         const void *dX, const Nd4jLong *dXShapeInfo,
+                                         void *extraParams,
+                                         void *hZ, const Nd4jLong *hZShapeInfo,
+                                         void *dZ, const Nd4jLong *dZShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -660,19 +659,19 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext  *lc,
 
     const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
 
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance()->maxMasterThreads());
+    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance().maxMasterThreads());
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceLong(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                         int opNum,
+                                         const void *hX, const Nd4jLong *hXShapeInfo,
+                                         const void *dX, const Nd4jLong *dXShapeInfo,
+                                         void *extraParams,
+                                         void *hZ, const Nd4jLong *hZShapeInfo,
+                                         void *dZ, const Nd4jLong *dZShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -688,7 +687,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext  *lc,
 
     const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
 
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance()->maxMasterThreads());
+    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance().maxMasterThreads());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -701,12 +700,12 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext  *lc,
  * @return
  */
 void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *extraParams,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo) {
+                                                int opNum,
+                                                const void *hX, const Nd4jLong *hXShapeInfo,
+                                                const void *dX, const Nd4jLong *dXShapeInfo,
+                                                void *extraParams,
+                                                void *hZ, const Nd4jLong *hZShapeInfo,
+                                                void *dZ, const Nd4jLong *dZShapeInfo) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -717,12 +716,12 @@ void NativeOpExecutioner::execReduceFloatScalar(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceSameScalar(sd::LaunchContext  *lc,
-                                        int opNum,
-                                        void *hX, Nd4jLong *hXShapeInfo,
-                                        void *dX, Nd4jLong *dXShapeInfo,
-                                        void *extraParams,
-                                        void *hZ, Nd4jLong *hZShapeInfo,
-                                        void *dZ, Nd4jLong *dZShapeInfo) {
+                                               int opNum,
+                                               const void *hX, const Nd4jLong *hXShapeInfo,
+                                               const void *dX, const Nd4jLong *dXShapeInfo,
+                                               void *extraParams,
+                                               void *hZ, const Nd4jLong *hZShapeInfo,
+                                               void *dZ, const Nd4jLong *dZShapeInfo) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -732,14 +731,12 @@ void NativeOpExecutioner::execReduceSameScalar(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext  *lc,
-                                        int opNum,
-                                        void *hX, Nd4jLong *hXShapeInfo,
-                                        void *dX, Nd4jLong *dXShapeInfo,
-                                        void *extraParams,
-                                        void *hZ, Nd4jLong *hZShapeInfo,
-                                        void *dZ, Nd4jLong *dZShapeInfo) {
-
-
+                                               int opNum,
+                                               const void *hX, const Nd4jLong *hXShapeInfo,
+                                               const void *dX, const Nd4jLong *dXShapeInfo,
+                                               void *extraParams,
+                                               void *hZ, const Nd4jLong *hZShapeInfo,
+                                               void *dZ, const Nd4jLong *dZShapeInfo) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -749,13 +746,12 @@ void NativeOpExecutioner::execReduceBoolScalar(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext  *lc,
-                                        int opNum,
-                                        void *hX, Nd4jLong *hXShapeInfo,
-                                        void *dX, Nd4jLong *dXShapeInfo,
-                                        void *extraParams,
-                                        void *hZ, Nd4jLong *hZShapeInfo,
-                                        void *dZ, Nd4jLong *dZShapeInfo) {
-
+                                               int opNum,
+                                               const void *hX, const Nd4jLong *hXShapeInfo,
+                                               const void *dX, const Nd4jLong *dXShapeInfo,
+                                               void *extraParams,
+                                               void *hZ, const Nd4jLong *hZShapeInfo,
+                                               void *dZ, const Nd4jLong *dZShapeInfo) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -779,14 +775,15 @@ void NativeOpExecutioner::execReduceLongScalar(sd::LaunchContext  *lc,
  * @param dimensionLength
  */
 void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo) {
+                                            int opNum,
+                                            const void *hX, const Nd4jLong *hXShapeInfo,
+                                            const void *dX, const Nd4jLong *dXShapeInfo,
+                                            void *extraParamsVals,
+                                            const void *hY, const Nd4jLong *hYShapeInfo,
+                                            const void *dY, const Nd4jLong *dYShapeInfo,
+                                            void *hZ, const Nd4jLong *hZShapeInfo,
+                                            void *dZ, const Nd4jLong *dZShapeInfo) {
+
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -807,15 +804,14 @@ void NativeOpExecutioner::execReduce3Scalar(sd::LaunchContext  *lc,
 * @param hZShapeInfo
 */
 void NativeOpExecutioner::execReduce3(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo) {
-
+                                      int opNum,
+                                      const void *hX, const Nd4jLong *hXShapeInfo,
+                                      const void *dX, const Nd4jLong *dXShapeInfo,
+                                      void *extraParamsVals,
+                                      const void *hY, const Nd4jLong *hYShapeInfo,
+                                      const void *dY, const Nd4jLong *dYShapeInfo,
+                                      void *hZ, const Nd4jLong *hZShapeInfo,
+                                      void *dZ, const Nd4jLong *dZShapeInfo) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -826,17 +822,17 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *xTadOnlyShapeInfo, Nd4jLong *xTadOffsets,
-                            Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+                                      int opNum,
+                                      const void *hX, const Nd4jLong *hXShapeInfo,
+                                      const void *dX, const Nd4jLong *dXShapeInfo,
+                                      void *extraParamsVals,
+                                      const void *hY, const Nd4jLong *hYShapeInfo,
+                                      const void *dY, const Nd4jLong *dYShapeInfo,
+                                      void *hZ, const Nd4jLong *hZShapeInfo,
+                                      void *dZ, const Nd4jLong *dZShapeInfo,
+                                      int *dimension, int dimensionLength,
+                                      const Nd4jLong *xTadOnlyShapeInfo, const Nd4jLong *xTadOffsets,
+                                      const Nd4jLong *yTadOnlyShapeInfo, const Nd4jLong *yTadOffsets) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -848,13 +844,13 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext  *lc,
     sd::TadPack tadPack;
 
     if(xLen == yLen) {
-        tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     }
     else if(yLen > xLen) {
-        tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(hYShapeInfo, dimension, dimensionLength);
+        tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hYShapeInfo, dimension, dimensionLength);
     }
     else {
-        tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     }
 
     auto func = PRAGMA_THREADS_FOR {
@@ -867,23 +863,22 @@ void NativeOpExecutioner::execReduce3(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3All(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
-                            Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
-
+                                         int opNum,
+                                         const void *hX, const Nd4jLong *hXShapeInfo,
+                                         const void *dX, const Nd4jLong *dXShapeInfo,
+                                         void *extraParamsVals,
+                                         const void *hY, const Nd4jLong *hYShapeInfo,
+                                         const void *dY, const Nd4jLong *dYShapeInfo,
+                                         void *hZ, const Nd4jLong *hZShapeInfo,
+                                         void *dZ, const Nd4jLong *dZShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         const Nd4jLong *xTadShapeInfo, const Nd4jLong *xOffsets,
+                                         const Nd4jLong *yTadShapeInfo, const Nd4jLong *yOffsets) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
-    auto tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
 
     // TODO: make it 2d
     auto func = PRAGMA_THREADS_FOR {
@@ -895,19 +890,17 @@ void NativeOpExecutioner::execReduce3All(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParamsVals,
-                            void *hY, Nd4jLong *hYShapeInfo,
-                            void *dY, Nd4jLong *dYShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *yTadShapeInfo, Nd4jLong *yTadOffsets) {
-
-
+                                         int opNum,
+                                         const void *hX, const Nd4jLong *hXShapeInfo,
+                                         const void *dX, const Nd4jLong *dXShapeInfo,
+                                         void *extraParamsVals,
+                                         const void *hY, const Nd4jLong *hYShapeInfo,
+                                         const void *dY, const Nd4jLong *dYShapeInfo,
+                                         void *hZ, const Nd4jLong *hZShapeInfo,
+                                         void *dZ, const Nd4jLong *dZShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                         const Nd4jLong *yTadShapeInfo, const Nd4jLong *yTadOffsets) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -918,13 +911,13 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext  *lc,
     sd::TadPack tadPack;
 
     if(xLen == yLen) {
-        tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     }
     else if(yLen > xLen) {
-        tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(hYShapeInfo, dimension, dimensionLength);
+        tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hYShapeInfo, dimension, dimensionLength);
     }
     else {
-        tadPack = sd::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo, dimension, dimensionLength);
     }
 
     auto func = PRAGMA_THREADS_FOR {
@@ -948,14 +941,15 @@ void NativeOpExecutioner::execReduce3TAD(sd::LaunchContext  *lc,
 * @param n
 */
 void NativeOpExecutioner::execScalar(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalar, Nd4jLong *hScalarShapeInfo,
-                            void *dScalar, Nd4jLong *dScalarShapeInfo,
-                            void *extraParams, bool allowParallelism) {
+                                     int opNum,
+                                     const void *hX, const Nd4jLong *hXShapeInfo,
+                                     const void *dX, const Nd4jLong *dXShapeInfo,
+                                     void *hZ, const Nd4jLong *hZShapeInfo,
+                                     void *dZ, const Nd4jLong *dZShapeInfo,
+                                     const void *hScalar, const Nd4jLong *hScalarShapeInfo,
+                                     const void *dScalar, const Nd4jLong *dScalarShapeInfo,
+                                     void *extraParams,
+                                     bool allowParallelism) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -975,7 +969,7 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 
 #endif
 }
@@ -983,16 +977,16 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext  *lc,
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalar(sd::LaunchContext  *lc,
                             int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
+                            void const* hX, Nd4jLong  const*hXShapeInfo,
+                            void const* dX, Nd4jLong  const*dXShapeInfo,
                             void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalars, Nd4jLong *hScalarShapeInfo,
-                            void *dScalars, Nd4jLong *dScalarShapeInfo,
+                            void *hZ, Nd4jLong  const*hZShapeInfo,
+                            void *dZ, Nd4jLong  const*dZShapeInfo,
+                            void const* hScalars, Nd4jLong  const*hScalarShapeInfo,
+                            void const* dScalars, Nd4jLong  const*dScalarShapeInfo,
                             int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                            Nd4jLong  const*tadShapeInfo, Nd4jLong  const*tadOffsets,
+                            Nd4jLong  const*tadShapeInfoZ, Nd4jLong  const*tadOffsetsZ) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1012,21 +1006,22 @@ void NativeOpExecutioner::execScalar(sd::LaunchContext  *lc,
     };
 
     auto yLen = shape::length(hScalarShapeInfo);
-    samediff::Threads::parallel_tad(func, 0, yLen, 1, sd::math::nd4j_min<int>(yLen, sd::Environment::getInstance()->maxMasterThreads()));
+    samediff::Threads::parallel_tad(func, 0, yLen, 1, sd::math::nd4j_min<int>(yLen, sd::Environment::getInstance().maxMasterThreads()));
 
 #endif
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalarBool(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalar, Nd4jLong *hSscalarShapeInfo,
-                            void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                            void *extraParams, bool allowParallelism) {
+                                         int opNum,
+                                         const void *hX, const Nd4jLong *hXShapeInfo,
+                                         const void *dX, const Nd4jLong *dXShapeInfo,
+                                         void *hZ, const Nd4jLong *hZShapeInfo,
+                                         void *dZ, const Nd4jLong *dZShapeInfo,
+                                         const void *hScalar, const Nd4jLong *hSscalarShapeInfo,
+                                         const void *dScalar, const Nd4jLong *dSscalarShapeInfo,
+                                         void *extraParams,
+                                         bool allowParallelism) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hSscalarShapeInfo);
@@ -1046,23 +1041,23 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1,  !allowParallelism ? 1 : sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1,  !allowParallelism ? 1 : sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalarBool(sd::LaunchContext  *lc,
-                            int opNum,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *extraParams,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *hScalars, Nd4jLong *hScalarShapeInfo,
-                            void *dScalars, Nd4jLong *dScalarShapeInfo,
-                            int *dimension, int dimensionLength,
-                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                                         int opNum,
+                                         const void *hX, const Nd4jLong *hXShapeInfo,
+                                         const void *dX, const Nd4jLong *dXShapeInfo,
+                                         void *extraParams,
+                                         void *hZ, const Nd4jLong *hZShapeInfo,
+                                         void *dZ, const Nd4jLong *dZShapeInfo,
+                                         const void *hScalars, const Nd4jLong *hScalarShapeInfo,
+                                         const void *dScalars, const Nd4jLong *dScalarShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                         const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetsZ) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1082,19 +1077,20 @@ void NativeOpExecutioner::execScalarBool(sd::LaunchContext  *lc,
     };
 
     auto yLen = shape::length(hScalarShapeInfo);
-    samediff::Threads::parallel_tad(func, 0, yLen, 1, sd::math::nd4j_min<int>(yLen, sd::Environment::getInstance()->maxMasterThreads()));
+    samediff::Threads::parallel_tad(func, 0, yLen, 1, sd::math::nd4j_min<int>(yLen, sd::Environment::getInstance().maxMasterThreads()));
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalarInt(sd::LaunchContext  *lc,
-                                         int opNum,
-                                         void *hX, Nd4jLong *hXShapeInfo,
-                                         void *dX, Nd4jLong *dXShapeInfo,
-                                         void *hZ, Nd4jLong *hZShapeInfo,
-                                         void *dZ, Nd4jLong *dZShapeInfo,
-                                         void *hScalar, Nd4jLong *hSscalarShapeInfo,
-                                         void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                                         void *extraParams, bool allowParallelism) {
+                                        int opNum,
+                                        const void *hX, const Nd4jLong *hXShapeInfo,
+                                        const void *dX, const Nd4jLong *dXShapeInfo,
+                                        void *hZ, const Nd4jLong *hZShapeInfo,
+                                        void *dZ, const Nd4jLong *dZShapeInfo,
+                                        const void *hScalar, const Nd4jLong *hSscalarShapeInfo,
+                                        const void *dScalar, const Nd4jLong *dSscalarShapeInfo,
+                                        void *extraParams,
+                                        bool allowParallelism) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hSscalarShapeInfo);
@@ -1114,23 +1110,23 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext  *lc,
     };
 
     auto zLen = shape::length(hZShapeInfo);
-    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(zLen / 1024, sd::Environment::getInstance().maxMasterThreads())));
 
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execScalarInt(sd::LaunchContext  *lc,
-                                         int opNum,
-                                         void *hX, Nd4jLong *hXShapeInfo,
-                                         void *dX, Nd4jLong *dXShapeInfo,
-                                         void *extraParams,
-                                         void *hZ, Nd4jLong *hZShapeInfo,
-                                         void *dZ, Nd4jLong *dZShapeInfo,
-                                         void *hScalars, Nd4jLong *hScalarShapeInfo,
-                                         void *dScalars, Nd4jLong *dScalarShapeInfo,
-                                         int *dimension, int dimensionLength,
-                                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                         Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+                                        int opNum,
+                                        const void *hX, const Nd4jLong *hXShapeInfo,
+                                        const void *dX, const Nd4jLong *dXShapeInfo,
+                                        void *extraParams,
+                                        void *hZ, const Nd4jLong *hZShapeInfo,
+                                        void *dZ, const Nd4jLong *dZShapeInfo,
+                                        const void *hScalars, const Nd4jLong *hScalarShapeInfo,
+                                        const void *dScalars, const Nd4jLong *dScalarShapeInfo,
+                                        int *dimension, int dimensionLength,
+                                        const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                        const Nd4jLong *tadShapeInfoZ, const Nd4jLong *tadOffsetsZ) {
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto yType = sd::ArrayOptions::dataType(hScalarShapeInfo);
@@ -1150,7 +1146,7 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext  *lc,
     };
 
     auto yLen = shape::length(hScalarShapeInfo);
-    samediff::Threads::parallel_tad(func, 0, yLen, 1, sd::math::nd4j_min<int>(yLen, sd::Environment::getInstance()->maxMasterThreads()));
+    samediff::Threads::parallel_tad(func, 0, yLen, 1, sd::math::nd4j_min<int>(yLen, sd::Environment::getInstance().maxMasterThreads()));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1164,13 +1160,13 @@ void NativeOpExecutioner::execScalarInt(sd::LaunchContext  *lc,
 * @param hZShapeInfo
 */
 void NativeOpExecutioner::execSummaryStats(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                bool biasCorrected) {
+                                           int opNum,
+                                           const void *hX, const Nd4jLong *hXShapeInfo,
+                                           const void *dX, const Nd4jLong *dXShapeInfo,
+                                           void *extraParams,
+                                           void *hZ, const Nd4jLong *hZShapeInfo,
+                                           void *dZ, const Nd4jLong *dZShapeInfo,
+                                           bool biasCorrected) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -1190,13 +1186,13 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext  *lc,
 * @param hZShapeInfo
 */
 void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext  *lc,
-                                    int opNum,
-                                    void *hX, Nd4jLong *hXShapeInfo,
-                                    void *dX, Nd4jLong *dXShapeInfo,
-                                    void *extraParams,
-                                    void *hZ, Nd4jLong *hZShapeInfo,
-                                    void *dZ, Nd4jLong *dZShapeInfo,
-                                    bool biasCorrected) {
+                                                 int opNum,
+                                                 const void *hX, const Nd4jLong *hXShapeInfo,
+                                                 const void *dX, const Nd4jLong *dXShapeInfo,
+                                                 void *extraParams,
+                                                 void *hZ, const Nd4jLong *hZShapeInfo,
+                                                 void *dZ, const Nd4jLong *dZShapeInfo,
+                                                 bool biasCorrected) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -1218,15 +1214,15 @@ void NativeOpExecutioner::execSummaryStatsScalar(sd::LaunchContext  *lc,
 * @param dimensionLength
 */
 void NativeOpExecutioner::execSummaryStats(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *extraParams,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
-                                bool biasCorrected) {
+                                           int opNum,
+                                           const void *hX, const Nd4jLong *hXShapeInfo,
+                                           const void *dX, const Nd4jLong *dXShapeInfo,
+                                           void *extraParams,
+                                           void *hZ, const Nd4jLong *hZShapeInfo,
+                                           void *dZ, const Nd4jLong *dZShapeInfo,
+                                           int *dimension, int dimensionLength,
+                                           const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                           bool biasCorrected) {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1246,13 +1242,13 @@ void NativeOpExecutioner::execSummaryStats(sd::LaunchContext  *lc,
 * @param n
 */
 void NativeOpExecutioner::execTransformFloat(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                             int opNum,
+                                             const void *hX, const Nd4jLong *hXShapeInfo,
+                                             const void *dX, const Nd4jLong *dXShapeInfo,
+                                             void *hZ, const Nd4jLong *hZShapeInfo,
+                                             void *dZ, const Nd4jLong *dZShapeInfo,
+                                             void *extraParams,
+                                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1263,18 +1259,18 @@ void NativeOpExecutioner::execTransformFloat(sd::LaunchContext  *lc,
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES, FLOAT_TYPES);
     };
 
-    samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance().maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformBool(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                            int opNum,
+                                            const void *hX, const Nd4jLong *hXShapeInfo,
+                                            const void *dX, const Nd4jLong *dXShapeInfo,
+                                            void *hZ, const Nd4jLong *hZShapeInfo,
+                                            void *dZ, const Nd4jLong *dZShapeInfo,
+                                            void *extraParams,
+                                            const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1285,18 +1281,19 @@ void NativeOpExecutioner::execTransformBool(sd::LaunchContext  *lc,
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES, BOOL_TYPES);
     };
 
-    samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance().maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformAny(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism) {
+                                           int opNum,
+                                           const void *hX, const Nd4jLong *hXShapeInfo,
+                                           const void *dX, const Nd4jLong *dXShapeInfo,
+                                           void *hZ, const Nd4jLong *hZShapeInfo,
+                                           void *dZ, const Nd4jLong *dZShapeInfo,
+                                           void *extraParams,
+                                           const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
+                                           bool allowParallelism) {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1313,19 +1310,19 @@ void NativeOpExecutioner::execTransformAny(sd::LaunchContext  *lc,
             BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES, LIBND4J_TYPES);
         };
 
-        samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+        samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance().maxMasterThreads())));
     }
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformSame(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                            int opNum,
+                                            const void *hX, const Nd4jLong *hXShapeInfo,
+                                            const void *dX, const Nd4jLong *dXShapeInfo,
+                                            void *hZ, const Nd4jLong *hZShapeInfo,
+                                            void *dZ, const Nd4jLong *dZShapeInfo,
+                                            void *extraParams,
+                                            const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1336,18 +1333,18 @@ void NativeOpExecutioner::execTransformSame(sd::LaunchContext  *lc,
         BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES);
     };
 
-    samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance().maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execTransformStrict(sd::LaunchContext  *lc,
-                                int opNum,
-                                void *hX, Nd4jLong *hXShapeInfo,
-                                void *dX, Nd4jLong *dXShapeInfo,
-                                void *hZ, Nd4jLong *hZShapeInfo,
-                                void *dZ, Nd4jLong *dZShapeInfo,
-                                void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                              int opNum,
+                                              const void *hX, const Nd4jLong *hXShapeInfo,
+                                              const void *dX, const Nd4jLong *dXShapeInfo,
+                                              void *hZ, const Nd4jLong *hZShapeInfo,
+                                              void *dZ, const Nd4jLong *dZShapeInfo,
+                                              void *extraParams,
+                                              const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1358,16 +1355,16 @@ void NativeOpExecutioner::execTransformStrict(sd::LaunchContext  *lc,
         BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), FLOAT_TYPES);
     };
 
-    samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance()->maxMasterThreads())));
+    samediff::Threads::parallel_do(func, sd::math::nd4j_max<int>(1, sd::math::nd4j_min<int>(shape::length(hZShapeInfo) / 1024, sd::Environment::getInstance().maxMasterThreads())));
 }
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
-                            int opNum,
-                            Nd4jPointer state,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *extraArguments) {
+                                     int opNum,
+                                     Nd4jPointer state,
+                                     void *hZ, const Nd4jLong *hZShapeInfo,
+                                     void *dZ, const Nd4jLong *dZShapeInfo,
+                                     void *extraArguments) {
 
 
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
@@ -1380,14 +1377,13 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
-                            int opNum,
-                            Nd4jPointer state,
-                            void *hX, Nd4jLong *hXShapeInfo,
-                            void *dX, Nd4jLong *dXShapeInfo,
-                            void *hZ, Nd4jLong *hZShapeInfo,
-                            void *dZ, Nd4jLong *dZShapeInfo,
-                            void *extraArguments) {
-
+                                     int opNum,
+                                     Nd4jPointer state,
+                                     const void *hX, const Nd4jLong *hXShapeInfo,
+                                     const void *dX, const Nd4jLong *dXShapeInfo,
+                                     void *hZ, const Nd4jLong *hZShapeInfo,
+                                     void *dZ, const Nd4jLong *dZShapeInfo,
+                                     void *extraArguments) {
 
     auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
@@ -1399,16 +1395,15 @@ void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
 
 ////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execRandom(sd::LaunchContext  *lc,
-                          int opNum,
-                          Nd4jPointer state,
-                          void *hX, Nd4jLong *hXShapeInfo,
-                          void *dX, Nd4jLong *dXShapeInfo,
-                          void *hY, Nd4jLong *hYShapeInfo,
-                          void *dY, Nd4jLong *dYShapeInfo,
-                          void *hZ, Nd4jLong *hZShapeInfo,
-                          void *dZ, Nd4jLong *dZShapeInfo,
-                          void *extraArguments) {
-
+                                     int opNum,
+                                     Nd4jPointer state,
+                                     const void *hX, const Nd4jLong *hXShapeInfo,
+                                     const void *dX, const Nd4jLong *dXShapeInfo,
+                                     const void *hY, const Nd4jLong *hYShapeInfo,
+                                     const void *dY, const Nd4jLong *dYShapeInfo,
+                                     void *hZ, const Nd4jLong *hZShapeInfo,
+                                     void *dZ, const Nd4jLong *dZShapeInfo,
+                                     void *extraArguments) {
 
     auto xType = sd::ArrayOptions::dataType(hZShapeInfo);
 

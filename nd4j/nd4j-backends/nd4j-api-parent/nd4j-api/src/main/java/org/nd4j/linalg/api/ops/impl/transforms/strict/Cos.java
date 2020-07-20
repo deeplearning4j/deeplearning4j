@@ -16,12 +16,11 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
@@ -32,13 +31,15 @@ import java.util.List;
  *
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class Cos extends BaseTransformStrictOp {
+
+    public Cos(SameDiff sameDiff, SDVariable i_v){
+        this(sameDiff, i_v, false);
+    }
 
     public Cos(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
-    }
-
-    public Cos() {
     }
 
     public Cos(INDArray x, INDArray z) {
@@ -61,7 +62,7 @@ public class Cos extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().neg(f().sin(arg())).mul(i_v.get(0));
+        SDVariable ret = sameDiff.math.neg(sameDiff.math.sin(arg())).mul(i_v.get(0));
         return Arrays.asList(ret);
     }
 

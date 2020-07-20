@@ -26,7 +26,7 @@ import org.deeplearning4j.models.sequencevectors.graph.walkers.GraphWalker;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -70,7 +70,7 @@ public class NearestVertexWalker<V extends SequenceElement> implements GraphWalk
     public void reset(boolean shuffle) {
         position.set(0);
         if (shuffle) {
-            log.debug("Calling shuffle() on entries...");
+            log.trace("Calling shuffle() on entries...");
             // https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
             for (int i = order.length - 1; i > 0; i--) {
                 int j = rng.nextInt(i + 1);

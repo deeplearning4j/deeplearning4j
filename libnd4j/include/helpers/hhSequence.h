@@ -27,35 +27,35 @@ namespace sd {
 namespace ops {
 namespace helpers {
 
-    
+
 class HHsequence {
 
     public:
-    
+
     /*
     *  matrix containing the Householder vectors
     */
-    NDArray _vectors;        
+    const NDArray& _vectors;
 
     /*
     *  vector containing the Householder coefficients
     */
-    NDArray _coeffs;    
-    
+    const NDArray& _coeffs;
+
     /*
-    *  shift of the Householder sequence 
+    *  shift of the Householder sequence
     */
     int _shift;
 
     /*
     *  length of the Householder sequence
     */
-    int _diagSize;        
+    int _diagSize;
 
-    /* 
+    /*
     *  type of sequence, type = 'u' (acting on columns, left) or type = 'v' (acting on rows, right)
     */
-    char _type;        
+    char _type;
 
     /*
     *  constructor
@@ -64,18 +64,18 @@ class HHsequence {
 
     /**
     *  this method mathematically multiplies input matrix on Householder sequence from the left H0*H1*...Hn * matrix
-    * 
+    *
     *  matrix - input matrix to be multiplied
     */
     template <typename T>
-    void _mulLeft(NDArray& matrix);
+    void mulLeft_(NDArray& matrix);
 
     void mulLeft(NDArray& matrix);
 
     NDArray getTail(const int idx) const;
 
     template <typename T>
-    void _applyTo(NDArray& dest);
+    void applyTo_(NDArray& dest);
 
     void applyTo(NDArray& dest);
 
@@ -87,8 +87,8 @@ class HHsequence {
 //////////////////////////////////////////////////////////////////////////
 FORCEINLINE int HHsequence::rows() const {
 
-    return _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1); 
-}    
+    return _type == 'u' ? _vectors.sizeAt(0) : _vectors.sizeAt(1);
+}
 
 
 

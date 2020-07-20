@@ -32,7 +32,7 @@ template <typename T, typename OpClass>
 static inline __device__ void randomSingleGeneric(
         Nd4jPointer state,
         void *z,
-        Nd4jLong *zShapeBuffer,
+        Nd4jLong const* zShapeBuffer,
         void *extraArguments) {
 
 
@@ -46,10 +46,10 @@ static inline __device__ void randomSingleGeneric(
 template <typename T, typename OpClass>
 static inline __device__ void randomDoubleGeneric(
         Nd4jPointer state,
-        void *x,
-        Nd4jLong *xShapeBuffer,
+        void const* x,
+        Nd4jLong const* xShapeBuffer,
         void *z,
-        Nd4jLong *zShapeBuffer,
+        Nd4jLong const* zShapeBuffer,
         void *extraArguments) {
 
 
@@ -66,12 +66,12 @@ static inline __device__ void randomDoubleGeneric(
 template <typename T, typename OpClass>
 static inline __device__ void randomTripleGeneric(
         Nd4jPointer state,
-        void *x,
-        Nd4jLong *xShapeBuffer,
-        void *y,
-        Nd4jLong *yShapeBuffer,
+        void const* x,
+        Nd4jLong const* xShapeBuffer,
+        void const* y,
+        Nd4jLong const* yShapeBuffer,
         void *z,
-        Nd4jLong *zShapeBuffer,
+        Nd4jLong const* zShapeBuffer,
         void *extraArguments) {
 
 
@@ -89,20 +89,20 @@ static inline __device__ void randomTripleGeneric(
 
 #ifndef __CLION_IDE__
 // here we generate kernels for target operations
-DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float, INPUT(Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, double, INPUT(Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float16, INPUT(Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, bfloat16, INPUT(Nd4jPointer state, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float, INPUT(Nd4jPointer state, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, double, INPUT(Nd4jPointer state, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, float16, INPUT(Nd4jPointer state, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomSingle_, randomSingleGeneric, bfloat16, INPUT(Nd4jPointer state, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, double, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float16, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, bfloat16, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float, INPUT(Nd4jPointer state, void const* x, Nd4jLong const* xShapeBuffer, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, double, INPUT(Nd4jPointer state, void const* x, Nd4jLong const* xShapeBuffer, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, float16, INPUT(Nd4jPointer state, void const* x, Nd4jLong const* xShapeBuffer, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomDouble_, randomDoubleGeneric, bfloat16, INPUT(Nd4jPointer state, void const* x, Nd4jLong const* xShapeBuffer, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
-DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, double, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float16, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
-DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, bfloat16, INPUT(Nd4jPointer state, void *x, Nd4jLong *xShapeBuffer, void *y, Nd4jLong *yShapeBuffer, void *z, Nd4jLong *zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float, INPUT(Nd4jPointer state, void const* x, Nd4jLong const* xShapeBuffer, void const* y, Nd4jLong const* yShapeBuffer, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, double, INPUT(Nd4jPointer state, void const* x, Nd4jLong const* xShapeBuffer, void const* y, Nd4jLong const* yShapeBuffer, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, float16, INPUT(Nd4jPointer state, void const* x, Nd4jLong const* xShapeBuffer, void const* y, Nd4jLong const* yShapeBuffer, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
+DISPATCH_KERNEL_SIMPLE(randomTriple_, randomTripleGeneric, bfloat16, INPUT(Nd4jPointer state, void const* x, Nd4jLong const* xShapeBuffer, void const* y, Nd4jLong const* yShapeBuffer, void *z, Nd4jLong const* zShapeBuffer, void *extraArguments), PARAMS(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments), OPS_A(RANDOM_OPS))
 
 #endif
 
@@ -110,10 +110,10 @@ namespace functions {
     namespace random {
             template<typename T>
             template<typename OpClass>
-            void _CUDA_D RandomFunction<T>::execTransformCuda(Nd4jPointer state, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+            void _CUDA_D RandomFunction<T>::execTransformCuda(Nd4jPointer state, void const* vx, Nd4jLong const* xShapeBuffer, void const* vy, Nd4jLong const* yShapeBuffer, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-                auto x = reinterpret_cast<T*>(vx);
-                auto y = reinterpret_cast<T*>(vy);
+                auto x = reinterpret_cast<T const*>(vx);
+                auto y = reinterpret_cast<T const*>(vy);
                 auto z = reinterpret_cast<T*>(vz);
                 auto extraArguments = reinterpret_cast<T*>(vextraArguments);
 
@@ -180,9 +180,9 @@ namespace functions {
 
             template<typename T>
             template<typename OpClass>
-            void _CUDA_D RandomFunction<T>::execTransformCuda(Nd4jPointer state, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+            void _CUDA_D RandomFunction<T>::execTransformCuda(Nd4jPointer state, void const* vx, Nd4jLong const* xShapeBuffer, void* vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-                auto x = reinterpret_cast<T*>(vx);
+                auto x = reinterpret_cast<T const*>(vx);
                 auto z = reinterpret_cast<T*>(vz);
                 auto extraArguments = reinterpret_cast<T*>(vextraArguments);
 
@@ -238,7 +238,7 @@ namespace functions {
 
             template<typename T>
             template<typename OpClass>
-            void _CUDA_D RandomFunction<T>::execTransformCuda(Nd4jPointer state, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+            void _CUDA_D RandomFunction<T>::execTransformCuda(Nd4jPointer state, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
                 auto z = reinterpret_cast<T*>(vz);
                 auto extraArguments = reinterpret_cast<T*>(vextraArguments);
@@ -283,7 +283,7 @@ namespace functions {
             }
 
         template <>
-        _CUDA_H void RandomFunction<float>::executeCudaSingle(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<float>::executeCudaSingle(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
             auto z = reinterpret_cast<float*>(vz);
             auto extraArguments = reinterpret_cast<float*>(vextraArguments);
@@ -295,7 +295,7 @@ namespace functions {
         }
 
         template <>
-        _CUDA_H void RandomFunction<float16>::executeCudaSingle(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<float16>::executeCudaSingle(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
             auto z = reinterpret_cast<float16*>(vz);
             auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
@@ -307,7 +307,7 @@ namespace functions {
         }
 
         template <>
-        _CUDA_H void RandomFunction<bfloat16>::executeCudaSingle(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<bfloat16>::executeCudaSingle(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
             auto z = reinterpret_cast<bfloat16*>(vz);
             auto extraArguments = reinterpret_cast<bfloat16*>(vextraArguments);
@@ -319,7 +319,7 @@ namespace functions {
         }
 
         template <>
-        _CUDA_H void RandomFunction<double>::executeCudaSingle(dim3& launchDims, cudaStream_t *stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<double>::executeCudaSingle(dim3& launchDims, cudaStream_t *stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
             auto z = reinterpret_cast<double*>(vz);
             auto extraArguments = reinterpret_cast<double*>(vextraArguments);
@@ -331,9 +331,9 @@ namespace functions {
         }
 
         template <>
-        _CUDA_H void RandomFunction<float>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<float>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void const* vx, Nd4jLong const* xShapeBuffer, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-            auto x = reinterpret_cast<float*>(vx);
+            auto x = reinterpret_cast<float const*>(vx);
             auto z = reinterpret_cast<float*>(vz);
             auto extraArguments = reinterpret_cast<float*>(vextraArguments);
 
@@ -345,9 +345,9 @@ namespace functions {
 
 
         template <>
-        _CUDA_H void RandomFunction<float16>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<float16>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void const* vx, Nd4jLong const* xShapeBuffer, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-            auto x = reinterpret_cast<float16*>(vx);
+            auto x = reinterpret_cast<float16 const*>(vx);
             auto z = reinterpret_cast<float16*>(vz);
             auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
 
@@ -358,9 +358,9 @@ namespace functions {
         }
 
         template <>
-        _CUDA_H void RandomFunction<bfloat16>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<bfloat16>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void const* vx, Nd4jLong const* xShapeBuffer, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-            auto x = reinterpret_cast<bfloat16*>(vx);
+            auto x = reinterpret_cast<bfloat16 const*>(vx);
             auto z = reinterpret_cast<bfloat16*>(vz);
             auto extraArguments = reinterpret_cast<bfloat16*>(vextraArguments);
 
@@ -371,9 +371,9 @@ namespace functions {
         }
 
         template <>
-        _CUDA_H void RandomFunction<double>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<double>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void const* vx, Nd4jLong const* xShapeBuffer, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-            auto x = reinterpret_cast<double*>(vx);
+            auto x = reinterpret_cast<double const*>(vx);
             auto z = reinterpret_cast<double*>(vz);
             auto extraArguments = reinterpret_cast<double*>(vextraArguments);
 
@@ -384,11 +384,10 @@ namespace functions {
         }
 
         template <>
-        _CUDA_H void RandomFunction<float>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<float>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void const* vx, Nd4jLong const* xShapeBuffer, void const* vy, Nd4jLong const* yShapeBuffer, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-
-            auto x = reinterpret_cast<float*>(vx);
-            auto y = reinterpret_cast<float*>(vy);
+            auto x = reinterpret_cast<float const*>(vx);
+            auto y = reinterpret_cast<float const*>(vy);
             auto z = reinterpret_cast<float*>(vz);
             auto extraArguments = reinterpret_cast<float*>(vextraArguments);
 
@@ -399,10 +398,10 @@ namespace functions {
         }
 
         template <>
-        _CUDA_H void RandomFunction<float16>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<float16>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void const* vx, Nd4jLong const* xShapeBuffer, void const* vy, Nd4jLong const* yShapeBuffer, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-            auto x = reinterpret_cast<float16*>(vx);
-            auto y = reinterpret_cast<float16*>(vy);
+            auto x = reinterpret_cast<float16 const*>(vx);
+            auto y = reinterpret_cast<float16 const*>(vy);
             auto z = reinterpret_cast<float16*>(vz);
             auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
 
@@ -413,10 +412,10 @@ namespace functions {
         }
 
         template <>
-        _CUDA_H void RandomFunction<bfloat16>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<bfloat16>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void const* vx, Nd4jLong const* xShapeBuffer, void const* vy, Nd4jLong const* yShapeBuffer, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-            auto x = reinterpret_cast<bfloat16*>(vx);
-            auto y = reinterpret_cast<bfloat16*>(vy);
+            auto x = reinterpret_cast<bfloat16 const*>(vx);
+            auto y = reinterpret_cast<bfloat16 const*>(vy);
             auto z = reinterpret_cast<bfloat16*>(vz);
             auto extraArguments = reinterpret_cast<bfloat16*>(vextraArguments);
 
@@ -429,10 +428,10 @@ namespace functions {
 
 
         template <>
-        _CUDA_H void RandomFunction<double>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
+        _CUDA_H void RandomFunction<double>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void const* vx, Nd4jLong const* xShapeBuffer, void const* vy, Nd4jLong const* yShapeBuffer, void *vz, Nd4jLong const* zShapeBuffer, void *vextraArguments) {
 
-            auto x = reinterpret_cast<double*>(vx);
-            auto y = reinterpret_cast<double*>(vy);
+            auto x = reinterpret_cast<double const*>(vx);
+            auto y = reinterpret_cast<double const*>(vy);
             auto z = reinterpret_cast<double*>(vz);
             auto extraArguments = reinterpret_cast<double*>(vextraArguments);
 

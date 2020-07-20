@@ -19,10 +19,10 @@ package org.deeplearning4j.text.treeparser;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.recursive.Tree;
-import org.deeplearning4j.text.corpora.treeparser.BinarizeTreeTransformer;
-import org.deeplearning4j.text.corpora.treeparser.CollapseUnaries;
-import org.deeplearning4j.text.corpora.treeparser.TreeParser;
-import org.deeplearning4j.text.corpora.treeparser.transformer.TreeTransformer;
+import org.deeplearning4j.nlp.uima.corpora.treeparser.BinarizeTreeTransformer;
+import org.deeplearning4j.nlp.uima.corpora.treeparser.CollapseUnaries;
+import org.deeplearning4j.nlp.uima.corpora.treeparser.TreeParser;
+import org.deeplearning4j.nlp.uima.corpora.treeparser.transformer.TreeTransformer;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;

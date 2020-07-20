@@ -39,9 +39,9 @@ void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& outp
     const T* y = diagonal.bufferAsT<T>();
           T* z = output.bufferAsT<T>();
 
-    const Nd4jLong* xShapeInfo = input.getShapeInfo();
-    const Nd4jLong* yShapeInfo = diagonal.getShapeInfo();
-    const Nd4jLong* zShapeInfo = output.getShapeInfo();
+    const Nd4jLong* xShapeInfo = input.shapeInfo();
+    const Nd4jLong* yShapeInfo = diagonal.shapeInfo();
+    const Nd4jLong* zShapeInfo = output.shapeInfo();
 
     const bool areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);    // shapes are definitely the same, but strides might not
 

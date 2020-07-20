@@ -26,16 +26,14 @@ import io.vertx.ext.web.RoutingContext;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageEvent;
-import org.deeplearning4j.api.storage.StatsStorageListener;
-import org.deeplearning4j.config.DL4JSystemProperties;
+import org.deeplearning4j.core.storage.Persistable;
+import org.deeplearning4j.core.storage.StatsStorage;
+import org.deeplearning4j.core.storage.StatsStorageEvent;
+import org.deeplearning4j.core.storage.StatsStorageListener;
+import org.deeplearning4j.common.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -43,6 +41,7 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
+import org.deeplearning4j.ui.VertxUIServer;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.I18N;
 import org.deeplearning4j.ui.api.Route;
@@ -50,17 +49,16 @@ import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.i18n.DefaultI18N;
 import org.deeplearning4j.ui.i18n.I18NProvider;
 import org.deeplearning4j.ui.i18n.I18NResource;
-import org.deeplearning4j.ui.stats.StatsListener;
-import org.deeplearning4j.ui.stats.api.Histogram;
-import org.deeplearning4j.ui.stats.api.StatsInitializationReport;
-import org.deeplearning4j.ui.stats.api.StatsReport;
-import org.deeplearning4j.ui.stats.api.StatsType;
-import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.function.Supplier;
+import org.deeplearning4j.ui.model.stats.StatsListener;
+import org.deeplearning4j.ui.model.stats.api.Histogram;
+import org.deeplearning4j.ui.model.stats.api.StatsInitializationReport;
+import org.deeplearning4j.ui.model.stats.api.StatsReport;
+import org.deeplearning4j.ui.model.stats.api.StatsType;
+import org.nd4j.common.function.Function;
 import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.primitives.Triple;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.File;
@@ -86,8 +84,6 @@ public class TrainModule implements UIModule {
     private static final DecimalFormat df2 = new DecimalFormat("#.00");
     private static DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-    private final Supplier<String> addressSupplier;
-
     private enum ModelType {
         MLN, CG, Layer
     }
@@ -99,29 +95,14 @@ public class TrainModule implements UIModule {
     private Map<String, AtomicInteger> workerIdxCount = new ConcurrentHashMap<>(); //Key: session ID
     private Map<String, Map<Integer, String>> workerIdxToName = new ConcurrentHashMap<>(); //Key: session ID
     private Map<String, Long> lastUpdateForSession = new ConcurrentHashMap<>();
-    private final boolean multiSession;
-    @Getter @Setter
-    private Function<String, Boolean> sessionLoader;
 
 
     private final Configuration configuration;
 
-    public TrainModule() {
-        this(false, null, null);
-    }
-
     /**
      * TrainModule
-     *
-     * @param multiSession    multi-session mode
-     * @param sessionLoader   StatsStorage loader to call if an unknown session ID is passed as URL path parameter
-     *                        in multi-session mode
-     * @param addressSupplier supplier for server address (server address in PlayUIServer gets initialized after modules)
      */
-    public TrainModule(boolean multiSession, Function<String, Boolean> sessionLoader, Supplier<String> addressSupplier) {
-        this.multiSession = multiSession;
-        this.sessionLoader = sessionLoader;
-        this.addressSupplier = addressSupplier;
+    public TrainModule() {
         String maxChartPointsProp = System.getProperty(DL4JSystemProperties.CHART_MAX_POINTS_PROPERTY);
         int value = DEFAULT_MAX_CHART_POINTS;
         if (maxChartPointsProp != null) {
@@ -137,7 +118,7 @@ public class TrainModule implements UIModule {
             maxChartPoints = DEFAULT_MAX_CHART_POINTS;
         }
 
-        configuration = new Configuration(new Version(2, 3, 29));
+        configuration = new Configuration(new Version(2, 3, 23));
         configuration.setDefaultEncoding("UTF-8");
         configuration.setLocale(Locale.US);
         configuration.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
@@ -159,8 +140,9 @@ public class TrainModule implements UIModule {
     @Override
     public List<Route> getRoutes() {
         List<Route> r = new ArrayList<>();
-        r.add(new Route("/train/multisession", HttpMethod.GET, (path, rc) -> rc.response().end(multiSession ? "true" : "false")));
-        if (multiSession) {
+        r.add(new Route("/train/multisession", HttpMethod.GET,
+                (path, rc) -> rc.response().end(VertxUIServer.getInstance().isMultiSession() ? "true" : "false")));
+        if (VertxUIServer.getInstance().isMultiSession()) {
             r.add(new Route("/train", HttpMethod.GET, (path, rc) -> this.listSessions(rc)));
             r.add(new Route("/train/:sessionId", HttpMethod.GET, (path, rc) -> {
                 rc.response()
@@ -199,6 +181,7 @@ public class TrainModule implements UIModule {
                 }
             }));
             r.add(new Route("/train/:sessionId/info", HttpMethod.GET, (path, rc) -> this.sessionInfoForSession(path.get(0), rc)));
+            r.add(new Route("/train/:sessionId/system/data", HttpMethod.GET, (path, rc) -> this.getSystemDataForSession(path.get(0), rc)));
         } else {
             r.add(new Route("/train", HttpMethod.GET, (path, rc) -> rc.reroute("/train/overview")));
             r.add(new Route("/train/sessions/current", HttpMethod.GET, (path, rc) -> rc.response().end(currentSessionID == null ? "" : currentSessionID)));
@@ -226,7 +209,9 @@ public class TrainModule implements UIModule {
      * @param rc   Routing context
      */
     private void renderFtl(String file, RoutingContext rc) {
-        Map<String, String> input = DefaultI18N.getInstance().getMessages(DefaultI18N.getInstance().getDefaultLanguage());
+        String sessionId = rc.request().getParam("sessionID");
+        String langCode = DefaultI18N.getInstance(sessionId).getDefaultLanguage();
+        Map<String, String> input = DefaultI18N.getInstance().getMessages(langCode);
         String html;
         try {
             String content = FileUtils.readFileToString(Resources.asFile("templates/" + file), StandardCharsets.UTF_8);
@@ -261,7 +246,9 @@ public class TrainModule implements UIModule {
         if (!knownSessionIDs.isEmpty()) {
             sb.append("        <ul>");
             for (String sessionId : knownSessionIDs.keySet()) {
-                sb.append("            <li><a href=\"train/").append(sessionId).append("\">").append(sessionId).append("</a></li>\n");
+                sb.append("            <li><a href=\"/train/")
+                        .append(sessionId).append("\">")
+                        .append(sessionId).append("</a></li>\n");
             }
             sb.append("        </ul>");
         } else {
@@ -281,9 +268,11 @@ public class TrainModule implements UIModule {
      *
      * @param sessionId  session ID to look fo with provider
      * @param targetPath one of overview / model / system, or null
+     * @param rc routing context
      */
     private void sessionNotFound(String sessionId, String targetPath, RoutingContext rc) {
-        if (sessionLoader != null && sessionLoader.apply(sessionId)) {
+        Function<String, Boolean> loader = VertxUIServer.getInstance().getStatsStorageLoader();
+        if (loader != null && loader.apply(sessionId)) {
             if (targetPath != null) {
                 rc.reroute(targetPath);
             } else {
@@ -303,9 +292,9 @@ public class TrainModule implements UIModule {
                         && StatsListener.TYPE_ID.equals(sse.getTypeID())
                         && !knownSessionIDs.containsKey(sse.getSessionID())) {
                     knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
-                    if (multiSession) {
+                    if (VertxUIServer.getInstance().isMultiSession()) {
                         log.info("Adding training session {}/train/{} of StatsStorage instance {}",
-                                addressSupplier.get(), sse.getSessionID(), sse.getStatsStorage());
+                                VertxUIServer.getInstance().getAddress(), sse.getSessionID(), sse.getStatsStorage());
                     }
                 }
 
@@ -329,9 +318,9 @@ public class TrainModule implements UIModule {
                 if (!StatsListener.TYPE_ID.equals(typeID))
                     continue;
                 knownSessionIDs.put(sessionID, statsStorage);
-                if (multiSession) {
+                if (VertxUIServer.getInstance().isMultiSession()) {
                     log.info("Adding training session {}/train/{} of StatsStorage instance {}",
-                            addressSupplier.get(), sessionID, statsStorage);
+                            VertxUIServer.getInstance().getAddress(), sessionID, statsStorage);
                 }
 
                 List<Persistable> latestUpdates = statsStorage.getLatestUpdateAllWorkers(sessionID, typeID);
@@ -361,9 +350,9 @@ public class TrainModule implements UIModule {
         }
         for (String s : toRemove) {
             knownSessionIDs.remove(s);
-            if (multiSession) {
+            if (VertxUIServer.getInstance().isMultiSession()) {
                 log.info("Removing training session {}/train/{} of StatsStorage instance {}.",
-                        addressSupplier.get(), s, statsStorage);
+                        VertxUIServer.getInstance().getAddress(), s, statsStorage);
             }
             lastUpdateForSession.remove(s);
         }
@@ -599,13 +588,13 @@ public class TrainModule implements UIModule {
     }
 
     /**
-     * Get global {@link I18N} instance if {@link #multiSession} is {@code true}, or instance for session
+     * Get global {@link I18N} instance if {@link VertxUIServer#isMultiSession()} is {@code true}, or instance for session
      *
      * @param sessionId session ID
      * @return {@link I18N} instance
      */
     private I18N getI18N(String sessionId) {
-        return multiSession ? I18NProvider.getInstance(sessionId) : I18NProvider.getInstance();
+        return VertxUIServer.getInstance().isMultiSession() ? I18NProvider.getInstance(sessionId) : I18NProvider.getInstance();
     }
 
 
@@ -926,7 +915,7 @@ public class TrainModule implements UIModule {
                         NeuralNetConfiguration.mapper().readValue(config, NeuralNetConfiguration.class);
                 return new Triple<>(null, null, layer);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         }
         return null;

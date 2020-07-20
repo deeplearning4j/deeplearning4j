@@ -23,7 +23,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.Relu6;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.Relu6Derivative;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 /**
  * f(x) = min(max(input, cutoff), 6)

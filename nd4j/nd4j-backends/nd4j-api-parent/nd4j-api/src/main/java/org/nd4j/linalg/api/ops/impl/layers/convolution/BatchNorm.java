@@ -25,7 +25,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -73,6 +73,19 @@ public class BatchNorm extends DynamicCustomOp {
         if(outputArrays != null) {
             addOutputArgument(outputArrays);
         }
+        addArgs();
+    }
+
+    public BatchNorm(SameDiff sameDiff, SDVariable input, SDVariable mean, SDVariable variance,
+                     SDVariable gamma, SDVariable beta, double epsilon, int[] axis) {
+        super(null,sameDiff, wrapFilterNull(input, mean, variance, gamma, beta), false);
+        Preconditions.checkState(axis != null && axis.length > 0, "Invalid axis argument: axis must be specified" +
+                "and length > 0. Got %s", axis);
+        this.sameDiff = sameDiff;
+        this.applyBeta = beta != null;
+        this.applyGamma = gamma != null;
+        this.epsilon = epsilon;
+        this.jaxis = axis;
         addArgs();
     }
 

@@ -70,7 +70,7 @@ public class RnnOpValidation extends BaseOpValidation {
         LSTMWeights weights = LSTMWeights.builder().weights(W).bias(b)
                 .inputPeepholeWeights(Wci).forgetPeepholeWeights(Wcf).outputPeepholeWeights(Wco).build();
 
-        LSTMCellOutputs v = sd.rnn().lstmCell(x, cLast, yLast, weights, conf);  //Output order: i, c, f, o, z, h, y
+        LSTMCellOutputs v = new LSTMCellOutputs(sd.rnn().lstmCell(x, cLast, yLast, weights, conf));  //Output order: i, c, f, o, z, h, y
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v.getAllOutputs()){
             toExec.add(sdv.name());
@@ -173,7 +173,7 @@ public class RnnOpValidation extends BaseOpValidation {
         LSTMWeights weights = LSTMWeights.builder().weights(W).bias(b)
                 .inputPeepholeWeights(Wci).forgetPeepholeWeights(Wcf).outputPeepholeWeights(Wco).build();
 
-        LSTMCellOutputs v = sd.rnn().lstmCell(x, cLast, yLast, weights, conf);  //Output order: i, c, f, o, z, h, y
+        LSTMCellOutputs v = new LSTMCellOutputs(sd.rnn().lstmCell(x, cLast, yLast, weights, conf));  //Output order: i, c, f, o, z, h, y
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v.getAllOutputs()){
             toExec.add(sdv.name());
@@ -227,7 +227,7 @@ public class RnnOpValidation extends BaseOpValidation {
                 .cBias(bc)
                 .build();
 
-        List<SDVariable> v = sd.rnn().gru("gru", x, hLast, weights).getAllOutputs();
+        SDVariable[] v = sd.rnn().gruCell(x, hLast, weights);
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v){
             toExec.add(sdv.name());

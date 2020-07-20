@@ -54,9 +54,9 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.resources.Resources;
 
 import java.io.*;
 import java.util.*;
@@ -493,7 +493,7 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
                 out.println();
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         return new Pair<>(dArr,temp);

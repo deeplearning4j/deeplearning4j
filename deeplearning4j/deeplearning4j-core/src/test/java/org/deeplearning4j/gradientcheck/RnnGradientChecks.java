@@ -52,6 +52,11 @@ public class RnnGradientChecks extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     @Ignore("AB 2019/06/24 - Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testBidirectionalWrapper() {
@@ -333,7 +338,7 @@ public class RnnGradientChecks extends BaseDL4JTest {
                         .weightInit(WeightInit.XAVIER)
                         .list()
                         .layer(new LSTM.Builder().nOut(layerSize).build())
-                        .layer(new TimeDistributed(new DenseLayer.Builder().nOut(layerSize).activation(Activation.SOFTMAX).build(), 2))
+                        .layer(new TimeDistributed(new DenseLayer.Builder().nOut(layerSize).activation(Activation.SOFTMAX).build()))
                         .layer(new RnnOutputLayer.Builder().nOut(nOut).activation(Activation.SOFTMAX)
                                 .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .setInputType(InputType.recurrent(nIn))

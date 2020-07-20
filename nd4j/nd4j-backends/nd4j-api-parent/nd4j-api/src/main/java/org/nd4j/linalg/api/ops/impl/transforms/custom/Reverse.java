@@ -16,22 +16,23 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.shape.bp.MergeAvgBp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 public class Reverse extends DynamicCustomOp {
 
-    public Reverse(SameDiff sameDiff, SDVariable i_v, int... dimensions) {
-        super(null, sameDiff, new SDVariable[]{i_v}, false);
+    public Reverse(@NonNull SameDiff sameDiff, @NonNull SDVariable i_v, @NonNull int... dimensions) {
+        super(sameDiff, new SDVariable[]{i_v});
         this.dimensions = dimensions;
         addIArgument(dimensions);
     }
@@ -56,6 +57,7 @@ public class Reverse extends DynamicCustomOp {
     public Reverse(INDArray x, int... axis){
         super(new INDArray[]{x}, new INDArray[0]);
         this.inPlace = false;
+        this.dimensions = axis;
         addIArgument(axis);
     }
 
@@ -67,6 +69,7 @@ public class Reverse extends DynamicCustomOp {
     public Reverse(INDArray x, INDArray z, int... axis){
         super(new INDArray[]{x}, new INDArray[] {z});
         this.inPlace = false;
+        this.dimensions = axis;
         addIArgument(axis);
     }
 
@@ -100,8 +103,7 @@ public class Reverse extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable ret = f().reverse(f1.get(0), dimensions);
-        return Arrays.asList(ret);
+        return new ReverseBp(sameDiff, arg(0), f1.get(0), dimensions).outputs();
     }
 
     @Override

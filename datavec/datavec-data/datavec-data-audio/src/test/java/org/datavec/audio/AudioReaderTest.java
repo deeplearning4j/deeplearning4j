@@ -24,6 +24,7 @@ import org.datavec.api.writable.Writable;
 import org.datavec.audio.recordreader.NativeAudioRecordReader;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.File;
 import java.nio.ShortBuffer;
@@ -36,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author saudet
  */
-public class AudioReaderTest {
+public class AudioReaderTest extends BaseND4JTest {
     @Ignore
     @Test
     public void testNativeAudioReader() throws Exception {

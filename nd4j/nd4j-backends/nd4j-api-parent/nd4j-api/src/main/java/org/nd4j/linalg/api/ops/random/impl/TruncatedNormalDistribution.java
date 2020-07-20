@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.random.impl;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -43,6 +43,13 @@ public class TruncatedNormalDistribution extends BaseRandomOp {
     }
 
     public TruncatedNormalDistribution(SameDiff sd, double mean, double stddev, long[] shape){
+        super(sd, shape);
+        this.mean = mean;
+        this.stddev = stddev;
+        this.extraArgs = new Object[] {this.mean, this.stddev};
+    }
+
+    public TruncatedNormalDistribution(SameDiff sd, double mean, double stddev, DataType dataType, long[] shape) {
         super(sd, shape);
         this.mean = mean;
         this.stddev = stddev;

@@ -17,6 +17,7 @@
 package org.nd4j.linalg.shape.indexing;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ErrorCollector;
@@ -188,6 +189,24 @@ public class IndexingTestsC extends BaseNd4jTest {
         assertArrayEquals(last10b.shape(), new long[] {10});
         for (int i = 0; i < 10; i++)
             assertTrue(last10b.getDouble(i) == 20 + i);
+    }
+
+    @Test
+    public void test1dSubarray_1() {
+        val data = Nd4j.linspace(DataType.FLOAT,0, 10, 1);
+        val exp = Nd4j.createFromArray(new float[]{3.f, 4.f});
+        val dataAtIndex = data.get(NDArrayIndex.interval(3, 5));
+
+        assertEquals(exp, dataAtIndex);
+    }
+
+    @Test
+    public void test1dSubarray_2() {
+        val data = Nd4j.linspace(DataType.FLOAT,1, 10, 1);
+        val exp = Nd4j.createFromArray(new float[]{4.f, 6.f});
+        val dataAtIndex = data.get(Nd4j.createFromArray(new int[]{3, 5}));
+
+        assertEquals(exp, dataAtIndex);
     }
 
     @Test

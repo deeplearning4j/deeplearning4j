@@ -18,6 +18,7 @@ package org.datavec.api.transform.ops;
 
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +30,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by huitseeker on 5/14/17.
  */
-public class DispatchOpTest {
+public class DispatchOpTest extends BaseND4JTest {
 
     private List<Integer> intList = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));
     private List<String> stringList = new ArrayList<>(Arrays.asList("arakoa", "abracadabra", "blast", "acceptance"));

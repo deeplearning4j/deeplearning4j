@@ -19,12 +19,11 @@ package org.nd4j.linalg.api.ops.impl.loss;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.ops.impl.loss.bp.SoftmaxCrossEntropyWithLogitsLossBp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -73,8 +72,6 @@ public class SoftmaxCrossEntropyWithLogitsLoss extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //No external gradient
         //Args: logits, weigths, label
-        SDVariable[] args = args();
-        SDVariable[] grads = f().lossSoftmaxCrossEntropyWithLogitsBp(arg(0), arg(1), classesDim);
-        return Arrays.asList(grads);
+        return new SoftmaxCrossEntropyWithLogitsLossBp(sameDiff, arg(0), arg(1), classesDim).outputs();
     }
 }

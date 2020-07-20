@@ -25,6 +25,7 @@
 #include <ops/declarable/headers/boolean.h>
 #include <ops/declarable/headers/broadcastable.h>
 #include <ops/declarable/headers/convo.h>
+#include <ops/declarable/headers/compression.h>
 #include <ops/declarable/headers/list.h>
 #include <ops/declarable/headers/recurrent.h>
 #include <ops/declarable/headers/transforms.h>

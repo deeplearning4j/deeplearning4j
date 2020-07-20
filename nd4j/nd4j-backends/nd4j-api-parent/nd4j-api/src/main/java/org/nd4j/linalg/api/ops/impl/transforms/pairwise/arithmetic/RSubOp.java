@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RSubBpOp;
 
 import java.util.List;
 
@@ -45,8 +46,16 @@ public class RSubOp extends BaseDynamicTransformOp {
         this(sameDiff, new SDVariable[]{i_v1, i_v2}, inPlace);
     }
 
+    public RSubOp(INDArray first, INDArray second){
+        this(first, second, null);
+    }
+
     public RSubOp(INDArray first, INDArray second, INDArray result){
-        this(new INDArray[]{first, second}, result == null ? null : new INDArray[]{result});
+        this(new INDArray[]{first, second}, wrapOrNull(result));
+    }
+
+    public RSubOp( INDArray[] inputs, INDArray[] outputs) {
+        super(inputs, outputs);
     }
 
     public RSubOp() {}
@@ -61,13 +70,9 @@ public class RSubOp extends BaseDynamicTransformOp {
         throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
     }
 
-    public RSubOp( INDArray[] inputs, INDArray[] outputs) {
-        super(inputs, outputs);
-    }
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return f().rsubBp(larg(), rarg(), i_v.get(0));
+        return new RSubBpOp(sameDiff, larg(), rarg(), i_v.get(0)).outputs();
     }
 
 }

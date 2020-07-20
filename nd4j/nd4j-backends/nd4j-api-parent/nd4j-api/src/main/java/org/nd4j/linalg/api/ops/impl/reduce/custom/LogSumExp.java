@@ -18,10 +18,11 @@ package org.nd4j.linalg.api.ops.impl.reduce.custom;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
 
 import java.util.Collections;
 import java.util.List;
@@ -43,6 +44,10 @@ public class LogSumExp extends DynamicCustomOp {
         }
         addTArgument(keepDims ? 1.0 : 0.0);
         this.keepDims = keepDims;
+    }
+
+    public LogSumExp(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
+        this(sameDiff, i_v, false, dimensions);
     }
 
     public LogSumExp() {}
@@ -78,10 +83,10 @@ public class LogSumExp extends DynamicCustomOp {
         //z = log(sum_i exp(x_i)) = log(s)
         //dL/dx = dL/dz * dz/ds * ds/dx
         //dz/ds = 1/s
-        SDVariable exp = f().exp(arg());
+        SDVariable exp = sameDiff.math.exp(arg());
         SDVariable sumExp = exp.sum(dimensions);
         SDVariable gradProd = f1.get(0).div(sumExp);
-        SDVariable dSumExpdx = f().sumBp(arg(), gradProd, keepDims, dimensions).mul(exp);
+        SDVariable dSumExpdx = new SumBp(sameDiff, arg(), gradProd, keepDims, dimensions).outputVariable().mul(exp);
         return Collections.singletonList(dSumExpdx);
     }
 

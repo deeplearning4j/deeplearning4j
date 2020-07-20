@@ -201,8 +201,8 @@ void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* varianc
 
 	// std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input->rankOf(), axes);
 
-	// auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimsToExclude);
- //    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->shapeInfo(), dimsToExclude);
+	// auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimsToExclude);
+ //    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimsToExclude);
 
  //    const int threadsPerBlock = MAX_NUM_THREADS / 2;
  //    const int blocksPerGrid = (mean->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
@@ -210,7 +210,7 @@ void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* varianc
  //    PointersManager manager(input->getContext(), "batchnorm");
 
  //    NDArray::prepareSpecialUse({output}, {input, mean, variance, gamma, beta});
- //    BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher, (blocksPerGrid, threadsPerBlock, input->getContext()->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), mean->getSpecialBuffer(), mean->getSpecialShapeInfo(), variance->getSpecialBuffer(), variance->getSpecialShapeInfo(), gamma ? gamma->getSpecialBuffer() : nullptr, gamma ? gamma->getSpecialShapeInfo() : nullptr, beta ? beta->getSpecialBuffer() : nullptr, beta ? beta->getSpecialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets(), epsilon), FLOAT_TYPES);
+ //    BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher, (blocksPerGrid, threadsPerBlock, input->getContext()->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), mean->specialBuffer(), mean->specialShapeInfo(), variance->specialBuffer(), variance->specialShapeInfo(), gamma ? gamma->specialBuffer() : nullptr, gamma ? gamma->specialShapeInfo() : nullptr, beta ? beta->specialBuffer() : nullptr, beta ? beta->specialShapeInfo() : nullptr, output->specialBuffer(), output->special(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platform(), packZ.platform(), epsilon), FLOAT_TYPES);
  //    NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
 
  //    manager.synchronize();
@@ -224,7 +224,7 @@ void batchnorm(const NDArray* input, const NDArray* mean, const NDArray* varianc
     const int* dims = reinterpret_cast<int*>(manager.replicatePointer(axes.data(), axes.size() * sizeof(int)));
 
     NDArray::prepareSpecialUse({output}, {input, mean, variance, gamma, beta});
-    BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher2, (blocksPerGrid, threadsPerBlock, input->getContext()->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), mean->getSpecialBuffer(), mean->getSpecialShapeInfo(), variance->getSpecialBuffer(), variance->getSpecialShapeInfo(), gamma ? gamma->getSpecialBuffer() : nullptr, gamma ? gamma->getSpecialShapeInfo() : nullptr, beta ? beta->getSpecialBuffer() : nullptr, beta ? beta->getSpecialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), axes.size(), dims, epsilon), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(input->dataType(), batchnormCudaLauncher2, (blocksPerGrid, threadsPerBlock, input->getContext()->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), mean->specialBuffer(), mean->specialShapeInfo(), variance->specialBuffer(), variance->specialShapeInfo(), gamma ? gamma->specialBuffer() : nullptr, gamma ? gamma->specialShapeInfo() : nullptr, beta ? beta->specialBuffer() : nullptr, beta ? beta->specialShapeInfo() : nullptr, output->specialBuffer(), output->specialShapeInfo(), axes.size(), dims, epsilon), FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {input, mean, variance, gamma, beta});
 
     manager.synchronize();

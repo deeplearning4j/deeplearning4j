@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.writable.Writable;
 import org.datavec.local.transforms.LocalTransformExecutor;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.Function;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -17,6 +17,7 @@
 package org.datavec.audio.fingerprint;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.audio.Wave;
 import org.datavec.audio.WaveHeader;
 import org.datavec.audio.dsp.Resampler;
@@ -38,6 +39,7 @@ import java.util.List;
  * @author jacquet
  *
  */
+@Slf4j
 public class FingerprintManager {
 
     private FingerprintProperties fingerprintProperties = FingerprintProperties.getInstance();
@@ -153,7 +155,7 @@ public class FingerprintManager {
             fingerprint = getFingerprintFromInputStream(fis);
             fis.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return fingerprint;
     }
@@ -170,7 +172,7 @@ public class FingerprintManager {
             fingerprint = new byte[inputStream.available()];
             inputStream.read(fingerprint);
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         return fingerprint;
     }
@@ -190,7 +192,7 @@ public class FingerprintManager {
             fileOutputStream.write(fingerprint);
             fileOutputStream.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 

@@ -19,8 +19,8 @@ package org.datavec.api.split;
 import lombok.Data;
 import lombok.NonNull;
 import org.datavec.api.util.files.ShuffledListIterator;
-import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.util.MathUtils;
+import org.nd4j.common.function.Function;
+import org.nd4j.common.util.MathUtils;
 
 import java.io.InputStream;
 import java.io.OutputStream;

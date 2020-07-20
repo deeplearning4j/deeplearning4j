@@ -69,8 +69,8 @@ linkage void rgbToYuvCudaLauncher(const int blocksPerGrid, const int threadsPerB
 ///////////////////////////////////////////////////////////////////
 void transformRgbYuv(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), { dimC });
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), { dimC });
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), { dimC });
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), { dimC });
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -80,7 +80,7 @@ void transformRgbYuv(sd::LaunchContext* context, const NDArray& input, NDArray& 
     PointersManager manager(context, "yuv_to_rgb");
 
     NDArray::prepareSpecialUse({ &output }, { &input });
-    BUILD_SINGLE_SELECTOR(input.dataType(), rgbToYuvCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), packX.platformOffsets(), output.specialBuffer(), output.specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), rgbToYuvCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), packX.platformOffsets(), output.specialBuffer(), output.specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
     NDArray::registerSpecialUse({ &output }, { &input });
 
     manager.synchronize();
@@ -124,8 +124,8 @@ linkage void yuvToRgbCudaLauncher(const int blocksPerGrid, const int threadsPerB
 ///////////////////////////////////////////////////////////////////
 void transformYuvRgb(sd::LaunchContext* context, const NDArray& input, NDArray& output, const int dimC) {
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), { dimC });
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), { dimC });
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), { dimC });
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), { dimC });
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -135,7 +135,7 @@ void transformYuvRgb(sd::LaunchContext* context, const NDArray& input, NDArray& 
     PointersManager manager(context, "yuv_to_rgb");
 
     NDArray::prepareSpecialUse({ &output }, { &input });
-    BUILD_SINGLE_SELECTOR(input.dataType(), yuvToRgbCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), packX.platformOffsets(), output.specialBuffer(), output.specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), yuvToRgbCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), packX.platformOffsets(), output.specialBuffer(), output.specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
     NDArray::registerSpecialUse({ &output }, { &input });
 
     manager.synchronize();
@@ -200,7 +200,7 @@ void transformRgbGrs(sd::LaunchContext* context, const NDArray& input, NDArray& 
     const int sharedMem = input.rankOf() * sizeof(int) * threadsPerBlock + 128;
 
 	NDArray::prepareSpecialUse({&output}, {&input});
-	BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrsCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), dimC), NUMERIC_TYPES);
+	BUILD_SINGLE_SELECTOR(input.dataType(), rgbToGrsCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), dimC), NUMERIC_TYPES);
 	NDArray::registerSpecialUse({&output}, {&input});
 
 	manager.synchronize();
@@ -287,8 +287,8 @@ static _CUDA_H void rgbToHsvCudaLauncher(const int blocksPerGrid, const int thre
 ///////////////////////////////////////////////////////////////////
 void transformHsvRgb(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
 
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),  {dimC});
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -298,7 +298,7 @@ void transformHsvRgb(sd::LaunchContext* context, const NDArray* input, NDArray* 
     PointersManager manager(context, "hsv_to_rgb");
 
     NDArray::prepareSpecialUse({output}, {input});
-    BUILD_SINGLE_SELECTOR(input->dataType(), hsvToRgbCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(input->dataType(), hsvToRgbCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {input});
 
     manager.synchronize();
@@ -306,8 +306,8 @@ void transformHsvRgb(sd::LaunchContext* context, const NDArray* input, NDArray* 
 
 ///////////////////////////////////////////////////////////////////
 void transformRgbHsv(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(),  {dimC});
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), {dimC});
 
     const Nd4jLong numOfTads = packX.numberOfTads();
 
@@ -317,7 +317,7 @@ void transformRgbHsv(sd::LaunchContext* context, const NDArray* input, NDArray* 
     PointersManager manager(context, "rgb_to_hsv");
 
     NDArray::prepareSpecialUse({output}, {input});
-    BUILD_SINGLE_SELECTOR(input->dataType(), rgbToHsvCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR(input->dataType(), rgbToHsvCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->specialBuffer(), input->specialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, dimC), FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {input});
 
     manager.synchronize();
@@ -389,21 +389,21 @@ __global__ void tripleTransformerCuda(const void *vx, const Nd4jLong *xShapeInfo
 
 template <typename T>
 static void rgbYiq(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
     NDArray::prepareSpecialUse({output}, {input});
-    return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformShapeInfo(), packZ.platformOffsets(), dimC, 1, packZ.numberOfTads());
+    return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(input->specialBuffer(), input->specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformShapeInfo(), packZ.platformOffsets(), dimC, 1, packZ.numberOfTads());
     NDArray::registerSpecialUse({output}, {input});
 }
 
 template <typename T>
 FORCEINLINE static void yiqRgb(sd::LaunchContext* context, const NDArray* input, NDArray* output, const int dimC) {
-    auto packX = sd::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), dimC);
-    auto packZ = sd::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
+    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), dimC);
+    auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), dimC);
 
     NDArray::prepareSpecialUse({output}, {input});
-    return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformShapeInfo(), packZ.platformOffsets(), dimC, 2, packZ.numberOfTads());
+    return tripleTransformerCuda<T><<<256, 256, 8192, *context->getCudaStream()>>>(input->specialBuffer(), input->specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformShapeInfo(), packZ.platformOffsets(), dimC, 2, packZ.numberOfTads());
     NDArray::registerSpecialUse({output}, {input});
 }
 

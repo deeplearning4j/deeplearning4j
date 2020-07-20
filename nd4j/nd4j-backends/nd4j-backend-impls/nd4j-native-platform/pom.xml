@@ -69,6 +69,8 @@
             <version>${project.version}</version>
             <classifier>${javacpp.platform.android-x86_64}</classifier>
         </dependency>
+        <!--
+        iOS support removed for 1.0.0-beta7 release, to be restored at a later date
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
@@ -81,6 +83,7 @@
             <version>${project.version}</version>
             <classifier>${javacpp.platform.ios-x86_64}</classifier>
         </dependency>
+        -->
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>

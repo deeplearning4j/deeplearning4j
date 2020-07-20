@@ -17,6 +17,7 @@
 package org.deeplearning4j.text.tokenization.tokenizer.preprocessor;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nlp.uima.tokenization.tokenizer.preprocessor.StemmingPreprocessor;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

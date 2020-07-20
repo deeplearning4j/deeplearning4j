@@ -22,6 +22,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.jcublas.buffer.JCudaBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Wraps the allocation
@@ -29,6 +30,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
  * @author bam4d
  *
  */
+@Slf4j
 public class CublasPointer implements AutoCloseable {
 
     /**
@@ -166,7 +168,7 @@ public class CublasPointer implements AutoCloseable {
             try {
                 pointer.close();
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         }
     }

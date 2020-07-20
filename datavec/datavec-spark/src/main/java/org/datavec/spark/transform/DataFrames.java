@@ -26,7 +26,7 @@ import org.apache.spark.sql.types.DataTypes;
 import org.apache.spark.sql.types.Metadata;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 import org.datavec.spark.transform.sparkfunction.SequenceToRows;

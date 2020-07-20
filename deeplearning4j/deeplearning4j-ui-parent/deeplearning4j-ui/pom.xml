@@ -44,11 +44,6 @@
             <artifactId>deeplearning4j-nlp</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jackson</artifactId>
-            <version>${nd4j.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>junit</groupId>

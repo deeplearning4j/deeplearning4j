@@ -18,8 +18,10 @@ package org.deeplearning4j.parallelism;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.api.storage.StatsStorageRouter;
-import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.core.storage.StatsStorageRouter;
+import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
+import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.DummyBlockDataSetIterator;
@@ -43,15 +45,13 @@ import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
 import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.parallelism.trainer.Trainer;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
-import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.Supplier;
+import org.nd4j.common.function.Supplier;
 
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -690,6 +690,7 @@ public class ParallelWrapper implements AutoCloseable {
         protected Supplier<INDArray> updaterParamsSupplier;
         protected ThresholdAlgorithm thresholdAlgorithm;
         protected ResidualPostProcessor residualPostProcessor;
+        protected Long encoderMemory = -1L;
 
         protected GradientsAccumulator accumulator;
 
@@ -828,7 +829,7 @@ public class ParallelWrapper implements AutoCloseable {
         /**
          *  This method allows you to specify training mode for this instance of PW.<br>
          *  1) AVERAGING - stands for parameters averaging. Each X epochs weights and updaters state will be averaged across all models<br>
-         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: <a href="https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-intro">https://deeplearning4j.org/docs/latest/deeplearning4j-scaleout-intro</a><br>
+         *  2) SHARED_GRADIENTS - stands for gradients sharing - more details available here: <a href="https://deeplearning4j.konduit.ai/distributed-deep-learning/intro">https://deeplearning4j.konduit.ai/distributed-deep-learning/intro</a><br>
          *  3) CUSTOM - this method allows you to specify custom gradients accumulator, this giving you better control of configuration params for training.<br>
          *
          * @param mode
@@ -875,6 +876,19 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         /**
+         * This method allows to define amount of temporary memory that will be used for gradients sharing.
+         * Typically it's safe to keep default value.
+         *
+         * Default value: -1, amount of temporary memory will be calculated automatically
+         * @param numBytes number of bytes to be used
+         * @return
+         */
+        public Builder temporaryMemory(@NonNull Long numBytes) {
+            this.encoderMemory = numBytes;
+            return this;
+        }
+
+        /**
          * Set the residual post processor algorithm. Not used for single machine training (only for PW used in a
          * distributed setting), and should not be set by users in most cases.
          * @param residualPostProcessor Residual post processor to use
@@ -909,11 +923,23 @@ public class ParallelWrapper implements AutoCloseable {
                 }
                     break;
                 case SHARED_GRADIENTS: {
-                    Preconditions.checkState(thresholdAlgorithm != null, "Cannot use SHARED_GRADIENTS training mode without setting a threshold algorithm");
+                    if (thresholdAlgorithm == null)
+                        thresholdAlgorithm = new AdaptiveThresholdAlgorithm();
+
                     this.trainerContext = new SymmetricTrainerContext();
                     if (this.accumulator == null) {
-                        log.info("Creating new GradientsAccumulator instance with threshold of [5e-4");
-                        this.accumulator = new EncodedGradientsAccumulator(workers, thresholdAlgorithm, residualPostProcessor,  false);
+                        log.info("Creating new GradientsAccumulator instance with default threshold of [5e-4]");
+                        val numParams = model.numParams();
+
+                        // we're limiting max size of updates for Sparse encoding to the size of bitmap encoded message
+                        val maxUpdate = (int) (numParams / 16 + 5);
+
+                        // memory sie in number of bytes
+                        long memorySize = encoderMemory == null || encoderMemory < 0
+                                            ? maxUpdate * 4 * (workers + 3)
+                                            : encoderMemory;
+
+                        this.accumulator = new EncodedGradientsAccumulator(workers, new EncodingHandler(thresholdAlgorithm, residualPostProcessor, maxUpdate, false), memorySize, workers + 2, Integer.MAX_VALUE, false);
                     }
                 }
                     break;

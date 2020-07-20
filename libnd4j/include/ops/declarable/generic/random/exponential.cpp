@@ -27,29 +27,8 @@
 namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(random_exponential, 1, 1, true, 1, 0) {
-            // uniform distribution
+            // random generator for distribution
             auto rng = block.randomGenerator();
-
-            // FIXME: to be implemented
-            /*
-            if (rng == nullptr)
-                return Status::THROW("RNG is null, aborting...");
-
-            auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
-
-            if (block.width() == 1)
-                functions::random::RandomFunction<T>::template execTransform<randomOps::ExponentialDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
-            else {
-                auto y = INPUT_VARIABLE(1);
-                REQUIRE_TRUE(y->isSameShape(z), 0, "ExponentialDistribution: Y shape should be equal to Z shape");
-
-                functions::random::RandomFunction<T>::template execTransform<randomOps::ExponentialDistribution<T>>(block.getRNG(), y->getBuffer(), y->getShapeInfo(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
-            }
-
-            STORE_RESULT(*z);
-*/
-
             auto z = OUTPUT_VARIABLE(0);
             auto lambda = T_ARG(0);
 
@@ -63,7 +42,7 @@ namespace sd {
             auto in = INPUT_VARIABLE(0);
             auto shape = in->template asVectorT<Nd4jLong>();
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(block.dataType(), 'c', shape);
             return SHAPELIST(newShape);
         }
 

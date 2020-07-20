@@ -34,11 +34,15 @@ import org.nd4j.linalg.api.ops.impl.image.CropAndResize;
 import org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression;
 import org.nd4j.linalg.api.ops.impl.image.ResizeArea;
 import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.shape.Create;
+import org.nd4j.linalg.api.ops.impl.shape.Linspace;
 import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
 import org.nd4j.linalg.api.ops.impl.shape.SequenceMask;
+import org.nd4j.linalg.api.ops.impl.transforms.Cholesky;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Qr;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
@@ -843,22 +847,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertArrayEquals(new long[]{256, 256, 3}, lsd.get(0).getShape());
     }
 
-    @Test
-    public void testAdjustContrastV2() {
-        INDArray in = Nd4j.linspace(DataType.DOUBLE,1.0,1.0, 4*4*3).reshape(4,4,3);
-        INDArray out = Nd4j.createUninitialized(4,4,3);
-
-        INDArray expected = Nd4j.createFromArray(new double[]{-21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
-                2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
-                26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
-                50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
-        }).reshape(4,4,3);
-
-        Nd4j.exec(new AdjustContrastV2(in, 2.0, out));
-
-        assertArrayEquals(out.shape(), in.shape());
-        assertEquals(expected, out);
-    }
 
     @Ignore("AS 11/13/2019 https://github.com/eclipse/deeplearning4j/issues/8374")
     @Test
@@ -1774,5 +1762,126 @@ public class CustomOpsTests extends BaseNd4jTest {
 
         INDArray[] ret = Nd4j.exec(new SequenceMask(arr, maxlen, DataType.INT32));
         assertEquals(expected, ret[0]);
+    }
+
+    @Test
+    public void testCholesky() {
+        INDArray x = Nd4j.createFromArray(new double[] {4,12,-16, 12 ,37,-43, -16, -43, 98}).reshape(3,3);
+        INDArray exp = Nd4j.createFromArray(new double[] {2.,  0.,  0., 6., 1.,  0., -8.,  5.,  3.}).reshape(3,3);
+
+        INDArray[] res = Nd4j.exec(new Cholesky(x));
+        assertEquals(res[0], exp);
+    }
+
+    @Test
+    public void testQr() {
+        INDArray in = Nd4j.createFromArray(new double[]{
+                12.,  -51.,    4.,        6.,   167.,  -68.,       -4.,    24.,  -41.,       -1.,     1.,    0.,        2.,     0.,    3.
+        }).reshape(5,3);
+        Qr op = new Qr(in);
+        INDArray[] ret = Nd4j.exec(op);
+        INDArray res = Nd4j.createUninitialized(in.shape());
+        DynamicCustomOp matmul = DynamicCustomOp.builder("matmul")
+                .addInputs(ret[0], ret[1])
+                .build();
+        ret = Nd4j.exec(matmul);
+        assertEquals(ret[0], in);
+    }
+
+
+    @Test
+    public void testLinspaceSignature_1() throws Exception {
+        val array1 = Nd4j.exec(new Linspace(DataType.FLOAT, Nd4j.scalar(1.0f), Nd4j.scalar(10.f), Nd4j.scalar(10L)))[0];
+        val array2 = Nd4j.exec(new Linspace(DataType.FLOAT, 1.0f, 10.f, 10L))[0];
+
+        assertEquals(array1.dataType(), array2.dataType());
+        assertEquals(array1, array2);
+    }
+
+    @Test
+    public void testLogdet() {
+        INDArray x = Nd4j.createFromArray(new double[]{
+                4,12,-16,12,37,-43,-16,-43,98, 4,1.2,-1.6,1.2,3.7,-4.3,-1.6,-4.3,9.8
+        }).reshape(2,3,3);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{3.5835189, 4.159008});
+        INDArray[] ret = Nd4j.exec(new Logdet(x));
+        assertEquals(ret[0], expected);
+
+    }
+
+    @Test
+    public void testBatchNormBpNHWC(){
+        //Nd4j.getEnvironment().allowHelpers(false);        //Passes if helpers/MKLDNN is disabled
+
+        INDArray in = Nd4j.rand(DataType.FLOAT, 2, 4, 4, 3);
+        INDArray eps = Nd4j.rand(DataType.FLOAT, in.shape());
+        INDArray epsStrided = eps.permute(1,0,2,3).dup().permute(1,0,2,3);
+        INDArray mean = Nd4j.rand(DataType.FLOAT, 3);
+        INDArray var = Nd4j.rand(DataType.FLOAT, 3);
+        INDArray gamma = Nd4j.rand(DataType.FLOAT, 3);
+        INDArray beta = Nd4j.rand(DataType.FLOAT, 3);
+
+        assertEquals(eps, epsStrided);
+
+        INDArray out1eps = in.like();
+        INDArray out1m = mean.like();
+        INDArray out1v = var.like();
+
+        INDArray out2eps = in.like();
+        INDArray out2m = mean.like();
+        INDArray out2v = var.like();
+
+        DynamicCustomOp op1 = DynamicCustomOp.builder("batchnorm_bp")
+                .addInputs(in, mean, var, gamma, beta, eps)
+                .addOutputs(out1eps, out1m, out1v)
+                .addIntegerArguments(1, 1, 3)
+                .addFloatingPointArguments(1e-5)
+                .build();
+
+        DynamicCustomOp op2 = DynamicCustomOp.builder("batchnorm_bp")
+                .addInputs(in, mean, var, gamma, beta, epsStrided)
+                .addOutputs(out2eps, out2m, out2v)
+                .addIntegerArguments(1, 1, 3)
+                .addFloatingPointArguments(1e-5)
+                .build();
+
+        Nd4j.exec(op1);
+        Nd4j.exec(op2);
+
+        assertEquals(out1eps, out2eps);        //Fails here
+        assertEquals(out1m, out2m);
+        assertEquals(out1v, out2v);
+    }
+
+    @Test
+    public void testSpaceToDepthBadStrides(){
+        INDArray in = Nd4j.rand(DataType.FLOAT, 2, 3, 6, 6);
+        INDArray inBadStrides = in.permute(1,0,2,3).dup().permute(1,0,2,3);
+        assertEquals(in, inBadStrides);
+
+        System.out.println("in: " + in.shapeInfoToString());
+        System.out.println("inBadStrides: " + inBadStrides.shapeInfoToString());
+
+
+        INDArray out = Nd4j.create(DataType.FLOAT, 2, 12, 3, 3);
+        INDArray out2 = out.like();
+
+
+        CustomOp op1 = DynamicCustomOp.builder("space_to_depth")
+                .addInputs(in)
+                .addIntegerArguments(2, 0)       //nchw = 0, nhwc = 1
+                .addOutputs(out)
+                .build();
+        Nd4j.exec(op1);
+
+        CustomOp op2 = DynamicCustomOp.builder("space_to_depth")
+                .addInputs(inBadStrides)
+                .addIntegerArguments(2, 0)       //nchw = 0, nhwc = 1
+                .addOutputs(out2)
+                .build();
+        Nd4j.exec(op2);
+
+        assertEquals(out, out2);
     }
 }

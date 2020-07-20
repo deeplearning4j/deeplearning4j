@@ -21,8 +21,8 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.util.DefaultHadoopConfig;
 import org.datavec.spark.util.SerializableHadoopConfig;
-import org.nd4j.api.loader.Source;
-import org.nd4j.api.loader.SourceFactory;
+import org.nd4j.common.loader.Source;
+import org.nd4j.common.loader.SourceFactory;
 
 import java.io.IOException;
 import java.net.URI;

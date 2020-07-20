@@ -49,7 +49,7 @@ void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray*>&
 
 //////////////////////////////////////////////////////////////////////////
 bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, const OpArgsHolder& argsHolderFF, const OpArgsHolder& argsHolderBP,
-	                      const std::vector<bool>& whatArrsToCheck, const std::vector<double>& idxRange, const LossFunc loss ) {
+	                      const std::vector<bool>& whatArrsToCheck, const std::vector<double>& idxRange, const LossFunc loss) {
 
 	const int numInArrsFF     = argsHolderFF.getNumInArrs();						// at the same time numInArrsFF = number of output arrays in opBP
 	const int numInGradArrsBP = argsHolderBP.getNumInArrs() - numInArrsFF;  		// because argsHolderBP.getNumInArrs() = numInArrsFF + numInGradArrsBP
@@ -120,7 +120,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 				throw std::runtime_error("");
 			}
 
-			// printf("num = %.5f, ana = %.5f\n", numericalGrad, analyticGrad);
+			// printf("%lld: num = %.15f, ana = %.15f\n", j, numericalGrad, analyticGrad);
 
 			// calculate relative error
 			double relError;
@@ -134,7 +134,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 
             	if(math::nd4j_abs<double>(analyticGrad - numericalGrad) < MINABSERR)
             		continue;
-            	printf("numericalGrad = %f,  analyticGrad = %f \n", numericalGrad, analyticGrad);
+            	printf("numericalGrad = %.15f,  analyticGrad = %.15f \n", numericalGrad, analyticGrad);
             	printf("GradCheck::checkGrad: got RELERROR = %f > MAXRELERROR(%f) for input array # %i and its element at position %lld ! \n", relError, MAXRELERR, i, j);
             	return false;
             }

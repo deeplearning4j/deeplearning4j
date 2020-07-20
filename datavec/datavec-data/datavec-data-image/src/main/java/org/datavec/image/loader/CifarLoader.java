@@ -16,11 +16,12 @@
 
 package org.datavec.image.loader;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ColorConversionTransform;
 import org.datavec.image.transform.EqualizeHistTransform;
@@ -35,7 +36,7 @@ import java.nio.ByteBuffer;
 import java.util.*;
 
 import org.bytedeco.opencv.opencv_core.*;
-import org.bytedeco.opencv.opencv_imgproc.*;
+
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
@@ -47,6 +48,7 @@ import static org.bytedeco.opencv.global.opencv_imgproc.*;
  * There is a special preProcessor used to normalize the dataset based on Sergey Zagoruyko example
  * <a href="https://github.com/szagoruyko/cifar.torch">https://github.com/szagoruyko/cifar.torch</a>
  */
+@Slf4j
 public class CifarLoader extends NativeImageLoader implements Serializable {
     public static final int NUM_TRAIN_IMAGES = 50000;
     public static final int NUM_TEST_IMAGES = 10000;
@@ -186,7 +188,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                 labels.add(line);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
     }
 
@@ -300,7 +302,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             try {
                 FileUtils.write(meanVarPath, uMean + "," + uStd + "," + vMean + "," + vStd);
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
             meanStdStored = true;
         } else if (uMean == 0 && meanStdStored) {
@@ -312,7 +314,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                 vStd = Double.parseDouble(values[3]);
 
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("",e);
             }
         }
         for (int i = 0; i < result.numExamples(); i++) {
@@ -356,12 +358,12 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
                     dataSets.add(new DataSet(asMatrix(matConversion.getSecond()), matConversion.getFirst()));
                     batchNumCount++;
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                     break;
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("",e);
         }
 
         if(dataSets.size() == 0){

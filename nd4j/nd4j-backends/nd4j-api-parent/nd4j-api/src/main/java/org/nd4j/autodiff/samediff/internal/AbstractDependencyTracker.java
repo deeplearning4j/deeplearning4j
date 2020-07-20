@@ -3,9 +3,9 @@ package org.nd4j.autodiff.samediff.internal;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.function.Predicate;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.function.Predicate;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
@@ -154,11 +154,9 @@ public abstract class AbstractDependencyTracker<T, D> {
                         }
                     }
 
-                    if (allSatisfied) {
-                        if (!this.allSatisfied.contains(t)) {
-                            this.allSatisfied.add(t);
-                            this.allSatisfiedQueue.add(t);
-                        }
+                    if (allSatisfied && !this.allSatisfied.contains(t)) {
+                        this.allSatisfied.add(t);
+                        this.allSatisfiedQueue.add(t);
                     }
                 }
             }
@@ -278,25 +276,25 @@ public abstract class AbstractDependencyTracker<T, D> {
     protected boolean isAllSatisfied(@NonNull T y) {
         Set<D> set1 = dependencies.get(y);
 
-        boolean allSatisfied = true;
+        boolean retVal = true;
         if (set1 != null) {
             for (D d : set1) {
-                allSatisfied = isSatisfied(d);
-                if (!allSatisfied)
+                retVal = isSatisfied(d);
+                if (!retVal)
                     break;
             }
         }
-        if (allSatisfied) {
+        if (retVal) {
             Set<Pair<D, D>> set2 = orDependencies.get(y);
             if (set2 != null) {
                 for (Pair<D, D> p : set2) {
-                    allSatisfied = isSatisfied(p.getFirst()) || isSatisfied(p.getSecond());
-                    if (!allSatisfied)
+                    retVal = isSatisfied(p.getFirst()) || isSatisfied(p.getSecond());
+                    if (!retVal)
                         break;
                 }
             }
         }
-        return allSatisfied;
+        return retVal;
     }
 
 

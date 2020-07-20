@@ -45,18 +45,18 @@ namespace sd {
         DECLARE_TYPES(max_pool_with_argmax) {
             getOpDescriptor()
                     ->setAllowedInputTypes(sd::DataType::ANY)
-                    ->setAllowedOutputTypes(0, DataType::INHERIT)
-                    ->setAllowedOutputTypes(1, {ALL_INTS});
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedOutputTypes(1, {ALL_INDICES});
 
         }
 
         DECLARE_SHAPE_FN(max_pool_with_argmax) {
+          auto in = inputShape->at(0);
+          auto dtype = block.numD() ? D_ARG(0) : sd::DataType::INT64;
+          auto valuesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in));
+          auto indicesShape = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(in, dtype));
             
-            auto in = inputShape->at(0);
-            auto valuesShape = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(in));
-            auto indicesShape = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(in, DataType::INT64));
-            
-            return SHAPELIST(valuesShape, indicesShape);
+          return SHAPELIST(valuesShape, indicesShape);
         }
     }
 }

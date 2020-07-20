@@ -48,7 +48,7 @@ namespace sd {
             return Status::OK();
         }
         DECLARE_SHAPE_FN(zero_fraction) {
-            return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(sd::DataType::DOUBLE));
+            return SHAPELIST(ConstantShapeHelper::getInstance().scalarShapeInfo(sd::DataType::DOUBLE));
         }
 
         DECLARE_TYPES(zero_fraction) {

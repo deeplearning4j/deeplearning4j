@@ -173,7 +173,7 @@ namespace functions {
 
             DISPATCH_SIMPLE(transformShaped, float16, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 
-            if (sd::Environment::getInstance()->isDebug())
+            if (sd::Environment::getInstance().isDebug())
 		        checkCudaErrors(cudaStreamSynchronize(*stream));
         }
 

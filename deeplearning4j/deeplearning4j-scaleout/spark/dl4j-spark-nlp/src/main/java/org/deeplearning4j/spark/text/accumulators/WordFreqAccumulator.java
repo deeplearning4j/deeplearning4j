@@ -17,7 +17,7 @@
 package org.deeplearning4j.spark.text.accumulators;
 
 import org.apache.spark.AccumulatorParam;
-import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.common.primitives.Counter;
 
 /**
  * @author jeffreytang

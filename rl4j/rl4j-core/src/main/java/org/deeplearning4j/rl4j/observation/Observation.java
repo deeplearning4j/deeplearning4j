@@ -17,6 +17,7 @@
 package org.deeplearning4j.rl4j.observation;
 
 import lombok.Getter;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -24,7 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Alexandre Boulanger
  */
-public class Observation {
+public class Observation implements Encodable {
 
     /**
      * A singleton representing a skipped observation
@@ -36,6 +37,11 @@ public class Observation {
      */
     @Getter
     private final INDArray data;
+
+    @Override
+    public double[] toArray() {
+        return data.data().asDouble();
+    }
 
     public boolean isSkipped() {
         return data == null;

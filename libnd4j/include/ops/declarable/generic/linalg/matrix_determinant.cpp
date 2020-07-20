@@ -38,17 +38,17 @@ namespace sd {
         DECLARE_SHAPE_FN(matrix_determinant) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong* determinantShape;
+            Nd4jLong const* determinantShape;
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
+                determinantShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
             else if (targetRank == 1) { // vector
-                determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
+                determinantShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded
-                determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
+                determinantShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
         }
@@ -85,17 +85,17 @@ namespace sd {
         DECLARE_SHAPE_FN(log_matrix_determinant) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong* determinantShape;
+            Nd4jLong const* determinantShape;
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
+                determinantShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
             else if (targetRank == 1) { // vector
-                determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
+                determinantShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded
-                determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
+                determinantShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
         }
@@ -126,17 +126,17 @@ namespace sd {
         DECLARE_SHAPE_FN(logdet) {
             auto inShape = inputShape->at(0);
 
-            Nd4jLong* determinantShape;
+            Nd4jLong const* determinantShape;
             int targetRank = shape::rank(inShape) - 2; // last two dimensions will be reduced to scalar
 
             if (targetRank == 0) { // scalar only
-                determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
+                determinantShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
             else if (targetRank == 1) { // vector
-                determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
+                determinantShape = ConstantShapeHelper::getInstance().vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded
-                determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
+                determinantShape = ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
         }

@@ -20,15 +20,15 @@ package org.deeplearning4j.ui.module.convolutional;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.api.storage.Persistable;
-import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.api.storage.StatsStorageEvent;
-import org.deeplearning4j.api.storage.StatsStorageListener;
+import org.deeplearning4j.core.storage.Persistable;
+import org.deeplearning4j.core.storage.StatsStorage;
+import org.deeplearning4j.core.storage.StatsStorageEvent;
+import org.deeplearning4j.core.storage.StatsStorageListener;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.i18n.I18NResource;
-import org.deeplearning4j.ui.weights.ConvolutionListenerPersistable;
+import org.deeplearning4j.ui.model.weights.ConvolutionListenerPersistable;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -105,22 +105,22 @@ public class ConvolutionalListenerModule implements UIModule {
                 BufferedImage bi = clp.getImg();
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 try {
-                    ImageIO.write(bi, "jpg", baos);
+                    ImageIO.write(bi, "png", baos);
                 } catch (IOException e) {
                     log.warn("Error displaying image", e);
                 }
 
                 rc.response()
-                        .putHeader("content-type", "image/jpg")
+                        .putHeader("content-type", "image/png")
                         .end(Buffer.buffer(baos.toByteArray()));
             } else {
                 rc.response()
-                        .putHeader("content-type", "image/jpg")
+                        .putHeader("content-type", "image/png")
                         .end(Buffer.buffer(new byte[0]));
             }
         } else {
             rc.response()
-                    .putHeader("content-type", "image/jpg")
+                    .putHeader("content-type", "image/png")
                     .end(Buffer.buffer(new byte[0]));
         }
     }

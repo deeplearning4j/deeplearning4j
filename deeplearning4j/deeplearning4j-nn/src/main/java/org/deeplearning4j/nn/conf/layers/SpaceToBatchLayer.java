@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -26,6 +27,7 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.ValidationUtils;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -65,12 +67,14 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
     protected int[] blocks;
     protected int[][] padding;
+    protected CNN2DFormat format = CNN2DFormat.NCHW;
 
 
     protected SpaceToBatchLayer(Builder builder) {
         super(builder);
         this.blocks = builder.blocks;
         this.padding = builder.padding;
+        this.format = builder.format;
     }
 
     @Override
@@ -112,7 +116,7 @@ public class SpaceToBatchLayer extends NoParamLayer {
         }
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
         return InputType.convolutional((i.getHeight() + padding[0][0] + padding[0][1]) / blocks[0],
-                        (i.getWidth() + padding[1][0] + padding[1][1]) / blocks[1], i.getChannels());
+                        (i.getWidth() + padding[1][0] + padding[1][1]) / blocks[1], i.getChannels(), i.getFormat());
     }
 
     @Override
@@ -123,7 +127,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        //No op: space to batch layer doesn't have nIn value
+        Preconditions.checkState(inputType.getType() == InputType.Type.CNN, "Only CNN input types can be used with SpaceToBatchLayer, got %s", inputType);
+        this.format = ((InputType.InputTypeConvolutional)inputType).getFormat();
     }
 
     @Override
@@ -158,6 +163,8 @@ public class SpaceToBatchLayer extends NoParamLayer {
          */
         protected int[][] padding;
 
+        protected CNN2DFormat format = CNN2DFormat.NCHW;
+
         /**
          * @param blocks Block size for SpaceToBatch layer. Should be a length 2 array for the height and width
          * dimensions
@@ -191,6 +198,17 @@ public class SpaceToBatchLayer extends NoParamLayer {
         public Builder(int[] blocks, int[][] padding) {
             this.setBlocks(blocks);
             this.setPadding(padding);
+        }
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public T dataFormat(CNN2DFormat format){
+            this.format = format;
+            return (T)this;
         }
 
         /**

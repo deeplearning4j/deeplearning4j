@@ -23,8 +23,8 @@
 #include<ops/declarable/helpers/transforms.h>
 #include<array>
 
-namespace sd {
-namespace ops  {
+namespace sd  {
+namespace ops {
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -85,6 +85,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
 
     // ******** input validation ******** //
     REQUIRE_TRUE(allOfSameType, 0, "CONCAT op: all of input arrays must have same type !");
+    REQUIRE_TRUE(nonEmptyArrs[0]->dataType() == OUTPUT_VARIABLE(0)->dataType(), 0, "CONCAT op: output array should have the same type as inputs arrays !");
     REQUIRE_TRUE(0 <= axis && (axis < rank || (axis == 0 && rank == 0)), 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
     for(int i = 1; i < numOfNonEmptyArrs; ++i)
@@ -132,16 +133,16 @@ DECLARE_SHAPE_FN(concat) {
 
     // first of all take into account possible presence of empty arrays
     // also if scalar is present -> use the shape of vector with length=1 instead
-    std::vector<Nd4jLong*> arrShapes;
+    ShapeList arrShapes;
     std::vector<int> shapesToDelete;
     int index = 0;
     for(int i = 0; i < numOfInArrs; ++i) {
 
         if(inputShape->at(i)[0] == 0) {
             if (shape::isEmpty(inputShape->at(i)))
-                arrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, INPUT_VARIABLE(0)->dataType()));
+                arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(0, INPUT_VARIABLE(0)->dataType()));
             else
-                arrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
+                arrShapes.push_back(ConstantShapeHelper::getInstance().vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
         }
         else{
             arrShapes.push_back(inputShape->at(i));
@@ -151,7 +152,7 @@ DECLARE_SHAPE_FN(concat) {
 
     const int numOfNonEmptyArrs = arrShapes.size();
 
-    const int rank = arrShapes[0][0];
+    const int rank = shape::rank(arrShapes.at(0));
 
     int axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<int>(0) : INT_ARG(0);
     if(axis < 0){
@@ -162,35 +163,35 @@ DECLARE_SHAPE_FN(concat) {
     REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
 
     for(int i = 1; i < numOfNonEmptyArrs; ++i)
-        REQUIRE_TRUE(arrShapes[i][0] == rank, 0, "CONCAT op: all input arrays must have the same rank !");
+        REQUIRE_TRUE(shape::rank(arrShapes.at(i)) == rank, 0, "CONCAT op: all input arrays must have the same rank !");
 
     for(int i = 1; i < numOfNonEmptyArrs; ++i) {
         for(int dim = 0; dim < rank; ++dim)
             if(dim != axis)
-                REQUIRE_TRUE(arrShapes[i][dim+1] == arrShapes[0][dim+1], 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
+                REQUIRE_TRUE(arrShapes.at(i)[dim+1] == arrShapes.at(0)[dim+1], 0, "CONCAT op: all input arrays must have the same dimensions (except those on input axis) !");
     }
     // ******** end of input validation ******** //
 
 
     Nd4jLong* outShapeInfo(nullptr);
-    COPY_SHAPE(arrShapes[0], outShapeInfo);
+    COPY_SHAPE(arrShapes.at(0), outShapeInfo);
 
     // case when we have only one input array
     if(numOfNonEmptyArrs == 1) {
-        ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes[0], shape::order(arrShapes[0]));
+        ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
         return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
     for(int i = 1; i < numOfNonEmptyArrs; ++i)
-        outShapeInfo[axis + 1] += arrShapes[i][axis + 1];
+        outShapeInfo[axis + 1] += arrShapes.at(i)[axis + 1];
 
-    ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes[0], shape::order(arrShapes[0]));
+    ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes.at(0), shape::order(arrShapes.at(0)));
 
     // delete dynamically allocated vectors shapes with length=1
-    for(int index : shapesToDelete)
-        RELEASE(arrShapes[index], block.getWorkspace());
+//    for(int index : shapesToDelete)
+//        RELEASE(arrShapes[index], block.getWorkspace());
 
-    auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo));
+    auto result = ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(outShapeInfo));
     RELEASE(outShapeInfo, block.getWorkspace());
     return SHAPELIST(result);
 }
@@ -237,13 +238,13 @@ DECLARE_SHAPE_FN(concat) {
         //     auto buffers = new Nd4jPointer[elements];
         //     auto shapes = new Nd4jPointer[elements];
 
-        //     buffers[0] = (Nd4jPointer) first->getBuffer();
-        //     shapes[0] = (Nd4jPointer) first->getShapeInfo();
+        //     buffers[0] = (Nd4jPointer) first->buffer();
+        //     shapes[0] = (Nd4jPointer) first->shapeInfo();
 
         //     if (_dimension < 0)
         //         _dimension += first->rankOf();
 
-        //     if (sd::Environment::getInstance()->isDebugAndVerbose()) {
+        //     if (sd::Environment::getInstance().isDebugAndVerbose()) {
         //         printf("Shape %i: ", 0);
         //         shape::printShapeInfoLinear((Nd4jLong *) shapes[0]);
         //     }
@@ -256,17 +257,17 @@ DECLARE_SHAPE_FN(concat) {
         //         if (array->isEmpty())
         //             continue;
 
-        //         buffers[er] = reinterpret_cast<Nd4jPointer>(array->getBuffer());
-        //         shapes[er++] = reinterpret_cast<Nd4jPointer>(array->getShapeInfo());
+        //         buffers[er] = reinterpret_cast<Nd4jPointer>(array->buffer());
+        //         shapes[er++] = reinterpret_cast<Nd4jPointer>(array->shapeInfo());
 
         //         oldScalars &= array->rankOf() == 2 && array->isScalar();
 
-        //         if (sd::Environment::getInstance()->isDebugAndVerbose()) {
+        //         if (sd::Environment::getInstance().isDebugAndVerbose()) {
         //             printf("Shape %i: ", e);
         //             shape::printShapeInfoLinear(array->shapeInfo());
         //         }
         //     }
-        //     if (sd::Environment::getInstance()->isDebugAndVerbose())
+        //     if (sd::Environment::getInstance().isDebugAndVerbose())
         //         fflush(stdout);
 
         //     if (oldScalars) {
@@ -274,11 +275,11 @@ DECLARE_SHAPE_FN(concat) {
         //         _dimension = 1;
         //     }
 
-        //     sd::SpecialMethods<T>::concatCpuGeneric(_dimension, elements, buffers, shapes, output->getBuffer(), output->getShapeInfo());
+        //     sd::SpecialMethods<T>::concatCpuGeneric(_dimension, elements, buffers, shapes, output->buffer(), output->shapeInfo());
 
         //     STORE_RESULT(*output);
 
-        //     if (sd::Environment::getInstance()->isDebugAndVerbose())
+        //     if (sd::Environment::getInstance().isDebugAndVerbose())
         //         output->printShapeInfo("Concat result shape");
 
         //     delete[] buffers;
@@ -427,7 +428,7 @@ DECLARE_SHAPE_FN(concat_bp) {
 
     for (int e = 0; e < numOfInArrs - 1; e++) {
         auto inShape = inputShape->at(e);
-        shapeList->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
+        shapeList->push_back(ConstantShapeHelper::getInstance().createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShape), shape::order(inShape), shape::shapeOf(inShape), shape::rank(inShape))));
     }
 
     return shapeList;

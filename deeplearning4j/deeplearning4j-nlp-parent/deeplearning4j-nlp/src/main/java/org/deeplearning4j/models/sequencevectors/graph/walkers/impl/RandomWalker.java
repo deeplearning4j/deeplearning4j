@@ -249,7 +249,7 @@ public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     public void reset(boolean shuffle) {
         this.position.set(0);
         if (shuffle) {
-            logger.debug("Calling shuffle() on entries...");
+            logger.trace("Calling shuffle() on entries...");
             // https://en.wikipedia.org/wiki/Fisher%E2%80%93Yates_shuffle#The_modern_algorithm
             for (int i = order.length - 1; i > 0; i--) {
                 int j = rng.nextInt(i + 1);

@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -26,6 +27,7 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -50,6 +52,7 @@ public class LocalResponseNormalization extends Layer {
     protected double beta = 0.75; // decay rate
     protected double alpha = 1e-4; // decay rate
     protected boolean cudnnAllowFallback = true;
+    protected CNN2DFormat dataFormat = CNN2DFormat.NCHW;
 
     private LocalResponseNormalization(Builder builder) {
         super(builder);
@@ -58,6 +61,7 @@ public class LocalResponseNormalization extends Layer {
         this.alpha = builder.alpha;
         this.beta = builder.beta;
         this.cudnnAllowFallback = builder.cudnnAllowFallback;
+        this.dataFormat = builder.dataFormat;
     }
 
     @Override
@@ -99,7 +103,8 @@ public class LocalResponseNormalization extends Layer {
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
-        //No op
+        Preconditions.checkState(inputType.getType() == InputType.Type.CNN, "Only CNN input types can be used with LocalResponseNormalisation, got %s", inputType);
+        this.dataFormat = ((InputType.InputTypeConvolutional)inputType).getFormat();
     }
 
     @Override
@@ -184,8 +189,10 @@ public class LocalResponseNormalization extends Layer {
          */
         protected boolean cudnnAllowFallback = true;
 
+        protected CNN2DFormat dataFormat = CNN2DFormat.NCHW;
+
         public Builder(double k, double n, double alpha, double beta) {
-            this(k, n, alpha, beta, true);
+            this(k, n, alpha, beta, true, CNN2DFormat.NCHW);
         }
 
         public Builder(double k, double alpha, double beta) {
@@ -260,6 +267,17 @@ public class LocalResponseNormalization extends Layer {
          */
         public Builder helperAllowFallback(boolean allowFallback) {
             this.cudnnAllowFallback = allowFallback;
+            return this;
+        }
+
+        /**
+         * Set the data format for the CNN activations - NCHW (channels first) or NHWC (channels last).
+         * See {@link CNN2DFormat} for more details.<br>
+         * Default: NCHW
+         * @param format Format for activations (in and out)
+         */
+        public Builder dataFormat(CNN2DFormat dataFormat){
+            this.dataFormat = dataFormat;
             return this;
         }
 

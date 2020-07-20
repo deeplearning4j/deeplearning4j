@@ -21,8 +21,10 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
+import org.nd4j.linalg.api.ops.impl.scalar.PowDerivative;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -33,6 +35,10 @@ import java.util.List;
 public class Square extends BaseTransformSameOp {
     public Square(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
+    }
+
+    public Square(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
     }
 
     public Square() {
@@ -68,7 +74,7 @@ public class Square extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable g = f().powDerivative(arg(), 2).mul(i_v.get(0));
-        return Arrays.asList(g);
+        SDVariable g = new PowDerivative(sameDiff, arg(), false, 2).outputVariable().mul(i_v.get(0));
+        return Collections.singletonList(g);
     }
 }

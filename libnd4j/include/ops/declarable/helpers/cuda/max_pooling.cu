@@ -27,7 +27,7 @@ namespace ops {
 namespace helpers {
 
     template <typename Z>
-    static _CUDA_G void indicesFiller(void *vz, Nd4jLong *zShapeInfo, Nd4jLong part, Nd4jLong bSize) {
+    static _CUDA_G void indicesFiller(void *vz, Nd4jLong const* zShapeInfo, Nd4jLong part, Nd4jLong bSize) {
         auto z = reinterpret_cast<Z*>(vz);
 
         for (int b = blockIdx.x; b < bSize; b += gridDim.x) {
@@ -88,7 +88,7 @@ namespace helpers {
     void maxPoolingFunctor(sd::LaunchContext * context, sd::graph::Context& block, NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
         NDArray::prepareSpecialUse({values, indices}, {input});
         auto yType = indices == nullptr ? sd::DataType::INT64 : indices->dataType();
-        BUILD_DOUBLE_SELECTOR(input->dataType(), yType,  maxPoolingFunctor_, (block, input, values, params, indices), FLOAT_TYPES, INDEXING_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), yType,  maxPoolingFunctor_, (block, input, values, params, indices), LIBND4J_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({values, indices}, {input});
     }
 

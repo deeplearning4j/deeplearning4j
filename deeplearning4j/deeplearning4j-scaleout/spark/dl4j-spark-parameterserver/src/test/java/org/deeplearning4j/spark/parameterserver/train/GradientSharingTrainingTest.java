@@ -75,7 +75,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 90000L;
+        return 180000L;
     }
 
     @Test
@@ -141,7 +141,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                 SparkComputationGraph sparkNet = new SparkComputationGraph(sc, conf, tm);
                 sparkNet.setCollectTrainingStats(tm.getIsCollectTrainingStats());
 
-                System.out.println(Arrays.toString(sparkNet.getNetwork().params().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+//                System.out.println(Arrays.toString(sparkNet.getNetwork().params().get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
                 File f = testDir.newFolder();
                 DataSetIterator iter = new MnistDataSetIterator(16, true, 12345);
                 int count = 0;
@@ -208,10 +208,10 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
                     }
 
                     INDArray paramsAfter = after.params();
-                    System.out.println(Arrays.toString(paramsBefore.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-                    System.out.println(Arrays.toString(paramsAfter.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
-                    System.out.println(Arrays.toString(
-                            Transforms.abs(paramsAfter.sub(paramsBefore)).get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+//                    System.out.println(Arrays.toString(paramsBefore.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+//                    System.out.println(Arrays.toString(paramsAfter.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
+//                    System.out.println(Arrays.toString(
+//                            Transforms.abs(paramsAfter.sub(paramsBefore)).get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 256)).dup().data().asFloat()));
                     assertNotEquals(paramsBefore, paramsAfter);
 
 
@@ -235,7 +235,7 @@ public class GradientSharingTrainingTest extends BaseSparkTest {
     }
 
 
-    @Test
+    @Test @Ignore //AB https://github.com/eclipse/deeplearning4j/issues/8985
     public void differentNetsTrainingTest() throws Exception {
         int batch = 3;
 

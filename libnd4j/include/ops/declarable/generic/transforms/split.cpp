@@ -84,17 +84,14 @@ namespace ops {
 
     DECLARE_SHAPE_FN(split) {
         int num_splits = INT_ARG(0);
-        Nd4jLong *input = nullptr;
-        sd::DataType dataType;
+        auto input = inputShape->at(0);
+        sd::DataType dataType = ArrayOptions::dataType(input);
 
         // axis is 0 by default
         int axis = 0;
 
 		int inputVar = 0;
-        if (inputShape->size() == 1) {
-            input = inputShape->at(0);
-            dataType = ArrayOptions::dataType(input);
-        } else {
+        if (inputShape->size() != 1) {
             auto shape0 = inputShape->at(0);
             auto shape1 = inputShape->at(1);
 
@@ -118,7 +115,7 @@ namespace ops {
 		//Edge case: splitting empty array (mainly for TF import compatibility) -> return N empty arrays
 		// if(INPUT_VARIABLE(inputVar)->isEmpty()){
 		// 	for (int e = 0; e < num_splits; e++) {
-  //               auto empty = ConstantShapeHelper::getInstance()->emptyShapeInfo(dataType);
+  //               auto empty = ConstantShapeHelper::getInstance().emptyShapeInfo(dataType);
 		// 		shapes->push_back(empty);
 		// 	}
 		// 	return shapes;
@@ -139,7 +136,7 @@ namespace ops {
                 shape[e] = shape::sizeAt(input, e);
 
         for (int e = 0; e < num_splits; e++) {
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dataType, shape::order(input), shape);
+            auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dataType, shape::order(input), shape);
             shapes->push_back(newShape);
         }
 

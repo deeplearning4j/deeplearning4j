@@ -20,7 +20,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -48,8 +48,16 @@ public class OnesLike extends DynamicCustomOp {
     public OnesLike() {
     }
 
+    public OnesLike(SameDiff sameDiff, SDVariable input) {
+        this(null, sameDiff, input);
+    }
+
     public OnesLike(String name, SameDiff sameDiff, SDVariable input) {
         this(name, sameDiff, input, input.dataType());
+    }
+
+    public OnesLike(SameDiff sameDiff, SDVariable input, DataType dataType) {
+        this(null, sameDiff, input, dataType);
     }
 
     public OnesLike(String name, SameDiff sameDiff, SDVariable input, DataType dataType) {

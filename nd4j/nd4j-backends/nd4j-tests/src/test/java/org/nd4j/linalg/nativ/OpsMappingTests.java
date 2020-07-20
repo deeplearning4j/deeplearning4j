@@ -29,7 +29,7 @@ import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
@@ -61,7 +61,7 @@ public class OpsMappingTests extends BaseNd4jTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 180000L;     //Can be slow on some CI machines such as PPC
+        return 360000L;     //Can be very slow on some CI machines (PPC)
     }
 
     @Test

@@ -34,7 +34,7 @@ public:
 };
 
 TEST_F(ExtraArgumentsTests, Basic_Test_1) {
-    if (!Environment::getInstance()->isCPU())
+    if (!Environment::getInstance().isCPU())
         return;
 
     ExtraArguments args({1.0, 2.0, 3.0});

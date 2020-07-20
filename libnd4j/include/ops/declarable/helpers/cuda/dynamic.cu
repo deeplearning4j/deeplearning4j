@@ -27,9 +27,9 @@ namespace sd {
 
 
             template <typename X, typename Y>
-            static _CUDA_G void dynamicPartitionScalarKernel(void *vx, Nd4jLong *xShapeInfo, void *vi, Nd4jLong *iShapeInfo, void **vz, Nd4jLong **zShapeInfos, const Nd4jLong numOutputs) {
-                auto x = reinterpret_cast<X*>(vx);
-                auto i = reinterpret_cast<Y*>(vi);
+            static _CUDA_G void dynamicPartitionScalarKernel(const void *vx, const Nd4jLong *xShapeInfo, const void *vi, const Nd4jLong *iShapeInfo, void **vz, Nd4jLong **zShapeInfos, const Nd4jLong numOutputs) {
+                auto x = reinterpret_cast<const X*>(vx);
+                auto i = reinterpret_cast<const Y*>(vi);
                 auto xLength = shape::length(xShapeInfo);
                 auto iLength = shape::length(iShapeInfo);
 
@@ -85,9 +85,9 @@ namespace sd {
             }
 
             template <typename X, typename Y>
-            static _CUDA_G void dynamicPartitionTadKernel(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, Nd4jLong xLength, void *vindices, Nd4jLong *iShapeInfo, Nd4jLong iLength, void **vz, Nd4jLong **zTadShapeInfos, Nd4jLong **zTadOffsets, Nd4jLong numOutputs) {
-                auto x = reinterpret_cast<X*>(vx);
-                auto indices = reinterpret_cast<Y*>(vindices);
+            static _CUDA_G void dynamicPartitionTadKernel(const void *vx, const Nd4jLong *xTadShapeInfo, const Nd4jLong *xTadOffsets, Nd4jLong xLength, const void *vindices, const Nd4jLong *iShapeInfo, Nd4jLong iLength, void **vz, Nd4jLong **zTadShapeInfos, Nd4jLong **zTadOffsets, Nd4jLong numOutputs) {
+                auto x = reinterpret_cast<const X*>(vx);
+                auto indices = reinterpret_cast<const Y*>(vindices);
 
                 // we run things in blocks, 1 partition per block of threads
                 for (int i = blockIdx.x; i < numOutputs; i += gridDim.x) {
@@ -124,11 +124,11 @@ namespace sd {
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
                     //compute tad array for given dimensions
-                    auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), sourceDims);
+                    auto packX = ConstantTadHelper::getInstance().tadForDimensions(input->shapeInfo(), sourceDims);
 
                     std::vector<void *> outBuffers(outSize);
-                    std::vector<Nd4jLong *> tadShapes(outSize);
-                    std::vector<Nd4jLong *> tadOffsets(outSize);
+                    std::vector<const Nd4jLong *> tadShapes(outSize);
+                    std::vector<const Nd4jLong *> tadOffsets(outSize);
                     std::vector<Nd4jLong> numTads(outSize);
                     // fill up dimensions array for before kernel
                     for (unsigned int i = 0; i < outSize; i++) {
@@ -140,9 +140,9 @@ namespace sd {
                         for (int k = 1; k < r; k++)
                             outDims[k - 1] = k;
 
-                        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(outputList.at(i)->getShapeInfo(), outDims);
+                        auto packZ = ConstantTadHelper::getInstance().tadForDimensions(outputList.at(i)->shapeInfo(), outDims);
 
-                        outBuffers[i] = outputList.at(i)->getSpecialBuffer();
+                        outBuffers[i] = outputList.at(i)->specialBuffer();
                         tadShapes[i] = packZ.platformShapeInfo();
                         tadOffsets[i] = packZ.platformOffsets();
                     }
@@ -152,24 +152,24 @@ namespace sd {
                     auto dOutTadShapes = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(tadShapes.data(), tadShapes.size() * sizeof(Nd4jLong *)));
                     auto dOutTadOffsets = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(tadOffsets.data(), tadOffsets.size() * sizeof(Nd4jLong *)));
                     // run kernel on device
-                    dynamicPartitionTadKernel<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input->getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), shape::length(packX.primaryShapeInfo()), indices->getSpecialBuffer(), indices->getSpecialShapeInfo(), indices->lengthOf(), dOutBuffers, dOutTadShapes, dOutTadOffsets, outSize);
+                    dynamicPartitionTadKernel<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input->specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), shape::length(packX.primaryShapeInfo()), indices->specialBuffer(), indices->specialShapeInfo(), indices->lengthOf(), dOutBuffers, dOutTadShapes, dOutTadOffsets, outSize);
 
                 } else { // linear case
                     auto numThreads = 256;
                     auto shmemSize = numThreads * sizeof(Y) * 2 + 1024;
 
                     std::vector<void *> outBuffers;
-                    std::vector<Nd4jLong *> outShapes;
+                    std::vector<const Nd4jLong *> outShapes;
 
                     for (auto v:outputList) {
-                        outBuffers.emplace_back(v->getSpecialBuffer());
-                        outShapes.emplace_back(v->getSpecialShapeInfo());
+                        outBuffers.emplace_back(v->specialBuffer());
+                        outShapes.emplace_back(v->specialShapeInfo());
                     }
 
                     auto dOutBuffers = reinterpret_cast<void **>(pm.replicatePointer(outBuffers.data(), outBuffers.size() * sizeof(void *)));
                     auto dOutShapes = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(outShapes.data(), outShapes.size() * sizeof(Nd4jLong *)));
 
-                    dynamicPartitionScalarKernel<X,Y><<<256, numThreads, shmemSize, *context->getCudaStream()>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), indices->getSpecialBuffer(), indices-> getSpecialShapeInfo(), dOutBuffers, dOutShapes, outSize);
+                    dynamicPartitionScalarKernel<X,Y><<<256, numThreads, shmemSize, *context->getCudaStream()>>>(input->specialBuffer(), input->specialShapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), dOutBuffers, dOutShapes, outSize);
                 }
 
                 pm.synchronize();
@@ -177,7 +177,7 @@ namespace sd {
 
 
             template <typename X, typename Y>
-            static _CUDA_G void dynamicStitchScalarKernel(void **vx, Nd4jLong **xShapeInfos, void **vindices, Nd4jLong **iShapeInfos, int inputSize, void *vz, Nd4jLong *zShapeInfo, Nd4jLong zLength) {
+            static _CUDA_G void dynamicStitchScalarKernel(void **vx, Nd4jLong **xShapeInfos, void **vindices, Nd4jLong **iShapeInfos, int inputSize, void *vz, const Nd4jLong *zShapeInfo, Nd4jLong zLength) {
                 auto z = reinterpret_cast<X*>(vz);
 
                 for (int e = blockIdx.x; e < inputSize; e += gridDim.x) {
@@ -198,7 +198,7 @@ namespace sd {
             }
 
             template <typename X, typename Y>
-            static _CUDA_G void dynamicStitchTadKernel(void **vx, Nd4jLong **xTadShapeInfos, Nd4jLong **xTadOffsets, void **vindices, Nd4jLong **iShapeInfos, int inputSize, void *vz, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+            static _CUDA_G void dynamicStitchTadKernel(void **vx, Nd4jLong **xTadShapeInfos, Nd4jLong **xTadOffsets, void **vindices, Nd4jLong **iShapeInfos, int inputSize, void *vz, const Nd4jLong *zTadShapeInfo, const Nd4jLong *zTadOffsets) {
                 auto bz = reinterpret_cast<X*>(vz);
 
                 for (int e = blockIdx.x; e < inputSize; e += gridDim.x) {
@@ -237,17 +237,17 @@ namespace sd {
                 PointersManager pm(context, "dynamicStitch");
 
                 if (output->isVector()) {
-                    std::vector<void *> inputBuffers(inputSize);
-                    std::vector<Nd4jLong *> inputShapes(inputSize);
-                    std::vector<void *> indicesBuffers(inputSize);
-                    std::vector<Nd4jLong *> indicesShapes(inputSize);
+                    std::vector<const void *> inputBuffers(inputSize);
+                    std::vector<const Nd4jLong *> inputShapes(inputSize);
+                    std::vector<const void *> indicesBuffers(inputSize);
+                    std::vector<const Nd4jLong *> indicesShapes(inputSize);
 
                     for (int e = 0; e < inputSize; e++) {
-                        inputBuffers[e] = inputs.at(e)->getSpecialBuffer();
-                        indicesBuffers[e] = indices.at(e)->getSpecialBuffer();
+                        inputBuffers[e] = inputs.at(e)->specialBuffer();
+                        indicesBuffers[e] = indices.at(e)->specialBuffer();
 
-                        inputShapes[e] = inputs.at(e)->getSpecialShapeInfo();
-                        indicesShapes[e] = indices.at(e)->getSpecialShapeInfo();
+                        inputShapes[e] = inputs.at(e)->specialShapeInfo();
+                        indicesShapes[e] = indices.at(e)->specialShapeInfo();
                     }
 
                     // copying pointers to buffers to device
@@ -262,26 +262,26 @@ namespace sd {
                     for (int i = restDims.size(); i > 0;  i--)
                         restDims[restDims.size() - i] = output->rankOf() - i;
 
-                    auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), restDims);
+                    auto packZ = ConstantTadHelper::getInstance().tadForDimensions(output->shapeInfo(), restDims);
 
-                    std::vector<void *> inputBuffers(inputSize);
-                    std::vector<Nd4jLong *> inputTadShapes(inputSize);
-                    std::vector<Nd4jLong *> inputTadOffsets(inputSize);
+                    std::vector<const void *> inputBuffers(inputSize);
+                    std::vector<const Nd4jLong *> inputTadShapes(inputSize);
+                    std::vector<const Nd4jLong *> inputTadOffsets(inputSize);
 
-                    std::vector<void *> indicesBuffers(inputSize);
-                    std::vector<Nd4jLong *> indicesShapes(inputSize);
+                    std::vector<const void *> indicesBuffers(inputSize);
+                    std::vector<const Nd4jLong *> indicesShapes(inputSize);
 
                     for (int e = 0; e < inputSize; e++) {
                         std::vector<int> sourceDims(inputs[e]->rankOf() - indices[e]->rankOf());
                         for (int i = sourceDims.size(); i > 0;  i--)
                             sourceDims[sourceDims.size() - i] = inputs[e]->rankOf() - i;
 
-                        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(inputs[e]->getShapeInfo(), sourceDims);
+                        auto packX = ConstantTadHelper::getInstance().tadForDimensions(inputs[e]->shapeInfo(), sourceDims);
 
-                        indicesBuffers[e] = indices[e]->getSpecialBuffer();
-                        indicesShapes[e] = indices[e]->getSpecialShapeInfo();
+                        indicesBuffers[e] = indices[e]->specialBuffer();
+                        indicesShapes[e] = indices[e]->specialShapeInfo();
 
-                        inputBuffers[e] = inputs[e]->getSpecialBuffer();
+                        inputBuffers[e] = inputs[e]->specialBuffer();
                         inputTadShapes[e] = packX.platformShapeInfo();
                         inputTadOffsets[e] = packX.platformOffsets();
                     }

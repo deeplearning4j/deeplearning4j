@@ -103,7 +103,7 @@ TEST_F(ScalarTests, Test_Concat_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -124,7 +124,7 @@ TEST_F(ScalarTests, Test_Concat_2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -146,7 +146,7 @@ TEST_F(ScalarTests, Test_Concat_3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ScalarTests, Test_ExpandDims_1) {
@@ -163,7 +163,7 @@ TEST_F(ScalarTests, Test_ExpandDims_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ScalarTests, Test_Squeeze_1) {
@@ -179,26 +179,8 @@ TEST_F(ScalarTests, Test_Squeeze_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
-
-
-TEST_F(ScalarTests, Test_Reshape_1) {
-    auto x = NDArrayFactory::create<float>(2.0f);
-    auto exp = NDArrayFactory::create<float>('c', {1, 1, 1}, {2.0f});
-
-    sd::ops::reshape op;
-    auto result = op.evaluate({&x}, {}, {-99, 1, 1, 1});
-    ASSERT_EQ(ND4J_STATUS_OK, result.status());
-
-    auto z = result.at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    
-}
-
 
 TEST_F(ScalarTests, Test_Permute_1) {
     auto x = NDArrayFactory::create<float>(3.0f);
@@ -213,7 +195,7 @@ TEST_F(ScalarTests, Test_Permute_1) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(ScalarTests, Test_Concat_Scalar_1) {

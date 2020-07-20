@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
@@ -58,12 +59,14 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
     private int inputLength = 1; // By default only use one index to embed
     private boolean hasBias = false;
     private boolean inferInputLength = false; // use input length as provided by input data
+    private RNNFormat outputFormat = RNNFormat.NCW;       //Default value for older deserialized models
 
     private EmbeddingSequenceLayer(Builder builder) {
         super(builder);
         this.hasBias = builder.hasBias;
         this.inputLength = builder.inputLength;
         this.inferInputLength = builder.inferInputLength;
+        this.outputFormat = builder.outputFormat;
         initializeConstraints(builder);
     }
 
@@ -87,7 +90,7 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
             throw new IllegalStateException("Invalid input for Embedding layer (layer index = " + layerIndex
                             + ", layer name = \"" + getLayerName() + "\"): expect FF/RNN input type. Got: " + inputType);
         }
-        return InputType.recurrent(nOut, inputLength);
+        return InputType.recurrent(nOut, inputLength, outputFormat);
     }
 
     @Override
@@ -166,6 +169,13 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
          *
          */
         private boolean inferInputLength = true;
+
+        private RNNFormat outputFormat = RNNFormat.NCW;       //Default value for older deserialized models
+
+        public Builder outputDataFormat(RNNFormat format){
+            this.outputFormat = format;
+            return this;
+        }
 
         /**
          * If true: include bias parameters in the layer. False (default): no bias.

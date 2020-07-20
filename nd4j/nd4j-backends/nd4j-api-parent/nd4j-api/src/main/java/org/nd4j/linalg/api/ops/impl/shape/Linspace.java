@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,11 +17,13 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -38,10 +41,45 @@ import java.util.Map;
 public class Linspace extends DynamicCustomOp {
 
     private DataType dataType;
+    private double start;
+    private double stop;
+    private long elements;
+
+    public Linspace(SameDiff sameDiff, DataType dataType, double start, double stop, long number) {
+        this(sameDiff, sameDiff.constant(start), sameDiff.constant(stop), sameDiff.constant(number), dataType);
+    }
 
     public Linspace(SameDiff sameDiff, SDVariable from, SDVariable to, SDVariable length, DataType dataType){
         super(sameDiff, new SDVariable[]{from, to, length});
         this.dataType = dataType;
+        addDArgument(dataType);
+    }
+
+    public Linspace(DataType dataType, double start, double stop, long number) {
+        this(start, stop, number, dataType);
+    }
+
+    public Linspace(DataType dataType, INDArray start, INDArray stop, INDArray number) {
+        this(start, stop, number, dataType);
+    }
+
+    public Linspace(@NonNull INDArray start, @NonNull INDArray stop, @NonNull INDArray number, @NonNull DataType dataType) {
+        super(new INDArray[]{start, stop, number}, null);
+        this.dataType = dataType;
+        addDArgument(dataType);
+    }
+
+    public Linspace(double start, double stop, long number, @NonNull DataType dataType) {
+        super(new INDArray[]{}, null);
+        this.dataType = dataType;
+        addDArgument(dataType);
+
+        this.start = start;
+        this.stop = stop;
+        this.elements = number;
+
+        addTArgument(this.start, this.stop);
+        addIArgument(elements);
     }
 
     public Linspace(){ }
@@ -78,6 +116,6 @@ public class Linspace extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().zerosLike(arg(0)), f().zerosLike(arg(1)), f().zerosLike(arg(2)));
+        return Arrays.asList(sameDiff.zerosLike(arg(0)), sameDiff.zerosLike(arg(1)), sameDiff.zerosLike(arg(2)));
     }
 }

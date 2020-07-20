@@ -49,12 +49,12 @@ import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.function.BiFunction;
-import org.nd4j.linalg.function.Function;
+import org.nd4j.common.function.BiFunction;
+import org.nd4j.common.function.Function;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossSparseMCXENT;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 import java.io.IOException;
@@ -87,16 +87,12 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
 
-    public static final BiFunction<String,INDArray,INDArray> nwc2ncwExpected = new BiFunction<String, INDArray, INDArray>() {
-        @Override
-        public INDArray apply(String s, INDArray array) {
-            if(array.rank() == 3)
-                return array.permute(0, 2, 1);    //NWC to NCW
-            return array;
-        }
-    };
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 180000L;     //Most benchmarks should run very quickly; large timeout is to avoid issues with unusually slow download of test resources
+    }
 
-        @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalStateException.class)
     public void fileNotFoundEndToEnd() throws Exception {
         String modelPath = "modelimport/keras/examples/foo/bar.h5";
         importEndModelTest(modelPath, null, true, true, false, false);
@@ -164,28 +160,28 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     public void importImdbLstmTfKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, nwc2ncwExpected);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, null);
     }
 
     @Test
     public void importImdbLstmThKeras1() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, nwc2ncwExpected);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, null);
     }
 
     @Test
     public void importImdbLstmTfKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, nwc2ncwExpected);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, null);
     }
 
     @Test
     public void importImdbLstmThKeras2() throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, true, false, false, true, null, nwc2ncwExpected);
+        importEndModelTest(modelPath, inputsOutputPath, false, true, false, false, true, null, null);
     }
 
     /**
@@ -257,7 +253,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         String modelPath = "modelimport/keras/examples/simple_flatten_rnn/simple_flatten_rnn_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/simple_flatten_rnn/" +
                 "simple_flatten_rnn_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, nwc2ncwExpected);
+        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, null);
     }
 
     /**
@@ -311,11 +307,11 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     @Test
     public void importAcganDiscriminator() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_discriminator_1_epochs.h5");
-        INDArray input = Nd4j.create(10, 1, 28, 28);
+        INDArray input = Nd4j.create(10, 28, 28, 1);        //NHWC
         INDArray[] output = model.output(input);
     }
 
-    @Test
+    @Test @Ignore   //AB 2020/04/22 Ignored until Keras model import updated to use NHWC support
     public void importAcganGenerator() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
         //System.out.println(model.summary()) ;
@@ -398,7 +394,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
 
         // Make predictions
         int miniBatch = 32;
-        INDArray input = Nd4j.ones(miniBatch, 4, 10);
+        INDArray input = Nd4j.ones(miniBatch, 10, 4);       //NWC format - with nIn=4, seqLength = 10
         INDArray[] out = graph.output(input);
 
         // Fit model
@@ -445,7 +441,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     @Test
     public void importMobileNet() throws Exception {
         ComputationGraph graph = importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/alternative.hdf5");
-        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        INDArray input = Nd4j.ones(10, 299, 299, 3);
         graph.output(input);
     }
 
@@ -457,7 +453,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         int[] inputShape = new int[]{299, 299, 3};
         ComputationGraph graph = importFunctionalModelH5Test(
                 "modelimport/keras/examples/inception/inception_tf_keras_2.h5", inputShape, false);
-        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        INDArray input = Nd4j.ones(10, 299, 299, 3);        //TF = channels last = NHWC
         graph.output(input);
         System.out.println(graph.summary());
     }
@@ -471,7 +467,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     public void importInception() throws Exception {
         ComputationGraph graph = importFunctionalModelH5Test(
                 "modelimport/keras/examples/inception/inception_v3_complete.h5");
-        INDArray input = Nd4j.ones(10, 3, 299, 299);
+        INDArray input = Nd4j.ones(10, 299, 299, 3);        //TF = channels last = NHWC
         graph.output(input);
         System.out.println(graph.summary());
     }
@@ -528,14 +524,14 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * - Separate (policy and value) residual architecture
      * - Separate (policy and value) convolutional architecture
      */
-    @Test
+    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
     public void importSepConvPolicy() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_policy.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test
+    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
     public void importSepResPolicy() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_policy.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
@@ -543,28 +539,28 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
 
-    @Test
+    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
     public void importSepConvValue() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_value.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test
+    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
     public void importSepResValue() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test
+    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
     public void importDualRes() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_res.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test
+    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
     public void importDualConv() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_conv.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
@@ -629,16 +625,9 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
             System.out.println("Starting test: " + name);
             String modelPath = "modelimport/keras/examples/causal_conv1d/" + name;
             String inputsOutputPath = "modelimport/keras/examples/causal_conv1d/" + (name.substring(0,name.length()-"model.h5".length()) + "inputs_and_outputs.h5");
-            Function<INDArray,INDArray> f = new Function<INDArray, INDArray>() {
-                @Override
-                public INDArray apply(INDArray i) {
-                    //NWC to NCW
-                    return i.permute(0, 2, 1);
-                }
-            };
 
             MultiLayerNetwork net = importEndModelTest(modelPath, inputsOutputPath, true, true,
-                    true, true, false, f, nwc2ncwExpected);
+                    true, true, false, null, null);
             Layer l = net.getLayer(0);
             Convolution1DLayer c1d = (Convolution1DLayer) l.getConfig();
             assertEquals(ConvolutionMode.Causal, c1d.getConvolutionMode());
@@ -702,25 +691,9 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
             System.out.println("Starting test: " + name);
             String modelPath = "modelimport/keras/examples/conv1d/" + name;
             String inputsOutputPath = "modelimport/keras/examples/conv1d/" + (name.substring(0,name.length()-"model.h5".length()) + "inputs_and_outputs.h5");
-            Function<INDArray,INDArray> f = name.contains("_cf_") ? null : new Function<INDArray, INDArray>() {
-                @Override
-                public INDArray apply(INDArray i) {
-                    //NWC to NCW
-                    return i.permute(0, 2, 1);
-                }
-            };
-
-            BiFunction<String,INDArray,INDArray> f2 = name.contains("_cf_") ? null : new BiFunction<String, INDArray, INDArray>() {
-                @Override
-                public INDArray apply(String s, INDArray array) {
-//                    if("conv".equals(s)){
-                        return array.permute(0, 2, 1);
-//                    }
-                }
-            };
 
             importEndModelTest(modelPath, inputsOutputPath, true, true,
-                    true, true, false, f, f2);
+                    true, true, false, null, null); //f, f2);
         }
     }
 
@@ -877,8 +850,6 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         INDArray[] inputs = new INDArray[inputNames.size()];
         for (int i = 0; i < inputNames.size(); i++) {
             inputs[i] = archive.readDataSet(inputNames.get(i), GROUP_ATTR_INPUTS);
-            if (inputs[i].shape().length == 4 && tensorFlowImageDimOrdering)
-                inputs[i] = inputs[i].permute(0, 3, 1, 2);
         }
         return inputs;
     }
@@ -888,8 +859,6 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         Map<String, INDArray> activations = new HashMap<String, INDArray>();
         for (String layerName : archive.getDataSets(GROUP_ACTIVATIONS)) {
             INDArray activation = archive.readDataSet(layerName, GROUP_ACTIVATIONS);
-            if (activation.shape().length == 4 && tensorFlowImageDimOrdering)
-                activation = activation.permute(0, 3, 1, 2);
             activations.put(layerName, activation);
         }
         return activations;
@@ -902,8 +871,6 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         INDArray[] outputs = new INDArray[outputNames.size()];
         for (int i = 0; i < outputNames.size(); i++) {
             outputs[i] = archive.readDataSet(outputNames.get(i), GROUP_ATTR_OUTPUTS);
-            if (outputs[i].shape().length == 4 && tensorFlowImageDimOrdering)
-                outputs[i] = outputs[i].permute(0, 3, 1, 2);
         }
         return outputs;
     }
@@ -915,8 +882,6 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         INDArray[] predictions = new INDArray[outputNames.size()];
         for (int i = 0; i < outputNames.size(); i++) {
             predictions[i] = archive.readDataSet(outputNames.get(i), GROUP_PREDICTIONS);
-            if (predictions[i].shape().length == 4 && tensorFlowImageDimOrdering)
-                predictions[i] = predictions[i].permute(0, 3, 1, 2);
         }
         return predictions;
     }
@@ -936,6 +901,11 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         // skip too small absolute inputs
         if (Math.abs(aAbsMax) > threshold && Math.abs(bAbsMax) > threshold) {
             boolean eq = expected.equalsWithEps(actual.castTo(expected.dataType()), eps);
+            if(!eq){
+                System.out.println("Expected: " + Arrays.toString(expected.shape()) + ", actual: " + Arrays.toString(actual.shape()));
+                System.out.println("Expected:\n" + expected);
+                System.out.println("Actual: \n" + actual);
+            }
             assertTrue("Output differs: " + label, eq);
         }
     }

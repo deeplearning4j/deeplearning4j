@@ -26,12 +26,13 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-public class TestTransformProcess {
+public class TestTransformProcess extends BaseND4JTest {
 
     @Test
     public void testExecution(){

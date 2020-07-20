@@ -20,13 +20,12 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -100,13 +99,11 @@ public class LayerNorm extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
-        SDVariable[] ret;
-        if(noBias){
-            ret = f().layerNormBp(arg(0), arg(1), gradient.get(0), channelsFirst, dimensions);
-        }else{
-            ret = f().layerNormBp(arg(0), arg(1), arg(2), gradient.get(0), channelsFirst, dimensions);
+        if (noBias) {
+            return new LayerNormBp(sameDiff, arg(0), arg(1), gradient.get(0), channelsFirst, dimensions).outputs();
+        } else {
+            return new LayerNormBp(sameDiff, arg(0), arg(1), arg(2), gradient.get(0), channelsFirst, dimensions).outputs();
         }
-        return Arrays.asList(ret);
     }
 
     @Override

@@ -19,13 +19,14 @@ package org.deeplearning4j.nn.layers.recurrent;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
@@ -59,18 +60,38 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
-        INDArray newEps = Nd4j.create(epsilon.dataType(), origOutputShape, 'f');
+        long[] newEpsShape = origOutputShape;
+
+        boolean nwc = TimeSeriesUtils.getFormatFromRnnLayer(underlying.conf().getLayer()) == RNNFormat.NWC;
+        INDArray newEps = Nd4j.create(epsilon.dataType(), newEpsShape, 'f');
         if(lastTimeStepIdxs == null){
             //no mask case
-            newEps.put(new INDArrayIndex[]{all(), all(), point(origOutputShape[2]-1)}, epsilon);
-        } else {
-            INDArrayIndex[] arr = new INDArrayIndex[]{null, all(), null};
-            //TODO probably possible to optimize this with reshape + scatter ops...
-            for( int i=0; i<lastTimeStepIdxs.length; i++ ){
-                arr[0] = point(i);
-                arr[2] = point(lastTimeStepIdxs[i]);
-                newEps.put(arr, epsilon.getRow(i));
+            if (nwc){
+                newEps.put(new INDArrayIndex[]{all(), point(origOutputShape[1]-1), all()}, epsilon);
             }
+            else{
+                newEps.put(new INDArrayIndex[]{all(), all(), point(origOutputShape[2]-1)}, epsilon);
+            }
+        } else {
+            if (nwc){
+                INDArrayIndex[] arr = new INDArrayIndex[]{null, null, all()};
+                //TODO probably possible to optimize this with reshape + scatter ops...
+                for( int i=0; i<lastTimeStepIdxs.length; i++ ){
+                    arr[0] = point(i);
+                    arr[1] = point(lastTimeStepIdxs[i]);
+                    newEps.put(arr, epsilon.getRow(i));
+                }
+            }
+            else{
+                INDArrayIndex[] arr = new INDArrayIndex[]{null, all(), null};
+                //TODO probably possible to optimize this with reshape + scatter ops...
+                for( int i=0; i<lastTimeStepIdxs.length; i++ ){
+                    arr[0] = point(i);
+                    arr[2] = point(lastTimeStepIdxs[i]);
+                    newEps.put(arr, epsilon.getRow(i));
+                }
+            }
+
         }
         return underlying.backpropGradient(newEps, workspaceMgr);
     }
@@ -103,10 +124,18 @@ public class LastTimeStepLayer extends BaseWrapperLayer {
                     "rank " + in.rank() + " with shape " + Arrays.toString(in.shape()));
         }
         origOutputShape = in.shape();
+        boolean nwc = TimeSeriesUtils.getFormatFromRnnLayer(underlying.conf().getLayer()) == RNNFormat.NWC;
+//        underlying instanceof  BaseRecurrentLayer && ((BaseRecurrentLayer)underlying).getDataFormat() == RNNFormat.NWC)||
+//                underlying instanceof MaskZeroLayer && ((MaskZeroLayer)underlying).getUnderlying() instanceof BaseRecurrentLayer &&
+//                        ((BaseRecurrentLayer)((MaskZeroLayer)underlying).getUnderlying()).getDataFormat() == RNNFormat.NWC;
+        if (nwc){
+            in = in.permute(0, 2, 1);
+        }
 
         INDArray mask = underlying.getMaskArray();
         Pair<INDArray,int[]> p = TimeSeriesUtils.pullLastTimeSteps(in, mask, workspaceMgr, arrayType);
         lastTimeStepIdxs = p.getSecond();
+
         return p.getFirst();
     }
 }

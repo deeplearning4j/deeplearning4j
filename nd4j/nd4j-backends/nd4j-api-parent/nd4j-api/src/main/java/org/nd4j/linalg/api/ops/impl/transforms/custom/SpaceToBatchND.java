@@ -84,7 +84,7 @@ public class SpaceToBatchND extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         // Inverse of space to batch is batch to space with same blocks and crops as padding
         SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        return Arrays.asList(sameDiff.cnn().batchToSpace(gradient, blocks, padding));
+        return Arrays.asList(sameDiff.cnn().batchToSpace(gradient, blocks, padding[0], padding[1]));
     }
 
     @Override

@@ -20,6 +20,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.nn.conf.DataFormat;
+import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
@@ -89,7 +92,11 @@ public abstract class InputType implements Serializable {
      * @return InputTypeFeedForward
      */
     public static InputType feedForward(long size) {
-        return new InputTypeFeedForward(size);
+        return new InputTypeFeedForward(size, null);
+    }
+
+    public static InputType feedForward(long size, DataFormat timeDistributedFormat) {
+        return new InputTypeFeedForward(size,timeDistributedFormat);
     }
 
     /**
@@ -110,9 +117,16 @@ public abstract class InputType implements Serializable {
      * @return InputTypeRecurrent
      */
     public static InputType recurrent(long size, long timeSeriesLength) {
-        return new InputTypeRecurrent(size, timeSeriesLength);
+        return new InputTypeRecurrent(size, timeSeriesLength, RNNFormat.NCW);
     }
 
+    public static InputType recurrent(long size, RNNFormat format){
+        return new InputTypeRecurrent(size, format);
+    }
+
+    public static InputType recurrent(long size, long timeSeriesLength, RNNFormat format){
+        return new InputTypeRecurrent(size, timeSeriesLength, format);
+    }
     /**
      * Input type for convolutional (CNN) data, that is 4d with shape [miniBatchSize, channels, height, width].
      * For CNN data that has been flattened, use {@link #convolutionalFlat(long, long, long)}
@@ -123,7 +137,11 @@ public abstract class InputType implements Serializable {
      * @return InputTypeConvolutional
      */
     public static InputType convolutional(long height, long width, long depth) {
-        return new InputTypeConvolutional(height, width, depth);
+        return convolutional(height, width, depth, CNN2DFormat.NCHW);
+    }
+
+    public static InputType convolutional(long height, long width, long depth, CNN2DFormat format){
+        return new InputTypeConvolutional(height, width, depth, format);
     }
 
     /**
@@ -177,9 +195,11 @@ public abstract class InputType implements Serializable {
     @EqualsAndHashCode(callSuper = false)
     public static class InputTypeFeedForward extends InputType {
         private long size;
+        private DataFormat timeDistributedFormat;
 
-        public InputTypeFeedForward(@JsonProperty("size") long size) {
+        public InputTypeFeedForward(@JsonProperty("size") long size, @JsonProperty("timeDistributedFormat") DataFormat timeDistributedFormat) {
             this.size = size;
+            this.timeDistributedFormat = timeDistributedFormat;
         }
 
         @Override
@@ -189,7 +209,7 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeFeedForward(" + size + ")";
+            return "InputTypeFeedForward(" + size + (timeDistributedFormat != null ? "," + timeDistributedFormat : "") + ")";
         }
 
         @Override
@@ -210,14 +230,23 @@ public abstract class InputType implements Serializable {
     public static class InputTypeRecurrent extends InputType {
         private long size;
         private long timeSeriesLength;
-
+        private RNNFormat format = RNNFormat.NCW;
         public InputTypeRecurrent(long size) {
             this(size, -1);
         }
+        public InputTypeRecurrent(long size, long timeSeriesLength){
+            this(size, timeSeriesLength, RNNFormat.NCW);
+        }
 
-        public InputTypeRecurrent(@JsonProperty("size") long size, @JsonProperty("timeSeriesLength") long timeSeriesLength) {
+        public  InputTypeRecurrent(long size, RNNFormat format){
+            this(size, -1, format);
+        }
+        public InputTypeRecurrent(@JsonProperty("size") long size,
+                                  @JsonProperty("timeSeriesLength") long timeSeriesLength,
+                                  @JsonProperty("format") RNNFormat format) {
             this.size = size;
             this.timeSeriesLength = timeSeriesLength;
+            this.format = format;
         }
 
         @Override
@@ -228,9 +257,9 @@ public abstract class InputType implements Serializable {
         @Override
         public String toString() {
             if (timeSeriesLength > 0) {
-                return "InputTypeRecurrent(" + size + ",timeSeriesLength=" + timeSeriesLength + ")";
+                return "InputTypeRecurrent(" + size + ",timeSeriesLength=" + timeSeriesLength + ",format=" + format + ")";
             } else {
-                return "InputTypeRecurrent(" + size + ")";
+                return "InputTypeRecurrent(" + size + ",format=" + format + ")";
             }
         }
 
@@ -245,8 +274,23 @@ public abstract class InputType implements Serializable {
 
         @Override
         public long[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new long[]{-1, size, timeSeriesLength};
-            else return new long[]{size, timeSeriesLength};
+            if (includeBatchDim){
+                if (format == RNNFormat.NCW){
+                    return new long[]{-1, size, timeSeriesLength};
+                }
+                else{
+                    return new long[]{-1, timeSeriesLength, size};
+                }
+
+            }
+            else{
+                if (format == RNNFormat.NCW){
+                    return new long[]{size, timeSeriesLength};
+                }
+                else{
+                    return new long[]{timeSeriesLength, size};
+                }
+            }
         }
     }
 
@@ -257,11 +301,19 @@ public abstract class InputType implements Serializable {
         private long height;
         private long width;
         private long channels;
+        private CNN2DFormat format = CNN2DFormat.NCHW;  //Default for JSON deserialization of older configurations
 
-        public InputTypeConvolutional(@JsonProperty("height") long height, @JsonProperty("width") long width, @JsonProperty("channels") long channels) {
+        public InputTypeConvolutional(@JsonProperty("height") long height, @JsonProperty("width") long width,
+                                      @JsonProperty("channels") long channels, @JsonProperty("format") CNN2DFormat format) {
             this.height = height;
             this.width = width;
             this.channels = channels;
+            if(format != null)
+                this.format = format;
+        }
+
+        public InputTypeConvolutional(long height, long width, long channels) {
+            this(height, width, channels, CNN2DFormat.NCHW);
         }
 
         /**
@@ -292,7 +344,7 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeConvolutional(h=" + height + ",w=" + width + ",c=" + channels + ")";
+            return "InputTypeConvolutional(h=" + height + ",w=" + width + ",c=" + channels + "," + format + ")";
         }
 
         @Override
@@ -302,8 +354,13 @@ public abstract class InputType implements Serializable {
 
         @Override
         public long[] getShape(boolean includeBatchDim) {
-            if(includeBatchDim) return new long[]{-1, channels, height, width};
-            else return new long[]{channels, height, width};
+            if(format == CNN2DFormat.NCHW){
+                if(includeBatchDim) return new long[]{-1, channels, height, width};
+                else return new long[]{channels, height, width};
+            } else {
+                if(includeBatchDim) return new long[]{-1, height, width, channels};
+                else return new long[]{height, width, channels};
+            }
         }
     }
 

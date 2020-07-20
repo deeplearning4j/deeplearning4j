@@ -1,10 +1,13 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm;
 
 import org.deeplearning4j.rl4j.learning.sync.Transition;
-import org.deeplearning4j.rl4j.learning.sync.support.MockDQN;
-import org.deeplearning4j.rl4j.learning.sync.support.MockTargetQNetworkSource;
+import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.MockitoJUnitRunner;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -13,16 +16,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class DoubleDQNTest {
+
+    @Mock
+    IOutputNeuralNet qNetworkMock;
+
+    @Mock
+    IOutputNeuralNet targetQNetworkMock;
+
+
+    @Before
+    public void setup() {
+        when(qNetworkMock.output(any(INDArray.class))).thenAnswer(i -> i.getArguments()[0]);
+    }
 
     @Test
     public void when_isTerminal_expect_rewardValueAtIdx0() {
 
         // Assemble
-        MockDQN qNetwork = new MockDQN();
-        MockDQN targetQNetwork = new MockDQN();
-        MockTargetQNetworkSource targetQNetworkSource = new MockTargetQNetworkSource(qNetwork, targetQNetwork);
+        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> i.getArguments()[0]);
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
@@ -31,10 +47,10 @@ public class DoubleDQNTest {
             }
         };
 
-        DoubleDQN sut = new DoubleDQN(targetQNetworkSource, 0.5);
+        DoubleDQN sut = new DoubleDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.computeTDTargets(transitions);
+        DataSet result = sut.compute(transitions);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels();
@@ -46,9 +62,7 @@ public class DoubleDQNTest {
     public void when_isNotTerminal_expect_rewardPlusEstimatedQValue() {
 
         // Assemble
-        MockDQN qNetwork = new MockDQN();
-        MockDQN targetQNetwork = new MockDQN(-1.0);
-        MockTargetQNetworkSource targetQNetworkSource = new MockTargetQNetworkSource(qNetwork, targetQNetwork);
+        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> ((INDArray)i.getArguments()[0]).mul(-1.0));
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
@@ -57,10 +71,10 @@ public class DoubleDQNTest {
             }
         };
 
-        DoubleDQN sut = new DoubleDQN(targetQNetworkSource, 0.5);
+        DoubleDQN sut = new DoubleDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.computeTDTargets(transitions);
+        DataSet result = sut.compute(transitions);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels();
@@ -72,9 +86,7 @@ public class DoubleDQNTest {
     public void when_batchHasMoreThanOne_expect_everySampleEvaluated() {
 
         // Assemble
-        MockDQN qNetwork = new MockDQN();
-        MockDQN targetQNetwork = new MockDQN(-1.0);
-        MockTargetQNetworkSource targetQNetworkSource = new MockTargetQNetworkSource(qNetwork, targetQNetwork);
+        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> ((INDArray)i.getArguments()[0]).mul(-1.0));
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
@@ -87,10 +99,10 @@ public class DoubleDQNTest {
             }
         };
 
-        DoubleDQN sut = new DoubleDQN(targetQNetworkSource, 0.5);
+        DoubleDQN sut = new DoubleDQN(qNetworkMock, targetQNetworkMock, 0.5);
 
         // Act
-        DataSet result = sut.computeTDTargets(transitions);
+        DataSet result = sut.compute(transitions);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels();

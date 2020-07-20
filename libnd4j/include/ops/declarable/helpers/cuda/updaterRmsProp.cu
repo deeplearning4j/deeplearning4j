@@ -105,10 +105,10 @@ void updaterRmsProp(sd::LaunchContext* context, const NDArray& gradient, const N
     NDArray::prepareSpecialUse({&update, &stateG}, {&gradient, &initState });
 
     BUILD_SINGLE_SELECTOR(gradient.dataType(), rmsPropUpdaterCudaLauncher, (blocksPerGrid, threadsPerBlock, 
-                          context->getCudaStream(), gradient.getSpecialBuffer(), gradient.getSpecialShapeInfo(), 
-                          initState.getSpecialBuffer(), initState.getSpecialShapeInfo(),  
-                          update.getSpecialBuffer(), update.getSpecialShapeInfo(), 
-                          stateG.getSpecialBuffer(), stateG.getSpecialShapeInfo(),
+                          context->getCudaStream(), gradient.specialBuffer(), gradient.specialShapeInfo(),
+                          initState.specialBuffer(), initState.specialShapeInfo(),
+                          update.specialBuffer(), update.specialShapeInfo(),
+                          stateG.specialBuffer(), stateG.specialShapeInfo(),
                           dLr, dRmsDecay, dEpsilon ), FLOAT_TYPES);
 
     NDArray::registerSpecialUse({&update, &stateG}, {&gradient, &initState});

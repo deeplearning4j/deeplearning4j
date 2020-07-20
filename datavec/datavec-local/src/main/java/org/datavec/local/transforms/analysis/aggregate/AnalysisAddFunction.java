@@ -22,7 +22,7 @@ import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.transform.analysis.counter.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -19,11 +19,12 @@ package org.nd4j.linalg.api.ops.impl.transforms.segment;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentMeanBp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -43,19 +44,21 @@ public class UnsortedSegmentMean extends DynamicCustomOp {
         addIArgument(numSegments);
     }
 
+    public UnsortedSegmentMean(INDArray data, INDArray segmentIds, int numSegments){
+        super(new INDArray[]{data, segmentIds}, null);
+        this.numSegments = numSegments;
+        addIArgument(numSegments);
+    }
+
     @Override
     public String opName(){
         return "unsorted_segment_mean";
     }
 
-    @Override
-    public String tensorflowName() {
-        return "UnsortedSegmentMean";
-    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradients){
-        return Arrays.asList(f().unsortedSegmentMeanBp(arg(0), arg(1), gradients.get(0), numSegments));
+        return new UnsortedSegmentMeanBp(sameDiff, arg(0), arg(1), gradients.get(0), numSegments).outputs();
     }
 
     @Override

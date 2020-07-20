@@ -21,12 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
-import org.nd4j.config.ND4JSystemProperties;
+import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.AtomicDouble;
-import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.common.primitives.AtomicBoolean;
+import org.nd4j.common.primitives.AtomicDouble;
+import org.nd4j.common.primitives.Triple;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.io.*;
 import java.nio.*;
@@ -826,6 +826,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case FLOAT:
                 return ((FloatIndexer) indexer).get(i);
             case UINT32:
+                return ((UIntIndexer) indexer).get(i);
             case INT:
                 return ((IntIndexer) indexer).get(i);
             case BFLOAT16:
@@ -866,10 +867,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return (long) ((Bfloat16Indexer) indexer).get(i);
             case HALF:
                 return (long) ((HalfIndexer) indexer).get( i);
-            case UINT64:
+            case UINT64:    //Fall through
             case LONG:
                 return ((LongIndexer) indexer).get(i);
             case UINT32:
+                return (long) ((UIntIndexer) indexer).get(i);
             case INT:
                 return (long) ((IntIndexer) indexer).get(i);
             case UINT16:
@@ -906,6 +908,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case BOOL:
                 return (short) (((BooleanIndexer) indexer).get(i) ? 1 : 0);
             case UINT32:
+                return (short) ((UIntIndexer)indexer).get(i);
             case INT:
                 return (short) ((IntIndexer) indexer).get(i);
             case UINT16:
@@ -943,6 +946,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case BOOL:
                 return ((BooleanIndexer) indexer).get(i) ? 1.f : 0.f;
             case UINT32:
+                return (float) ((UIntIndexer)indexer).get(i);
             case INT:
                 return (float) ((IntIndexer) indexer).get(i);
             case UINT16:
@@ -957,7 +961,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return (float) ((UByteIndexer) indexer).get(i);
             case BYTE:
                 return (float) ((ByteIndexer) indexer).get(i);
-            case UINT64:
+            case UINT64:  //Fall through
             case LONG:
                 return (float)  ((LongIndexer) indexer).get(i);
             case FLOAT:
@@ -978,6 +982,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case BOOL:
                 return ((BooleanIndexer) indexer).get(i) ? 1 : 0;
             case UINT32:
+                return (int)((UIntIndexer) indexer).get(i);
             case INT:
                 return ((IntIndexer) indexer).get(i);
             case BFLOAT16:
@@ -992,7 +997,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 return ((UByteIndexer) indexer).get(i);
             case BYTE:
                 return ((ByteIndexer) indexer).get(i);
-            case UINT64:
+            case UINT64:  //Fall through
             case LONG:
                 return (int) ((LongIndexer) indexer).get(i);
             case FLOAT:
@@ -1058,6 +1063,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((ShortIndexer) indexer).put(i,  (short) element);
                 break;
             case UINT32:
+                ((UIntIndexer) indexer).put(i, (long)element);
+                break;
             case INT:
                 ((IntIndexer) indexer).put(i, (int) element);
                 break;
@@ -1104,6 +1111,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((ShortIndexer) indexer).put(i,  (short) element);
                 break;
             case UINT32:
+                ((UIntIndexer) indexer).put(i, (long)element);
+                break;
             case INT:
                 ((IntIndexer) indexer).put(i, (int) element);
                 break;
@@ -1150,10 +1159,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((ShortIndexer) indexer).put(i,  (short) element);
                 break;
             case UINT32:
+                ((UIntIndexer) indexer).put(i, element);
+                break;
             case INT:
                 ((IntIndexer) indexer).put(i, element);
                 break;
-            case UINT64:
+            case UINT64: //Fall through
             case LONG:
                 ((LongIndexer) indexer).put(i, element);
                 break;
@@ -1195,8 +1206,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             case SHORT:
                 ((ShortIndexer) indexer).put(i, element ? (short) 1 : (short) 0);
                 break;
-            case INT:
             case UINT32:
+                ((UIntIndexer) indexer).put(i, element ? 1 : 0);
+                break;
+            case INT:
                 ((IntIndexer) indexer).put(i, element ? 1 : 0);
                 break;
             case UINT64:
@@ -1242,6 +1255,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 ((ShortIndexer) indexer).put(i, (short) element);
                 break;
             case UINT32:
+                ((UIntIndexer) indexer).put(i, element);
+                break;
             case INT:
                 ((IntIndexer) indexer).put(i, (int) element);
                 break;
@@ -1930,7 +1945,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected void release() {
         this.released = true;
-        this.pointer.deallocate();
         this.indexer = null;
         this.pointer = null;
     }
@@ -1943,6 +1957,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public boolean wasClosed() {
+        if (wrappedDataBuffer != null && wrappedDataBuffer != this)
+            return wrappedDataBuffer.wasClosed();
+
         return released;
     }
 

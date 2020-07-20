@@ -47,9 +47,8 @@ public class RecordConverter {
      *
      * @return the array
      */
-    @Deprecated
-    public static INDArray toArray(Collection<Writable> record, int size) {
-        return toArray(record);
+    public static INDArray toArray(DataType dataType, Collection<Writable> record, int size) {
+        return toArray(dataType, record);
     }
 
     /**
@@ -78,13 +77,23 @@ public class RecordConverter {
 
     /**
      * Convert a set of records in to a matrix
+     * As per {@link #toMatrix(DataType, List)} but hardcoded to Float datatype
      * @param records the records ot convert
      * @return the matrix for the records
      */
     public static INDArray toMatrix(List<List<Writable>> records) {
+        return toMatrix(DataType.FLOAT, records);
+    }
+
+    /**
+     * Convert a set of records in to a matrix
+     * @param records the records ot convert
+     * @return the matrix for the records
+     */
+    public static INDArray toMatrix(DataType dataType, List<List<Writable>> records) {
         List<INDArray> toStack = new ArrayList<>();
         for(List<Writable> l : records){
-            toStack.add(toArray(l));
+            toStack.add(toArray(dataType, l));
         }
 
         return Nd4j.vstack(toStack);
@@ -92,10 +101,20 @@ public class RecordConverter {
 
     /**
      * Convert a record to an INDArray. May contain a mix of Writables and row vector NDArrayWritables.
+     * As per {@link #toArray(DataType, Collection)} but hardcoded to Float datatype
      * @param record the record to convert
      * @return the array
      */
-    public static INDArray toArray(Collection<? extends Writable> record) {
+    public static INDArray toArray(Collection<? extends Writable> record){
+        return toArray(DataType.FLOAT, record);
+    }
+
+    /**
+     * Convert a record to an INDArray. May contain a mix of Writables and row vector NDArrayWritables.
+     * @param record the record to convert
+     * @return the array
+     */
+    public static INDArray toArray(DataType dataType, Collection<? extends Writable> record) {
         List<Writable> l;
         if(record instanceof List){
             l = (List<Writable>)record;
@@ -124,7 +143,7 @@ public class RecordConverter {
             }
         }
 
-        INDArray arr = Nd4j.create(1, length);
+        INDArray arr = Nd4j.create(dataType, 1, length);
 
         int k = 0;
         for (Writable w : record ) {

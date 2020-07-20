@@ -55,13 +55,13 @@ namespace sd {
                 isLower = !isLower;
             };
 
-            auto res = helpers::triangularSolveFunctor(block.launchContext(), input, b, isLower, useAdjoint, z);
+            auto res = helpers::triangularSolveFunctor(block.launchContext(), input, b, isLower, false, z);
             if (input != a)
                 delete input;
 
             return Status::OK();
         }
-        
+
         DECLARE_SHAPE_FN(triangular_solve) {
             auto in0 = inputShape->at(1);
             auto in1 = inputShape->at(1);

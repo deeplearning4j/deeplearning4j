@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,6 +35,10 @@ import java.util.List;
 public class Log extends BaseTransformStrictOp {
     public Log(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
+    }
+
+    public Log(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
     }
 
     public Log() {
@@ -71,8 +76,7 @@ public class Log extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        f().validateDifferentialFunctionsameDiff(arg());
-        SDVariable toInverse = sameDiff.setupFunction(f().div(i_v.get(0), arg()));
-        return Arrays.asList(toInverse);
+        SDVariable toInverse = sameDiff.math.div(i_v.get(0), arg());
+        return Collections.singletonList(toInverse);
     }
 }

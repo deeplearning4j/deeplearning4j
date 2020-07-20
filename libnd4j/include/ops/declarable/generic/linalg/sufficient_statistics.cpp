@@ -71,14 +71,14 @@ namespace sd {
             helpers::adjustAxis(input->rankOf(), axisVector, axis);
 
             //std::vector<int> dims = ShapeUtils::evalDimsToExclude(input->rankOf(), {axis});
-            auto scalarShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)));
+            auto scalarShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0)));
             auto sumShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
 
             auto squareShape = ShapeUtils::evalReduceShapeInfo('c', axis, *input, false, false, block.workspace());
 
             auto shapeList = SHAPELIST(scalarShape, sumShape, squareShape);
             if (block.numT() > 0)
-                shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
+                shapeList->push_back(ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));
 
             return shapeList;
         }

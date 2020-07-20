@@ -47,9 +47,9 @@ import org.datavec.local.transforms.sequence.*;
 import org.datavec.local.transforms.transform.LocalTransformFunction;
 import org.datavec.local.transforms.transform.SequenceSplitFunction;
 import org.datavec.local.transforms.transform.filter.LocalFilterFunction;
-import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.function.FunctionalUtils;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.function.Function;
+import org.nd4j.common.function.FunctionalUtils;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 import java.util.function.BiPredicate;

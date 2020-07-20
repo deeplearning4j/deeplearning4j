@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.misc.RepeatVector;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -60,6 +61,7 @@ public class KerasRepeatVector extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
 
         this.layer = new RepeatVector.Builder().repetitionFactor(getRepeatMultiplier(layerConfig, conf))
+                .dataFormat(RNNFormat.NWC)
                 .name(this.layerName).build();
     }
 

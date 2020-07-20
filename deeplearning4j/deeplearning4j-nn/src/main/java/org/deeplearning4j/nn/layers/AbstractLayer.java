@@ -33,7 +33,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
@@ -63,7 +63,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public AbstractLayer(NeuralNetConfiguration conf, DataType dataType) {
         this.conf = conf;
         if (conf != null)
-        cacheMode = conf.getCacheMode();
+            cacheMode = conf.getCacheMode();
         this.dataType = dataType;
     }
 
@@ -427,5 +427,10 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     public boolean updaterDivideByMinibatch(String paramName) {
         //Majority of params's gradients should be... Exception: batch norm mean/variance estimate
         return true;
+    }
+
+    @Override
+    public void close(){
+        //No-op for individual layers
     }
 }

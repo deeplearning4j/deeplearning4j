@@ -1,6 +1,5 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -21,7 +20,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -37,7 +36,6 @@ import java.util.*;
  */
 @NoArgsConstructor
 public class CropAndResize extends DynamicCustomOp {
-
     public enum Method {BILINEAR, NEAREST};
     protected Method method = Method.BILINEAR;
     protected double extrapolationValue = 0.0;
@@ -50,6 +48,10 @@ public class CropAndResize extends DynamicCustomOp {
         addArgs();
     }
 
+    public CropAndResize(@NonNull SameDiff sameDiff, SDVariable image, SDVariable cropBoxes, SDVariable boxIndices,
+                         SDVariable cropOutSize, double extrapolationValue) {
+        this(sameDiff, image, cropBoxes, boxIndices, cropOutSize, null, extrapolationValue);
+    }
 
     public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
                          @NonNull INDArray cropOutSize, @NonNull Method method, double extrapolationValue,
@@ -65,11 +67,9 @@ public class CropAndResize extends DynamicCustomOp {
         outputArguments.add(output);
     }
 
-    public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
-                         @NonNull INDArray cropOutSize, double extrapolationValue) {
-        this(image, cropBoxes, boxIndices, cropOutSize, Method.BILINEAR, extrapolationValue, null);
+    public CropAndResize(INDArray image, INDArray cropBoxes, INDArray boxIndices, INDArray cropOutSize, double extrapolationValue ) {
+        this(image, cropBoxes, boxIndices, cropOutSize, null, extrapolationValue, null);
     }
-
 
     @Override
     public String opName() {

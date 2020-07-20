@@ -47,7 +47,7 @@ namespace sd {
 
     DECLARE_SHAPE_FN(reshapeas) {
 
-        return SHAPELIST(ShapeBuilders::copyShapeInfo(INPUT_VARIABLE(1)->getShapeInfo(), false, block.workspace()));
+        return SHAPELIST(ShapeBuilders::copyShapeInfo(INPUT_VARIABLE(1)->shapeInfo(), false, block.workspace()));
     }
 
         DECLARE_TYPES(reshapeas) {

@@ -1,5 +1,6 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -20,83 +21,87 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.agent.learning.ILearningBehavior;
+import org.deeplearning4j.rl4j.agent.learning.LearningBehavior;
+import org.deeplearning4j.rl4j.agent.update.DQNNeuralNetUpdateRule;
+import org.deeplearning4j.rl4j.agent.update.IUpdateRule;
+import org.deeplearning4j.rl4j.experience.ExperienceHandler;
+import org.deeplearning4j.rl4j.experience.ReplayMemoryExperienceHandler;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.DoubleDQN;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.ITDTargetAlgorithm;
-import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.StandardDQN;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-
-import java.util.ArrayList;
 
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
- *
+ * <p>
  * DQN or Deep Q-Learning in the Discrete domain
- *
+ * <p>
  * http://arxiv.org/abs/1312.5602
- *
  */
 public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O, Integer, DiscreteSpace> {
 
     @Getter
-    final private QLConfiguration configuration;
+    final private QLearningConfiguration configuration;
     private final LegacyMDPWrapper<O, Integer, DiscreteSpace> mdp;
     @Getter
     private DQNPolicy<O> policy;
     @Getter
-    private EpsGreedy<O, Integer, DiscreteSpace> egPolicy;
+    private EpsGreedy<Integer> egPolicy;
 
     @Getter
     final private IDQN qNetwork;
-    @Getter
-    @Setter(AccessLevel.PROTECTED)
-    private IDQN targetQNetwork;
 
     private int lastAction;
     private double accuReward = 0;
 
-    private Transition pendingTransition;
-
-    ITDTargetAlgorithm tdTargetAlgorithm;
+    private final ILearningBehavior<Integer> learningBehavior;
 
     protected LegacyMDPWrapper<O, Integer, DiscreteSpace> getLegacyMDPWrapper() {
         return mdp;
     }
 
-    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
-                             int epsilonNbStep) {
+    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLearningConfiguration conf, int epsilonNbStep) {
         this(mdp, dqn, conf, epsilonNbStep, Nd4j.getRandomFactory().getNewRandomInstance(conf.getSeed()));
     }
 
-    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
-                             int epsilonNbStep, Random random) {
-        super(conf);
+    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLearningConfiguration conf, int epsilonNbStep, Random random) {
+        this(mdp, dqn, conf, epsilonNbStep, buildLearningBehavior(dqn, conf, random), random);
+    }
+
+    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLearningConfiguration conf,
+                             int epsilonNbStep, ILearningBehavior<Integer> learningBehavior, Random random) {
         this.configuration = conf;
-        this.mdp = new LegacyMDPWrapper<O, Integer, DiscreteSpace>(mdp, null, this);
+        this.mdp = new LegacyMDPWrapper<>(mdp, null);
         qNetwork = dqn;
-        targetQNetwork = dqn.clone();
         policy = new DQNPolicy(getQNetwork());
         egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), epsilonNbStep, random, conf.getMinEpsilon(),
                 this);
 
-        tdTargetAlgorithm = conf.isDoubleDQN()
-                ? new DoubleDQN(this, conf.getGamma(), conf.getErrorClamp())
-                : new StandardDQN(this, conf.getGamma(), conf.getErrorClamp());
+        this.learningBehavior = learningBehavior;
+    }
+
+    private static ILearningBehavior<Integer> buildLearningBehavior(IDQN qNetwork, QLearningConfiguration conf, Random random) {
+        IUpdateRule<Transition<Integer>> updateRule = new DQNNeuralNetUpdateRule(qNetwork, conf.getTargetDqnUpdateFreq(), conf.isDoubleDQN(), conf.getGamma(), conf.getErrorClamp());
+        ExperienceHandler<Integer, Transition<Integer>> experienceHandler = new ReplayMemoryExperienceHandler(conf.getExpRepMaxSize(), conf.getBatchSize(), random);
+        return LearningBehavior.<Integer, Transition<Integer>>builder()
+                .experienceHandler(experienceHandler)
+                .updateRule(updateRule)
+                .experienceUpdateSize(conf.getBatchSize())
+                .build();
 
     }
 
@@ -114,7 +119,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     public void preEpoch() {
         lastAction = mdp.getActionSpace().noOp();
         accuReward = 0;
-        pendingTransition = null;
+        learningBehavior.handleEpisodeStart();
     }
 
     @Override
@@ -125,72 +130,39 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     /**
      * Single step of training
+     *
      * @param obs last obs
      * @return relevant info for next step
      */
     protected QLStepReturn<Observation> trainStep(Observation obs) {
 
-        Integer action;
-
-        boolean isHistoryProcessor = getHistoryProcessor() != null;
-        int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
-        int historyLength = isHistoryProcessor ? getHistoryProcessor().getConf().getHistoryLength() : 1;
-        int updateStart = getConfiguration().getUpdateStart()
-                        + ((getConfiguration().getBatchSize() + historyLength) * skipFrame);
-
         Double maxQ = Double.NaN; //ignore if Nan for stats
 
         //if step of training, just repeat lastAction
-        if (obs.isSkipped()) {
-            action = lastAction;
-        } else {
+        if (!obs.isSkipped()) {
             INDArray qs = getQNetwork().output(obs);
             int maxAction = Learning.getMaxAction(qs);
             maxQ = qs.getDouble(maxAction);
 
-            action = getEgPolicy().nextAction(obs);
+            lastAction = getEgPolicy().nextAction(obs);
         }
 
-        lastAction = action;
-
-        StepReply<Observation> stepReply = mdp.step(action);
-
+        StepReply<Observation> stepReply = mdp.step(lastAction);
         accuReward += stepReply.getReward() * configuration.getRewardFactor();
 
         //if it's not a skipped frame, you can do a step of training
         if (!obs.isSkipped()) {
 
             // Add experience
-            if(pendingTransition != null) {
-                pendingTransition.setNextObservation(obs);
-                getExpReplay().store(pendingTransition);
-            }
-            pendingTransition = new Transition(obs, action, accuReward, stepReply.isDone());
+            learningBehavior.handleNewExperience(obs, lastAction, accuReward, stepReply.isDone());
             accuReward = 0;
-
-            // Update NN
-            // FIXME: maybe start updating when experience replay has reached a certain size instead of using "updateStart"?
-            if (getStepCounter() > updateStart) {
-                DataSet targets = setTarget(getExpReplay().getBatch());
-                getQNetwork().fit(targets.getFeatures(), targets.getLabels());
-            }
         }
 
-        return new QLStepReturn<Observation>(maxQ, getQNetwork().getLatestScore(), stepReply);
-    }
-
-    protected DataSet setTarget(ArrayList<Transition<Integer>> transitions) {
-        if (transitions.size() == 0)
-            throw new IllegalArgumentException("too few transitions");
-
-        return tdTargetAlgorithm.computeTDTargets(transitions);
+        return new QLStepReturn<>(maxQ, getQNetwork().getLatestScore(), stepReply);
     }
 
     @Override
     protected void finishEpoch(Observation observation) {
-        if(pendingTransition != null) {
-            pendingTransition.setNextObservation(observation);
-            getExpReplay().store(pendingTransition);
-        }
+        learningBehavior.handleEpisodeEnd(observation);
     }
 }

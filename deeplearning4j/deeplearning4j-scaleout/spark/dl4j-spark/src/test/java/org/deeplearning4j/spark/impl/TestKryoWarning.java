@@ -86,7 +86,7 @@ public class TestKryoWarning {
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
                         .set("spark.driver.host", "localhost")
                         .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-                        .set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
+                        .set("spark.kryo.registrator", "org.nd4j.kryo.Nd4jRegistrator");
 
         doTestMLN(sparkConf);
     }
@@ -122,7 +122,7 @@ public class TestKryoWarning {
         SparkConf sparkConf = new SparkConf().setMaster("local[*]").setAppName("sparktest")
                         .set("spark.driver.host", "localhost")
                         .set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-                        .set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");
+                        .set("spark.kryo.registrator", "org.nd4j.kryo.Nd4jRegistrator");
 
         doTestCG(sparkConf);
     }

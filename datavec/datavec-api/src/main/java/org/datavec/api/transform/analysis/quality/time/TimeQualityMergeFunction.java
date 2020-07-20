@@ -17,7 +17,7 @@
 package org.datavec.api.transform.analysis.quality.time;
 
 import org.datavec.api.transform.quality.columns.TimeQuality;
-import org.nd4j.linalg.function.BiFunction;
+import org.nd4j.common.function.BiFunction;
 
 import java.io.Serializable;
 

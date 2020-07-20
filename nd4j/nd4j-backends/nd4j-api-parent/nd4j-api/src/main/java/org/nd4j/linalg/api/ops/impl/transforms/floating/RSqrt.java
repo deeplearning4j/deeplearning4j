@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.floating;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -31,12 +32,16 @@ import java.util.List;
  *
  * @author Adam Gibson
   */
+@NoArgsConstructor
 public class RSqrt extends BaseTransformFloatOp {
+
+    public RSqrt(SameDiff sameDiff, SDVariable i_v) {
+        this(sameDiff, i_v, false);
+    }
+
     public RSqrt(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }
-
-    public RSqrt() {}
 
     public RSqrt(INDArray x, INDArray z) {
         super(x, z);
@@ -70,7 +75,7 @@ public class RSqrt extends BaseTransformFloatOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable xPowNeg32 = f().pow(arg(), -1.5).mul(-0.5);
+        SDVariable xPowNeg32 = sameDiff.math.pow(arg(), -1.5).mul(-0.5);
         return Collections.singletonList(i_v.get(0).mul(xPowNeg32));
     }
 

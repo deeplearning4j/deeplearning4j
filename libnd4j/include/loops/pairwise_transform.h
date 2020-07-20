@@ -52,65 +52,55 @@ namespace functions {
         class PairWiseTransform {
         public:
 
-#ifdef __CUDACC__            
+#ifdef __CUDABLAS__
 
             template <typename OpType>            
-            static __host__ void intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams);
+            static __host__ void intermediateShaped(dim3& launchDims, cudaStream_t *stream,
+                                                    const void *vx, const Nd4jLong *xShapeInfo,
+                                                    const void *vy, const Nd4jLong *yShapeInfo,
+                                                    void *vz, const Nd4jLong *zShapeInfo,
+                                                    void *vextraParams);
 
-            static __host__ void executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams);
+            static __host__ void executeCudaShaped(dim3& launchDims, cudaStream_t *stream,
+                                                   int opNum,
+                                                   const void *x, const Nd4jLong *xShapeInfo,
+                                                   const void *y, const Nd4jLong *yShapeInfo,
+                                                   void *z, const Nd4jLong *zShapeInfo,
+                                                   void *extraParams);
 
 #endif
         public:
 
-            static void exec(
-				const int opNum,
-				void *x,
-				Nd4jLong *xShapeInfo,
-				void *y,
-				Nd4jLong *yShapeInfo,
-				void *z,
-				Nd4jLong *zShapeInfo,
-				void *extraParams,
-                uint64_t start,
-                uint64_t stop);
+            static void exec(int opNum,
+                             const void *x, const Nd4jLong *xShapeInfo,
+                             const void *y, const Nd4jLong *yShapeInfo,
+                             void *z, const Nd4jLong *zShapeInfo,
+                             void *extraParams,
+                             uint64_t start, uint64_t stop);
 
-			static void exec(
-				const int opNum,
-				void *x,
-				Nd4jLong xStride,
-				void *y,
-				Nd4jLong yStride,
-				void *z,
-				Nd4jLong resultStride,
-				void *extraParams,
-				Nd4jLong len,
-                uint64_t start,
-                uint64_t stop);
+			static void exec(int opNum,
+                             const void *x, Nd4jLong xStride,
+                             const void *y, Nd4jLong yStride,
+                             void *z, Nd4jLong resultStride,
+                             void *extraParams,
+                             Nd4jLong len,
+                             uint64_t start, uint64_t stop);
 
 
 			template<typename OpType>
-			static void exec(
-                    void *vx,
-                    Nd4jLong* xShapeInfo,
-                    void *vy,
-                    Nd4jLong* yShapeInfo,
-                    void *vresult,
-                    Nd4jLong* zShapeInfo,
-                    void *vextraParams,
-                    uint64_t start,
-                    uint64_t stop);
+			static void exec(const void *vx, const Nd4jLong* xShapeInfo,
+                             const void *vy, const Nd4jLong* yShapeInfo,
+                             void *vresult, const Nd4jLong* zShapeInfo,
+                             void *vextraParams,
+                             uint64_t start, uint64_t stop);
 
             template<typename OpType>
-            static void exec(void *vx,
-                             Nd4jLong xStride,
-                             void *vy,
-                             Nd4jLong yStride,
-                             void *vresult,
-                             Nd4jLong resultStride,
+            static void exec(const void *vx, Nd4jLong xStride,
+                             const void *vy, Nd4jLong yStride,
+                             void *vresult, Nd4jLong resultStride,
                              void *vextraParams,
                              Nd4jLong len,
-                             uint64_t start,
-                             uint64_t stop);
+                             uint64_t start, uint64_t stop);
         };
     }
 }

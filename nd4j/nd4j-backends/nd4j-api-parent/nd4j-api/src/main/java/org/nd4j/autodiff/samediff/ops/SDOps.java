@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2019-2020 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -14,30 +14,24 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
+
 package org.nd4j.autodiff.samediff.ops;
 
-import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.samediff.SDVariable;
+import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
+
 import org.nd4j.autodiff.samediff.SameDiff;
 
-/**
- * Abstract class for defining categories of operations - such as {@link SDMath} that is available via {@code SameDiff.math()}
- *
- * @author Alex Black
- */
-public abstract class SDOps {
+public class SDOps {
+  protected SameDiff sd;
 
-    protected final SameDiff sd;
+  public SDOps() {
+    sd = null;
+  }
 
-    public SDOps(SameDiff sameDiff) {
-        this.sd = sameDiff;
-    }
+  public SDOps(SameDiff sameDiff) {
+    this.sd = sameDiff;
+  }
 
-    protected DifferentialFunctionFactory f() {
-        return sd.f();
-    }
 
-    protected SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName) {
-        return sd.updateVariableNameAndReference(varToUpdate, newVarName);
-    }
 }

@@ -44,7 +44,7 @@ namespace sd {
 
             auto shape = shapeInput->getBufferAsVector<Nd4jLong>();
 
-            return SHAPELIST(sd::ConstantShapeHelper::getInstance()->createShapeInfo(dtype, order, shape));
+            return SHAPELIST(sd::ConstantShapeHelper::getInstance().createShapeInfo(dtype, order, shape));
         }
 
         DECLARE_TYPES(create) {

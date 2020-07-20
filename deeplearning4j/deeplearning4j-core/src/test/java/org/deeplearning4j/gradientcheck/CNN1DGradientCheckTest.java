@@ -54,6 +54,11 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
         Nd4j.setDataType(DataType.DOUBLE);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 90000L;
+    }
+
     @Test
     public void testCnn1DWithLocallyConnected1D() {
         Nd4j.getRandom().setSeed(1337);

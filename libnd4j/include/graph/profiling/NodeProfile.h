@@ -88,8 +88,8 @@ namespace sd {
             void setObjectsSize(Nd4jLong bytes);
             void setTotalSize(Nd4jLong bytes);
 
-            void addInputShape(Nd4jLong *shapeInfo);
-            void addOutputShape(Nd4jLong *shapeInfo);
+            void addInputShape(Nd4jLong const* shapeInfo);
+            void addOutputShape(Nd4jLong const* shapeInfo);
 
             Nd4jLong getActivationsSize() const;
             Nd4jLong getTemporarySize() const;

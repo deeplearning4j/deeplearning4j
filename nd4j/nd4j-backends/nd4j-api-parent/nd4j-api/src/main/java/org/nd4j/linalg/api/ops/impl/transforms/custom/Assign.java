@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -44,6 +44,10 @@ public class Assign extends DynamicCustomOp {
 
     public Assign(INDArray[] inputs, INDArray[] outputs) {
         super(null,inputs, outputs);
+    }
+
+    public Assign(INDArray x, INDArray y ) {
+        this( new INDArray[]{y ,x},new INDArray[]{y}); // TODO: Still check. y cannot be null, must be same shape as x.
     }
 
     @Override
@@ -89,7 +93,7 @@ public class Assign extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1){
         //TODO replace with assign backprop op from libnd4j (that handles the broadcast case properly)
-        return Arrays.asList(f().zerosLike(larg()), f1.get(0));
+        return Arrays.asList(sameDiff.zerosLike(larg()), f1.get(0));
     }
 
     @Override

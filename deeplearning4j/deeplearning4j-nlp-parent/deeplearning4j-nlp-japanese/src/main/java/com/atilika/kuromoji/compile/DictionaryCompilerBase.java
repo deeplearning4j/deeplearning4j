@@ -20,10 +20,12 @@ import com.atilika.kuromoji.dict.CharacterDefinitions;
 import com.atilika.kuromoji.dict.ConnectionCosts;
 import com.atilika.kuromoji.dict.UnknownDictionary;
 import com.atilika.kuromoji.trie.DoubleArrayTrie;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.util.List;
 
+@Slf4j
 public abstract class DictionaryCompilerBase {
 
     public void build(String inputDirname, String outputDirname, String encoding, boolean compactTries)
@@ -66,7 +68,7 @@ public abstract class DictionaryCompilerBase {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("",e);
         }
         ProgressLog.end();
 

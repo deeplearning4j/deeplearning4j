@@ -19,12 +19,13 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -35,8 +36,16 @@ import java.util.List;
 @NoArgsConstructor
 public class InvertPermutation extends BaseDynamicTransformOp {
 
+    public InvertPermutation(SameDiff sameDiff, SDVariable input) {
+        this(sameDiff, input, false);
+    }
+
     public InvertPermutation(SameDiff sameDiff, SDVariable input, boolean inPlace) {
         super( sameDiff, new SDVariable[] {input}, inPlace);
+    }
+
+    public InvertPermutation(INDArray input) {
+        addInputArgument(input);
     }
 
     @Override
@@ -58,8 +67,8 @@ public class InvertPermutation extends BaseDynamicTransformOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
         SDVariable gradient = grad.get(0);
-        SDVariable invertedGradient = f().invertPermutation(gradient, false);
-        return Arrays.asList(invertedGradient);
+        SDVariable invertedGradient = sameDiff.invertPermutation(gradient);
+        return Collections.singletonList(invertedGradient);
     }
 
     @Override

@@ -23,9 +23,9 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.util.ReflectionUtils;
-import org.nd4j.linalg.primitives.Pair;
 import org.datavec.hadoop.records.reader.mapfile.index.LongIndexToKey;
 import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
+import org.nd4j.common.primitives.Pair;
 
 import java.io.Closeable;
 import java.io.IOException;

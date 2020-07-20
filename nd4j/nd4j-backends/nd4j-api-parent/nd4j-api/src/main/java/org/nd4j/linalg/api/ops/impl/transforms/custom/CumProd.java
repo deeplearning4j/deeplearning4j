@@ -20,7 +20,7 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.descriptors.properties.adapters.BooleanAdapter;
@@ -28,6 +28,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.CumProdBp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -59,7 +60,7 @@ public class CumProd extends DynamicCustomOp {
     }
 
     public CumProd(INDArray in, INDArray result, boolean exclusive, boolean reverse, int... axis) {
-        super(null, new INDArray[]{in}, new INDArray[]{result}, null, (List<Integer>)null);
+        super(null, new INDArray[]{in}, result != null ? new INDArray[]{result} : null, null, (List<Integer>)null);
         this.exclusive = exclusive;
         this.reverse = reverse;
         this.jaxis = axis;
@@ -67,6 +68,10 @@ public class CumProd extends DynamicCustomOp {
         tArguments.clear();
         iArguments.clear();
         addArgs();
+    }
+
+    public CumProd(INDArray in,  boolean exclusive, boolean reverse, int... axis) {
+        this(in, null, exclusive, reverse, axis);
     }
 
     @Override
@@ -138,7 +143,7 @@ public class CumProd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> grad) {
-        return Collections.singletonList(f().cumprodBp(arg(0), grad.get(0), exclusive, reverse, jaxis));
+        return new CumProdBp(sameDiff, arg(0), grad.get(0), exclusive, reverse, jaxis).outputs();
     }
 
     @Override

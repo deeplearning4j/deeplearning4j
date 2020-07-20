@@ -22,7 +22,7 @@ import org.agrona.CloseHelper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.BaseND4JTest;
+import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -109,7 +109,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
                 try {
                     subscriber.launch();
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
 
             });
@@ -133,7 +133,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
                     publisher.publish(arr);
                     log.info("Sent array");
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("",e);
                 }
             });
 
@@ -189,7 +189,7 @@ public class NdArrayIpcTest extends BaseND4JTest {
             try {
                 subscriber.launch();
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("",e);
             }
 
         });

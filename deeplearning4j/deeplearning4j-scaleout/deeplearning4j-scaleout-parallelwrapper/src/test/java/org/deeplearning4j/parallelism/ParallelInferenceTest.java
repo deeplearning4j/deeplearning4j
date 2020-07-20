@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.*;
 import org.junit.rules.Timeout;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -44,9 +43,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.primitives.Triple;
-import org.nd4j.resources.Resources;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.primitives.Triple;
+import org.nd4j.common.resources.Resources;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -660,7 +659,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                     //OK
                     System.out.println("Expected exception: " + e.getMessage());
                 } catch (Exception e){
-                    e.printStackTrace();
+                    log.error("",e);
                     fail("Expected other exception type");
                 }
 
@@ -903,7 +902,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                             int idx = t.getRight();
                             act[idx] = inf.output(t.getFirst(), t.getSecond());
                         } catch (Exception e) {
-                            e.printStackTrace();
+                            log.error("",e);
                             failedCount.incrementAndGet();
                         }
                     }
@@ -955,7 +954,7 @@ public class ParallelInferenceTest extends BaseDL4JTest {
                         act[j] = inf.output(in.get(j), inMask);
                         counter.incrementAndGet();
                     } catch (Exception e){
-                        e.printStackTrace();
+                        log.error("",e);
                         failedCount.incrementAndGet();
                     }
                 }

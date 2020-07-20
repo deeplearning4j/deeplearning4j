@@ -41,6 +41,10 @@ public class Any extends BaseReduceBoolOp {
         super(x);
     }
 
+    public Any(INDArray x, int... dimensions) {
+        super(x, dimensions);
+    }
+
     @Override
     public int opNum() {
         return 0;
@@ -53,7 +57,7 @@ public class Any extends BaseReduceBoolOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().zerosLike(arg()));
+        return Collections.singletonList(sameDiff.zerosLike(arg()));
     }
 
     @Override

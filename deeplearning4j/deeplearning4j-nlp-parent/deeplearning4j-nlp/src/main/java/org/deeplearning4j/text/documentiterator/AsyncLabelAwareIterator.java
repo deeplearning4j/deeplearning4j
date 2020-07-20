@@ -18,9 +18,10 @@ package org.deeplearning4j.text.documentiterator;
 
 import lombok.Getter;
 import lombok.NonNull;
-import org.deeplearning4j.parallelism.AsyncIterator;
+import org.deeplearning4j.core.parallelism.AsyncIterator;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * @author raver119@gmail.com
@@ -77,7 +78,7 @@ public class AsyncLabelAwareIterator implements LabelAwareIterator, Iterator<Lab
     }
 
     @Override
-    public LabelledDocument next() {
+    public LabelledDocument next() throws NoSuchElementException {
         return nextDocument();
     }
 }

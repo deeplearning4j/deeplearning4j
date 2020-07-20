@@ -56,7 +56,10 @@ CUSTOM_OP_IMPL(space_to_batch_nd, 3, 1, false, 0, 0) {
         REQUIRE_TRUE((input->sizeAt(i + 1) + padLeft + padRight) % blockSize == 0, 0, "SpaceToBatchND: after padding, spatial dimensions of input array must be divisible by blockSize !");
     }
 
-    helpers::spaceToBatchND(block.launchContext(), *input, *blockShape, *padding, *output);
+    if (shape::strideDescendingCAscendingF(input->shapeInfo()))
+        helpers::spaceToBatchND(block.launchContext(), *input, *blockShape, *padding, *output);
+    else
+        helpers::spaceToBatchND(block.launchContext(), input->dup(), *blockShape, *padding, *output);
 
     return Status::OK();
 }
@@ -93,7 +96,7 @@ DECLARE_SHAPE_FN(space_to_batch_nd) {
     for (uint i = 0; i < numOfSpatialDims; ++i)
         outShape[i + 1] = (outShape[i + 1] + INPUT_VARIABLE(2)->e<uint>(i,0) + INPUT_VARIABLE(2)->e<uint>(i,1)) / INPUT_VARIABLE(1)->e<Nd4jLong>(i);
 
-    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outShape));
+    return SHAPELIST(ConstantShapeHelper::getInstance().createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', outShape));
 }
 
 }

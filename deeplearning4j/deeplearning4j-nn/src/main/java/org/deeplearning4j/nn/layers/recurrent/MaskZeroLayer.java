@@ -22,13 +22,13 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.wrapper.BaseWrapperLayer;
-import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.common.primitives.Pair;
 
 import lombok.NonNull;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+
+import static org.deeplearning4j.nn.conf.RNNFormat.NWC;
 
 /**
  * Masks timesteps with activation equal to the specified masking value, defaulting to 0.0.
@@ -76,7 +76,11 @@ public class MaskZeroLayer extends BaseWrapperLayer {
             throw new IllegalArgumentException("Expected input of shape [batch_size, timestep_input_size, timestep], " +
                     "got shape "+Arrays.toString(input.shape()) + " instead");
         }
-        INDArray mask = input.eq(maskingValue).castTo(input.dataType()).sum(1).neq(input.shape()[1]);
+        if ((underlying instanceof BaseRecurrentLayer &&
+                ((BaseRecurrentLayer)underlying).getDataFormat() == NWC)){
+            input = input.permute(0, 2, 1);
+        }
+        INDArray mask = input.eq(maskingValue).castTo(input.dataType()).sum(1).neq(input.shape()[1]).castTo(input.dataType());
         underlying.setMaskArray(mask.detach());
     }
 

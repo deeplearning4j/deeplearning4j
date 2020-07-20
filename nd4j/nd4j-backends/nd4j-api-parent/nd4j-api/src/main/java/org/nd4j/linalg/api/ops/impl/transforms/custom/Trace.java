@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.impl.transforms.custom;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -51,12 +51,12 @@ public class Trace extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradAtOutput){
-        SDVariable rows = f().reshape(f().sizeAt(arg(), -2), new long[]{1});
-        SDVariable cols = f().reshape(f().sizeAt(arg(), -1), new long[]{1});
-        SDVariable eye = sameDiff.math().eye(f().shape(gradAtOutput.get(0)), rows, cols);
+        SDVariable rows = sameDiff.reshape(sameDiff.sizeAt(arg(), -2), 1);
+        SDVariable cols = sameDiff.reshape(sameDiff.sizeAt(arg(), -1), 1);
+        SDVariable eye = sameDiff.math().eye(/*sameDiff.shape(gradAtOutput.get(0)),*/ rows, cols);
         //Reshape gradient from [x,y,z] to [x,y,z,1,1]
-        SDVariable reshapedGrad = f().expandDims(gradAtOutput.get(0), -1);
-        reshapedGrad = f().expandDims(reshapedGrad, -1);
+        SDVariable reshapedGrad = sameDiff.expandDims(gradAtOutput.get(0), -1);
+        reshapedGrad = sameDiff.expandDims(reshapedGrad, -1);
         return Collections.singletonList(reshapedGrad.mul(eye));
     }
 

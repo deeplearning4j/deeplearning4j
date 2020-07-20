@@ -50,6 +50,7 @@ namespace sd {
                 // make sure host buffer is updated
                 values.syncToHost();
                 indices.syncToHost();
+                output.syncToHost();
 
                 auto rank = output.rankOf();
 
@@ -113,7 +114,7 @@ namespace sd {
                     }
 
                     // write out values
-                    BUILD_DOUBLE_SELECTOR(values.dataType(), indices.dataType(), fill_, (values.getBuffer(), indices.getBuffer(), output.buffer(), output.getShapeInfo(), rank, values.lengthOf()), LIBND4J_TYPES, INDEXING_TYPES);
+                    BUILD_DOUBLE_SELECTOR(values.dataType(), indices.dataType(), fill_, (values.buffer(), indices.buffer(), output.buffer(), output.shapeInfo(), rank, values.lengthOf()), LIBND4J_TYPES, INDEXING_TYPES);
                 }
                 // copy back to device, if there's any
                 output.syncToDevice();

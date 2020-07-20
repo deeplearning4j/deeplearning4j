@@ -19,12 +19,13 @@ package org.nd4j.linalg.api.ops.impl.summarystats;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceOp;
 import org.nd4j.linalg.api.ops.OpContext;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.VarianceBp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -65,6 +66,10 @@ public class Variance extends BaseReduceOp {
     public Variance(INDArray x, INDArray z, boolean biasCorrected, int... dimensions) {
         this(x, z, true, false, dimensions);
         this.biasCorrected = biasCorrected;
+    }
+
+    public Variance(INDArray x, boolean biasCorrected, boolean keepDims, int... dimensions) {
+        this(x, null, biasCorrected, keepDims, dimensions);
     }
 
     public Variance(INDArray x, boolean biasCorrected, int... dimensions) {
@@ -111,7 +116,7 @@ public class Variance extends BaseReduceOp {
         //If out = var(in) then:
         //dL/dIn = dL/dOut * dOut/dIn
         // with dOut/dIn = (in-mean) * 2/(n-1)
-        return Collections.singletonList(f().varianceBp(arg(), grad.get(0), biasCorrected, keepDims, dimensions));
+        return new VarianceBp(sameDiff, arg(), grad.get(0), biasCorrected, keepDims, dimensions).outputs();
     }
 
     @Override
@@ -160,10 +165,7 @@ public class Variance extends BaseReduceOp {
             return false;
 
         INDArray z = oc != null ? oc.getOutputArray(0) : z();
-        if (z != null && !z.isR())
-            return false;
-
-        return true;
+        return !(z != null && !z.isR());
     }
 
     @Override
@@ -196,6 +198,7 @@ public class Variance extends BaseReduceOp {
         return Type.VARIANCE;
     }
 
+    @Override
     public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
         //Variance and stdev reduction: Always FP out, but if FP in is float/double/half then it's float/double/half out

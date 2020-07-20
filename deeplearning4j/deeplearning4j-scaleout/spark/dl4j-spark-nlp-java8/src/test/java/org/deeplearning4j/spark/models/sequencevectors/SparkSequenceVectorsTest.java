@@ -31,7 +31,7 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.nd4j.linalg.primitives.Counter;
+import org.nd4j.common.primitives.Counter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +43,12 @@ import static org.junit.Assert.assertNotEquals;
  * @author raver119@gmail.com
  */
 public class SparkSequenceVectorsTest extends BaseDL4JTest {
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 120000L;
+    }
+
     protected static List<Sequence<VocabWord>> sequencesCyclic;
     private JavaSparkContext sc;
 

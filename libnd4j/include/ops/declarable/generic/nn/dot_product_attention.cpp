@@ -40,7 +40,7 @@ namespace ops  {
         if(outputWeights){
             weights = OUTPUT_VARIABLE(1);
         }else{
-            auto weightShape = ShapeUtils::evalShapeForMatmul(keys->getShapeInfo(), queries->getShapeInfo(), true, false);
+            auto weightShape = ShapeUtils::evalShapeForMatmul(keys->shapeInfo(), queries->shapeInfo(), true, false);
             weights = new NDArray('c', weightShape, values->dataType(), block.launchContext());
         }
 
@@ -113,8 +113,8 @@ namespace ops  {
         auto keys_shape = inputShape->at(1);
         auto values_shape = inputShape->at(2);
 
-        auto weights_shape = ConstantShapeHelper::getInstance()->createShapeInfo(sd::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(keys_shape, query_shape, true, false));
-        auto output_shape = ConstantShapeHelper::getInstance()->createShapeInfo(sd::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false));
+        auto weights_shape = ConstantShapeHelper::getInstance().createShapeInfo(sd::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(keys_shape, query_shape, true, false));
+        auto output_shape = ConstantShapeHelper::getInstance().createShapeInfo(sd::ArrayOptions::dataType(values_shape), 'c', ShapeUtils::evalShapeForMatmul(values_shape, weights_shape, false, false));
 
         if(INT_ARG(1)){
             return SHAPELIST(output_shape, weights_shape);
@@ -164,7 +164,7 @@ namespace ops  {
         if(normalization)
             factor = sqrt((double)keys->sizeAt(-2));
 
-        auto weightShape = ShapeUtils::evalShapeForMatmul(keys->getShapeInfo(), queries->getShapeInfo(), true, false);
+        auto weightShape = ShapeUtils::evalShapeForMatmul(keys->shapeInfo(), queries->shapeInfo(), true, false);
 
         sd::ops::matmul mmul;
         NDArray preSoftmax('c', weightShape, values->dataType(), block.launchContext());
@@ -188,7 +188,7 @@ namespace ops  {
         softmax.execute({&preSoftmax}, {&weights},{}, {-2}, {});
 
         sd::ops::matmul_bp mmul_bp;
-        NDArray dLdw(weights.getShapeInfo(), block.workspace());
+        NDArray dLdw(weights.shapeInfo(), block.workspace());
         mmul_bp.execute({values, &weights, eps}, std::vector<NDArray*>{dLdv, &dLdw}, {}, {}, {});
 
         NDArray dLds(preSoftmax.shapeInfo(), block.workspace());

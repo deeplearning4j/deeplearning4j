@@ -18,6 +18,7 @@ package org.datavec.api.util;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.nd4j.common.tests.BaseND4JTest;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,7 +34,7 @@ import static org.hamcrest.core.IsEqual.equalTo;
 /**
  * @author raver119@gmail.com
  */
-public class ClassPathResourceTest {
+public class ClassPathResourceTest extends BaseND4JTest {
 
     private boolean isWindows = false; //File sizes are reported slightly different on Linux vs. Windows
 

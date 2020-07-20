@@ -41,6 +41,11 @@ public class BaseMKLDNNHelper {
             return false;
         }
 
+        if(!Nd4j.getEnvironment().helpersAllowed()){
+            //C++ helpers not allowed
+            return false;
+        }
+
         try{
             Class<?> c = Class.forName("org.nd4j.nativeblas.Nd4jCpu$Environment");
             Method m = c.getMethod("getInstance");

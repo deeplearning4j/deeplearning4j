@@ -18,6 +18,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.util.ThreadUtils;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -27,8 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import org.deeplearning4j.util.ThreadUtils;
 
 /**
  * This BlockingQueue implementation is suited only for symmetric gradients updates, and should NOT be used anywhere else.

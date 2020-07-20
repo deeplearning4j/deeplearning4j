@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.earlystopping;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
@@ -25,7 +24,7 @@ import org.deeplearning4j.earlystopping.termination.EpochTerminationCondition;
 import org.deeplearning4j.earlystopping.termination.IterationTerminationCondition;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
-import org.nd4j.linalg.function.Supplier;
+import org.nd4j.common.function.Supplier;
 
 import java.io.Serializable;
 import java.util.ArrayList;

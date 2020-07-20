@@ -224,7 +224,7 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     const bool keepUnitiesInShape = inRank == mean->rankOf();
 
     // inverse batch size 1/N
-    const float Ninv = 1.f * shape::tadLength(input->getShapeInfo(), axes.data(), axes.size()) / input->lengthOf();
+    const float Ninv = 1.f * shape::tadLength(input->shapeInfo(), axes.data(), axes.size()) / input->lengthOf();
 
     // input - mean
     NDArray xMinusMean(input); // empty array with same shape as input
@@ -322,8 +322,8 @@ DECLARE_TYPES(batchnorm_bp) {
 
 DECLARE_SHAPE_FN(batchnorm_bp) {
 
-    Nd4jLong* inShapeInfo   = inputShape->at(0);
-    Nd4jLong* meanShapeInfo = inputShape->at(1);
+    Nd4jLong const* inShapeInfo   = inputShape->at(0);
+    Nd4jLong const* meanShapeInfo = inputShape->at(1);
 
     const bool applyScale  = (bool)INT_ARG(0);
     const bool applyOffset = (bool)INT_ARG(1);
@@ -333,10 +333,10 @@ DECLARE_SHAPE_FN(batchnorm_bp) {
     auto shapes = SHAPELIST();
 
     // dLdI shapeInfo
-    shapes->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(outType, inShapeInfo));
+    shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(outType, inShapeInfo));
 
     // dLdM shapeInfo
-    shapes->push_back(ConstantShapeHelper::getInstance()->createShapeInfo(outType, meanShapeInfo));
+    shapes->push_back(ConstantShapeHelper::getInstance().createShapeInfo(outType, meanShapeInfo));
 
     // dLdV shapeInfo (same as dLdM)
     shapes->push_back(shapes->at(shapes->size()-1));

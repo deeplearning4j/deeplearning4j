@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.adapters.DataTypeAdapter;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -71,9 +71,7 @@ public class RandomGamma extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if(attributesForNode.containsKey("alpha")) {
-            outputDataType = DataTypeAdapter.dtypeConv(attributesForNode.get("alpha").getType());
-        }
+            outputDataType = DataTypeAdapter.dtypeConv(attributesForNode.get("T").getType());
     }
 
     @Override
