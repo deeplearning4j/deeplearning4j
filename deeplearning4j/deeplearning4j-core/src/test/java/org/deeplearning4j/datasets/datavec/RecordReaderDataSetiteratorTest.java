@@ -42,7 +42,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
 import org.deeplearning4j.datasets.datavec.tools.SpecialImageRecordReader;
-import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
+import org.nd4j.linalg.dataset.AsyncDataSetIterator;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
