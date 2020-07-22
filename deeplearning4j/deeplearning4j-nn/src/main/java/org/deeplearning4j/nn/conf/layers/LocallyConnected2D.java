@@ -203,14 +203,14 @@ public class LocallyConnected2D extends SameDiffLayer {
         }
 
         SDVariable[] inputArray = new SDVariable[outH * outW];
-        for (int i = 0; i < outH; i++) {
-            for (int j = 0; j < outW; j++) {
+        for (int y = 0; y < outH; y++) {
+            for (int x = 0; x < outW; x++) {
                 SDVariable slice = layerInput.get(SDIndex.all(), // miniBatch
                                 SDIndex.all(), // nIn
-                                SDIndex.interval(i * sH, i * sH + kH), // kernel height
-                                SDIndex.interval(j * sW, j * sW + kW) // kernel width
+                                SDIndex.interval(y * sH, y * sH + kH), // kernel height
+                                SDIndex.interval(x * sW, x * sW + kW) // kernel width
                 );
-                inputArray[i * outH + j] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
+                inputArray[x * outH + y] = sameDiff.reshape(slice, 1, miniBatch, featureDim);
             }
         }
         SDVariable concatOutput = sameDiff.concat(0, inputArray); // (outH * outW, miniBatch, featureDim)
