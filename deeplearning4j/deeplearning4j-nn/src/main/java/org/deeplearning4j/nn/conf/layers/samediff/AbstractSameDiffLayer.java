@@ -16,11 +16,11 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -42,14 +42,22 @@ import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, doNotUseGetters = true) 
+//@EqualsAndHashCode(callSuper = true) Won't work correctly for this class due to
+//java.lang.NullPointerException
+//at org.deeplearning4j.nn.conf.layers.LocallyConnected2D.defineParameters(LocallyConnected2D.java:151)
+//at org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer.getLayerParams(AbstractSameDiffLayer.java:103)
+//at org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer.hashCode(AbstractSameDiffLayer.java:52)
+//at org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer.hashCode(SameDiffLayer.java:56)
+//at org.deeplearning4j.nn.conf.layers.LocallyConnected2D.hashCode(LocallyConnected2D.java:51)
 public abstract class AbstractSameDiffLayer extends Layer {
 
     protected List<Regularization> regularization;
@@ -62,7 +70,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
     private SDLayerParams layerParams;
 
     @Override
-    public List<Regularization> getRegularizationByParam(String paramName) {
+    public List<Regularization> getRegularizationByParam(final String paramName) {
         if(layerParams.isWeightParam(paramName)){
             return regularization;
         } else if(layerParams.isBiasParam(paramName)){
@@ -71,7 +79,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
         return null;
     }
 
-    protected AbstractSameDiffLayer(Builder builder) {
+    protected AbstractSameDiffLayer(final Builder builder) {
         super(builder);
         this.regularization = builder.regularization;
         this.regularizationBias = builder.regularizationBias;
@@ -82,13 +90,13 @@ public abstract class AbstractSameDiffLayer extends Layer {
         // to pre-empt a failure later for users, which will have a more difficult to understand message
         try {
             getClass().getDeclaredConstructor();
-        } catch (NoSuchMethodException e) {
+        } catch (final NoSuchMethodException e) {
             log.warn("***SameDiff layer {} does not have a zero argument (no-arg) constructor.***\nA no-arg constructor "
                             + "is required for JSON deserialization, which is used for both model saving and distributed (Spark) "
                             + "training.\nA no-arg constructor (private, protected or public) as well as setters (or simply a "
                             + "Lombok @Data annotation) should be added to avoid JSON errors later.",
                             getClass().getName());
-        } catch (SecurityException e) {
+        } catch (final SecurityException e) {
             //Ignore
         }
     }
@@ -106,18 +114,18 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override) {
+    public void setNIn(final InputType inputType, final boolean override) {
         //Default implementation: no-op
     }
 
     @Override
-    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+    public InputPreProcessor getPreProcessorForInputType(final InputType inputType) {
         //Default implementation: no-op
         return null;
     }
 
 
-    public void applyGlobalConfigToLayer(NeuralNetConfiguration.Builder globalConfig) {
+    public void applyGlobalConfigToLayer(final NeuralNetConfiguration.Builder globalConfig) {
         //Default implementation: no op
     }
 
@@ -149,7 +157,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     @Override
-    public IUpdater getUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(final String paramName) {
         if (biasUpdater != null && initializer().isBiasParam(this, paramName)) {
             return biasUpdater;
         } else if (initializer().isBiasParam(this, paramName) || initializer().isWeightParam(this, paramName)) {
@@ -159,12 +167,12 @@ public abstract class AbstractSameDiffLayer extends Layer {
     }
 
     @Override
-    public boolean isPretrainParam(String paramName) {
+    public boolean isPretrainParam(final String paramName) {
         return false;
     }
 
     @Override
-    public LayerMemoryReport getMemoryReport(InputType inputType) {
+    public LayerMemoryReport getMemoryReport(final InputType inputType) {
         return new LayerMemoryReport(); //TODO
     }
 
@@ -175,15 +183,15 @@ public abstract class AbstractSameDiffLayer extends Layer {
      * @param param Name of the parameter
      * @return Memory layout ('c' or 'f') of the parameter
      */
-    public char paramReshapeOrder(String param) {
+    public char paramReshapeOrder(final String param) {
         return 'c';
     }
 
-    protected void initWeights(int fanIn, int fanOut, WeightInit weightInit, INDArray array) {
+    protected void initWeights(final int fanIn, final int fanOut, final WeightInit weightInit, final INDArray array) {
         WeightInitUtil.initWeights(fanIn, fanOut, array.shape(), weightInit, null, paramReshapeOrder(null), array);
     }
 
-    public void applyGlobalConfig(NeuralNetConfiguration.Builder b) {
+    public void applyGlobalConfig(final NeuralNetConfiguration.Builder b) {
         if (regularization == null || regularization.isEmpty()) {
             regularization = b.getRegularization();
         }
@@ -211,7 +219,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
      * @param input Input to the layer
      * @return A mask array - should be same datatype as the input (usually)
      */
-    public INDArray onesMaskForInput(INDArray input){
+    public INDArray onesMaskForInput(final INDArray input){
         if(input.rank() == 2){
             return Nd4j.ones(input.dataType(), input.size(0), 1);
         } else if(input.rank() == 3){
@@ -253,7 +261,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
          * coefficient for the bias.
          */
-        public T l1(double l1) {
+        public T l1(final double l1) {
             //Check if existing L1 exists; if so, replace it
             NetworkUtils.removeInstances(this.regularization, L1Regularization.class);
             if(l1 > 0.0) {
@@ -268,7 +276,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecay(double,boolean)} should be preferred to
          * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
-        public T l2(double l2) {
+        public T l2(final double l2) {
             //Check if existing L2 exists; if so, replace it. Also remove weight decay - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
             if(l2 > 0.0) {
@@ -281,7 +289,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
         /**
          * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
          */
-        public T l1Bias(double l1Bias) {
+        public T l1Bias(final double l1Bias) {
             NetworkUtils.removeInstances(this.regularizationBias, L1Regularization.class);
             if(l1Bias > 0.0) {
                 this.regularizationBias.add(new L1Regularization(l1Bias));
@@ -294,7 +302,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecayBias(double,boolean)} should be preferred to
          * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
-        public T l2Bias(double l2Bias) {
+        public T l2Bias(final double l2Bias) {
             NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
             if(l2Bias > 0.0) {
                 NetworkUtils.removeInstancesWithWarning(this.regularizationBias, WeightDecay.class, "WeightDecay bias regularization removed: incompatible with added L2 regularization");
@@ -310,7 +318,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * @param coefficient Weight decay regularization coefficient
          * @see #weightDecay(double, boolean)
          */
-        public Builder weightDecay(double coefficient) {
+        public Builder weightDecay(final double coefficient) {
             return weightDecay(coefficient, true);
         }
 
@@ -321,7 +329,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * @param applyLR     Whether the learning rate should be multiplied in when performing weight decay updates. See {@link WeightDecay} for more details.
          * @see #weightDecay(double, boolean)
          */
-        public Builder weightDecay(double coefficient, boolean applyLR) {
+        public Builder weightDecay(final double coefficient, final boolean applyLR) {
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
             if(coefficient > 0.0) {
@@ -338,7 +346,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          * @param coefficient Weight decay regularization coefficient
          * @see #weightDecayBias(double, boolean)
          */
-        public Builder weightDecayBias(double coefficient) {
+        public Builder weightDecayBias(final double coefficient) {
             return weightDecayBias(coefficient, true);
         }
 
@@ -347,7 +355,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          *
          * @param coefficient Weight decay regularization coefficient
          */
-        public Builder weightDecayBias(double coefficient, boolean applyLR) {
+        public Builder weightDecayBias(final double coefficient, final boolean applyLR) {
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
             if(coefficient > 0.0) {
@@ -362,7 +370,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          *
          * @param regularization Regularization to apply for the network parameters/weights (excluding biases)
          */
-        public Builder regularization(List<Regularization> regularization) {
+        public Builder regularization(final List<Regularization> regularization) {
             this.setRegularization(regularization);
             return this;
         }
@@ -372,7 +380,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          *
          * @param regularizationBias Regularization to apply for the network biases only
          */
-        public Builder regularizationBias(List<Regularization> regularizationBias) {
+        public Builder regularizationBias(final List<Regularization> regularizationBias) {
             this.setRegularizationBias(regularizationBias);
             return this;
         }
@@ -383,7 +391,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          *
          * @param updater Updater to use
          */
-        public T updater(IUpdater updater) {
+        public T updater(final IUpdater updater) {
             this.setUpdater(updater);
             return (T) this;
         }
@@ -394,7 +402,7 @@ public abstract class AbstractSameDiffLayer extends Layer {
          *
          * @param biasUpdater Updater to use for bias parameters
          */
-        public T biasUpdater(IUpdater biasUpdater) {
+        public T biasUpdater(final IUpdater biasUpdater) {
             this.setBiasUpdater(biasUpdater);
             return (T) this;
         }
