@@ -16,7 +16,10 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import lombok.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -33,9 +36,11 @@ import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * A neural network layer.
@@ -58,7 +63,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected double gradientNormalizationThreshold = 1.0; //Threshold for l2 and element-wise gradient clipping
 
 
-    public BaseLayer(Builder builder) {
+    public BaseLayer(final Builder builder) {
         super(builder);
         this.layerName = builder.layerName;
         this.activationFn = builder.activationFn;
@@ -95,20 +100,20 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
 
     @Override
     public BaseLayer clone() {
-        BaseLayer clone = (BaseLayer) super.clone();
+        final BaseLayer clone = (BaseLayer) super.clone();
         if (clone.iDropout != null) {
             clone.iDropout = clone.iDropout.clone();
         }
         if(regularization != null){
             //Regularization fields are _usually_ thread safe and immutable, but let's clone to be sure
             clone.regularization = new ArrayList<>(regularization.size());
-            for(Regularization r : regularization){
+            for(final Regularization r : regularization){
                 clone.regularization.add(r.clone());
             }
         }
         if(regularizationBias != null){
             clone.regularizationBias = new ArrayList<>(regularizationBias.size());
-            for(Regularization r : regularizationBias){
+            for(final Regularization r : regularizationBias){
                 clone.regularizationBias.add(r.clone());
             }
         }
@@ -123,7 +128,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
      * @return IUpdater for the parameter
      */
     @Override
-    public IUpdater getUpdaterByParam(String paramName) {
+    public IUpdater getUpdaterByParam(final String paramName) {
         if (biasUpdater != null && initializer().isBiasParam(this, paramName)) {
             return biasUpdater;
         }
@@ -136,7 +141,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     }
 
     @Override
-    public List<Regularization> getRegularizationByParam(String paramName){
+    public List<Regularization> getRegularizationByParam(final String paramName){
         if(initializer().isWeightParam(this, paramName)){
             return regularization;
         } else if(initializer().isBiasParam(this, paramName)){
@@ -228,7 +233,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param activationFunction Activation function to use for the layer
          */
-        public T activation(IActivation activationFunction) {
+        public T activation(final IActivation activationFunction) {
             this.setActivationFn(activationFunction);
             return (T) this;
         }
@@ -238,7 +243,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param activation Activation function to use for the layer
          */
-        public T activation(Activation activation) {
+        public T activation(final Activation activation) {
             return activation(activation.getActivationFunction());
         }
 
@@ -247,7 +252,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @see IWeightInit
          */
-        public T weightInit(IWeightInit weightInit) {
+        public T weightInit(final IWeightInit weightInit) {
             this.setWeightInitFn(weightInit);
             return (T) this;
         }
@@ -257,7 +262,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @see WeightInit
          */
-        public T weightInit(WeightInit weightInit) {
+        public T weightInit(final WeightInit weightInit) {
             if (weightInit == WeightInit.DISTRIBUTION) {
                 throw new UnsupportedOperationException(
                                 "Not supported!, Use weightInit(Distribution distribution) instead!");
@@ -273,7 +278,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param distribution Distribution to use for weight initialization
          */
-        public T weightInit(Distribution distribution) {
+        public T weightInit(final Distribution distribution) {
             return weightInit(new WeightInitDistribution(distribution));
         }
 
@@ -282,7 +287,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param biasInit Value to use for initializing biases
          */
-        public T biasInit(double biasInit) {
+        public T biasInit(final double biasInit) {
             this.setBiasInit(biasInit);
             return (T) this;
         }
@@ -292,7 +297,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param gainInit Value to use for initializing gain
          */
-        public T gainInit(double gainInit) {
+        public T gainInit(final double gainInit) {
             this.gainInit = gainInit;
             return (T) this;
         }
@@ -302,7 +307,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * WeightInitDistribution(distribution))}
          */
         @Deprecated
-        public T dist(Distribution dist) {
+        public T dist(final Distribution dist) {
             return weightInit(dist);
         }
 
@@ -310,7 +315,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * L1 regularization coefficient (weights only). Use {@link #l1Bias(double)} to configure the l1 regularization
          * coefficient for the bias.
          */
-        public T l1(double l1) {
+        public T l1(final double l1) {
             //Check if existing L1 exists; if so, replace it
             NetworkUtils.removeInstances(this.regularization, L1Regularization.class);
             if(l1 > 0.0) {
@@ -325,7 +330,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecay(double,boolean)} should be preferred to
          * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
-        public T l2(double l2) {
+        public T l2(final double l2) {
             //Check if existing L2 exists; if so, replace it. Also remove weight decay - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularization, L2Regularization.class);
             if(l2 > 0.0) {
@@ -338,7 +343,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         /**
          * L1 regularization coefficient for the bias. Default: 0. See also {@link #l1(double)}
          */
-        public T l1Bias(double l1Bias) {
+        public T l1Bias(final double l1Bias) {
             NetworkUtils.removeInstances(this.regularizationBias, L1Regularization.class);
             if(l1Bias > 0.0) {
                 this.regularizationBias.add(new L1Regularization(l1Bias));
@@ -351,7 +356,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * <b>Note</b>: Generally, {@link WeightDecay} (set via {@link #weightDecayBias(double,boolean)} should be preferred to
          * L2 regularization. See {@link WeightDecay} javadoc for further details.<br>
          */
-        public T l2Bias(double l2Bias) {
+        public T l2Bias(final double l2Bias) {
             NetworkUtils.removeInstances(this.regularizationBias, L2Regularization.class);
             if(l2Bias > 0.0) {
                 NetworkUtils.removeInstancesWithWarning(this.regularizationBias, WeightDecay.class, "WeightDecay regularization removed: incompatible with added L2 regularization");
@@ -367,7 +372,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param coefficient Weight decay regularization coefficient
          * @see #weightDecay(double, boolean)
          */
-        public Builder weightDecay(double coefficient) {
+        public Builder weightDecay(final double coefficient) {
             return weightDecay(coefficient, true);
         }
 
@@ -378,7 +383,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param applyLR     Whether the learning rate should be multiplied in when performing weight decay updates. See {@link WeightDecay} for more details.
          * @see #weightDecay(double, boolean)
          */
-        public Builder weightDecay(double coefficient, boolean applyLR) {
+        public Builder weightDecay(final double coefficient, final boolean applyLR) {
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularization, WeightDecay.class);
             if(coefficient > 0.0) {
@@ -395,7 +400,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param coefficient Weight decay regularization coefficient
          * @see #weightDecayBias(double, boolean)
          */
-        public Builder weightDecayBias(double coefficient) {
+        public Builder weightDecayBias(final double coefficient) {
             return weightDecayBias(coefficient, true);
         }
 
@@ -404,7 +409,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param coefficient Weight decay regularization coefficient
          */
-        public Builder weightDecayBias(double coefficient, boolean applyLR) {
+        public Builder weightDecayBias(final double coefficient, final boolean applyLR) {
             //Check if existing weight decay if it exists; if so, replace it. Also remove L2 - it doesn't make sense to use both
             NetworkUtils.removeInstances(this.regularizationBias, WeightDecay.class);
             if(coefficient > 0.0) {
@@ -419,7 +424,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param regularization Regularization to apply for the network parameters/weights (excluding biases)
          */
-        public Builder regularization(List<Regularization> regularization) {
+        public Builder regularization(final List<Regularization> regularization) {
             this.setRegularization(regularization);
             return this;
         }
@@ -429,7 +434,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param regularizationBias Regularization to apply for the network biases only
          */
-        public Builder regularizationBias(List<Regularization> regularizationBias) {
+        public Builder regularizationBias(final List<Regularization> regularizationBias) {
             this.setRegularizationBias(regularizationBias);
             return this;
         }
@@ -441,7 +446,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @see Updater
          */
         @Deprecated
-        public T updater(Updater updater) {
+        public T updater(final Updater updater) {
             return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
@@ -451,7 +456,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param updater Updater to use
          */
-        public T updater(IUpdater updater) {
+        public T updater(final IUpdater updater) {
             this.setIupdater(updater);
             return (T) this;
         }
@@ -462,7 +467,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param biasUpdater Updater to use for bias parameters
          */
-        public T biasUpdater(IUpdater biasUpdater) {
+        public T biasUpdater(final IUpdater biasUpdater) {
             this.setBiasUpdater(biasUpdater);
             return (T) this;
         }
@@ -473,7 +478,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * @param gradientNormalization Type of normalization to use. Defaults to None.
          * @see GradientNormalization
          */
-        public T gradientNormalization(GradientNormalization gradientNormalization) {
+        public T gradientNormalization(final GradientNormalization gradientNormalization) {
             this.setGradientNormalization(gradientNormalization);
             return (T) this;
         }
@@ -484,7 +489,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          * otherwise.<br> L2 threshold for first two types of clipping, or absolute value threshold for last type of
          * clipping.
          */
-        public T gradientNormalizationThreshold(double threshold) {
+        public T gradientNormalizationThreshold(final double threshold) {
             this.setGradientNormalizationThreshold(threshold);
             return (T) this;
         }
@@ -495,7 +500,7 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          *
          * @param weightNoise Weight noise instance to use
          */
-        public T weightNoise(IWeightNoise weightNoise) {
+        public T weightNoise(final IWeightNoise weightNoise) {
             this.setWeightNoise(weightNoise);
             return (T) this;
         }
