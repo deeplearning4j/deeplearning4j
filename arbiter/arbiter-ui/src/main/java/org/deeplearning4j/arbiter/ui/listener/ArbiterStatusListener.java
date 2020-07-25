@@ -224,7 +224,7 @@ public class ArbiterStatusListener implements StatusListener {
             throw new RuntimeException(e);
         }
 
-        GlobalConfigPersistable p = new GlobalConfigPersistable.Builder()
+        return new GlobalConfigPersistable.Builder()
                 .sessionId(sessionId)
                 .timestamp(System.currentTimeMillis())
                 .optimizationConfigJson(ocJson)
@@ -232,7 +232,5 @@ public class ArbiterStatusListener implements StatusListener {
                         r.numCandidatesFailed(), r.numCandidatesTotal())
                 .optimizationRunner(r.getClass().getSimpleName())
                 .build();
-
-        return p;
     }
 }

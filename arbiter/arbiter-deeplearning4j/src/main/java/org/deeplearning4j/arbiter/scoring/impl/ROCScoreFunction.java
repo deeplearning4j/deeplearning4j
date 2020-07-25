@@ -52,7 +52,7 @@ public class ROCScoreFunction extends BaseNetScoreFunction {
      * AUC: Area under ROC curve<br>
      * AUPRC: Area under precision/recall curve
      */
-    public enum Metric {AUC, AUPRC};
+    public enum Metric {AUC, AUPRC}
 
     protected ROCType type;
     protected Metric metric;
