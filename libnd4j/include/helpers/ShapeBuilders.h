@@ -52,11 +52,9 @@ namespace sd {
         static Nd4jLong* copyShapeInfoAndType(const Nd4jLong* inShapeInfo, const Nd4jLong* shapeInfoToGetTypeFrom, const bool copyStrides, memory::Workspace* workspace = nullptr);
 
         /**
-        * allocates memory for new shapeInfo and copy all information from inShapeInfo to new shapeInfo except dimensions in dimsToExclude (unit dimensions) and corresponding strides
-        * for example inShapeInfo is {3, 2,1,3,1,4,  12,12,4,4,1, 16384,1,99}, dimsToExclude = {2,3}, dimsSize = 2
-        * then outShapeInfo will contain {3, 2,3,4, 12,4,1, 16384,1,99}
+        * allocates memory for sub-array shapeInfo and copy shape and strides at axes(positions) stored in dims
         */
-        static Nd4jLong* copyShapeInfoWithoutUnites(const Nd4jLong* inShapeInfo, const int dimsSize, const int* dimsToExclude, memory::Workspace* workspace = nullptr);
+        static Nd4jLong* createSubArrShapeInfo(const Nd4jLong* inShapeInfo, const int* dims, const int dimsSize, memory::Workspace* workspace = nullptr);
 
         static Nd4jLong* emptyShapeInfo(const sd::DataType dataType, memory::Workspace* workspace = nullptr);
 

@@ -21,6 +21,13 @@ public class ReplayMemoryExperienceHandlerTest {
     @Mock
     IExpReplay<Integer> expReplayMock;
 
+    private ReplayMemoryExperienceHandler.Configuration buildConfiguration() {
+        return ReplayMemoryExperienceHandler.Configuration.builder()
+                .maxReplayMemorySize(10)
+                .batchSize(5)
+                .build();
+    }
+
     @Test
     public void when_addingFirstExperience_expect_notAddedToStoreBeforeNextObservationIsAdded() {
         // Arrange
@@ -87,7 +94,7 @@ public class ReplayMemoryExperienceHandlerTest {
     @Test
     public void when_addingExperience_expect_getTrainingBatchSizeReturnSize() {
         // Arrange
-        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(10, 5, Nd4j.getRandom());
+        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(buildConfiguration(), Nd4j.getRandom());
         sut.addExperience(new Observation(Nd4j.create(new double[] { 1.0 })), 1, 1.0, false);
         sut.addExperience(new Observation(Nd4j.create(new double[] { 2.0 })), 2, 2.0, false);
         sut.setFinalObservation(new Observation(Nd4j.create(new double[] { 3.0 })));
@@ -102,7 +109,7 @@ public class ReplayMemoryExperienceHandlerTest {
     @Test
     public void when_experienceSizeIsSmallerThanBatchSize_expect_TrainingBatchIsNotReady() {
         // Arrange
-        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(10, 5, Nd4j.getRandom());
+        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(buildConfiguration(), Nd4j.getRandom());
         sut.addExperience(new Observation(Nd4j.create(new double[] { 1.0 })), 1, 1.0, false);
         sut.addExperience(new Observation(Nd4j.create(new double[] { 2.0 })), 2, 2.0, false);
         sut.setFinalObservation(new Observation(Nd4j.create(new double[] { 3.0 })));
@@ -116,7 +123,7 @@ public class ReplayMemoryExperienceHandlerTest {
     @Test
     public void when_experienceSizeIsGreaterOrEqualToBatchSize_expect_TrainingBatchIsReady() {
         // Arrange
-        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(10, 5, Nd4j.getRandom());
+        ReplayMemoryExperienceHandler sut = new ReplayMemoryExperienceHandler(buildConfiguration(), Nd4j.getRandom());
         sut.addExperience(new Observation(Nd4j.create(new double[] { 1.0 })), 1, 1.0, false);
         sut.addExperience(new Observation(Nd4j.create(new double[] { 2.0 })), 2, 2.0, false);
         sut.addExperience(new Observation(Nd4j.create(new double[] { 3.0 })), 3, 3.0, false);

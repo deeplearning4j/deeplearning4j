@@ -35,4 +35,9 @@ public interface IOutputNeuralNet {
      * @return The ouptut of the network
      */
     INDArray output(INDArray batch);
+
+    /**
+     * Clear the neural net of any previous state
+     */
+    void reset();
 }

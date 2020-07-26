@@ -40,6 +40,12 @@ namespace sd {
         static const Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const NDArray& arr, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
         static const Nd4jLong* evalReduceShapeInfo(const char order, std::vector<int>& dimensions, const Nd4jLong* shapeInfo, const bool keepDims = false, const bool supportOldShapes = false, sd::memory::Workspace* workspace = nullptr);
 
+
+        // for example
+        // if rank = 3 and dimsToExclude = {0,2} then output = {1,0,2},   if rank = 3 and dimsToExclude = {2} then output = {0,1,2}
+        // if rank = 3 and dimsToExclude = {0} then output = {1,2,0},     if rank = 4 and dimsToExclude = {0,3} then output = {1,2,0,3}
+        static std::vector<int> evalDimsForReduceOp(const int rank, const std::vector<int>& dimsToExclude);
+
         /**
          * evaluate output shape for reduce operation when input shape is empty
          * behavior is analogous to tf

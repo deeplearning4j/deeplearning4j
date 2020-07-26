@@ -92,9 +92,15 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 AllocationsTracker.getInstance().markAllocated(AllocationKind.GENERAL, Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
 
                 MemoryTracker.getInstance().incrementWorkspaceAllocatedAmount(Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes + SAFETY_OFFSET);
-            }
 
-            //log.info("Workspace [{}] initialized successfully", id);
+                // if base pointer isn't aligned to 16 bytes (128 bits) - adjust the offfset then
+                val addr = workspace.getDevicePointer().address();
+                val div = addr % alignmentBase;
+                if (div != 0) {
+                    deviceOffset.set(alignmentBase - div);
+                    hostOffset.set(alignmentBase - div);
+                }
+            }
         }
     }
 
@@ -134,8 +140,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
-        if (requiredMemory % 8 != 0)
-            requiredMemory += 8 - (requiredMemory % 8);
+        // alignment
+        if (requiredMemory % alignmentBase != 0)
+            requiredMemory += alignmentBase - (requiredMemory % alignmentBase);
 
         if (!isUsed.get()) {
             if (disabledCounter.incrementAndGet() % 10 == 0)

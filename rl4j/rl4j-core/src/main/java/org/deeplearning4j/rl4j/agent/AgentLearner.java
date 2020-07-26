@@ -15,9 +15,11 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.agent;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
-import org.deeplearning4j.rl4j.agent.learning.ILearningBehavior;
+import lombok.experimental.SuperBuilder;
+import org.deeplearning4j.rl4j.agent.learning.behavior.ILearningBehavior;
 import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.environment.StepResult;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -41,12 +43,17 @@ public class AgentLearner<ACTION> extends Agent<ACTION> implements IAgentLearner
      * @param environment The {@link Environment} to be used
      * @param transformProcess The {@link TransformProcess} to be used to transform the raw observations into usable ones.
      * @param policy The {@link IPolicy} to be used
-     * @param maxEpisodeSteps The maximum number of steps an episode can have before being interrupted. Use null to have no max.
+     * @param configuration The configuration for the AgentLearner
      * @param id A user-supplied id to identify the instance.
      * @param learningBehavior The {@link ILearningBehavior} that will be used to supervise the learning.
      */
-    public AgentLearner(Environment<ACTION> environment, TransformProcess transformProcess, IPolicy<ACTION> policy, Integer maxEpisodeSteps, String id, @NonNull ILearningBehavior<ACTION> learningBehavior) {
-        super(environment, transformProcess, policy, maxEpisodeSteps, id);
+    public AgentLearner(Environment<ACTION> environment,
+                        TransformProcess transformProcess,
+                        IPolicy<ACTION> policy,
+                        Configuration configuration,
+                        String id,
+                        @NonNull ILearningBehavior<ACTION> learningBehavior) {
+        super(environment, transformProcess, policy, configuration, id);
 
         this.learningBehavior = learningBehavior;
     }
@@ -86,30 +93,8 @@ public class AgentLearner<ACTION> extends Agent<ACTION> implements IAgentLearner
         ++totalStepCount;
     }
 
-    // FIXME: parent is still visible
-    public static <ACTION> AgentLearner.Builder<ACTION, AgentLearner<ACTION>> builder(Environment<ACTION> environment,
-                                                   TransformProcess transformProcess,
-                                                   IPolicy<ACTION> policy,
-                                                   ILearningBehavior<ACTION> learningBehavior) {
-        return new AgentLearner.Builder<ACTION, AgentLearner<ACTION>>(environment, transformProcess, policy, learningBehavior);
-    }
-
-    public static class Builder<ACTION, AGENT_TYPE extends AgentLearner<ACTION>> extends Agent.Builder<ACTION, AGENT_TYPE> {
-
-        private final ILearningBehavior<ACTION> learningBehavior;
-
-        public Builder(@NonNull Environment<ACTION> environment,
-                       @NonNull TransformProcess transformProcess,
-                       @NonNull IPolicy<ACTION> policy,
-                       @NonNull ILearningBehavior<ACTION> learningBehavior) {
-            super(environment, transformProcess, policy);
-
-            this.learningBehavior = learningBehavior;
-        }
-
-        @Override
-        public AGENT_TYPE build() {
-            return (AGENT_TYPE)new AgentLearner<ACTION>(environment, transformProcess, policy, maxEpisodeSteps, id, learningBehavior);
-        }
+    @SuperBuilder
+    @Data
+    public static class Configuration extends Agent.Configuration {
     }
 }

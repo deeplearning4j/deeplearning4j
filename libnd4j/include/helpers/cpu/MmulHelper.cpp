@@ -443,17 +443,17 @@ static void batchedGemm(const NDArray* vA, const NDArray* vB,  NDArray* vC,
             // calculate index of current batch
             Nd4jLong batchInd;
             if(cRank > 2)
-                batchInd = shape::coords2index(cShapeInfo, cCoords.data(), cRank - 2, cBatchDims);
+                batchInd = shape::coords2index(cShapeInfo, cBatchDims, cRank - 2, cCoords.data());
 
             // evaluate A coordinates
             if(aRank > 2)
-                shape::index2coords(batchInd, aShapeInfo, aCoords.data(), aRank - 2, aBatchDims);
+                shape::index2coords(batchInd, aShapeInfo, aBatchDims, aRank - 2, aCoords.data());
             aCoords[aMaxis] = cCoords[cMaxis];
             aCoords[aKaxis] = 0;
 
             // evaluate B coordinates
             if(bRank > 2)
-                shape::index2coords(batchInd, bShapeInfo, bCoords.data(), bRank - 2, bBatchDims);
+                shape::index2coords(batchInd, bShapeInfo, bBatchDims, bRank - 2, bCoords.data());
             bCoords[bKaxis] = 0;
             bCoords[bNaxis] = cCoords[cNaxis];
 

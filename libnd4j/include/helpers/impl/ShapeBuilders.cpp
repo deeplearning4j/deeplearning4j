@@ -140,14 +140,26 @@ namespace sd {
     }
 
 ////////////////////////////////////////////////////////////////////////////////
-Nd4jLong* ShapeBuilders::copyShapeInfoWithoutUnites(const Nd4jLong* inShapeInfo, const int dimsSize, const int* dimsToExclude, memory::Workspace* workspace) {
+Nd4jLong* ShapeBuilders::createSubArrShapeInfo(const Nd4jLong* inShapeInfo, const int* dims, const int dimsSize, memory::Workspace* workspace) {
 
-    Nd4jLong *outShapeInfo = nullptr;
-    ALLOCATE(outShapeInfo, workspace, shape::shapeInfoLength(inShapeInfo[0] - dimsSize), Nd4jLong);
+    Nd4jLong *subArrShapeInfo = nullptr;
+    ALLOCATE(subArrShapeInfo, workspace, shape::shapeInfoLength(dimsSize), Nd4jLong);
 
-    shape::excludeUnitiesFromShapeInfo(inShapeInfo, dimsSize, dimsToExclude, outShapeInfo);
+    subArrShapeInfo[0] = dimsSize;                                 // rank
+    sd::ArrayOptions::copyDataType(subArrShapeInfo, inShapeInfo);  // type
+    subArrShapeInfo[2*dimsSize + 3] = shape::order(inShapeInfo);   // order
 
-    return outShapeInfo;
+    Nd4jLong* shape = shape::shapeOf(subArrShapeInfo);
+    Nd4jLong* strides = shape::stride(subArrShapeInfo);
+
+    for(int i = 0; i < dimsSize; ++i) {
+        shape[i]   = shape::sizeAt(inShapeInfo, dims[i]);
+        strides[i] = shape::strideAt(inShapeInfo, dims[i]);
+    }
+
+    shape::checkStridesEwsAndOrder(subArrShapeInfo);
+
+    return subArrShapeInfo;
 }
 
 }

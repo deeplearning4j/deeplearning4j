@@ -18,6 +18,7 @@ package org.deeplearning4j.rl4j.policy;
 
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -37,14 +38,14 @@ import java.io.IOException;
 @AllArgsConstructor
 public class DQNPolicy<OBSERVATION> extends Policy<Integer> {
 
-    final private IDQN dqn;
+    final private IOutputNeuralNet neuralNet;
 
     public static <OBSERVATION extends Encodable> DQNPolicy<OBSERVATION> load(String path) throws IOException {
         return new DQNPolicy<>(DQN.load(path));
     }
 
-    public IDQN getNeuralNet() {
-        return dqn;
+    public IOutputNeuralNet getNeuralNet() {
+        return neuralNet;
     }
 
     @Override
@@ -53,12 +54,13 @@ public class DQNPolicy<OBSERVATION> extends Policy<Integer> {
     }
 
     public Integer nextAction(INDArray input) {
-        INDArray output = dqn.output(input);
+        INDArray output = neuralNet.output(input);
         return Learning.getMaxAction(output);
     }
 
     public void save(String filename) throws IOException {
-        dqn.save(filename);
+        // TODO: refac load & save. Code below should continue to work in the meantime because it's only called by the lecacy code and it's only using a DQN network with DQNPolicy
+        ((IDQN)neuralNet).save(filename);
     }
 
 }

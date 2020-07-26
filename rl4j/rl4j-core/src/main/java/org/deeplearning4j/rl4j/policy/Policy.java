@@ -16,15 +16,16 @@
 
 package org.deeplearning4j.rl4j.policy;
 
+import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 
 /**
@@ -36,7 +37,7 @@ import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
  */
 public abstract class Policy<A> implements INeuralNetPolicy<A> {
 
-    public abstract NeuralNet getNeuralNet();
+    public abstract IOutputNeuralNet getNeuralNet();
 
     public abstract A nextAction(Observation obs);
 
@@ -106,5 +107,4 @@ public abstract class Policy<A> implements INeuralNetPolicy<A> {
 
         return new Learning.InitMdp(0, observation, reward);
     }
-
 }

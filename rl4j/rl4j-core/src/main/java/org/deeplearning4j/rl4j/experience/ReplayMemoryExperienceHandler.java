@@ -15,7 +15,10 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.experience;
 
+import lombok.Builder;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
@@ -47,8 +50,8 @@ public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, Tr
         this.batchSize = expReplay.getDesignatedBatchSize();
     }
 
-    public ReplayMemoryExperienceHandler(int maxReplayMemorySize, int batchSize, Random random) {
-        this(new ExpReplay<A>(maxReplayMemorySize, batchSize, random));
+    public ReplayMemoryExperienceHandler(Configuration configuration, Random random) {
+        this(new ExpReplay<A>(configuration.maxReplayMemorySize, configuration.batchSize, random));
     }
 
     public void addExperience(Observation observation, A action, double reward, boolean isTerminal) {
@@ -91,28 +94,19 @@ public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, Tr
         }
     }
 
-    public class Builder {
+    @SuperBuilder
+    @Data
+    public static class Configuration {
+        /**
+         * The maximum replay memory size. Default is 150000
+         */
+        @Builder.Default
         private int maxReplayMemorySize = DEFAULT_MAX_REPLAY_MEMORY_SIZE;
+
+        /**
+         * The size of training batches. Default is 32.
+         */
+        @Builder.Default
         private int batchSize = DEFAULT_BATCH_SIZE;
-        private Random random = Nd4j.getRandom();
-
-        public Builder maxReplayMemorySize(int value) {
-            maxReplayMemorySize = value;
-            return this;
-        }
-
-        public Builder batchSize(int value) {
-            batchSize = value;
-            return this;
-        }
-
-        public Builder random(Random value) {
-            random = value;
-            return this;
-        }
-
-        public ReplayMemoryExperienceHandler<A> build() {
-            return new ReplayMemoryExperienceHandler<A>(maxReplayMemorySize, batchSize, random);
-        }
     }
 }

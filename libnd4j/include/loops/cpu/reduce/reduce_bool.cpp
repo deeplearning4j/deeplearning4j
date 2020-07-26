@@ -114,71 +114,6 @@ namespace functions {
             DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_BOOL_OPS);
         }
 
-        template <typename X, typename Y>
-        void ReduceBoolFunction<X, Y>::exec(const int opNum,
-                                            const void *x, const Nd4jLong *xShapeInfo,
-                                            void *extraParams,
-                                            void *z, const Nd4jLong *zShapeInfo,
-                                            int *dimension, int dimensionLength,
-                                            const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
-                                            int64_t start, int64_t stop) {
-                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset, start, stop), REDUCE_BOOL_OPS);
-        }
-
-        template <typename X, typename Z>
-        template <typename OpType>
-        void _CUDA_H ReduceBoolFunction<X,Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
-                                                   void *vextraParams,
-                                                   void *vresult, const Nd4jLong *zShapeInfo,
-                                                   int *dimension, int dimensionLength,
-                                                   const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset, int64_t start, int64_t stop) {
-
-                auto x = reinterpret_cast<const X *>(vx);
-                auto z = reinterpret_cast<Z *>(vresult);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-                auto resultLength = shape::length(zShapeInfo);
-
-                if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
-                    if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
-                        return;
-                    const auto startingVal = OpType::startingValue(x);
-
-                    for (Nd4jLong i = 0; i < resultLength; i++)
-                        z[i] = startingVal;
-                    return;
-                }
-
-                //pre squeezed: this is for keeping the pointer to the original
-                //shape information for tad offset
-                //the squeezed information doesn't render the right strides for
-                //tad offset
-                // || tad.wholeThing
-                if (resultLength == 1 || dimension == nullptr || dimensionLength == shape::rank(xShapeInfo)) {
-                    z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
-                    return;
-                }
-
-                auto tadOnlyShapeInfo = tadShapeInfo;
-                auto tadOffsets = tadOffset;
-
-                if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    if (dimensionLength < 1)
-                        return;
-
-                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-                    tadOnlyShapeInfo = tadPack.primaryShapeInfo();
-                    tadOffsets = tadPack.primaryOffsets();
-                }
-
-#ifdef INLINE_LOOPS
-                sd::ReductionLoops<X,Z,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
-#else
-                sd::ReductionBoolLoops<X,Z>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
-#endif
-            }
-
-
         template <typename X, typename Z>
         template<typename OpType>
         void _CUDA_H ReduceBoolFunction<X,Z>::exec(const void *x, const Nd4jLong *xShapeInfo,
@@ -220,7 +155,51 @@ namespace functions {
                 return OpType::postProcess(intermediate[0], length, extraParams);
             }
 
+////////////////////////////////////////////////////////////////////////
+template <typename X, typename Z>
+template <typename OpType>
+void _CUDA_H ReduceBoolFunction<X,Z>::exec(sd::memory::Workspace* workspace, const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams, void *vz, const Nd4jLong *zShapeInfo, const int* dims) {
 
-        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceBoolFunction, , LIBND4J_TYPES, BOOL_TYPES);
+    const X* x = reinterpret_cast<const X*>(vx);
+          Z* z = reinterpret_cast<Z*>(vz);
+          X* extraParams = reinterpret_cast<X*>(vextraParams);
+
+    const int xRank = shape::rank(xShapeInfo);
+    const int zRank = shape::rank(zShapeInfo);
+
+     if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
+
+        const auto startingVal = OpType::startingValue(x);
+        const auto zLen = shape::length(zShapeInfo);
+
+        for (Nd4jLong i = 0; i < zLen; i++)
+            z[i] = startingVal;
+        return;
     }
+
+    if (shape::length(zShapeInfo) == 1) {
+        z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
+        return;
+    }
+
+
+#ifdef INLINE_LOOPS
+    sd::ReductionLoops<X,Z,X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
+#else
+    sd::ReductionBoolLoops<X,Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
+#endif
+
 }
+
+////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+void ReduceBoolFunction<X,Y>::exec(const int opNum, sd::memory::Workspace* workspace, const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams, void *vz, const Nd4jLong *zShapeInfo, const int *dims) {
+
+    DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_BOOL_OPS);
+}
+
+
+BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReduceBoolFunction, , LIBND4J_TYPES, BOOL_TYPES);
+}
+}
+

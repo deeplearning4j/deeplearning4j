@@ -29,7 +29,7 @@ import java.io.OutputStream;
  * Factorisation between ActorCritic and DQN neural net.
  * Useful for AsyncLearning and Thread code.
  */
-public interface NeuralNet<NN extends NeuralNet> extends IOutputNeuralNet, ITrainableNeuralNet<NN> {
+public interface NeuralNet<NN extends NeuralNet> extends ITrainableNeuralNet<NN> {
 
     /**
      * Returns the underlying MultiLayerNetwork or ComputationGraph objects.

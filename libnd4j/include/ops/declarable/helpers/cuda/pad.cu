@@ -251,7 +251,12 @@ namespace sd {
                     sd::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadLinearKernel(...) failed");
                 }
                 else {
-                    mirrorPadKernel<F, I><<<256, 256, 8192, *stream>>>(input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen, paddings.specialBuffer(), paddings.specialShapeInfo(), reflBorder);
+
+                    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+                    const int blocksPerGrid = (outLen + threadsPerBlock - 1) / threadsPerBlock;
+                    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * input.rankOf() + 256;
+
+                    mirrorPadKernel<F, I><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), outLen, paddings.specialBuffer(), paddings.specialShapeInfo(), reflBorder);
                     sd::DebugHelper::checkErrorCode(stream, "helpers::mirrorPadKernel(...) failed");
                 }
                 NDArray::registerSpecialUse({&output}, {&input, &paddings});
