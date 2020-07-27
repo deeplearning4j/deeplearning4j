@@ -16,14 +16,10 @@
 
 package org.deeplearning4j.nn.conf.layers;
 
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
@@ -40,10 +36,9 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  * A neural network layer.
@@ -59,7 +54,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
     protected List<LayerConstraint> constraints;
 
 
-    public Layer(final Builder builder) {
+    public Layer(Builder builder) {
         this.layerName = builder.layerName;
         this.iDropout = builder.iDropout;
     }
@@ -67,29 +62,29 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
     /**
      * Initialize the weight constraints. Should be called last, in the outer-most constructor
      */
-    protected void initializeConstraints(final Builder<?> builder) {
+    protected void initializeConstraints(Builder<?> builder) {
         //Note: this has to be done AFTER all constructors have finished - otherwise the required
         // fields may not yet be set yet
-        final List<LayerConstraint> allConstraints = new ArrayList<>();
+        List<LayerConstraint> allConstraints = new ArrayList<>();
         if (builder.allParamConstraints != null && !initializer().paramKeys(this).isEmpty()) {
-            for (final LayerConstraint c : builder.allParamConstraints) {
-                final LayerConstraint c2 = c.clone();
+            for (LayerConstraint c : builder.allParamConstraints) {
+                LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().paramKeys(this)));
                 allConstraints.add(c2);
             }
         }
 
         if (builder.weightConstraints != null && !initializer().weightKeys(this).isEmpty()) {
-            for (final LayerConstraint c : builder.weightConstraints) {
-                final LayerConstraint c2 = c.clone();
+            for (LayerConstraint c : builder.weightConstraints) {
+                LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().weightKeys(this)));
                 allConstraints.add(c2);
             }
         }
 
         if (builder.biasConstraints != null && !initializer().biasKeys(this).isEmpty()) {
-            for (final LayerConstraint c : builder.biasConstraints) {
-                final LayerConstraint c2 = c.clone();
+            for (LayerConstraint c : builder.biasConstraints) {
+                LayerConstraint c2 = c.clone();
                 c2.setParams(new HashSet<>(initializer().biasKeys(this)));
                 allConstraints.add(c2);
             }
@@ -117,25 +112,25 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
     @Override
     public Layer clone() {
         try {
-            final Layer ret = (Layer) super.clone();
+            Layer ret = (Layer) super.clone();
             //Let's check for any INDArray fields and dup them (in case cloned layer will be used in different threads on CUDA...
             // we don't want it being relocated contantly between devices)
             Class<?> c = getClass();
             while (c != Object.class) {
-                final Field[] fields = c.getDeclaredFields();
-                for (final Field f : fields) {
+                Field[] fields = c.getDeclaredFields();
+                for (Field f : fields) {
                     if (f.getType() == INDArray.class) {
                         f.setAccessible(true);
                         INDArray toClone;
                         try {
                             toClone = (INDArray) f.get(this);
-                        } catch (final Exception e) {
+                        } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
                         if (toClone != null) {
                             try {
                                 f.set(this, toClone.dup());
-                            } catch (final Exception e) {
+                            } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
                         }
@@ -146,7 +141,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
             }
 
             return ret;
-        } catch (final CloneNotSupportedException e) {
+        } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
     }
@@ -221,13 +216,13 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
      * @param paramName Parameter name
      * @return IUpdater for the parameter
      */
-    public IUpdater getUpdaterByParam(final String paramName) {
+    public IUpdater getUpdaterByParam(String paramName) {
         throw new UnsupportedOperationException(
                         "Not supported: all layers with parameters should override this method");
     }
 
     @Override
-    public void setDataType(final DataType dataType) {
+    public void setDataType(DataType dataType) {
         //No-op for most layers
     }
 
@@ -258,7 +253,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
         /**
          * Layer name assigns layer string name. Allows easier differentiation between layers.
          */
-        public T name(final String layerName) {
+        public T name(String layerName) {
             this.setLayerName(layerName);
             return (T) this;
         }
@@ -288,7 +283,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
          * activation value for a layer)
          * @see #dropOut(IDropout)
          */
-        public T dropOut(final double inputRetainProbability) {
+        public T dropOut(double inputRetainProbability) {
             if (inputRetainProbability == 0.0) {
                 return dropOut(null);
             }
@@ -301,7 +296,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
          * @param dropout Dropout, such as {@link Dropout}, {@link org.deeplearning4j.nn.conf.dropout.GaussianDropout},
          * {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise} etc
          */
-        public T dropOut(final IDropout dropout) {
+        public T dropOut(IDropout dropout) {
             this.setIDropout(dropout);
             return (T) this;
         }
@@ -314,7 +309,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
          *
          * @param constraints Constraints to apply to all parameters of this layer
          */
-        public T constrainAllParameters(final LayerConstraint... constraints) {
+        public T constrainAllParameters(LayerConstraint... constraints) {
             this.setAllParamConstraints(Arrays.asList(constraints));
             return (T) this;
         }
@@ -327,7 +322,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
          *
          * @param constraints Constraints to apply to all bias parameters of this layer
          */
-        public T constrainBias(final LayerConstraint... constraints) {
+        public T constrainBias(LayerConstraint... constraints) {
             this.setBiasConstraints(Arrays.asList(constraints));
             return (T) this;
         }
@@ -340,7 +335,7 @@ public abstract class Layer implements TrainingConfig, Serializable, Cloneable {
          *
          * @param constraints Constraints to apply to all weight parameters of this layer
          */
-        public T constrainWeights(final LayerConstraint... constraints) {
+        public T constrainWeights(LayerConstraint... constraints) {
             this.setWeightConstraints(Arrays.asList(constraints));
             return (T) this;
         }
