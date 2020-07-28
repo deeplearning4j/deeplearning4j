@@ -181,7 +181,7 @@ public class TestMultiLayerSpace extends BaseDL4JTest {
 
     @Test
     public void testILossFunctionGetsSet() {
-        ILossFunction lossFunction = new LossMCXENT(Nd4j.create(new float[] {1f, 2f}, 1,2));
+        ILossFunction lossFunction = new LossMCXENT(Nd4j.create(new float[] {1f, 2f}, new long[]{1,2}));
 
         MultiLayerConfiguration expected =
                         new NeuralNetConfiguration.Builder().updater(new Sgd(0.005)).seed(12345).list()
@@ -477,7 +477,7 @@ public class TestMultiLayerSpace extends BaseDL4JTest {
                                         .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
                                                         new OutputLayer.Builder()
                                                                         .lossFunction(new LossMSE(Nd4j.create(
-                                                                                        new double[] {1, 2, 3, 4, 5}, 1,5)))
+                                                                                        new double[] {1, 2, 3, 4, 5}, new long[]{1,5})))
                                                                         .nIn(10).nOut(5).build())
                                         .build();
 
@@ -486,7 +486,7 @@ public class TestMultiLayerSpace extends BaseDL4JTest {
                                         .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(),
                                                         new FixedValue<>(2)) //2 identical layers
                                         .addLayer(new OutputLayerSpace.Builder()
-                                                        .iLossFunction(new LossMSE(Nd4j.create(new double[] {1, 2, 3, 4, 5}, 1,5)))
+                                                        .iLossFunction(new LossMSE(Nd4j.create(new double[] {1, 2, 3, 4, 5}, new long[]{1,5})))
                                                         .nIn(10).nOut(5).build())
                                         .build();
 
