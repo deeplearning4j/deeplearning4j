@@ -94,7 +94,7 @@ public class FileModelSaver implements ResultSaver {
 
 
         Object additionalResults = result.getModelSpecificResults();
-        if (additionalResults != null && additionalResults instanceof Serializable) {
+        if (additionalResults instanceof Serializable) {
             try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(additionalResultsFile))) {
                 oos.writeObject(additionalResults);
             }

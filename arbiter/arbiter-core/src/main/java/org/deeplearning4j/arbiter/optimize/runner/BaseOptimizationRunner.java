@@ -319,9 +319,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
     @Override
     public void removeListeners(StatusListener... listeners) {
         for (StatusListener l : listeners) {
-            if (statusListeners.contains(l)) {
-                statusListeners.remove(l);
-            }
+            statusListeners.remove(l);
         }
     }
 
@@ -332,8 +330,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
     @Override
     public List<CandidateInfo> getCandidateStatus() {
-        List<CandidateInfo> list = new ArrayList<>();
-        list.addAll(currentStatus.values());
+        List<CandidateInfo> list = new ArrayList<>(currentStatus.values());
         return list;
     }
 

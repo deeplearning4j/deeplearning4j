@@ -56,19 +56,19 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
         if (constrainWeights != null){
             List<LayerConstraint> c = constrainWeights.getValue(values);
             if(c != null){
-                builder.constrainWeights(c.toArray(new LayerConstraint[c.size()]));
+                builder.constrainWeights(c.toArray(new LayerConstraint[0]));
             }
         }
         if (constrainBias != null){
             List<LayerConstraint> c = constrainBias.getValue(values);
             if(c != null){
-                builder.constrainBias(c.toArray(new LayerConstraint[c.size()]));
+                builder.constrainBias(c.toArray(new LayerConstraint[0]));
             }
         }
         if (constrainAll != null){
             List<LayerConstraint> c = constrainAll.getValue(values);
             if(c != null){
-                builder.constrainAllParameters(c.toArray(new LayerConstraint[c.size()]));
+                builder.constrainAllParameters(c.toArray(new LayerConstraint[0]));
             }
         }
 

@@ -22,7 +22,6 @@ import lombok.NonNull;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.nd4j.linalg.schedule.ISchedule;
-import org.nd4j.linalg.schedule.InverseSchedule;
 import org.nd4j.linalg.schedule.ScheduleType;
 import org.nd4j.linalg.schedule.StepSchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;

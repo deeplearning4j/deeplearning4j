@@ -19,7 +19,6 @@ package org.deeplearning4j.arbiter.optimize.parameter.discrete;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.util.ObjectUtils;
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
