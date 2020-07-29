@@ -64,7 +64,7 @@ public abstract class LayerSpace<L extends Layer> extends AbstractParameterSpace
                 out.add(next);
             } else {
                 Map<String, ParameterSpace> m = next.getNestedSpaces();
-                ParameterSpace[] arr = m.values().toArray(new ParameterSpace[m.size()]);
+                ParameterSpace[] arr = m.values().toArray(new ParameterSpace[0]);
                 for (int i = arr.length - 1; i >= 0; i--) {
                     stack.add(arr[i]);
                 }

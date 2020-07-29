@@ -23,7 +23,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 
 public class RandomMutationOperatorTests extends BaseDL4JTest {
     @Test

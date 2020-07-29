@@ -21,7 +21,6 @@ import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.BaseTrainingListener;
-import org.deeplearning4j.optimize.api.IterationListener;
 
 import java.util.List;
 

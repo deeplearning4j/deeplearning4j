@@ -66,7 +66,7 @@ public class SeparableConvolution2DLayerSpace extends BaseConvolutionLayerSpace<
         if (pointWiseConstraints != null){
             List<LayerConstraint> c = pointWiseConstraints.getValue(values);
             if(c != null){
-                builder.constrainPointWise(c.toArray(new LayerConstraint[c.size()]));
+                builder.constrainPointWise(c.toArray(new LayerConstraint[0]));
             }
         }
     }

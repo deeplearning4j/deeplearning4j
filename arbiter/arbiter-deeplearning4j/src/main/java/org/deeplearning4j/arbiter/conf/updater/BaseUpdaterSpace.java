@@ -17,8 +17,6 @@
 package org.deeplearning4j.arbiter.conf.updater;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.deeplearning4j.arbiter.optimize.api.AbstractParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.nd4j.linalg.learning.config.IUpdater;
