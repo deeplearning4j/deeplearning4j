@@ -299,9 +299,11 @@
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
         <openblas.version>0.3.10</openblas.version>
-        <mkl.version>2020.1</mkl.version>
-        <opencv.version>4.3.0</opencv.version>
-        <ffmpeg.version>4.3</ffmpeg.version>
+
+        <mkl.version>2020.2</mkl.version>
+        <opencv.version>4.4.0</opencv.version>
+        <ffmpeg.version>4.3.1</ffmpeg.version>
+
         <leptonica.version>1.79.0</leptonica.version>
         <hdf5.version>1.12.0</hdf5.version>
         <ale.version>0.6.1</ale.version>
