@@ -20,6 +20,8 @@ import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
 
+import java.util.Arrays;
+
 /**
  * Degenerate distribution: i.e., integer "distribution" that is just a fixed value
  */
@@ -89,8 +91,7 @@ public class DegenerateIntegerDistribution implements IntegerDistribution {
     @Override
     public int[] sample(int sampleSize) {
         int[] out = new int[sampleSize];
-        for (int i = 0; i < out.length; i++)
-            out[i] = value;
+        Arrays.fill(out, value);
         return out;
     }
 }

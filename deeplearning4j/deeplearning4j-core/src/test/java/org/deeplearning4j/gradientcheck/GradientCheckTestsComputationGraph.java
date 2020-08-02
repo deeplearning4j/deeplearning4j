@@ -1299,47 +1299,53 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         }
     }
 
+
+
+
     @Test
     public void testL2NormalizeVertex2d() {
         Nd4j.getRandom().setSeed(12345);
+        int[][] definitions = {null,new int[]{1}};
+        for(int[] definition : definitions) {
+            log.info("Testing definition {}",definition);
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                    .dataType(DataType.DOUBLE)
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
+                    .addInputs("in1").addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(3).build(), "in1")
+                    .addVertex("norm", new L2NormalizeVertex(definition,L2NormalizeVertex.DEFAULT_EPS), "d1")
+                    .addLayer("out1",
+                            new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2).nIn(3)
+                                    .nOut(2).activation(Activation.IDENTITY).build(),
+                            "norm")
+                    .setOutputs("out1").build();
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                        .dataType(DataType.DOUBLE)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .dist(new NormalDistribution(0, 1))
-                        .activation(Activation.TANH).updater(new NoOp()).graphBuilder()
-                        .addInputs("in1").addLayer("d1", new DenseLayer.Builder().nIn(2).nOut(3).build(), "in1")
-                        .addVertex("norm", new L2NormalizeVertex(), "d1")
-                        .addLayer("out1",
-                                        new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2).nIn(3)
-                                                        .nOut(2).activation(Activation.IDENTITY).build(),
-                                        "norm")
-                        .setOutputs("out1").build();
+            ComputationGraph graph = new ComputationGraph(conf);
+            graph.init();
 
-        ComputationGraph graph = new ComputationGraph(conf);
-        graph.init();
+            int[] mbSizes = new int[] {1, 3, 10};
+            for (int minibatch : mbSizes) {
 
-        int[] mbSizes = new int[] {1, 3, 10};
-        for (int minibatch : mbSizes) {
+                INDArray in1 = Nd4j.rand(minibatch, 2);
 
-            INDArray in1 = Nd4j.rand(minibatch, 2);
+                INDArray labels1 = Nd4j.rand(minibatch, 2);
 
-            INDArray labels1 = Nd4j.rand(minibatch, 2);
+                String testName = "testL2NormalizeVertex2d() - minibatch = " + minibatch;
 
-            String testName = "testL2NormalizeVertex2d() - minibatch = " + minibatch;
-
-            if (PRINT_RESULTS) {
-                System.out.println(testName);
+                if (PRINT_RESULTS) {
+                    System.out.println(testName);
 //                for (int j = 0; j < graph.getNumLayers(); j++)
 //                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+                }
+
+                boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1})
+                        .labels(new INDArray[]{labels1}));
+
+                assertTrue(testName, gradOK);
+                TestUtils.testModelSerialization(graph);
             }
-
-            boolean gradOK = GradientCheckUtil.checkGradients(new GradientCheckUtil.GraphConfig().net(graph).inputs(new INDArray[]{in1})
-                    .labels(new INDArray[]{labels1}));
-
-            assertTrue(testName, gradOK);
-            TestUtils.testModelSerialization(graph);
         }
+
     }
 
     @Test

@@ -17,13 +17,10 @@
 package org.deeplearning4j.arbiter.util;
 
 import lombok.AllArgsConstructor;
-import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.datasets.iterator.EarlyTerminationDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
-
-import java.util.Map;
 
 @AllArgsConstructor
 public class TestDataFactoryProviderMnist implements DataSetIteratorFactory {

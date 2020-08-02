@@ -187,19 +187,19 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
         if (allParamConstraints != null){
             List<LayerConstraint> c = allParamConstraints.getValue(values);
             if(c != null){
-                builder.constrainAllParameters(c.toArray(new LayerConstraint[c.size()]));
+                builder.constrainAllParameters(c.toArray(new LayerConstraint[0]));
             }
         }
         if (weightConstraints != null){
             List<LayerConstraint> c = weightConstraints.getValue(values);
             if(c != null){
-                builder.constrainWeights(c.toArray(new LayerConstraint[c.size()]));
+                builder.constrainWeights(c.toArray(new LayerConstraint[0]));
             }
         }
         if (biasConstraints != null){
             List<LayerConstraint> c = biasConstraints.getValue(values);
             if(c != null){
-                builder.constrainBias(c.toArray(new LayerConstraint[c.size()]));
+                builder.constrainBias(c.toArray(new LayerConstraint[0]));
             }
         }
 
@@ -226,7 +226,7 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
                 out.add(next);
             } else {
                 Map<String, ParameterSpace> m = next.getNestedSpaces();
-                ParameterSpace[] arr = m.values().toArray(new ParameterSpace[m.size()]);
+                ParameterSpace[] arr = m.values().toArray(new ParameterSpace[0]);
                 for (int i = arr.length - 1; i >= 0; i--) {
                     stack.add(arr[i]);
                 }
