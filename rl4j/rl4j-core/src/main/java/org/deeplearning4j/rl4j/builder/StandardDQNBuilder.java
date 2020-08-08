@@ -32,7 +32,7 @@ import org.nd4j.linalg.api.rng.Random;
 /**
  * A {@link IAgentLearner} builder that will setup a {@link StandardDQN standard DQN} algorithm in addition to the setup done by {@link BaseDQNAgentLearnerBuilder}.
  */
-public class StandardDQNBuilder extends BaseDQNAgentLearnerBuilder {
+public class StandardDQNBuilder extends BaseDQNAgentLearnerBuilder<StandardDQNBuilder.Configuration> {
 
 
     public StandardDQNBuilder(Configuration configuration,
@@ -45,7 +45,7 @@ public class StandardDQNBuilder extends BaseDQNAgentLearnerBuilder {
 
     @Override
     protected IUpdateAlgorithm<FeaturesLabels, Transition<Integer>> buildUpdateAlgorithm() {
-        return new StandardDQN(networks.getThreadCurrentNetwork(), networks.getTargetNetwork(), getConfiguration().getUpdateAlgorithmConfiguration());
+        return new StandardDQN(networks.getThreadCurrentNetwork(), networks.getTargetNetwork(), configuration.getUpdateAlgorithmConfiguration());
     }
 
     @EqualsAndHashCode(callSuper = true)

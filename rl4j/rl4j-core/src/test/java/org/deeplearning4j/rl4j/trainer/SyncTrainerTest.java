@@ -26,6 +26,7 @@ public class SyncTrainerTest {
 
     public void setup(Predicate<SyncTrainer> stoppingCondition) {
         when(agentLearnerBuilder.build()).thenReturn(agentLearnerMock);
+        when(agentLearnerMock.getEpisodeStepCount()).thenReturn(10);
 
         sut = new SyncTrainer(agentLearnerBuilder, stoppingCondition);
     }
@@ -54,6 +55,21 @@ public class SyncTrainerTest {
 
         // Assert
         verify(agentLearnerMock, times(5)).run();
+    }
+
+    @Test
+    public void when_training_expect_countsAreReset() {
+        // Arrange
+        Predicate<SyncTrainer> stoppingCondition = t -> t.getEpisodeCount() >= 5; // Stop after 5 episodes
+        setup(stoppingCondition);
+
+        // Act
+        sut.train();
+        sut.train();
+
+        // Assert
+        assertEquals(5, sut.getEpisodeCount());
+        assertEquals(50, sut.getStepCount());
     }
 
 }

@@ -27,14 +27,14 @@ public interface IOutputNeuralNet {
      * @param observation An {@link Observation}
      * @return The ouptut of the network
      */
-    INDArray output(Observation observation);
+    NeuralNetOutput output(Observation observation);
 
     /**
      * Compute the output for the supplied batch.
      * @param batch
      * @return The ouptut of the network
      */
-    INDArray output(INDArray batch);
+    NeuralNetOutput output(INDArray batch);
 
     /**
      * Clear the neural net of any previous state

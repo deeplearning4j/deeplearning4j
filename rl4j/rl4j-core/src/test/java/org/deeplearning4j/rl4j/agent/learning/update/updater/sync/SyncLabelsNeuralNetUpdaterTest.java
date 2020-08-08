@@ -1,7 +1,7 @@
-package org.deeplearning4j.rl4j.agent.learning.update.updater;
+package org.deeplearning4j.rl4j.agent.learning.update.updater.sync;
 
-import org.deeplearning4j.rl4j.agent.Agent;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
+import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterConfiguration;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,10 +13,10 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class LabelsNeuralNetUpdaterTest {
+public class SyncLabelsNeuralNetUpdaterTest {
 
     @Mock
-    ITrainableNeuralNet currentMock;
+    ITrainableNeuralNet threadCurrentMock;
 
     @Mock
     ITrainableNeuralNet targetMock;
@@ -24,11 +24,11 @@ public class LabelsNeuralNetUpdaterTest {
     @Test
     public void when_callingUpdateWithTargetUpdateFrequencyAt0_expect_Exception() {
         // Arrange
-        LabelsNeuralNetUpdater.Configuration configuration = LabelsNeuralNetUpdater.Configuration.builder()
+        NeuralNetUpdaterConfiguration configuration = NeuralNetUpdaterConfiguration.builder()
                 .targetUpdateFrequency(0)
                 .build();
         try {
-            LabelsNeuralNetUpdater sut = new LabelsNeuralNetUpdater(currentMock, targetMock, configuration);
+            SyncLabelsNeuralNetUpdater sut = new SyncLabelsNeuralNetUpdater(threadCurrentMock, targetMock, configuration);
             fail("IllegalArgumentException should have been thrown");
         } catch (IllegalArgumentException exception) {
             String expectedMessage = "Configuration: targetUpdateFrequency must be greater than 0, got:  [0]";
@@ -40,28 +40,28 @@ public class LabelsNeuralNetUpdaterTest {
     }
 
     @Test
-    public void when_callingUpdate_expect_currentUpdatedAndTargetNotChanged() {
+    public void when_callingUpdate_expect_gradientsComputedFromThreadCurrentAndAppliedOnGlobalCurrent() {
         // Arrange
-        LabelsNeuralNetUpdater.Configuration configuration = LabelsNeuralNetUpdater.Configuration.builder()
+        NeuralNetUpdaterConfiguration configuration = NeuralNetUpdaterConfiguration.builder()
                 .build();
-        LabelsNeuralNetUpdater sut = new LabelsNeuralNetUpdater(currentMock, targetMock, configuration);
+        SyncLabelsNeuralNetUpdater sut = new SyncLabelsNeuralNetUpdater(threadCurrentMock, targetMock, configuration);
         FeaturesLabels featureLabels = new FeaturesLabels(null);
 
         // Act
         sut.update(featureLabels);
 
         // Assert
-        verify(currentMock, times(1)).fit(featureLabels);
+        verify(threadCurrentMock, times(1)).fit(featureLabels);
         verify(targetMock, never()).fit(any());
     }
 
     @Test
-    public void when_callingUpdate_expect_targetUpdatedFromCurrentAtFrequency() {
+    public void when_callingUpdate_expect_targetUpdatedFromGlobalCurrentAtFrequency() {
         // Arrange
-        LabelsNeuralNetUpdater.Configuration configuration = LabelsNeuralNetUpdater.Configuration.builder()
+        NeuralNetUpdaterConfiguration configuration = NeuralNetUpdaterConfiguration.builder()
                 .targetUpdateFrequency(3)
                 .build();
-        LabelsNeuralNetUpdater sut = new LabelsNeuralNetUpdater(currentMock, targetMock, configuration);
+        SyncLabelsNeuralNetUpdater sut = new SyncLabelsNeuralNetUpdater(threadCurrentMock, targetMock, configuration);
         FeaturesLabels featureLabels = new FeaturesLabels(null);
 
         // Act
@@ -70,8 +70,7 @@ public class LabelsNeuralNetUpdaterTest {
         sut.update(featureLabels);
 
         // Assert
-        verify(currentMock, never()).copy(any());
-        verify(targetMock, times(1)).copy(currentMock);
+        verify(threadCurrentMock, never()).copyFrom(any());
+        verify(targetMock, times(1)).copyFrom(threadCurrentMock);
     }
-
 }

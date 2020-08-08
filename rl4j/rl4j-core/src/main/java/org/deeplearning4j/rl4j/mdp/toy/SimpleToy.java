@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.NeuralNetFetchable;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.Box;
@@ -58,7 +59,7 @@ public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
         for (int i = 0; i < maxStep; i++) {
             input.putRow(i, Nd4j.create(new SimpleToyState(i, i).toArray()));
         }
-        INDArray output = fetchable.getNeuralNet().output(input);
+        INDArray output = fetchable.getNeuralNet().output(input).get(CommonOutputNames.QValues);
         log.info(output.toString());
     }
 

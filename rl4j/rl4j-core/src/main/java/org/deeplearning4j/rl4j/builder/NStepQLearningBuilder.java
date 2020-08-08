@@ -23,12 +23,9 @@ import org.deeplearning4j.rl4j.agent.IAgentLearner;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.NStepQLearning;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
-import org.deeplearning4j.rl4j.agent.learning.update.updater.GradientsNeuralNetUpdater;
-import org.deeplearning4j.rl4j.agent.learning.update.updater.INeuralNetUpdater;
+import org.deeplearning4j.rl4j.agent.learning.update.updater.async.AsyncSharedNetworksUpdateHandler;
 import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.environment.IActionSchema;
-import org.deeplearning4j.rl4j.experience.ExperienceHandler;
-import org.deeplearning4j.rl4j.experience.StateActionExperienceHandler;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
@@ -45,10 +42,8 @@ import org.nd4j.linalg.api.rng.Random;
  * <li>a neural net updater that expects gradient update data</li>
  * <li>a n-step Q-Learning gradient conputation algorithm</li>
  */
-public class NStepQLearningBuilder extends BaseAgentLearnerBuilder<Integer, StateActionPair<Integer>, Gradients>{
+public class NStepQLearningBuilder extends BaseAsyncAgentLearnerBuilder<NStepQLearningBuilder.Configuration> {
 
-
-    private final Configuration configuration;
     private final Random rnd;
 
     public NStepQLearningBuilder(Configuration configuration,
@@ -57,7 +52,6 @@ public class NStepQLearningBuilder extends BaseAgentLearnerBuilder<Integer, Stat
                                  Builder<TransformProcess> transformProcessBuilder,
                                  Random rnd) {
         super(configuration, neuralNet, environmentBuilder, transformProcessBuilder);
-        this.configuration = configuration;
         this.rnd = rnd;
     }
 
@@ -69,28 +63,20 @@ public class NStepQLearningBuilder extends BaseAgentLearnerBuilder<Integer, Stat
     }
 
     @Override
-    protected ExperienceHandler<Integer, StateActionPair<Integer>> buildExperienceHandler() {
-        return new StateActionExperienceHandler<Integer>(configuration.getExperienceHandlerConfiguration());
-    }
-
-    @Override
     protected IUpdateAlgorithm<Gradients, StateActionPair<Integer>> buildUpdateAlgorithm() {
         IActionSchema<Integer> actionSchema = getEnvironment().getSchema().getActionSchema();
         return new NStepQLearning(networks.getThreadCurrentNetwork(), networks.getTargetNetwork(), actionSchema.getActionSpaceSize(), configuration.getNstepQLearningConfiguration());
     }
 
     @Override
-    protected INeuralNetUpdater<Gradients> buildNeuralNetUpdater() {
-        return new GradientsNeuralNetUpdater(networks.getThreadCurrentNetwork(), networks.getTargetNetwork(), configuration.getNeuralNetUpdaterConfiguration());
+    protected AsyncSharedNetworksUpdateHandler buildAsyncSharedNetworksUpdateHandler() {
+        return new AsyncSharedNetworksUpdateHandler(networks.getGlobalCurrentNetwork(), networks.getTargetNetwork(), configuration.getNeuralNetUpdaterConfiguration());
     }
 
     @EqualsAndHashCode(callSuper = true)
     @SuperBuilder
     @Data
-    public static class Configuration extends BaseAgentLearnerBuilder.Configuration<Integer> {
-        EpsGreedy.Configuration policyConfiguration;
-        GradientsNeuralNetUpdater.Configuration neuralNetUpdaterConfiguration;
+    public static class Configuration extends BaseAsyncAgentLearnerBuilder.Configuration {
         NStepQLearning.Configuration nstepQLearningConfiguration;
-        StateActionExperienceHandler.Configuration experienceHandlerConfiguration;
     }
 }

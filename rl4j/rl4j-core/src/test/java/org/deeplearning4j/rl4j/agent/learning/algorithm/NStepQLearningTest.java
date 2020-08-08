@@ -3,9 +3,7 @@ package org.deeplearning4j.rl4j.agent.learning.algorithm;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
-import org.deeplearning4j.rl4j.network.CommonLabelNames;
-import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
-import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
+import org.deeplearning4j.rl4j.network.*;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,7 +25,7 @@ public class NStepQLearningTest {
     private static final int ACTION_SPACE_SIZE = 2;
 
     @Mock
-    ITrainableNeuralNet currentMock;
+    ITrainableNeuralNet threadCurrentMock;
 
     @Mock
     IOutputNeuralNet targetMock;
@@ -35,13 +33,21 @@ public class NStepQLearningTest {
     NStepQLearning sut;
 
     private void setup(double gamma) {
-        when(currentMock.output(any(INDArray.class))).thenAnswer(invocation -> invocation.getArgument(0, INDArray.class).mul(-1.0));
-        when(targetMock.output(any(INDArray.class))).thenAnswer(invocation -> invocation.getArgument(0, INDArray.class).mul(-2.0));
+        when(threadCurrentMock.output(any(INDArray.class))).thenAnswer(invocation -> {
+            NeuralNetOutput result = new NeuralNetOutput();
+            result.put(CommonOutputNames.QValues, invocation.getArgument(0, INDArray.class).mul(-1.0));
+            return result;
+        });
+        when(targetMock.output(any(INDArray.class))).thenAnswer(invocation -> {
+            NeuralNetOutput result = new NeuralNetOutput();
+            result.put(CommonOutputNames.QValues, invocation.getArgument(0, INDArray.class).mul(-2.0));
+            return result;
+        });
 
         NStepQLearning.Configuration configuration = NStepQLearning.Configuration.builder()
             .gamma(gamma)
             .build();
-        sut = new NStepQLearning(currentMock, targetMock, ACTION_SPACE_SIZE, configuration);
+        sut = new NStepQLearning(threadCurrentMock, targetMock, ACTION_SPACE_SIZE, configuration);
     }
 
     @Test
@@ -62,7 +68,7 @@ public class NStepQLearningTest {
 
         // Assert
         ArgumentCaptor<FeaturesLabels> argument = ArgumentCaptor.forClass(FeaturesLabels.class);
-        verify(currentMock, times(1)).computeGradients(argument.capture());
+        verify(threadCurrentMock, times(1)).computeGradients(argument.capture());
 
         FeaturesLabels featuresLabels = argument.getValue();
         assertEquals(0.0, featuresLabels.getLabels(CommonLabelNames.QValues).getDouble(0), 0.000001);
@@ -86,7 +92,7 @@ public class NStepQLearningTest {
 
         // Assert
         ArgumentCaptor<FeaturesLabels> argument = ArgumentCaptor.forClass(FeaturesLabels.class);
-        verify(currentMock, times(1)).computeGradients(argument.capture());
+        verify(threadCurrentMock, times(1)).computeGradients(argument.capture());
 
         FeaturesLabels featuresLabels = argument.getValue();
         assertEquals(-2.0 * observation.getData().getDouble(0, 1), featuresLabels.getLabels(CommonLabelNames.QValues).getDouble(0), 0.000001);
@@ -110,7 +116,7 @@ public class NStepQLearningTest {
 
         // Assert
         ArgumentCaptor<FeaturesLabels> argument = ArgumentCaptor.forClass(FeaturesLabels.class);
-        verify(currentMock, times(1)).computeGradients(argument.capture());
+        verify(threadCurrentMock, times(1)).computeGradients(argument.capture());
 
         // input side -- should be a stack of observations
         INDArray featuresValues = argument.getValue().getFeatures();

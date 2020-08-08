@@ -105,6 +105,7 @@ public class EpsGreedy<A> extends Policy<A> {
         return policy.getNeuralNet();
     }
 
+    @Deprecated
     public A nextAction(INDArray input) {
 
         double ep = getEpsilon();

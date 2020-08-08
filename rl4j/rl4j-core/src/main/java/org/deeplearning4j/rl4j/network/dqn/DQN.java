@@ -26,6 +26,8 @@ import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.CommonGradientNames;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
+import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -71,16 +73,21 @@ public class DQN implements IDQN<DQN> {
         fit(input, labels[0]);
     }
 
-    public INDArray output(INDArray batch) {
-        return mln.output(batch);
+    public NeuralNetOutput output(INDArray batch) {
+        NeuralNetOutput result = new NeuralNetOutput();
+        result.put(CommonOutputNames.QValues, mln.output(batch));
+
+        return result;
+
     }
 
-    public INDArray output(Observation observation) {
-        return this.output(observation.getData());
+    public NeuralNetOutput output(Observation observation) {
+        return output(observation.getData());
     }
 
+    @Deprecated
     public INDArray[] outputAll(INDArray batch) {
-        return new INDArray[] {output(batch)};
+        return new INDArray[] {output(batch).get(CommonOutputNames.QValues)};
     }
 
     @Override
@@ -89,7 +96,7 @@ public class DQN implements IDQN<DQN> {
     }
 
     @Override
-    public void copy(DQN from) {
+    public void copyFrom(DQN from) {
         mln.setParams(from.mln.params());
     }
 

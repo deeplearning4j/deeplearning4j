@@ -23,6 +23,8 @@ import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
+import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -155,7 +157,9 @@ public class QLearningDiscreteTest {
 
         // An example observation and 2 Q values output (2 actions)
         Observation observation = new Observation(Nd4j.zeros(observationShape));
-        when(mockDQN.output(eq(observation))).thenReturn(Nd4j.create(new float[] {1.0f, 0.5f}));
+        NeuralNetOutput netOutputResult = new NeuralNetOutput();
+        netOutputResult.put(CommonOutputNames.QValues, Nd4j.create(new float[] {1.0f, 0.5f}));
+        when(mockDQN.output(eq(observation))).thenReturn(netOutputResult);
 
         when(mockMDP.step(anyInt())).thenReturn(new StepReply<>(new Observation(Nd4j.zeros(observationShape)), 0, false, null));
 

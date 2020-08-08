@@ -18,6 +18,7 @@ package org.deeplearning4j.rl4j.policy;
 
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
@@ -53,8 +54,9 @@ public class DQNPolicy<OBSERVATION> extends Policy<Integer> {
         return nextAction(obs.getData());
     }
 
+    @Deprecated
     public Integer nextAction(INDArray input) {
-        INDArray output = neuralNet.output(input);
+        INDArray output = neuralNet.output(input).get(CommonOutputNames.QValues);
         return Learning.getMaxAction(output);
     }
 

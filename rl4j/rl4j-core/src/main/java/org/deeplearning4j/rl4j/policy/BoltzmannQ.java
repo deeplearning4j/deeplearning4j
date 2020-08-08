@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.rl4j.policy;
 
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -49,9 +50,9 @@ public class BoltzmannQ<OBSERVATION extends Encodable> extends Policy<Integer> {
         return nextAction(obs.getData());
     }
 
+    @Deprecated
     public Integer nextAction(INDArray input) {
-
-        INDArray output = dqn.output(input);
+        INDArray output = dqn.output(input).get(CommonOutputNames.QValues);
         INDArray exp = exp(output);
 
         double sum = exp.sum(1).getDouble(0);
@@ -61,7 +62,6 @@ public class BoltzmannQ<OBSERVATION extends Encodable> extends Policy<Integer> {
                 return i;
         }
         return -1;
-
     }
 
 
