@@ -65,7 +65,7 @@ namespace sd {
                 additionalShape = additionalShapeBroadcasted;
             }
             auto lastDim = shape::sizeAt(alphaShape, 0);
-            auto dtype = ArrayOptions::dataType(alphaShape);
+            auto dtype = block.numD() > 0? D_ARG(0): ArrayOptions::dataType(alphaShape);
             for (auto i = 0; i < shape::rank(additionalShape); i++)
                 shape.push_back(shape::sizeAt(additionalShape, i));
             auto newShape = ConstantShapeHelper::getInstance().createShapeInfo(dtype, 'c', shape);

@@ -24,6 +24,8 @@
 #include <system/msvc.h>
 #include <stdint.h>
 
+#define CUDA_BLOCK_SIZE 256
+
 typedef void* Nd4jPointer;
 typedef long long Nd4jLong;
 typedef uint64_t Nd4jULong;

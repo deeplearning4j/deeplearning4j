@@ -45,6 +45,21 @@ if ("${BUILD_MKLDNN}")
     set(MKLDNN dnnl)
 endif()
 
+if (${HELPERS_armcompute})
+ find_package(ARMCOMPUTE REQUIRED)
+
+ if(ARMCOMPUTE_FOUND)
+    message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
+    set(HAVE_ARMCOMPUTE 1)
+    # Add preprocessor definition for ARM Compute NEON
+    add_definitions(-DARMCOMPUTENEON_ENABLED)
+    #build our library with neon support
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
+    include_directories(${ARMCOMPUTE_INCLUDE})
+ endif()
+
+endif()
+
 # Download and unpack flatbuffers at configure time
 configure_file(../../CMakeLists.txt.in flatbuffers-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
@@ -217,6 +232,10 @@ if ("${BUILD_MKLDNN}")
     file(GLOB_RECURSE CUSTOMOPS_PLATFORM_SOURCES false ../../include/ops/declarable/platform/mkldnn/*.cpp)
 endif()
 
+if(HAVE_ARMCOMPUTE)
+    file(GLOB_RECURSE CUSTOMOPS_ARMCOMPUTE_SOURCES false ../include/ops/declarable/platform/armcompute/*.cpp ../include/ops/declarable/platform/armcompute/armcomputeUtils.h)
+endif()
+
 message("CPU backend")
 add_definitions(-D__CPUBLAS__=true)
 
@@ -276,8 +295,9 @@ endforeach(TMP_PATH)
 
 
 add_executable(runtests ${LOOPS_SOURCES} ${LEGACY_SOURCES} ${EXEC_SOURCES} ${HELPERS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_PLATFORM_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
+    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_PLATFORM_SOURCES} 
+    ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES})
 
-target_link_libraries(runtests gtest ${MKLDNN} gtest_main ${BLAS_LIBRARIES})
+target_link_libraries(runtests gtest ${MKLDNN} ${ARMCOMPUTE_LIBRARIES} gtest_main ${BLAS_LIBRARIES})
 

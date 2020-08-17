@@ -275,12 +275,10 @@ public class ArbiterCliGenerator {
     }
 
     private ComputationGraphSpace loadCompGraph() throws Exception {
-        ComputationGraphSpace multiLayerSpace = ComputationGraphSpace.fromJson(FileUtils.readFileToString(new File(searchSpacePath)));
-        return multiLayerSpace;
+        return ComputationGraphSpace.fromJson(FileUtils.readFileToString(new File(searchSpacePath)));
     }
 
     private MultiLayerSpace loadMultiLayer() throws Exception {
-        MultiLayerSpace multiLayerSpace = MultiLayerSpace.fromJson(FileUtils.readFileToString(new File(searchSpacePath)));
-        return multiLayerSpace;
+        return MultiLayerSpace.fromJson(FileUtils.readFileToString(new File(searchSpacePath)));
     }
 }

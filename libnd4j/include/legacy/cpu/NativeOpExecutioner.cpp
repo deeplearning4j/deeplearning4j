@@ -585,8 +585,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext  *lc,
                                           void *extraParams,
                                           void *hZ, const Nd4jLong *hZShapeInfo,
                                           void *dZ, const Nd4jLong *dZShapeInfo,
-                                          int *dimension, int dimensionLength,
-                                          const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
+                                          int *dimension, int dimensionLength) {
 
 
 
@@ -597,13 +596,7 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext  *lc,
     if (shape::isEmpty(hZShapeInfo))
         return;
 
-    auto func = PRAGMA_THREADS_FOR {
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::exec(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, start, stop), LIBND4J_TYPES, FLOAT_TYPES);
-    };
-
-    const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
-
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance().maxMasterThreads());
+      BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension), LIBND4J_TYPES, FLOAT_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -614,24 +607,16 @@ void NativeOpExecutioner::execReduceSame(sd::LaunchContext  *lc,
                                          void *extraParams,
                                          void *hZ, const Nd4jLong *hZShapeInfo,
                                          void *dZ, const Nd4jLong *dZShapeInfo,
-                                         int *dimension, int dimensionLength,
-                                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
+                                         int *dimension, int dimensionLength) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
-    auto zType = sd::ArrayOptions::dataType(hZShapeInfo);
 
     // nothing to do here if result is empty
     if (shape::isEmpty(hZShapeInfo))
         return;
 
-    auto func = PRAGMA_THREADS_FOR {
-        BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::exec(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, start, stop), LIBND4J_TYPES);
-    };
-
-    const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
-
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance().maxMasterThreads());
+    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension), LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -642,8 +627,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext  *lc,
                                          void *extraParams,
                                          void *hZ, const Nd4jLong *hZShapeInfo,
                                          void *dZ, const Nd4jLong *dZShapeInfo,
-                                         int *dimension, int dimensionLength,
-                                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
+                                         int *dimension, int dimensionLength) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -653,13 +637,7 @@ void NativeOpExecutioner::execReduceBool(sd::LaunchContext  *lc,
     if (shape::isEmpty(hZShapeInfo))
         return;
 
-    auto func = PRAGMA_THREADS_FOR {
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::exec(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, start, stop), LIBND4J_TYPES, BOOL_TYPES);
-    };
-
-    const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
-
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance().maxMasterThreads());
+      BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension), LIBND4J_TYPES, BOOL_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -670,8 +648,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext  *lc,
                                          void *extraParams,
                                          void *hZ, const Nd4jLong *hZShapeInfo,
                                          void *dZ, const Nd4jLong *dZShapeInfo,
-                                         int *dimension, int dimensionLength,
-                                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
+                                         int *dimension, int dimensionLength) {
 
 
     auto xType = sd::ArrayOptions::dataType(hXShapeInfo);
@@ -681,13 +658,7 @@ void NativeOpExecutioner::execReduceLong(sd::LaunchContext  *lc,
     if (shape::isEmpty(hZShapeInfo))
         return;
 
-    auto func = PRAGMA_THREADS_FOR {
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::exec(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, start, stop), LIBND4J_TYPES, LONG_TYPES);
-    };
-
-    const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
-
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance().maxMasterThreads());
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::exec(opNum, lc ? lc->getWorkspace() : nullptr, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, dimension), LIBND4J_TYPES, LONG_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

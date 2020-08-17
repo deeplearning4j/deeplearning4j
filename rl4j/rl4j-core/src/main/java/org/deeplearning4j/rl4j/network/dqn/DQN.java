@@ -22,6 +22,10 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
+import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
+import org.deeplearning4j.rl4j.network.CommonGradientNames;
+import org.deeplearning4j.rl4j.network.CommonLabelNames;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,7 +37,7 @@ import java.util.Collection;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
  */
-public class DQN<NN extends DQN> implements IDQN<NN> {
+public class DQN implements IDQN<DQN> {
 
     final protected MultiLayerNetwork mln;
 
@@ -79,14 +83,21 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
         return new INDArray[] {output(batch)};
     }
 
-    public NN clone() {
-        NN nn = (NN)new DQN(mln.clone());
-        nn.mln.setListeners(mln.getListeners());
-        return nn;
+    @Override
+    public void fit(FeaturesLabels featuresLabels) {
+        fit(featuresLabels.getFeatures(), featuresLabels.getLabels(CommonLabelNames.QValues));
     }
 
-    public void copy(NN from) {
+    @Override
+    public void copy(DQN from) {
         mln.setParams(from.mln.params());
+    }
+
+    @Override
+    public DQN clone() {
+        DQN nn = new DQN(mln.clone());
+        nn.mln.setListeners(mln.getListeners());
+        return nn;
     }
 
     public Gradient[] gradient(INDArray input, INDArray labels) {
@@ -105,6 +116,41 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
 
     public Gradient[] gradient(INDArray input, INDArray[] labels) {
         return gradient(input, labels[0]);
+    }
+
+
+    @Override
+    public Gradients computeGradients(FeaturesLabels updateLabels) {
+        mln.setInput(updateLabels.getFeatures());
+        mln.setLabels(updateLabels.getLabels(CommonLabelNames.QValues));
+        mln.computeGradientAndScore();
+        Collection<TrainingListener> iterationListeners = mln.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (TrainingListener l : iterationListeners) {
+                l.onGradientCalculation(mln);
+            }
+        }
+        Gradients result = new Gradients(updateLabels.getBatchSize());
+        result.putGradient(CommonGradientNames.QValues, mln.gradient());
+        return result;
+    }
+
+    @Override
+    public void applyGradients(Gradients gradients) {
+        Gradient qValues = gradients.getGradient(CommonGradientNames.QValues);
+
+        MultiLayerConfiguration mlnConf = mln.getLayerWiseConfigurations();
+        int iterationCount = mlnConf.getIterationCount();
+        int epochCount = mlnConf.getEpochCount();
+        mln.getUpdater().update(mln, qValues, iterationCount, epochCount, (int)gradients.getBatchSize(), LayerWorkspaceMgr.noWorkspaces());
+        mln.params().subi(qValues.gradient());
+        Collection<TrainingListener> iterationListeners = mln.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (TrainingListener listener : iterationListeners) {
+                listener.iterationDone(mln, iterationCount, epochCount);
+            }
+        }
+        mlnConf.setIterationCount(iterationCount + 1);
     }
 
     public void applyGradient(Gradient[] gradient, int batchSize) {

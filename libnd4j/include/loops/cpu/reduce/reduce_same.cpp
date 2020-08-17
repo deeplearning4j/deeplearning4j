@@ -129,85 +129,6 @@ namespace functions {
             DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_SAME_OPS);
         }
 
-        template <typename X>
-        void ReduceSameFunction<X>::exec(const int opNum,
-                                         const void *x, const Nd4jLong *xShapeInfo,
-                                         void *extraParams,
-                                         void *z, const Nd4jLong *zShapeInfo,
-                                         int *dimension, int dimensionLength,
-                                         const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
-                                         int64_t start, int64_t stop) {
-                DISPATCH_BY_OPNUM_T(exec, PARAMS(x,
-                                               xShapeInfo,
-                                               extraParams,
-                                               z,
-                                               zShapeInfo,
-                                               dimension,
-                                               dimensionLength,
-                                               tadShapeInfo,
-                                               tadOffset, start, stop),
-                                  REDUCE_SAME_OPS);
-        }
-
-        template <typename X>
-        template <typename OpType>
-        void _CUDA_H ReduceSameFunction<X>::exec(const void *vx, const Nd4jLong *xShapeInfo,
-                                                 void *vextraParams,
-                                                 void *vz, const Nd4jLong *zShapeInfo,
-                                                 int *dimension, int dimensionLength,
-                                                 const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
-                                                 int64_t start, int64_t stop) {
-
-                auto x = reinterpret_cast<const X *>(vx);
-                auto z = reinterpret_cast<X *>(vz);
-                auto extraParams = reinterpret_cast<X *>(vextraParams);
-
-                auto zLength = shape::length(zShapeInfo);
-
-                if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
-                    if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
-                        return;
-                    const auto startingVal = OpType::startingValue(x);
-
-                    for (Nd4jLong i = 0; i < zLength; i++)
-                        z[i] = startingVal;
-                    return;
-                }
-
-                //pre squeezed: this is for keeping the pointer to the original
-                //shape information for tad offset
-                //the squeezed information doesn't render the right strides for
-                //tad offset
-                // || tad.wholeThing
-                if (zLength == 1 || dimension == nullptr || dimensionLength == shape::rank(xShapeInfo)) {
-                    z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
-                    return;
-                }
-
-                if (OpType::requiresSpecialAccumulation) {
-                    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset);
-                    return;
-                }
-
-                auto tadOnlyShapeInfo = tadShapeInfo;
-                auto tadOffsets = tadOffset;
-
-                if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    if (dimensionLength < 1)
-                        return;
-
-                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-                    tadOnlyShapeInfo = tadPack.primaryShapeInfo();
-                    tadOffsets = tadPack.primaryOffsets();
-                }
-
-#ifdef INLINE_LOOPS
-                sd::ReductionLoops<X,X,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
-#else
-                sd::ReductionSameLoops<X>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo, tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
-#endif
-            }
-
 
         template <typename X>
         template<typename OpType>
@@ -251,7 +172,57 @@ namespace functions {
             return OpType::postProcess(intermediate[0], length, extraParams);
         }
 
+////////////////////////////////////////////////////////////////////////
+template <typename X>
+template <typename OpType>
+void _CUDA_H ReduceSameFunction<X>::exec(sd::memory::Workspace* workspace, const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams, void *vz, const Nd4jLong *zShapeInfo, const int* dims) {
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ReduceSameFunction, , LIBND4J_TYPES);
+    const X* x = reinterpret_cast<const X*>(vx);
+          X* z = reinterpret_cast<X*>(vz);
+          X* extraParams = reinterpret_cast<X*>(vextraParams);
+
+    const int xRank = shape::rank(xShapeInfo);
+    const int zRank = shape::rank(zShapeInfo);
+
+    if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
+
+        const auto startingVal = OpType::startingValue(x);
+        const auto zLen = shape::length(zShapeInfo);
+
+        for (Nd4jLong i = 0; i < zLen; i++)
+            z[i] = startingVal;
+        return;
     }
+
+    if (shape::length(zShapeInfo) == 1) {
+        z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
+        return;
+    }
+
+    if (OpType::requiresSpecialAccumulation) {
+        OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<int*>(dims)+zRank, xRank-zRank, nullptr, nullptr);
+        return;
+    }
+
+#ifdef INLINE_LOOPS
+    sd::ReductionLoops<X,X,X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
+#else
+    sd::ReductionSameLoops<X>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
+#endif
+
 }
+
+////////////////////////////////////////////////////////////////////////
+template <typename X>
+void ReduceSameFunction<X>::exec(const int opNum, sd::memory::Workspace* workspace, const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams, void *vz, const Nd4jLong *zShapeInfo, const int *dims) {
+
+    DISPATCH_BY_OPNUM_T(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_SAME_OPS);
+}
+
+
+
+BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT ReduceSameFunction, , LIBND4J_TYPES);
+}
+}
+
+

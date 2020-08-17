@@ -346,12 +346,16 @@ public class TestVertxUI extends BaseDL4JTest {
     }
 
     @Test
-    public void testUIAutoStopOnThreadExit() throws InterruptedException {
-        AtomicReference<UIServer> uiServer = new AtomicReference<>();
-        Thread thread = new Thread(() -> uiServer.set(UIServer.getInstance()));
-        thread.start();
-        thread.join();
-        Thread.sleep(1_000);
-        assertTrue(uiServer.get().isStopped());
+    public void testUIShutdownHook() throws InterruptedException {
+        UIServer uIServer = UIServer.getInstance();
+        Thread shutdownHook = UIServer.getShutdownHook();
+        shutdownHook.start();
+        shutdownHook.join();
+        /*
+         * running the shutdown hook thread before the Runtime is terminated
+         * enables us to check if the UI server has been shut down or not
+         */
+        assertTrue(uIServer.isStopped());
+        log.info("Deeplearning4j UI server stopped in shutdown hook.");
     }
 }

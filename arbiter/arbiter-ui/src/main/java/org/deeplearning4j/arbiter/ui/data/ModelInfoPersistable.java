@@ -85,7 +85,7 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
         private Integer modelIdx;
         private Double score;
         private CandidateStatus status;
-        private long lastUpdateTime;;
+        private long lastUpdateTime;
         private long numParameters;
         private int numLayers;
         private int totalNumUpdates;

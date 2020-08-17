@@ -35,14 +35,10 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z, typename OpType>
-__global__ void simpleReduce(const void *x, const Nd4jLong *xShapeInfo,
-                            void *extraParams,
-                            void *z, const Nd4jLong *zShapeInfo,
-                            int *dimension, int dimensionLength,
-                            void *reductionBuffer,
-                             const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets) {
+__global__ void simpleReduce(const void *x, const Nd4jLong *outerXTadShapeInfo, const Nd4jLong *innerXTadShapeInfo,
+                            void *extraParams, void *vreductionBuffer, void *z, const Nd4jLong *zShapeInfo) {
 
-    functions::reduce::ReduceFloatFunction<X,Z>::template transformCudaXD<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
+    functions::reduce::ReduceFloatFunction<X,Z>::template transformCudaXD<OpType>(x, outerXTadShapeInfo, innerXTadShapeInfo, extraParams, vreductionBuffer, z, zShapeInfo);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -96,51 +92,48 @@ __device__ void ReduceFloatFunction<X,Z>::aggregatePartials(void *vsPartials, Nd
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
 template <typename OpType>
-__device__ void ReduceFloatFunction<X,Z>::transformCudaXD(const void *vx, const Nd4jLong *xShapeInfo,
-                                                        void *vextraParams,
-                                                        void *vz, const Nd4jLong *zShapeInfo,
-                                                        int *dimension,  int dimensionLength,
-                                                        void *vreductionBuffer,
-                                                          const Nd4jLong *tadOnlyShapeInfo, const Nd4jLong *tadOffsets) {
+__device__ void ReduceFloatFunction<X,Z>::transformCudaXD(const void *vx, const Nd4jLong *outerXTadShapeInfo, const Nd4jLong *innerXTadShapeInfo,
+                                                        void *vextraParams, void *vreductionBuffer,
+                                                        void *vz, const Nd4jLong *zShapeInfo) {
 
     auto x = reinterpret_cast<const X*>(vx);
     auto z = reinterpret_cast<Z*>(vz);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
-    auto reductionBuffer = reinterpret_cast<Z*>(vreductionBuffer);
 
     //shared memory space for storing intermediate results
-    __shared__ Z* sPartials;
-    __shared__ int tadLength, numTads;
-    __shared__ bool isPlainOutput;
+    __shared__ Z sPartials[CUDA_BLOCK_SIZE];
+    __shared__ int tadLen, numTads;
+    __shared__ bool sameOffsets;
 
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<Z*>(shmem);
+        sameOffsets = shape::haveSameShapeAndStrides(zShapeInfo, outerXTadShapeInfo);
 
-        isPlainOutput = shape::order(zShapeInfo) == 'c' && shape::elementWiseStride(zShapeInfo) == 1;
-
-        tadLength = shape::length(tadOnlyShapeInfo);
-        numTads = shape::length(xShapeInfo) / tadLength;
+        tadLen  = shape::length(innerXTadShapeInfo);
+        numTads = shape::length(outerXTadShapeInfo);
     }
     __syncthreads();
 
+    int coords[MAX_RANK];
+
     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 
-        auto tadOffsetForBlock = tadOffsets[r];
-        sPartials[threadIdx.x] = OpType::startingValue(x + tadOffsetForBlock);
+        shape::index2coords(r, outerXTadShapeInfo, coords);
+        const auto outerOffset = shape::getOffset(outerXTadShapeInfo, coords);
+        const auto zOffset = sameOffsets ? outerOffset : shape::getOffset(zShapeInfo, coords);
 
-        for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo);
-            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
-        }
+        const X* xTad = x + outerOffset;
+        sPartials[threadIdx.x] = OpType::startingValue(xTad);
+
+        for (int i = threadIdx.x; i < tadLen; i += blockDim.x)
+            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(xTad[shape::getIndexOffset(i, innerXTadShapeInfo)], extraParams), extraParams);
         __syncthreads();
 
-        // aggregate. do NOT reduce for elements > tadLength
-        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+        // aggregate. do NOT reduce for elements > tadLen
+        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLen), extraParams);
         __syncthreads();
 
         if (threadIdx.x == 0)
-            z[isPlainOutput ? r : shape::getIndexOffset(r, zShapeInfo)] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+            z[zOffset] = OpType::postProcess(sPartials[threadIdx.x], tadLen, extraParams);
     }
 }
 
@@ -161,13 +154,11 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(const void *vx, const N
     auto tid = blockDim.x * blockIdx.x + threadIdx.x;
 
     //shared memory space for storing intermediate results
-    __shared__ Z* sPartials;
+    __shared__ Z sPartials[CUDA_BLOCK_SIZE];
     __shared__ Nd4jLong xEws;
     __shared__ Nd4jLong len;
 
     if(threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sPartials = reinterpret_cast<Z*>(shmem);
         xEws = shape::elementWiseStride(xShapeInfo);
         len = shape::length(xShapeInfo);
     }
@@ -236,12 +227,9 @@ __device__ void ReduceFloatFunction<X,Z>::execScalarCuda(const void *vx, const N
 template <typename X, typename Z>
 template<typename OpType>
 __host__ void ReduceFloatFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStream_t *stream,
-                                                       const void *x, const Nd4jLong *xShape, const Nd4jLong *hXShapeInfo,
-                                                       void *extraParams,
-                                                       void *z, const Nd4jLong *zShape, const Nd4jLong *hZShapeInfo,
-                                                       int *dimension, int dimensionLength,
-                                                       void *reductionPointer,
-                                                       const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
+                                                       const void *x, const Nd4jLong *dXShapeInfo, const Nd4jLong *hXShapeInfo,
+                                                       void *extraParams, void *vreductionBuffer,
+                                                       void *z, const Nd4jLong *dZShapeInfo, const Nd4jLong *hZShapeInfo, const int* dims) {
 
     if(shape::isEmpty(hXShapeInfo)) {
 
@@ -256,10 +244,17 @@ __host__ void ReduceFloatFunction<X,Z>::intermediateXD(dim3 launchDims, cudaStre
         auto ptr = sd::LaunchContext::defaultContext()->getScalarPointer();
 
         // scalar assign
-        functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, zShape, hZShapeInfo, z, zShape, hZShapeInfo, ptr, nullptr);
+        functions::scalar::ScalarTransform<Z, Z, Z>::executeCudaShaped(launchDims, stream, 14, z, dZShapeInfo, hZShapeInfo, z, dZShapeInfo, hZShapeInfo, ptr, nullptr);
     }
     else {
-        simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShape, extraParams, z, zShape, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets);
+
+        const int zRank = shape::rank(hZShapeInfo);
+        const int tadRank = shape::rank(hXShapeInfo) - zRank;
+
+        auto outerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims, zRank);
+        auto innerPack = sd::ConstantShapeHelper::getInstance().createSubArrShapeInfo(hXShapeInfo, dims+zRank, tadRank);
+
+        simpleReduce<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, reinterpret_cast<Nd4jLong const*>(outerPack.special()), reinterpret_cast<Nd4jLong const*>(innerPack.special()), extraParams, vreductionBuffer, z, dZShapeInfo);
     }
 }
 
@@ -269,7 +264,7 @@ template<typename OpType>
 __host__ void ReduceFloatFunction<X,Z>::intermediateScalar(dim3 launchDims, cudaStream_t *stream,
                                                            const void *x, const Nd4jLong *xShapeInfo, const Nd4jLong *hXShapeInfo,
                                                            void *extraParams,
-                                                           void *z, const Nd4jLong *zShapeInfo, const Nd4jLong *hZShapeInfo,
+                                                           void *z, const Nd4jLong *dZShapeInfo, const Nd4jLong *hZShapeInfo,
                                                            int *dimension, int dimensionLength,
                                                            void *reductionBuffer,
                                                            const Nd4jLong *tadOnlyShapeInfo) {
@@ -286,7 +281,7 @@ __host__ void ReduceFloatFunction<X,Z>::intermediateScalar(dim3 launchDims, cuda
             throw sd::cuda_exception::build("ReduceFloatFunction<X,Z>::intermediateScalar: failed to copy resulting scalar", res);
     }
     else {
-        simpleScalar<X, Z, OpType> <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
+        simpleScalar<X, Z, OpType> <<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, dZShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo);
     }
 }
 
@@ -296,27 +291,28 @@ _CUDA_H void ReduceFloatFunction<X,Y>::execReduceScalar(dim3 launchDims, cudaStr
                                                         const int opNum,
                                                         const void *x, const Nd4jLong *xShapeInfo, const Nd4jLong *hXShapeInfo,
                                                         void *extraParams,
-                                                        void *z, const Nd4jLong *zShapeInfo, const Nd4jLong *hZShapeInfo,
+                                                        void *z, const Nd4jLong *dZShapeInfo, const Nd4jLong *hZShapeInfo,
                                                         int *dimension, int dimensionLength,
                                                         void *reductionBuffer,
                                                         const Nd4jLong *tadOnlyShapeInfo) {
 
-        DISPATCH_BY_OPNUM_TT(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, hXShapeInfo, extraParams, z, zShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_FLOAT_OPS));
+        DISPATCH_BY_OPNUM_TT(intermediateScalar, PARAMS(launchDims, stream, x, xShapeInfo, hXShapeInfo, extraParams, z, dZShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_FLOAT_OPS));
         sd::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-_CUDA_H void ReduceFloatFunction<X,Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream,
-                                                    const int opNum,
-                                                    const int rank, const void *x, const Nd4jLong *xShape, const Nd4jLong *hXShapeInfo,
-                                                    void *extraParams,
-                                                    void *z, const Nd4jLong *zShape, const Nd4jLong *hZShapeInfo,
-                                                    int *dimension, int dimensionLength,
-                                                    void *reductionPointer,
-                                                    const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets) {
+_CUDA_H void ReduceFloatFunction<X,Y>::execReduceXD(dim3 launchDims, cudaStream_t *stream, const int opNum,
+                                                    const void *x, const Nd4jLong *dXShapeInfo, const Nd4jLong *hXShapeInfo,
+                                                    void *extraParams, void *vreductionBuffer,
+                                                    void *z, const Nd4jLong *dZShapeInfo, const Nd4jLong *hZShapeInfo, const int *dims) {
 
-    DISPATCH_BY_OPNUM_TT(intermediateXD, PARAMS(launchDims, stream, x, xShape, hXShapeInfo, extraParams, z, zShape, hZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(REDUCE_FLOAT_OPS));
+    if(shape::length(hZShapeInfo) == 1)  {
+        ReduceFloatFunction<X,Y>::execReduceScalar(launchDims, stream, opNum, x, dXShapeInfo, hXShapeInfo, extraParams, z, dZShapeInfo, hZShapeInfo, nullptr, 0, vreductionBuffer, nullptr);
+    }
+    else {
+        DISPATCH_BY_OPNUM_TT(intermediateXD, PARAMS(launchDims, stream, x, dXShapeInfo, hXShapeInfo, extraParams, vreductionBuffer, z, dZShapeInfo, hZShapeInfo, dims), OPS_A(REDUCE_FLOAT_OPS));
+    }
     DEBUG_KERNEL(stream, opNum);
 }
 

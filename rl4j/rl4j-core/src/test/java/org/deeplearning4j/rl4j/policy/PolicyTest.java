@@ -23,6 +23,8 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
+import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
@@ -42,9 +44,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  *
@@ -89,6 +89,21 @@ public class PolicyTest {
         }
 
         @Override
+        public void fit(FeaturesLabels featuresLabels) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Gradients computeGradients(FeaturesLabels updateLabels) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void applyGradients(Gradients gradients) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void copy(NN from) {
             throw new UnsupportedOperationException();
         }
@@ -125,6 +140,16 @@ public class PolicyTest {
 
         @Override
         public void save(String filename) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public INDArray output(Observation observation) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public INDArray output(INDArray batch) {
             throw new UnsupportedOperationException();
         }
     }

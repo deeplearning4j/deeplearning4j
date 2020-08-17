@@ -33,6 +33,94 @@
 namespace sd {
 namespace ops {
 namespace helpers {
+    /**
+     * gammaLess - compute gamma distributed value for shapes (alpha) from 0 to 1
+     * @tparam T - any float types are acceptable
+     * @param U - uniform random generated vals
+     * @param alpha - shape of distribution
+     * @param beta - scale of distributed values
+     * @return gamma distributed value
+     */
+    template <typename T>
+    T __device__ gammaLess(T const* U, Nd4jLong index, Nd4jLong maxLength, T const alpha, T const beta) {
+        auto d = T(1.0334f) - T(0.0766f) * math::p_exp(T(2.2942f) * alpha);
+        auto a = math::p_pow(T(2.f), alpha) * math::p_pow(T(1.f) - math::p_exp(-d * T(0.5f)), alpha);
+        auto b = alpha * math::p_pow(d, alpha - T(1.f)) * exp(-d);
+        auto c = a + b;
+        T rawX;
+        auto indexV = index;
+        auto underAlpha = T(1.f) / alpha;
+        auto powerAlpha = math::p_pow(T(2.f), alpha - T(1.f));
+
+        for (;;) {
+            auto u = (indexV < maxLength)?U[indexV++]:U[0];
+              if (indexV >= maxLength) indexV = 0LL;
+//            math::atomics::nd4j_atomicAdd(index, 1LL);
+            if (u <= a / c) rawX = -T(2.f) * math::p_log(T(1.f) - T(0.5f) * math::p_pow(c * u, underAlpha));
+            else            rawX = - math::p_log(c * (T(1.f) - u)/(alpha * math::p_pow(d, alpha - T(1.f))));
+
+            T v = indexV < maxLength?U[indexV++]:U[0];
+            if (indexV >= maxLength) indexV = 0LL;
+//            math::atomics::nd4j_atomicAdd(index, 1LL);
+
+            if (rawX <= d) {
+                auto testVal = (math::p_pow(rawX, alpha - 1.f) * math::p_exp(-T(0.5f) * rawX)) / (powerAlpha * math::p_pow(T(1.f) - math::p_exp(-T(0.5f) * rawX), alpha - T(1.f)));
+                if (testVal < v) continue;
+                break;
+            }
+            else {
+                if (v <= math::p_pow(d / rawX, T(1.f) - alpha)) break;
+                continue;
+            }
+        }
+        return rawX / beta;
+    }
+
+    /**
+     * gammaGreat - generate gamma distributed value for shape (alpha) greater then 1
+     * @tparam T - given type (any float type is accepted.)
+     * @param rng  - random generator
+     * @param alpha - shape of the gamma distribution (alpha)
+     * @param beta  - scale of the gamma distribution (beta)
+     * @return - gamma distributed value with given params
+     */
+    template <typename T>
+    T __device__ gammaGreat(T const* U, Nd4jLong index, Nd4jLong maxLength, T const alpha, T const beta) {
+        auto decreasedAlpha = alpha - T(1.f/3.f);
+        auto c = T(1.)/ math::p_sqrt(T(9.f) * decreasedAlpha);
+//        static auto index = 0LL;
+        auto indexV = index;
+        T x;
+        auto normalDistributed = [U, maxLength](Nd4jLong& index) {
+            auto v1 = index < maxLength?U[index++]:U[0];
+            if (index >= maxLength) index = 0LL;
+//            math::atomics::nd4j_atomicAdd(index, 1LL);
+            auto v2 = index < maxLength?U[index++]:U[0];
+            if (index >= maxLength) index = 0LL;
+//            math::atomics::nd4j_atomicAdd(index, 1LL);
+
+            return math::p_cos(T(2.f * 3.141592f) * v2) * math::p_sqrt(T(-2.f) * math::p_log(v1));
+        };
+
+        float normalizedVar;
+        for(;;) {
+            do {
+                x = normalDistributed(indexV); //printf("X = %f\n", x);
+                normalizedVar = T(1.f) + c * x;
+            } while(normalizedVar < T(0.f));
+            normalizedVar = normalizedVar * normalizedVar * normalizedVar; //v * v * v;
+
+            auto u = U[indexV++];
+            if (indexV >= maxLength) indexV = 0LL;
+//            math::atomics::nd4j_atomicAdd(index, 1LL);
+
+            if( u < T(1.f) - T(.0331f) * (x * x) * (x * x) )
+                break; //return (d * v / b);
+            if( log(u) < 0.5f * x * x + decreasedAlpha * (1. - normalizedVar + math::p_log(normalizedVar)) )
+                break;
+        }
+        return (decreasedAlpha * normalizedVar / beta);
+    }
 
     /*
      * fillGammaKernel - fill up output with gamma distributed values
@@ -44,25 +132,28 @@ namespace helpers {
      *  output - distributed output.
      * */
     template <typename T>
-    static __global__ void fillGammaKernel(T* uList, Nd4jLong uLength, T* alpha, const Nd4jLong* alphaShape,
-            T* beta, const Nd4jLong* betaShape, T* output, const Nd4jLong* outputShape) {
+    static __global__ void fillGammaKernel(T const* uList, Nd4jLong uLength, T const* alpha, const Nd4jLong* alphaShape,
+            T const* beta, const Nd4jLong* betaShape, T* output, const Nd4jLong* outputShape) {
         // fill up
         __shared__ Nd4jLong aLength;
+        __shared__ Nd4jLong outLength;
         if (threadIdx.x == 0) {
             aLength = shape::length(alphaShape);
+            outLength = shape::length(outputShape) / aLength;
         }
         __syncthreads();
 
-        for (auto k = blockIdx.x; k < (int)uLength; k += gridDim.x) {
+        for (auto k = blockIdx.x; k < (int)outLength; k += gridDim.x) {
             auto pos = k * aLength;
-            auto u = uList[k]; // this is a vector
+//            auto u = uList[k]; // this is a vector
+            //Nd4jLong index = k;
             for (auto e = threadIdx.x; e < (int)aLength; e += blockDim.x) {
                 auto aIndex = shape::getIndexOffset(e, alphaShape);
                 auto bIndex = betaShape?shape::getIndexOffset(e, betaShape):-1LL;
-                auto betaV = T(beta != nullptr ? beta[bIndex] * u : u);
+                auto betaV = T(beta != nullptr ? beta[bIndex] : T(1.f));
                 auto zIndex = shape::getIndexOffset(e + pos, outputShape);
 
-                output[zIndex] = math::nd4j_igamma<T, T, T>(alpha[aIndex], betaV);
+                output[zIndex] = alpha[aIndex] > T(1.f)?gammaGreat(uList, pos, uLength, alpha[aIndex], betaV):gammaLess(uList, pos, uLength, alpha[aIndex], betaV);
             }
         }
     }
@@ -76,7 +167,7 @@ namespace helpers {
         else
             broadcasted = alpha->shapeInfo();
         auto step = shape::length(broadcasted);
-        auto shift = output->lengthOf() / step;
+        auto shift = output->lengthOf() * 4LL; // 2-wise greater case for uniform vals
 
         auto copyAlpha = alpha;
         auto copyBeta = beta;
@@ -86,19 +177,21 @@ namespace helpers {
 
             copyAlpha = new NDArray(alphaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *alpha));
             copyBeta = new NDArray(betaBroadcasted.applyTrueBroadcast(BroadcastOpsTuple::Assign(), *beta));
-            copyAlpha->tickWriteDevice(); copyBeta->tickWriteDevice();
+//            if (!copyAlpha->isActualOnDevice()) copyAlpha->syncToDevice();
+//            if (!copyBeta->isActualOnDevice()) copyBeta->syncToDevice();
         }
 
         auto stream = context->getCudaStream();
         NDArray uniform = NDArrayFactory::create<T>('c', {shift}, context);
         uniform.syncToDevice();
         // fill up uniform with given length
-        RandomLauncher::fillUniform(context, rng, &uniform, 0., 1.);
-
+        RandomLauncher::fillUniform(context, rng, &uniform, 0.0000000001, 0.9999999999);
+        uniform.syncToDevice();
+//        uniform.printIndexedBuffer("Uniform");
         fillGammaKernel<T><<<128, 128, 256, *stream>>>(uniform.dataBuffer()->specialAsT<T>(), shift,
                 copyAlpha->dataBuffer()->specialAsT<T>(), copyAlpha->specialShapeInfo(),
-                beta?copyBeta->dataBuffer()->specialAsT<T>():(T*)nullptr,
-                beta?copyBeta->specialShapeInfo():(Nd4jLong*)nullptr,
+                beta?copyBeta->dataBuffer()->specialAsT<T>():(T const*)nullptr,
+                beta?copyBeta->specialShapeInfo():(Nd4jLong const*)nullptr,
                 output->dataBuffer()->specialAsT<T>(), output->specialShapeInfo());
 
         if (beta != nullptr) {

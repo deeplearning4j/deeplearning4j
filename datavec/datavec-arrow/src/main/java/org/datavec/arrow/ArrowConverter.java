@@ -1268,10 +1268,6 @@ public class ArrowConverter {
             return dateMilliVector.get(row);
 
         }
-        else if(fieldVector instanceof TimeStampMilliVector) {
-            TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
-            return timeStampMilliVector.get(row);
-        }
         else if(fieldVector instanceof TimeMilliVector) {
             TimeMilliVector timeMilliVector = (TimeMilliVector) fieldVector;
             return timeMilliVector.get(row);
@@ -1283,10 +1279,6 @@ public class ArrowConverter {
         else if(fieldVector instanceof TimeSecVector) {
             TimeSecVector timeSecVector = (TimeSecVector) fieldVector;
             return timeSecVector.get(row);
-        }
-        else if(fieldVector instanceof TimeStampMilliVector) {
-            TimeStampMilliVector timeStampMilliVector = (TimeStampMilliVector) fieldVector;
-            return timeStampMilliVector.get(row);
         }
         else if(fieldVector instanceof TimeStampMilliTZVector) {
             TimeStampMilliTZVector timeStampMilliTZVector = (TimeStampMilliTZVector) fieldVector;

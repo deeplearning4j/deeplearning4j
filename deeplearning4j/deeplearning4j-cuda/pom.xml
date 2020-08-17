@@ -16,7 +16,7 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>deeplearning4j-cuda-10.2</artifactId>
+    <artifactId>deeplearning4j-cuda-11.0</artifactId>
     <name>deeplearning4j-cuda</name>
     <parent>
         <groupId>org.deeplearning4j</groupId>
@@ -26,9 +26,9 @@
 
     <properties>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->
-        <cuda.version>10.2</cuda.version>
-        <cudnn.version>7.6</cudnn.version>
-        <javacpp-presets.cuda.version>1.5.3</javacpp-presets.cuda.version>
+        <cuda.version>11.0</cuda.version>
+        <cudnn.version>8.0</cudnn.version>
+        <javacpp-presets.cuda.version>1.5.4-SNAPSHOT</javacpp-presets.cuda.version>
     </properties>
 
     <dependencyManagement>
@@ -112,7 +112,7 @@
             </build>
         </profile>
         <profile>
-            <id>test-nd4j-cuda-10.2</id>
+            <id>test-nd4j-cuda-11.0</id>
         </profile>
     </profiles>
 

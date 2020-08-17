@@ -22,7 +22,6 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.distribution.DistributionUtils;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.RealDistributionDeserializer;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.RealDistributionSerializer;
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
@@ -122,9 +121,8 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
         if (distribution == null ? other.distribution != null
                         : !DistributionUtils.distributionsEqual(distribution, other.distribution))
             return false;
-        if (this.index != other.index)
-            return false;
-        return true;
+
+        return this.index == other.index;
     }
 
     public int hashCode() {

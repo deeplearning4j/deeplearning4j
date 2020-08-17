@@ -18,11 +18,9 @@
 package org.deeplearning4j.rl4j.learning.async;
 
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-public interface IAsyncGlobal<NN extends NeuralNet> {
+public interface IAsyncGlobal<NN extends ITrainableNeuralNet> {
 
     boolean isTrainingComplete();
 

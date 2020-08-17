@@ -17,6 +17,7 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -24,6 +25,11 @@ import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
+import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
+import org.deeplearning4j.rl4j.network.CommonGradientNames;
+import org.deeplearning4j.rl4j.network.CommonLabelNames;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -70,7 +76,6 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
 
     }
 
-
     public INDArray[] outputAll(INDArray batch) {
         if (recurrent) {
             return new INDArray[] {valueNet.rnnTimeStep(batch), policyNet.rnnTimeStep(batch)};
@@ -84,6 +89,25 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         nn.valueNet.setListeners(valueNet.getListeners());
         nn.policyNet.setListeners(policyNet.getListeners());
         return nn;
+    }
+
+    @Override
+    public void fit(FeaturesLabels featuresLabels) {
+        // TODO: signature of fit() will change from DataSet to a class that has named labels to support network like
+        // this one (labels for the value-network and another labels for the policy-network
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    }
+
+    @Override
+    public Gradients computeGradients(FeaturesLabels updateLabels) {
+        // TODO
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    }
+
+    @Override
+    public void applyGradients(Gradients gradients) {
+        // TODO
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
     }
 
     public void copy(NN from) {
@@ -163,6 +187,20 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
     public void save(String pathValue, String pathPolicy) throws IOException {
         ModelSerializer.writeModel(valueNet, pathValue, true);
         ModelSerializer.writeModel(policyNet, pathPolicy, true);
+    }
+
+    @Override
+    public INDArray output(Observation observation) {
+        // TODO: signature of output() will change to return a class that has named outputs to support network like
+        // this one (output from the value-network and another output for the policy-network
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    }
+
+    @Override
+    public INDArray output(INDArray batch) {
+        // TODO: signature of output() will change to return a class that has named outputs to support network like
+        // this one (output from the value-network and another output for the policy-network
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
     }
 }
 

@@ -88,7 +88,7 @@ namespace helpers {
     void maxPoolingFunctor(sd::LaunchContext * context, sd::graph::Context& block, NDArray* input, NDArray* values, std::vector<int> const& params, NDArray* indices) {
         NDArray::prepareSpecialUse({values, indices}, {input});
         auto yType = indices == nullptr ? sd::DataType::INT64 : indices->dataType();
-        BUILD_DOUBLE_SELECTOR(input->dataType(), yType,  maxPoolingFunctor_, (block, input, values, params, indices), FLOAT_TYPES, INDEXING_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), yType,  maxPoolingFunctor_, (block, input, values, params, indices), LIBND4J_TYPES, INDEXING_TYPES);
         NDArray::registerSpecialUse({values, indices}, {input});
     }
 

@@ -317,7 +317,7 @@ void fill_random(sd::NDArray& arr) {
 
     }
 }
- 
+
 void testLegacy(bool random) {
 #if 0
     int bases[] = { 3, 2, 4, 5, 7 };
@@ -364,7 +364,7 @@ int k = 4;
 #endif
 auto dim = NDArrayFactory::create<int>(dimension);
 
-#if 1 
+#if 1
 nd4j_printf("C(N:%d K:%d) \n", N, k);
 dim.printIndexedBuffer("Dimension");
 for (int xind : dimension) {
@@ -385,7 +385,7 @@ for (int e = 0; e < Loop; e++) {
     auto outerTime = std::chrono::duration_cast<std::chrono::microseconds>(timeEnd - timeStart).count();
     values.emplace_back(outerTime);
 }
- 
+
 std::sort(values.begin(), values.end());
 
 nd4j_printf("Time: %lld us;\n", values[values.size() / 2]);
@@ -411,7 +411,7 @@ void testNewReduction(bool random, bool checkCorrectness = false , char order ='
     constexpr int N = 5;
 
 #endif
-    
+
     for (int i = 0; i < N; i++) {
         arr_dimensions.push_back(bases[i]);
     }
@@ -451,7 +451,7 @@ void testNewReduction(bool random, bool checkCorrectness = false , char order ='
 #endif
     auto dim = NDArrayFactory::create<int>(dimension);
 
-#if 1 
+#if 1
     nd4j_printf("C(N:%d K:%d) \n", N, k);
     dim.printIndexedBuffer("Dimension");
     for (int xind : dimension) {
@@ -477,14 +477,14 @@ void testNewReduction(bool random, bool checkCorrectness = false , char order ='
         //check for the correctness
         NDArray exp = output_bases.size() > 0 ? NDArrayFactory::create<Nd4jLong>('c', output_bases) : NDArrayFactory::create<Nd4jLong>(0);
         original_argmax(x, dimension, exp);
-   
+
 
 #if  0// defined(DEBUG)
      x.printIndexedBuffer("X");
     exp.printIndexedBuffer("Expected");
     z->printIndexedBuffer("Z");
 #endif
- 
+
         ASSERT_TRUE(exp.isSameShape(z));
         ASSERT_TRUE(exp.equalsTo(z));
     }
@@ -505,7 +505,7 @@ TEST_F(PlaygroundTests, ArgMaxPerfLinspace) {
     testNewReduction(false, test_corr);
 }
 #endif
- 
+
 TEST_F(PlaygroundTests, ArgMaxPerfRandom) {
     testNewReduction(true, test_corr);
 }
@@ -513,7 +513,7 @@ TEST_F(PlaygroundTests, ArgMaxPerfRandom) {
 TEST_F(PlaygroundTests, ArgMaxPerfRandomOrderF) {
     testNewReduction(true, test_corr, 'f');
 }
- 
+
 #if !defined(DEBUG)
 TEST_F(PlaygroundTests, ArgMaxPerfLegacyLinspace) {
     testLegacy(false);
@@ -1062,39 +1062,6 @@ TEST_F(PlaygroundTests, my) {
     delete variableSpace;
 }
 
-TEST_F(PlaygroundTests, my) {
-
-    int N = 100;
-    int bS=16, iH=128,iW=128,  iC=32,oC=64,  kH=4,kW=4,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
-    int        oH=128,oW=128;
-
-    int paddingMode = 1;             // 1-SAME, 0-VALID;
-    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
-
-    // NDArray input('c', {bS, iC, iH, iW}, sd::DataType::FLOAT32);
-    // NDArray output('c', {bS, oC, oH, oW}, sd::DataType::FLOAT32);
-    NDArray input('c', {bS, iH, iW, iC}, sd::DataType::FLOAT32);
-    NDArray output('c', {bS, oH, oW, oC}, sd::DataType::FLOAT32);
-    // NDArray weights('c', {kH, kW, iC, oC}, sd::DataType::FLOAT32);    // permute [kH, kW, iC, oC] -> [oC, iC, kH, kW]
-    NDArray weights('c', {oC, iC, kH, kW}, sd::DataType::FLOAT32);
-    NDArray bias('c', {oC}, sd::DataType::FLOAT32);
-
-    input = 5.;
-    weights = 3.;
-    bias = 1.;
-
-    sd::ops::conv2d op;
-    auto err = op.execute({&input, &weights, &bias}, {&output}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-
-    auto timeStart = std::chrono::system_clock::now();
-    for (int i = 0; i < N; ++i)
-        err = op.execute({&input, &weights, &bias}, {&output}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
-    auto timeEnd = std::chrono::system_clock::now();
-    auto time = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-
-    printf("time: %i \n", time);
-}
-
 ///////////////////////////////////////////////////////////////////
 TEST_F(PlaygroundTests, lstmLayerCellBp_1) {
 
@@ -1163,6 +1130,26 @@ TEST_F(PlaygroundTests, lstmLayerCellBp_1) {
     sd::ops::lstmLayerCellBp opBP;
 
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, true, true, true});
+}
+
+TEST_F(PlaygroundTests, my) {
+
+    const int N = 40;
+
+    NDArray x('c', {256,256,128,128}, sd::DataType::FLOAT32);
+    NDArray z1('c', {256,2,128}, sd::DataType::DOUBLE);
+    NDArray z = z1({0,0,0,1,0,0});
+    z.printShapeInfo();
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int i = 0; i < N; ++i) {
+        // x.reduceAlongDimension(sd::reduce::Mean, z, {1,3});
+        x.applyBroadcast(sd::broadcast::Ops::Add, {1,3}, z, x);
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+
+    printf("old %ld\n", time);
 }
 
 
@@ -1691,5 +1678,3 @@ TEST_F(DeclarableOpsTests15, gru_bp_1) {
 }
 
 */
-
-

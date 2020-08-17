@@ -1557,8 +1557,6 @@ TEST_F(DeclarableOpsTests5, trace_test1) {
     // exp.printIndexedBuffer("EXP TRACE");
     // output->printIndexedBuffer("OUT TRACE");
     ASSERT_TRUE(exp.equalsTo(output));
-
-
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1575,8 +1573,6 @@ TEST_F(DeclarableOpsTests5, trace_test2) {
     ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
-
-
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1593,8 +1589,6 @@ TEST_F(DeclarableOpsTests5, trace_test3) {
     ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
-
-
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1611,8 +1605,6 @@ TEST_F(DeclarableOpsTests5, trace_test4) {
     ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
-
-
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1629,8 +1621,6 @@ TEST_F(DeclarableOpsTests5, trace_test5) {
     ASSERT_EQ(Status::OK(), results.status());
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
-
-
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1638,22 +1628,15 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test1) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 2, 2});
     input.linspace(1);
+    NDArray exp1 = input.dup();
+    NDArray exp2('c',{2,2,2}, {5,6,7,8,  1,2,3,4}, sd::DataType::DOUBLE);
 
     sd::ops::random_shuffle op;
     auto results = op.evaluate({&input});
     auto output = results.at(0);
 
-    bool haveZeros = false;
-    for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->e<float>(i) == (float)0.)
-            haveZeros = true;
-
     ASSERT_EQ(Status::OK(), results.status());
-    ASSERT_TRUE(input.isSameShape(output));
-    ASSERT_TRUE(!input.equalsTo(output));
-    ASSERT_TRUE(!haveZeros);
-
-
+    ASSERT_TRUE(output->equalsTo(exp1) || output->equalsTo(exp2));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1661,16 +1644,14 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test2) {
 
     auto input = NDArrayFactory::create<double>('c', {1, 3, 2});
     input.linspace(1);
+    NDArray exp1 = input.dup();
 
     sd::ops::random_shuffle op;
     auto results = op.evaluate({&input});
     auto output = results.at(0);
 
     ASSERT_EQ(Status::OK(), results.status());
-    ASSERT_TRUE(input.isSameShape(output));
-    ASSERT_TRUE(input.equalsTo(output));
-
-
+    ASSERT_TRUE(output->equalsTo(exp1));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1678,129 +1659,132 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test3) {
 
     auto input = NDArrayFactory::create<double>('c', {3, 2, 1});
     input.linspace(1);
+    NDArray exp1 = input.dup();
+    NDArray exp2('c',{3,2,1}, {1,2, 5,6, 3,4}, sd::DataType::DOUBLE);
+    NDArray exp3('c',{3,2,1}, {3,4, 1,2, 5,6}, sd::DataType::DOUBLE);
+    NDArray exp4('c',{3,2,1}, {3,4, 5,6, 1,2}, sd::DataType::DOUBLE);
+    NDArray exp5('c',{3,2,1}, {5,6, 1,2, 3,4}, sd::DataType::DOUBLE);
+    NDArray exp6('c',{3,2,1}, {5,6, 3,4, 1,2}, sd::DataType::DOUBLE);
 
     sd::ops::random_shuffle op;
-    auto results = op.evaluate({&input});
-    auto output = results.at(0);
-
-    bool haveZeros = false;
-    for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->e<float>(i) == (float)0.)
-            haveZeros = true;
-
-    ASSERT_EQ(Status::OK(), results.status());
-    ASSERT_TRUE(input.isSameShape(output));
-    ASSERT_TRUE(!input.equalsTo(output));
-    ASSERT_TRUE(!haveZeros);
-
-
-}
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests5, random_shuffle_test04) {
-    auto input = NDArrayFactory::create<double>('c', {4});
-    input.linspace(1);
-
-    sd::ops::random_shuffle op;
-    //NDArray* output;
     auto results = op.evaluate({&input}, {},  {},  {}, {}, true);
+
     ASSERT_EQ(Status::OK(), results.status());
-    auto output = &input; //results.at(0);
-    bool haveZeros = false;
-    for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->e<float>(i) == (float)0.)
-            haveZeros = true;
-
-    ASSERT_TRUE(input.isSameShape(output));
-    //ASSERT_TRUE(!input.equalsTo(output));
-    ASSERT_TRUE(!haveZeros);
-
-
+    ASSERT_TRUE(input.equalsTo(exp1) || input.equalsTo(exp2) || input.equalsTo(exp3)
+             || input.equalsTo(exp4) || input.equalsTo(exp5) || input.equalsTo(exp6));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
-    auto input = NDArrayFactory::create<double>('c', {4});
+
+    auto input = NDArrayFactory::create<double>('c', {3, 2, 1});
     input.linspace(1);
+    NDArray exp1 = input.dup();
+    NDArray exp2('c',{3,2,1}, {1,2, 5,6, 3,4}, sd::DataType::DOUBLE);
+    NDArray exp3('c',{3,2,1}, {3,4, 1,2, 5,6}, sd::DataType::DOUBLE);
+    NDArray exp4('c',{3,2,1}, {3,4, 5,6, 1,2}, sd::DataType::DOUBLE);
+    NDArray exp5('c',{3,2,1}, {5,6, 1,2, 3,4}, sd::DataType::DOUBLE);
+    NDArray exp6('c',{3,2,1}, {5,6, 3,4, 1,2}, sd::DataType::DOUBLE);
 
     sd::ops::random_shuffle op;
-    //NDArray* output;
     auto results = op.evaluate({&input});
-    ASSERT_EQ(Status::OK(), results.status());
     auto output = results.at(0);
-    bool haveZeros = false;
-    for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->e<float>(i) == (float)0.)
-            haveZeros = true;
 
-    ASSERT_TRUE(input.isSameShape(output));
-    //ASSERT_TRUE(!input.equalsTo(output));
-    ASSERT_TRUE(!haveZeros);
-
-
+    ASSERT_EQ(Status::OK(), results.status());
+    ASSERT_TRUE(output->equalsTo(exp1) || output->equalsTo(exp2) || output->equalsTo(exp3)
+             || output->equalsTo(exp4) || output->equalsTo(exp5) || output->equalsTo(exp6));
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, random_shuffle_test5) {
-
-    auto input = NDArrayFactory::create<double>('c', {4,1});
+    auto input = NDArrayFactory::create<int>('c', {4});
     input.linspace(1);
 
     sd::ops::random_shuffle op;
-    auto results = op.evaluate({&input});
+    auto results = op.evaluate({&input}, {},  {},  {}, {}, false);
     auto output = results.at(0);
-
-    bool haveZeros = false;
-    for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->e<float>(i) == (float)0.)
-            haveZeros = true;
+    // output->printBuffer();
 
     ASSERT_EQ(Status::OK(), results.status());
-    ASSERT_TRUE(input.isSameShape(output));
-    ASSERT_TRUE(!input.equalsTo(output));
-    ASSERT_TRUE(!haveZeros);
+    // ASSERT_TRUE(!output->equalsTo(input));
 
-
+    bool hasDublicates = false;
+    for(int i = 0; i < output->lengthOf() - 1; ++i)
+        for(int j = i+1; j < output->lengthOf(); ++j)
+            if(output->t<int>(i) == output->t<int>(j)) {
+                hasDublicates = true;
+                i = output->lengthOf();
+                break;
+            }
+    ASSERT_TRUE(!hasDublicates);
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, random_shuffle_test6) {
-
-    auto input = NDArrayFactory::create<double>('c', {4,1,1});
+    auto input = NDArrayFactory::create<int>('c', {4,1,1});
     input.linspace(1);
 
     sd::ops::random_shuffle op;
-    auto results = op.evaluate({&input});
+    auto results = op.evaluate({&input}, {},  {},  {}, {}, false);
     auto output = results.at(0);
 
-    bool haveZeros = false;
-    for(int i = 0; i < output->lengthOf(); ++i)
-        if(output->e<float>(i) == (float)0.)
-            haveZeros = true;
-
     ASSERT_EQ(Status::OK(), results.status());
-    ASSERT_TRUE(input.isSameShape(output));
-    ASSERT_TRUE(!input.equalsTo(output));
-    ASSERT_TRUE(!haveZeros);
+    // ASSERT_TRUE(!output->equalsTo(input));
 
-
+    bool hasDublicates = false;
+    for(int i = 0; i < output->lengthOf() - 1; ++i)
+        for(int j = i+1; j < output->lengthOf(); ++j)
+            if(output->t<int>(i) == output->t<int>(j)) {
+                hasDublicates = true;
+                i = output->lengthOf();
+                break;
+            }
+    ASSERT_TRUE(!hasDublicates);
 }
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, random_shuffle_test7) {
-
-    auto input = NDArrayFactory::create<double>('c', {1,4});
+    auto input = NDArrayFactory::create<int>('c', {16010});
     input.linspace(1);
-    auto exp = NDArrayFactory::create<double>('c', {1,4}, {1, 2, 3, 4});
 
     sd::ops::random_shuffle op;
-    auto results = op.evaluate({&input});
+    auto results = op.evaluate({&input}, {},  {},  {}, {}, false);
     auto output = results.at(0);
-
+    // output->printBuffer();
     ASSERT_EQ(Status::OK(), results.status());
-    ASSERT_TRUE(input.isSameShape(output));
-    ASSERT_TRUE(input.equalsTo(output));
+    ASSERT_TRUE(!output->equalsTo(input));
 
+    auto vec1 = input.getBufferAsVector<int>();
+    auto vec2 = output->getBufferAsVector<int>();
+    std::sort(vec2.begin(), vec2.end());
+    ASSERT_TRUE(std::equal(vec1.begin(), vec1.end(), vec2.begin()));
+}
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, random_shuffle_test8) {
+    auto input = NDArrayFactory::create<int>('c', {1,4,1});
+    input.linspace(1);
+    NDArray inCopy = input.dup();
+
+    sd::ops::random_shuffle op;
+    auto results = op.evaluate({&input}, {},  {},  {}, {}, false);
+    ASSERT_EQ(Status::OK(), results.status());
+    ASSERT_TRUE(input.equalsTo(inCopy));
+
+}
+
+TEST_F(DeclarableOpsTests5, random_shuffle_test9) {
+
+  auto x = NDArrayFactory::create<int>('c', {4}, {1, 2, 3, 4});
+  auto z = x.ulike();
+
+  sd::ops::random_shuffle op;
+  auto status = op.execute({&x}, {&z});
+  ASSERT_EQ(Status::OK(), status);
+
+  auto vec = z.getBufferAsVector<int>();
+  std::sort(vec.begin(), vec.end());
+  ASSERT_EQ(std::vector<int>({1, 2, 3, 4}), vec);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

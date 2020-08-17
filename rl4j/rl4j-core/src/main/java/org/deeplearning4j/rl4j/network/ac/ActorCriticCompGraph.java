@@ -18,6 +18,7 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -25,6 +26,9 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
+import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -78,6 +82,24 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
         ActorCriticCompGraph nn = new ActorCriticCompGraph(cg.clone());
         nn.cg.setListeners(cg.getListeners());
         return nn;
+    }
+
+    @Override
+    public void fit(FeaturesLabels featuresLabels) {
+        // TODO
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    }
+
+    @Override
+    public Gradients computeGradients(FeaturesLabels updateLabels) {
+        // TODO
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    }
+
+    @Override
+    public void applyGradients(Gradients gradients) {
+        // TODO
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
     }
 
     public void copy(ActorCriticCompGraph from) {
@@ -136,6 +158,20 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
 
     public void save(String pathValue, String pathPolicy) throws IOException {
         throw new UnsupportedOperationException("Call save(path)");
+    }
+
+    @Override
+    public INDArray output(Observation observation) {
+        // TODO: signature of output() will change to return a class that has named outputs to support network like
+        // this one (output from the value-network and another output for the policy-network
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    }
+
+    @Override
+    public INDArray output(INDArray batch) {
+        // TODO: signature of output() will change to return a class that has named outputs to support network like
+        // this one (output from the value-network and another output for the policy-network
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
     }
 }
 
