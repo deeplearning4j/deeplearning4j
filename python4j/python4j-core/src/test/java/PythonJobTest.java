@@ -14,10 +14,7 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-import org.nd4j.python4j.PythonContextManager;
-import org.nd4j.python4j.PythonJob;
-import org.nd4j.python4j.PythonTypes;
-import org.nd4j.python4j.PythonVariable;
+import org.nd4j.python4j.*;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -30,8 +27,11 @@ import static org.junit.Assert.assertEquals;
 public class PythonJobTest {
 
     @Test
-    public void testPythonJobBasic(){
-        PythonContextManager.deleteNonMainContexts();
+    public void testPythonJobBasic() {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+
+        }
 
         String code = "c = a + b";
         PythonJob job = new PythonJob("job1", code, false);
@@ -66,7 +66,10 @@ public class PythonJobTest {
 
     @Test
     public void testPythonJobReturnAllVariables(){
-        PythonContextManager.deleteNonMainContexts();
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+
+        }
 
         String code = "c = a + b";
         PythonJob job = new PythonJob("job1", code, false);
@@ -102,7 +105,10 @@ public class PythonJobTest {
 
     @Test
     public void testMultiplePythonJobsParallel(){
-        PythonContextManager.deleteNonMainContexts();
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+
+        }
         String code1 = "c = a + b";
         PythonJob job1 = new PythonJob("job1", code1, false);
 
@@ -151,8 +157,10 @@ public class PythonJobTest {
 
     @Test
     public void testPythonJobSetupRun(){
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
 
-        PythonContextManager.deleteNonMainContexts();
+        }
         String code = "five=None\n" +
                 "def setup():\n" +
                 "    global five\n"+
@@ -190,7 +198,10 @@ public class PythonJobTest {
     }
     @Test
     public void testPythonJobSetupRunAndReturnAllVariables(){
-        PythonContextManager.deleteNonMainContexts();
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+
+        }
         String code = "five=None\n" +
                 "c=None\n"+
                 "def setup():\n" +
@@ -226,7 +237,10 @@ public class PythonJobTest {
 
     @Test
     public void testMultiplePythonJobsSetupRunParallel(){
-        PythonContextManager.deleteNonMainContexts();
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+
+        }
 
         String code1 = "five=None\n" +
                 "def setup():\n" +

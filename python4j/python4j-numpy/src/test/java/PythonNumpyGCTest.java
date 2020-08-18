@@ -16,6 +16,7 @@
 
 import org.nd4j.python4j.Python;
 import org.nd4j.python4j.PythonGC;
+import org.nd4j.python4j.PythonGIL;
 import org.nd4j.python4j.PythonObject;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,28 +29,31 @@ import javax.annotation.concurrent.NotThreadSafe;
 public class PythonNumpyGCTest {
 
     @Test
-    public void testGC(){
-        PythonObject gcModule = Python.importModule("gc");
-        PythonObject getObjects = gcModule.attr("get_objects");
-        PythonObject pyObjCount1 = Python.len(getObjects.call());
-        long objCount1 =  pyObjCount1.toLong();
-        PythonObject pyList = Python.list();
-        pyList.attr("append").call(new PythonObject(Nd4j.linspace(1, 10, 10)));
-        pyList.attr("append").call(1.0);
-        pyList.attr("append").call(true);
-        PythonObject pyObjCount2 = Python.len(getObjects.call());
-        long objCount2 =  pyObjCount2.toLong();
-        long diff = objCount2 - objCount1;
-        Assert.assertTrue(diff > 2);
-        try(PythonGC gc = PythonGC.watch()){
-            PythonObject pyList2 = Python.list();
-            pyList2.attr("append").call(new PythonObject(Nd4j.linspace(1, 10, 10)));
-            pyList2.attr("append").call(1.0);
-            pyList2.attr("append").call(true);
+    public void testGC() {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonObject gcModule = Python.importModule("gc");
+            PythonObject getObjects = gcModule.attr("get_objects");
+            PythonObject pyObjCount1 = Python.len(getObjects.call());
+            long objCount1 =  pyObjCount1.toLong();
+            PythonObject pyList = Python.list();
+            pyList.attr("append").call(new PythonObject(Nd4j.linspace(1, 10, 10)));
+            pyList.attr("append").call(1.0);
+            pyList.attr("append").call(true);
+            PythonObject pyObjCount2 = Python.len(getObjects.call());
+            long objCount2 =  pyObjCount2.toLong();
+            long diff = objCount2 - objCount1;
+            Assert.assertTrue(diff > 2);
+            try(PythonGC gc = PythonGC.watch()){
+                PythonObject pyList2 = Python.list();
+                pyList2.attr("append").call(new PythonObject(Nd4j.linspace(1, 10, 10)));
+                pyList2.attr("append").call(1.0);
+                pyList2.attr("append").call(true);
+            }
+            PythonObject pyObjCount3 = Python.len(getObjects.call());
+            long objCount3 =  pyObjCount3.toLong();
+            diff = objCount3 - objCount2;
+            Assert.assertTrue(diff <= 2);// 2 objects created during function call
         }
-        PythonObject pyObjCount3 = Python.len(getObjects.call());
-        long objCount3 =  pyObjCount3.toLong();
-        diff = objCount3 - objCount2;
-        Assert.assertTrue(diff <= 2);// 2 objects created during function call
+
     }
 }

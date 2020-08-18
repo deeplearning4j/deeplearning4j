@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Nonnull;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
@@ -62,7 +63,7 @@ public class PythonJob {
         this.name = name;
         this.code = code;
         this.setupRunMode = setupRunMode;
-        context = "__job_" + name;
+        context = "__job_" + name + UUID.randomUUID().toString().replace("-","_");
         if (PythonContextManager.hasContext(context)) {
             throw new PythonException("Unable to create python job " + name + ". Context " + context + " already exists!");
         }
