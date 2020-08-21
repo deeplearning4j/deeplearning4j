@@ -333,6 +333,7 @@
         <args4j.version>2.0.29</args4j.version>
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
+        <archunit.version>0.14.1</archunit.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.10.1</jackson.version>
         <jackson.databind.version>2.10.3</jackson.databind.version>
