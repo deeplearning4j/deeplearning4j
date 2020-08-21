@@ -20,8 +20,6 @@ import org.apache.poi.ss.usermodel.*;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaDataIndex;
-import org.datavec.api.records.metadata.RecordMetaDataLine;
-import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.BooleanWritable;
@@ -29,7 +27,6 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;

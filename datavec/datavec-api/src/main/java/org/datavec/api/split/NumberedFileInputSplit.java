@@ -18,11 +18,9 @@ package org.datavec.api.split;
 
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.files.UriFromPathIterator;
-import org.datavec.api.writable.WritableType;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.regex.Matcher;

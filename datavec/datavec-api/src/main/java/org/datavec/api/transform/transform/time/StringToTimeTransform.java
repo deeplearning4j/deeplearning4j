@@ -32,7 +32,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TimeZone;

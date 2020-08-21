@@ -16,7 +16,6 @@
 
 package org.datavec.api.writable;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,9 +27,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * {@link Writable} type for
