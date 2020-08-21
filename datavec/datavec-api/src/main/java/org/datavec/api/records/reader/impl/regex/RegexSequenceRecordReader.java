@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +58,7 @@ import java.util.regex.Pattern;
  */
 public class RegexSequenceRecordReader extends FileRecordReader implements SequenceRecordReader {
     public static final String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
-    public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
+    public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
     public static final LineErrorHandling DEFAULT_ERROR_HANDLING = LineErrorHandling.FailOnInvalid;
 
     /**Error handling mode: How should invalid lines (i.e., those that don't match the provided regex) be handled?<br>

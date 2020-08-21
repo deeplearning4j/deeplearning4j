@@ -33,6 +33,7 @@ import org.datavec.api.transform.ui.HtmlAnalysis;
 import org.datavec.api.writable.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -96,7 +97,7 @@ public class SparkUtils {
     public static void writeStringToFile(String path, String toWrite, Configuration hadoopConfig) throws IOException {
         FileSystem fileSystem = FileSystem.get(hadoopConfig);
         try (BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))) {
-            bos.write(toWrite.getBytes("UTF-8"));
+            bos.write(toWrite.getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -130,7 +131,7 @@ public class SparkUtils {
         FileSystem fileSystem = FileSystem.get(hadoopConfig);
         try (BufferedInputStream bis = new BufferedInputStream(fileSystem.open(new Path(path)))) {
             byte[] asBytes = IOUtils.toByteArray(bis);
-            return new String(asBytes, "UTF-8");
+            return new String(asBytes, StandardCharsets.UTF_8);
         }
     }
 
