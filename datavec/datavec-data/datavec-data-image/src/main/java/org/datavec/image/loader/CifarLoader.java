@@ -328,7 +328,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     }
 
     public Pair<INDArray, Mat> convertMat(byte[] byteFeature) {
-        INDArray label = FeatureUtil.toOutcomeVector(byteFeature[0], NUM_LABELS);; // first value in the 3073 byte array
+        INDArray label = FeatureUtil.toOutcomeVector(byteFeature[0], NUM_LABELS);// first value in the 3073 byte array
         Mat image = new Mat(HEIGHT, WIDTH, CV_8UC(CHANNELS)); // feature are 3072
         ByteBuffer imageData = image.createBuffer();
 

@@ -67,7 +67,7 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
      */
     public enum LineErrorHandling {
         FailOnInvalid, SkipInvalid, SkipInvalidWithWarning
-    };
+    }
 
     public static final Logger LOG = LoggerFactory.getLogger(RegexSequenceRecordReader.class);
 

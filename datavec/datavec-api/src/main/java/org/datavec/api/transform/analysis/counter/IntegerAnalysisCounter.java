@@ -47,27 +47,27 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
      */
     private TDigest digest = TDigest.createDigest(100);
 
-    public IntegerAnalysisCounter() {};
+    public IntegerAnalysisCounter() {}
 
     public int getMinValueSeen() {
         return (int) counter.getMin();
-    };
+    }
 
     public int getMaxValueSeen() {
         return (int) counter.getMax();
-    };
+    }
 
     public long getSum() {
         return (long) counter.getSum();
-    };
+    }
 
     public long getCountTotal() {
         return counter.getCount();
-    };
+    }
 
     public double getSampleStdev() {
         return counter.getStddev(false);
-    };
+    }
 
     public double getMean() {
         return counter.getMean();
@@ -100,7 +100,7 @@ public class IntegerAnalysisCounter implements AnalysisCounter<IntegerAnalysisCo
             countPositive++;
         } else {
             countNegative++;
-        } ;
+        }
 
         digest.add((double) value);
         counter.add((double) value);

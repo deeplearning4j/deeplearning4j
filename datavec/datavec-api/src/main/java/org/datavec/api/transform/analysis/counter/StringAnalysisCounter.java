@@ -35,27 +35,27 @@ public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCoun
     private long countMinLength = 0;
     private long countMaxLength = 0;
 
-    public StringAnalysisCounter() {};
+    public StringAnalysisCounter() {}
 
     public int getMinLengthSeen() {
         return (int) counter.getMin();
-    };
+    }
 
     public int getMaxLengthSeen() {
         return (int) counter.getMax();
-    };
+    }
 
     public long getSumLength() {
         return (long) counter.getSum();
-    };
+    }
 
     public long getCountTotal() {
         return counter.getCount();
-    };
+    }
 
     public double getSampleStdev() {
         return counter.getStddev(false);
-    };
+    }
 
     public double getMean() {
         return counter.getMean();

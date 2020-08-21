@@ -46,7 +46,7 @@ public class Join implements Serializable {
      */
     public enum JoinType {
         Inner, LeftOuter, RightOuter, FullOuter
-    };
+    }
 
     private JoinType joinType;
     private Schema leftSchema;
@@ -196,7 +196,7 @@ public class Join implements Serializable {
 
         for (ColumnMetaData rightMeta : rightSchema.getColumnMetaData()) {
             if (keySetRight.contains(rightMeta.getName()))
-                continue;;
+                continue;
             metaDataOut.add(rightMeta);
         }
 
