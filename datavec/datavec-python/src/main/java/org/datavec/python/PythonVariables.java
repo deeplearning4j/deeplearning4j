@@ -16,16 +16,9 @@
 
 package org.datavec.python;
 
-import lombok.Data;
 import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.Pointer;
-import org.json.JSONObject;
-import org.json.JSONArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.nativeblas.NativeOpsHolder;
 
-import java.io.Serializable;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 

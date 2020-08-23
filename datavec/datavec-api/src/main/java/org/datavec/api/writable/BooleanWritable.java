@@ -34,7 +34,7 @@ public class BooleanWritable implements WritableComparable {
 
     /**
      */
-    public BooleanWritable() {};
+    public BooleanWritable() {}
 
     /**
      */

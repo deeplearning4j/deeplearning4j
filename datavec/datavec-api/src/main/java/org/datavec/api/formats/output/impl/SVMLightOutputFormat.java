@@ -24,8 +24,6 @@ import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 
-import java.io.File;
-
 /**
  * Created by agibsonccc on 1/11/15.
  */

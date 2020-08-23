@@ -20,7 +20,6 @@ package org.datavec.nlp.tokenization.tokenizerfactory;
 
 import org.datavec.nlp.tokenization.tokenizer.TokenPreProcess;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.InputStream;

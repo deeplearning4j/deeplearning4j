@@ -16,16 +16,11 @@
 
 package org.datavec.api.records.reader.impl.jackson;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 /**

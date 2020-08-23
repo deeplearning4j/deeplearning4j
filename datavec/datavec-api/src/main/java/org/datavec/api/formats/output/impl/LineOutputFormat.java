@@ -23,9 +23,6 @@ import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.impl.LineRecordWriter;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-
 /**
  * Line output format
  * @author Adam Gibson

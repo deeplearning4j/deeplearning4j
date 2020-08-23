@@ -22,7 +22,6 @@ import org.datavec.image.data.ImageWritable;
 import java.util.Random;
 
 import org.bytedeco.opencv.opencv_core.*;
-import static org.bytedeco.opencv.global.opencv_core.*;
 
 /**
  * Transforms images deterministically or randomly with the help of an array of ImageTransform

@@ -25,6 +25,7 @@ import org.datavec.api.split.partition.Partitioner;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Write to files.
@@ -38,7 +39,7 @@ import java.nio.charset.Charset;
  */
 public abstract class FileRecordWriter implements RecordWriter {
 
-    public static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
+    public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 
     protected DataOutputStream out;
     public final static String NEW_LINE = "\n";

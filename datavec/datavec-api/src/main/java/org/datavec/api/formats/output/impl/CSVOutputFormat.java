@@ -23,9 +23,6 @@ import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-
 /**
  * Creates an @link{CSVRecordWriter}
  *

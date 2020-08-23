@@ -26,7 +26,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.holder.ObjectMapperHolder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.ArrayList;
 import java.util.List;

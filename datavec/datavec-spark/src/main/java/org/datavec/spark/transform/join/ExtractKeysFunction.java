@@ -18,7 +18,6 @@ package org.datavec.spark.transform.join;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.PairFunction;
-import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import scala.Tuple2;
 
