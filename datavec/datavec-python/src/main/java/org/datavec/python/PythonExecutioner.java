@@ -345,10 +345,7 @@ public class PythonExecutioner {
                     //// TODO: fix in javacpp
                     File sitePackagesWindows = new File(python.cachePackage(), "site-packages");
                     File[] packages2 = new File[packages.length + 1];
-                    for (int i = 0;i < packages.length; i++){
-                        //System.out.println(packages[i].getAbsolutePath());
-                        packages2[i] = packages[i];
-                    }
+                    System.arraycopy(packages, 0, packages2, 0, packages.length);
                     packages2[packages.length] = sitePackagesWindows;
                     //System.out.println(sitePackagesWindows.getAbsolutePath());
                     packages = packages2;

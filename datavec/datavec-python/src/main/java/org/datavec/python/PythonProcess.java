@@ -30,9 +30,7 @@ public class PythonProcess {
     private static String pythonExecutable = Loader.load(org.bytedeco.cpython.python.class);
     public static String runAndReturn(String... arguments)throws IOException, InterruptedException{
         String[] allArgs = new String[arguments.length + 1];
-        for (int i = 0; i < arguments.length; i++){
-            allArgs[i + 1] = arguments[i];
-        }
+        System.arraycopy(arguments, 0, allArgs, 1, arguments.length);
         allArgs[0] = pythonExecutable;
         log.info("Executing command: " + Arrays.toString(allArgs));
         ProcessBuilder pb = new ProcessBuilder(allArgs);
@@ -45,9 +43,7 @@ public class PythonProcess {
 
     public static void run(String... arguments)throws IOException, InterruptedException{
         String[] allArgs = new String[arguments.length + 1];
-        for (int i = 0; i < arguments.length; i++){
-            allArgs[i + 1] = arguments[i];
-        }
+        System.arraycopy(arguments, 0, allArgs, 1, arguments.length);
         allArgs[0] = pythonExecutable;
         log.info("Executing command: " + Arrays.toString(allArgs));
         ProcessBuilder pb = new ProcessBuilder(allArgs);
