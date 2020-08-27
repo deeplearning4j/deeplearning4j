@@ -243,8 +243,7 @@ public class ArrowWritableRecordBatch extends AbstractWritableRecordBatch implem
     public List<List<Writable>> toArrayList() {
         List<List<Writable>> ret = new ArrayList<>();
         for(int i = 0; i < size(); i++) {
-            List<Writable> add = new ArrayList<>();
-            add.addAll(get(i));
+            List<Writable> add = new ArrayList<>(get(i));
             ret.add(add);
         }
 

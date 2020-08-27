@@ -279,8 +279,7 @@ public class TestTransforms extends BaseND4JTest {
         Assert.assertEquals(outputColumns, newSchema.getColumnNames());
 
         List<Writable> input = new ArrayList<>();
-        for (Writable value : COLUMN_VALUES)
-            input.add(value);
+        input.addAll(COLUMN_VALUES);
 
         transform.setInputSchema(schema);
         List<Writable> transformed = transform.map(input);

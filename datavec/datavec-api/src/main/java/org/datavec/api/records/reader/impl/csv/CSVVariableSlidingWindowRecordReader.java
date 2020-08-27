@@ -128,9 +128,7 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
         }
 
         List<List<Writable>> sequence = new ArrayList<>();
-        for(List<Writable> line : queue) {
-            sequence.add(line);
-        }
+        sequence.addAll(queue);
 
         if(exhausted && queue.size()==1)
             queue.pollLast();
