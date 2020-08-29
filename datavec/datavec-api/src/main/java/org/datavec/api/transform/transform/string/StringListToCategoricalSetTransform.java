@@ -220,6 +220,6 @@ public class StringListToCategoricalSetTransform extends BaseTransform {
      */
     @Override
     public String columnName() {
-        return columnName();
+        return columnName;
     }
 }
