@@ -178,26 +178,25 @@ public class InputTypeUtil {
                                             stride, padding, outputChannels, convolutionMode));
         }
 
-        if (kH <= 0 || kH > inHeight + 2 * padH) {
+        if (kH <= 0 || (padH > 0 && kH > inHeight + 2 * padH)) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
                             + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
                             + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n" + getConfigErrorCommonLastLine(
                                             inputType, kernelSize, stride, padding, outputChannels, convolutionMode));
         }
 
-        if (kW <= 0 || kW > inWidth + 2 * padW) {
+        if (kW <= 0 || (padW > 0 && kW > inWidth + 2 * padW)) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                             + " Invalid input configuration for kernel width. Require 0 < kW <= inWidth + 2*padW; got (kW="
                             + kW + ", inWidth=" + inWidth + ", padW=" + padW + ")\n" + getConfigErrorCommonLastLine(
                                             inputType, kernelSize, stride, padding, outputChannels, convolutionMode));
         }
-        if (kD <= 0 || kD > inDepth + 2 * padD) {
+        if (kD <= 0 || (padD > 0 && kD > inDepth + 2 * padD)) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                             + " Invalid input configuration for kernel channels. Require 0 < kD <= inDepth + 2*padD; got (kD="
                             + kD + ", inDepth=" + inDepth + ", padD=" + padD + ")\n" + getConfigErrorCommonLastLine(
                                             inputType, kernelSize, stride, padding, outputChannels, convolutionMode));
         }
-
         //Strict mode: require exactly the right size...
         if (convolutionMode == ConvolutionMode.Strict) {
             if ((inHeight - kH + 2 * padH) % sH != 0) {
@@ -292,7 +291,7 @@ public class InputTypeUtil {
                             + getConfigErrorCommonLastLine1D(inputType, kH, sH, padH, outputDepth, convolutionMode));
         }
 
-        if (kH <= 0 || kH > inHeight + 2 * padH) {
+        if (kH <= 0 || (padH > 0 && kH > inHeight + 2 * padH)) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
                             + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
                             + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n"
@@ -373,7 +372,6 @@ public class InputTypeUtil {
 
         int sH = stride[0];
         int sW = stride[1];
-
         if (sH <= 0 || sW <= 0) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, sH <= 0)
                             + " Invalid strides: strides must be > 0 (strideH = " + sH + ", strideW = " + sW + ")"
@@ -381,14 +379,14 @@ public class InputTypeUtil {
                                             convolutionMode));
         }
 
-        if (kH <= 0 || kH > inHeight + 2 * padH) {
+        if (kH <= 0 ||  (padH > 0 && kH > inHeight + 2 * padH)) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, true)
                             + " Invalid input configuration for kernel height. Require 0 < kH <= inHeight + 2*padH; got (kH="
                             + kH + ", inHeight=" + inHeight + ", padH=" + padH + ")\n" + getConfigErrorCommonLastLine(
                                             inputType, kernelSize, stride, padding, outputDepth, convolutionMode));
         }
 
-        if (kW <= 0 || kW > inWidth + 2 * padW) {
+        if (kW <= 0 || (padW > 0 && kW > inWidth + 2 * padW)) {
             throw new DL4JInvalidConfigException(getConfigErrorCommonLine(layerIdx, layerName, layerClass, false)
                             + " Invalid input configuration for kernel width. Require 0 < kW <= inWidth + 2*padW; got (kW="
                             + kW + ", inWidth=" + inWidth + ", padW=" + padW + ")\n" + getConfigErrorCommonLastLine(

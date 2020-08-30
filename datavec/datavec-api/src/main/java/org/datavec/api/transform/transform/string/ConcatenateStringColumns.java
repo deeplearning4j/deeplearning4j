@@ -75,8 +75,7 @@ public class ConcatenateStringColumns extends BaseTransform implements ColumnOp 
             }
         }
 
-        List<ColumnMetaData> outMeta = new ArrayList<>();
-        outMeta.addAll(inputSchema.getColumnMetaData());
+        List<ColumnMetaData> outMeta = new ArrayList<>(inputSchema.getColumnMetaData());
 
         ColumnMetaData newColMeta = ColumnType.String.newColumnMetaData(newColumnName);
         outMeta.add(newColMeta);

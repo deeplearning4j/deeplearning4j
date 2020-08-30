@@ -165,9 +165,8 @@ public class TimeWindowFunction implements WindowFunction {
     public Schema transform(Schema inputSchema) {
         if (!addWindowStartTimeColumn && !addWindowEndTimeColumn)
             return inputSchema;
-        List<ColumnMetaData> newMeta = new ArrayList<>();
 
-        newMeta.addAll(inputSchema.getColumnMetaData());
+        List<ColumnMetaData> newMeta = new ArrayList<>(inputSchema.getColumnMetaData());
 
         if (addWindowStartTimeColumn) {
             newMeta.add(new TimeMetaData("windowStartTime"));

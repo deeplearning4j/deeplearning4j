@@ -40,8 +40,7 @@ public class LocalGroupToSequenceFunction implements Function<List<List<Writable
     public List<List<Writable>> apply(List<List<Writable>> lists) {
 
         List<List<Writable>> list = new ArrayList<>();
-        for (List<Writable> writables : lists)
-            list.add(writables);
+        list.addAll(lists);
 
         Collections.sort(list, comparator);
 

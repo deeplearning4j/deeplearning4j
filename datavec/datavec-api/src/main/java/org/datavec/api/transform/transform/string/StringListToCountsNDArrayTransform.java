@@ -254,6 +254,6 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
      */
     @Override
     public String columnName() {
-        return columnName();
+        return columnName;
     }
 }
