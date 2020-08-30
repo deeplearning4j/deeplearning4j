@@ -19,7 +19,6 @@ package org.deeplearning4j.rl4j.mdp.toy;
 import lombok.Getter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
@@ -53,7 +52,7 @@ public class HardDeteministicToy implements MDP<HardToyState, Integer, DiscreteS
         for (int i = 0; i < MAX_STEP; i++) {
             input.putRow(i, Nd4j.create(states[i].toArray()));
         }
-        INDArray output = Nd4j.max(idqn.output(input).get(CommonOutputNames.QValues), 1);
+        INDArray output = Nd4j.max(idqn.output(input), 1);
         Logger.getAnonymousLogger().info(output.toString());
     }
 

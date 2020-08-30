@@ -65,7 +65,7 @@ public abstract class A3CDiscrete<OBSERVATION extends Encodable> extends AsyncLe
             rnd.setSeed(seed);
         }
 
-        policy = new ACPolicy<OBSERVATION>(iActorCritic, true, rnd);
+        policy = new ACPolicy<>(iActorCritic, rnd);
     }
 
     protected AsyncThread newThread(int i, int deviceNum) {

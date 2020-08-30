@@ -208,3 +208,19 @@ To run tests using CUDA backend it's pretty much similar process:
     2. ./blasbuild/cuda/tests_cpu/layers_tests/runtests (.exe on Windows)
 
 
+## Development
+
+In order to extend and update libnd4j, understanding libnd4j's various
+cmake flags is the key. Many of them are in buildnativeoperations.sh.
+The pom.xml is used to integrate and auto configure the project
+for building with deeplearning4j.
+
+At a minimum, you will want to enable tests. An example default set of flags
+for running tests and getting cpu builds working is as follows:
+```bash
+-DSD_CPU=true -DBLAS=TRUE -DSD_ARCH=x86-64 -DSD_EXTENSION= -DSD_LIBRARY_NAME=nd4jcpu -DSD_CHECK_VECTORIZATION=OFF  -DSD_SHARED_LIB=ON -DSD_STATIC_LIB=OFF -DSD_BUILD_MINIFIER=false -DSD_ALL_OPS=true -DCMAKE_BUILD_TYPE=Release -DPACKAGING=none  -DSD_BUILD_TESTS=OFF -DCOMPUTE=all -DOPENBLAS_PATH=C:/Users/agibs/.javacpp/cache/openblas-0.3.10-1.5.4-SNAPSHOT-windows-x86_64.jar/org/bytedeco/openblas/windows-x86_64 -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE -DSD_BUILD_TESTS=YES
+```
+
+The way the main build script works, it dynamically generates a set of flags
+suitable for use for building the projects. Understanding the build script
+will go a long way in to configuring cmake for your particular IDE.

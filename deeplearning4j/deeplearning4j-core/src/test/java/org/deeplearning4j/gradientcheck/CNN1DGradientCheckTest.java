@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -38,6 +39,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -451,7 +454,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testCnn1Causal() {
+    public void testCnn1Causal() throws Exception {
         int convNIn = 2;
         int convNOut1 = 3;
         int convNOut2 = 4;
@@ -463,7 +466,6 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
         int[] strides   =  {1,   2,  1,  2,  1,  1};
         boolean[] masks =  {false, true, false, true, false, true};
         boolean[] hasB  =  {true, false, true, false, true, true};
-
         for (int i = 0; i < lengths.length; i++) {
             int length = lengths[i];
             int k = kernels[i];
@@ -472,7 +474,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
             boolean mask = masks[i];
             boolean hasBias = hasB[i];
             //TODO has bias
-            String s = "k=" + k + ", s=" + st + "d=" + d + ", seqLen=" + length;
+            String s = "k=" + k + ", s=" + st + " d=" + d + ", seqLen=" + length;
             log.info("Starting test: " + s);
             Nd4j.getRandom().setSeed(12345);
 

@@ -189,7 +189,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         return preOutput;
     }
 
-    protected Pair<INDArray,INDArray> causalConv1dForward(){
+    protected Pair<INDArray,INDArray> causalConv1dForward() {
         //TODO eventually we'll use this for all convolution modes - but only after libnd4j has cuDNN support
         org.deeplearning4j.nn.conf.layers.Convolution1DLayer c = (org.deeplearning4j.nn.conf.layers.Convolution1DLayer) layerConf();
         Conv1DConfig conf = Conv1DConfig.builder()
@@ -198,7 +198,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
                 .d(c.getDilation()[0])
                 .p(c.getPadding()[0])
                 .dataFormat((((org.deeplearning4j.nn.conf.layers.Convolution1DLayer)
-                        layerConf()).getRnnDataFormat()== RNNFormat.NCW)?Conv1DConfig.NCW: Conv1DConfig.NCW)
+                        layerConf()).getRnnDataFormat() == RNNFormat.NCW) ? Conv1DConfig.NCW: Conv1DConfig.NWC)
                 .paddingMode(PaddingMode.CAUSAL)
                 .build();
         INDArray w = getParam(ConvolutionParamInitializer.WEIGHT_KEY);

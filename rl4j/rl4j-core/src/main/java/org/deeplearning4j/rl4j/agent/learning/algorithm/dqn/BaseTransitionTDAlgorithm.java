@@ -24,7 +24,6 @@ import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
-import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -83,7 +82,7 @@ public abstract class BaseTransitionTDAlgorithm implements IUpdateAlgorithm<Feat
 
         initComputation(observations, nextObservations);
 
-        INDArray updatedQValues = qNetwork.output(observations).get(CommonOutputNames.QValues);
+        INDArray updatedQValues = qNetwork.output(observations);
         for (int i = 0; i < size; ++i) {
             Transition<Integer> transition = transitions.get(i);
             double yTarget = computeTarget(i, transition.getReward(), transition.isTerminal());

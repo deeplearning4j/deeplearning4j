@@ -16,16 +16,12 @@
 
 package org.deeplearning4j.rl4j.policy;
 
-import lombok.Builder;
-import lombok.NonNull;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.network.CommonOutputNames;
-import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
-import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,67 +29,50 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.IOException;
 
 /**
- * A stochastic policy that, when training, explore the environment based on
- * the softmax output of the actor critic, but objects constructed.
- * Revert to a greedy policy when not training.
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
  *
+ * A stochastic policy thats explore the environment based on
+ * the softmax output of the actor critic, but objects constructed
+ * with a {@link Random} argument of null return the max only.
  */
 public class ACPolicy<OBSERVATION extends Encodable> extends Policy<Integer> {
 
-    final private IOutputNeuralNet neuralNet;
-    private final boolean isTraining;
-    private final Random rnd;
+    final private IActorCritic actorCritic;
+    Random rnd;
 
-    @Builder
-    public ACPolicy(@NonNull IOutputNeuralNet neuralNet, boolean isTraining, Random rnd) {
-        this.neuralNet = neuralNet;
-        this.isTraining = isTraining;
-        this.rnd = !isTraining || rnd != null ? rnd : Nd4j.getRandom();
+    public ACPolicy(IActorCritic actorCritic) {
+        this(actorCritic, Nd4j.getRandom());
+    }
+    public ACPolicy(IActorCritic actorCritic, Random rnd) {
+        this.actorCritic = actorCritic;
+        this.rnd = rnd;
     }
 
     public static <OBSERVATION extends Encodable> ACPolicy<OBSERVATION> load(String path) throws IOException {
-        // TODO: Add better load/save support
-        return new ACPolicy<>(ActorCriticCompGraph.load(path), false, null);
+        return new ACPolicy<>(ActorCriticCompGraph.load(path));
     }
     public static <OBSERVATION extends Encodable> ACPolicy<OBSERVATION> load(String path, Random rnd) throws IOException {
-        // TODO: Add better load/save support
-        return new ACPolicy<>(ActorCriticCompGraph.load(path), true, rnd);
+        return new ACPolicy<>(ActorCriticCompGraph.load(path), rnd);
     }
 
     public static <OBSERVATION extends Encodable> ACPolicy<OBSERVATION> load(String pathValue, String pathPolicy) throws IOException {
-        return new ACPolicy<>(ActorCriticSeparate.load(pathValue, pathPolicy), false, null);
+        return new ACPolicy<>(ActorCriticSeparate.load(pathValue, pathPolicy));
     }
     public static <OBSERVATION extends Encodable> ACPolicy<OBSERVATION> load(String pathValue, String pathPolicy, Random rnd) throws IOException {
-        return new ACPolicy<>(ActorCriticSeparate.load(pathValue, pathPolicy), true, rnd);
+        return new ACPolicy<>(ActorCriticSeparate.load(pathValue, pathPolicy), rnd);
     }
 
-    @Deprecated
-    public IOutputNeuralNet getNeuralNet() {
-        return neuralNet;
+    public IActorCritic getNeuralNet() {
+        return actorCritic;
     }
 
     @Override
     public Integer nextAction(Observation obs) {
-        // Review: Should ActorCriticPolicy be a training policy only? Why not use the existing greedy policy when not training instead of duplicating the code?
-        INDArray output = neuralNet.output(obs).get(CommonOutputNames.ActorCritic.Policy);
-        if (!isTraining) {
-            return Learning.getMaxAction(output);
-        }
-
-        float rVal = rnd.nextFloat();
-        for (int i = 0; i < output.length(); i++) {
-            if (rVal < output.getFloat(i)) {
-                return i;
-            } else
-                rVal -= output.getFloat(i);
-        }
-
-        throw new RuntimeException("Output from network is not a probability distribution: " + output);
+        return nextAction(obs.getData());
     }
 
-    @Deprecated
     public Integer nextAction(INDArray input) {
-        INDArray output = ((IActorCritic) neuralNet).outputAll(input)[1];
+        INDArray output = actorCritic.outputAll(input)[1];
         if (rnd == null) {
             return Learning.getMaxAction(output);
         }
@@ -110,13 +89,11 @@ public class ACPolicy<OBSERVATION extends Encodable> extends Policy<Integer> {
     }
 
     public void save(String filename) throws IOException {
-        // TODO: Add better load/save support
-        ((IActorCritic) neuralNet).save(filename);
+        actorCritic.save(filename);
     }
 
     public void save(String filenameValue, String filenamePolicy) throws IOException {
-        // TODO: Add better load/save support
-        ((IActorCritic) neuralNet).save(filenameValue, filenamePolicy);
+        actorCritic.save(filenameValue, filenamePolicy);
     }
 
 }

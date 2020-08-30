@@ -25,7 +25,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Random;
 
 import org.bytedeco.opencv.opencv_core.*;
-import static org.bytedeco.opencv.global.opencv_core.*;
 
 /**
  * Crops images deterministically or randomly.

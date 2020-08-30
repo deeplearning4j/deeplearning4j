@@ -19,7 +19,6 @@ package org.datavec.api.io.labels;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
-import java.net.URI;
 import java.util.List;
 
 /**

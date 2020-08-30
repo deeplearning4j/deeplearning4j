@@ -24,14 +24,8 @@ import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.sequence.SequenceComparator;
 import org.datavec.api.transform.sequence.SequenceSplit;
-import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
-import org.nd4j.shade.jackson.annotation.PropertyAccessor;
-import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.core.type.TypeReference;
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
-import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 
 import java.util.Arrays;
 import java.util.List;

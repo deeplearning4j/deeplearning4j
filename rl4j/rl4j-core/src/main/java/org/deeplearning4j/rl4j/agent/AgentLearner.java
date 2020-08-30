@@ -32,6 +32,9 @@ import org.deeplearning4j.rl4j.policy.IPolicy;
  */
 public class AgentLearner<ACTION> extends Agent<ACTION> implements IAgentLearner<ACTION> {
 
+    @Getter
+    private int totalStepCount = 0;
+
     private final ILearningBehavior<ACTION> learningBehavior;
     private double rewardAtLastExperience;
 
@@ -85,8 +88,9 @@ public class AgentLearner<ACTION> extends Agent<ACTION> implements IAgentLearner
     }
 
     @Override
-    protected void onBeforeStep() {
-        learningBehavior.notifyBeforeStep();
+    protected void incrementEpisodeStepCount() {
+        super.incrementEpisodeStepCount();
+        ++totalStepCount;
     }
 
     @SuperBuilder

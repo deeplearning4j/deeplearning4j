@@ -46,9 +46,4 @@ public interface ILearningBehavior<ACTION> {
      * @param finalObservation The observation after the last action of the episode has been taken.
      */
     void handleEpisodeEnd(Observation finalObservation);
-
-    /**
-     * Notify the learning behavior that a step will be taken.
-     */
-    void notifyBeforeStep();
 }

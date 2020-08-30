@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.builder.Builder;
 import org.deeplearning4j.rl4j.agent.AgentLearner;
 import org.deeplearning4j.rl4j.agent.IAgentLearner;
@@ -45,18 +46,17 @@ import java.util.List;
  * @param <ACTION> The type of action
  * @param <EXPERIENCE_TYPE> The type of experiences
  * @param <ALGORITHM_RESULT_TYPE> The response type of {@link org.deeplearning4j.rl4j.network.IOutputNeuralNet IOutputNeuralNet}.output()
- * @param <CONFIGURATION_TYPE> The type of the configuration
  */
-public abstract class BaseAgentLearnerBuilder<ACTION, EXPERIENCE_TYPE, ALGORITHM_RESULT_TYPE, CONFIGURATION_TYPE extends BaseAgentLearnerBuilder.Configuration<ACTION>> implements Builder<IAgentLearner<ACTION>> {
+public abstract class BaseAgentLearnerBuilder<ACTION, EXPERIENCE_TYPE, ALGORITHM_RESULT_TYPE> implements Builder<IAgentLearner<ACTION>> {
 
-    protected final CONFIGURATION_TYPE configuration;
+    private final Configuration<ACTION> configuration;
     private final Builder<Environment<ACTION>> environmentBuilder;
     private final Builder<TransformProcess> transformProcessBuilder;
     protected final INetworksHandler networks;
 
     protected int createdAgentLearnerCount;
 
-    public BaseAgentLearnerBuilder(@NonNull CONFIGURATION_TYPE configuration,
+    public BaseAgentLearnerBuilder(@NonNull Configuration configuration,
                                    @NonNull ITrainableNeuralNet neuralNet,
                                    @NonNull Builder<Environment<ACTION>> environmentBuilder,
                                    @NonNull Builder<TransformProcess> transformProcessBuilder) {
@@ -64,9 +64,11 @@ public abstract class BaseAgentLearnerBuilder<ACTION, EXPERIENCE_TYPE, ALGORITHM
         this.environmentBuilder = environmentBuilder;
         this.transformProcessBuilder = transformProcessBuilder;
 
-        this.networks = configuration.isAsynchronous()
-                ? new AsyncNetworkHandler(neuralNet)
-                : new SyncNetworkHandler(neuralNet);
+        // TODO: Support async setups
+        if(configuration.isAsynchronous()) {
+            throw new NotImplementedException("Asynchronous BaseAgentLearnerBuilder is not yet implemented");
+        }
+        this.networks = new SyncNetworkHandler(neuralNet);
     }
 
     @Getter(AccessLevel.PROTECTED)
@@ -108,7 +110,6 @@ public abstract class BaseAgentLearnerBuilder<ACTION, EXPERIENCE_TYPE, ALGORITHM
     }
 
     protected void resetForNewBuild() {
-        networks.resetForNewBuild();
         environment = environmentBuilder.build();
         transformProcess = transformProcessBuilder.build();
         policy = buildPolicy();

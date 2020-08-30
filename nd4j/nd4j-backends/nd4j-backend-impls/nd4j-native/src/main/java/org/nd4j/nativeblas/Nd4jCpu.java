@@ -382,6 +382,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
     @Override public DataBuffer position(long position) {
         return (DataBuffer)super.position(position);
     }
+    @Override public DataBuffer getPointer(long i) {
+        return new DataBuffer(this).position(position + i);
+    }
 
 
         public DataBuffer(Pointer primary, Pointer special,
@@ -597,6 +600,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
         @Override public ConstantDataBuffer position(long position) {
             return (ConstantDataBuffer)super.position(position);
         }
+        @Override public ConstantDataBuffer getPointer(long i) {
+            return new ConstantDataBuffer(this).position(position + i);
+        }
     
         public ConstantDataBuffer(@Const @ByRef ConstantDataBuffer other) { super((Pointer)null); allocate(other); }
         private native void allocate(@Const @ByRef ConstantDataBuffer other);
@@ -656,6 +662,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
     @Override public ConstantShapeBuffer position(long position) {
         return (ConstantShapeBuffer)super.position(position);
     }
+    @Override public ConstantShapeBuffer getPointer(long i) {
+        return new ConstantShapeBuffer(this).position(position + i);
+    }
 
   public ConstantShapeBuffer() { super((Pointer)null); allocate(); }
   private native void allocate();
@@ -709,6 +718,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
     private native void allocateArray(long size);
     @Override public ConstantOffsetsBuffer position(long position) {
         return (ConstantOffsetsBuffer)super.position(position);
+    }
+    @Override public ConstantOffsetsBuffer getPointer(long i) {
+        return new ConstantOffsetsBuffer(this).position(position + i);
     }
 
   public ConstantOffsetsBuffer() { super((Pointer)null); allocate(); }
@@ -847,6 +859,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
         @Override public TadPack position(long position) {
             return (TadPack)super.position(position);
         }
+        @Override public TadPack getPointer(long i) {
+            return new TadPack(this).position(position + i);
+        }
     
         public TadPack(@Const @ByRef ConstantShapeBuffer shapes, @Const @ByRef ConstantOffsetsBuffer offets, @Cast("Nd4jLong") long numTads) { super((Pointer)null); allocate(shapes, offets, numTads); }
         private native void allocate(@Const @ByRef ConstantShapeBuffer shapes, @Const @ByRef ConstantOffsetsBuffer offets, @Cast("Nd4jLong") long numTads);
@@ -911,6 +926,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
         private native void allocateArray(long size);
         @Override public ErrorReference position(long position) {
             return (ErrorReference)super.position(position);
+        }
+        @Override public ErrorReference getPointer(long i) {
+            return new ErrorReference(this).position(position + i);
         }
     
         public ErrorReference() { super((Pointer)null); allocate(); }
@@ -1154,6 +1172,9 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
         @Override public utf8string position(long position) {
             return (utf8string)super.position(position);
         }
+        @Override public utf8string getPointer(long i) {
+            return new utf8string(this).position(position + i);
+        }
     
         public native @Cast("char*") BytePointer _buffer(); public native utf8string _buffer(BytePointer setter);
         public native @Cast("unsigned int") int _length(); public native utf8string _length(int setter);
@@ -1300,20 +1321,20 @@ public native void setTADThreshold(int num);
    * @param extraParams
    */
 public native void execIndexReduceScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                     int opNum,
-                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                                     Pointer extraParams,
-                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
+                                       int opNum,
+                                       OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                       Pointer extraParams,
+                                       OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execIndexReduceScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                     int opNum,
-                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                                     Pointer extraParams,
-                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
+                                       int opNum,
+                                       OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                       Pointer extraParams,
+                                       OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execIndexReduceScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                     int opNum,
-                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                                     Pointer extraParams,
-                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
+                                       int opNum,
+                                       OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                       Pointer extraParams,
+                                       OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 /**
  *
@@ -1327,23 +1348,23 @@ public native void execIndexReduceScalar(@Cast("Nd4jPointer*") PointerPointer ex
  * @param dimensionLength
  */
 public native void execIndexReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        int opNum,
-        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-        Pointer extraParams,
-        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execIndexReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        int opNum,
-        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-        Pointer extraParams,
-        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execIndexReduce(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        int opNum,
-        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-        Pointer extraParams,
-        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 /**
  *
@@ -1471,69 +1492,69 @@ public native void execPairwiseTransformBool(
  * @param resultShapeInfo
  */
 public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                        Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
+                                  int opNum,
+                                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                  Pointer extraParams,
+                                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                        Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
+                                  int opNum,
+                                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                  Pointer extraParams,
+                                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                        Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
+                                  int opNum,
+                                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                  Pointer extraParams,
+                                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
+                                 int opNum,
+                                 OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                 Pointer extraParams,
+                                 OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
+                                 int opNum,
+                                 OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                 Pointer extraParams,
+                                 OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduceSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
+                                 int opNum,
+                                 OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                 Pointer extraParams,
+                                 OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
+                                 int opNum,
+                                 OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                 Pointer extraParams,
+                                 OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
+                                 int opNum,
+                                 OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                 Pointer extraParams,
+                                 OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduceBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
+                                 int opNum,
+                                 OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                 Pointer extraParams,
+                                 OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 
 public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
+                                 int opNum,
+                                 OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                 Pointer extraParams,
+                                 OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
+                                 int opNum,
+                                 OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                 Pointer extraParams,
+                                 OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
+                                 int opNum,
+                                 OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                 Pointer extraParams,
+                                 OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 /**
  *
@@ -1545,83 +1566,83 @@ public native void execReduceLong(@Cast("Nd4jPointer*") PointerPointer extraPoin
  * @param resultShapeInfo
  */
 public native void execReduceFloat2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                        Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
+                                    int opNum,
+                                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                    Pointer extraParams,
+                                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                    OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execReduceFloat2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                        Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
+                                    int opNum,
+                                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                    Pointer extraParams,
+                                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                    OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execReduceFloat2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                        Pointer extraParams,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
+                                    int opNum,
+                                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                    Pointer extraParams,
+                                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                    OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 
 public native void execReduceSame2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                  Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execReduceSame2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                  Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execReduceSame2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                  Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 
 public native void execReduceBool2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                  Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execReduceBool2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                  Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execReduceBool2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                  Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 
 public native void execReduceLong2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                  Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape);
 public native void execReduceLong2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                  Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape);
 public native void execReduceLong2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                  Pointer extraParams,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                  OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape);
 
 /**
  *
@@ -1635,23 +1656,23 @@ public native void execReduceLong2(@Cast("Nd4jPointer*") PointerPointer extraPoi
  * @param resultShapeInfo
  */
 public native void execReduce3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
+                              int opNum,
+                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                              Pointer extraParamsVals,
+                              OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduce3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
+                              int opNum,
+                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                              Pointer extraParamsVals,
+                              OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduce3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
+                              int opNum,
+                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                              Pointer extraParamsVals,
+                              OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 
 /**
  *
@@ -1663,23 +1684,23 @@ public native void execReduce3(@Cast("Nd4jPointer*") PointerPointer extraPointer
  * @param yShapeInfo
  */
 public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                   Pointer extraParamsVals,
+                                   OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo);
 public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                   Pointer extraParamsVals,
+                                   OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo);
 public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                   Pointer extraParamsVals,
+                                   OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo);
 /**
  *
  * @param opNum
@@ -1694,61 +1715,61 @@ public native void execReduce3Scalar(@Cast("Nd4jPointer*") PointerPointer extraP
  * @param dimensionLength
  */
 public native void execReduce3Tad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
-                        @Cast("const Nd4jLong*") LongPointer tadOnlyShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets,
-                        @Cast("const Nd4jLong*") LongPointer yTadOnlyShapeInfo, @Cast("const Nd4jLong*") LongPointer yTadOffsets);
+                                int opNum,
+                                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                Pointer extraParamsVals,
+                                OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+                                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
+                                @Cast("const Nd4jLong*") LongPointer tadOnlyShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets,
+                                @Cast("const Nd4jLong*") LongPointer yTadOnlyShapeInfo, @Cast("const Nd4jLong*") LongPointer yTadOffsets);
 public native void execReduce3Tad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
-                        @Cast("const Nd4jLong*") LongBuffer tadOnlyShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets,
-                        @Cast("const Nd4jLong*") LongBuffer yTadOnlyShapeInfo, @Cast("const Nd4jLong*") LongBuffer yTadOffsets);
+                                int opNum,
+                                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                Pointer extraParamsVals,
+                                OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+                                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
+                                @Cast("const Nd4jLong*") LongBuffer tadOnlyShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets,
+                                @Cast("const Nd4jLong*") LongBuffer yTadOnlyShapeInfo, @Cast("const Nd4jLong*") LongBuffer yTadOffsets);
 public native void execReduce3Tad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
-                        @Cast("const Nd4jLong*") long[] tadOnlyShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets,
-                        @Cast("const Nd4jLong*") long[] yTadOnlyShapeInfo, @Cast("const Nd4jLong*") long[] yTadOffsets);
+                                int opNum,
+                                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                Pointer extraParamsVals,
+                                OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+                                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
+                                @Cast("const Nd4jLong*") long[] tadOnlyShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets,
+                                @Cast("const Nd4jLong*") long[] yTadOnlyShapeInfo, @Cast("const Nd4jLong*") long[] yTadOffsets);
 
 
 public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
-                        @Cast("const Nd4jLong*") LongPointer xTadShapeInfo, @Cast("const Nd4jLong*") LongPointer xOffsets,
-                        @Cast("const Nd4jLong*") LongPointer yTadShapeInfo, @Cast("const Nd4jLong*") LongPointer yOffsets);
+                                int opNum,
+                                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                Pointer extraParamsVals,
+                                OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYShapeInfo,
+                                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
+                                @Cast("const Nd4jLong*") LongPointer xTadShapeInfo, @Cast("const Nd4jLong*") LongPointer xOffsets,
+                                @Cast("const Nd4jLong*") LongPointer yTadShapeInfo, @Cast("const Nd4jLong*") LongPointer yOffsets);
 public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
-                        @Cast("const Nd4jLong*") LongBuffer xTadShapeInfo, @Cast("const Nd4jLong*") LongBuffer xOffsets,
-                        @Cast("const Nd4jLong*") LongBuffer yTadShapeInfo, @Cast("const Nd4jLong*") LongBuffer yOffsets);
+                                int opNum,
+                                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                Pointer extraParamsVals,
+                                OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo,
+                                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
+                                @Cast("const Nd4jLong*") LongBuffer xTadShapeInfo, @Cast("const Nd4jLong*") LongBuffer xOffsets,
+                                @Cast("const Nd4jLong*") LongBuffer yTadShapeInfo, @Cast("const Nd4jLong*") LongBuffer yOffsets);
 public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        int opNum,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                        Pointer extraParamsVals,
-                        OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
-                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                        OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
-                        @Cast("const Nd4jLong*") long[] xTadShapeInfo, @Cast("const Nd4jLong*") long[] xOffsets,
-                        @Cast("const Nd4jLong*") long[] yTadShapeInfo, @Cast("const Nd4jLong*") long[] yOffsets);
+                                int opNum,
+                                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                Pointer extraParamsVals,
+                                OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] dYShapeInfo,
+                                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
+                                @Cast("const Nd4jLong*") long[] xTadShapeInfo, @Cast("const Nd4jLong*") long[] xOffsets,
+                                @Cast("const Nd4jLong*") long[] yTadShapeInfo, @Cast("const Nd4jLong*") long[] yOffsets);
 
 /**
  *
@@ -1762,42 +1783,42 @@ public native void execReduce3All(@Cast("Nd4jPointer*") PointerPointer extraPoin
  * @param n
  */
 public native void execScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                      OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongPointer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dSscalarShapeInfo,
-                      Pointer extraParams);
+                            int opNum,
+                            OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                            OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                            OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongPointer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dSscalarShapeInfo,
+                            Pointer extraParams);
 public native void execScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                      OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongBuffer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dSscalarShapeInfo,
-                      Pointer extraParams);
+                            int opNum,
+                            OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                            OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                            OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongBuffer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dSscalarShapeInfo,
+                            Pointer extraParams);
 public native void execScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                      OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") long[] hSscalarShapeInfo, @Cast("const Nd4jLong*") long[] dSscalarShapeInfo,
-                      Pointer extraParams);
+                            int opNum,
+                            OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                            OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                            OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") long[] hSscalarShapeInfo, @Cast("const Nd4jLong*") long[] dSscalarShapeInfo,
+                            Pointer extraParams);
 
 public native void execScalarBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                int opNum,
-                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongPointer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dSscalarShapeInfo,
-                Pointer extraParams);
+                                int opNum,
+                                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongPointer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dSscalarShapeInfo,
+                                Pointer extraParams);
 public native void execScalarBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                int opNum,
-                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongBuffer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dSscalarShapeInfo,
-                Pointer extraParams);
+                                int opNum,
+                                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") LongBuffer hSscalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dSscalarShapeInfo,
+                                Pointer extraParams);
 public native void execScalarBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                int opNum,
-                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") long[] hSscalarShapeInfo, @Cast("const Nd4jLong*") long[] dSscalarShapeInfo,
-                Pointer extraParams);
+                                int opNum,
+                                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                OpaqueDataBuffer dbScalar, @Cast("const Nd4jLong*") long[] hSscalarShapeInfo, @Cast("const Nd4jLong*") long[] dSscalarShapeInfo,
+                                Pointer extraParams);
 
 /**
  *
@@ -1807,23 +1828,23 @@ public native void execScalarBool(@Cast("Nd4jPointer*") PointerPointer extraPoin
  * @param extraParams
  */
 public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                      int opNum,
-                                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                                      Pointer extraParams,
-                                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                                      @Cast("bool") boolean biasCorrected);
+                                        int opNum,
+                                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                        Pointer extraParams,
+                                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                        @Cast("bool") boolean biasCorrected);
 public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                      int opNum,
-                                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                                      Pointer extraParams,
-                                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                                      @Cast("bool") boolean biasCorrected);
+                                        int opNum,
+                                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                        Pointer extraParams,
+                                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                        @Cast("bool") boolean biasCorrected);
 public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                                      int opNum,
-                                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                                      Pointer extraParams,
-                                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                                      @Cast("bool") boolean biasCorrected);
+                                        int opNum,
+                                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                        Pointer extraParams,
+                                        OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                        @Cast("bool") boolean biasCorrected);
 /**
  *
  * @param opNum
@@ -1834,23 +1855,23 @@ public native void execSummaryStatsScalar(@Cast("Nd4jPointer*") PointerPointer e
  * @param resultShapeInfo
  */
 public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                              int opNum,
-                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo,  @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                              Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                              @Cast("bool") boolean biasCorrected);
+                                  int opNum,
+                                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo,  @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                  Pointer extraParams,
+                                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                  @Cast("bool") boolean biasCorrected);
 public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                              int opNum,
-                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo,  @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                              Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                              @Cast("bool") boolean biasCorrected);
+                                  int opNum,
+                                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo,  @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                  Pointer extraParams,
+                                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                  @Cast("bool") boolean biasCorrected);
 public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                              int opNum,
-                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo,  @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                              Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                              @Cast("bool") boolean biasCorrected);
+                                  int opNum,
+                                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo,  @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                  Pointer extraParams,
+                                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                  @Cast("bool") boolean biasCorrected);
 /**
  *
  * @param opNum
@@ -1863,29 +1884,29 @@ public native void execSummaryStats(@Cast("Nd4jPointer*") PointerPointer extraPo
  * @param dimensionLength
  */
 public native void execSummaryStatsTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                              int opNum,
-                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                              Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                              OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
-                              @Cast("bool") boolean biasCorrected,
-                              @Cast("const Nd4jLong*") LongPointer tadShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets);
+                                     int opNum,
+                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                     Pointer extraParams,
+                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                     OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
+                                     @Cast("bool") boolean biasCorrected,
+                                     @Cast("const Nd4jLong*") LongPointer tadShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets);
 public native void execSummaryStatsTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                              int opNum,
-                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                              Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                              OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
-                              @Cast("bool") boolean biasCorrected,
-                              @Cast("const Nd4jLong*") LongBuffer tadShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets);
+                                     int opNum,
+                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                     Pointer extraParams,
+                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                     OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
+                                     @Cast("bool") boolean biasCorrected,
+                                     @Cast("const Nd4jLong*") LongBuffer tadShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets);
 public native void execSummaryStatsTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                              int opNum,
-                              OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                              Pointer extraParams,
-                              OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                              OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
-                              @Cast("bool") boolean biasCorrected,
-                              @Cast("const Nd4jLong*") long[] tadShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets);
+                                     int opNum,
+                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                     Pointer extraParams,
+                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                     OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
+                                     @Cast("bool") boolean biasCorrected,
+                                     @Cast("const Nd4jLong*") long[] tadShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets);
 
 /**
  *
@@ -1898,84 +1919,84 @@ public native void execSummaryStatsTad(@Cast("Nd4jPointer*") PointerPointer extr
  * @param n
  */
 public native void execTransformFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                          int opNum,
-                          OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                          OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                          Pointer extraParams);
+                                    int opNum,
+                                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                    Pointer extraParams);
 public native void execTransformFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                          int opNum,
-                          OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                          OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                          Pointer extraParams);
+                                    int opNum,
+                                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                    Pointer extraParams);
 public native void execTransformFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                          int opNum,
-                          OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                          OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                          Pointer extraParams);
+                                    int opNum,
+                                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                    Pointer extraParams);
 
 public native void execTransformSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                  Pointer extraParams);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                   Pointer extraParams);
 public native void execTransformSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                  Pointer extraParams);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                   Pointer extraParams);
 public native void execTransformSame(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                  Pointer extraParams);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                   Pointer extraParams);
 
 public native void execTransformBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                  Pointer extraParams);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                   Pointer extraParams);
 public native void execTransformBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                  Pointer extraParams);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                   Pointer extraParams);
 public native void execTransformBool(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  int opNum,
-                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                  Pointer extraParams);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                   Pointer extraParams);
 
 public native void execTransformAny(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                       int opNum,
-                       OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                       OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                       Pointer extraParams);
+                                  int opNum,
+                                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                  Pointer extraParams);
 public native void execTransformAny(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                       int opNum,
-                       OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                       OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                       Pointer extraParams);
+                                  int opNum,
+                                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                  Pointer extraParams);
 public native void execTransformAny(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                       int opNum,
-                       OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                       OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                       Pointer extraParams);
+                                  int opNum,
+                                  OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                  OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                  Pointer extraParams);
 
 public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                      Pointer extraParams);
+                                     int opNum,
+                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                     Pointer extraParams);
 public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                      Pointer extraParams);
+                                     int opNum,
+                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                     Pointer extraParams);
 public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                      Pointer extraParams);
+                                     int opNum,
+                                     OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                     OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                     Pointer extraParams);
 
 /**
  *
@@ -1991,60 +2012,60 @@ public native void execTransformStrict(@Cast("Nd4jPointer*") PointerPointer extr
  * @param dimensionLength
  */
 public native void execScalarTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                      OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongPointer hScalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dScalarShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
-                      @Cast("const Nd4jLong*") LongPointer tadShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets,
-                      @Cast("const Nd4jLong*") LongPointer tadShapeInfoZ, @Cast("const Nd4jLong*") LongPointer tadOffsetsZ);
+                               int opNum,
+                               OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                               OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                               OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongPointer hScalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dScalarShapeInfo,
+                               Pointer extraParams,
+                               OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
+                               @Cast("const Nd4jLong*") LongPointer tadShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets,
+                               @Cast("const Nd4jLong*") LongPointer tadShapeInfoZ, @Cast("const Nd4jLong*") LongPointer tadOffsetsZ);
 public native void execScalarTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                      OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongBuffer hScalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dScalarShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
-                      @Cast("const Nd4jLong*") LongBuffer tadShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets,
-                      @Cast("const Nd4jLong*") LongBuffer tadShapeInfoZ, @Cast("const Nd4jLong*") LongBuffer tadOffsetsZ);
+                               int opNum,
+                               OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                               OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                               OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongBuffer hScalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dScalarShapeInfo,
+                               Pointer extraParams,
+                               OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
+                               @Cast("const Nd4jLong*") LongBuffer tadShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets,
+                               @Cast("const Nd4jLong*") LongBuffer tadShapeInfoZ, @Cast("const Nd4jLong*") LongBuffer tadOffsetsZ);
 public native void execScalarTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                      OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") long[] hScalarShapeInfo, @Cast("const Nd4jLong*") long[] dScalarShapeInfo,
-                      Pointer extraParams,
-                      OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
-                      @Cast("const Nd4jLong*") long[] tadShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets,
-                      @Cast("const Nd4jLong*") long[] tadShapeInfoZ, @Cast("const Nd4jLong*") long[] tadOffsetsZ);
+                               int opNum,
+                               OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                               OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                               OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") long[] hScalarShapeInfo, @Cast("const Nd4jLong*") long[] dScalarShapeInfo,
+                               Pointer extraParams,
+                               OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
+                               @Cast("const Nd4jLong*") long[] tadShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets,
+                               @Cast("const Nd4jLong*") long[] tadShapeInfoZ, @Cast("const Nd4jLong*") long[] tadOffsetsZ);
 
 public native void execScalarBoolTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                int opNum,
-                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
-                OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongPointer hScalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dScalarShapeInfo,
-                Pointer extraParams,
-                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
-                @Cast("const Nd4jLong*") LongPointer tadShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets,
-                @Cast("const Nd4jLong*") LongPointer tadShapeInfoZ, @Cast("const Nd4jLong*") LongPointer tadOffsetsZ);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeInfo, @Cast("const Nd4jLong*") LongPointer dZShapeInfo,
+                                   OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongPointer hScalarShapeInfo, @Cast("const Nd4jLong*") LongPointer dScalarShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongPointer hDimensionShape, @Cast("const Nd4jLong*") LongPointer dDimensionShape,
+                                   @Cast("const Nd4jLong*") LongPointer tadShapeInfo, @Cast("const Nd4jLong*") LongPointer tadOffsets,
+                                   @Cast("const Nd4jLong*") LongPointer tadShapeInfoZ, @Cast("const Nd4jLong*") LongPointer tadOffsetsZ);
 public native void execScalarBoolTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                int opNum,
-                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
-                OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongBuffer hScalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dScalarShapeInfo,
-                Pointer extraParams,
-                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
-                @Cast("const Nd4jLong*") LongBuffer tadShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets,
-                @Cast("const Nd4jLong*") LongBuffer tadShapeInfoZ, @Cast("const Nd4jLong*") LongBuffer tadOffsetsZ);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeInfo, @Cast("const Nd4jLong*") LongBuffer dZShapeInfo,
+                                   OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") LongBuffer hScalarShapeInfo, @Cast("const Nd4jLong*") LongBuffer dScalarShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") LongBuffer hDimensionShape, @Cast("const Nd4jLong*") LongBuffer dDimensionShape,
+                                   @Cast("const Nd4jLong*") LongBuffer tadShapeInfo, @Cast("const Nd4jLong*") LongBuffer tadOffsets,
+                                   @Cast("const Nd4jLong*") LongBuffer tadShapeInfoZ, @Cast("const Nd4jLong*") LongBuffer tadOffsetsZ);
 public native void execScalarBoolTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                int opNum,
-                OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
-                OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
-                OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") long[] hScalarShapeInfo, @Cast("const Nd4jLong*") long[] dScalarShapeInfo,
-                Pointer extraParams,
-                OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
-                @Cast("const Nd4jLong*") long[] tadShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets,
-                @Cast("const Nd4jLong*") long[] tadShapeInfoZ, @Cast("const Nd4jLong*") long[] tadOffsetsZ);
+                                   int opNum,
+                                   OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] dXShapeInfo,
+                                   OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeInfo, @Cast("const Nd4jLong*") long[] dZShapeInfo,
+                                   OpaqueDataBuffer dbScalars, @Cast("const Nd4jLong*") long[] hScalarShapeInfo, @Cast("const Nd4jLong*") long[] dScalarShapeInfo,
+                                   Pointer extraParams,
+                                   OpaqueDataBuffer dbDimension, @Cast("const Nd4jLong*") long[] hDimensionShape, @Cast("const Nd4jLong*") long[] dDimensionShape,
+                                   @Cast("const Nd4jLong*") long[] tadShapeInfo, @Cast("const Nd4jLong*") long[] tadOffsets,
+                                   @Cast("const Nd4jLong*") long[] tadShapeInfoZ, @Cast("const Nd4jLong*") long[] tadOffsetsZ);
 
 public native void specialConcat(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
@@ -2264,10 +2285,10 @@ public native @Cast("char*") String getDeviceName(int deviceId);
  * @return
  */
 public native int memcpySync(@Cast("Nd4jPointer") Pointer dst,
-           @Cast("Nd4jPointer") Pointer src,
-           @Cast("Nd4jLong") long size,
-           int flags,
-           @Cast("Nd4jPointer") Pointer reserved);
+                           @Cast("Nd4jPointer") Pointer src,
+                           @Cast("Nd4jLong") long size,
+                           int flags,
+                           @Cast("Nd4jPointer") Pointer reserved);
 
 /**
  *
@@ -2279,10 +2300,10 @@ public native int memcpySync(@Cast("Nd4jPointer") Pointer dst,
  * @return
  */
 public native int memcpyAsync(@Cast("Nd4jPointer") Pointer dst,
-                @Cast("Nd4jPointer") Pointer src,
-                @Cast("Nd4jLong") long size,
-                int flags,
-                @Cast("Nd4jPointer") Pointer reserved);
+                            @Cast("Nd4jPointer") Pointer src,
+                            @Cast("Nd4jLong") long size,
+                            int flags,
+                            @Cast("Nd4jPointer") Pointer reserved);
 
 /**
  *
@@ -2294,10 +2315,10 @@ public native int memcpyAsync(@Cast("Nd4jPointer") Pointer dst,
  * @return
  */
 public native int memsetSync(@Cast("Nd4jPointer") Pointer dst,
-           int value,
-           @Cast("Nd4jLong") long size,
-           int flags,
-           @Cast("Nd4jPointer") Pointer reserved);
+                           int value,
+                           @Cast("Nd4jLong") long size,
+                           int flags,
+                           @Cast("Nd4jPointer") Pointer reserved);
 
 /**
  *
@@ -2309,10 +2330,10 @@ public native int memsetSync(@Cast("Nd4jPointer") Pointer dst,
  * @return
  */
 public native int memsetAsync(@Cast("Nd4jPointer") Pointer dst,
-                int value,
-                @Cast("Nd4jLong") long size,
-                int flags,
-                @Cast("Nd4jPointer") Pointer reserved);
+                            int value,
+                            @Cast("Nd4jLong") long size,
+                            int flags,
+                            @Cast("Nd4jPointer") Pointer reserved);
 
 /**
  *
@@ -2324,10 +2345,10 @@ public native int memsetAsync(@Cast("Nd4jPointer") Pointer dst,
  * @return
  */
 public native int memcpyConstantAsync(@Cast("Nd4jLong") long dst,
-                        @Cast("Nd4jPointer") Pointer src,
-                        @Cast("Nd4jLong") long size,
-                        int flags,
-                        @Cast("Nd4jPointer") Pointer reserved);
+                                    @Cast("Nd4jPointer") Pointer src,
+                                    @Cast("Nd4jLong") long size,
+                                    int flags,
+                                    @Cast("Nd4jPointer") Pointer reserved);
 
 /**
  *
@@ -2368,14 +2389,14 @@ public native void setGridLimit(int gridSize);
  * @param offsetsBuffer
  */
 public native OpaqueTadPack tadOnlyShapeInfo(@Cast("const Nd4jLong*") LongPointer xShapeInfo,
-                      IntPointer dimension,
-                      int dimensionLength);
+                                            IntPointer dimension,
+                                            int dimensionLength);
 public native OpaqueTadPack tadOnlyShapeInfo(@Cast("const Nd4jLong*") LongBuffer xShapeInfo,
-                      IntBuffer dimension,
-                      int dimensionLength);
+                                            IntBuffer dimension,
+                                            int dimensionLength);
 public native OpaqueTadPack tadOnlyShapeInfo(@Cast("const Nd4jLong*") long[] xShapeInfo,
-                      int[] dimension,
-                      int dimensionLength);
+                                            int[] dimension,
+                                            int dimensionLength);
 
 public native @Cast("const Nd4jLong*") LongPointer getPrimaryShapeInfo(OpaqueTadPack pack);
 public native @Cast("const Nd4jLong*") LongPointer getPrimaryOffsets(OpaqueTadPack pack);
@@ -2405,32 +2426,32 @@ public native void deleteTadPack(OpaqueTadPack ptr);
  * @param zTadOffsets
  */
 public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer xShapeInfo, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer zShapeInfo, @Cast("const Nd4jLong*") LongPointer dzShapeInfo,
-                    @Cast("Nd4jLong") long n,
-                    @Cast("Nd4jLong*") LongPointer indexes,
-                    @Cast("const Nd4jLong*") LongPointer tadShapeInfo,
-                    @Cast("const Nd4jLong*") LongPointer tadOffsets,
-                    @Cast("const Nd4jLong*") LongPointer zTadShapeInfo,
-                    @Cast("const Nd4jLong*") LongPointer zTadOffsets);
+                          OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer xShapeInfo, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                          OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer zShapeInfo, @Cast("const Nd4jLong*") LongPointer dzShapeInfo,
+                          @Cast("Nd4jLong") long n,
+                          @Cast("Nd4jLong*") LongPointer indexes,
+                          @Cast("const Nd4jLong*") LongPointer tadShapeInfo,
+                          @Cast("const Nd4jLong*") LongPointer tadOffsets,
+                          @Cast("const Nd4jLong*") LongPointer zTadShapeInfo,
+                          @Cast("const Nd4jLong*") LongPointer zTadOffsets);
 public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer xShapeInfo, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer zShapeInfo, @Cast("const Nd4jLong*") LongBuffer dzShapeInfo,
-                    @Cast("Nd4jLong") long n,
-                    @Cast("Nd4jLong*") LongBuffer indexes,
-                    @Cast("const Nd4jLong*") LongBuffer tadShapeInfo,
-                    @Cast("const Nd4jLong*") LongBuffer tadOffsets,
-                    @Cast("const Nd4jLong*") LongBuffer zTadShapeInfo,
-                    @Cast("const Nd4jLong*") LongBuffer zTadOffsets);
+                          OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer xShapeInfo, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                          OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer zShapeInfo, @Cast("const Nd4jLong*") LongBuffer dzShapeInfo,
+                          @Cast("Nd4jLong") long n,
+                          @Cast("Nd4jLong*") LongBuffer indexes,
+                          @Cast("const Nd4jLong*") LongBuffer tadShapeInfo,
+                          @Cast("const Nd4jLong*") LongBuffer tadOffsets,
+                          @Cast("const Nd4jLong*") LongBuffer zTadShapeInfo,
+                          @Cast("const Nd4jLong*") LongBuffer zTadOffsets);
 public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                    OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] xShapeInfo, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-                    OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] zShapeInfo, @Cast("const Nd4jLong*") long[] dzShapeInfo,
-                    @Cast("Nd4jLong") long n,
-                    @Cast("Nd4jLong*") long[] indexes,
-                    @Cast("const Nd4jLong*") long[] tadShapeInfo,
-                    @Cast("const Nd4jLong*") long[] tadOffsets,
-                    @Cast("const Nd4jLong*") long[] zTadShapeInfo,
-                    @Cast("const Nd4jLong*") long[] zTadOffsets);
+                          OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] xShapeInfo, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                          OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] zShapeInfo, @Cast("const Nd4jLong*") long[] dzShapeInfo,
+                          @Cast("Nd4jLong") long n,
+                          @Cast("Nd4jLong*") long[] indexes,
+                          @Cast("const Nd4jLong*") long[] tadShapeInfo,
+                          @Cast("const Nd4jLong*") long[] tadOffsets,
+                          @Cast("const Nd4jLong*") long[] zTadShapeInfo,
+                          @Cast("const Nd4jLong*") long[] zTadOffsets);
 
 /**
  *
@@ -2442,52 +2463,52 @@ public native void pullRows(@Cast("Nd4jPointer*") PointerPointer extraPointers,
  * @param propagate
  */
 public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-                   Pointer z, @Cast("const Nd4jLong*") LongPointer zShapeInfo,
-                   Pointer dz, @Cast("const Nd4jLong*") LongPointer dzShapeInfo,
-                   int n,
-                   @Cast("Nd4jLong") long length,
-                   @Cast("bool") boolean propagate);
+                         @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                         Pointer z, @Cast("const Nd4jLong*") LongPointer zShapeInfo,
+                         Pointer dz, @Cast("const Nd4jLong*") LongPointer dzShapeInfo,
+                         int n,
+                         @Cast("Nd4jLong") long length,
+                         @Cast("bool") boolean propagate);
 public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-                   Pointer z, @Cast("const Nd4jLong*") LongBuffer zShapeInfo,
-                   Pointer dz, @Cast("const Nd4jLong*") LongBuffer dzShapeInfo,
-                   int n,
-                   @Cast("Nd4jLong") long length,
-                   @Cast("bool") boolean propagate);
+                         @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                         Pointer z, @Cast("const Nd4jLong*") LongBuffer zShapeInfo,
+                         Pointer dz, @Cast("const Nd4jLong*") LongBuffer dzShapeInfo,
+                         int n,
+                         @Cast("Nd4jLong") long length,
+                         @Cast("bool") boolean propagate);
 public native void average(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-                   Pointer z, @Cast("const Nd4jLong*") long[] zShapeInfo,
-                   Pointer dz, @Cast("const Nd4jLong*") long[] dzShapeInfo,
-                   int n,
-                   @Cast("Nd4jLong") long length,
-                   @Cast("bool") boolean propagate);
+                         @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                         Pointer z, @Cast("const Nd4jLong*") long[] zShapeInfo,
+                         Pointer dz, @Cast("const Nd4jLong*") long[] dzShapeInfo,
+                         int n,
+                         @Cast("Nd4jLong") long length,
+                         @Cast("bool") boolean propagate);
 
 
 public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-                   Pointer z, @Cast("const Nd4jLong*") LongPointer zShapeInfo,
-                   Pointer dz, @Cast("const Nd4jLong*") LongPointer dzShapeInfo,
-                   int n,
-                   @Cast("Nd4jLong") long length);
+                            @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                            @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                            Pointer z, @Cast("const Nd4jLong*") LongPointer zShapeInfo,
+                            Pointer dz, @Cast("const Nd4jLong*") LongPointer dzShapeInfo,
+                            int n,
+                            @Cast("Nd4jLong") long length);
 public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-                   Pointer z, @Cast("const Nd4jLong*") LongBuffer zShapeInfo,
-                   Pointer dz, @Cast("const Nd4jLong*") LongBuffer dzShapeInfo,
-                   int n,
-                   @Cast("Nd4jLong") long length);
+                            @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                            @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                            Pointer z, @Cast("const Nd4jLong*") LongBuffer zShapeInfo,
+                            Pointer dz, @Cast("const Nd4jLong*") LongBuffer dzShapeInfo,
+                            int n,
+                            @Cast("Nd4jLong") long length);
 public native void accumulate(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-                   Pointer z, @Cast("const Nd4jLong*") long[] zShapeInfo,
-                   Pointer dz, @Cast("const Nd4jLong*") long[] dzShapeInfo,
-                   int n,
-                   @Cast("Nd4jLong") long length);
+                            @Cast("Nd4jPointer*") PointerPointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                            @Cast("Nd4jPointer*") PointerPointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                            Pointer z, @Cast("const Nd4jLong*") long[] zShapeInfo,
+                            Pointer dz, @Cast("const Nd4jLong*") long[] dzShapeInfo,
+                            int n,
+                            @Cast("Nd4jLong") long length);
 
 
 /**
@@ -2527,32 +2548,32 @@ public native @Cast("bool") boolean isP2PAvailable();
  * @param tadOffsets
  */
 public native void shuffle(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jPointer*") PointerPointer dxShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer z, @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dz, @Cast("Nd4jPointer*") PointerPointer dzShapeInfo,
-                   int N,
-                   IntPointer shuffleMap,
-                   @Cast("Nd4jPointer*") PointerPointer tadShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer tadOffsets);
+                         @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jPointer*") PointerPointer dxShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer z, @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer dz, @Cast("Nd4jPointer*") PointerPointer dzShapeInfo,
+                         int N,
+                         IntPointer shuffleMap,
+                         @Cast("Nd4jPointer*") PointerPointer tadShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer tadOffsets);
 public native void shuffle(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jPointer*") PointerPointer dxShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer z, @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dz, @Cast("Nd4jPointer*") PointerPointer dzShapeInfo,
-                   int N,
-                   IntBuffer shuffleMap,
-                   @Cast("Nd4jPointer*") PointerPointer tadShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer tadOffsets);
+                         @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jPointer*") PointerPointer dxShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer z, @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer dz, @Cast("Nd4jPointer*") PointerPointer dzShapeInfo,
+                         int N,
+                         IntBuffer shuffleMap,
+                         @Cast("Nd4jPointer*") PointerPointer tadShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer tadOffsets);
 public native void shuffle(@Cast("Nd4jPointer*") PointerPointer extras,
-                   @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jPointer*") PointerPointer dxShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer z, @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer dz, @Cast("Nd4jPointer*") PointerPointer dzShapeInfo,
-                   int N,
-                   int[] shuffleMap,
-                   @Cast("Nd4jPointer*") PointerPointer tadShapeInfo,
-                   @Cast("Nd4jPointer*") PointerPointer tadOffsets);
+                         @Cast("Nd4jPointer*") PointerPointer x, @Cast("Nd4jPointer*") PointerPointer xShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer dx, @Cast("Nd4jPointer*") PointerPointer dxShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer z, @Cast("Nd4jPointer*") PointerPointer zShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer dz, @Cast("Nd4jPointer*") PointerPointer dzShapeInfo,
+                         int N,
+                         int[] shuffleMap,
+                         @Cast("Nd4jPointer*") PointerPointer tadShapeInfo,
+                         @Cast("Nd4jPointer*") PointerPointer tadOffsets);
 
 
 /**
@@ -2597,57 +2618,57 @@ public native @Cast("bool") boolean isExperimentalEnabled();
  * @param numRealArguments
  */
 public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                         int opNum,
-                         @Cast("void**") PointerPointer arguments,
-                         int numArguments,
-                         @Cast("Nd4jLong**") PointerPointer shapeArguments,
-                         int numShapeArguments,
-                         IntPointer indexArguments,
-                         int numIndexArguments,
-                         @Cast("int**") PointerPointer intArrays,
-                         int numIntArrays,
-                         Pointer realArguments,
-                         int numRealArguments,
-                         @Cast("sd::DataType") int dtype);
+                               int opNum,
+                               @Cast("void**") PointerPointer arguments,
+                               int numArguments,
+                               @Cast("Nd4jLong**") PointerPointer shapeArguments,
+                               int numShapeArguments,
+                               IntPointer indexArguments,
+                               int numIndexArguments,
+                               @Cast("int**") PointerPointer intArrays,
+                               int numIntArrays,
+                               Pointer realArguments,
+                               int numRealArguments,
+                               @Cast("sd::DataType") int dtype);
 public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                         int opNum,
-                         @Cast("void**") @ByPtrPtr Pointer arguments,
-                         int numArguments,
-                         @Cast("Nd4jLong**") @ByPtrPtr LongPointer shapeArguments,
-                         int numShapeArguments,
-                         IntPointer indexArguments,
-                         int numIndexArguments,
-                         @ByPtrPtr IntPointer intArrays,
-                         int numIntArrays,
-                         Pointer realArguments,
-                         int numRealArguments,
-                         @Cast("sd::DataType") int dtype);
+                               int opNum,
+                               @Cast("void**") @ByPtrPtr Pointer arguments,
+                               int numArguments,
+                               @Cast("Nd4jLong**") @ByPtrPtr LongPointer shapeArguments,
+                               int numShapeArguments,
+                               IntPointer indexArguments,
+                               int numIndexArguments,
+                               @ByPtrPtr IntPointer intArrays,
+                               int numIntArrays,
+                               Pointer realArguments,
+                               int numRealArguments,
+                               @Cast("sd::DataType") int dtype);
 public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                         int opNum,
-                         @Cast("void**") @ByPtrPtr Pointer arguments,
-                         int numArguments,
-                         @Cast("Nd4jLong**") @ByPtrPtr LongBuffer shapeArguments,
-                         int numShapeArguments,
-                         IntBuffer indexArguments,
-                         int numIndexArguments,
-                         @ByPtrPtr IntBuffer intArrays,
-                         int numIntArrays,
-                         Pointer realArguments,
-                         int numRealArguments,
-                         @Cast("sd::DataType") int dtype);
+                               int opNum,
+                               @Cast("void**") @ByPtrPtr Pointer arguments,
+                               int numArguments,
+                               @Cast("Nd4jLong**") @ByPtrPtr LongBuffer shapeArguments,
+                               int numShapeArguments,
+                               IntBuffer indexArguments,
+                               int numIndexArguments,
+                               @ByPtrPtr IntBuffer intArrays,
+                               int numIntArrays,
+                               Pointer realArguments,
+                               int numRealArguments,
+                               @Cast("sd::DataType") int dtype);
 public native void execAggregate(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                         int opNum,
-                         @Cast("void**") @ByPtrPtr Pointer arguments,
-                         int numArguments,
-                         @Cast("Nd4jLong**") @ByPtrPtr long[] shapeArguments,
-                         int numShapeArguments,
-                         int[] indexArguments,
-                         int numIndexArguments,
-                         @ByPtrPtr int[] intArrays,
-                         int numIntArrays,
-                         Pointer realArguments,
-                         int numRealArguments,
-                         @Cast("sd::DataType") int dtype);
+                               int opNum,
+                               @Cast("void**") @ByPtrPtr Pointer arguments,
+                               int numArguments,
+                               @Cast("Nd4jLong**") @ByPtrPtr long[] shapeArguments,
+                               int numShapeArguments,
+                               int[] indexArguments,
+                               int numIndexArguments,
+                               @ByPtrPtr int[] intArrays,
+                               int numIntArrays,
+                               Pointer realArguments,
+                               int numRealArguments,
+                               @Cast("sd::DataType") int dtype);
 
 
 public native void batchExecutor(@Cast("Nd4jPointer*") PointerPointer extraPointers,
@@ -2663,16 +2684,16 @@ public native void batchExecutor(@Cast("Nd4jPointer*") PointerPointer extraPoint
                                @Cast("sd::DataType") int dtype);
 
 public native void execAggregateBatch(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                              int numAggregates,
-                              int opNum,
-                              int maxArgs,
-                              int maxShapes,
-                              int maxIntArrays,
-                              int maxIntArraySize,
-                              int maxIdx,
-                              int maxReals,
-                              Pointer ptrToArguments,
-                              @Cast("sd::DataType") int dtype);
+                                    int numAggregates,
+                                    int opNum,
+                                    int maxArgs,
+                                    int maxShapes,
+                                    int maxIntArrays,
+                                    int maxIntArraySize,
+                                    int maxIdx,
+                                    int maxReals,
+                                    Pointer ptrToArguments,
+                                    @Cast("sd::DataType") int dtype);
 
 /**
  * Random operations
@@ -2688,20 +2709,20 @@ public native void execAggregateBatch(@Cast("Nd4jPointer*") PointerPointer extra
  * @param extraArguments
  */
 public native void execRandom(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeBuffer, @Cast("const Nd4jLong*") LongPointer dZShapeBuffer,
-                      Pointer extraArguments);
+                            int opNum,
+                            @Cast("Nd4jPointer") Pointer state,
+                            OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeBuffer, @Cast("const Nd4jLong*") LongPointer dZShapeBuffer,
+                            Pointer extraArguments);
 public native void execRandom(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dZShapeBuffer,
-                      Pointer extraArguments);
+                            int opNum,
+                            @Cast("Nd4jPointer") Pointer state,
+                            OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dZShapeBuffer,
+                            Pointer extraArguments);
 public native void execRandom(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeBuffer, @Cast("const Nd4jLong*") long[] dZShapeBuffer,
-                      Pointer extraArguments);
+                            int opNum,
+                            @Cast("Nd4jPointer") Pointer state,
+                            OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeBuffer, @Cast("const Nd4jLong*") long[] dZShapeBuffer,
+                            Pointer extraArguments);
 
 /**
  *
@@ -2717,26 +2738,26 @@ public native void execRandom(@Cast("Nd4jPointer*") PointerPointer extraPointers
  * @param extraArguments
  */
 public native void execRandom3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeBuffer, @Cast("const Nd4jLong*") LongPointer dXShapeBuffer,
-                      OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeBuffer, @Cast("const Nd4jLong*") LongPointer dYShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeBuffer, @Cast("const Nd4jLong*") LongPointer dZShapeBuffer,
-                      Pointer extraArguments);
+                             int opNum,
+                             @Cast("Nd4jPointer") Pointer state,
+                             OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeBuffer, @Cast("const Nd4jLong*") LongPointer dXShapeBuffer,
+                             OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongPointer hYShapeBuffer, @Cast("const Nd4jLong*") LongPointer dYShapeBuffer,
+                             OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeBuffer, @Cast("const Nd4jLong*") LongPointer dZShapeBuffer,
+                             Pointer extraArguments);
 public native void execRandom3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dXShapeBuffer,
-                      OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dYShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dZShapeBuffer,
-                      Pointer extraArguments);
+                             int opNum,
+                             @Cast("Nd4jPointer") Pointer state,
+                             OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dXShapeBuffer,
+                             OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") LongBuffer hYShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dYShapeBuffer,
+                             OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dZShapeBuffer,
+                             Pointer extraArguments);
 public native void execRandom3(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeBuffer, @Cast("const Nd4jLong*") long[] dXShapeBuffer,
-                      OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeBuffer, @Cast("const Nd4jLong*") long[] dYShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeBuffer, @Cast("const Nd4jLong*") long[] dZShapeBuffer,
-                      Pointer extraArguments);
+                             int opNum,
+                             @Cast("Nd4jPointer") Pointer state,
+                             OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeBuffer, @Cast("const Nd4jLong*") long[] dXShapeBuffer,
+                             OpaqueDataBuffer dbY, @Cast("const Nd4jLong*") long[] hYShapeBuffer, @Cast("const Nd4jLong*") long[] dYShapeBuffer,
+                             OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeBuffer, @Cast("const Nd4jLong*") long[] dZShapeBuffer,
+                             Pointer extraArguments);
 
 /**
  *
@@ -2750,23 +2771,23 @@ public native void execRandom3(@Cast("Nd4jPointer*") PointerPointer extraPointer
  * @param extraArguments
  */
 public native void execRandom2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeBuffer, @Cast("const Nd4jLong*") LongPointer dXShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeBuffer, @Cast("const Nd4jLong*") LongPointer dZShapeBuffer,
-                      Pointer extraArguments);
+                             int opNum,
+                             @Cast("Nd4jPointer") Pointer state,
+                             OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer hXShapeBuffer, @Cast("const Nd4jLong*") LongPointer dXShapeBuffer,
+                             OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongPointer hZShapeBuffer, @Cast("const Nd4jLong*") LongPointer dZShapeBuffer,
+                             Pointer extraArguments);
 public native void execRandom2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dXShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dZShapeBuffer,
-                      Pointer extraArguments);
+                             int opNum,
+                             @Cast("Nd4jPointer") Pointer state,
+                             OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer hXShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dXShapeBuffer,
+                             OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") LongBuffer hZShapeBuffer, @Cast("const Nd4jLong*") LongBuffer dZShapeBuffer,
+                             Pointer extraArguments);
 public native void execRandom2(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                      int opNum,
-                      @Cast("Nd4jPointer") Pointer state,
-                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeBuffer, @Cast("const Nd4jLong*") long[] dXShapeBuffer,
-                      OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeBuffer, @Cast("const Nd4jLong*") long[] dZShapeBuffer,
-                      Pointer extraArguments);
+                             int opNum,
+                             @Cast("Nd4jPointer") Pointer state,
+                             OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] hXShapeBuffer, @Cast("const Nd4jLong*") long[] dXShapeBuffer,
+                             OpaqueDataBuffer dbZ, @Cast("const Nd4jLong*") long[] hZShapeBuffer, @Cast("const Nd4jLong*") long[] dZShapeBuffer,
+                             Pointer extraArguments);
 
 
 /**
@@ -2778,9 +2799,9 @@ public native void execRandom2(@Cast("Nd4jPointer*") PointerPointer extraPointer
  * @return
  */
 public native @Cast("Nd4jPointer") Pointer initRandom(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                       long seed,
-                       long bufferSize,
-                       @Cast("Nd4jPointer") Pointer ptrToBuffer);
+                                   long seed,
+                                   long bufferSize,
+                                   @Cast("Nd4jPointer") Pointer ptrToBuffer);
 
 /**
  *
@@ -2789,8 +2810,8 @@ public native @Cast("Nd4jPointer") Pointer initRandom(@Cast("Nd4jPointer*") Poin
  * @param ptrRandom
  */
 public native void refreshBuffer(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                   long seed,
-                   @Cast("Nd4jPointer") Pointer ptrRandom);
+                               long seed,
+                               @Cast("Nd4jPointer") Pointer ptrRandom);
 
 /**
  *
@@ -2799,8 +2820,8 @@ public native void refreshBuffer(@Cast("Nd4jPointer*") PointerPointer extraPoint
  * @param ptrRandom
  */
 public native void reSeedBuffer(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                  long seed,
-                  @Cast("Nd4jPointer") Pointer ptrRandom);
+                              long seed,
+                              @Cast("Nd4jPointer") Pointer ptrRandom);
 
 /**
  *
@@ -2900,7 +2921,8 @@ public native Pointer mapFromNpzFile(@StdString String path);
 
 public native int getNumNpyArraysInMap(Pointer map);
 
-public native @Cast("char*") String getNpyArrayNameFromMap(Pointer map, int index);
+public native @Cast("char*") String getNpyArrayNameFromMap(Pointer map, int index,@Cast("char*") BytePointer nameBuffer);
+public native @Cast("char*") BytePointer getNpyArrayNameFromMap(Pointer map, int index,@Cast("char*") String nameBuffer);
 
 public native Pointer getNpyArrayFromMap(Pointer map, int index);
 
@@ -2951,7 +2973,7 @@ public native void releaseNumpy(@Cast("Nd4jPointer") Pointer npyArray);
 public native int lengthForShapeBufferPointer(@Cast("Nd4jPointer") Pointer buffer);
 
 
-  /**
+/**
 * The pointer to get the address for
 *
 * @param address the address to get the pointer
@@ -2970,146 +2992,146 @@ public native @Cast("Nd4jPointer") Pointer pointerForAddress(@Cast("Nd4jLong") l
  * @return
  */
 public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer xShapeInfo, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-                        @Cast("Nd4jPointer*") PointerPointer targets, @Cast("const Nd4jLong*") LongPointer zShapeInfo,
-                        @Cast("const Nd4jLong*") LongPointer tadShapeInfo,
-                        @Cast("const Nd4jLong*") LongPointer tadOffsets);
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongPointer xShapeInfo, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                      @Cast("Nd4jPointer*") PointerPointer targets, @Cast("const Nd4jLong*") LongPointer zShapeInfo,
+                      @Cast("const Nd4jLong*") LongPointer tadShapeInfo,
+                      @Cast("const Nd4jLong*") LongPointer tadOffsets);
 public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer xShapeInfo, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-                        @Cast("Nd4jPointer*") PointerPointer targets, @Cast("const Nd4jLong*") LongBuffer zShapeInfo,
-                        @Cast("const Nd4jLong*") LongBuffer tadShapeInfo,
-                        @Cast("const Nd4jLong*") LongBuffer tadOffsets);
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") LongBuffer xShapeInfo, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                      @Cast("Nd4jPointer*") PointerPointer targets, @Cast("const Nd4jLong*") LongBuffer zShapeInfo,
+                      @Cast("const Nd4jLong*") LongBuffer tadShapeInfo,
+                      @Cast("const Nd4jLong*") LongBuffer tadOffsets);
 public native void tear(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                        OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] xShapeInfo, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-                        @Cast("Nd4jPointer*") PointerPointer targets, @Cast("const Nd4jLong*") long[] zShapeInfo,
-                        @Cast("const Nd4jLong*") long[] tadShapeInfo,
-                        @Cast("const Nd4jLong*") long[] tadOffsets);
+                      OpaqueDataBuffer dbX, @Cast("const Nd4jLong*") long[] xShapeInfo, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                      @Cast("Nd4jPointer*") PointerPointer targets, @Cast("const Nd4jLong*") long[] zShapeInfo,
+                      @Cast("const Nd4jLong*") long[] tadShapeInfo,
+                      @Cast("const Nd4jLong*") long[] tadOffsets);
 
 public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
-        Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-        @Cast("bool") boolean descending);
+                      Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                      Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                      @Cast("bool") boolean descending);
 public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
-        Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-        @Cast("bool") boolean descending);
+                      Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                      Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                      @Cast("bool") boolean descending);
 public native void sort(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
-        Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-        @Cast("bool") boolean descending);
+                      Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                      Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                      @Cast("bool") boolean descending);
 
 public native void sortByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-               Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
-               Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-               Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
-               Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
-               @Cast("bool") boolean descending);
+                           Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                           Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                           Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
+                           Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
+                           @Cast("bool") boolean descending);
 public native void sortByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-               Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
-               Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-               Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
-               Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
-               @Cast("bool") boolean descending);
+                           Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                           Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                           Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
+                           Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
+                           @Cast("bool") boolean descending);
 public native void sortByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-               Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
-               Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-               Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
-               Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
-               @Cast("bool") boolean descending);
+                           Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                           Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                           Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
+                           Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
+                           @Cast("bool") boolean descending);
 
 public native void sortByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                 Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
-                 Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-                 Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
-                 Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
-                 @Cast("bool") boolean descending);
+                             Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                             Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                             Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
+                             Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
+                             @Cast("bool") boolean descending);
 public native void sortByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                 Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
-                 Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-                 Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
-                 Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
-                 @Cast("bool") boolean descending);
+                             Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                             Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                             Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
+                             Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
+                             @Cast("bool") boolean descending);
 public native void sortByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-                 Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
-                 Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-                 Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
-                 Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
-                 @Cast("bool") boolean descending);
+                             Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                             Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                             Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
+                             Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
+                             @Cast("bool") boolean descending);
 
 public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
-        Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-        IntPointer dimension,
-        int dimensionLength,
-        @Cast("const Nd4jLong*") LongPointer tadShapeInfo,
-        @Cast("const Nd4jLong*") LongPointer tadOffsets,
-        @Cast("bool") boolean descending);
+                         Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                         Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                         IntPointer dimension,
+                         int dimensionLength,
+                         @Cast("const Nd4jLong*") LongPointer tadShapeInfo,
+                         @Cast("const Nd4jLong*") LongPointer tadOffsets,
+                         @Cast("bool") boolean descending);
 public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
-        Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-        IntBuffer dimension,
-        int dimensionLength,
-        @Cast("const Nd4jLong*") LongBuffer tadShapeInfo,
-        @Cast("const Nd4jLong*") LongBuffer tadOffsets,
-        @Cast("bool") boolean descending);
+                         Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                         Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                         IntBuffer dimension,
+                         int dimensionLength,
+                         @Cast("const Nd4jLong*") LongBuffer tadShapeInfo,
+                         @Cast("const Nd4jLong*") LongBuffer tadOffsets,
+                         @Cast("bool") boolean descending);
 public native void sortTad(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-        Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
-        Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-        int[] dimension,
-        int dimensionLength,
-        @Cast("const Nd4jLong*") long[] tadShapeInfo,
-        @Cast("const Nd4jLong*") long[] tadOffsets,
-        @Cast("bool") boolean descending);
+                         Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                         Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                         int[] dimension,
+                         int dimensionLength,
+                         @Cast("const Nd4jLong*") long[] tadShapeInfo,
+                         @Cast("const Nd4jLong*") long[] tadOffsets,
+                         @Cast("bool") boolean descending);
 
 public native void sortTadByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
-             Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-             Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
-             Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
-             IntPointer dimension,
-             int dimensionLength,
-             @Cast("bool") boolean descending);
+                              Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                              Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                              Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
+                              Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
+                              IntPointer dimension,
+                              int dimensionLength,
+                              @Cast("bool") boolean descending);
 public native void sortTadByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
-             Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-             Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
-             Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
-             IntBuffer dimension,
-             int dimensionLength,
-             @Cast("bool") boolean descending);
+                              Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                              Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                              Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
+                              Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
+                              IntBuffer dimension,
+                              int dimensionLength,
+                              @Cast("bool") boolean descending);
 public native void sortTadByKey(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
-             Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-             Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
-             Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
-             int[] dimension,
-             int dimensionLength,
-             @Cast("bool") boolean descending);
+                              Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                              Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                              Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
+                              Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
+                              int[] dimension,
+                              int dimensionLength,
+                              @Cast("bool") boolean descending);
 
 public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
-             Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
-             Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
-             Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
-             IntPointer dimension,
-             int dimensionLength,
-             @Cast("bool") boolean descending);
+                                Pointer x, @Cast("const Nd4jLong*") LongPointer xShapeInfo,
+                                Pointer dx, @Cast("const Nd4jLong*") LongPointer dxShapeInfo,
+                                Pointer y, @Cast("const Nd4jLong*") LongPointer yShapeInfo,
+                                Pointer dy, @Cast("const Nd4jLong*") LongPointer dyShapeInfo,
+                                IntPointer dimension,
+                                int dimensionLength,
+                                @Cast("bool") boolean descending);
 public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
-             Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
-             Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
-             Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
-             IntBuffer dimension,
-             int dimensionLength,
-             @Cast("bool") boolean descending);
+                                Pointer x, @Cast("const Nd4jLong*") LongBuffer xShapeInfo,
+                                Pointer dx, @Cast("const Nd4jLong*") LongBuffer dxShapeInfo,
+                                Pointer y, @Cast("const Nd4jLong*") LongBuffer yShapeInfo,
+                                Pointer dy, @Cast("const Nd4jLong*") LongBuffer dyShapeInfo,
+                                IntBuffer dimension,
+                                int dimensionLength,
+                                @Cast("bool") boolean descending);
 public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPointers,
-             Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
-             Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
-             Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
-             Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
-             int[] dimension,
-             int dimensionLength,
-             @Cast("bool") boolean descending);
+                                Pointer x, @Cast("const Nd4jLong*") long[] xShapeInfo,
+                                Pointer dx, @Cast("const Nd4jLong*") long[] dxShapeInfo,
+                                Pointer y, @Cast("const Nd4jLong*") long[] yShapeInfo,
+                                Pointer dy, @Cast("const Nd4jLong*") long[] dyShapeInfo,
+                                int[] dimension,
+                                int dimensionLength,
+                                @Cast("bool") boolean descending);
 
 
 // special sort impl for sorting out COO indices and values
@@ -3207,23 +3229,23 @@ public native @Cast("char*") BytePointer getUtf8StringBuffer(@Cast("Nd4jPointer*
 public native void deleteUtf8String(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer ptr);
 
 public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
-                  Pointer hX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer hXOffsets,
-                  Pointer dX, @Cast("const Nd4jLong*") LongPointer dXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXOffsets,
-                  Pointer hY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer hYOffsets,
-                  Pointer dY, @Cast("const Nd4jLong*") LongPointer dYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYOffsets,
-                  Pointer hIindexes, @Cast("const Nd4jLong*") LongPointer hIndicesShapeInfo, Pointer dIindexes, @Cast("const Nd4jLong*") LongPointer dIndicesShapeInfo);
+                               Pointer hX, @Cast("const Nd4jLong*") LongPointer hXShapeInfo, @Cast("const Nd4jLong*") LongPointer hXOffsets,
+                               Pointer dX, @Cast("const Nd4jLong*") LongPointer dXShapeInfo, @Cast("const Nd4jLong*") LongPointer dXOffsets,
+                               Pointer hY, @Cast("const Nd4jLong*") LongPointer hYShapeInfo, @Cast("const Nd4jLong*") LongPointer hYOffsets,
+                               Pointer dY, @Cast("const Nd4jLong*") LongPointer dYShapeInfo, @Cast("const Nd4jLong*") LongPointer dYOffsets,
+                               Pointer hIindexes, @Cast("const Nd4jLong*") LongPointer hIndicesShapeInfo, Pointer dIindexes, @Cast("const Nd4jLong*") LongPointer dIndicesShapeInfo);
 public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
-                  Pointer hX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer hXOffsets,
-                  Pointer dX, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXOffsets,
-                  Pointer hY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer hYOffsets,
-                  Pointer dY, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYOffsets,
-                  Pointer hIindexes, @Cast("const Nd4jLong*") LongBuffer hIndicesShapeInfo, Pointer dIindexes, @Cast("const Nd4jLong*") LongBuffer dIndicesShapeInfo);
+                               Pointer hX, @Cast("const Nd4jLong*") LongBuffer hXShapeInfo, @Cast("const Nd4jLong*") LongBuffer hXOffsets,
+                               Pointer dX, @Cast("const Nd4jLong*") LongBuffer dXShapeInfo, @Cast("const Nd4jLong*") LongBuffer dXOffsets,
+                               Pointer hY, @Cast("const Nd4jLong*") LongBuffer hYShapeInfo, @Cast("const Nd4jLong*") LongBuffer hYOffsets,
+                               Pointer dY, @Cast("const Nd4jLong*") LongBuffer dYShapeInfo, @Cast("const Nd4jLong*") LongBuffer dYOffsets,
+                               Pointer hIindexes, @Cast("const Nd4jLong*") LongBuffer hIndicesShapeInfo, Pointer dIindexes, @Cast("const Nd4jLong*") LongBuffer dIndicesShapeInfo);
 public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
-                  Pointer hX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] hXOffsets,
-                  Pointer dX, @Cast("const Nd4jLong*") long[] dXShapeInfo, @Cast("const Nd4jLong*") long[] dXOffsets,
-                  Pointer hY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] hYOffsets,
-                  Pointer dY, @Cast("const Nd4jLong*") long[] dYShapeInfo, @Cast("const Nd4jLong*") long[] dYOffsets,
-                  Pointer hIindexes, @Cast("const Nd4jLong*") long[] hIndicesShapeInfo, Pointer dIindexes, @Cast("const Nd4jLong*") long[] dIndicesShapeInfo);
+                               Pointer hX, @Cast("const Nd4jLong*") long[] hXShapeInfo, @Cast("const Nd4jLong*") long[] hXOffsets,
+                               Pointer dX, @Cast("const Nd4jLong*") long[] dXShapeInfo, @Cast("const Nd4jLong*") long[] dXOffsets,
+                               Pointer hY, @Cast("const Nd4jLong*") long[] hYShapeInfo, @Cast("const Nd4jLong*") long[] hYOffsets,
+                               Pointer dY, @Cast("const Nd4jLong*") long[] dYShapeInfo, @Cast("const Nd4jLong*") long[] dYOffsets,
+                               Pointer hIindexes, @Cast("const Nd4jLong*") long[] hIndicesShapeInfo, Pointer dIindexes, @Cast("const Nd4jLong*") long[] dIndicesShapeInfo);
 
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongPointer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongBuffer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
@@ -3371,6 +3393,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             @Override public ExternalWorkspace position(long position) {
                 return (ExternalWorkspace)super.position(position);
             }
+            @Override public ExternalWorkspace getPointer(long i) {
+                return new ExternalWorkspace(this).position(position + i);
+            }
         
             public ExternalWorkspace() { super((Pointer)null); allocate(); }
             private native void allocate();
@@ -3435,6 +3460,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             private native void allocateArray(long size);
             @Override public Workspace position(long position) {
                 return (Workspace)super.position(position);
+            }
+            @Override public Workspace getPointer(long i) {
+                return new Workspace(this).position(position + i);
             }
         
             public Workspace(ExternalWorkspace external) { super((Pointer)null); allocate(external); }
@@ -3518,6 +3546,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         @Override public NDIndex position(long position) {
             return (NDIndex)super.position(position);
         }
+        @Override public NDIndex getPointer(long i) {
+            return new NDIndex(this).position(position + i);
+        }
     
         public NDIndex() { super((Pointer)null); allocate(); }
         private native void allocate();
@@ -3529,10 +3560,10 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         public native @Cast("Nd4jLong*") @StdVector LongPointer getIndices();
         public native @Cast("Nd4jLong") long stride();
 
-        public static native NDIndex all();
-        public static native NDIndex point(@Cast("Nd4jLong") long pt);
-        public static native NDIndex interval(@Cast("Nd4jLong") long start, @Cast("Nd4jLong") long end, @Cast("Nd4jLong") long stride/*=1*/);
-        public static native NDIndex interval(@Cast("Nd4jLong") long start, @Cast("Nd4jLong") long end);
+        public native NDIndex all();
+        public native NDIndex point(@Cast("Nd4jLong") long pt);
+        public native NDIndex interval(@Cast("Nd4jLong") long start, @Cast("Nd4jLong") long end, @Cast("Nd4jLong") long stride/*=1*/);
+        public native NDIndex interval(@Cast("Nd4jLong") long start, @Cast("Nd4jLong") long end);
     }
 
     @Namespace("sd") public static class NDIndexAll extends NDIndex {
@@ -3544,6 +3575,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         private native void allocateArray(long size);
         @Override public NDIndexAll position(long position) {
             return (NDIndexAll)super.position(position);
+        }
+        @Override public NDIndexAll getPointer(long i) {
+            return new NDIndexAll(this).position(position + i);
         }
     
         public NDIndexAll() { super((Pointer)null); allocate(); }
@@ -3698,6 +3732,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         @Override public ArgumentsList position(long position) {
             return (ArgumentsList)super.position(position);
         }
+        @Override public ArgumentsList getPointer(long i) {
+            return new ArgumentsList(this).position(position + i);
+        }
     
         public ArgumentsList() { super((Pointer)null); allocate(); }
         private native void allocate();
@@ -3758,6 +3795,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         private native void allocateArray(long size);
         @Override public Pair position(long position) {
             return (Pair)super.position(position);
+        }
+        @Override public Pair getPointer(long i) {
+            return new Pair(this).position(position + i);
         }
     
         public Pair(int first/*=0*/, int second/*=0*/) { super((Pointer)null); allocate(first, second); }
@@ -3828,7 +3868,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 
 
-    @Namespace("sd") public static native @ByVal NDArray mmul(@Const @ByRef NDArray arg0, @Const @ByRef NDArray arg1);
+    @Namespace("sd") public native @ByVal NDArray mmul(@Const @ByRef NDArray arg0, @Const @ByRef NDArray arg1);
 
     @Namespace("sd") @NoOffset public static class NDArray extends Pointer {
         static { Loader.load(); }
@@ -4034,15 +4074,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
          * @param writeList
          * @param readList
          */
-        public static native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList);
-        public static native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList);
-        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
-        public static native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList);
+        public native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList);
+        public native void registerSpecialUse(@Const @ByRef ConstNDArrayVector writeList);
+        public native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
+        public native void prepareSpecialUse(@Const @ByRef ConstNDArrayVector writeList);
 
-        public static native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList);
-        public static native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList);
-        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
-        public static native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList);
+        public native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList);
+        public native void registerPrimaryUse(@Const @ByRef ConstNDArrayVector writeList);
+        public native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList, @Const @ByRef(nullValue = "std::vector<const sd::NDArray*>({})") ConstNDArrayVector readList, @Cast("bool") boolean synchronizeWritables/*=false*/);
+        public native void preparePrimaryUse(@Const @ByRef ConstNDArrayVector writeList);
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
@@ -4095,7 +4135,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
          * @param array
          * @return
          */
-        public static native @ByVal NDArray quantize(@Const @ByRef NDArray array);
+        public native @ByVal NDArray quantize(@Const @ByRef NDArray array);
 
         /**
         *  fill target array by repeating current array
@@ -5173,6 +5213,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         @Override public ResultSet position(long position) {
             return (ResultSet)super.position(position);
         }
+        @Override public ResultSet getPointer(long i) {
+            return new ResultSet(this).position(position + i);
+        }
     
         public ResultSet() { super((Pointer)null); allocate(); }
         private native void allocate();
@@ -5254,6 +5297,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             @Override public RandomGenerator position(long position) {
                 return (RandomGenerator)super.position(position);
             }
+            @Override public RandomGenerator getPointer(long i) {
+                return new RandomGenerator(this).position(position + i);
+            }
         
             public native @Cast("uint32_t") int xoroshiro32(@Cast("uint64_t") long index);
             public native @Cast("uint64_t") long xoroshiro64(@Cast("uint64_t") long index);
@@ -5334,11 +5380,11 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         
 
         //////
-        @Namespace("sd::graph") public static native @Cast("uint32_t") int rotl(@Cast("const uint32_t") int x, int k);
+        @Namespace("sd::graph") public native @Cast("uint32_t") int rotl(@Cast("const uint32_t") int x, int k);
 
-        @Namespace("sd::graph") public static native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, int k);
+        @Namespace("sd::graph") public native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, int k);
 
-        @Namespace("sd::graph") public static native @Cast("uint32_t") int next(@Cast("uint32_t") int s0, @Cast("uint32_t") int s1, @Cast("uint32_t") int s2, @Cast("uint32_t") int s3);
+        @Namespace("sd::graph") public native @Cast("uint32_t") int next(@Cast("uint32_t") int s0, @Cast("uint32_t") int s1, @Cast("uint32_t") int s2, @Cast("uint32_t") int s3);
 
         
 
@@ -5396,6 +5442,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             private native void allocateArray(long size);
             @Override public Variable position(long position) {
                 return (Variable)super.position(position);
+            }
+            @Override public Variable getPointer(long i) {
+                return new Variable(this).position(position + i);
             }
         
             public Variable(@Cast("bool") boolean placeHolder) { super((Pointer)null); allocate(placeHolder); }
@@ -5570,6 +5619,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             @Override public FlowPath position(long position) {
                 return (FlowPath)super.position(position);
             }
+            @Override public FlowPath getPointer(long i) {
+                return new FlowPath(this).position(position + i);
+            }
         
             public FlowPath() { super((Pointer)null); allocate(); }
             private native void allocate();
@@ -5656,6 +5708,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         @Override public Intervals position(long position) {
             return (Intervals)super.position(position);
         }
+        @Override public Intervals getPointer(long i) {
+            return new Intervals(this).position(position + i);
+        }
     
 
         // default constructor
@@ -5723,6 +5778,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             @Override public KeyPair position(long position) {
                 return (KeyPair)super.position(position);
             }
+            @Override public KeyPair getPointer(long i) {
+                return new KeyPair(this).position(position + i);
+            }
         
             public KeyPair(int node/*=0*/, @Cast("char*") String name/*=nullptr*/) { super((Pointer)null); allocate(node, name); }
             private native void allocate(int node/*=0*/, @Cast("char*") String name/*=nullptr*/);
@@ -5753,6 +5811,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             private native void allocateArray(long size);
             @Override public Stash position(long position) {
                 return (Stash)super.position(position);
+            }
+            @Override public Stash getPointer(long i) {
+                return new Stash(this).position(position + i);
             }
         
             public Stash() { super((Pointer)null); allocate(); }
@@ -5946,6 +6007,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             @Override public VariableSpace position(long position) {
                 return (VariableSpace)super.position(position);
             }
+            @Override public VariableSpace getPointer(long i) {
+                return new VariableSpace(this).position(position + i);
+            }
         
             public VariableSpace() { super((Pointer)null); allocate(); }
             private native void allocate();
@@ -6119,9 +6183,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
             public native @Cast("uint64_t") long next64(@Cast("uint64_t") long shiftedSeed);
 
-            public static native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, @Cast("uint64_t") long k);
+            public native @Cast("uint64_t") long rotl(@Cast("const uint64_t") long x, @Cast("uint64_t") long k);
 
-            public static native @Cast("uint64_t") long safeShift(@Cast("uint64_t") long x, @Cast("uint64_t") long y);
+            public native @Cast("uint64_t") long safeShift(@Cast("uint64_t") long x, @Cast("uint64_t") long y);
 
             public native @Cast("uint64_t") long seedConv(@Cast("Nd4jLong") long seed);
 
@@ -6312,6 +6376,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             @Override public GraphProfile position(long position) {
                 return (GraphProfile)super.position(position);
             }
+            @Override public GraphProfile getPointer(long i) {
+                return new GraphProfile(this).position(position + i);
+            }
         
             public GraphProfile() { super((Pointer)null); allocate(); }
             private native void allocate();
@@ -6366,8 +6433,8 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             /**
              * These methods are just utility methods for time
              */
-            public static native @Cast("Nd4jLong") long currentTime();
-            public static native @Cast("Nd4jLong") long relativeTime(@Cast("Nd4jLong") long time);
+            public native @Cast("Nd4jLong") long currentTime();
+            public native @Cast("Nd4jLong") long relativeTime(@Cast("Nd4jLong") long time);
 
             public native void printOut();
         }
@@ -6414,6 +6481,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             private native void allocateArray(long size);
             @Override public NodeProfile position(long position) {
                 return (NodeProfile)super.position(position);
+            }
+            @Override public NodeProfile getPointer(long i) {
+                return new NodeProfile(this).position(position + i);
             }
         
             public NodeProfile() { super((Pointer)null); allocate(); }
@@ -6748,6 +6818,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
             @Override public ContextPrototype position(long position) {
                 return (ContextPrototype)super.position(position);
             }
+            @Override public ContextPrototype getPointer(long i) {
+                return new ContextPrototype(this).position(position + i);
+            }
         
             public ContextPrototype(OpDescriptor opDescriptor/*=nullptr*/, int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/) { super((Pointer)null); allocate(opDescriptor, nodeId, inPlace); }
             private native void allocate(OpDescriptor opDescriptor/*=nullptr*/, int nodeId/*=1*/, @Cast("bool") boolean inPlace/*=false*/);
@@ -6938,6 +7011,9 @@ public static final int PREALLOC_SIZE = 33554432;
         @Override public ShapeInformation position(long position) {
             return (ShapeInformation)super.position(position);
         }
+        @Override public ShapeInformation getPointer(long i) {
+            return new ShapeInformation(this).position(position + i);
+        }
     
         public ShapeInformation(@Cast("Nd4jLong*") LongPointer shape_/*=nullptr*/, @Cast("Nd4jLong*") LongPointer stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/) { super((Pointer)null); allocate(shape_, stride_, order_, rank_, offset_, elementWiseStride_); }
         private native void allocate(@Cast("Nd4jLong*") LongPointer shape_/*=nullptr*/, @Cast("Nd4jLong*") LongPointer stride_/*=nullptr*/, char order_/*=0*/, int rank_/*=0*/, int offset_/*=0*/, int elementWiseStride_/*=0*/);
@@ -6973,6 +7049,9 @@ public static final int PREALLOC_SIZE = 33554432;
         @Override public CurrentIndexing position(long position) {
             return (CurrentIndexing)super.position(position);
         }
+        @Override public CurrentIndexing getPointer(long i) {
+            return new CurrentIndexing(this).position(position + i);
+        }
     
         public native int numElementsPerThread(); public native CurrentIndexing numElementsPerThread(int setter);
         public native int blockStartingIndex(); public native CurrentIndexing blockStartingIndex(int setter);
@@ -6983,111 +7062,111 @@ public static final int PREALLOC_SIZE = 33554432;
 
 
 
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") LongPointer shape1, int shape2Rank, @Cast("const Nd4jLong*") LongPointer shape2);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") LongBuffer shape1, int shape2Rank, @Cast("const Nd4jLong*") LongBuffer shape2);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") long[] shape1, int shape2Rank, @Cast("const Nd4jLong*") long[] shape2);
+    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") LongPointer shape1, int shape2Rank, @Cast("const Nd4jLong*") LongPointer shape2);
+    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") LongBuffer shape1, int shape2Rank, @Cast("const Nd4jLong*") LongBuffer shape2);
+    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(int shape1Rank, @Cast("const Nd4jLong*") long[] shape1, int shape2Rank, @Cast("const Nd4jLong*") long[] shape2);
 
-    @Namespace("shape") public static native @Cast("const Nd4jLong*") LongPointer detachShape(@Cast("const Nd4jLong*") LongPointer originalShape);
-    @Namespace("shape") public static native @Cast("const Nd4jLong*") LongBuffer detachShape(@Cast("const Nd4jLong*") LongBuffer originalShape);
-    @Namespace("shape") public static native @Cast("const Nd4jLong*") long[] detachShape(@Cast("const Nd4jLong*") long[] originalShape);
+    @Namespace("shape") public native @Cast("const Nd4jLong*") LongPointer detachShape(@Cast("const Nd4jLong*") LongPointer originalShape);
+    @Namespace("shape") public native @Cast("const Nd4jLong*") LongBuffer detachShape(@Cast("const Nd4jLong*") LongBuffer originalShape);
+    @Namespace("shape") public native @Cast("const Nd4jLong*") long[] detachShape(@Cast("const Nd4jLong*") long[] originalShape);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer copyShape(@Cast("const Nd4jLong*") LongPointer originalShape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer copyShape(@Cast("const Nd4jLong*") LongBuffer originalShape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] copyShape(@Cast("const Nd4jLong*") long[] originalShape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer copyShape(@Cast("const Nd4jLong*") LongPointer originalShape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer copyShape(@Cast("const Nd4jLong*") LongBuffer originalShape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] copyShape(@Cast("const Nd4jLong*") long[] originalShape);
 
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2);
+    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2);
+    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
+    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2);
 
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2, @Cast("const Nd4jLong*") LongPointer shapeInfo3);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2, @Cast("const Nd4jLong*") LongBuffer shapeInfo3);
-    @Namespace("shape") public static native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2, @Cast("const Nd4jLong*") long[] shapeInfo3);
+    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2, @Cast("const Nd4jLong*") LongPointer shapeInfo3);
+    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2, @Cast("const Nd4jLong*") LongBuffer shapeInfo3);
+    @Namespace("shape") public native @Cast("bool") boolean shapeEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2, @Cast("const Nd4jLong*") long[] shapeInfo3);
 
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("const Nd4jLong*") LongPointer shape1,int shape2Rank, @Cast("const Nd4jLong*") LongPointer shape2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("const Nd4jLong*") LongBuffer shape1,int shape2Rank, @Cast("const Nd4jLong*") LongBuffer shape2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("const Nd4jLong*") long[] shape1,int shape2Rank, @Cast("const Nd4jLong*") long[] shape2);
+    @Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("const Nd4jLong*") LongPointer shape1,int shape2Rank, @Cast("const Nd4jLong*") LongPointer shape2);
+    @Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("const Nd4jLong*") LongBuffer shape1,int shape2Rank, @Cast("const Nd4jLong*") LongBuffer shape2);
+    @Namespace("shape") public native @Cast("bool") boolean strideEquals(int shape1Rank,@Cast("const Nd4jLong*") long[] shape1,int shape2Rank, @Cast("const Nd4jLong*") long[] shape2);
 
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2);
+    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2);
+    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
+    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2);
 
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongPointer stride1,int rank1, @Cast("const Nd4jLong*") LongPointer stride2, int rank2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongBuffer stride1,int rank1, @Cast("const Nd4jLong*") LongBuffer stride2, int rank2);
-    @Namespace("shape") public static native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") long[] stride1,int rank1, @Cast("const Nd4jLong*") long[] stride2, int rank2);
+    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongPointer stride1,int rank1, @Cast("const Nd4jLong*") LongPointer stride2, int rank2);
+    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") LongBuffer stride1,int rank1, @Cast("const Nd4jLong*") LongBuffer stride2, int rank2);
+    @Namespace("shape") public native @Cast("bool") boolean strideEquals(@Cast("const Nd4jLong*") long[] stride1,int rank1, @Cast("const Nd4jLong*") long[] stride2, int rank2);
 
-    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
+    @Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
+    @Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
+    @Namespace("shape") public native @Cast("bool") boolean equalsSoft(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
 
-    @Namespace("shape") public static native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
+    @Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
+    @Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
+    @Namespace("shape") public native @Cast("bool") boolean equalsTypesAndShapesSoft(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
 
-    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
-    @Namespace("shape") public static native @Cast("bool") boolean equalsStrict(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
+    @Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const Nd4jLong*") LongPointer shapeA, @Cast("const Nd4jLong*") LongPointer shapeB);
+    @Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const Nd4jLong*") LongBuffer shapeA, @Cast("const Nd4jLong*") LongBuffer shapeB);
+    @Namespace("shape") public native @Cast("bool") boolean equalsStrict(@Cast("const Nd4jLong*") long[] shapeA, @Cast("const Nd4jLong*") long[] shapeB);
 
     // returns true if ranks, shapes and strides are the same
-    @Namespace("shape") public static native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2);
-    @Namespace("shape") public static native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2, @Cast("const Nd4jLong*") LongPointer shapeInfo3);
-    @Namespace("shape") public static native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2, @Cast("const Nd4jLong*") LongBuffer shapeInfo3);
-    @Namespace("shape") public static native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2, @Cast("const Nd4jLong*") long[] shapeInfo3);
+    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2);
+    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2);
+    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2);
+    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2, @Cast("const Nd4jLong*") LongPointer shapeInfo3);
+    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2, @Cast("const Nd4jLong*") LongBuffer shapeInfo3);
+    @Namespace("shape") public native @Cast("bool") boolean haveSameShapeAndStrides(@Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2, @Cast("const Nd4jLong*") long[] shapeInfo3);
 
-    @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") LongPointer shapeInfo, int dim);
-    @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") LongBuffer shapeInfo, int dim);
-    @Namespace("shape") public static native int sizeAt(@Cast("const Nd4jLong*") long[] shapeInfo, int dim);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long strideAt(@Cast("const Nd4jLong*") LongPointer shapeInfo, int dim);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long strideAt(@Cast("const Nd4jLong*") LongBuffer shapeInfo, int dim);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long strideAt(@Cast("const Nd4jLong*") long[] shapeInfo, int dim);
+    @Namespace("shape") public native int sizeAt(@Cast("const Nd4jLong*") LongPointer shapeInfo, int dim);
+    @Namespace("shape") public native int sizeAt(@Cast("const Nd4jLong*") LongBuffer shapeInfo, int dim);
+    @Namespace("shape") public native int sizeAt(@Cast("const Nd4jLong*") long[] shapeInfo, int dim);
+    @Namespace("shape") public native @Cast("Nd4jLong") long strideAt(@Cast("const Nd4jLong*") LongPointer shapeInfo, int dim);
+    @Namespace("shape") public native @Cast("Nd4jLong") long strideAt(@Cast("const Nd4jLong*") LongBuffer shapeInfo, int dim);
+    @Namespace("shape") public native @Cast("Nd4jLong") long strideAt(@Cast("const Nd4jLong*") long[] shapeInfo, int dim);
 
-    @Namespace("shape") public static native void traceNew(int id);
+    @Namespace("shape") public native void traceNew(int id);
 
 
-    @Namespace("shape") public static native int tadIndexForLinear(int linearIndex, int tadLength);
+    @Namespace("shape") public native int tadIndexForLinear(int linearIndex, int tadLength);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("const Nd4jLong*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("const Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("const Nd4jLong*") long[] shapeInfo, int[] dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long tadLength(@Cast("const Nd4jLong*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long tadLength(@Cast("const Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long tadLength(@Cast("const Nd4jLong*") long[] shapeInfo, int[] dimension, int dimensionLength);
 
-    @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") LongPointer oldShape, int newRank, @Cast("Nd4jLong*") LongPointer newShape, @Cast("bool") boolean isFOrder);
-    @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") LongBuffer oldShape, int newRank, @Cast("Nd4jLong*") LongBuffer newShape, @Cast("bool") boolean isFOrder);
-    @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") long[] oldShape, int newRank, @Cast("Nd4jLong*") long[] newShape, @Cast("bool") boolean isFOrder);
+    @Namespace("shape") public native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") LongPointer oldShape, int newRank, @Cast("Nd4jLong*") LongPointer newShape, @Cast("bool") boolean isFOrder);
+    @Namespace("shape") public native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") LongBuffer oldShape, int newRank, @Cast("Nd4jLong*") LongBuffer newShape, @Cast("bool") boolean isFOrder);
+    @Namespace("shape") public native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") long[] oldShape, int newRank, @Cast("Nd4jLong*") long[] newShape, @Cast("bool") boolean isFOrder);
 
-    @Namespace("shape") public static native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") LongPointer oldShapeInfo, byte newOrder, int newRank, @Cast("const Nd4jLong*") LongPointer newShape, @Cast("Nd4jLong*") LongPointer newShapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") LongBuffer oldShapeInfo, byte newOrder, int newRank, @Cast("const Nd4jLong*") LongBuffer newShape, @Cast("Nd4jLong*") LongBuffer newShapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") long[] oldShapeInfo, byte newOrder, int newRank, @Cast("const Nd4jLong*") long[] newShape, @Cast("Nd4jLong*") long[] newShapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") LongPointer oldShapeInfo, byte newOrder, int newRank, @Cast("const Nd4jLong*") LongPointer newShape, @Cast("Nd4jLong*") LongPointer newShapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") LongBuffer oldShapeInfo, byte newOrder, int newRank, @Cast("const Nd4jLong*") LongBuffer newShape, @Cast("Nd4jLong*") LongBuffer newShapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") long[] oldShapeInfo, byte newOrder, int newRank, @Cast("const Nd4jLong*") long[] newShape, @Cast("Nd4jLong*") long[] newShapeInfo);
     /**
     * newShapeInfo contains rank, shape and order only, no strides/ews/type
     */
-    @Namespace("shape") public static native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") LongPointer oldShapeInfo, @Cast("Nd4jLong*") LongPointer newShapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") LongBuffer oldShapeInfo, @Cast("Nd4jLong*") LongBuffer newShapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") long[] oldShapeInfo, @Cast("Nd4jLong*") long[] newShapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") LongPointer oldShapeInfo, @Cast("Nd4jLong*") LongPointer newShapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") LongBuffer oldShapeInfo, @Cast("Nd4jLong*") LongBuffer newShapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean reshapeC(@Cast("const Nd4jLong*") long[] oldShapeInfo, @Cast("Nd4jLong*") long[] newShapeInfo);
 
     /**
     * Get the shape info buffer
     * for the given rank and shape.
     */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] shapeBuffer(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] buffer);
 
     /**
     * Get the shape info buffer
     * for the given rank and shape.
      */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer output);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer output);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] output);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer output);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer output);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] shapeBufferFortran(int rank, @Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] output);
 
 // #ifdef __CUDACC__
 // #endif
@@ -7101,13 +7180,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank, @Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank, @Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank, @Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank, @Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank, @Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank, @Cast("Nd4jLong*") long[] ret);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -7117,20 +7196,20 @@ public static final int PREALLOC_SIZE = 33554432;
  * @return the strides for a matrix of n dimensions
  */
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank, @Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank, @Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank, @Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank, @Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank, @Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank, @Cast("Nd4jLong*") long[] ret);
 
-    @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") LongPointer shape, byte order);
-    @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") LongBuffer shape, byte order);
-    @Namespace("shape") public static native void updateStrides(@Cast("Nd4jLong*") long[] shape, byte order);
-    @Namespace("shape") public static native void updateStrides(int rank, @Cast("const Nd4jLong*") LongPointer shapeOnly, @Cast("Nd4jLong*") LongPointer stridesOnly, byte order);
-    @Namespace("shape") public static native void updateStrides(int rank, @Cast("const Nd4jLong*") LongBuffer shapeOnly, @Cast("Nd4jLong*") LongBuffer stridesOnly, byte order);
-    @Namespace("shape") public static native void updateStrides(int rank, @Cast("const Nd4jLong*") long[] shapeOnly, @Cast("Nd4jLong*") long[] stridesOnly, byte order);
+    @Namespace("shape") public native void updateStrides(@Cast("Nd4jLong*") LongPointer shape, byte order);
+    @Namespace("shape") public native void updateStrides(@Cast("Nd4jLong*") LongBuffer shape, byte order);
+    @Namespace("shape") public native void updateStrides(@Cast("Nd4jLong*") long[] shape, byte order);
+    @Namespace("shape") public native void updateStrides(int rank, @Cast("const Nd4jLong*") LongPointer shapeOnly, @Cast("Nd4jLong*") LongPointer stridesOnly, byte order);
+    @Namespace("shape") public native void updateStrides(int rank, @Cast("const Nd4jLong*") LongBuffer shapeOnly, @Cast("Nd4jLong*") LongBuffer stridesOnly, byte order);
+    @Namespace("shape") public native void updateStrides(int rank, @Cast("const Nd4jLong*") long[] shapeOnly, @Cast("Nd4jLong*") long[] stridesOnly, byte order);
 
 
 // check whether input dimensions are permuted, not permuted dimensions order have to be 0,....,rank-1
@@ -7142,13 +7221,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum, @Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum, @Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum, @Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer calcStridesFortran(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum, @Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer calcStridesFortran(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum, @Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] calcStridesFortran(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum, @Cast("Nd4jLong*") long[] ret);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -7157,37 +7236,37 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param startNum the start number for the strides
  * @return the strides for a matrix of n dimensions
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum, @Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum, @Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum, @Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer calcStrides(@Cast("const Nd4jLong*") LongPointer shape, int rank, int startNum, @Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer calcStrides(@Cast("const Nd4jLong*") LongBuffer shape, int rank, int startNum, @Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] calcStrides(@Cast("const Nd4jLong*") long[] shape, int rank, int startNum, @Cast("Nd4jLong*") long[] ret);
 
 /**
  * @param toCopy the shape to copy
  * @return a copy of the original struct
  */
-    @Namespace("shape") public static native ShapeInformation shapeCopy( ShapeInformation toCopy);
+    @Namespace("shape") public native ShapeInformation shapeCopy( ShapeInformation toCopy);
 
 
-    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") LongPointer shapeBuffer);
-    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") LongBuffer shapeBuffer);
-    @Namespace("shape") public static native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") long[] shapeBuffer);
+    @Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") LongPointer shapeBuffer);
+    @Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") LongBuffer shapeBuffer);
+    @Namespace("shape") public native @Cast("bool") boolean strideDescendingCAscendingF(@Cast("const Nd4jLong*") long[] shapeBuffer);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isContiguous(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isContiguous(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isContiguous(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isContiguous(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isContiguous(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isContiguous(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 
 /**
  * copy-past from java hasDefaultStridesForShape function
  * check whether array is not permuted and has contiguous elements in memory
  */
-    @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean areStridesDefault(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 
 /**
@@ -7201,9 +7280,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer stride, int isFOrder);
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer stride, int isFOrder);
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] stride, int isFOrder);
+    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer stride, int isFOrder);
+    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer stride, int isFOrder);
+    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] stride, int isFOrder);
 
 /**
  * Compute the element wise stride
@@ -7216,17 +7295,17 @@ public static final int PREALLOC_SIZE = 33554432;
  * @return 0 if there is no element wise stride the
  * element wise stride of reshape(1,length) otherwise
  */
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer stride, int isFOrder, @Cast("const Nd4jLong*") LongPointer dimension, int dimensionLength);
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer stride, int isFOrder, @Cast("const Nd4jLong*") LongBuffer dimension, int dimensionLength);
-    @Namespace("shape") public static native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] stride, int isFOrder, @Cast("const Nd4jLong*") long[] dimension, int dimensionLength);
+    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer stride, int isFOrder, @Cast("const Nd4jLong*") LongPointer dimension, int dimensionLength);
+    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer stride, int isFOrder, @Cast("const Nd4jLong*") LongBuffer dimension, int dimensionLength);
+    @Namespace("shape") public native int computeElementWiseStride(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] stride, int isFOrder, @Cast("const Nd4jLong*") long[] dimension, int dimensionLength);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] shapeInfoOnlyShapeAndStride(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] dimension, int dimensionLength,@Cast("bool") boolean reverseCopyStride, @Cast("Nd4jLong*") long[] buffer);
 /**
  *
  * @param length
@@ -7234,9 +7313,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param rearrange
  * @return
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer doPermuteSwap(int length, @Cast("Nd4jLong*") LongPointer shape, IntPointer rearrange);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer doPermuteSwap(int length, @Cast("Nd4jLong*") LongBuffer shape, IntBuffer rearrange);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] doPermuteSwap(int length, @Cast("Nd4jLong*") long[] shape, int[] rearrange);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer doPermuteSwap(int length, @Cast("Nd4jLong*") LongPointer shape, IntPointer rearrange);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer doPermuteSwap(int length, @Cast("Nd4jLong*") LongBuffer shape, IntBuffer rearrange);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] doPermuteSwap(int length, @Cast("Nd4jLong*") long[] shape, int[] rearrange);
 
 
 
@@ -7246,22 +7325,22 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param shape
  * @param rearrange
  */
-    @Namespace("shape") public static native void doPermuteSwap(int length, @Cast("Nd4jLong**") PointerPointer shape, IntPointer rearrange);
+    @Namespace("shape") public native void doPermuteSwap(int length, @Cast("Nd4jLong**") PointerPointer shape, IntPointer rearrange);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer permuteShapeBuffer(@Cast("const Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer permuteShapeBuffer(@Cast("const Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] permuteShapeBuffer(@Cast("const Nd4jLong*") long[] shapeBuffer, int[] rearrange);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer permuteShapeBuffer(@Cast("const Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer permuteShapeBuffer(@Cast("const Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] permuteShapeBuffer(@Cast("const Nd4jLong*") long[] shapeBuffer, int[] rearrange);
 
-    @Namespace("shape") public static native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange, @Cast("Nd4jLong*") LongPointer out);
-    @Namespace("shape") public static native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange, @Cast("Nd4jLong*") LongBuffer out);
-    @Namespace("shape") public static native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") long[] shapeBuffer, int[] rearrange, @Cast("Nd4jLong*") long[] out);
+    @Namespace("shape") public native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") LongPointer shapeBuffer, IntPointer rearrange, @Cast("Nd4jLong*") LongPointer out);
+    @Namespace("shape") public native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") LongBuffer shapeBuffer, IntBuffer rearrange, @Cast("Nd4jLong*") LongBuffer out);
+    @Namespace("shape") public native void permuteShapeBufferInPlace(@Cast("Nd4jLong*") long[] shapeBuffer, int[] rearrange, @Cast("Nd4jLong*") long[] out);
 
-    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongPointer shapeBuffer, @Const IntPointer rearrange, @Cast("Nd4jLong") long len/*=-1*/);
-    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongPointer shapeBuffer, @Const IntPointer rearrange);
-    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeBuffer, @Const IntBuffer rearrange, @Cast("Nd4jLong") long len/*=-1*/);
-    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeBuffer, @Const IntBuffer rearrange);
-    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") long[] shapeBuffer, @Const int[] rearrange, @Cast("Nd4jLong") long len/*=-1*/);
-    @Namespace("shape") public static native void doPermuteShapeInfo(@Cast("Nd4jLong*") long[] shapeBuffer, @Const int[] rearrange);
+    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongPointer shapeBuffer, @Const IntPointer rearrange, @Cast("Nd4jLong") long len/*=-1*/);
+    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongPointer shapeBuffer, @Const IntPointer rearrange);
+    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeBuffer, @Const IntBuffer rearrange, @Cast("Nd4jLong") long len/*=-1*/);
+    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeBuffer, @Const IntBuffer rearrange);
+    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("Nd4jLong*") long[] shapeBuffer, @Const int[] rearrange, @Cast("Nd4jLong") long len/*=-1*/);
+    @Namespace("shape") public native void doPermuteShapeInfo(@Cast("Nd4jLong*") long[] shapeBuffer, @Const int[] rearrange);
 
     /**
      * Rearrange the permute indexes
@@ -7278,22 +7357,22 @@ public static final int PREALLOC_SIZE = 33554432;
      * wise stride.
      */
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer createPermuteIndexes(int originalRank, IntPointer dimension,int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer createPermuteIndexes(int originalRank, IntBuffer dimension,int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] createPermuteIndexes(int originalRank, int[] dimension,int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer createPermuteIndexes(int originalRank, IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer createPermuteIndexes(int originalRank, IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] createPermuteIndexes(int originalRank, int[] dimension,int dimensionLength);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer computeResultShape(@Cast("const Nd4jLong*") LongPointer originalShapeBuffer, IntPointer dimension,int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer computeResultShape(@Cast("const Nd4jLong*") LongBuffer originalShapeBuffer, IntBuffer dimension,int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] computeResultShape(@Cast("const Nd4jLong*") long[] originalShapeBuffer, int[] dimension,int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer computeResultShape(@Cast("const Nd4jLong*") LongPointer originalShapeBuffer, IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer computeResultShape(@Cast("const Nd4jLong*") LongBuffer originalShapeBuffer, IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] computeResultShape(@Cast("const Nd4jLong*") long[] originalShapeBuffer, int[] dimension,int dimensionLength);
 
     /**
      * This method does inplace transpose of given shapeBuffer
      *
      * @param shapeBuffer
      */
-    @Namespace("shape") public static native void transposeInplace(@Cast("Nd4jLong*") LongPointer shapeBuffer);
-    @Namespace("shape") public static native void transposeInplace(@Cast("Nd4jLong*") LongBuffer shapeBuffer);
-    @Namespace("shape") public static native void transposeInplace(@Cast("Nd4jLong*") long[] shapeBuffer);
+    @Namespace("shape") public native void transposeInplace(@Cast("Nd4jLong*") LongPointer shapeBuffer);
+    @Namespace("shape") public native void transposeInplace(@Cast("Nd4jLong*") LongBuffer shapeBuffer);
+    @Namespace("shape") public native void transposeInplace(@Cast("Nd4jLong*") long[] shapeBuffer);
 
 
 /**
@@ -7304,9 +7383,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param elementStride
  * @return
  */
-    @Namespace("shape") public static native char getOrder(int length, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int elementStride);
-    @Namespace("shape") public static native char getOrder(int length, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int elementStride);
-    @Namespace("shape") public static native char getOrder(int length, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] stride, int elementStride);
+    @Namespace("shape") public native char getOrder(int length, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int elementStride);
+    @Namespace("shape") public native char getOrder(int length, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int elementStride);
+    @Namespace("shape") public native char getOrder(int length, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] stride, int elementStride);
 
 /**
  * Ensure that every value in the re arrange
@@ -7324,10 +7403,10 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param rearrange the order to re arrange
  * @param rank the rank of the rearrange array
  */
-    @Namespace("shape") public static native void permute(@Cast("shape::ShapeInformation**") PointerPointer info, IntPointer rearrange, int rank);
-    @Namespace("shape") public static native void permute(@ByPtrPtr ShapeInformation info, IntPointer rearrange, int rank);
-    @Namespace("shape") public static native void permute(@ByPtrPtr ShapeInformation info, IntBuffer rearrange, int rank);
-    @Namespace("shape") public static native void permute(@ByPtrPtr ShapeInformation info, int[] rearrange, int rank);
+    @Namespace("shape") public native void permute(@Cast("shape::ShapeInformation**") PointerPointer info, IntPointer rearrange, int rank);
+    @Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, IntPointer rearrange, int rank);
+    @Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, IntBuffer rearrange, int rank);
+    @Namespace("shape") public native void permute(@ByPtrPtr ShapeInformation info, int[] rearrange, int rank);
 
 /**
  * Returns whether the
@@ -7335,50 +7414,50 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param shape the shape of the array
  * @param rank the rank of cthe shape
  */
-    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public native int isVector(@Cast("const Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public native int isVector(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public native int isVector(@Cast("const Nd4jLong*") long[] shape, int rank);
 
 
     /**
      * When 1 dimension is the whole length of the
      * array
      */
-    @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public native int oneDimEqualToLength(@Cast("Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public native int oneDimEqualToLength(@Cast("Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public native int oneDimEqualToLength(@Cast("Nd4jLong*") long[] shape, int rank);
 
-    @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native int oneDimEqualToLength(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native int oneDimEqualToLength(@Cast("Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native int oneDimEqualToLength(@Cast("Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native int oneDimEqualToLength(@Cast("Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native int isVector(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native int isVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native int isVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native int isVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("const Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
-    @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
-    @Namespace("shape") public static native @Cast("bool") boolean isLikeVector(@Cast("const Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
+    @Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
+    @Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
+    @Namespace("shape") public native @Cast("bool") boolean isLikeVector(@Cast("const Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
-    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
-    @Namespace("shape") public static native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
+    @Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") LongPointer shapeInfo, @ByRef IntPointer posOfNonUnityDim);
+    @Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @ByRef IntBuffer posOfNonUnityDim);
+    @Namespace("shape") public native @Cast("bool") boolean isCommonVector(@Cast("const Nd4jLong*") long[] shapeInfo, @ByRef int[] posOfNonUnityDim);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isRowVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isColumnVector(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isColumnVector(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isColumnVector(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isColumnVector(@Cast("const Nd4jLong*") long[] shapeInfo);
 
     /**
     * shape - input inShape is shape only, not shapeInfo
     * returns number of non-unity dimensions in inShape
     */
-    @Namespace("shape") public static native int numOfNonUnitDims(int rank, @Cast("const Nd4jLong*") LongPointer inShape);
-    @Namespace("shape") public static native int numOfNonUnitDims(int rank, @Cast("const Nd4jLong*") LongBuffer inShape);
-    @Namespace("shape") public static native int numOfNonUnitDims(int rank, @Cast("const Nd4jLong*") long[] inShape);
+    @Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const Nd4jLong*") LongPointer inShape);
+    @Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const Nd4jLong*") LongBuffer inShape);
+    @Namespace("shape") public native int numOfNonUnitDims(int rank, @Cast("const Nd4jLong*") long[] inShape);
 
     /**
  * Returns whether the
@@ -7387,20 +7466,20 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param rank the rank of the shape
  */
 
-    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongPointer shape, int rank);
-    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
-    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") long[] shape, int rank);
+    @Namespace("shape") public native int isMatrix(@Cast("const Nd4jLong*") LongPointer shape, int rank);
+    @Namespace("shape") public native int isMatrix(@Cast("const Nd4jLong*") LongBuffer shape, int rank);
+    @Namespace("shape") public native int isMatrix(@Cast("const Nd4jLong*") long[] shape, int rank);
 
-    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native int isMatrix(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native int isMatrix(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native int isMatrix(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native int isMatrix(@Cast("const Nd4jLong*") long[] shapeInfo);
 /**
  * Returns the shape portion of an information
  * buffer
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeOf(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeOf(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeOf(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer shapeOf(@Cast("Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer shapeOf(@Cast("Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] shapeOf(@Cast("Nd4jLong*") long[] shapeInfo);
 
 /**
  * Return a copy of a buffer.
@@ -7418,9 +7497,9 @@ public static final int PREALLOC_SIZE = 33554432;
 * This buffer allocates memory
 * that must be freed elsewhere.
 */
-    @Namespace("shape") public static native void copyTo(int length, @Cast("const Nd4jLong*") LongPointer from, @Cast("Nd4jLong*") LongPointer to, @Cast("Nd4jLong*") LongPointer indexes);
-    @Namespace("shape") public static native void copyTo(int length, @Cast("const Nd4jLong*") LongBuffer from, @Cast("Nd4jLong*") LongBuffer to, @Cast("Nd4jLong*") LongBuffer indexes);
-    @Namespace("shape") public static native void copyTo(int length, @Cast("const Nd4jLong*") long[] from, @Cast("Nd4jLong*") long[] to, @Cast("Nd4jLong*") long[] indexes);
+    @Namespace("shape") public native void copyTo(int length, @Cast("const Nd4jLong*") LongPointer from, @Cast("Nd4jLong*") LongPointer to, @Cast("Nd4jLong*") LongPointer indexes);
+    @Namespace("shape") public native void copyTo(int length, @Cast("const Nd4jLong*") LongBuffer from, @Cast("Nd4jLong*") LongBuffer to, @Cast("Nd4jLong*") LongBuffer indexes);
+    @Namespace("shape") public native void copyTo(int length, @Cast("const Nd4jLong*") long[] from, @Cast("Nd4jLong*") long[] to, @Cast("Nd4jLong*") long[] indexes);
 
 /**
  * Permute the given strides
@@ -7438,17 +7517,17 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param shape the shape to take the slice of
  * @return the shape array - the first entry
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer slice(@Cast("Nd4jLong*") LongPointer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer slice(@Cast("Nd4jLong*") LongBuffer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] slice(@Cast("Nd4jLong*") long[] shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer slice(@Cast("Nd4jLong*") LongPointer shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer slice(@Cast("Nd4jLong*") LongBuffer shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] slice(@Cast("Nd4jLong*") long[] shape);
 
-    @Namespace("shape") public static native int slices(@Cast("Nd4jLong*") LongPointer shapeBuffer);
-    @Namespace("shape") public static native int slices(@Cast("Nd4jLong*") LongBuffer shapeBuffer);
-    @Namespace("shape") public static native int slices(@Cast("Nd4jLong*") long[] shapeBuffer);
+    @Namespace("shape") public native int slices(@Cast("Nd4jLong*") LongPointer shapeBuffer);
+    @Namespace("shape") public native int slices(@Cast("Nd4jLong*") LongBuffer shapeBuffer);
+    @Namespace("shape") public native int slices(@Cast("Nd4jLong*") long[] shapeBuffer);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer sliceOfShapeBuffer(@Cast("Nd4jLong") long sliceIdx, @Cast("Nd4jLong*") LongPointer shapeBuffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer sliceOfShapeBuffer(@Cast("Nd4jLong") long sliceIdx, @Cast("Nd4jLong*") LongBuffer shapeBuffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] sliceOfShapeBuffer(@Cast("Nd4jLong") long sliceIdx, @Cast("Nd4jLong*") long[] shapeBuffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer sliceOfShapeBuffer(@Cast("Nd4jLong") long sliceIdx, @Cast("Nd4jLong*") LongPointer shapeBuffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer sliceOfShapeBuffer(@Cast("Nd4jLong") long sliceIdx, @Cast("Nd4jLong*") LongBuffer shapeBuffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] sliceOfShapeBuffer(@Cast("Nd4jLong") long sliceIdx, @Cast("Nd4jLong*") long[] shapeBuffer);
 /**
  * Returns the length of the
  * shape information buffer:
@@ -7457,35 +7536,35 @@ public static final int PREALLOC_SIZE = 33554432;
  * info length for
  * @return rank * 2 + 4
  */
-    @Namespace("shape") public static native int shapeInfoLength(int rank);
+    @Namespace("shape") public native int shapeInfoLength(int rank);
 
-    @Namespace("shape") public static native int shapeInfoLength(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native int shapeInfoLength(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native int shapeInfoLength(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native int shapeInfoLength(@Cast("Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native int shapeInfoLength(@Cast("Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native int shapeInfoLength(@Cast("Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(int rank);
+    @Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(int rank);
 
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("size_t") long shapeInfoByteLength(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 /**
  * Returns the rank portion of
  * an information buffer
  */
-    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native int rank(@Cast("const Nd4jLong*") long[] shapeInfo);
-    @Namespace("shape") public static native int rank(@Const IntPointer shapeInfo);
-    @Namespace("shape") public static native int rank(@Const IntBuffer shapeInfo);
-    @Namespace("shape") public static native int rank(@Const int[] shapeInfo);
+    @Namespace("shape") public native int rank(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native int rank(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native int rank(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native int rank(@Const IntPointer shapeInfo);
+    @Namespace("shape") public native int rank(@Const IntBuffer shapeInfo);
+    @Namespace("shape") public native int rank(@Const int[] shapeInfo);
 
     /**
     *  returns pointer on elementWiseStride
     */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ews(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ews(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ews(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer ews(@Cast("Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer ews(@Cast("Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] ews(@Cast("Nd4jLong*") long[] shapeInfo);
 
 /**
  * Converts a raw int buffer of the layout:
@@ -7497,62 +7576,62 @@ public static final int PREALLOC_SIZE = 33554432;
  *
  * where shape and stride are both straight int pointers
  */
-    @Namespace("shape") public static native ShapeInformation infoFromBuffer(@Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native ShapeInformation infoFromBuffer(@Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native ShapeInformation infoFromBuffer(@Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public native ShapeInformation infoFromBuffer(@Cast("Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public native ShapeInformation infoFromBuffer(@Cast("Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public native ShapeInformation infoFromBuffer(@Cast("Nd4jLong*") long[] buffer);
 
 /**
  * Returns the stride portion of an information
  * buffer
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer stride(@Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer stride(@Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] stride(@Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer stride(@Cast("Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer stride(@Cast("Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] stride(@Cast("Nd4jLong*") long[] buffer);
 
 /**
  * Compute the length of the given shape
  */
-    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("bool") boolean isEmpty(@Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long length(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 /***
  * Returns the offset portion of an information buffer
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long offset(@Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long offset(@Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long offset(@Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong") long offset(@Cast("Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong") long offset(@Cast("Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong") long offset(@Cast("Nd4jLong*") long[] buffer);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") @ByRef LongPointer extra(@Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") @ByRef LongBuffer extra(@Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") @ByRef long[] extra(@Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") @ByRef LongPointer extra(@Cast("Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") @ByRef LongBuffer extra(@Cast("Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") @ByRef long[] extra(@Cast("Nd4jLong*") long[] buffer);
 
 /**
  * Returns the ordering
  * for this shape information buffer
  */
-    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native char order(@Cast("const Nd4jLong*") long[] buffer);
+    @Namespace("shape") public native char order(@Cast("const Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public native char order(@Cast("const Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public native char order(@Cast("const Nd4jLong*") long[] buffer);
 
 /**
  * Returns the type
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long type(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long type(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long type(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long type(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long type(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long type(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 /**
  * Returns the element wise stride for this information
  * buffer
  */
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-   @Namespace("shape") public static native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") long[] shapeInfo);
+   @Namespace("shape") public native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+   @Namespace("shape") public native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+   @Namespace("shape") public native @Cast("Nd4jLong") long elementWiseStride(@Cast("const Nd4jLong*") long[] shapeInfo);
 
 
     /**
@@ -7560,18 +7639,18 @@ public static final int PREALLOC_SIZE = 33554432;
  * buffer
      * relative to a dimension and ordering for a reduction index
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long reductionIndexElementWiseStride(@Cast("Nd4jLong*") LongPointer buffer, IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long reductionIndexElementWiseStride(@Cast("Nd4jLong*") LongBuffer buffer, IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long reductionIndexElementWiseStride(@Cast("Nd4jLong*") long[] buffer, int[] dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long reductionIndexElementWiseStride(@Cast("Nd4jLong*") LongPointer buffer, IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long reductionIndexElementWiseStride(@Cast("Nd4jLong*") LongBuffer buffer, IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long reductionIndexElementWiseStride(@Cast("Nd4jLong*") long[] buffer, int[] dimension, int dimensionLength);
 
 /**
  * Returns whether
  * the given shape info buffer
  * represents a scalar shape
  */
-    @Namespace("shape") public static native int isScalar(@Cast("const Nd4jLong*") LongPointer info);
-    @Namespace("shape") public static native int isScalar(@Cast("const Nd4jLong*") LongBuffer info);
-    @Namespace("shape") public static native int isScalar(@Cast("const Nd4jLong*") long[] info);
+    @Namespace("shape") public native int isScalar(@Cast("const Nd4jLong*") LongPointer info);
+    @Namespace("shape") public native int isScalar(@Cast("const Nd4jLong*") LongBuffer info);
+    @Namespace("shape") public native int isScalar(@Cast("const Nd4jLong*") long[] info);
 
 /**
  * Returns whether
@@ -7579,7 +7658,7 @@ public static final int PREALLOC_SIZE = 33554432;
  * represents a scalar
  * shape or not
  */
-    @Namespace("shape") public static native int isScalar(ShapeInformation info);
+    @Namespace("shape") public native int isScalar(ShapeInformation info);
 
 /**
  * Return a copy of this array with the
@@ -7618,9 +7697,9 @@ public static final int PREALLOC_SIZE = 33554432;
      * indexes should be the indexes to exclude
      * indexes length should be the length of indexes
      */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer everyIndexBut(@Cast("const Nd4jLong*") LongPointer indexes,int indexesLength,int begin,int end);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer everyIndexBut(@Cast("const Nd4jLong*") LongBuffer indexes,int indexesLength,int begin,int end);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] everyIndexBut(@Cast("const Nd4jLong*") long[] indexes,int indexesLength,int begin,int end);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer everyIndexBut(@Cast("const Nd4jLong*") LongPointer indexes,int indexesLength,int begin,int end);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer everyIndexBut(@Cast("const Nd4jLong*") LongBuffer indexes,int indexesLength,int begin,int end);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] everyIndexBut(@Cast("const Nd4jLong*") long[] indexes,int indexesLength,int begin,int end);
 
 /**
  * Computes the offset for accessing
@@ -7640,15 +7719,15 @@ public static final int PREALLOC_SIZE = 33554432;
  * for the shape to be returned as
  * @return the new shape
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ensureVectorShape(@Cast("Nd4jLong*") LongPointer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ensureVectorShape(@Cast("Nd4jLong*") LongBuffer shape);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ensureVectorShape(@Cast("Nd4jLong*") long[] shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer ensureVectorShape(@Cast("Nd4jLong*") LongPointer shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer ensureVectorShape(@Cast("Nd4jLong*") LongBuffer shape);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] ensureVectorShape(@Cast("Nd4jLong*") long[] shape);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer createScalarShapeInfo();
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer createScalarShapeInfo();
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer createScalarShapeInfo(@Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer createScalarShapeInfo(@Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] createScalarShapeInfo(@Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer createScalarShapeInfo(@Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer createScalarShapeInfo(@Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] createScalarShapeInfo(@Cast("Nd4jLong*") long[] ret);
 
 /**
  * Generate an int buffer
@@ -7666,9 +7745,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Keep the given indexes
  * in the data
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer keep(@Cast("Nd4jLong*") LongPointer data, @Const IntPointer index, int indexLength, int dataLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer keep(@Cast("Nd4jLong*") LongBuffer data, @Const IntBuffer index, int indexLength, int dataLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] keep(@Cast("Nd4jLong*") long[] data, @Const int[] index, int indexLength, int dataLength);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer keep(@Cast("Nd4jLong*") LongPointer data, @Const IntPointer index, int indexLength, int dataLength);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer keep(@Cast("Nd4jLong*") LongBuffer data, @Const IntBuffer index, int indexLength, int dataLength);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] keep(@Cast("Nd4jLong*") long[] data, @Const int[] index, int indexLength, int dataLength);
 
 /**
  * Generate reverse copy of the data
@@ -7706,9 +7785,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * @return the length per slice of the given shape
  * along the given dimension
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Const IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Const IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("const Nd4jLong*") long[] shape, @Const int[] dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Const IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Const IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long lengthPerSlice(int rank, @Cast("const Nd4jLong*") long[] shape, @Const int[] dimension, int dimensionLength);
 
 /**
  * calculates the offset for a tensor
@@ -7717,21 +7796,21 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param tensorShape
  * @return
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long sliceOffsetForTensor(int rank,
+    @Namespace("shape") public native @Cast("Nd4jLong") long sliceOffsetForTensor(int rank,
                                            int index,
                                            @Cast("const Nd4jLong*") LongPointer shape,
                                            @Cast("const Nd4jLong*") LongPointer tensorShape,
                                            int tensorShapeLength,
                                            @Const IntPointer dimension,
                                            int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long sliceOffsetForTensor(int rank,
+    @Namespace("shape") public native @Cast("Nd4jLong") long sliceOffsetForTensor(int rank,
                                            int index,
                                            @Cast("const Nd4jLong*") LongBuffer shape,
                                            @Cast("const Nd4jLong*") LongBuffer tensorShape,
                                            int tensorShapeLength,
                                            @Const IntBuffer dimension,
                                            int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long sliceOffsetForTensor(int rank,
+    @Namespace("shape") public native @Cast("Nd4jLong") long sliceOffsetForTensor(int rank,
                                            int index,
                                            @Cast("const Nd4jLong*") long[] shape,
                                            @Cast("const Nd4jLong*") long[] tensorShape,
@@ -7746,7 +7825,7 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param tensorShape
  * @return
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long sliceOffsetForTensor(int index,int tensorLength,int lengthPerSlice2);
+    @Namespace("shape") public native @Cast("Nd4jLong") long sliceOffsetForTensor(int index,int tensorLength,int lengthPerSlice2);
 /**
  * Computes the tensor along dimension
  * offset
@@ -7767,17 +7846,17 @@ public static final int PREALLOC_SIZE = 33554432;
  * of tensors along
  * a given dimension
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tensorsAlongDimension(int rank,
+    @Namespace("shape") public native @Cast("Nd4jLong") long tensorsAlongDimension(int rank,
                                             int length,
                                             @Cast("Nd4jLong*") LongPointer shape,
                                             IntPointer dimension,
                                             int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tensorsAlongDimension(int rank,
+    @Namespace("shape") public native @Cast("Nd4jLong") long tensorsAlongDimension(int rank,
                                             int length,
                                             @Cast("Nd4jLong*") LongBuffer shape,
                                             IntBuffer dimension,
                                             int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tensorsAlongDimension(int rank,
+    @Namespace("shape") public native @Cast("Nd4jLong") long tensorsAlongDimension(int rank,
                                             int length,
                                             @Cast("Nd4jLong*") long[] shape,
                                             int[] dimension,
@@ -7788,9 +7867,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * of tensors along
  * a given dimension
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tensorsAlongDimension(@Cast("Nd4jLong*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tensorsAlongDimension(@Cast("Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long tensorsAlongDimension(@Cast("Nd4jLong*") long[] shapeInfo, int[] dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long tensorsAlongDimension(@Cast("Nd4jLong*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long tensorsAlongDimension(@Cast("Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public native @Cast("Nd4jLong") long tensorsAlongDimension(@Cast("Nd4jLong*") long[] shapeInfo, int[] dimension, int dimensionLength);
 
 
 
@@ -7802,13 +7881,13 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param i
  * @return
  */
-    @Namespace("shape") public static native int tadForBlockIndex(int blockSize, int blockIdx, int i);
+    @Namespace("shape") public native int tadForBlockIndex(int blockSize, int blockIdx, int i);
 
 /**
  * Computes the number of tads per block
  *
  */
-    @Namespace("shape") public static native int tadsPerBlock(int blockSize, int tads);
+    @Namespace("shape") public native int tadsPerBlock(int blockSize, int tads);
 
 //    ND4J_EXPORT _CUDA_HD Nd4jLong *tadShapeInfo(int index, Nd4jLong *xShapeInfo, Nd4jLong *dimension,
 //                                int dimensionLength);
@@ -7817,11 +7896,11 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns a shape buffer
  * for the shape information metadata.
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer toShapeBuffer( ShapeInformation info);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer toShapeBuffer( ShapeInformation info);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer toShapeBuffer( ShapeInformation info, @Cast("Nd4jLong*") LongPointer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer toShapeBuffer( ShapeInformation info, @Cast("Nd4jLong*") LongBuffer ret);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] toShapeBuffer( ShapeInformation info, @Cast("Nd4jLong*") long[] ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer toShapeBuffer( ShapeInformation info, @Cast("Nd4jLong*") LongPointer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer toShapeBuffer( ShapeInformation info, @Cast("Nd4jLong*") LongBuffer ret);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] toShapeBuffer( ShapeInformation info, @Cast("Nd4jLong*") long[] ret);
 
 /**
  * Returns the number of elements per thread
@@ -7872,7 +7951,7 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param numElementsPerTad the number of elements
  * per tad
  */
-    @Namespace("shape") public static native int tadIndex(int i, int elementWiseStride, int numElementsPerTad);
+    @Namespace("shape") public native int tadIndex(int i, int elementWiseStride, int numElementsPerTad);
 
 /**
  * Map a tad to a
@@ -7882,7 +7961,7 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param tadsForReduced the number of tads for the shrunk down problem (eg: 2,3)
  * @param tadsForOriginal the number of tads for the smaller problem (eg: 3)
  */
-    @Namespace("shape") public static native int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced,
+    @Namespace("shape") public native int reductionIndexForTad(int tadIndexForOriginal, int tadsForReduced,
                                  int tadsForOriginal);
 
 /**
@@ -7890,7 +7969,7 @@ public static final int PREALLOC_SIZE = 33554432;
  * per reduce index for the
  * reduction tad.
  */
-    @Namespace("shape") public static native int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal);
+    @Namespace("shape") public native int tadsPerReduceIndex(int tadsForReduce, int tadsForOriginal);
 
 /**
  * Maps a linear index to a reduction index
@@ -7900,16 +7979,16 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param tadNum the number of tads for the shrunken problem
  * @param originalTadNum the tad number for the reduced version of the problem
  */
-    @Namespace("shape") public static native int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad,
+    @Namespace("shape") public native int reductionIndexForLinear(int i, int elementWiseStride, int numElementsPerTad,
                                     int tadNum, int originalTadNum);
 
 /**
  * Returns the prod of the data
  * up to the given length
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") LongPointer data, int length);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") LongBuffer data, int length);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") long[] data, int length);
+    @Namespace("shape") public native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") LongPointer data, int length);
+    @Namespace("shape") public native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") LongBuffer data, int length);
+    @Namespace("shape") public native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") long[] data, int length);
 
     /**
      * Returns the rear most left over item not present in
@@ -7941,77 +8020,100 @@ public static final int PREALLOC_SIZE = 33554432;
 * @return the double at the specified index
 */
 
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const Nd4jLong*") LongPointer coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const Nd4jLong*") LongPointer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const Nd4jLong*") LongBuffer coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const Nd4jLong*") LongBuffer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const Nd4jLong*") long[] coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const Nd4jLong*") long[] coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const Nd4jLong*") LongPointer coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const Nd4jLong*") LongPointer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const Nd4jLong*") LongBuffer coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const Nd4jLong*") LongBuffer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const Nd4jLong*") long[] coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const Nd4jLong*") long[] coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] coords, @Cast("Nd4jLong") long baseOffset/*=0*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer coords, @Const IntPointer dims);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer coords, @Const IntBuffer dims);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getOffset(@Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] coords, @Const int[] dims);     // length of dims is equal to rank of shapeInfo
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer createShapeInfo(@Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer createShapeInfo(@Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int rank);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] createShapeInfo(@Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] stride, int rank);
+    // all three arrays should have same rank
+    // all three arrays should have same dimensions or some of them are 1 (that is satisfy broadcasting principle), strides may be different
+    // shapeInfo1 - first array should have max length compared to rest of two arrays
+    @Namespace("shape") public native void getOffsetBroadcast(@Cast("const Nd4jLong") long startInd, @Cast("const Nd4jLong") long ind,
+                                                    @Cast("const Nd4jLong*") LongPointer shapeInfo1, @Cast("const Nd4jLong*") LongPointer shapeInfo2, @Cast("const Nd4jLong*") LongPointer shapeInfo3,
+                                                    @Cast("const bool") boolean sameOffsets12, @Cast("const bool") boolean sameOffsets13,
+                                                    IntPointer coords,
+                                                    @Cast("Nd4jLong*") @ByRef LongPointer offset1, @Cast("Nd4jLong*") @ByRef LongPointer offset2, @Cast("Nd4jLong*") @ByRef LongPointer offset3);
+    @Namespace("shape") public native void getOffsetBroadcast(@Cast("const Nd4jLong") long startInd, @Cast("const Nd4jLong") long ind,
+                                                    @Cast("const Nd4jLong*") LongBuffer shapeInfo1, @Cast("const Nd4jLong*") LongBuffer shapeInfo2, @Cast("const Nd4jLong*") LongBuffer shapeInfo3,
+                                                    @Cast("const bool") boolean sameOffsets12, @Cast("const bool") boolean sameOffsets13,
+                                                    IntBuffer coords,
+                                                    @Cast("Nd4jLong*") @ByRef LongBuffer offset1, @Cast("Nd4jLong*") @ByRef LongBuffer offset2, @Cast("Nd4jLong*") @ByRef LongBuffer offset3);
+    @Namespace("shape") public native void getOffsetBroadcast(@Cast("const Nd4jLong") long startInd, @Cast("const Nd4jLong") long ind,
+                                                    @Cast("const Nd4jLong*") long[] shapeInfo1, @Cast("const Nd4jLong*") long[] shapeInfo2, @Cast("const Nd4jLong*") long[] shapeInfo3,
+                                                    @Cast("const bool") boolean sameOffsets12, @Cast("const bool") boolean sameOffsets13,
+                                                    int[] coords,
+                                                    @Cast("Nd4jLong*") @ByRef long[] offset1, @Cast("Nd4jLong*") @ByRef long[] offset2, @Cast("Nd4jLong*") @ByRef long[] offset3);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer createShapeInfo(@Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int rank, @Cast("Nd4jLong*") LongPointer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer createShapeInfo(@Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int rank, @Cast("Nd4jLong*") LongBuffer buffer);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] createShapeInfo(@Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] stride, int rank, @Cast("Nd4jLong*") long[] buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer createShapeInfo(@Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int rank);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer createShapeInfo(@Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int rank);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] createShapeInfo(@Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] stride, int rank);
+
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer createShapeInfo(@Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer stride, int rank, @Cast("Nd4jLong*") LongPointer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer createShapeInfo(@Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer stride, int rank, @Cast("Nd4jLong*") LongBuffer buffer);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] createShapeInfo(@Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] stride, int rank, @Cast("Nd4jLong*") long[] buffer);
 
     /**
     * Convert a linear index to the corresponding coordinates
     * for example if shape is {2, 4}, then index 5 corresponds to coordinates [1, 1]
     */
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo,  @Cast("Nd4jLong*") LongPointer coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo,  @Cast("Nd4jLong*") LongBuffer coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo,  @Cast("Nd4jLong*") long[] coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo,  IntPointer coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo,  IntBuffer coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo,  int[] coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongPointer shape, IntPointer coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongBuffer shape, IntBuffer coords);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") long[] shape, int[] coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo,  @Cast("Nd4jLong*") LongPointer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo,  @Cast("Nd4jLong*") LongBuffer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo,  @Cast("Nd4jLong*") long[] coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo,  IntPointer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo,  IntBuffer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo,  int[] coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongPointer shape, IntPointer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") LongBuffer shape, IntBuffer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, int rank, @Cast("const Nd4jLong*") long[] shape, int[] coords);
 
-    @Namespace("shape") public static native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer coords);
-    @Namespace("shape") public static native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer coords);
-    @Namespace("shape") public static native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] coords);
-    @Namespace("shape") public static native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, IntPointer coords);
-    @Namespace("shape") public static native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, IntBuffer coords);
-    @Namespace("shape") public static native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, int[] coords);
+    @Namespace("shape") public native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer coords);
+    @Namespace("shape") public native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer coords);
+    @Namespace("shape") public native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] coords);
+    @Namespace("shape") public native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, IntPointer coords);
+    @Namespace("shape") public native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, IntBuffer coords);
+    @Namespace("shape") public native void index2coordsCPU(@Cast("const Nd4jLong") long startIndex, @Cast("const Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, int[] coords);
+    // ND4J_EXPORT _CUDA_HD void index2coordsCPU(const Nd4jLong& startIndex, const Nd4jLong& index, const Nd4jLong *shapeInfo, const int* dims, Nd4jLong *coords);
 
     /**
     * take into account only dimensions stored in tadDims, tadDims must be sorted in increasing order!
     */
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, IntPointer coords, int dimsSize, @Const IntPointer tadDims);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, IntBuffer coords, int dimsSize, @Const IntBuffer tadDims);
-    @Namespace("shape") public static native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, int[] coords, int dimsSize, @Const int[] tadDims);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer dims, int dimsLen, IntPointer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer dims, int dimsLen, IntBuffer coords);
+    @Namespace("shape") public native void index2coords(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] dims, int dimsLen, int[] coords);
 
     /**
     * Convert coordinates to the corresponding linear index (sequence number in other words)
     * for example if shape is {2, 4} and coordinates [1, 1] then index 5 is returned
     */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const Nd4jLong*") LongPointer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const Nd4jLong*") LongBuffer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const Nd4jLong*") long[] coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Const IntPointer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Const IntBuffer coords);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(int rank, @Cast("const Nd4jLong*") long[] shape, @Const int[] coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("const Nd4jLong*") LongPointer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("const Nd4jLong*") LongBuffer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("const Nd4jLong*") long[] coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Const IntPointer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Const IntBuffer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(int rank, @Cast("const Nd4jLong*") long[] shape, @Const int[] coords);
     /**
     * take into account only dimensions stored in tadDims, tadDims must be sorted in increasing order!
     */
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer coords, int dimsSize, @Const IntPointer tadDims);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer coords, int dimsSize, @Const IntBuffer tadDims);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] coords, int dimsSize, @Const int[] tadDims);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Const IntPointer dims, int dimsSize, @Const IntPointer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Const IntBuffer dims, int dimsSize, @Const IntBuffer coords);
+    @Namespace("shape") public native @Cast("Nd4jLong") long coords2index(@Cast("const Nd4jLong*") long[] shapeInfo, @Const int[] dims, int dimsSize, @Const int[] coords);
 
    /**
    * increment n-dimensional array by one iteration by changing coord appropriately
@@ -8023,141 +8125,141 @@ public static final int PREALLOC_SIZE = 33554432;
 
    /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
    */
-    @Namespace("shape") public static native @Cast("uint") int getIndexOffset(@Cast("uint") int index, @Cast("const uint*") IntPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("uint") int getIndexOffset(@Cast("uint") int index, @Cast("const uint*") IntBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("uint") int getIndexOffset(@Cast("uint") int index, @Cast("const uint*") int[] shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long indexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer lShapeInfo, @Cast("const uint*") IntPointer uShapeInfo, @Cast("const bool") boolean useUnsigned);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long indexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer lShapeInfo, @Cast("const uint*") IntBuffer uShapeInfo, @Cast("const bool") boolean useUnsigned);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long indexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] lShapeInfo, @Cast("const uint*") int[] uShapeInfo, @Cast("const bool") boolean useUnsigned);
+    @Namespace("shape") public native @Cast("uint") int getIndexOffset(@Cast("uint") int index, @Cast("const uint*") IntPointer shapeInfo);
+    @Namespace("shape") public native @Cast("uint") int getIndexOffset(@Cast("uint") int index, @Cast("const uint*") IntBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("uint") int getIndexOffset(@Cast("uint") int index, @Cast("const uint*") int[] shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long getIndexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long indexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongPointer lShapeInfo, @Cast("const uint*") IntPointer uShapeInfo, @Cast("const bool") boolean useUnsigned);
+    @Namespace("shape") public native @Cast("Nd4jLong") long indexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") LongBuffer lShapeInfo, @Cast("const uint*") IntBuffer uShapeInfo, @Cast("const bool") boolean useUnsigned);
+    @Namespace("shape") public native @Cast("Nd4jLong") long indexOffset(@Cast("Nd4jLong") long index, @Cast("const Nd4jLong*") long[] lShapeInfo, @Cast("const uint*") int[] uShapeInfo, @Cast("const bool") boolean useUnsigned);
 
-    @Namespace("shape") public static native void printShapeInfo(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native void printShapeInfo(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native void printShapeInfo(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native void printShapeInfo(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native void printShapeInfo(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native void printShapeInfo(@Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const Nd4jLong*") long[] shapeInfo);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, @Cast("const Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, @Cast("const Nd4jLong*") long[] shapeInfo);
 
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides);
-    @Namespace("shape") public static native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") String msg, int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides);
+    @Namespace("shape") public native void printShapeInfoLinear(@Cast("char*") BytePointer msg, int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides);
 
-    @Namespace("shape") public static native void printIntArray(@Cast("const Nd4jLong*") LongPointer arr, int length);
-    @Namespace("shape") public static native void printIntArray(@Cast("const Nd4jLong*") LongBuffer arr, int length);
-    @Namespace("shape") public static native void printIntArray(@Cast("const Nd4jLong*") long[] arr, int length);
-    @Namespace("shape") public static native void printIntArray(@Const IntPointer arr, int length);
-    @Namespace("shape") public static native void printIntArray(@Const IntBuffer arr, int length);
-    @Namespace("shape") public static native void printIntArray(@Const int[] arr, int length);
+    @Namespace("shape") public native void printIntArray(@Cast("const Nd4jLong*") LongPointer arr, int length);
+    @Namespace("shape") public native void printIntArray(@Cast("const Nd4jLong*") LongBuffer arr, int length);
+    @Namespace("shape") public native void printIntArray(@Cast("const Nd4jLong*") long[] arr, int length);
+    @Namespace("shape") public native void printIntArray(@Const IntPointer arr, int length);
+    @Namespace("shape") public native void printIntArray(@Const IntBuffer arr, int length);
+    @Namespace("shape") public native void printIntArray(@Const int[] arr, int length);
 
-    @Namespace("shape") public static native void printArray(FloatPointer arr,int length);
-    @Namespace("shape") public static native void printArray(FloatBuffer arr,int length);
-    @Namespace("shape") public static native void printArray(float[] arr,int length);
+    @Namespace("shape") public native void printArray(FloatPointer arr,int length);
+    @Namespace("shape") public native void printArray(FloatBuffer arr,int length);
+    @Namespace("shape") public native void printArray(float[] arr,int length);
 
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntPointer shape,@Cast("bool") boolean fortranOrder);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntBuffer shape,@Cast("bool") boolean fortranOrder);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] shapeBufferOfNpy(int rank, @Cast("unsigned int*") int[] shape,@Cast("bool") boolean fortranOrder);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntPointer shape,@Cast("bool") boolean fortranOrder);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer shapeBufferOfNpy(int rank, @Cast("unsigned int*") IntBuffer shape,@Cast("bool") boolean fortranOrder);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] shapeBufferOfNpy(int rank, @Cast("unsigned int*") int[] shape,@Cast("bool") boolean fortranOrder);
 
 //    ND4J_EXPORT _CUDA_HD Nd4jLong *shapeBufferOfNpyBuffer(char *buffer);
 
 
    // this function checks the consistence of dimensions with array rank (negative dimensions, too large dimensions, too big number of dimensions)
     // also sort input array of dimensions, this operation is also necessary for creating TAD object
-    @Namespace("shape") public static native void checkDimensions(int rank, @StdVector IntPointer dimensions);
-    @Namespace("shape") public static native void checkDimensions(int rank, @StdVector IntBuffer dimensions);
-    @Namespace("shape") public static native void checkDimensions(int rank, @StdVector int[] dimensions);
+    @Namespace("shape") public native void checkDimensions(int rank, @StdVector IntPointer dimensions);
+    @Namespace("shape") public native void checkDimensions(int rank, @StdVector IntBuffer dimensions);
+    @Namespace("shape") public native void checkDimensions(int rank, @StdVector int[] dimensions);
 
     // function calculates linear index of array min, min is sub-array of max, index to be returned is min-array's index and corresponds to maxIdx of max array
     // dimsToExclude - should be sorted in increasing order
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayIndex(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
     // function calculates absolute offset of min array, min is sub-array of max, offset to be returned corresponds to maxIdx of max array
     // dimsToExclude - should be sorted in increasing order
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public static native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+    @Namespace("shape") public native @Cast("Nd4jLong") long subArrayOffset(@Cast("const Nd4jLong") long maxIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
     // max array is outer for min array, min array is sub-array of max array
     // function calculates the coordinates of min array (and saves them into minIdxs) given coordinates of max array (already stored in maxIdxs)
     // dimsToExclude - should be sorted in increasing order
     // dimsLen - length of dimsToExclude, if not set (= -1), then it is calculated as maxRank - minRank
-    @Namespace("shape") public static native void maxIndToMinInd(IntPointer maxIdxs, IntPointer minIdxs, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public static native void maxIndToMinInd(IntPointer maxIdxs, IntPointer minIdxs, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
-    @Namespace("shape") public static native void maxIndToMinInd(IntBuffer maxIdxs, IntBuffer minIdxs, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public static native void maxIndToMinInd(IntBuffer maxIdxs, IntBuffer minIdxs, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
-    @Namespace("shape") public static native void maxIndToMinInd(int[] maxIdxs, int[] minIdxs, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
-    @Namespace("shape") public static native void maxIndToMinInd(int[] maxIdxs, int[] minIdxs, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
+    @Namespace("shape") public native void maxIndToMinInd(IntPointer maxIdxs, IntPointer minIdxs, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+    @Namespace("shape") public native void maxIndToMinInd(IntPointer maxIdxs, IntPointer minIdxs, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
+    @Namespace("shape") public native void maxIndToMinInd(IntBuffer maxIdxs, IntBuffer minIdxs, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+    @Namespace("shape") public native void maxIndToMinInd(IntBuffer maxIdxs, IntBuffer minIdxs, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
+    @Namespace("shape") public native void maxIndToMinInd(int[] maxIdxs, int[] minIdxs, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/, int dimsLen/*=-1*/);
+    @Namespace("shape") public native void maxIndToMinInd(int[] maxIdxs, int[] minIdxs, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
     // calculate indexes of max-array, these output indexes correspond to one minIdx index of min-array which is sub-array of max-array
     // dimsToExclude - should be sorted in increasing order
-    @Namespace("shape") public static native int outerArrayIndexes(IntPointer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public static native int outerArrayIndexes(IntPointer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
-    @Namespace("shape") public static native int outerArrayIndexes(IntBuffer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public static native int outerArrayIndexes(IntBuffer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
-    @Namespace("shape") public static native int outerArrayIndexes(int[] maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public static native int outerArrayIndexes(int[] maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
+    @Namespace("shape") public native int outerArrayIndexes(IntPointer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Const IntPointer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public native int outerArrayIndexes(IntPointer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo);
+    @Namespace("shape") public native int outerArrayIndexes(IntBuffer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Const IntBuffer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public native int outerArrayIndexes(IntBuffer maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo);
+    @Namespace("shape") public native int outerArrayIndexes(int[] maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public native int outerArrayIndexes(int[] maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
     // calculate offsets of max-array, these offsets correspond to one minIdx index of min-array which is sub-array of max-array
     // maxOffsets - will contain calculated offsets of max-array, buffer for maxOffsets should be allocated beforehand
     // dimsToExclude - should be sorted in increasing order
     // memBuff - auxiliary memory buffer (size = 2 * max_rank) for coordinates and increments storing, should be allocated beforehand
-    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongPointer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, IntPointer memBuff, @Const IntPointer dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongPointer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, IntPointer memBuff);
-    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongBuffer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, IntBuffer memBuff, @Const IntBuffer dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongBuffer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, IntBuffer memBuff);
-    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, int[] memBuff, @Const int[] dimsToExclude/*=nullptr*/);
-    @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, int[] memBuff);
+    @Namespace("shape") public native int outerArrayOffsets(@Cast("Nd4jLong*") LongPointer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, IntPointer memBuff, @Const IntPointer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public native int outerArrayOffsets(@Cast("Nd4jLong*") LongPointer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, IntPointer memBuff);
+    @Namespace("shape") public native int outerArrayOffsets(@Cast("Nd4jLong*") LongBuffer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, IntBuffer memBuff, @Const IntBuffer dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public native int outerArrayOffsets(@Cast("Nd4jLong*") LongBuffer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, IntBuffer memBuff);
+    @Namespace("shape") public native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, int[] memBuff, @Const int[] dimsToExclude/*=nullptr*/);
+    @Namespace("shape") public native int outerArrayOffsets(@Cast("Nd4jLong*") long[] maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, int[] memBuff);
 
     // calculates offsets for entities (elements or sub-arrays), shape in context of sub-array means dimensions excluded from outer array
     // rank is equal to size of shape
-    @Namespace("shape") public static native void calcOffsets(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, @Cast("Nd4jLong*") LongPointer offsets, byte order/*='c'*/);
-    @Namespace("shape") public static native void calcOffsets(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, @Cast("Nd4jLong*") LongPointer offsets);
-    @Namespace("shape") public static native void calcOffsets(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, @Cast("Nd4jLong*") LongBuffer offsets, byte order/*='c'*/);
-    @Namespace("shape") public static native void calcOffsets(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, @Cast("Nd4jLong*") LongBuffer offsets);
-    @Namespace("shape") public static native void calcOffsets(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, @Cast("Nd4jLong*") long[] offsets, byte order/*='c'*/);
-    @Namespace("shape") public static native void calcOffsets(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, @Cast("Nd4jLong*") long[] offsets);
-    @Namespace("shape") public static native void calcOffsets(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer offsets, byte order/*='c'*/);
-    @Namespace("shape") public static native void calcOffsets(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer offsets);
-    @Namespace("shape") public static native void calcOffsets(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer offsets, byte order/*='c'*/);
-    @Namespace("shape") public static native void calcOffsets(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer offsets);
-    @Namespace("shape") public static native void calcOffsets(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] offsets, byte order/*='c'*/);
-    @Namespace("shape") public static native void calcOffsets(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] offsets);
+    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, @Cast("Nd4jLong*") LongPointer offsets, byte order/*='c'*/);
+    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, @Cast("Nd4jLong*") LongPointer offsets);
+    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, @Cast("Nd4jLong*") LongBuffer offsets, byte order/*='c'*/);
+    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, @Cast("Nd4jLong*") LongBuffer offsets);
+    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, @Cast("Nd4jLong*") long[] offsets, byte order/*='c'*/);
+    @Namespace("shape") public native void calcOffsets(int rank, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, @Cast("Nd4jLong*") long[] offsets);
+    @Namespace("shape") public native void calcOffsets(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer offsets, byte order/*='c'*/);
+    @Namespace("shape") public native void calcOffsets(@Cast("const Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jLong*") LongPointer offsets);
+    @Namespace("shape") public native void calcOffsets(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer offsets, byte order/*='c'*/);
+    @Namespace("shape") public native void calcOffsets(@Cast("const Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jLong*") LongBuffer offsets);
+    @Namespace("shape") public native void calcOffsets(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] offsets, byte order/*='c'*/);
+    @Namespace("shape") public native void calcOffsets(@Cast("const Nd4jLong*") long[] shapeInfo, @Cast("Nd4jLong*") long[] offsets);
     // ND4J_EXPORT void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const char order = 'c');
     // ND4J_EXPORT void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const Nd4jLong* zShapeInfo, Nd4jLong*& zOffsets, const char order = 'c');
-    @Namespace("shape") public static native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("Nd4jLong*const") LongPointer buffer, byte order);
-    @Namespace("shape") public static native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("Nd4jLong*const") LongBuffer buffer, byte order);
-    @Namespace("shape") public static native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("Nd4jLong*const") long[] buffer, byte order);
+    @Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("Nd4jLong*const") LongPointer buffer, byte order);
+    @Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("Nd4jLong*const") LongBuffer buffer, byte order);
+    @Namespace("shape") public native void shapeOldScalar(@Cast("sd::DataType") int dtype, @Cast("Nd4jLong*const") long[] buffer, byte order);
 
     // deduce order and element-wise stride
     // if array is scalar or unit length vector then ews = 1 and order is preserved
     // if array is common vector then ews = stride of non-unity dimension and order is preserved
     // if strides are normal/contiguous then ews = 1 and corresponding order is set, otherwise ews = 0 and order is preserved
-    @Namespace("shape") public static native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") LongPointer shapeInfo, byte proposedOrder, int numOfNonUnitDims, @Cast("const Nd4jLong*") LongPointer shapeNoUnities, @Cast("const Nd4jLong*") LongPointer stridesNoUnities);
-    @Namespace("shape") public static native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo, byte proposedOrder, int numOfNonUnitDims, @Cast("const Nd4jLong*") LongBuffer shapeNoUnities, @Cast("const Nd4jLong*") LongBuffer stridesNoUnities);
-    @Namespace("shape") public static native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") long[] shapeInfo, byte proposedOrder, int numOfNonUnitDims, @Cast("const Nd4jLong*") long[] shapeNoUnities, @Cast("const Nd4jLong*") long[] stridesNoUnities);
-    @Namespace("shape") public static native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") LongPointer shapeInfo);
-    @Namespace("shape") public static native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo);
-    @Namespace("shape") public static native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") long[] shapeInfo);
+    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") LongPointer shapeInfo, byte proposedOrder, int numOfNonUnitDims, @Cast("const Nd4jLong*") LongPointer shapeNoUnities, @Cast("const Nd4jLong*") LongPointer stridesNoUnities);
+    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo, byte proposedOrder, int numOfNonUnitDims, @Cast("const Nd4jLong*") LongBuffer shapeNoUnities, @Cast("const Nd4jLong*") LongBuffer stridesNoUnities);
+    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") long[] shapeInfo, byte proposedOrder, int numOfNonUnitDims, @Cast("const Nd4jLong*") long[] shapeNoUnities, @Cast("const Nd4jLong*") long[] stridesNoUnities);
+    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") LongPointer shapeInfo);
+    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") LongBuffer shapeInfo);
+    @Namespace("shape") public native void checkStridesEwsAndOrder(@Cast("Nd4jLong*") long[] shapeInfo);
 
     /**
     * processes whole set of sub-arrays
@@ -8171,12 +8273,12 @@ public static final int PREALLOC_SIZE = 33554432;
     * subArrOffsets      - output argument, contains successive sub-arrays offsets from original this-buffer
     * keepUnitiesInShape - if false then eliminate unities from sub-array shapeInfo, for example {1,a,1,b} -> {a,b}
     */
-    @Namespace("shape") public static native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") LongPointer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntPointer dimsToExclude, @Cast("Nd4jLong*") LongPointer subArrShapeInfo, @Cast("Nd4jLong*") LongPointer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-    @Namespace("shape") public static native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") LongPointer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntPointer dimsToExclude, @Cast("Nd4jLong*") LongPointer subArrShapeInfo, @Cast("Nd4jLong*") LongPointer subArrOffsets);
-    @Namespace("shape") public static native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") LongBuffer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude, @Cast("Nd4jLong*") LongBuffer subArrShapeInfo, @Cast("Nd4jLong*") LongBuffer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-    @Namespace("shape") public static native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") LongBuffer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude, @Cast("Nd4jLong*") LongBuffer subArrShapeInfo, @Cast("Nd4jLong*") LongBuffer subArrOffsets);
-    @Namespace("shape") public static native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
-    @Namespace("shape") public static native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets);
+    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") LongPointer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntPointer dimsToExclude, @Cast("Nd4jLong*") LongPointer subArrShapeInfo, @Cast("Nd4jLong*") LongPointer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") LongPointer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntPointer dimsToExclude, @Cast("Nd4jLong*") LongPointer subArrShapeInfo, @Cast("Nd4jLong*") LongPointer subArrOffsets);
+    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") LongBuffer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude, @Cast("Nd4jLong*") LongBuffer subArrShapeInfo, @Cast("Nd4jLong*") LongBuffer subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") LongBuffer wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const IntBuffer dimsToExclude, @Cast("Nd4jLong*") LongBuffer subArrShapeInfo, @Cast("Nd4jLong*") LongBuffer subArrOffsets);
+    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets, @Cast("bool") boolean keepUnitiesInShape/*=false*/);
+    @Namespace("shape") public native void calcSubArrsShapeInfoAndOffsets(@Cast("const Nd4jLong*") long[] wholeShapeInfo, @Cast("const Nd4jLong") long numOfSubArrs, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] subArrShapeInfo, @Cast("Nd4jLong*") long[] subArrOffsets);
 
     /**
     * processes only one sub-array, evaluates shapeInfo of sub-array and its buffer offset from original array
@@ -8192,12 +8294,12 @@ public static final int PREALLOC_SIZE = 33554432;
     * isStrided - input argument, if true then idx has length (3 * this->rankOf()) and contains additional stride numbers which correspond to stride between dimStart and dimEnd,
     * numOfUntiesInMinShape - input argument, number of occurrences in idx when (dimEnd - dimStart) = 1
     */
-    @Namespace("shape") public static native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") LongPointer idx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("Nd4jLong*") LongPointer minShapeInfo, @Cast("Nd4jLong*") @ByRef LongPointer minOffset, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/, int numOfUntiesInMinShape/*=0*/);
-    @Namespace("shape") public static native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") LongPointer idx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("Nd4jLong*") LongPointer minShapeInfo, @Cast("Nd4jLong*") @ByRef LongPointer minOffset);
-    @Namespace("shape") public static native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("Nd4jLong*") LongBuffer minShapeInfo, @Cast("Nd4jLong*") @ByRef LongBuffer minOffset, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/, int numOfUntiesInMinShape/*=0*/);
-    @Namespace("shape") public static native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("Nd4jLong*") LongBuffer minShapeInfo, @Cast("Nd4jLong*") @ByRef LongBuffer minOffset);
-    @Namespace("shape") public static native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") long[] idx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("Nd4jLong*") long[] minShapeInfo, @Cast("Nd4jLong*") @ByRef long[] minOffset, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/, int numOfUntiesInMinShape/*=0*/);
-    @Namespace("shape") public static native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") long[] idx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("Nd4jLong*") long[] minShapeInfo, @Cast("Nd4jLong*") @ByRef long[] minOffset);
+    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") LongPointer idx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("Nd4jLong*") LongPointer minShapeInfo, @Cast("Nd4jLong*") @ByRef LongPointer minOffset, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/, int numOfUntiesInMinShape/*=0*/);
+    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") LongPointer idx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("Nd4jLong*") LongPointer minShapeInfo, @Cast("Nd4jLong*") @ByRef LongPointer minOffset);
+    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("Nd4jLong*") LongBuffer minShapeInfo, @Cast("Nd4jLong*") @ByRef LongBuffer minOffset, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/, int numOfUntiesInMinShape/*=0*/);
+    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") LongBuffer idx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("Nd4jLong*") LongBuffer minShapeInfo, @Cast("Nd4jLong*") @ByRef LongBuffer minOffset);
+    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") long[] idx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("Nd4jLong*") long[] minShapeInfo, @Cast("Nd4jLong*") @ByRef long[] minOffset, @Cast("const bool") boolean keepUnitiesInShape/*=false*/, @Cast("const bool") boolean isStrided/*=false*/, int numOfUntiesInMinShape/*=0*/);
+    @Namespace("shape") public native void calcSubArrShapeInfoAndOffset(@Cast("const Nd4jLong*") long[] idx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("Nd4jLong*") long[] minShapeInfo, @Cast("Nd4jLong*") @ByRef long[] minOffset);
 
     /**
     * for example inShapeInfo is {3, 2,1,4, 4,4,1, 16384,1,99}
@@ -8206,17 +8308,17 @@ public static final int PREALLOC_SIZE = 33554432;
     * returns number of non-unity dimensions in inShapeInfo
     * if there is no unities in inShapeInfo, then no copy procedure will be performed and shapeNoUnities/stridesNoUnities will point on corresponding places in inShapeInfo
     */
-    @Namespace("shape") public static native int excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") LongPointer inShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongPointer shapeNoUnities, @Cast("Nd4jLong*&") @ByPtrRef LongPointer stridesNoUnities);
-    @Namespace("shape") public static native int excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") LongBuffer inShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer shapeNoUnities, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer stridesNoUnities);
-    @Namespace("shape") public static native int excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") long[] inShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef long[] shapeNoUnities, @Cast("Nd4jLong*&") @ByPtrRef long[] stridesNoUnities);
+    @Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") LongPointer inShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongPointer shapeNoUnities, @Cast("Nd4jLong*&") @ByPtrRef LongPointer stridesNoUnities);
+    @Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") LongBuffer inShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer shapeNoUnities, @Cast("Nd4jLong*&") @ByPtrRef LongBuffer stridesNoUnities);
+    @Namespace("shape") public native int excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") long[] inShapeInfo, @Cast("Nd4jLong*&") @ByPtrRef long[] shapeNoUnities, @Cast("Nd4jLong*&") @ByPtrRef long[] stridesNoUnities);
 
     /**
-    * for example inShapeInfo is {3, 2,1,3,1,4,  12,12,4,4,1, 16384,1,99}, dimsToExclude = {1,3}, dimsSize = 2
+    * for example inShapeInfo is {3, 2,1,3,1,4,  12,12,4,4,1, 16384,1,99}, dimsToExclude(points on unity dimensions) = {1,3}, dimsSize = 2
     * then outShapeInfo will contain {3, 2,3,4, 12,4,1, 16384,1,99}
     */
-    @Namespace("shape") public static native void excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") LongPointer inShapeInfo, int dimsSize, @Const IntPointer dimsToExclude, @Cast("Nd4jLong*") LongPointer outShapeInfo);
-    @Namespace("shape") public static native void excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") LongBuffer inShapeInfo, int dimsSize, @Const IntBuffer dimsToExclude, @Cast("Nd4jLong*") LongBuffer outShapeInfo);
-    @Namespace("shape") public static native void excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") long[] inShapeInfo, int dimsSize, @Const int[] dimsToExclude, @Cast("Nd4jLong*") long[] outShapeInfo);
+    @Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") LongPointer inShapeInfo, @Const IntPointer dimsToExclude, int dimsSize, @Cast("Nd4jLong*") LongPointer outShapeInfo);
+    @Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") LongBuffer inShapeInfo, @Const IntBuffer dimsToExclude, int dimsSize, @Cast("Nd4jLong*") LongBuffer outShapeInfo);
+    @Namespace("shape") public native void excludeUnitiesFromShapeInfo(@Cast("const Nd4jLong*") long[] inShapeInfo, @Const int[] dimsToExclude, int dimsSize, @Cast("Nd4jLong*") long[] outShapeInfo);
 
     /**
     * get stride over contiguous axis (contiguous axis must have stride = 1)
@@ -8272,9 +8374,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * Again: this may not preserve ordering of the tad
  * but maybe used for reductions.
  */
-    @Namespace("shape") public static native int tadElementWiseStride(@Cast("Nd4jLong*") LongPointer shapeInfo, IntPointer dimension,int dimensionLength);
-    @Namespace("shape") public static native int tadElementWiseStride(@Cast("Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension,int dimensionLength);
-    @Namespace("shape") public static native int tadElementWiseStride(@Cast("Nd4jLong*") long[] shapeInfo, int[] dimension,int dimensionLength);
+    @Namespace("shape") public native int tadElementWiseStride(@Cast("Nd4jLong*") LongPointer shapeInfo, IntPointer dimension,int dimensionLength);
+    @Namespace("shape") public native int tadElementWiseStride(@Cast("Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension,int dimensionLength);
+    @Namespace("shape") public native int tadElementWiseStride(@Cast("Nd4jLong*") long[] shapeInfo, int[] dimension,int dimensionLength);
 
 /**
  * Computes the standard packed array strides for a given shape.
@@ -8624,9 +8726,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * for the shape to be returned as
  * @return the new shape
  */
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongPointer ensureVectorShape(@Cast("Nd4jLong*") LongPointer shape, int dimension);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") LongBuffer ensureVectorShape(@Cast("Nd4jLong*") LongBuffer shape, int dimension);
-    @Namespace("shape") public static native @Cast("Nd4jLong*") long[] ensureVectorShape(@Cast("Nd4jLong*") long[] shape, int dimension);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongPointer ensureVectorShape(@Cast("Nd4jLong*") LongPointer shape, int dimension);
+    @Namespace("shape") public native @Cast("Nd4jLong*") LongBuffer ensureVectorShape(@Cast("Nd4jLong*") LongBuffer shape, int dimension);
+    @Namespace("shape") public native @Cast("Nd4jLong*") long[] ensureVectorShape(@Cast("Nd4jLong*") long[] shape, int dimension);
 
 /**
  * Returns a shape
@@ -8773,6 +8875,9 @@ public static final int PREALLOC_SIZE = 33554432;
 
 //////////////////////////////////////////////////////////////////////////
 
+//////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
 
 /**
  * Returns the tensor along dimension
@@ -8839,9 +8944,9 @@ public static final int PREALLOC_SIZE = 33554432;
  * up to the given length
  */
 
-    @Namespace("shape") public static native int rearMostLeftOverItem(@Cast("Nd4jLong*") LongPointer data, @Cast("Nd4jLong*") LongPointer dimension,int dimensionLength);
-    @Namespace("shape") public static native int rearMostLeftOverItem(@Cast("Nd4jLong*") LongBuffer data, @Cast("Nd4jLong*") LongBuffer dimension,int dimensionLength);
-    @Namespace("shape") public static native int rearMostLeftOverItem(@Cast("Nd4jLong*") long[] data, @Cast("Nd4jLong*") long[] dimension,int dimensionLength);
+    @Namespace("shape") public native int rearMostLeftOverItem(@Cast("Nd4jLong*") LongPointer data, @Cast("Nd4jLong*") LongPointer dimension,int dimensionLength);
+    @Namespace("shape") public native int rearMostLeftOverItem(@Cast("Nd4jLong*") LongBuffer data, @Cast("Nd4jLong*") LongBuffer dimension,int dimensionLength);
+    @Namespace("shape") public native int rearMostLeftOverItem(@Cast("Nd4jLong*") long[] data, @Cast("Nd4jLong*") long[] dimension,int dimensionLength);
 
 // #ifdef __CUDACC__
 // #endif
@@ -9103,6 +9208,24 @@ public static final int PREALLOC_SIZE = 33554432;
 //////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////
+// INLINEDEF _CUDA_HD void index2coordsCPU(const Nd4jLong& startIndex, const Nd4jLong& index, const Nd4jLong *shapeInfo, const int* dims, const int dimsLen, int *coords) {
+
+//     if(startIndex == index) {
+//         shape::index2coords(index, shapeInfo, dims, dimsLen, coords);
+//     }
+//     else {
+//         int i = dimsLen - 1;
+//         while(coords[dims[i]] == shape::sizeAt(shapeInfo, dims[i]) - 1)
+//             coords[dims[i--]] = 0;
+//         ++coords[dims[i]];
+//     }
+// }
+
+//////////////////////////////////////////////////////////////////////
 // INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffsets, const Nd4jLong *yShapeInfo, Nd4jLong*& yOffsets, const Nd4jLong* zShapeInfo, Nd4jLong*& zOffsets, const char order) {
 
 //     // we assume all array have same length
@@ -9292,10 +9415,6 @@ public static final int PREALLOC_SIZE = 33554432;
 //     }
 // }
 
-//////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////
-
 
 //////////////////////////////////////////////////////////////////////
 // INLINEDEF _CUDA_HD Nd4jLong strideOverContigAxis(const int axis, const Nd4jLong* inShapeInfo) {
@@ -9361,6 +9480,9 @@ public static final int PREALLOC_SIZE = 33554432;
     private native void allocateArray(long size);
     @Override public OpArgsHolder position(long position) {
         return (OpArgsHolder)super.position(position);
+    }
+    @Override public OpArgsHolder getPointer(long i) {
+        return new OpArgsHolder(this).position(position + i);
     }
 
 
@@ -9464,6 +9586,9 @@ public static final int PREALLOC_SIZE = 33554432;
         private native void allocateArray(long size);
         @Override public ShapeList position(long position) {
             return (ShapeList)super.position(position);
+        }
+        @Override public ShapeList getPointer(long i) {
+            return new ShapeList(this).position(position + i);
         }
     
         public ShapeList(@Cast("const Nd4jLong*") LongPointer shape/*=nullptr*/) { super((Pointer)null); allocate(shape); }
@@ -12138,8 +12263,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <ctime>
 // #include <mutex>
 
-        @Namespace("sd::ops") public static native @Cast("Nd4jStatus") int conditionHelper(@Cast("char*") String file, int line, int condition, int argNumber, @Cast("char*") String format);
-        @Namespace("sd::ops") public static native @Cast("Nd4jStatus") int conditionHelper(@Cast("char*") BytePointer file, int line, int condition, int argNumber, @Cast("char*") BytePointer format);
+        @Namespace("sd::ops") public native @Cast("Nd4jStatus") int conditionHelper(@Cast("char*") String file, int line, int condition, int argNumber, @Cast("char*") String format);
+        @Namespace("sd::ops") public native @Cast("Nd4jStatus") int conditionHelper(@Cast("char*") BytePointer file, int line, int condition, int argNumber, @Cast("char*") BytePointer format);
 
         /**
          * This class is the basic building block of Graph Operations. Any CustomOp out there is built on top of this "abstract" class.
@@ -12553,11 +12678,11 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             public OpRegistrator(Pointer p) { super(p); }
         
 
-            public static native @ByRef OpRegistrator getInstance();
+            public native @ByRef OpRegistrator getInstance();
 
-            public static native void exitHandler();
-            public static native void sigIntHandler(int sig);
-            public static native void sigSegVHandler(int sig);
+            public native void exitHandler();
+            public native void sigIntHandler(int sig);
+            public native void sigSegVHandler(int sig);
 
             
             public native @Cast("char*") String getAllCustomOperations();
@@ -12668,6 +12793,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         @Override public _loader position(long position) {
             return (_loader)super.position(position);
         }
+        @Override public _loader getPointer(long i) {
+            return new _loader(this).position(position + i);
+        }
     
         public _loader() { super((Pointer)null); allocate(); }
         private native void allocate();
@@ -12684,6 +12812,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public Switch position(long position) {
                 return (Switch)super.position(position);
             }
+            @Override public Switch getPointer(long i) {
+                return new Switch(this).position(position + i);
+            }
         
                                                                 public Switch() { super((Pointer)null); allocate(); }
                                                                 private native void allocate();
@@ -12699,6 +12830,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public While position(long position) {
                 return (While)super.position(position);
             }
+            @Override public While getPointer(long i) {
+                return new While(this).position(position + i);
+            }
         
                                         public While() { super((Pointer)null); allocate(); }
                                         private native void allocate();
@@ -12712,6 +12846,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public Scope position(long position) {
                 return (Scope)super.position(position);
+            }
+            @Override public Scope getPointer(long i) {
+                return new Scope(this).position(position + i);
             }
         
                                         public Scope() { super((Pointer)null); allocate(); }
@@ -12727,6 +12864,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public Conditional position(long position) {
                 return (Conditional)super.position(position);
             }
+            @Override public Conditional getPointer(long i) {
+                return new Conditional(this).position(position + i);
+            }
         
                                         public Conditional() { super((Pointer)null); allocate(); }
                                         private native void allocate();
@@ -12740,6 +12880,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public Return position(long position) {
                 return (Return)super.position(position);
+            }
+            @Override public Return getPointer(long i) {
+                return new Return(this).position(position + i);
             }
         
                                         public Return() { super((Pointer)null); allocate(); }
@@ -12762,6 +12905,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public expose position(long position) {
                 return (expose)super.position(position);
+            }
+            @Override public expose getPointer(long i) {
+                return new expose(this).position(position + i);
             }
         
                                                                                     public expose() { super((Pointer)null); allocate(); }
@@ -12816,6 +12962,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public sigmoid position(long position) {
                 return (sigmoid)super.position(position);
             }
+            @Override public sigmoid getPointer(long i) {
+                return new sigmoid(this).position(position + i);
+            }
         
                                                                                     public sigmoid() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -12830,6 +12979,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public sigmoid_bp position(long position) {
                 return (sigmoid_bp)super.position(position);
+            }
+            @Override public sigmoid_bp getPointer(long i) {
+                return new sigmoid_bp(this).position(position + i);
             }
         
                                                                                     public sigmoid_bp() { super((Pointer)null); allocate(); }
@@ -12853,6 +13005,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public softsign position(long position) {
                 return (softsign)super.position(position);
             }
+            @Override public softsign getPointer(long i) {
+                return new softsign(this).position(position + i);
+            }
         
                                                                                     public softsign() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -12867,6 +13022,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public softsign_bp position(long position) {
                 return (softsign_bp)super.position(position);
+            }
+            @Override public softsign_bp getPointer(long i) {
+                return new softsign_bp(this).position(position + i);
             }
         
                                                                                     public softsign_bp() { super((Pointer)null); allocate(); }
@@ -12889,6 +13047,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public tanh position(long position) {
                 return (tanh)super.position(position);
             }
+            @Override public tanh getPointer(long i) {
+                return new tanh(this).position(position + i);
+            }
         
                                                                                     public tanh() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -12903,6 +13064,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public tanh_bp position(long position) {
                 return (tanh_bp)super.position(position);
+            }
+            @Override public tanh_bp getPointer(long i) {
+                return new tanh_bp(this).position(position + i);
             }
         
                                                                                     public tanh_bp() { super((Pointer)null); allocate(); }
@@ -12926,6 +13090,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public softplus position(long position) {
                 return (softplus)super.position(position);
             }
+            @Override public softplus getPointer(long i) {
+                return new softplus(this).position(position + i);
+            }
         
                                                                                     public softplus() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -12940,6 +13107,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public softplus_bp position(long position) {
                 return (softplus_bp)super.position(position);
+            }
+            @Override public softplus_bp getPointer(long i) {
+                return new softplus_bp(this).position(position + i);
             }
         
                                                                                     public softplus_bp() { super((Pointer)null); allocate(); }
@@ -12962,6 +13132,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public relu position(long position) {
                 return (relu)super.position(position);
             }
+            @Override public relu getPointer(long i) {
+                return new relu(this).position(position + i);
+            }
         
                                                                                     public relu() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -12976,6 +13149,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public relu_bp position(long position) {
                 return (relu_bp)super.position(position);
+            }
+            @Override public relu_bp getPointer(long i) {
+                return new relu_bp(this).position(position + i);
             }
         
                                                                                     public relu_bp() { super((Pointer)null); allocate(); }
@@ -12998,6 +13174,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public selu position(long position) {
                 return (selu)super.position(position);
             }
+            @Override public selu getPointer(long i) {
+                return new selu(this).position(position + i);
+            }
         
                                                                                     public selu() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13012,6 +13191,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public selu_bp position(long position) {
                 return (selu_bp)super.position(position);
+            }
+            @Override public selu_bp getPointer(long i) {
+                return new selu_bp(this).position(position + i);
             }
         
                                                                                     public selu_bp() { super((Pointer)null); allocate(); }
@@ -13035,6 +13217,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lrelu position(long position) {
                 return (lrelu)super.position(position);
             }
+            @Override public lrelu getPointer(long i) {
+                return new lrelu(this).position(position + i);
+            }
         
                                                                                     public lrelu() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13049,6 +13234,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public lrelu_bp position(long position) {
                 return (lrelu_bp)super.position(position);
+            }
+            @Override public lrelu_bp getPointer(long i) {
+                return new lrelu_bp(this).position(position + i);
             }
         
                                                                                     public lrelu_bp() { super((Pointer)null); allocate(); }
@@ -13072,6 +13260,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public elu position(long position) {
                 return (elu)super.position(position);
             }
+            @Override public elu getPointer(long i) {
+                return new elu(this).position(position + i);
+            }
         
                                                                                     public elu() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13086,6 +13277,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public elu_bp position(long position) {
                 return (elu_bp)super.position(position);
+            }
+            @Override public elu_bp getPointer(long i) {
+                return new elu_bp(this).position(position + i);
             }
         
                                                                                     public elu_bp() { super((Pointer)null); allocate(); }
@@ -13109,6 +13303,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public cube position(long position) {
                 return (cube)super.position(position);
             }
+            @Override public cube getPointer(long i) {
+                return new cube(this).position(position + i);
+            }
         
                                                                                     public cube() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13123,6 +13320,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public cube_bp position(long position) {
                 return (cube_bp)super.position(position);
+            }
+            @Override public cube_bp getPointer(long i) {
+                return new cube_bp(this).position(position + i);
             }
         
                                                                                     public cube_bp() { super((Pointer)null); allocate(); }
@@ -13146,6 +13346,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public rectifiedtanh position(long position) {
                 return (rectifiedtanh)super.position(position);
             }
+            @Override public rectifiedtanh getPointer(long i) {
+                return new rectifiedtanh(this).position(position + i);
+            }
         
                                                                                     public rectifiedtanh() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13160,6 +13363,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public rectifiedtanh_bp position(long position) {
                 return (rectifiedtanh_bp)super.position(position);
+            }
+            @Override public rectifiedtanh_bp getPointer(long i) {
+                return new rectifiedtanh_bp(this).position(position + i);
             }
         
                                                                                     public rectifiedtanh_bp() { super((Pointer)null); allocate(); }
@@ -13182,6 +13388,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public rationaltanh position(long position) {
                 return (rationaltanh)super.position(position);
             }
+            @Override public rationaltanh getPointer(long i) {
+                return new rationaltanh(this).position(position + i);
+            }
         
                                                                                     public rationaltanh() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13196,6 +13405,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public rationaltanh_bp position(long position) {
                 return (rationaltanh_bp)super.position(position);
+            }
+            @Override public rationaltanh_bp getPointer(long i) {
+                return new rationaltanh_bp(this).position(position + i);
             }
         
                                                                                     public rationaltanh_bp() { super((Pointer)null); allocate(); }
@@ -13219,6 +13431,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public hardtanh position(long position) {
                 return (hardtanh)super.position(position);
             }
+            @Override public hardtanh getPointer(long i) {
+                return new hardtanh(this).position(position + i);
+            }
         
                                                                                     public hardtanh() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13233,6 +13448,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public hardtanh_bp position(long position) {
                 return (hardtanh_bp)super.position(position);
+            }
+            @Override public hardtanh_bp getPointer(long i) {
+                return new hardtanh_bp(this).position(position + i);
             }
         
                                                                                     public hardtanh_bp() { super((Pointer)null); allocate(); }
@@ -13256,6 +13474,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public hardsigmoid position(long position) {
                 return (hardsigmoid)super.position(position);
             }
+            @Override public hardsigmoid getPointer(long i) {
+                return new hardsigmoid(this).position(position + i);
+            }
         
                                                                                     public hardsigmoid() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13270,6 +13491,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public hardsigmoid_bp position(long position) {
                 return (hardsigmoid_bp)super.position(position);
+            }
+            @Override public hardsigmoid_bp getPointer(long i) {
+                return new hardsigmoid_bp(this).position(position + i);
             }
         
                                                                                     public hardsigmoid_bp() { super((Pointer)null); allocate(); }
@@ -13292,6 +13516,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public identity position(long position) {
                 return (identity)super.position(position);
             }
+            @Override public identity getPointer(long i) {
+                return new identity(this).position(position + i);
+            }
         
                                                     public identity() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -13306,6 +13533,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public identity_bp position(long position) {
                 return (identity_bp)super.position(position);
+            }
+            @Override public identity_bp getPointer(long i) {
+                return new identity_bp(this).position(position + i);
             }
         
                                                     public identity_bp() { super((Pointer)null); allocate(); }
@@ -13327,6 +13557,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public identity_n position(long position) {
                 return (identity_n)super.position(position);
+            }
+            @Override public identity_n getPointer(long i) {
+                return new identity_n(this).position(position + i);
             }
         
                                                                                     public identity_n() { super((Pointer)null); allocate(); }
@@ -13352,6 +13585,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public crelu position(long position) {
                 return (crelu)super.position(position);
             }
+            @Override public crelu getPointer(long i) {
+                return new crelu(this).position(position + i);
+            }
         
                                                                                     public crelu() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13366,6 +13602,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public crelu_bp position(long position) {
                 return (crelu_bp)super.position(position);
+            }
+            @Override public crelu_bp getPointer(long i) {
+                return new crelu_bp(this).position(position + i);
             }
         
                                                                                     public crelu_bp() { super((Pointer)null); allocate(); }
@@ -13388,6 +13627,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public relu6 position(long position) {
                 return (relu6)super.position(position);
             }
+            @Override public relu6 getPointer(long i) {
+                return new relu6(this).position(position + i);
+            }
         
                                                                                     public relu6() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13402,6 +13644,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public relu6_bp position(long position) {
                 return (relu6_bp)super.position(position);
+            }
+            @Override public relu6_bp getPointer(long i) {
+                return new relu6_bp(this).position(position + i);
             }
         
                                                                                     public relu6_bp() { super((Pointer)null); allocate(); }
@@ -13426,6 +13671,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public prelu position(long position) {
                 return (prelu)super.position(position);
             }
+            @Override public prelu getPointer(long i) {
+                return new prelu(this).position(position + i);
+            }
         
                                                                                     public prelu() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13440,6 +13688,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public prelu_bp position(long position) {
                 return (prelu_bp)super.position(position);
+            }
+            @Override public prelu_bp getPointer(long i) {
+                return new prelu_bp(this).position(position + i);
             }
         
                                                                                     public prelu_bp() { super((Pointer)null); allocate(); }
@@ -13464,6 +13715,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public thresholdedrelu position(long position) {
                 return (thresholdedrelu)super.position(position);
             }
+            @Override public thresholdedrelu getPointer(long i) {
+                return new thresholdedrelu(this).position(position + i);
+            }
         
                                                                                     public thresholdedrelu() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13478,6 +13732,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public thresholdedrelu_bp position(long position) {
                 return (thresholdedrelu_bp)super.position(position);
+            }
+            @Override public thresholdedrelu_bp getPointer(long i) {
+                return new thresholdedrelu_bp(this).position(position + i);
             }
         
                                                                                     public thresholdedrelu_bp() { super((Pointer)null); allocate(); }
@@ -13536,6 +13793,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lt_scalar position(long position) {
                 return (lt_scalar)super.position(position);
             }
+            @Override public lt_scalar getPointer(long i) {
+                return new lt_scalar(this).position(position + i);
+            }
         
                                                     public lt_scalar() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -13558,6 +13818,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public gt_scalar position(long position) {
                 return (gt_scalar)super.position(position);
+            }
+            @Override public gt_scalar getPointer(long i) {
+                return new gt_scalar(this).position(position + i);
             }
         
                                                     public gt_scalar() { super((Pointer)null); allocate(); }
@@ -13582,6 +13845,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lte_scalar position(long position) {
                 return (lte_scalar)super.position(position);
             }
+            @Override public lte_scalar getPointer(long i) {
+                return new lte_scalar(this).position(position + i);
+            }
         
                                                     public lte_scalar() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -13604,6 +13870,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public gte_scalar position(long position) {
                 return (gte_scalar)super.position(position);
+            }
+            @Override public gte_scalar getPointer(long i) {
+                return new gte_scalar(this).position(position + i);
             }
         
                                                     public gte_scalar() { super((Pointer)null); allocate(); }
@@ -13628,6 +13897,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public eq_scalar position(long position) {
                 return (eq_scalar)super.position(position);
             }
+            @Override public eq_scalar getPointer(long i) {
+                return new eq_scalar(this).position(position + i);
+            }
         
                                                     public eq_scalar() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -13651,6 +13923,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public neq_scalar position(long position) {
                 return (neq_scalar)super.position(position);
             }
+            @Override public neq_scalar getPointer(long i) {
+                return new neq_scalar(this).position(position + i);
+            }
         
                                                     public neq_scalar() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -13672,6 +13947,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public Where position(long position) {
                 return (Where)super.position(position);
             }
+            @Override public Where getPointer(long i) {
+                return new Where(this).position(position + i);
+            }
         
                                                                                     public Where() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13689,6 +13967,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public where_np position(long position) {
                 return (where_np)super.position(position);
+            }
+            @Override public where_np getPointer(long i) {
+                return new where_np(this).position(position + i);
             }
         
                                                                                     public where_np() { super((Pointer)null); allocate(); }
@@ -13711,6 +13992,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public select position(long position) {
                 return (select)super.position(position);
+            }
+            @Override public select getPointer(long i) {
+                return new select(this).position(position + i);
             }
         
                                                                                     public select() { super((Pointer)null); allocate(); }
@@ -13743,6 +14027,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public choose position(long position) {
                 return (choose)super.position(position);
             }
+            @Override public choose getPointer(long i) {
+                return new choose(this).position(position + i);
+            }
         
                                                                                     public choose() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13764,6 +14051,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public is_non_decreasing position(long position) {
                 return (is_non_decreasing)super.position(position);
             }
+            @Override public is_non_decreasing getPointer(long i) {
+                return new is_non_decreasing(this).position(position + i);
+            }
         
                                                     public is_non_decreasing() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -13783,6 +14073,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public is_strictly_increasing position(long position) {
                 return (is_strictly_increasing)super.position(position);
+            }
+            @Override public is_strictly_increasing getPointer(long i) {
+                return new is_strictly_increasing(this).position(position + i);
             }
         
                                                     public is_strictly_increasing() { super((Pointer)null); allocate(); }
@@ -13804,6 +14097,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public is_numeric_tensor position(long position) {
                 return (is_numeric_tensor)super.position(position);
             }
+            @Override public is_numeric_tensor getPointer(long i) {
+                return new is_numeric_tensor(this).position(position + i);
+            }
         
                                                     public is_numeric_tensor() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -13823,6 +14119,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public boolean_not position(long position) {
                 return (boolean_not)super.position(position);
+            }
+            @Override public boolean_not getPointer(long i) {
+                return new boolean_not(this).position(position + i);
             }
         
                                                     public boolean_not() { super((Pointer)null); allocate(); }
@@ -13886,6 +14185,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public maximum position(long position) {
                 return (maximum)super.position(position);
             }
+            @Override public maximum getPointer(long i) {
+                return new maximum(this).position(position + i);
+            }
         
                                                                                     public maximum() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13899,6 +14201,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public maximum_bp position(long position) {
                 return (maximum_bp)super.position(position);
+            }
+            @Override public maximum_bp getPointer(long i) {
+                return new maximum_bp(this).position(position + i);
             }
         
                                                                                     public maximum_bp() { super((Pointer)null); allocate(); }
@@ -13927,6 +14232,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public minimum position(long position) {
                 return (minimum)super.position(position);
             }
+            @Override public minimum getPointer(long i) {
+                return new minimum(this).position(position + i);
+            }
         
                                                                                     public minimum() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13940,6 +14248,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public minimum_bp position(long position) {
                 return (minimum_bp)super.position(position);
+            }
+            @Override public minimum_bp getPointer(long i) {
+                return new minimum_bp(this).position(position + i);
             }
         
                                                                                     public minimum_bp() { super((Pointer)null); allocate(); }
@@ -13968,6 +14279,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public add position(long position) {
                 return (add)super.position(position);
             }
+            @Override public add getPointer(long i) {
+                return new add(this).position(position + i);
+            }
         
                                                                                     public add() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -13981,6 +14295,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public add_bp position(long position) {
                 return (add_bp)super.position(position);
+            }
+            @Override public add_bp getPointer(long i) {
+                return new add_bp(this).position(position + i);
             }
         
                                                                                     public add_bp() { super((Pointer)null); allocate(); }
@@ -14009,6 +14326,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public subtract position(long position) {
                 return (subtract)super.position(position);
             }
+            @Override public subtract getPointer(long i) {
+                return new subtract(this).position(position + i);
+            }
         
                                                                                     public subtract() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14022,6 +14342,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public subtract_bp position(long position) {
                 return (subtract_bp)super.position(position);
+            }
+            @Override public subtract_bp getPointer(long i) {
+                return new subtract_bp(this).position(position + i);
             }
         
                                                                                     public subtract_bp() { super((Pointer)null); allocate(); }
@@ -14050,6 +14373,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reversesubtract position(long position) {
                 return (reversesubtract)super.position(position);
             }
+            @Override public reversesubtract getPointer(long i) {
+                return new reversesubtract(this).position(position + i);
+            }
         
                                                                                     public reversesubtract() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14063,6 +14389,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reversesubtract_bp position(long position) {
                 return (reversesubtract_bp)super.position(position);
+            }
+            @Override public reversesubtract_bp getPointer(long i) {
+                return new reversesubtract_bp(this).position(position + i);
             }
         
                                                                                     public reversesubtract_bp() { super((Pointer)null); allocate(); }
@@ -14091,6 +14420,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reversemod position(long position) {
                 return (reversemod)super.position(position);
             }
+            @Override public reversemod getPointer(long i) {
+                return new reversemod(this).position(position + i);
+            }
         
                                                                                     public reversemod() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14104,6 +14436,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reversemod_bp position(long position) {
                 return (reversemod_bp)super.position(position);
+            }
+            @Override public reversemod_bp getPointer(long i) {
+                return new reversemod_bp(this).position(position + i);
             }
         
                                                                                     public reversemod_bp() { super((Pointer)null); allocate(); }
@@ -14133,6 +14468,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public squaredsubtract position(long position) {
                 return (squaredsubtract)super.position(position);
             }
+            @Override public squaredsubtract getPointer(long i) {
+                return new squaredsubtract(this).position(position + i);
+            }
         
                                                                                     public squaredsubtract() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14146,6 +14484,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocateArray(long size);
                                                                                     @Override public squaredsubtract_bp position(long position) {
                                                                                         return (squaredsubtract_bp)super.position(position);
+                                                                                    }
+                                                                                    @Override public squaredsubtract_bp getPointer(long i) {
+                                                                                        return new squaredsubtract_bp(this).position(position + i);
                                                                                     }
                                                                                 
                                                                                     public squaredsubtract_bp() { super((Pointer)null); allocate(); }
@@ -14174,6 +14515,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public multiply position(long position) {
                 return (multiply)super.position(position);
             }
+            @Override public multiply getPointer(long i) {
+                return new multiply(this).position(position + i);
+            }
         
                                                                                     public multiply() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14187,6 +14531,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public multiply_bp position(long position) {
                 return (multiply_bp)super.position(position);
+            }
+            @Override public multiply_bp getPointer(long i) {
+                return new multiply_bp(this).position(position + i);
             }
         
                                                                                     public multiply_bp() { super((Pointer)null); allocate(); }
@@ -14215,6 +14562,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public divide position(long position) {
                 return (divide)super.position(position);
             }
+            @Override public divide getPointer(long i) {
+                return new divide(this).position(position + i);
+            }
         
                                                                                     public divide() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14228,6 +14578,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public divide_bp position(long position) {
                 return (divide_bp)super.position(position);
+            }
+            @Override public divide_bp getPointer(long i) {
+                return new divide_bp(this).position(position + i);
             }
         
                                                                                     public divide_bp() { super((Pointer)null); allocate(); }
@@ -14256,6 +14609,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public divide_no_nan position(long position) {
                 return (divide_no_nan)super.position(position);
             }
+            @Override public divide_no_nan getPointer(long i) {
+                return new divide_no_nan(this).position(position + i);
+            }
         
                                                                                     public divide_no_nan() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14281,6 +14637,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reversedivide position(long position) {
                 return (reversedivide)super.position(position);
             }
+            @Override public reversedivide getPointer(long i) {
+                return new reversedivide(this).position(position + i);
+            }
         
                                                                                     public reversedivide() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14294,6 +14653,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reversedivide_bp position(long position) {
                 return (reversedivide_bp)super.position(position);
+            }
+            @Override public reversedivide_bp getPointer(long i) {
+                return new reversedivide_bp(this).position(position + i);
             }
         
                                                                                     public reversedivide_bp() { super((Pointer)null); allocate(); }
@@ -14322,6 +14684,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public floormod position(long position) {
                 return (floormod)super.position(position);
             }
+            @Override public floormod getPointer(long i) {
+                return new floormod(this).position(position + i);
+            }
         
                                                                                     public floormod() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14335,6 +14700,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public floormod_bp position(long position) {
                 return (floormod_bp)super.position(position);
+            }
+            @Override public floormod_bp getPointer(long i) {
+                return new floormod_bp(this).position(position + i);
             }
         
                                                                                     public floormod_bp() { super((Pointer)null); allocate(); }
@@ -14354,6 +14722,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public mod position(long position) {
                 return (mod)super.position(position);
             }
+            @Override public mod getPointer(long i) {
+                return new mod(this).position(position + i);
+            }
         
                                                                                     public mod() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14367,6 +14738,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public mod_bp position(long position) {
                 return (mod_bp)super.position(position);
+            }
+            @Override public mod_bp getPointer(long i) {
+                return new mod_bp(this).position(position + i);
             }
         
                                                                                     public mod_bp() { super((Pointer)null); allocate(); }
@@ -14395,6 +14769,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public floordiv position(long position) {
                 return (floordiv)super.position(position);
             }
+            @Override public floordiv getPointer(long i) {
+                return new floordiv(this).position(position + i);
+            }
         
                                                                                     public floordiv() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14408,6 +14785,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     private native void allocateArray(long size);
                                                                                     @Override public floordiv_bp position(long position) {
                                                                                         return (floordiv_bp)super.position(position);
+                                                                                    }
+                                                                                    @Override public floordiv_bp getPointer(long i) {
+                                                                                        return new floordiv_bp(this).position(position + i);
                                                                                     }
                                                                                 
                                                                                     public floordiv_bp() { super((Pointer)null); allocate(); }
@@ -14436,6 +14816,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public realdiv position(long position) {
                 return (realdiv)super.position(position);
             }
+            @Override public realdiv getPointer(long i) {
+                return new realdiv(this).position(position + i);
+            }
         
                                                                                     public realdiv() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14449,6 +14832,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public realdiv_bp position(long position) {
                 return (realdiv_bp)super.position(position);
+            }
+            @Override public realdiv_bp getPointer(long i) {
+                return new realdiv_bp(this).position(position + i);
             }
         
                                                                                     public realdiv_bp() { super((Pointer)null); allocate(); }
@@ -14472,6 +14858,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public truncatediv position(long position) {
                 return (truncatediv)super.position(position);
+            }
+            @Override public truncatediv getPointer(long i) {
+                return new truncatediv(this).position(position + i);
             }
         
                                                                                     public truncatediv() { super((Pointer)null); allocate(); }
@@ -14498,6 +14887,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public assign position(long position) {
                 return (assign)super.position(position);
             }
+            @Override public assign getPointer(long i) {
+                return new assign(this).position(position + i);
+            }
         
                                                                                     public assign() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14511,6 +14903,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public assign_bp position(long position) {
                 return (assign_bp)super.position(position);
+            }
+            @Override public assign_bp getPointer(long i) {
+                return new assign_bp(this).position(position + i);
             }
         
                                                                                     public assign_bp() { super((Pointer)null); allocate(); }
@@ -14529,6 +14924,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public meshgrid position(long position) {
                 return (meshgrid)super.position(position);
+            }
+            @Override public meshgrid getPointer(long i) {
+                return new meshgrid(this).position(position + i);
             }
         
                                                                                     public meshgrid() { super((Pointer)null); allocate(); }
@@ -14553,6 +14951,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public equals position(long position) {
                 return (equals)super.position(position);
             }
+            @Override public equals getPointer(long i) {
+                return new equals(this).position(position + i);
+            }
         
                                                                                     public equals() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14573,6 +14974,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public not_equals position(long position) {
                 return (not_equals)super.position(position);
+            }
+            @Override public not_equals getPointer(long i) {
+                return new not_equals(this).position(position + i);
             }
         
                                                                                     public not_equals() { super((Pointer)null); allocate(); }
@@ -14595,6 +14999,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public less_equal position(long position) {
                 return (less_equal)super.position(position);
             }
+            @Override public less_equal getPointer(long i) {
+                return new less_equal(this).position(position + i);
+            }
         
                                                                                     public less_equal() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14615,6 +15022,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public greater_equal position(long position) {
                 return (greater_equal)super.position(position);
+            }
+            @Override public greater_equal getPointer(long i) {
+                return new greater_equal(this).position(position + i);
             }
         
                                                                                     public greater_equal() { super((Pointer)null); allocate(); }
@@ -14637,6 +15047,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public less position(long position) {
                 return (less)super.position(position);
             }
+            @Override public less getPointer(long i) {
+                return new less(this).position(position + i);
+            }
         
                                                                                     public less() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14658,6 +15071,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public greater position(long position) {
                 return (greater)super.position(position);
             }
+            @Override public greater getPointer(long i) {
+                return new greater(this).position(position + i);
+            }
         
                                                                                     public greater() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14677,6 +15093,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public boolean_and position(long position) {
                 return (boolean_and)super.position(position);
+            }
+            @Override public boolean_and getPointer(long i) {
+                return new boolean_and(this).position(position + i);
             }
         
                                                                                     public boolean_and() { super((Pointer)null); allocate(); }
@@ -14698,6 +15117,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public boolean_or position(long position) {
                 return (boolean_or)super.position(position);
             }
+            @Override public boolean_or getPointer(long i) {
+                return new boolean_or(this).position(position + i);
+            }
         
                                                                                     public boolean_or() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14717,6 +15139,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public boolean_xor position(long position) {
                 return (boolean_xor)super.position(position);
+            }
+            @Override public boolean_xor getPointer(long i) {
+                return new boolean_xor(this).position(position + i);
             }
         
                                                                                     public boolean_xor() { super((Pointer)null); allocate(); }
@@ -14747,6 +15172,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public percentile position(long position) {
                 return (percentile)super.position(position);
             }
+            @Override public percentile getPointer(long i) {
+                return new percentile(this).position(position + i);
+            }
         
                                                                                     public percentile() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14770,6 +15198,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public tf_atan2 position(long position) {
                 return (tf_atan2)super.position(position);
             }
+            @Override public tf_atan2 getPointer(long i) {
+                return new tf_atan2(this).position(position + i);
+            }
         
                                                                                     public tf_atan2() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14791,6 +15222,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public Pow position(long position) {
                 return (Pow)super.position(position);
             }
+            @Override public Pow getPointer(long i) {
+                return new Pow(this).position(position + i);
+            }
         
                                                                                     public Pow() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14804,6 +15238,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public Pow_bp position(long position) {
                 return (Pow_bp)super.position(position);
+            }
+            @Override public Pow_bp getPointer(long i) {
+                return new Pow_bp(this).position(position + i);
             }
         
                                                                                     public Pow_bp() { super((Pointer)null); allocate(); }
@@ -14831,6 +15268,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public igamma position(long position) {
                         return (igamma)super.position(position);
                     }
+                    @Override public igamma getPointer(long i) {
+                        return new igamma(this).position(position + i);
+                    }
                 
                                                                                     public igamma() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14853,6 +15293,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     private native void allocateArray(long size);
                     @Override public igammac position(long position) {
                         return (igammac)super.position(position);
+                    }
+                    @Override public igammac getPointer(long i) {
+                        return new igammac(this).position(position + i);
                     }
                 
                                                                                     public igammac() { super((Pointer)null); allocate(); }
@@ -14914,6 +15357,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public conv1d position(long position) {
                 return (conv1d)super.position(position);
             }
+            @Override public conv1d getPointer(long i) {
+                return new conv1d(this).position(position + i);
+            }
         
                                                                                     public conv1d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14928,6 +15374,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public conv1d_bp position(long position) {
                 return (conv1d_bp)super.position(position);
+            }
+            @Override public conv1d_bp getPointer(long i) {
+                return new conv1d_bp(this).position(position + i);
             }
         
                                                                                     public conv1d_bp() { super((Pointer)null); allocate(); }
@@ -14966,6 +15415,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public conv2d position(long position) {
                 return (conv2d)super.position(position);
             }
+            @Override public conv2d getPointer(long i) {
+                return new conv2d(this).position(position + i);
+            }
         
                                                                                     public conv2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14981,6 +15433,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public conv2d_bp position(long position) {
                 return (conv2d_bp)super.position(position);
             }
+            @Override public conv2d_bp getPointer(long i) {
+                return new conv2d_bp(this).position(position + i);
+            }
         
                                                                                     public conv2d_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -14995,6 +15450,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public conv2d_input_bp position(long position) {
                 return (conv2d_input_bp)super.position(position);
+            }
+            @Override public conv2d_input_bp getPointer(long i) {
+                return new conv2d_input_bp(this).position(position + i);
             }
         
                                                                                     public conv2d_input_bp() { super((Pointer)null); allocate(); }
@@ -15022,6 +15480,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public sconv2d position(long position) {
                 return (sconv2d)super.position(position);
             }
+            @Override public sconv2d getPointer(long i) {
+                return new sconv2d(this).position(position + i);
+            }
         
                                                                                     public sconv2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15036,6 +15497,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public sconv2d_bp position(long position) {
                 return (sconv2d_bp)super.position(position);
+            }
+            @Override public sconv2d_bp getPointer(long i) {
+                return new sconv2d_bp(this).position(position + i);
             }
         
                                                                                     public sconv2d_bp() { super((Pointer)null); allocate(); }
@@ -15069,6 +15533,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public deconv2d position(long position) {
                 return (deconv2d)super.position(position);
             }
+            @Override public deconv2d getPointer(long i) {
+                return new deconv2d(this).position(position + i);
+            }
         
                                                                                     public deconv2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15083,6 +15550,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public deconv2d_bp position(long position) {
                 return (deconv2d_bp)super.position(position);
+            }
+            @Override public deconv2d_bp getPointer(long i) {
+                return new deconv2d_bp(this).position(position + i);
             }
         
                                                                                     public deconv2d_bp() { super((Pointer)null); allocate(); }
@@ -15122,6 +15592,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public deconv3d position(long position) {
                 return (deconv3d)super.position(position);
             }
+            @Override public deconv3d getPointer(long i) {
+                return new deconv3d(this).position(position + i);
+            }
         
                                                                                     public deconv3d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15136,6 +15609,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public deconv3d_bp position(long position) {
                 return (deconv3d_bp)super.position(position);
+            }
+            @Override public deconv3d_bp getPointer(long i) {
+                return new deconv3d_bp(this).position(position + i);
             }
         
                                                                                     public deconv3d_bp() { super((Pointer)null); allocate(); }
@@ -15171,6 +15647,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public maxpool2d position(long position) {
                 return (maxpool2d)super.position(position);
             }
+            @Override public maxpool2d getPointer(long i) {
+                return new maxpool2d(this).position(position + i);
+            }
         
                                                                                     public maxpool2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15185,6 +15664,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public maxpool2d_bp position(long position) {
                 return (maxpool2d_bp)super.position(position);
+            }
+            @Override public maxpool2d_bp getPointer(long i) {
+                return new maxpool2d_bp(this).position(position + i);
             }
         
                                                                                     public maxpool2d_bp() { super((Pointer)null); allocate(); }
@@ -15219,6 +15701,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public avgpool2d position(long position) {
                 return (avgpool2d)super.position(position);
             }
+            @Override public avgpool2d getPointer(long i) {
+                return new avgpool2d(this).position(position + i);
+            }
         
                                                                                     public avgpool2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15233,6 +15718,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public avgpool2d_bp position(long position) {
                 return (avgpool2d_bp)super.position(position);
+            }
+            @Override public avgpool2d_bp getPointer(long i) {
+                return new avgpool2d_bp(this).position(position + i);
             }
         
                                                                                     public avgpool2d_bp() { super((Pointer)null); allocate(); }
@@ -15268,6 +15756,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public pnormpool2d position(long position) {
                 return (pnormpool2d)super.position(position);
             }
+            @Override public pnormpool2d getPointer(long i) {
+                return new pnormpool2d(this).position(position + i);
+            }
         
                                                                                     public pnormpool2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15282,6 +15773,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public pnormpool2d_bp position(long position) {
                 return (pnormpool2d_bp)super.position(position);
+            }
+            @Override public pnormpool2d_bp getPointer(long i) {
+                return new pnormpool2d_bp(this).position(position + i);
             }
         
                                                                                     public pnormpool2d_bp() { super((Pointer)null); allocate(); }
@@ -15316,6 +15810,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public im2col position(long position) {
                 return (im2col)super.position(position);
             }
+            @Override public im2col getPointer(long i) {
+                return new im2col(this).position(position + i);
+            }
         
                                                                                     public im2col() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15330,6 +15827,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 		    private native void allocateArray(long size);
 		    @Override public im2col_bp position(long position) {
 		        return (im2col_bp)super.position(position);
+		    }
+		    @Override public im2col_bp getPointer(long i) {
+		        return new im2col_bp(this).position(position + i);
 		    }
 		
                                                                                     public im2col_bp() { super((Pointer)null); allocate(); }
@@ -15363,6 +15863,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public col2im position(long position) {
                 return (col2im)super.position(position);
             }
+            @Override public col2im getPointer(long i) {
+                return new col2im(this).position(position + i);
+            }
         
                                                                                     public col2im() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15389,6 +15892,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public upsampling2d position(long position) {
                 return (upsampling2d)super.position(position);
             }
+            @Override public upsampling2d getPointer(long i) {
+                return new upsampling2d(this).position(position + i);
+            }
         
                                                                                     public upsampling2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15403,6 +15909,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public upsampling2d_bp position(long position) {
                 return (upsampling2d_bp)super.position(position);
+            }
+            @Override public upsampling2d_bp getPointer(long i) {
+                return new upsampling2d_bp(this).position(position + i);
             }
         
                                                                                     public upsampling2d_bp() { super((Pointer)null); allocate(); }
@@ -15431,6 +15940,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public upsampling3d position(long position) {
                 return (upsampling3d)super.position(position);
             }
+            @Override public upsampling3d getPointer(long i) {
+                return new upsampling3d(this).position(position + i);
+            }
         
                                                                                     public upsampling3d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15445,6 +15957,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public upsampling3d_bp position(long position) {
                 return (upsampling3d_bp)super.position(position);
+            }
+            @Override public upsampling3d_bp getPointer(long i) {
+                return new upsampling3d_bp(this).position(position + i);
             }
         
                                                                                     public upsampling3d_bp() { super((Pointer)null); allocate(); }
@@ -15471,6 +15986,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public ismax position(long position) {
                 return (ismax)super.position(position);
             }
+            @Override public ismax getPointer(long i) {
+                return new ismax(this).position(position + i);
+            }
         
                                                                                     public ismax() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15495,6 +16013,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public dilation2d position(long position) {
                 return (dilation2d)super.position(position);
             }
+            @Override public dilation2d getPointer(long i) {
+                return new dilation2d(this).position(position + i);
+            }
         
                                                                                     public dilation2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15513,6 +16034,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public conv3dnew position(long position) {
                 return (conv3dnew)super.position(position);
             }
+            @Override public conv3dnew getPointer(long i) {
+                return new conv3dnew(this).position(position + i);
+            }
         
                                                                                     public conv3dnew() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15527,6 +16051,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public conv3dnew_bp position(long position) {
                 return (conv3dnew_bp)super.position(position);
+            }
+            @Override public conv3dnew_bp getPointer(long i) {
+                return new conv3dnew_bp(this).position(position + i);
             }
         
                                                                                     public conv3dnew_bp() { super((Pointer)null); allocate(); }
@@ -15546,6 +16073,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public avgpool3dnew position(long position) {
                 return (avgpool3dnew)super.position(position);
             }
+            @Override public avgpool3dnew getPointer(long i) {
+                return new avgpool3dnew(this).position(position + i);
+            }
         
                                                                                     public avgpool3dnew() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15560,6 +16090,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public avgpool3dnew_bp position(long position) {
                 return (avgpool3dnew_bp)super.position(position);
+            }
+            @Override public avgpool3dnew_bp getPointer(long i) {
+                return new avgpool3dnew_bp(this).position(position + i);
             }
         
                                                                                     public avgpool3dnew_bp() { super((Pointer)null); allocate(); }
@@ -15579,6 +16112,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public maxpool3dnew position(long position) {
                 return (maxpool3dnew)super.position(position);
             }
+            @Override public maxpool3dnew getPointer(long i) {
+                return new maxpool3dnew(this).position(position + i);
+            }
         
                                                                                     public maxpool3dnew() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15593,6 +16129,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public maxpool3dnew_bp position(long position) {
                 return (maxpool3dnew_bp)super.position(position);
+            }
+            @Override public maxpool3dnew_bp getPointer(long i) {
+                return new maxpool3dnew_bp(this).position(position + i);
             }
         
                                                                                     public maxpool3dnew_bp() { super((Pointer)null); allocate(); }
@@ -15623,6 +16162,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public max_pool_with_argmax position(long position) {
                 return (max_pool_with_argmax)super.position(position);
             }
+            @Override public max_pool_with_argmax getPointer(long i) {
+                return new max_pool_with_argmax(this).position(position + i);
+            }
         
                                                                                     public max_pool_with_argmax() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15642,6 +16184,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public depthwise_conv2d position(long position) {
                 return (depthwise_conv2d)super.position(position);
             }
+            @Override public depthwise_conv2d getPointer(long i) {
+                return new depthwise_conv2d(this).position(position + i);
+            }
         
                                                                                     public depthwise_conv2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15656,6 +16201,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public depthwise_conv2d_bp position(long position) {
                 return (depthwise_conv2d_bp)super.position(position);
+            }
+            @Override public depthwise_conv2d_bp getPointer(long i) {
+                return new depthwise_conv2d_bp(this).position(position + i);
             }
         
                                                                                     public depthwise_conv2d_bp() { super((Pointer)null); allocate(); }
@@ -15684,6 +16232,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public pointwise_conv2d position(long position) {
                 return (pointwise_conv2d)super.position(position);
             }
+            @Override public pointwise_conv2d getPointer(long i) {
+                return new pointwise_conv2d(this).position(position + i);
+            }
         
                                                                                     public pointwise_conv2d() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -15699,6 +16250,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public deconv2d_tf position(long position) {
                 return (deconv2d_tf)super.position(position);
+            }
+            @Override public deconv2d_tf getPointer(long i) {
+                return new deconv2d_tf(this).position(position + i);
             }
         
                                                                                     public deconv2d_tf() { super((Pointer)null); allocate(); }
@@ -15755,6 +16309,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public write_list position(long position) {
                 return (write_list)super.position(position);
             }
+            @Override public write_list getPointer(long i) {
+                return new write_list(this).position(position + i);
+            }
         
                                                                 public write_list() { super((Pointer)null); allocate(); }
                                                                 private native void allocate();
@@ -15774,6 +16331,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public stack_list position(long position) {
                 return (stack_list)super.position(position);
+            }
+            @Override public stack_list getPointer(long i) {
+                return new stack_list(this).position(position + i);
             }
         
                                                                 public stack_list() { super((Pointer)null); allocate(); }
@@ -15801,6 +16361,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public read_list position(long position) {
                 return (read_list)super.position(position);
             }
+            @Override public read_list getPointer(long i) {
+                return new read_list(this).position(position + i);
+            }
         
                                                                 public read_list() { super((Pointer)null); allocate(); }
                                                                 private native void allocate();
@@ -15827,6 +16390,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public pick_list position(long position) {
                 return (pick_list)super.position(position);
             }
+            @Override public pick_list getPointer(long i) {
+                return new pick_list(this).position(position + i);
+            }
         
                                                                 public pick_list() { super((Pointer)null); allocate(); }
                                                                 private native void allocate();
@@ -15849,6 +16415,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public size_list position(long position) {
                 return (size_list)super.position(position);
             }
+            @Override public size_list getPointer(long i) {
+                return new size_list(this).position(position + i);
+            }
         
                                                                 public size_list() { super((Pointer)null); allocate(); }
                                                                 private native void allocate();
@@ -15869,6 +16438,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public create_list position(long position) {
                 return (create_list)super.position(position);
             }
+            @Override public create_list getPointer(long i) {
+                return new create_list(this).position(position + i);
+            }
         
                                                                 public create_list() { super((Pointer)null); allocate(); }
                                                                 private native void allocate();
@@ -15888,6 +16460,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public scatter_list position(long position) {
                 return (scatter_list)super.position(position);
+            }
+            @Override public scatter_list getPointer(long i) {
+                return new scatter_list(this).position(position + i);
             }
         
                                                                 public scatter_list() { super((Pointer)null); allocate(); }
@@ -15913,6 +16488,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public split_list position(long position) {
                 return (split_list)super.position(position);
             }
+            @Override public split_list getPointer(long i) {
+                return new split_list(this).position(position + i);
+            }
         
                                                                 public split_list() { super((Pointer)null); allocate(); }
                                                                 private native void allocate();
@@ -15936,6 +16514,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public gather_list position(long position) {
                 return (gather_list)super.position(position);
             }
+            @Override public gather_list getPointer(long i) {
+                return new gather_list(this).position(position + i);
+            }
         
                                                                 public gather_list() { super((Pointer)null); allocate(); }
                                                                 private native void allocate();
@@ -15956,6 +16537,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public clone_list position(long position) {
                 return (clone_list)super.position(position);
             }
+            @Override public clone_list getPointer(long i) {
+                return new clone_list(this).position(position + i);
+            }
         
                                                                 public clone_list() { super((Pointer)null); allocate(); }
                                                                 private native void allocate();
@@ -15975,6 +16559,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public unstack_list position(long position) {
                 return (unstack_list)super.position(position);
+            }
+            @Override public unstack_list getPointer(long i) {
+                return new unstack_list(this).position(position + i);
             }
         
                                                                 public unstack_list() { super((Pointer)null); allocate(); }
@@ -16039,6 +16626,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public sru position(long position) {
                 return (sru)super.position(position);
             }
+            @Override public sru getPointer(long i) {
+                return new sru(this).position(position + i);
+            }
         
                                                                                     public sru() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16071,6 +16661,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public sru_bi position(long position) {
                 return (sru_bi)super.position(position);
+            }
+            @Override public sru_bi getPointer(long i) {
+                return new sru_bi(this).position(position + i);
             }
         
                                                                                     public sru_bi() { super((Pointer)null); allocate(); }
@@ -16111,6 +16704,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public sru_bp position(long position) {
                 return (sru_bp)super.position(position);
             }
+            @Override public sru_bp getPointer(long i) {
+                return new sru_bp(this).position(position + i);
+            }
         
                                                                                     public sru_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16148,6 +16744,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public sru_bi_bp position(long position) {
                 return (sru_bi_bp)super.position(position);
+            }
+            @Override public sru_bi_bp getPointer(long i) {
+                return new sru_bi_bp(this).position(position + i);
             }
         
                                                                                     public sru_bi_bp() { super((Pointer)null); allocate(); }
@@ -16199,6 +16798,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lstmCell position(long position) {
                 return (lstmCell)super.position(position);
             }
+            @Override public lstmCell getPointer(long i) {
+                return new lstmCell(this).position(position + i);
+            }
         
                                                                                     public lstmCell() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16217,6 +16819,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lstmLayerCell position(long position) {
                 return (lstmLayerCell)super.position(position);
             }
+            @Override public lstmLayerCell getPointer(long i) {
+                return new lstmLayerCell(this).position(position + i);
+            }
         
                                                                                     public lstmLayerCell() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16233,6 +16838,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public lstmLayerCellBp position(long position) {
                 return (lstmLayerCellBp)super.position(position);
+            }
+            @Override public lstmLayerCellBp getPointer(long i) {
+                return new lstmLayerCellBp(this).position(position + i);
             }
         
                                                                                     public lstmLayerCellBp() { super((Pointer)null); allocate(); }
@@ -16287,6 +16895,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public lstmBlockCell position(long position) {
                 return (lstmBlockCell)super.position(position);
+            }
+            @Override public lstmBlockCell getPointer(long i) {
+                return new lstmBlockCell(this).position(position + i);
             }
         
                                                                                     public lstmBlockCell() { super((Pointer)null); allocate(); }
@@ -16344,6 +16955,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lstmBlock position(long position) {
                 return (lstmBlock)super.position(position);
             }
+            @Override public lstmBlock getPointer(long i) {
+                return new lstmBlock(this).position(position + i);
+            }
         
                                                                                     public lstmBlock() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16363,6 +16977,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lstmLayer position(long position) {
                 return (lstmLayer)super.position(position);
             }
+            @Override public lstmLayer getPointer(long i) {
+                return new lstmLayer(this).position(position + i);
+            }
         
                                                                                     public lstmLayer() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16381,6 +16998,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public lstmLayer_bp position(long position) {
                 return (lstmLayer_bp)super.position(position);
+            }
+            @Override public lstmLayer_bp getPointer(long i) {
+                return new lstmLayer_bp(this).position(position + i);
             }
         
                                                                                     public lstmLayer_bp() { super((Pointer)null); allocate(); }
@@ -16414,6 +17034,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public sruCell position(long position) {
                 return (sruCell)super.position(position);
+            }
+            @Override public sruCell getPointer(long i) {
+                return new sruCell(this).position(position + i);
             }
         
                                                                                     public sruCell() { super((Pointer)null); allocate(); }
@@ -16454,6 +17077,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public gruCell position(long position) {
                 return (gruCell)super.position(position);
             }
+            @Override public gruCell getPointer(long i) {
+                return new gruCell(this).position(position + i);
+            }
         
                                                                                     public gruCell() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16471,6 +17097,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public gruCell_bp position(long position) {
                 return (gruCell_bp)super.position(position);
+            }
+            @Override public gruCell_bp getPointer(long i) {
+                return new gruCell_bp(this).position(position + i);
             }
         
                                                                                     public gruCell_bp() { super((Pointer)null); allocate(); }
@@ -16517,6 +17146,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lstm position(long position) {
                 return (lstm)super.position(position);
             }
+            @Override public lstm getPointer(long i) {
+                return new lstm(this).position(position + i);
+            }
         
                                                                                     public lstm() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16549,6 +17181,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public gru position(long position) {
                 return (gru)super.position(position);
             }
+            @Override public gru getPointer(long i) {
+                return new gru(this).position(position + i);
+            }
         
                                                                                     public gru() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16566,6 +17201,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public gru_bp position(long position) {
                 return (gru_bp)super.position(position);
+            }
+            @Override public gru_bp getPointer(long i) {
+                return new gru_bp(this).position(position + i);
             }
         
                                                                                     public gru_bp() { super((Pointer)null); allocate(); }
@@ -16599,6 +17237,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public static_rnn position(long position) {
                 return (static_rnn)super.position(position);
+            }
+            @Override public static_rnn getPointer(long i) {
+                return new static_rnn(this).position(position + i);
             }
         
                                                                                     public static_rnn() { super((Pointer)null); allocate(); }
@@ -16634,6 +17275,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public dynamic_rnn position(long position) {
                 return (dynamic_rnn)super.position(position);
+            }
+            @Override public dynamic_rnn getPointer(long i) {
+                return new dynamic_rnn(this).position(position + i);
             }
         
                                                                                     public dynamic_rnn() { super((Pointer)null); allocate(); }
@@ -16671,6 +17315,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public static_bidirectional_rnn position(long position) {
                 return (static_bidirectional_rnn)super.position(position);
+            }
+            @Override public static_bidirectional_rnn getPointer(long i) {
+                return new static_bidirectional_rnn(this).position(position + i);
             }
         
                                                                                     public static_bidirectional_rnn() { super((Pointer)null); allocate(); }
@@ -16712,6 +17359,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public dynamic_bidirectional_rnn position(long position) {
                 return (dynamic_bidirectional_rnn)super.position(position);
+            }
+            @Override public dynamic_bidirectional_rnn getPointer(long i) {
+                return new dynamic_bidirectional_rnn(this).position(position + i);
             }
         
                                                                                     public dynamic_bidirectional_rnn() { super((Pointer)null); allocate(); }
@@ -16760,6 +17410,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public clipbyvalue position(long position) {
                 return (clipbyvalue)super.position(position);
             }
+            @Override public clipbyvalue getPointer(long i) {
+                return new clipbyvalue(this).position(position + i);
+            }
         
                                                                                     public clipbyvalue() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16778,6 +17431,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public clipbynorm position(long position) {
                 return (clipbynorm)super.position(position);
             }
+            @Override public clipbynorm getPointer(long i) {
+                return new clipbynorm(this).position(position + i);
+            }
         
                                                                                     public clipbynorm() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16792,6 +17448,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public clipbynorm_bp position(long position) {
                 return (clipbynorm_bp)super.position(position);
+            }
+            @Override public clipbynorm_bp getPointer(long i) {
+                return new clipbynorm_bp(this).position(position + i);
             }
         
                                                                                     public clipbynorm_bp() { super((Pointer)null); allocate(); }
@@ -16811,6 +17470,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public clipbyavgnorm position(long position) {
                 return (clipbyavgnorm)super.position(position);
             }
+            @Override public clipbyavgnorm getPointer(long i) {
+                return new clipbyavgnorm(this).position(position + i);
+            }
         
                                                                                     public clipbyavgnorm() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16825,6 +17487,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public clipbyavgnorm_bp position(long position) {
                 return (clipbyavgnorm_bp)super.position(position);
+            }
+            @Override public clipbyavgnorm_bp getPointer(long i) {
+                return new clipbyavgnorm_bp(this).position(position + i);
             }
         
                                                                                     public clipbyavgnorm_bp() { super((Pointer)null); allocate(); }
@@ -16844,6 +17509,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public cumsum position(long position) {
                 return (cumsum)super.position(position);
             }
+            @Override public cumsum getPointer(long i) {
+                return new cumsum(this).position(position + i);
+            }
         
                                                                                     public cumsum() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16861,6 +17529,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public cumprod position(long position) {
                 return (cumprod)super.position(position);
+            }
+            @Override public cumprod getPointer(long i) {
+                return new cumprod(this).position(position + i);
             }
         
                                                                                     public cumprod() { super((Pointer)null); allocate(); }
@@ -16880,6 +17551,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public tile position(long position) {
                 return (tile)super.position(position);
             }
+            @Override public tile getPointer(long i) {
+                return new tile(this).position(position + i);
+            }
         
                                                                                     public tile() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16894,6 +17568,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public tile_bp position(long position) {
                 return (tile_bp)super.position(position);
+            }
+            @Override public tile_bp getPointer(long i) {
+                return new tile_bp(this).position(position + i);
             }
         
                                                                                     public tile_bp() { super((Pointer)null); allocate(); }
@@ -16913,6 +17590,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public repeat position(long position) {
                 return (repeat)super.position(position);
             }
+            @Override public repeat getPointer(long i) {
+                return new repeat(this).position(position + i);
+            }
         
                                                                                     public repeat() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16931,6 +17611,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public invert_permutation position(long position) {
                 return (invert_permutation)super.position(position);
             }
+            @Override public invert_permutation getPointer(long i) {
+                return new invert_permutation(this).position(position + i);
+            }
         
                                                                                     public invert_permutation() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16948,6 +17631,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public concat position(long position) {
                 return (concat)super.position(position);
             }
+            @Override public concat getPointer(long i) {
+                return new concat(this).position(position + i);
+            }
         
                                                                                     public concat() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -16962,6 +17648,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public concat_bp position(long position) {
                 return (concat_bp)super.position(position);
+            }
+            @Override public concat_bp getPointer(long i) {
+                return new concat_bp(this).position(position + i);
             }
         
                                                                                     public concat_bp() { super((Pointer)null); allocate(); }
@@ -16980,6 +17669,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public mergemax position(long position) {
                 return (mergemax)super.position(position);
             }
+            @Override public mergemax getPointer(long i) {
+                return new mergemax(this).position(position + i);
+            }
         
                                                     public mergemax() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -16994,6 +17686,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public mergemax_bp position(long position) {
                 return (mergemax_bp)super.position(position);
+            }
+            @Override public mergemax_bp getPointer(long i) {
+                return new mergemax_bp(this).position(position + i);
             }
         
                                                                                     public mergemax_bp() { super((Pointer)null); allocate(); }
@@ -17019,6 +17714,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public mergemaxindex position(long position) {
                 return (mergemaxindex)super.position(position);
             }
+            @Override public mergemaxindex getPointer(long i) {
+                return new mergemaxindex(this).position(position + i);
+            }
         
                                                                                     public mergemaxindex() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17037,6 +17735,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public mergeadd position(long position) {
                 return (mergeadd)super.position(position);
             }
+            @Override public mergeadd getPointer(long i) {
+                return new mergeadd(this).position(position + i);
+            }
         
                                                     public mergeadd() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -17051,6 +17752,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public mergeadd_bp position(long position) {
                 return (mergeadd_bp)super.position(position);
+            }
+            @Override public mergeadd_bp getPointer(long i) {
+                return new mergeadd_bp(this).position(position + i);
             }
         
                                                                                     public mergeadd_bp() { super((Pointer)null); allocate(); }
@@ -17070,6 +17774,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public mergeavg position(long position) {
                 return (mergeavg)super.position(position);
             }
+            @Override public mergeavg getPointer(long i) {
+                return new mergeavg(this).position(position + i);
+            }
         
                                                     public mergeavg() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -17084,6 +17791,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public mergeavg_bp position(long position) {
                 return (mergeavg_bp)super.position(position);
+            }
+            @Override public mergeavg_bp getPointer(long i) {
+                return new mergeavg_bp(this).position(position + i);
             }
         
                                                                                     public mergeavg_bp() { super((Pointer)null); allocate(); }
@@ -17103,6 +17813,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public scatter_update position(long position) {
                 return (scatter_update)super.position(position);
             }
+            @Override public scatter_update getPointer(long i) {
+                return new scatter_update(this).position(position + i);
+            }
         
                                                                                     public scatter_update() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17120,6 +17833,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public Floor position(long position) {
                 return (Floor)super.position(position);
+            }
+            @Override public Floor getPointer(long i) {
+                return new Floor(this).position(position + i);
             }
         
                                                     public Floor() { super((Pointer)null); allocate(); }
@@ -17139,6 +17855,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public Log1p position(long position) {
                 return (Log1p)super.position(position);
             }
+            @Override public Log1p getPointer(long i) {
+                return new Log1p(this).position(position + i);
+            }
         
                                                     public Log1p() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -17157,6 +17876,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reverse position(long position) {
                 return (reverse)super.position(position);
             }
+            @Override public reverse getPointer(long i) {
+                return new reverse(this).position(position + i);
+            }
         
                                                                                     public reverse() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17171,6 +17893,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reverse_bp position(long position) {
                 return (reverse_bp)super.position(position);
+            }
+            @Override public reverse_bp getPointer(long i) {
+                return new reverse_bp(this).position(position + i);
             }
         
                                                                                     public reverse_bp() { super((Pointer)null); allocate(); }
@@ -17190,6 +17915,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public gather position(long position) {
                 return (gather)super.position(position);
             }
+            @Override public gather getPointer(long i) {
+                return new gather(this).position(position + i);
+            }
         
                                                                                     public gather() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17207,6 +17935,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public pad position(long position) {
                 return (pad)super.position(position);
+            }
+            @Override public pad getPointer(long i) {
+                return new pad(this).position(position + i);
             }
         
                                                                                     public pad() { super((Pointer)null); allocate(); }
@@ -17241,6 +17972,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public eye position(long position) {
                 return (eye)super.position(position);
             }
+            @Override public eye getPointer(long i) {
+                return new eye(this).position(position + i);
+            }
         
                                                                                     public eye() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17258,6 +17992,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public gather_nd position(long position) {
                 return (gather_nd)super.position(position);
+            }
+            @Override public gather_nd getPointer(long i) {
+                return new gather_nd(this).position(position + i);
             }
         
                                                                                     public gather_nd() { super((Pointer)null); allocate(); }
@@ -17277,6 +18014,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reverse_sequence position(long position) {
                 return (reverse_sequence)super.position(position);
             }
+            @Override public reverse_sequence getPointer(long i) {
+                return new reverse_sequence(this).position(position + i);
+            }
         
                                                                                     public reverse_sequence() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17295,6 +18035,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public trace position(long position) {
                 return (trace)super.position(position);
             }
+            @Override public trace getPointer(long i) {
+                return new trace(this).position(position + i);
+            }
         
                                                                                     public trace() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17312,6 +18055,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public random_shuffle position(long position) {
                 return (random_shuffle)super.position(position);
+            }
+            @Override public random_shuffle getPointer(long i) {
+                return new random_shuffle(this).position(position + i);
             }
         
                                                     public random_shuffle() { super((Pointer)null); allocate(); }
@@ -17343,6 +18089,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public clip_by_global_norm position(long position) {
                 return (clip_by_global_norm)super.position(position);
             }
+            @Override public clip_by_global_norm getPointer(long i) {
+                return new clip_by_global_norm(this).position(position + i);
+            }
         
                                                                                     public clip_by_global_norm() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17360,6 +18109,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public tri position(long position) {
                 return (tri)super.position(position);
             }
+            @Override public tri getPointer(long i) {
+                return new tri(this).position(position + i);
+            }
         
                                                                                     public tri() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17375,6 +18127,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public triu position(long position) {
                 return (triu)super.position(position);
+            }
+            @Override public triu getPointer(long i) {
+                return new triu(this).position(position + i);
             }
         
                                                                                     public triu() { super((Pointer)null); allocate(); }
@@ -17392,6 +18147,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public triu_bp position(long position) {
                 return (triu_bp)super.position(position);
             }
+            @Override public triu_bp getPointer(long i) {
+                return new triu_bp(this).position(position + i);
+            }
         
                                                                                     public triu_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17408,6 +18166,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public mirror_pad position(long position) {
                 return (mirror_pad)super.position(position);
+            }
+            @Override public mirror_pad getPointer(long i) {
+                return new mirror_pad(this).position(position + i);
             }
         
                                                                                     public mirror_pad() { super((Pointer)null); allocate(); }
@@ -17427,6 +18188,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public cumsum_bp position(long position) {
                 return (cumsum_bp)super.position(position);
             }
+            @Override public cumsum_bp getPointer(long i) {
+                return new cumsum_bp(this).position(position + i);
+            }
         
                                                                                     public cumsum_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17444,6 +18208,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public cumprod_bp position(long position) {
                 return (cumprod_bp)super.position(position);
+            }
+            @Override public cumprod_bp getPointer(long i) {
+                return new cumprod_bp(this).position(position + i);
             }
         
                                                                                     public cumprod_bp() { super((Pointer)null); allocate(); }
@@ -17463,6 +18230,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public flatten position(long position) {
                 return (flatten)super.position(position);
+            }
+            @Override public flatten getPointer(long i) {
+                return new flatten(this).position(position + i);
             }
         
                                                                                     public flatten() { super((Pointer)null); allocate(); }
@@ -17493,6 +18263,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public histogram_fixed_width position(long position) {
                 return (histogram_fixed_width)super.position(position);
             }
+            @Override public histogram_fixed_width getPointer(long i) {
+                return new histogram_fixed_width(this).position(position + i);
+            }
         
                                                                                     public histogram_fixed_width() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17517,6 +18290,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public standardize position(long position) {
                         return (standardize)super.position(position);
                     }
+                    @Override public standardize getPointer(long i) {
+                        return new standardize(this).position(position + i);
+                    }
                 
                                                                                     public standardize() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17531,6 +18307,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     private native void allocateArray(long size);
                     @Override public standardize_bp position(long position) {
                         return (standardize_bp)super.position(position);
+                    }
+                    @Override public standardize_bp getPointer(long i) {
+                        return new standardize_bp(this).position(position + i);
                     }
                 
                                                                                     public standardize_bp() { super((Pointer)null); allocate(); }
@@ -17553,6 +18332,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                 @Override public hashcode position(long position) {
                     return (hashcode)super.position(position);
                 }
+                @Override public hashcode getPointer(long i) {
+                    return new hashcode(this).position(position + i);
+                }
             
                                                                                     public hashcode() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17573,6 +18355,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public histogram position(long position) {
                 return (histogram)super.position(position);
+            }
+            @Override public histogram getPointer(long i) {
+                return new histogram(this).position(position + i);
             }
         
                                                                                     public histogram() { super((Pointer)null); allocate(); }
@@ -17632,6 +18417,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public argmax position(long position) {
                 return (argmax)super.position(position);
             }
+            @Override public argmax getPointer(long i) {
+                return new argmax(this).position(position + i);
+            }
         
                                                                                     public argmax() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17658,6 +18446,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public argmin position(long position) {
                 return (argmin)super.position(position);
+            }
+            @Override public argmin getPointer(long i) {
+                return new argmin(this).position(position + i);
             }
         
                                                                                     public argmin() { super((Pointer)null); allocate(); }
@@ -17686,6 +18477,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public argamax position(long position) {
                 return (argamax)super.position(position);
             }
+            @Override public argamax getPointer(long i) {
+                return new argamax(this).position(position + i);
+            }
         
                                                                                     public argamax() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17712,6 +18506,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public argamin position(long position) {
                 return (argamin)super.position(position);
+            }
+            @Override public argamin getPointer(long i) {
+                return new argamin(this).position(position + i);
             }
         
                                                                                     public argamin() { super((Pointer)null); allocate(); }
@@ -17751,6 +18548,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public norm position(long position) {
                 return (norm)super.position(position);
             }
+            @Override public norm getPointer(long i) {
+                return new norm(this).position(position + i);
+            }
         
                                                                                     public norm() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17783,6 +18583,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public matrix_set_diag position(long position) {
                 return (matrix_set_diag)super.position(position);
             }
+            @Override public matrix_set_diag getPointer(long i) {
+                return new matrix_set_diag(this).position(position + i);
+            }
         
                                                                                     public matrix_set_diag() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17810,6 +18613,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public matrix_diag position(long position) {
                 return (matrix_diag)super.position(position);
+            }
+            @Override public matrix_diag getPointer(long i) {
+                return new matrix_diag(this).position(position + i);
             }
         
                                                                                     public matrix_diag() { super((Pointer)null); allocate(); }
@@ -17844,6 +18650,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public betainc position(long position) {
                 return (betainc)super.position(position);
             }
+            @Override public betainc getPointer(long i) {
+                return new betainc(this).position(position + i);
+            }
         
                                                                                     public betainc() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17869,6 +18678,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public biasadd position(long position) {
                 return (biasadd)super.position(position);
             }
+            @Override public biasadd getPointer(long i) {
+                return new biasadd(this).position(position + i);
+            }
         
                                                                                     public biasadd() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17883,6 +18695,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public biasadd_bp position(long position) {
                 return (biasadd_bp)super.position(position);
+            }
+            @Override public biasadd_bp getPointer(long i) {
+                return new biasadd_bp(this).position(position + i);
             }
         
                                                                                     public biasadd_bp() { super((Pointer)null); allocate(); }
@@ -17905,6 +18720,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public diag position(long position) {
                 return (diag)super.position(position);
             }
+            @Override public diag getPointer(long i) {
+                return new diag(this).position(position + i);
+            }
         
                                                                                     public diag() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -17925,6 +18743,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public diag_part position(long position) {
                 return (diag_part)super.position(position);
+            }
+            @Override public diag_part getPointer(long i) {
+                return new diag_part(this).position(position + i);
             }
         
                                                                                     public diag_part() { super((Pointer)null); allocate(); }
@@ -17951,6 +18772,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public matrix_diag_part position(long position) {
                 return (matrix_diag_part)super.position(position);
+            }
+            @Override public matrix_diag_part getPointer(long i) {
+                return new matrix_diag_part(this).position(position + i);
             }
         
                                                                                     public matrix_diag_part() { super((Pointer)null); allocate(); }
@@ -17981,6 +18805,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public qr position(long position) {
                 return (qr)super.position(position);
             }
+            @Override public qr getPointer(long i) {
+                return new qr(this).position(position + i);
+            }
         
                                                                                     public qr() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18004,6 +18831,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public listdiff position(long position) {
                 return (listdiff)super.position(position);
+            }
+            @Override public listdiff getPointer(long i) {
+                return new listdiff(this).position(position + i);
             }
         
                                                                                     public listdiff() { super((Pointer)null); allocate(); }
@@ -18030,6 +18860,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public scatter_add position(long position) {
                 return (scatter_add)super.position(position);
             }
+            @Override public scatter_add getPointer(long i) {
+                return new scatter_add(this).position(position + i);
+            }
         
                                                     public scatter_add() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -18054,6 +18887,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public scatter_sub position(long position) {
                 return (scatter_sub)super.position(position);
+            }
+            @Override public scatter_sub getPointer(long i) {
+                return new scatter_sub(this).position(position + i);
             }
         
                                                     public scatter_sub() { super((Pointer)null); allocate(); }
@@ -18080,6 +18916,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public scatter_mul position(long position) {
                 return (scatter_mul)super.position(position);
             }
+            @Override public scatter_mul getPointer(long i) {
+                return new scatter_mul(this).position(position + i);
+            }
         
                                                     public scatter_mul() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -18104,6 +18943,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public scatter_div position(long position) {
                 return (scatter_div)super.position(position);
+            }
+            @Override public scatter_div getPointer(long i) {
+                return new scatter_div(this).position(position + i);
             }
         
                                                     public scatter_div() { super((Pointer)null); allocate(); }
@@ -18130,6 +18972,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public scatter_upd position(long position) {
                 return (scatter_upd)super.position(position);
             }
+            @Override public scatter_upd getPointer(long i) {
+                return new scatter_upd(this).position(position + i);
+            }
         
                                                     public scatter_upd() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -18154,6 +18999,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public scatter_max position(long position) {
                 return (scatter_max)super.position(position);
+            }
+            @Override public scatter_max getPointer(long i) {
+                return new scatter_max(this).position(position + i);
             }
         
                                                     public scatter_max() { super((Pointer)null); allocate(); }
@@ -18180,6 +19028,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public scatter_min position(long position) {
                 return (scatter_min)super.position(position);
             }
+            @Override public scatter_min getPointer(long i) {
+                return new scatter_min(this).position(position + i);
+            }
         
                                                     public scatter_min() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -18204,6 +19055,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public scatter_nd position(long position) {
                 return (scatter_nd)super.position(position);
+            }
+            @Override public scatter_nd getPointer(long i) {
+                return new scatter_nd(this).position(position + i);
             }
         
                                                                                     public scatter_nd() { super((Pointer)null); allocate(); }
@@ -18230,6 +19084,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public scatter_nd_update position(long position) {
                 return (scatter_nd_update)super.position(position);
             }
+            @Override public scatter_nd_update getPointer(long i) {
+                return new scatter_nd_update(this).position(position + i);
+            }
         
                                                     public scatter_nd_update() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -18255,6 +19112,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public scatter_nd_add position(long position) {
                 return (scatter_nd_add)super.position(position);
             }
+            @Override public scatter_nd_add getPointer(long i) {
+                return new scatter_nd_add(this).position(position + i);
+            }
         
                                                     public scatter_nd_add() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -18279,6 +19139,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public scatter_nd_sub position(long position) {
                 return (scatter_nd_sub)super.position(position);
+            }
+            @Override public scatter_nd_sub getPointer(long i) {
+                return new scatter_nd_sub(this).position(position + i);
             }
         
                                                     public scatter_nd_sub() { super((Pointer)null); allocate(); }
@@ -18306,6 +19169,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public fill_as position(long position) {
                 return (fill_as)super.position(position);
             }
+            @Override public fill_as getPointer(long i) {
+                return new fill_as(this).position(position + i);
+            }
         
                                                                                     public fill_as() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18326,6 +19192,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public rint position(long position) {
                 return (rint)super.position(position);
+            }
+            @Override public rint getPointer(long i) {
+                return new rint(this).position(position + i);
             }
         
                                                     public rint() { super((Pointer)null); allocate(); }
@@ -18349,6 +19218,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public unique position(long position) {
                 return (unique)super.position(position);
+            }
+            @Override public unique getPointer(long i) {
+                return new unique(this).position(position + i);
             }
         
                                                                                     public unique() { super((Pointer)null); allocate(); }
@@ -18378,6 +19250,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public unique_with_counts position(long position) {
                 return (unique_with_counts)super.position(position);
             }
+            @Override public unique_with_counts getPointer(long i) {
+                return new unique_with_counts(this).position(position + i);
+            }
         
                                                                                     public unique_with_counts() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18404,6 +19279,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public tear position(long position) {
                 return (tear)super.position(position);
             }
+            @Override public tear getPointer(long i) {
+                return new tear(this).position(position + i);
+            }
         
                                                                                     public tear() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18426,6 +19304,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public unstack position(long position) {
                 return (unstack)super.position(position);
             }
+            @Override public unstack getPointer(long i) {
+                return new unstack(this).position(position + i);
+            }
         
                                                                                     public unstack() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18447,6 +19328,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public strided_slice position(long position) {
                 return (strided_slice)super.position(position);
             }
+            @Override public strided_slice getPointer(long i) {
+                return new strided_slice(this).position(position + i);
+            }
         
                                                                                     public strided_slice() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18461,6 +19345,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public strided_slice_bp position(long position) {
                 return (strided_slice_bp)super.position(position);
+            }
+            @Override public strided_slice_bp getPointer(long i) {
+                return new strided_slice_bp(this).position(position + i);
             }
         
                                                                                     public strided_slice_bp() { super((Pointer)null); allocate(); }
@@ -18484,6 +19371,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public slice position(long position) {
                 return (slice)super.position(position);
             }
+            @Override public slice getPointer(long i) {
+                return new slice(this).position(position + i);
+            }
         
                                                                                     public slice() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18498,6 +19388,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public slice_bp position(long position) {
                 return (slice_bp)super.position(position);
+            }
+            @Override public slice_bp getPointer(long i) {
+                return new slice_bp(this).position(position + i);
             }
         
                                                                                     public slice_bp() { super((Pointer)null); allocate(); }
@@ -18534,6 +19427,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public range position(long position) {
                 return (range)super.position(position);
             }
+            @Override public range getPointer(long i) {
+                return new range(this).position(position + i);
+            }
         
                                                                                     public range() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18564,6 +19460,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public onehot position(long position) {
                 return (onehot)super.position(position);
+            }
+            @Override public onehot getPointer(long i) {
+                return new onehot(this).position(position + i);
             }
         
                                                                                     public onehot() { super((Pointer)null); allocate(); }
@@ -18596,6 +19495,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public confusion_matrix position(long position) {
                 return (confusion_matrix)super.position(position);
             }
+            @Override public confusion_matrix getPointer(long i) {
+                return new confusion_matrix(this).position(position + i);
+            }
         
                                                                                     public confusion_matrix() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18619,6 +19521,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public stack position(long position) {
                 return (stack)super.position(position);
+            }
+            @Override public stack getPointer(long i) {
+                return new stack(this).position(position + i);
             }
         
                                                                                     public stack() { super((Pointer)null); allocate(); }
@@ -18645,6 +19550,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public size position(long position) {
                 return (size)super.position(position);
             }
+            @Override public size getPointer(long i) {
+                return new size(this).position(position + i);
+            }
         
                                                                                     public size() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18667,6 +19575,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public rank position(long position) {
                 return (rank)super.position(position);
             }
+            @Override public rank getPointer(long i) {
+                return new rank(this).position(position + i);
+            }
         
                                                                                     public rank() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18685,6 +19596,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public broadcastgradientargs position(long position) {
                 return (broadcastgradientargs)super.position(position);
+            }
+            @Override public broadcastgradientargs getPointer(long i) {
+                return new broadcastgradientargs(this).position(position + i);
             }
         
                                                     public broadcastgradientargs() { super((Pointer)null); allocate(); }
@@ -18710,6 +19624,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public zeros_as position(long position) {
                 return (zeros_as)super.position(position);
             }
+            @Override public zeros_as getPointer(long i) {
+                return new zeros_as(this).position(position + i);
+            }
         
                                                                                     public zeros_as() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18734,6 +19651,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public ones_as position(long position) {
                 return (ones_as)super.position(position);
             }
+            @Override public ones_as getPointer(long i) {
+                return new ones_as(this).position(position + i);
+            }
         
                                                                                     public ones_as() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18756,6 +19676,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public square position(long position) {
                 return (square)super.position(position);
+            }
+            @Override public square getPointer(long i) {
+                return new square(this).position(position + i);
             }
         
                                                     public square() { super((Pointer)null); allocate(); }
@@ -18788,6 +19711,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public zeta position(long position) {
                 return (zeta)super.position(position);
             }
+            @Override public zeta getPointer(long i) {
+                return new zeta(this).position(position + i);
+            }
         
                                                                                     public zeta() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18819,6 +19745,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public polygamma position(long position) {
                 return (polygamma)super.position(position);
             }
+            @Override public polygamma getPointer(long i) {
+                return new polygamma(this).position(position + i);
+            }
         
                                                                                     public polygamma() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18846,6 +19775,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public lgamma position(long position) {
                 return (lgamma)super.position(position);
+            }
+            @Override public lgamma getPointer(long i) {
+                return new lgamma(this).position(position + i);
             }
         
                                                     public lgamma() { super((Pointer)null); allocate(); }
@@ -18875,6 +19807,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public digamma position(long position) {
                 return (digamma)super.position(position);
             }
+            @Override public digamma getPointer(long i) {
+                return new digamma(this).position(position + i);
+            }
         
                                                                                     public digamma() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18902,6 +19837,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public fill position(long position) {
                 return (fill)super.position(position);
+            }
+            @Override public fill getPointer(long i) {
+                return new fill(this).position(position + i);
             }
         
                                                                                     public fill() { super((Pointer)null); allocate(); }
@@ -18932,6 +19870,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public split_v position(long position) {
                 return (split_v)super.position(position);
             }
+            @Override public split_v getPointer(long i) {
+                return new split_v(this).position(position + i);
+            }
         
                                                                                     public split_v() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -18958,6 +19899,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public split position(long position) {
                 return (split)super.position(position);
+            }
+            @Override public split getPointer(long i) {
+                return new split(this).position(position + i);
             }
         
                                                                                     public split() { super((Pointer)null); allocate(); }
@@ -18990,6 +19934,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public adjust_hue position(long position) {
                 return (adjust_hue)super.position(position);
             }
+            @Override public adjust_hue getPointer(long i) {
+                return new adjust_hue(this).position(position + i);
+            }
         
                                                                                     public adjust_hue() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19020,6 +19967,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public adjust_saturation position(long position) {
                 return (adjust_saturation)super.position(position);
             }
+            @Override public adjust_saturation getPointer(long i) {
+                return new adjust_saturation(this).position(position + i);
+            }
         
                                                                                     public adjust_saturation() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19048,6 +19998,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public adjust_contrast position(long position) {
                 return (adjust_contrast)super.position(position);
             }
+            @Override public adjust_contrast getPointer(long i) {
+                return new adjust_contrast(this).position(position + i);
+            }
         
                                                                                     public adjust_contrast() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19062,6 +20015,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public adjust_contrast_v2 position(long position) {
                 return (adjust_contrast_v2)super.position(position);
+            }
+            @Override public adjust_contrast_v2 getPointer(long i) {
+                return new adjust_contrast_v2(this).position(position + i);
             }
         
                                                                                     public adjust_contrast_v2() { super((Pointer)null); allocate(); }
@@ -19101,6 +20057,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public depth_to_space position(long position) {
                 return (depth_to_space)super.position(position);
             }
+            @Override public depth_to_space getPointer(long i) {
+                return new depth_to_space(this).position(position + i);
+            }
         
                                                                                     public depth_to_space() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19137,6 +20096,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public space_to_depth position(long position) {
                 return (space_to_depth)super.position(position);
             }
+            @Override public space_to_depth getPointer(long i) {
+                return new space_to_depth(this).position(position + i);
+            }
         
                                                                                     public space_to_depth() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19160,6 +20122,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public cross position(long position) {
                 return (cross)super.position(position);
+            }
+            @Override public cross getPointer(long i) {
+                return new cross(this).position(position + i);
             }
         
                                                     public cross() { super((Pointer)null); allocate(); }
@@ -19196,6 +20161,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public space_to_batch position(long position) {
                 return (space_to_batch)super.position(position);
             }
+            @Override public space_to_batch getPointer(long i) {
+                return new space_to_batch(this).position(position + i);
+            }
         
                                                                                     public space_to_batch() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19230,6 +20198,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public space_to_batch_nd position(long position) {
                 return (space_to_batch_nd)super.position(position);
             }
+            @Override public space_to_batch_nd getPointer(long i) {
+                return new space_to_batch_nd(this).position(position + i);
+            }
         
                                                                                     public space_to_batch_nd() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19252,6 +20223,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public batch_to_space position(long position) {
                 return (batch_to_space)super.position(position);
             }
+            @Override public batch_to_space getPointer(long i) {
+                return new batch_to_space(this).position(position + i);
+            }
         
                                                                                     public batch_to_space() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19268,6 +20242,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public batch_to_space_nd position(long position) {
                 return (batch_to_space_nd)super.position(position);
+            }
+            @Override public batch_to_space_nd getPointer(long i) {
+                return new batch_to_space_nd(this).position(position + i);
             }
         
                                                                                     public batch_to_space_nd() { super((Pointer)null); allocate(); }
@@ -19296,6 +20273,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public top_k position(long position) {
                 return (top_k)super.position(position);
             }
+            @Override public top_k getPointer(long i) {
+                return new top_k(this).position(position + i);
+            }
         
                                                                                     public top_k() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19320,6 +20300,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public in_top_k position(long position) {
                 return (in_top_k)super.position(position);
+            }
+            @Override public in_top_k getPointer(long i) {
+                return new in_top_k(this).position(position + i);
             }
         
                                                                                     public in_top_k() { super((Pointer)null); allocate(); }
@@ -19348,6 +20331,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public moments position(long position) {
                 return (moments)super.position(position);
             }
+            @Override public moments getPointer(long i) {
+                return new moments(this).position(position + i);
+            }
         
                                                                                     public moments() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19369,6 +20355,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public embedding_lookup position(long position) {
                 return (embedding_lookup)super.position(position);
+            }
+            @Override public embedding_lookup getPointer(long i) {
+                return new embedding_lookup(this).position(position + i);
             }
         
                                                                                     public embedding_lookup() { super((Pointer)null); allocate(); }
@@ -19398,6 +20387,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public dynamic_partition position(long position) {
                 return (dynamic_partition)super.position(position);
             }
+            @Override public dynamic_partition getPointer(long i) {
+                return new dynamic_partition(this).position(position + i);
+            }
         
                                                                                     public dynamic_partition() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19415,6 +20407,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public dynamic_partition_bp position(long position) {
                 return (dynamic_partition_bp)super.position(position);
+            }
+            @Override public dynamic_partition_bp getPointer(long i) {
+                return new dynamic_partition_bp(this).position(position + i);
             }
         
                                                                                     public dynamic_partition_bp() { super((Pointer)null); allocate(); }
@@ -19445,6 +20440,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public dynamic_stitch position(long position) {
                 return (dynamic_stitch)super.position(position);
             }
+            @Override public dynamic_stitch getPointer(long i) {
+                return new dynamic_stitch(this).position(position + i);
+            }
         
                                                                                     public dynamic_stitch() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19469,6 +20467,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public zero_fraction position(long position) {
                 return (zero_fraction)super.position(position);
+            }
+            @Override public zero_fraction getPointer(long i) {
+                return new zero_fraction(this).position(position + i);
             }
         
                                                                                     public zero_fraction() { super((Pointer)null); allocate(); }
@@ -19500,6 +20501,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public xw_plus_b position(long position) {
                         return (xw_plus_b)super.position(position);
                     }
+                    @Override public xw_plus_b getPointer(long i) {
+                        return new xw_plus_b(this).position(position + i);
+                    }
                 
                                                                                     public xw_plus_b() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19514,6 +20518,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     private native void allocateArray(long size);
                     @Override public xw_plus_b_bp position(long position) {
                         return (xw_plus_b_bp)super.position(position);
+                    }
+                    @Override public xw_plus_b_bp getPointer(long i) {
+                        return new xw_plus_b_bp(this).position(position + i);
                     }
                 
                                                                                     public xw_plus_b_bp() { super((Pointer)null); allocate(); }
@@ -19538,6 +20545,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public stop_gradient position(long position) {
                 return (stop_gradient)super.position(position);
             }
+            @Override public stop_gradient getPointer(long i) {
+                return new stop_gradient(this).position(position + i);
+            }
         
                                                     public stop_gradient() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -19555,6 +20565,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public parallel_stack position(long position) {
                 return (parallel_stack)super.position(position);
+            }
+            @Override public parallel_stack getPointer(long i) {
+                return new parallel_stack(this).position(position + i);
             }
         
                                                                                     public parallel_stack() { super((Pointer)null); allocate(); }
@@ -19585,6 +20598,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public normalize_moments position(long position) {
                 return (normalize_moments)super.position(position);
+            }
+            @Override public normalize_moments getPointer(long i) {
+                return new normalize_moments(this).position(position + i);
             }
         
                                                                                     public normalize_moments() { super((Pointer)null); allocate(); }
@@ -19622,6 +20638,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public sufficient_statistics position(long position) {
                 return (sufficient_statistics)super.position(position);
             }
+            @Override public sufficient_statistics getPointer(long i) {
+                return new sufficient_statistics(this).position(position + i);
+            }
         
                                                                                     public sufficient_statistics() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19648,6 +20667,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public weighted_cross_entropy_with_logits position(long position) {
                 return (weighted_cross_entropy_with_logits)super.position(position);
+            }
+            @Override public weighted_cross_entropy_with_logits getPointer(long i) {
+                return new weighted_cross_entropy_with_logits(this).position(position + i);
             }
         
                                                     public weighted_cross_entropy_with_logits() { super((Pointer)null); allocate(); }
@@ -19677,6 +20699,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public dropout position(long position) {
                 return (dropout)super.position(position);
             }
+            @Override public dropout getPointer(long i) {
+                return new dropout(this).position(position + i);
+            }
         
                                                                                     public dropout() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19693,6 +20718,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public dropout_bp position(long position) {
                 return (dropout_bp)super.position(position);
+            }
+            @Override public dropout_bp getPointer(long i) {
+                return new dropout_bp(this).position(position + i);
             }
         
                                                                                     public dropout_bp() { super((Pointer)null); allocate(); }
@@ -19718,6 +20746,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public alpha_dropout_bp position(long position) {
                 return (alpha_dropout_bp)super.position(position);
+            }
+            @Override public alpha_dropout_bp getPointer(long i) {
+                return new alpha_dropout_bp(this).position(position + i);
             }
         
                                                                                     public alpha_dropout_bp() { super((Pointer)null); allocate(); }
@@ -19755,6 +20786,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public bincount position(long position) {
                 return (bincount)super.position(position);
             }
+            @Override public bincount getPointer(long i) {
+                return new bincount(this).position(position + i);
+            }
         
                                                                                     public bincount() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19783,6 +20817,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public broadcast_dynamic_shape position(long position) {
                 return (broadcast_dynamic_shape)super.position(position);
             }
+            @Override public broadcast_dynamic_shape getPointer(long i) {
+                return new broadcast_dynamic_shape(this).position(position + i);
+            }
         
                                                                                     public broadcast_dynamic_shape() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19810,6 +20847,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public matrix_determinant position(long position) {
                 return (matrix_determinant)super.position(position);
+            }
+            @Override public matrix_determinant getPointer(long i) {
+                return new matrix_determinant(this).position(position + i);
             }
         
                                                                                     public matrix_determinant() { super((Pointer)null); allocate(); }
@@ -19840,6 +20880,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public log_matrix_determinant position(long position) {
                 return (log_matrix_determinant)super.position(position);
             }
+            @Override public log_matrix_determinant getPointer(long i) {
+                return new log_matrix_determinant(this).position(position + i);
+            }
         
                                                                                     public log_matrix_determinant() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19868,6 +20911,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public logdet position(long position) {
                 return (logdet)super.position(position);
+            }
+            @Override public logdet getPointer(long i) {
+                return new logdet(this).position(position + i);
             }
         
                                                                                     public logdet() { super((Pointer)null); allocate(); }
@@ -19904,6 +20950,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lstsq position(long position) {
                 return (lstsq)super.position(position);
             }
+            @Override public lstsq getPointer(long i) {
+                return new lstsq(this).position(position + i);
+            }
         
                                                                                     public lstsq() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19939,6 +20988,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public solve_ls position(long position) {
                         return (solve_ls)super.position(position);
                     }
+                    @Override public solve_ls getPointer(long i) {
+                        return new solve_ls(this).position(position + i);
+                    }
                 
                                                                                     public solve_ls() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -19965,6 +21017,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public matrix_inverse position(long position) {
                 return (matrix_inverse)super.position(position);
+            }
+            @Override public matrix_inverse getPointer(long i) {
+                return new matrix_inverse(this).position(position + i);
             }
         
                                                     public matrix_inverse() { super((Pointer)null); allocate(); }
@@ -19999,6 +21054,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public triangular_solve position(long position) {
                 return (triangular_solve)super.position(position);
             }
+            @Override public triangular_solve getPointer(long i) {
+                return new triangular_solve(this).position(position + i);
+            }
         
                                                                                     public triangular_solve() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20030,6 +21088,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public solve position(long position) {
                 return (solve)super.position(position);
+            }
+            @Override public solve getPointer(long i) {
+                return new solve(this).position(position + i);
             }
         
                                                                                     public solve() { super((Pointer)null); allocate(); }
@@ -20063,6 +21124,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public lu position(long position) {
                 return (lu)super.position(position);
             }
+            @Override public lu getPointer(long i) {
+                return new lu(this).position(position + i);
+            }
         
                                                                                     public lu() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20090,6 +21154,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public sequence_mask position(long position) {
                 return (sequence_mask)super.position(position);
+            }
+            @Override public sequence_mask getPointer(long i) {
+                return new sequence_mask(this).position(position + i);
             }
         
                                                                                     public sequence_mask() { super((Pointer)null); allocate(); }
@@ -20119,6 +21186,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public segment_max position(long position) {
                 return (segment_max)super.position(position);
             }
+            @Override public segment_max getPointer(long i) {
+                return new segment_max(this).position(position + i);
+            }
         
                                                                                     public segment_max() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20135,6 +21205,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public segment_max_bp position(long position) {
                 return (segment_max_bp)super.position(position);
+            }
+            @Override public segment_max_bp getPointer(long i) {
+                return new segment_max_bp(this).position(position + i);
             }
         
                                                                                     public segment_max_bp() { super((Pointer)null); allocate(); }
@@ -20164,6 +21237,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public segment_min position(long position) {
                 return (segment_min)super.position(position);
             }
+            @Override public segment_min getPointer(long i) {
+                return new segment_min(this).position(position + i);
+            }
         
                                                                                     public segment_min() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20180,6 +21256,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public segment_min_bp position(long position) {
                 return (segment_min_bp)super.position(position);
+            }
+            @Override public segment_min_bp getPointer(long i) {
+                return new segment_min_bp(this).position(position + i);
             }
         
                                                                                     public segment_min_bp() { super((Pointer)null); allocate(); }
@@ -20209,6 +21288,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public segment_sum position(long position) {
                 return (segment_sum)super.position(position);
             }
+            @Override public segment_sum getPointer(long i) {
+                return new segment_sum(this).position(position + i);
+            }
         
                                                                                     public segment_sum() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20225,6 +21307,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public segment_sum_bp position(long position) {
                 return (segment_sum_bp)super.position(position);
+            }
+            @Override public segment_sum_bp getPointer(long i) {
+                return new segment_sum_bp(this).position(position + i);
             }
         
                                                                                     public segment_sum_bp() { super((Pointer)null); allocate(); }
@@ -20254,6 +21339,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public segment_prod position(long position) {
                 return (segment_prod)super.position(position);
             }
+            @Override public segment_prod getPointer(long i) {
+                return new segment_prod(this).position(position + i);
+            }
         
                                                                                     public segment_prod() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20270,6 +21358,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public segment_prod_bp position(long position) {
                 return (segment_prod_bp)super.position(position);
+            }
+            @Override public segment_prod_bp getPointer(long i) {
+                return new segment_prod_bp(this).position(position + i);
             }
         
                                                                                     public segment_prod_bp() { super((Pointer)null); allocate(); }
@@ -20298,6 +21389,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public segment_mean position(long position) {
                 return (segment_mean)super.position(position);
             }
+            @Override public segment_mean getPointer(long i) {
+                return new segment_mean(this).position(position + i);
+            }
         
                                                                                     public segment_mean() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20314,6 +21408,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public segment_mean_bp position(long position) {
                 return (segment_mean_bp)super.position(position);
+            }
+            @Override public segment_mean_bp getPointer(long i) {
+                return new segment_mean_bp(this).position(position + i);
             }
         
                                                                                     public segment_mean_bp() { super((Pointer)null); allocate(); }
@@ -20343,6 +21440,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public unsorted_segment_max position(long position) {
                 return (unsorted_segment_max)super.position(position);
             }
+            @Override public unsorted_segment_max getPointer(long i) {
+                return new unsorted_segment_max(this).position(position + i);
+            }
         
                                                                                     public unsorted_segment_max() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20359,6 +21459,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public unsorted_segment_max_bp position(long position) {
                 return (unsorted_segment_max_bp)super.position(position);
+            }
+            @Override public unsorted_segment_max_bp getPointer(long i) {
+                return new unsorted_segment_max_bp(this).position(position + i);
             }
         
                                                                                     public unsorted_segment_max_bp() { super((Pointer)null); allocate(); }
@@ -20391,6 +21494,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public unsorted_segment_min position(long position) {
                 return (unsorted_segment_min)super.position(position);
             }
+            @Override public unsorted_segment_min getPointer(long i) {
+                return new unsorted_segment_min(this).position(position + i);
+            }
         
                                                                                     public unsorted_segment_min() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20407,6 +21513,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public unsorted_segment_min_bp position(long position) {
                 return (unsorted_segment_min_bp)super.position(position);
+            }
+            @Override public unsorted_segment_min_bp getPointer(long i) {
+                return new unsorted_segment_min_bp(this).position(position + i);
             }
         
                                                                                     public unsorted_segment_min_bp() { super((Pointer)null); allocate(); }
@@ -20439,6 +21548,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public unsorted_segment_sum position(long position) {
                 return (unsorted_segment_sum)super.position(position);
             }
+            @Override public unsorted_segment_sum getPointer(long i) {
+                return new unsorted_segment_sum(this).position(position + i);
+            }
         
                                                                                     public unsorted_segment_sum() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20455,6 +21567,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public unsorted_segment_sum_bp position(long position) {
                 return (unsorted_segment_sum_bp)super.position(position);
+            }
+            @Override public unsorted_segment_sum_bp getPointer(long i) {
+                return new unsorted_segment_sum_bp(this).position(position + i);
             }
         
                                                                                     public unsorted_segment_sum_bp() { super((Pointer)null); allocate(); }
@@ -20487,6 +21602,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public unsorted_segment_prod position(long position) {
                 return (unsorted_segment_prod)super.position(position);
             }
+            @Override public unsorted_segment_prod getPointer(long i) {
+                return new unsorted_segment_prod(this).position(position + i);
+            }
         
                                                                                     public unsorted_segment_prod() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20503,6 +21621,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public unsorted_segment_prod_bp position(long position) {
                 return (unsorted_segment_prod_bp)super.position(position);
+            }
+            @Override public unsorted_segment_prod_bp getPointer(long i) {
+                return new unsorted_segment_prod_bp(this).position(position + i);
             }
         
                                                                                     public unsorted_segment_prod_bp() { super((Pointer)null); allocate(); }
@@ -20535,6 +21656,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public unsorted_segment_mean position(long position) {
                 return (unsorted_segment_mean)super.position(position);
             }
+            @Override public unsorted_segment_mean getPointer(long i) {
+                return new unsorted_segment_mean(this).position(position + i);
+            }
         
                                                                                     public unsorted_segment_mean() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20551,6 +21675,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public unsorted_segment_mean_bp position(long position) {
                 return (unsorted_segment_mean_bp)super.position(position);
+            }
+            @Override public unsorted_segment_mean_bp getPointer(long i) {
+                return new unsorted_segment_mean_bp(this).position(position + i);
             }
         
                                                                                     public unsorted_segment_mean_bp() { super((Pointer)null); allocate(); }
@@ -20583,6 +21710,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public unsorted_segment_sqrt_n position(long position) {
                 return (unsorted_segment_sqrt_n)super.position(position);
             }
+            @Override public unsorted_segment_sqrt_n getPointer(long i) {
+                return new unsorted_segment_sqrt_n(this).position(position + i);
+            }
         
                                                                                     public unsorted_segment_sqrt_n() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20599,6 +21729,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public unsorted_segment_sqrt_n_bp position(long position) {
                 return (unsorted_segment_sqrt_n_bp)super.position(position);
+            }
+            @Override public unsorted_segment_sqrt_n_bp getPointer(long i) {
+                return new unsorted_segment_sqrt_n_bp(this).position(position + i);
             }
         
                                                                                     public unsorted_segment_sqrt_n_bp() { super((Pointer)null); allocate(); }
@@ -20633,6 +21766,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public extract_image_patches position(long position) {
                 return (extract_image_patches)super.position(position);
             }
+            @Override public extract_image_patches getPointer(long i) {
+                return new extract_image_patches(this).position(position + i);
+            }
         
                                                                                     public extract_image_patches() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20663,6 +21799,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public draw_bounding_boxes position(long position) {
                 return (draw_bounding_boxes)super.position(position);
+            }
+            @Override public draw_bounding_boxes getPointer(long i) {
+                return new draw_bounding_boxes(this).position(position + i);
             }
         
                                                     public draw_bounding_boxes() { super((Pointer)null); allocate(); }
@@ -20700,6 +21839,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public roll position(long position) {
                 return (roll)super.position(position);
             }
+            @Override public roll getPointer(long i) {
+                return new roll(this).position(position + i);
+            }
         
                                                                                     public roll() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20732,6 +21874,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public lin_space position(long position) {
                 return (lin_space)super.position(position);
+            }
+            @Override public lin_space getPointer(long i) {
+                return new lin_space(this).position(position + i);
             }
         
                                                                                     public lin_space() { super((Pointer)null); allocate(); }
@@ -20771,6 +21916,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_sum position(long position) {
                 return (reduce_sum)super.position(position);
             }
+            @Override public reduce_sum getPointer(long i) {
+                return new reduce_sum(this).position(position + i);
+            }
         
                                                                                     public reduce_sum() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20788,6 +21936,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_sum_bp position(long position) {
                 return (reduce_sum_bp)super.position(position);
+            }
+            @Override public reduce_sum_bp getPointer(long i) {
+                return new reduce_sum_bp(this).position(position + i);
             }
         
                                                                                     public reduce_sum_bp() { super((Pointer)null); allocate(); }
@@ -20827,6 +21978,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_prod position(long position) {
                 return (reduce_prod)super.position(position);
             }
+            @Override public reduce_prod getPointer(long i) {
+                return new reduce_prod(this).position(position + i);
+            }
         
                                                                                     public reduce_prod() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20844,6 +21998,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_prod_bp position(long position) {
                 return (reduce_prod_bp)super.position(position);
+            }
+            @Override public reduce_prod_bp getPointer(long i) {
+                return new reduce_prod_bp(this).position(position + i);
             }
         
                                                                                     public reduce_prod_bp() { super((Pointer)null); allocate(); }
@@ -20878,6 +22035,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_min position(long position) {
                 return (reduce_min)super.position(position);
             }
+            @Override public reduce_min getPointer(long i) {
+                return new reduce_min(this).position(position + i);
+            }
         
                                                                                     public reduce_min() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20894,6 +22054,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_min_bp position(long position) {
                 return (reduce_min_bp)super.position(position);
+            }
+            @Override public reduce_min_bp getPointer(long i) {
+                return new reduce_min_bp(this).position(position + i);
             }
         
                                                                                     public reduce_min_bp() { super((Pointer)null); allocate(); }
@@ -20928,6 +22091,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_max position(long position) {
                 return (reduce_max)super.position(position);
             }
+            @Override public reduce_max getPointer(long i) {
+                return new reduce_max(this).position(position + i);
+            }
         
                                                                                     public reduce_max() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20944,6 +22110,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_max_bp position(long position) {
                 return (reduce_max_bp)super.position(position);
+            }
+            @Override public reduce_max_bp getPointer(long i) {
+                return new reduce_max_bp(this).position(position + i);
             }
         
                                                                                     public reduce_max_bp() { super((Pointer)null); allocate(); }
@@ -20978,6 +22147,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_norm1 position(long position) {
                 return (reduce_norm1)super.position(position);
             }
+            @Override public reduce_norm1 getPointer(long i) {
+                return new reduce_norm1(this).position(position + i);
+            }
         
                                                                                     public reduce_norm1() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -20994,6 +22166,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_norm1_bp position(long position) {
                 return (reduce_norm1_bp)super.position(position);
+            }
+            @Override public reduce_norm1_bp getPointer(long i) {
+                return new reduce_norm1_bp(this).position(position + i);
             }
         
                                                                                     public reduce_norm1_bp() { super((Pointer)null); allocate(); }
@@ -21028,6 +22203,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_norm2 position(long position) {
                 return (reduce_norm2)super.position(position);
             }
+            @Override public reduce_norm2 getPointer(long i) {
+                return new reduce_norm2(this).position(position + i);
+            }
         
                                                                                     public reduce_norm2() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21044,6 +22222,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_norm2_bp position(long position) {
                 return (reduce_norm2_bp)super.position(position);
+            }
+            @Override public reduce_norm2_bp getPointer(long i) {
+                return new reduce_norm2_bp(this).position(position + i);
             }
         
                                                                                     public reduce_norm2_bp() { super((Pointer)null); allocate(); }
@@ -21079,6 +22260,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_sqnorm position(long position) {
                 return (reduce_sqnorm)super.position(position);
             }
+            @Override public reduce_sqnorm getPointer(long i) {
+                return new reduce_sqnorm(this).position(position + i);
+            }
         
                                                                                     public reduce_sqnorm() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21095,6 +22279,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_sqnorm_bp position(long position) {
                 return (reduce_sqnorm_bp)super.position(position);
+            }
+            @Override public reduce_sqnorm_bp getPointer(long i) {
+                return new reduce_sqnorm_bp(this).position(position + i);
             }
         
                                                                                     public reduce_sqnorm_bp() { super((Pointer)null); allocate(); }
@@ -21129,6 +22316,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_norm_max position(long position) {
                 return (reduce_norm_max)super.position(position);
             }
+            @Override public reduce_norm_max getPointer(long i) {
+                return new reduce_norm_max(this).position(position + i);
+            }
         
                                                                                     public reduce_norm_max() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21145,6 +22335,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_norm_max_bp position(long position) {
                 return (reduce_norm_max_bp)super.position(position);
+            }
+            @Override public reduce_norm_max_bp getPointer(long i) {
+                return new reduce_norm_max_bp(this).position(position + i);
             }
         
                                                                                     public reduce_norm_max_bp() { super((Pointer)null); allocate(); }
@@ -21179,6 +22372,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_mean position(long position) {
                 return (reduce_mean)super.position(position);
             }
+            @Override public reduce_mean getPointer(long i) {
+                return new reduce_mean(this).position(position + i);
+            }
         
                                                                                     public reduce_mean() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21196,6 +22392,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_mean_bp position(long position) {
                 return (reduce_mean_bp)super.position(position);
+            }
+            @Override public reduce_mean_bp getPointer(long i) {
+                return new reduce_mean_bp(this).position(position + i);
             }
         
                                                                                     public reduce_mean_bp() { super((Pointer)null); allocate(); }
@@ -21229,6 +22428,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_variance position(long position) {
                 return (reduce_variance)super.position(position);
             }
+            @Override public reduce_variance getPointer(long i) {
+                return new reduce_variance(this).position(position + i);
+            }
         
                                                                                     public reduce_variance() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21243,6 +22445,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_variance_bp position(long position) {
                 return (reduce_variance_bp)super.position(position);
+            }
+            @Override public reduce_variance_bp getPointer(long i) {
+                return new reduce_variance_bp(this).position(position + i);
             }
         
                                                                                     public reduce_variance_bp() { super((Pointer)null); allocate(); }
@@ -21275,6 +22480,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_stdev position(long position) {
                 return (reduce_stdev)super.position(position);
             }
+            @Override public reduce_stdev getPointer(long i) {
+                return new reduce_stdev(this).position(position + i);
+            }
         
                                                                                     public reduce_stdev() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21289,6 +22497,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_stdev_bp position(long position) {
                 return (reduce_stdev_bp)super.position(position);
+            }
+            @Override public reduce_stdev_bp getPointer(long i) {
+                return new reduce_stdev_bp(this).position(position + i);
             }
         
                                                                                     public reduce_stdev_bp() { super((Pointer)null); allocate(); }
@@ -21323,6 +22534,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reduce_dot_bp position(long position) {
                 return (reduce_dot_bp)super.position(position);
+            }
+            @Override public reduce_dot_bp getPointer(long i) {
+                return new reduce_dot_bp(this).position(position + i);
             }
         
                                                                                     public reduce_dot_bp() { super((Pointer)null); allocate(); }
@@ -21363,6 +22577,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reduce_logsumexp position(long position) {
                 return (reduce_logsumexp)super.position(position);
             }
+            @Override public reduce_logsumexp getPointer(long i) {
+                return new reduce_logsumexp(this).position(position + i);
+            }
         
                                                                                     public reduce_logsumexp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21396,6 +22613,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public matrix_band_part position(long position) {
                 return (matrix_band_part)super.position(position);
             }
+            @Override public matrix_band_part getPointer(long i) {
+                return new matrix_band_part(this).position(position + i);
+            }
         
                                                                                     public matrix_band_part() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21414,6 +22634,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public Assert position(long position) {
                 return (Assert)super.position(position);
+            }
+            @Override public Assert getPointer(long i) {
+                return new Assert(this).position(position + i);
             }
         
                                                     public Assert() { super((Pointer)null); allocate(); }
@@ -21449,6 +22672,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public non_max_suppression position(long position) {
                 return (non_max_suppression)super.position(position);
             }
+            @Override public non_max_suppression getPointer(long i) {
+                return new non_max_suppression(this).position(position + i);
+            }
         
                                                                                     public non_max_suppression() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21465,6 +22691,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     private native void allocateArray(long size);
                     @Override public non_max_suppression_v3 position(long position) {
                         return (non_max_suppression_v3)super.position(position);
+                    }
+                    @Override public non_max_suppression_v3 getPointer(long i) {
+                        return new non_max_suppression_v3(this).position(position + i);
                     }
                 
                                                                                     public non_max_suppression_v3() { super((Pointer)null); allocate(); }
@@ -21499,6 +22728,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public non_max_suppression_overlaps position(long position) {
                 return (non_max_suppression_overlaps)super.position(position);
             }
+            @Override public non_max_suppression_overlaps getPointer(long i) {
+                return new non_max_suppression_overlaps(this).position(position + i);
+            }
         
                                                                                     public non_max_suppression_overlaps() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21523,6 +22755,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public cholesky position(long position) {
                 return (cholesky)super.position(position);
+            }
+            @Override public cholesky getPointer(long i) {
+                return new cholesky(this).position(position + i);
             }
         
                                                     public cholesky() { super((Pointer)null); allocate(); }
@@ -21550,6 +22785,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public nth_element position(long position) {
                 return (nth_element)super.position(position);
             }
+            @Override public nth_element getPointer(long i) {
+                return new nth_element(this).position(position + i);
+            }
         
                                                                                     public nth_element() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21570,6 +22808,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public check_numerics position(long position) {
                 return (check_numerics)super.position(position);
+            }
+            @Override public check_numerics getPointer(long i) {
+                return new check_numerics(this).position(position + i);
             }
         
                                                                                     public check_numerics() { super((Pointer)null); allocate(); }
@@ -21602,6 +22843,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public fake_quant_with_min_max_vars position(long position) {
                 return (fake_quant_with_min_max_vars)super.position(position);
+            }
+            @Override public fake_quant_with_min_max_vars getPointer(long i) {
+                return new fake_quant_with_min_max_vars(this).position(position + i);
             }
         
                                                                                     public fake_quant_with_min_max_vars() { super((Pointer)null); allocate(); }
@@ -21636,6 +22880,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public fake_quant_with_min_max_vars_per_channel position(long position) {
                         return (fake_quant_with_min_max_vars_per_channel)super.position(position);
                     }
+                    @Override public fake_quant_with_min_max_vars_per_channel getPointer(long i) {
+                        return new fake_quant_with_min_max_vars_per_channel(this).position(position + i);
+                    }
                 
                                                                                     public fake_quant_with_min_max_vars_per_channel() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21664,6 +22911,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public compare_and_bitpack position(long position) {
                 return (compare_and_bitpack)super.position(position);
+            }
+            @Override public compare_and_bitpack getPointer(long i) {
+                return new compare_and_bitpack(this).position(position + i);
             }
         
                                                                                     public compare_and_bitpack() { super((Pointer)null); allocate(); }
@@ -21714,6 +22964,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public permute position(long position) {
                 return (permute)super.position(position);
             }
+            @Override public permute getPointer(long i) {
+                return new permute(this).position(position + i);
+            }
         
                                                                                     public permute() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21731,6 +22984,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public reshapeas position(long position) {
                 return (reshapeas)super.position(position);
+            }
+            @Override public reshapeas getPointer(long i) {
+                return new reshapeas(this).position(position + i);
             }
         
                                                                                     public reshapeas() { super((Pointer)null); allocate(); }
@@ -21750,6 +23006,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public transpose position(long position) {
                 return (transpose)super.position(position);
             }
+            @Override public transpose getPointer(long i) {
+                return new transpose(this).position(position + i);
+            }
         
                                                                                     public transpose() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21767,6 +23026,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public shape_of position(long position) {
                 return (shape_of)super.position(position);
+            }
+            @Override public shape_of getPointer(long i) {
+                return new shape_of(this).position(position + i);
             }
         
                                                                                     public shape_of() { super((Pointer)null); allocate(); }
@@ -21786,6 +23048,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public shapes_of position(long position) {
                 return (shapes_of)super.position(position);
             }
+            @Override public shapes_of getPointer(long i) {
+                return new shapes_of(this).position(position + i);
+            }
         
                                                                                     public shapes_of() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21803,6 +23068,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public squeeze position(long position) {
                 return (squeeze)super.position(position);
+            }
+            @Override public squeeze getPointer(long i) {
+                return new squeeze(this).position(position + i);
             }
         
                                                                                     public squeeze() { super((Pointer)null); allocate(); }
@@ -21822,6 +23090,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public expand_dims position(long position) {
                 return (expand_dims)super.position(position);
             }
+            @Override public expand_dims getPointer(long i) {
+                return new expand_dims(this).position(position + i);
+            }
         
                                                                                     public expand_dims() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21840,6 +23111,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public reshape position(long position) {
                 return (reshape)super.position(position);
             }
+            @Override public reshape getPointer(long i) {
+                return new reshape(this).position(position + i);
+            }
         
                                                                                     public reshape() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21857,6 +23131,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public size_at position(long position) {
                 return (size_at)super.position(position);
+            }
+            @Override public size_at getPointer(long i) {
+                return new size_at(this).position(position + i);
             }
         
                                                                                     public size_at() { super((Pointer)null); allocate(); }
@@ -21885,6 +23162,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public order position(long position) {
                 return (order)super.position(position);
             }
+            @Override public order getPointer(long i) {
+                return new order(this).position(position + i);
+            }
         
                                                                                     public order() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21908,6 +23188,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public tile_to_shape position(long position) {
                 return (tile_to_shape)super.position(position);
             }
+            @Override public tile_to_shape getPointer(long i) {
+                return new tile_to_shape(this).position(position + i);
+            }
         
                                                                                     public tile_to_shape() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21922,6 +23205,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public tile_to_shape_bp position(long position) {
                 return (tile_to_shape_bp)super.position(position);
+            }
+            @Override public tile_to_shape_bp getPointer(long i) {
+                return new tile_to_shape_bp(this).position(position + i);
             }
         
                                                                                     public tile_to_shape_bp() { super((Pointer)null); allocate(); }
@@ -21948,6 +23234,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public broadcast_to position(long position) {
                 return (broadcast_to)super.position(position);
             }
+            @Override public broadcast_to getPointer(long i) {
+                return new broadcast_to(this).position(position + i);
+            }
         
                                                                                     public broadcast_to() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -21966,6 +23255,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public evaluate_reduction_shape position(long position) {
                 return (evaluate_reduction_shape)super.position(position);
+            }
+            @Override public evaluate_reduction_shape getPointer(long i) {
+                return new evaluate_reduction_shape(this).position(position + i);
             }
         
                                                                                     public evaluate_reduction_shape() { super((Pointer)null); allocate(); }
@@ -21996,6 +23288,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public create position(long position) {
                 return (create)super.position(position);
+            }
+            @Override public create getPointer(long i) {
+                return new create(this).position(position + i);
             }
         
                                                                                     public create() { super((Pointer)null); allocate(); }
@@ -22046,6 +23341,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public set_seed position(long position) {
                 return (set_seed)super.position(position);
             }
+            @Override public set_seed getPointer(long i) {
+                return new set_seed(this).position(position + i);
+            }
         
                                                                                     public set_seed() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22063,6 +23361,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public get_seed position(long position) {
                 return (get_seed)super.position(position);
+            }
+            @Override public get_seed getPointer(long i) {
+                return new get_seed(this).position(position + i);
             }
         
                                                                                     public get_seed() { super((Pointer)null); allocate(); }
@@ -22094,6 +23395,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public randomuniform position(long position) {
                 return (randomuniform)super.position(position);
             }
+            @Override public randomuniform getPointer(long i) {
+                return new randomuniform(this).position(position + i);
+            }
         
                                                                                     public randomuniform() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22124,6 +23428,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public random_multinomial position(long position) {
                 return (random_multinomial)super.position(position);
             }
+            @Override public random_multinomial getPointer(long i) {
+                return new random_multinomial(this).position(position + i);
+            }
         
                                                                                     public random_multinomial() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22141,6 +23448,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public random_normal position(long position) {
                 return (random_normal)super.position(position);
+            }
+            @Override public random_normal getPointer(long i) {
+                return new random_normal(this).position(position + i);
             }
         
                                                                                     public random_normal() { super((Pointer)null); allocate(); }
@@ -22160,6 +23470,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public random_bernoulli position(long position) {
                 return (random_bernoulli)super.position(position);
             }
+            @Override public random_bernoulli getPointer(long i) {
+                return new random_bernoulli(this).position(position + i);
+            }
         
                                                                                     public random_bernoulli() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22178,6 +23491,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public random_exponential position(long position) {
                 return (random_exponential)super.position(position);
             }
+            @Override public random_exponential getPointer(long i) {
+                return new random_exponential(this).position(position + i);
+            }
         
                                                                                     public random_exponential() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22195,6 +23511,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public random_crop position(long position) {
                 return (random_crop)super.position(position);
+            }
+            @Override public random_crop getPointer(long i) {
+                return new random_crop(this).position(position + i);
             }
         
                                                                                     public random_crop() { super((Pointer)null); allocate(); }
@@ -22217,6 +23536,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public random_gamma position(long position) {
                 return (random_gamma)super.position(position);
             }
+            @Override public random_gamma getPointer(long i) {
+                return new random_gamma(this).position(position + i);
+            }
         
                                                                                     public random_gamma() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22237,6 +23559,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public random_poisson position(long position) {
                 return (random_poisson)super.position(position);
+            }
+            @Override public random_poisson getPointer(long i) {
+                return new random_poisson(this).position(position + i);
             }
         
                                                                                     public random_poisson() { super((Pointer)null); allocate(); }
@@ -22288,6 +23613,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public softmax position(long position) {
                 return (softmax)super.position(position);
             }
+            @Override public softmax getPointer(long i) {
+                return new softmax(this).position(position + i);
+            }
         
                                                                                     public softmax() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22302,6 +23630,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public softmax_bp position(long position) {
                 return (softmax_bp)super.position(position);
+            }
+            @Override public softmax_bp getPointer(long i) {
+                return new softmax_bp(this).position(position + i);
             }
         
                                                                                     public softmax_bp() { super((Pointer)null); allocate(); }
@@ -22334,6 +23665,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public lrn position(long position) {
                 return (lrn)super.position(position);
+            }
+            @Override public lrn getPointer(long i) {
+                return new lrn(this).position(position + i);
             }
         
                                                                                     public lrn() { super((Pointer)null); allocate(); }
@@ -22368,6 +23702,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public lrn_bp position(long position) {
                 return (lrn_bp)super.position(position);
+            }
+            @Override public lrn_bp getPointer(long i) {
+                return new lrn_bp(this).position(position + i);
             }
         
                                                                                     public lrn_bp() { super((Pointer)null); allocate(); }
@@ -22405,6 +23742,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public batchnorm position(long position) {
                 return (batchnorm)super.position(position);
+            }
+            @Override public batchnorm getPointer(long i) {
+                return new batchnorm(this).position(position + i);
             }
         
                                                                                     public batchnorm() { super((Pointer)null); allocate(); }
@@ -22449,6 +23789,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public batchnorm_bp position(long position) {
                 return (batchnorm_bp)super.position(position);
             }
+            @Override public batchnorm_bp getPointer(long i) {
+                return new batchnorm_bp(this).position(position + i);
+            }
         
                                                                                     public batchnorm_bp() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22477,6 +23820,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public apply_sgd position(long position) {
                 return (apply_sgd)super.position(position);
+            }
+            @Override public apply_sgd getPointer(long i) {
+                return new apply_sgd(this).position(position + i);
             }
         
                                                                                     public apply_sgd() { super((Pointer)null); allocate(); }
@@ -22516,6 +23862,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public fused_batch_norm position(long position) {
                 return (fused_batch_norm)super.position(position);
             }
+            @Override public fused_batch_norm getPointer(long i) {
+                return new fused_batch_norm(this).position(position + i);
+            }
         
                                                                                     public fused_batch_norm() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22534,6 +23883,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public log_softmax position(long position) {
                 return (log_softmax)super.position(position);
             }
+            @Override public log_softmax getPointer(long i) {
+                return new log_softmax(this).position(position + i);
+            }
         
                                                                                     public log_softmax() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22548,6 +23900,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public log_softmax_bp position(long position) {
                 return (log_softmax_bp)super.position(position);
+            }
+            @Override public log_softmax_bp getPointer(long i) {
+                return new log_softmax_bp(this).position(position + i);
             }
         
                                                                                     public log_softmax_bp() { super((Pointer)null); allocate(); }
@@ -22569,6 +23924,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public relu_layer position(long position) {
                 return (relu_layer)super.position(position);
+            }
+            @Override public relu_layer getPointer(long i) {
+                return new relu_layer(this).position(position + i);
             }
         
                                                                                     public relu_layer() { super((Pointer)null); allocate(); }
@@ -22594,6 +23952,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public layer_norm position(long position) {
                         return (layer_norm)super.position(position);
                     }
+                    @Override public layer_norm getPointer(long i) {
+                        return new layer_norm(this).position(position + i);
+                    }
                 
                                                                                     public layer_norm() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22608,6 +23969,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     private native void allocateArray(long size);
                     @Override public layer_norm_bp position(long position) {
                         return (layer_norm_bp)super.position(position);
+                    }
+                    @Override public layer_norm_bp getPointer(long i) {
+                        return new layer_norm_bp(this).position(position + i);
                     }
                 
                                                                                     public layer_norm_bp() { super((Pointer)null); allocate(); }
@@ -22658,6 +24022,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public dot_product_attention position(long position) {
                         return (dot_product_attention)super.position(position);
                     }
+                    @Override public dot_product_attention getPointer(long i) {
+                        return new dot_product_attention(this).position(position + i);
+                    }
                 
                                                                                     public dot_product_attention() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22672,6 +24039,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     private native void allocateArray(long size);
                     @Override public dot_product_attention_bp position(long position) {
                         return (dot_product_attention_bp)super.position(position);
+                    }
+                    @Override public dot_product_attention_bp getPointer(long i) {
+                        return new dot_product_attention_bp(this).position(position + i);
                     }
                 
                                                                                     public dot_product_attention_bp() { super((Pointer)null); allocate(); }
@@ -22721,6 +24091,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     @Override public multi_head_dot_product_attention position(long position) {
                         return (multi_head_dot_product_attention)super.position(position);
                     }
+                    @Override public multi_head_dot_product_attention getPointer(long i) {
+                        return new multi_head_dot_product_attention(this).position(position + i);
+                    }
                 
                                                                                     public multi_head_dot_product_attention() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22735,6 +24108,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     private native void allocateArray(long size);
                     @Override public multi_head_dot_product_attention_bp position(long position) {
                         return (multi_head_dot_product_attention_bp)super.position(position);
+                    }
+                    @Override public multi_head_dot_product_attention_bp getPointer(long i) {
+                        return new multi_head_dot_product_attention_bp(this).position(position + i);
                     }
                 
                                                                                     public multi_head_dot_product_attention_bp() { super((Pointer)null); allocate(); }
@@ -22800,6 +24176,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public matmul position(long position) {
                 return (matmul)super.position(position);
             }
+            @Override public matmul getPointer(long i) {
+                return new matmul(this).position(position + i);
+            }
         
                                                                                     public matmul() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22814,6 +24193,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public matmul_bp position(long position) {
                 return (matmul_bp)super.position(position);
+            }
+            @Override public matmul_bp getPointer(long i) {
+                return new matmul_bp(this).position(position + i);
             }
         
                                                                                     public matmul_bp() { super((Pointer)null); allocate(); }
@@ -22843,6 +24225,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public tensormmul position(long position) {
                 return (tensormmul)super.position(position);
             }
+            @Override public tensormmul getPointer(long i) {
+                return new tensormmul(this).position(position + i);
+            }
         
                                                                                     public tensormmul() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22857,6 +24242,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public tensormmul_bp position(long position) {
                 return (tensormmul_bp)super.position(position);
+            }
+            @Override public tensormmul_bp getPointer(long i) {
+                return new tensormmul_bp(this).position(position + i);
             }
         
                                                                                     public tensormmul_bp() { super((Pointer)null); allocate(); }
@@ -22879,6 +24267,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public axpy position(long position) {
                 return (axpy)super.position(position);
+            }
+            @Override public axpy getPointer(long i) {
+                return new axpy(this).position(position + i);
             }
         
                                                                                     public axpy() { super((Pointer)null); allocate(); }
@@ -22910,6 +24301,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public batched_gemm position(long position) {
                 return (batched_gemm)super.position(position);
+            }
+            @Override public batched_gemm getPointer(long i) {
+                return new batched_gemm(this).position(position + i);
             }
         
                                                                                     public batched_gemm() { super((Pointer)null); allocate(); }
@@ -22948,6 +24342,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public svd position(long position) {
                 return (svd)super.position(position);
             }
+            @Override public svd getPointer(long i) {
+                return new svd(this).position(position + i);
+            }
         
                                                                                     public svd() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -22975,6 +24372,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public sqrtm position(long position) {
                 return (sqrtm)super.position(position);
+            }
+            @Override public sqrtm getPointer(long i) {
+                return new sqrtm(this).position(position + i);
             }
         
                                                                                     public sqrtm() { super((Pointer)null); allocate(); }
@@ -23020,6 +24420,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public test_output_reshape position(long position) {
                 return (test_output_reshape)super.position(position);
             }
+            @Override public test_output_reshape getPointer(long i) {
+                return new test_output_reshape(this).position(position + i);
+            }
         
                                                     public test_output_reshape() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -23037,6 +24440,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public test_scalar position(long position) {
                 return (test_scalar)super.position(position);
+            }
+            @Override public test_scalar getPointer(long i) {
+                return new test_scalar(this).position(position + i);
             }
         
                                                                                     public test_scalar() { super((Pointer)null); allocate(); }
@@ -23056,6 +24462,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public testreduction position(long position) {
                 return (testreduction)super.position(position);
             }
+            @Override public testreduction getPointer(long i) {
+                return new testreduction(this).position(position + i);
+            }
         
                                                                                     public testreduction() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23072,6 +24481,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public noop position(long position) {
                 return (noop)super.position(position);
+            }
+            @Override public noop getPointer(long i) {
+                return new noop(this).position(position + i);
             }
         
                                                     public noop() { super((Pointer)null); allocate(); }
@@ -23091,6 +24503,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public testop2i2o position(long position) {
                 return (testop2i2o)super.position(position);
             }
+            @Override public testop2i2o getPointer(long i) {
+                return new testop2i2o(this).position(position + i);
+            }
         
                                                     public testop2i2o() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -23108,6 +24523,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public testcustom position(long position) {
                 return (testcustom)super.position(position);
+            }
+            @Override public testcustom getPointer(long i) {
+                return new testcustom(this).position(position + i);
             }
         
                                                                                     public testcustom() { super((Pointer)null); allocate(); }
@@ -23162,6 +24580,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public toggle_bits position(long position) {
                 return (toggle_bits)super.position(position);
             }
+            @Override public toggle_bits getPointer(long i) {
+                return new toggle_bits(this).position(position + i);
+            }
         
                                                     public toggle_bits() { super((Pointer)null); allocate(); }
                                                     private native void allocate();
@@ -23188,6 +24609,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public shift_bits position(long position) {
                 return (shift_bits)super.position(position);
             }
+            @Override public shift_bits getPointer(long i) {
+                return new shift_bits(this).position(position + i);
+            }
         
                                                                                     public shift_bits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23211,6 +24635,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public rshift_bits position(long position) {
                 return (rshift_bits)super.position(position);
+            }
+            @Override public rshift_bits getPointer(long i) {
+                return new rshift_bits(this).position(position + i);
             }
         
                                                                                     public rshift_bits() { super((Pointer)null); allocate(); }
@@ -23236,6 +24663,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public cyclic_shift_bits position(long position) {
                 return (cyclic_shift_bits)super.position(position);
             }
+            @Override public cyclic_shift_bits getPointer(long i) {
+                return new cyclic_shift_bits(this).position(position + i);
+            }
         
                                                                                     public cyclic_shift_bits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23259,6 +24689,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public cyclic_rshift_bits position(long position) {
                 return (cyclic_rshift_bits)super.position(position);
+            }
+            @Override public cyclic_rshift_bits getPointer(long i) {
+                return new cyclic_rshift_bits(this).position(position + i);
             }
         
                                                                                     public cyclic_rshift_bits() { super((Pointer)null); allocate(); }
@@ -23284,6 +24717,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public bitwise_and position(long position) {
                 return (bitwise_and)super.position(position);
             }
+            @Override public bitwise_and getPointer(long i) {
+                return new bitwise_and(this).position(position + i);
+            }
         
                                                                                     public bitwise_and() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23307,6 +24743,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public bitwise_or position(long position) {
                 return (bitwise_or)super.position(position);
+            }
+            @Override public bitwise_or getPointer(long i) {
+                return new bitwise_or(this).position(position + i);
             }
         
                                                                                     public bitwise_or() { super((Pointer)null); allocate(); }
@@ -23332,6 +24771,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public bitwise_xor position(long position) {
                 return (bitwise_xor)super.position(position);
             }
+            @Override public bitwise_xor getPointer(long i) {
+                return new bitwise_xor(this).position(position + i);
+            }
         
                                                                                     public bitwise_xor() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23355,6 +24797,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public bits_hamming_distance position(long position) {
                 return (bits_hamming_distance)super.position(position);
+            }
+            @Override public bits_hamming_distance getPointer(long i) {
+                return new bits_hamming_distance(this).position(position + i);
             }
         
                                                                                     public bits_hamming_distance() { super((Pointer)null); allocate(); }
@@ -23427,6 +24872,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public hinge_loss position(long position) {
                 return (hinge_loss)super.position(position);
             }
+            @Override public hinge_loss getPointer(long i) {
+                return new hinge_loss(this).position(position + i);
+            }
         
                                                                                     public hinge_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23441,6 +24889,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public hinge_loss_grad position(long position) {
                 return (hinge_loss_grad)super.position(position);
+            }
+            @Override public hinge_loss_grad getPointer(long i) {
+                return new hinge_loss_grad(this).position(position + i);
             }
         
                                                                                     public hinge_loss_grad() { super((Pointer)null); allocate(); }
@@ -23488,6 +24939,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public huber_loss position(long position) {
                 return (huber_loss)super.position(position);
             }
+            @Override public huber_loss getPointer(long i) {
+                return new huber_loss(this).position(position + i);
+            }
         
                                                                                     public huber_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23502,6 +24956,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public huber_loss_grad position(long position) {
                 return (huber_loss_grad)super.position(position);
+            }
+            @Override public huber_loss_grad getPointer(long i) {
+                return new huber_loss_grad(this).position(position + i);
             }
         
                                                                                     public huber_loss_grad() { super((Pointer)null); allocate(); }
@@ -23547,6 +25004,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public log_loss position(long position) {
                 return (log_loss)super.position(position);
             }
+            @Override public log_loss getPointer(long i) {
+                return new log_loss(this).position(position + i);
+            }
         
                                                                                     public log_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23561,6 +25021,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public log_loss_grad position(long position) {
                 return (log_loss_grad)super.position(position);
+            }
+            @Override public log_loss_grad getPointer(long i) {
+                return new log_loss_grad(this).position(position + i);
             }
         
                                                                                     public log_loss_grad() { super((Pointer)null); allocate(); }
@@ -23586,6 +25049,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public l2_loss position(long position) {
                 return (l2_loss)super.position(position);
+            }
+            @Override public l2_loss getPointer(long i) {
+                return new l2_loss(this).position(position + i);
             }
         
                                                                                     public l2_loss() { super((Pointer)null); allocate(); }
@@ -23627,6 +25093,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public log_poisson_loss position(long position) {
                 return (log_poisson_loss)super.position(position);
             }
+            @Override public log_poisson_loss getPointer(long i) {
+                return new log_poisson_loss(this).position(position + i);
+            }
         
                                                                                     public log_poisson_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23641,6 +25110,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public log_poisson_loss_grad position(long position) {
                 return (log_poisson_loss_grad)super.position(position);
+            }
+            @Override public log_poisson_loss_grad getPointer(long i) {
+                return new log_poisson_loss_grad(this).position(position + i);
             }
         
                                                                                     public log_poisson_loss_grad() { super((Pointer)null); allocate(); }
@@ -23674,6 +25146,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public mean_pairwssqerr_loss position(long position) {
                 return (mean_pairwssqerr_loss)super.position(position);
             }
+            @Override public mean_pairwssqerr_loss getPointer(long i) {
+                return new mean_pairwssqerr_loss(this).position(position + i);
+            }
         
                                                                                     public mean_pairwssqerr_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23688,6 +25163,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public mean_pairwssqerr_loss_grad position(long position) {
                 return (mean_pairwssqerr_loss_grad)super.position(position);
+            }
+            @Override public mean_pairwssqerr_loss_grad getPointer(long i) {
+                return new mean_pairwssqerr_loss_grad(this).position(position + i);
             }
         
                                                                                     public mean_pairwssqerr_loss_grad() { super((Pointer)null); allocate(); }
@@ -23730,6 +25208,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public mean_sqerr_loss position(long position) {
                 return (mean_sqerr_loss)super.position(position);
             }
+            @Override public mean_sqerr_loss getPointer(long i) {
+                return new mean_sqerr_loss(this).position(position + i);
+            }
         
                                                                                     public mean_sqerr_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23744,6 +25225,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public mean_sqerr_loss_grad position(long position) {
                 return (mean_sqerr_loss_grad)super.position(position);
+            }
+            @Override public mean_sqerr_loss_grad getPointer(long i) {
+                return new mean_sqerr_loss_grad(this).position(position + i);
             }
         
                                                                                     public mean_sqerr_loss_grad() { super((Pointer)null); allocate(); }
@@ -23789,6 +25273,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public sigm_cross_entropy_loss position(long position) {
                 return (sigm_cross_entropy_loss)super.position(position);
             }
+            @Override public sigm_cross_entropy_loss getPointer(long i) {
+                return new sigm_cross_entropy_loss(this).position(position + i);
+            }
         
                                                                                     public sigm_cross_entropy_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23803,6 +25290,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public sigm_cross_entropy_loss_grad position(long position) {
                 return (sigm_cross_entropy_loss_grad)super.position(position);
+            }
+            @Override public sigm_cross_entropy_loss_grad getPointer(long i) {
+                return new sigm_cross_entropy_loss_grad(this).position(position + i);
             }
         
                                                                                     public sigm_cross_entropy_loss_grad() { super((Pointer)null); allocate(); }
@@ -23848,6 +25338,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public softmax_cross_entropy_loss position(long position) {
                 return (softmax_cross_entropy_loss)super.position(position);
             }
+            @Override public softmax_cross_entropy_loss getPointer(long i) {
+                return new softmax_cross_entropy_loss(this).position(position + i);
+            }
         
                                                                                     public softmax_cross_entropy_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23862,6 +25355,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public softmax_cross_entropy_loss_grad position(long position) {
                 return (softmax_cross_entropy_loss_grad)super.position(position);
+            }
+            @Override public softmax_cross_entropy_loss_grad getPointer(long i) {
+                return new softmax_cross_entropy_loss_grad(this).position(position + i);
             }
         
                                                                                     public softmax_cross_entropy_loss_grad() { super((Pointer)null); allocate(); }
@@ -23904,6 +25400,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public absolute_difference_loss position(long position) {
                 return (absolute_difference_loss)super.position(position);
             }
+            @Override public absolute_difference_loss getPointer(long i) {
+                return new absolute_difference_loss(this).position(position + i);
+            }
         
                                                                                     public absolute_difference_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23918,6 +25417,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public absolute_difference_loss_grad position(long position) {
                 return (absolute_difference_loss_grad)super.position(position);
+            }
+            @Override public absolute_difference_loss_grad getPointer(long i) {
+                return new absolute_difference_loss_grad(this).position(position + i);
             }
         
                                                                                     public absolute_difference_loss_grad() { super((Pointer)null); allocate(); }
@@ -23961,6 +25463,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public cosine_distance_loss position(long position) {
                 return (cosine_distance_loss)super.position(position);
             }
+            @Override public cosine_distance_loss getPointer(long i) {
+                return new cosine_distance_loss(this).position(position + i);
+            }
         
                                                                                     public cosine_distance_loss() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -23975,6 +25480,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public cosine_distance_loss_grad position(long position) {
                 return (cosine_distance_loss_grad)super.position(position);
+            }
+            @Override public cosine_distance_loss_grad getPointer(long i) {
+                return new cosine_distance_loss_grad(this).position(position + i);
             }
         
                                                                                     public cosine_distance_loss_grad() { super((Pointer)null); allocate(); }
@@ -24009,6 +25517,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public softmax_cross_entropy_loss_with_logits position(long position) {
                 return (softmax_cross_entropy_loss_with_logits)super.position(position);
             }
+            @Override public softmax_cross_entropy_loss_with_logits getPointer(long i) {
+                return new softmax_cross_entropy_loss_with_logits(this).position(position + i);
+            }
         
                                                                                     public softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -24023,6 +25534,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public softmax_cross_entropy_loss_with_logits_grad position(long position) {
                 return (softmax_cross_entropy_loss_with_logits_grad)super.position(position);
+            }
+            @Override public softmax_cross_entropy_loss_with_logits_grad getPointer(long i) {
+                return new softmax_cross_entropy_loss_with_logits_grad(this).position(position + i);
             }
         
                                                                                     public softmax_cross_entropy_loss_with_logits_grad() { super((Pointer)null); allocate(); }
@@ -24054,6 +25568,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public sparse_softmax_cross_entropy_loss_with_logits position(long position) {
                 return (sparse_softmax_cross_entropy_loss_with_logits)super.position(position);
             }
+            @Override public sparse_softmax_cross_entropy_loss_with_logits getPointer(long i) {
+                return new sparse_softmax_cross_entropy_loss_with_logits(this).position(position + i);
+            }
         
                                                                                     public sparse_softmax_cross_entropy_loss_with_logits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -24068,6 +25585,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public sparse_softmax_cross_entropy_loss_with_logits_grad position(long position) {
                 return (sparse_softmax_cross_entropy_loss_with_logits_grad)super.position(position);
+            }
+            @Override public sparse_softmax_cross_entropy_loss_with_logits_grad getPointer(long i) {
+                return new sparse_softmax_cross_entropy_loss_with_logits_grad(this).position(position + i);
             }
         
                                                                                     public sparse_softmax_cross_entropy_loss_with_logits_grad() { super((Pointer)null); allocate(); }
@@ -24123,6 +25643,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public to_double position(long position) {
                 return (to_double)super.position(position);
             }
+            @Override public to_double getPointer(long i) {
+                return new to_double(this).position(position + i);
+            }
         
                                                                                     public to_double() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -24145,6 +25668,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public to_float16 position(long position) {
                 return (to_float16)super.position(position);
+            }
+            @Override public to_float16 getPointer(long i) {
+                return new to_float16(this).position(position + i);
             }
         
                                                                                     public to_float16() { super((Pointer)null); allocate(); }
@@ -24169,6 +25695,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public to_float32 position(long position) {
                 return (to_float32)super.position(position);
             }
+            @Override public to_float32 getPointer(long i) {
+                return new to_float32(this).position(position + i);
+            }
         
                                                                                     public to_float32() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -24191,6 +25720,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public to_int32 position(long position) {
                 return (to_int32)super.position(position);
+            }
+            @Override public to_int32 getPointer(long i) {
+                return new to_int32(this).position(position + i);
             }
         
                                                                                     public to_int32() { super((Pointer)null); allocate(); }
@@ -24215,6 +25747,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public to_int64 position(long position) {
                 return (to_int64)super.position(position);
             }
+            @Override public to_int64 getPointer(long i) {
+                return new to_int64(this).position(position + i);
+            }
         
                                                                                     public to_int64() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -24238,6 +25773,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public to_uint32 position(long position) {
                 return (to_uint32)super.position(position);
             }
+            @Override public to_uint32 getPointer(long i) {
+                return new to_uint32(this).position(position + i);
+            }
         
                                                                                     public to_uint32() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -24260,6 +25798,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public to_uint64 position(long position) {
                 return (to_uint64)super.position(position);
+            }
+            @Override public to_uint64 getPointer(long i) {
+                return new to_uint64(this).position(position + i);
             }
         
                                                                                     public to_uint64() { super((Pointer)null); allocate(); }
@@ -24288,6 +25829,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             @Override public cast position(long position) {
                 return (cast)super.position(position);
             }
+            @Override public cast getPointer(long i) {
+                return new cast(this).position(position + i);
+            }
         
                                                                                     public cast() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
@@ -24309,6 +25853,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                     private native void allocateArray(long size);
                     @Override public bitcast position(long position) {
                         return (bitcast)super.position(position);
+                    }
+                    @Override public bitcast getPointer(long i) {
+                        return new bitcast(this).position(position + i);
                     }
                 
                                                                                     public bitcast() { super((Pointer)null); allocate(); }
@@ -24358,6 +25905,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         private native void allocateArray(long size);
         @Override public ContextBuffers position(long position) {
             return (ContextBuffers)super.position(position);
+        }
+        @Override public ContextBuffers getPointer(long i) {
+            return new ContextBuffers(this).position(position + i);
         }
     
         public ContextBuffers() { super((Pointer)null); allocate(); }
@@ -24449,6 +25999,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
     @Override public LaunchContext position(long position) {
         return (LaunchContext)super.position(position);
     }
+    @Override public LaunchContext getPointer(long i) {
+        return new LaunchContext(this).position(position + i);
+    }
 
 // #ifdef __CUDABLAS__
 
@@ -24472,14 +26025,14 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #endif
 
-    	public static native @Cast("bool") boolean isInitialized();
-    	public static native void releaseBuffers();
+    	public native @Cast("bool") boolean isInitialized();
+    	public native void releaseBuffers();
 
 
-	    public static native LaunchContext defaultContext();
+	    public native LaunchContext defaultContext();
 
 
-    	public static native void swapContextBuffers(@ByRef ContextBuffers buffers);
+    	public native void swapContextBuffers(@ByRef ContextBuffers buffers);
 
 }
 
@@ -24530,6 +26083,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
     private native void allocateArray(long size);
     @Override public ShapeDescriptor position(long position) {
         return (ShapeDescriptor)super.position(position);
+    }
+    @Override public ShapeDescriptor getPointer(long i) {
+        return new ShapeDescriptor(this).position(position + i);
     }
 
         public ShapeDescriptor(@Const @ByRef ShapeDescriptor other) { super((Pointer)null); allocate(other); }
@@ -24622,9 +26178,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         public native @Cast("Nd4jLong*") LongPointer toShapeInfo();
 
 
-        public static native @ByVal ShapeDescriptor emptyDescriptor(@Cast("const sd::DataType") int type);
-        public static native @ByVal ShapeDescriptor scalarDescriptor(@Cast("const sd::DataType") int type);
-        public static native @ByVal ShapeDescriptor vectorDescriptor(@Cast("const Nd4jLong") long length, @Cast("const sd::DataType") int type);
+        public native @ByVal ShapeDescriptor emptyDescriptor(@Cast("const sd::DataType") int type);
+        public native @ByVal ShapeDescriptor scalarDescriptor(@Cast("const sd::DataType") int type);
+        public native @ByVal ShapeDescriptor vectorDescriptor(@Cast("const Nd4jLong") long length, @Cast("const sd::DataType") int type);
     }
 
 
@@ -24770,6 +26326,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         @Override public DebugInfo position(long position) {
             return (DebugInfo)super.position(position);
         }
+        @Override public DebugInfo getPointer(long i) {
+            return new DebugInfo(this).position(position + i);
+        }
     
        public native double _minValue(); public native DebugInfo _minValue(double setter);
        public native double _maxValue(); public native DebugInfo _maxValue(double setter);
@@ -24782,7 +26341,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
        public native @Cast("Nd4jLong") long _nanCount(); public native DebugInfo _nanCount(long setter);
     }
 
-    @Namespace("sd") public static native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef DebugInfo first, @Const @ByRef DebugInfo second);
+    @Namespace("sd") public native @Cast("bool") @Name("operator ==") boolean equals(@Const @ByRef DebugInfo first, @Const @ByRef DebugInfo second);
 
 
 
@@ -24826,6 +26385,9 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
             private native void allocateArray(long size);
             @Override public firas_sparse position(long position) {
                 return (firas_sparse)super.position(position);
+            }
+            @Override public firas_sparse getPointer(long i) {
+                return new firas_sparse(this).position(position + i);
             }
         
                                                                                     public firas_sparse() { super((Pointer)null); allocate(); }

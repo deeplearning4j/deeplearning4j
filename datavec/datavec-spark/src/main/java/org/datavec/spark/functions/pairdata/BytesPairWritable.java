@@ -21,6 +21,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 /**A Hadoop writable class for a pair of byte arrays, plus the original URIs (as Strings) of the files they came from
  * @author Alex Black
@@ -44,8 +45,8 @@ public class BytesPairWritable implements Serializable, org.apache.hadoop.io.Wri
     public void write(DataOutput dataOutput) throws IOException {
         int length1 = (first != null ? first.length : 0);
         int length2 = (second != null ? second.length : 0);
-        byte[] s1Bytes = (uriFirst != null ? uriFirst.getBytes(Charset.forName("UTF-8")) : null);
-        byte[] s2Bytes = (uriSecond != null ? uriSecond.getBytes(Charset.forName("UTF-8")) : null);
+        byte[] s1Bytes = (uriFirst != null ? uriFirst.getBytes(StandardCharsets.UTF_8) : null);
+        byte[] s2Bytes = (uriSecond != null ? uriSecond.getBytes(StandardCharsets.UTF_8) : null);
         int s1Len = (s1Bytes != null ? s1Bytes.length : 0);
         int s2Len = (s2Bytes != null ? s2Bytes.length : 0);
         dataOutput.writeInt(length1);
@@ -79,12 +80,12 @@ public class BytesPairWritable implements Serializable, org.apache.hadoop.io.Wri
         if (s1Len > 0) {
             byte[] s1Bytes = new byte[s1Len];
             dataInput.readFully(s1Bytes);
-            uriFirst = new String(s1Bytes, Charset.forName("UTF-8"));
+            uriFirst = new String(s1Bytes, StandardCharsets.UTF_8);
         }
         if (s2Len > 0) {
             byte[] s2Bytes = new byte[s2Len];
             dataInput.readFully(s2Bytes);
-            uriSecond = new String(s2Bytes, Charset.forName("UTF-8"));
+            uriSecond = new String(s2Bytes, StandardCharsets.UTF_8);
         }
     }
 

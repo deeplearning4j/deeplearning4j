@@ -24,7 +24,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
 import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
-import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,27 +33,25 @@ import java.util.List;
 
 /**
  * This the "Algorithm S2 Asynchronous n-step Q-learning" of <i>Asynchronous Methods for Deep Reinforcement Learning</i>
- * @see <a href="https://arxiv.org/pdf/1602.01783.pdf">Asynchronous Methods for Deep Reinforcement Learning on arXiv</a>, page 14
- * <p/>
- * Note: The output of threadCurrent must contain a channel named "Q".
+ * @see <a href="https://arxiv.org/pdf/1602.01783.pdf">https://arxiv.org/pdf/1602.01783.pdf</a>, page 13
  */
 public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPair<Integer>> {
 
-    private final ITrainableNeuralNet threadCurrent;
+    private final ITrainableNeuralNet current;
     private final IOutputNeuralNet target;
     private final int actionSpaceSize;
     private final double gamma;
 
     /**
-     * @param threadCurrent The &theta;' parameters (the thread-specific network)
+     * @param current The &theta;' parameters (the thread-specific network)
      * @param target The &theta;<sup>&ndash;</sup> parameters (the global target network)
      * @param actionSpaceSize The numbers of possible actions that can be taken on the environment
      */
-    public NStepQLearning(@NonNull ITrainableNeuralNet threadCurrent,
+    public NStepQLearning(@NonNull ITrainableNeuralNet current,
                           @NonNull IOutputNeuralNet target,
                           int actionSpaceSize,
                           @NonNull Configuration configuration) {
-        this.threadCurrent = threadCurrent;
+        this.current = current;
         this.target = target;
         this.actionSpaceSize = actionSpaceSize;
         this.gamma = configuration.getGamma();
@@ -74,7 +71,7 @@ public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPa
         if (stateActionPair.isTerminal()) {
             r = 0;
         } else {
-            INDArray output = target.output(data).get(CommonOutputNames.QValues);
+            INDArray output = target.output(data);
             r = Nd4j.max(output).getDouble(0);
         }
 
@@ -85,14 +82,14 @@ public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPa
             features.putRow(i, data);
 
             r = stateActionPair.getReward() + gamma * r;
-            INDArray row = threadCurrent.output(data).get(CommonOutputNames.QValues);
+            INDArray row = current.output(data);
             row = row.putScalar(stateActionPair.getAction(), r);
             labels.putRow(i, row);
         }
 
         FeaturesLabels featuresLabels = new FeaturesLabels(features);
         featuresLabels.putLabels(CommonLabelNames.QValues, labels);
-        return threadCurrent.computeGradients(featuresLabels);
+        return current.computeGradients(featuresLabels);
     }
 
     @SuperBuilder

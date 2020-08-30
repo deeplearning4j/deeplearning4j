@@ -28,14 +28,12 @@ import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
-import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 

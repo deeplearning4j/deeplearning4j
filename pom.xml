@@ -17,8 +17,8 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -259,7 +259,6 @@
         <snappy.version>1.1.2.6</snappy.version>
         <spring.version>5.1.1.RELEASE</spring.version>
         <t-digest.version>3.2</t-digest.version>
-
         <oshi.version>3.4.2</oshi.version>
         <kafka.version>0.8.2.2</kafka.version>
         <typesafe.config.version>1.3.0</typesafe.config.version>
@@ -309,7 +308,7 @@
         <gym.version>0.17.2</gym.version>
         <tensorflow.version>1.15.3</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
-
+        <archunit.version>0.14.1</archunit.version>
         <commons-compress.version>1.18</commons-compress.version>
         <commonsmath.version>3.5</commonsmath.version>
         <commonslang.version>3.6</commonslang.version>
@@ -729,7 +728,7 @@
             <id>javacpp-platform-default</id>
             <activation>
                 <property>
-                  <name>!javacpp.platform</name>
+                    <name>!javacpp.platform</name>
                 </property>
             </activation>
             <properties>

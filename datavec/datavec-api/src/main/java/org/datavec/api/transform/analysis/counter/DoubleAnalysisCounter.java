@@ -49,27 +49,27 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
   private TDigest digest = TDigest.createDigest(100);
 
 
-    public DoubleAnalysisCounter() {};
+    public DoubleAnalysisCounter() {}
 
     public double getMinValueSeen() {
         return counter.getMin();
-    };
+    }
 
     public double getMaxValueSeen() {
         return counter.getMax();
-    };
+    }
 
     public double getSum() {
         return counter.getSum();
-    };
+    }
 
     public long getCountTotal() {
         return counter.getCount();
-    };
+    }
 
     public double getSampleStdev() {
         return counter.getStddev(false);
-    };
+    }
 
     public double getMean() {
         return counter.getMean();
@@ -105,7 +105,7 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
             countPositive++;
         } else {
             countNegative++;
-        } ;
+        }
 
         digest.add(value);
         counter.add(value);

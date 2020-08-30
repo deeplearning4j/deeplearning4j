@@ -19,11 +19,6 @@ package org.datavec.local.transforms;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.transform.TransformProcessRecordReader;
 import org.datavec.api.transform.TransformProcess;
-import org.datavec.api.writable.Writable;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 /**
  * A wrapper around the {@link TransformProcessRecordReader}

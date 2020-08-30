@@ -4,9 +4,7 @@ import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
-import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
-import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,16 +36,8 @@ public class StandardDQNTest {
 
     @Before
     public void setup() {
-        when(qNetworkMock.output(any(INDArray.class))).thenAnswer(i -> {
-            NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, i.getArgument(0, INDArray.class));
-            return result;
-        });
-        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> {
-            NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, i.getArgument(0, INDArray.class));
-            return result;
-        });
+        when(qNetworkMock.output(any(INDArray.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> i.getArguments()[0]);
     }
 
 

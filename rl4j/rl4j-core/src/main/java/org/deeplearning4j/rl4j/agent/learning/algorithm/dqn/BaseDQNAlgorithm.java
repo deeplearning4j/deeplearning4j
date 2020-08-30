@@ -17,7 +17,6 @@
 package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
 import lombok.NonNull;
-import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -52,7 +51,7 @@ public abstract class BaseDQNAlgorithm extends BaseTransitionTDAlgorithm {
     protected void initComputation(INDArray observations, INDArray nextObservations) {
         super.initComputation(observations, nextObservations);
 
-        qNetworkNextObservation = qNetwork.output(nextObservations).get(CommonOutputNames.QValues);
-        targetQNetworkNextObservation = targetQNetwork.output(nextObservations).get(CommonOutputNames.QValues);
+        qNetworkNextObservation = qNetwork.output(nextObservations);
+        targetQNetworkNextObservation = targetQNetwork.output(nextObservations);
     }
 }

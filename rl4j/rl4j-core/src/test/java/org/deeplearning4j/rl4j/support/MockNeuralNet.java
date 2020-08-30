@@ -6,7 +6,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -59,7 +58,7 @@ public class MockNeuralNet implements NeuralNet {
     }
 
     @Override
-    public void copyFrom(ITrainableNeuralNet from) {
+    public void copy(ITrainableNeuralNet from) {
         ++copyCallCount;
     }
 
@@ -99,12 +98,12 @@ public class MockNeuralNet implements NeuralNet {
     }
 
     @Override
-    public NeuralNetOutput output(Observation observation) {
+    public INDArray output(Observation observation) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public NeuralNetOutput output(INDArray batch) {
+    public INDArray output(INDArray batch) {
         throw new UnsupportedOperationException();
     }
 }

@@ -102,7 +102,7 @@ public abstract class AsyncThreadDiscrete<OBSERVATION extends Encodable, NN exte
      */
     public SubEpochReturn trainSubEpoch(Observation sObs, int trainingSteps) {
 
-        current.copyFrom(getAsyncGlobal().getTarget());
+        current.copy(getAsyncGlobal().getTarget());
 
         Observation obs = sObs;
         IPolicy<Integer> policy = getPolicy(current);

@@ -22,7 +22,7 @@ import org.deeplearning4j.rl4j.agent.IAgentLearner;
 
 import java.util.function.Predicate;
 
-// TODO: Add listeners & events
+// TODO: Add listeners & events once AsyncTrainer is implemented
 
 /**
  * A {@link ITrainer} implementation that will create a single {@link IAgentLearner} and perform the training in a
@@ -38,18 +38,11 @@ public class SyncTrainer<ACTION> implements ITrainer {
     private int episodeCount;
 
     @Getter
-    private int stepCount;
-
-
-    @Getter
     final IAgentLearner<ACTION> agentLearner;
 
     /**
      * Build a SyncTrainer that will train until a stopping condition is met.
-     * @param agentLearnerBuilder the builder that will be used to create the agent-learner instance.
-     *                            Can be a descendant of {@link org.deeplearning4j.rl4j.builder.BaseAgentLearnerBuilder BaseAgentLearnerBuilder}
-     *                            for common scenario, or any class or lambda that implements <tt>Builder&lt;IAgentLearner&lt;ACTION&gt;&gt;</tt> if any specific
-     *                            need is not met by BaseAgentLearnerBuilder.
+     * @param agentLearnerBuilder the builder that will be used to create the agent-learner instance
      * @param stoppingCondition the training will stop when this condition evaluates to true
      */
     @lombok.Builder
@@ -59,14 +52,13 @@ public class SyncTrainer<ACTION> implements ITrainer {
         agentLearner = agentLearnerBuilder.build();
     }
 
+    /**
+     * Perform the training
+     */
     public void train() {
-        episodeCount = 0;
-        stepCount = 0;
-
         while (!stoppingCondition.test(this)) {
             agentLearner.run();
             ++episodeCount;
-            stepCount += agentLearner.getEpisodeStepCount();
         }
     }
 }

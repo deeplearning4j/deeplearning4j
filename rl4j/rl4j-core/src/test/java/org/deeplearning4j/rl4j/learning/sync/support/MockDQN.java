@@ -4,9 +4,7 @@ import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
-import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
-import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -52,19 +50,16 @@ public class MockDQN implements IDQN {
     }
 
     @Override
-    public NeuralNetOutput output(INDArray batch) {
-        NeuralNetOutput result = new NeuralNetOutput();
-        INDArray data = batch;
+    public INDArray output(INDArray batch) {
         if(mult != 1.0) {
-            data = data.dup().muli(mult);
+            return batch.dup().muli(mult);
         }
-        result.put(CommonOutputNames.QValues, data);
 
-        return result;
+        return batch;
     }
 
     @Override
-    public NeuralNetOutput output(Observation observation) {
+    public INDArray output(Observation observation) {
         return this.output(observation.getData());
     }
 
@@ -89,7 +84,7 @@ public class MockDQN implements IDQN {
     }
 
     @Override
-    public void copyFrom(ITrainableNeuralNet from) {
+    public void copy(ITrainableNeuralNet from) {
         throw new UnsupportedOperationException();
     }
 

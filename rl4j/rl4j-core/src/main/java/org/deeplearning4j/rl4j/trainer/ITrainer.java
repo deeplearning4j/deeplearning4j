@@ -19,18 +19,5 @@ package org.deeplearning4j.rl4j.trainer;
  * An interface describing the behavior of all trainers
  */
 public interface ITrainer {
-    /**
-     * Perform the training
-     */
     void train();
-
-    /**
-     * @return The total number of episodes completed in this training session
-     */
-    int getEpisodeCount();
-
-    /**
-     * @return The total number of steps taken in this training session
-     */
-    int getStepCount();
 }

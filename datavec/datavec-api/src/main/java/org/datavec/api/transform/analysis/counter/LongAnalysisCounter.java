@@ -47,23 +47,23 @@ public class LongAnalysisCounter implements AnalysisCounter<LongAnalysisCounter>
      */
     private TDigest digest = TDigest.createDigest(100);
 
-    public LongAnalysisCounter() {};
+    public LongAnalysisCounter() {}
 
     public long getMinValueSeen() {
         return (long) counter.getMin();
-    };
+    }
 
     public long getMaxValueSeen() {
         return (long) counter.getMax();
-    };
+    }
 
     public long getSum() {
         return (long) counter.getSum();
-    };
+    }
 
     public long getCountTotal() {
         return counter.getCount();
-    };
+    }
 
     public double getSampleStdev() {
         return counter.getStddev(false);
@@ -100,7 +100,7 @@ public class LongAnalysisCounter implements AnalysisCounter<LongAnalysisCounter>
             countPositive++;
         } else {
             countNegative++;
-        } ;
+        }
 
         digest.add((double) value);
         counter.add((double) value);

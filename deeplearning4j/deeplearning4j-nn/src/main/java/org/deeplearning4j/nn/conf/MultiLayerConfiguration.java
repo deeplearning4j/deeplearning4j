@@ -640,7 +640,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
             if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig){
                 //Check for invalid combination - tbptt plus LastTimeStepLayer or
-                for( int i=0; i<confs.size(); i++ ){
+                for( int i = 0; i < confs.size(); i++) {
                     Layer l = confs.get(i).getLayer();
                     if(l instanceof LastTimeStep || l instanceof GlobalPoolingLayer){
                         throw new IllegalStateException("Invalid network configuration detected: Truncated backpropagation through time (TBPTT)" +
@@ -698,7 +698,27 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     if (inputPreProcessor != null) {
                         currentInputType = inputPreProcessor.getOutputType(currentInputType);
                     }
-                    l.setNIn(currentInputType, false); //Don't override the nIn setting, if it's manually set by the user
+                    if(i > 0) {
+                        Layer layer = confs.get(i - 1).getLayer();
+                        //convolution 1d is an edge case where it has rnn input type but the filters
+                        //should be the output
+                        if(layer instanceof Convolution1DLayer) {
+                            Convolution1DLayer convolution1D = (Convolution1DLayer) layer;
+                            if(l instanceof DenseLayer) {
+                                FeedForwardLayer feedForwardLayer = (FeedForwardLayer) l;
+                                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                                feedForwardLayer.setNIn(recurrent.getTimeSeriesLength());
+                            }
+                            else
+                                l.setNIn(currentInputType, false); //Don't override the nIn setting, if it's manually set by the user
+                        }
+                        else
+                            l.setNIn(currentInputType, false); //Don't override the nIn setting, if it's manually set by the user
+
+                    }
+                    else
+                         l.setNIn(currentInputType, false); //Don't override the nIn setting, if it's manually set by the user
+
 
                     currentInputType = l.getOutputType(i, currentInputType);
                 }

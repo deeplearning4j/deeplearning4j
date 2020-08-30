@@ -1,11 +1,10 @@
 package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
+import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
-import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
-import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,22 +36,14 @@ public class DoubleDQNTest {
 
     @Before
     public void setup() {
-        when(qNetworkMock.output(any(INDArray.class))).thenAnswer(i -> {
-            NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, i.getArgument(0, INDArray.class));
-            return result;
-        });
+        when(qNetworkMock.output(any(INDArray.class))).thenAnswer(i -> i.getArguments()[0]);
     }
 
     @Test
     public void when_isTerminal_expect_rewardValueAtIdx0() {
 
         // Assemble
-        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> {
-            NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, i.getArgument(0, INDArray.class));
-            return result;
-        });
+        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> i.getArguments()[0]);
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
@@ -76,11 +67,7 @@ public class DoubleDQNTest {
     public void when_isNotTerminal_expect_rewardPlusEstimatedQValue() {
 
         // Assemble
-        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> {
-            NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, i.getArgument(0, INDArray.class).mul(-1.0));
-            return result;
-        });
+        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> ((INDArray)i.getArguments()[0]).mul(-1.0));
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {
@@ -104,11 +91,7 @@ public class DoubleDQNTest {
     public void when_batchHasMoreThanOne_expect_everySampleEvaluated() {
 
         // Assemble
-        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> {
-            NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, i.getArgument(0, INDArray.class).mul(-1.0));
-            return result;
-        });
+        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> ((INDArray)i.getArguments()[0]).mul(-1.0));
 
         List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
             {

@@ -605,7 +605,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testCausalCon1D() throws Exception {
+    public void testCausalConv1D() throws Exception {
         String[] names = new String[]{
                 "causal_conv1d_k2_s1_d1_cl_model.h5",
                 "causal_conv1d_k2_s1_d2_cl_model.h5",
@@ -635,7 +635,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testCon1D() throws Exception {
+    public void testConv1D() throws Exception {
         String[] names = new String[]{
                 "conv1d_k2_s1_d1_cf_same_model.h5",
                 "conv1d_k2_s1_d1_cf_valid_model.h5",
@@ -696,6 +696,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                     true, true, false, null, null); //f, f2);
         }
     }
+
 
     @Test
     public void testActivationLayers() throws Exception {

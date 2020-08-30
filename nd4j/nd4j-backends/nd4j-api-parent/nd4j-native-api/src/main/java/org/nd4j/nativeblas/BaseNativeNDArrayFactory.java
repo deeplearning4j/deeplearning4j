@@ -677,15 +677,24 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         int n = nativeOps.getNumNpyArraysInMap(pointer);
         HashMap<String, INDArray> map = new HashMap<>();
 
-        for (int i=0; i<n; i++){
-            String arrName = nativeOps.getNpyArrayNameFromMap(pointer, i);
+        for (int i=0; i < n; i++) {
+            //pre allocate 255 chars, only use up to null terminated
+            //create a null terminated string buffer pre allocated for use
+            //with the buffer
+            byte[] buffer = new byte[255];
+            for(int j = 0; j < buffer.length; j++) {
+                buffer[j] = '\0';
+            }
+
+            BytePointer charPointer = new BytePointer(buffer);
+            String arrName = nativeOps.getNpyArrayNameFromMap(pointer, i,charPointer);
             Pointer arrPtr = nativeOps.getNpyArrayFromMap(pointer, i);
             int ndim = nativeOps.getNpyArrayRank(arrPtr);
             long[] shape = new long[ndim];
             LongPointer shapePtr = nativeOps.getNpyArrayShape(arrPtr);
 
             long length = 1;
-            for (int j=0; j<ndim; j++){
+            for (int j = 0; j < ndim; j++) {
                 shape[j] = shapePtr.get(j);
                 length *= shape[j];
             }

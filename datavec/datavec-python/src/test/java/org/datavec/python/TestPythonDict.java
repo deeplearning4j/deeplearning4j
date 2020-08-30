@@ -18,18 +18,13 @@
 package org.datavec.python;
 
 
-import lombok.var;
-import org.json.JSONArray;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 @javax.annotation.concurrent.NotThreadSafe

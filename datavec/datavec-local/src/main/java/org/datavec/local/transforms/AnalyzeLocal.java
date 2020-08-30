@@ -25,7 +25,6 @@ import org.datavec.api.transform.analysis.DataVecAnalysisUtils;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.analysis.histogram.HistogramCounter;
 import org.datavec.api.transform.analysis.quality.QualityAnalysisAddFunction;
-import org.datavec.api.transform.analysis.quality.QualityAnalysisCombineFunction;
 import org.datavec.api.transform.analysis.quality.QualityAnalysisState;
 import org.datavec.api.transform.quality.DataQualityAnalysis;
 import org.datavec.api.transform.quality.columns.ColumnQuality;

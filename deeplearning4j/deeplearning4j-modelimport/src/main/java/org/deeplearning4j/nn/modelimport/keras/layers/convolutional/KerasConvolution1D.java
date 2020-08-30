@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -87,7 +88,6 @@ public class KerasConvolution1D extends KerasConvolution {
         hasBias = getHasBiasFromConfig(layerConfig, conf);
         numTrainableParams = hasBias ? 2 : 1;
         int[] dilationRate = getDilationRate(layerConfig, 1, conf, false);
-
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
@@ -103,7 +103,7 @@ public class KerasConvolution1D extends KerasConvolution {
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)
-                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]).rnnDataFormat(dimOrder == DimOrder.TENSORFLOW? RNNFormat.NWC: RNNFormat.NCW);
+                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]).rnnDataFormat(dimOrder == DimOrder.TENSORFLOW ? RNNFormat.NCW: RNNFormat.NWC);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
         if (hasBias)
             builder.biasInit(0.0);
@@ -115,6 +115,14 @@ public class KerasConvolution1D extends KerasConvolution {
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
+        if(inputShape != null) {
+            if(dimOrder == DimOrder.THEANO) {
+                builder.nIn(inputShape[0]);
+            }
+            else {
+                builder.nIn(inputShape[1]);
+            }
+        }
         this.layer = builder.build();
     }
 

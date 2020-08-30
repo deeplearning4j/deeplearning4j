@@ -16,4 +16,9 @@
 package org.deeplearning4j.rl4j.agent;
 
 public interface IAgentLearner<ACTION> extends IAgent<ACTION> {
+
+    /**
+     * @return The total count of steps taken by this AgentLearner, for all episodes.
+     */
+    int getTotalStepCount();
 }

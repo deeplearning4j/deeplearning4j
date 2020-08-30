@@ -26,9 +26,4 @@ public interface INeuralNetUpdater<DATA_TYPE> {
      * @param dataType
      */
     void update(DATA_TYPE dataType);
-
-    /**
-     * Make sure the thread local current netwrok is synchronized with the global current (in the async case)
-     */
-    void synchronizeCurrent();
 }

@@ -16,13 +16,8 @@
 
 package org.datavec.image.loader;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.split.FileSplit;
-import org.datavec.api.split.InputSplit;
-import org.datavec.image.recordreader.ImageRecordReader;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -30,9 +25,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.io.SequenceInputStream;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 

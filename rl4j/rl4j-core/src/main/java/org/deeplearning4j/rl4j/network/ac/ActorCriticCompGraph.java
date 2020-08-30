@@ -28,10 +28,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
-import org.deeplearning4j.rl4j.network.CommonGradientNames;
-import org.deeplearning4j.rl4j.network.CommonLabelNames;
-import org.deeplearning4j.rl4j.network.CommonOutputNames;
-import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -90,52 +86,26 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
 
     @Override
     public void fit(FeaturesLabels featuresLabels) {
-        INDArray[] features = new INDArray[] { featuresLabels.getFeatures() };
-        INDArray[] labels = new INDArray[] { featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy) };
-        cg.fit(features, labels);
+        // TODO
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
     }
 
     @Override
     public Gradients computeGradients(FeaturesLabels updateLabels) {
-        cg.setInput(0, updateLabels.getFeatures());
-        cg.setLabels(updateLabels.getLabels(CommonLabelNames.ActorCritic.Value), updateLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
-        cg.computeGradientAndScore();
-        Collection<TrainingListener> iterationListeners = cg.getListeners();
-        if (iterationListeners != null && iterationListeners.size() > 0) {
-            for (TrainingListener l : iterationListeners) {
-                l.onGradientCalculation(cg);
-            }
-        }
-
-        Gradients result = new Gradients(updateLabels.getBatchSize());
-        result.putGradient(CommonGradientNames.ActorCritic.Combined, cg.gradient());
-
-        return result;
+        // TODO
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
     }
 
     @Override
     public void applyGradients(Gradients gradients) {
-        ComputationGraphConfiguration cgConf = cg.getConfiguration();
-        int iterationCount = cgConf.getIterationCount();
-        int epochCount = cgConf.getEpochCount();
-
-        Gradient gradient = gradients.getGradient(CommonGradientNames.ActorCritic.Combined);
-        cg.getUpdater().update(gradient, iterationCount, epochCount, (int)gradients.getBatchSize(), LayerWorkspaceMgr.noWorkspaces());
-        cg.params().subi(gradient.gradient());
-        Collection<TrainingListener> iterationListeners = cg.getListeners();
-        if (iterationListeners != null && iterationListeners.size() > 0) {
-            for (TrainingListener listener : iterationListeners) {
-                listener.iterationDone(cg, iterationCount, epochCount);
-            }
-        }
-        cgConf.setIterationCount(iterationCount + 1);
+        // TODO
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
     }
 
-    public void copyFrom(ActorCriticCompGraph from) {
+    public void copy(ActorCriticCompGraph from) {
         cg.setParams(from.cg.params());
     }
 
-    @Deprecated
     public Gradient[] gradient(INDArray input, INDArray[] labels) {
         cg.setInput(0, input);
         cg.setLabels(labels);
@@ -191,19 +161,17 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
     }
 
     @Override
-    public NeuralNetOutput output(Observation observation) {
-        return output(observation.getData());
+    public INDArray output(Observation observation) {
+        // TODO: signature of output() will change to return a class that has named outputs to support network like
+        // this one (output from the value-network and another output for the policy-network
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
     }
 
     @Override
-    public NeuralNetOutput output(INDArray batch) {
-        INDArray[] cgOutput = cg.output(batch);
-
-        NeuralNetOutput result = new NeuralNetOutput();
-        result.put(CommonOutputNames.ActorCritic.Value, cgOutput[0]);
-        result.put(CommonOutputNames.ActorCritic.Policy, cgOutput[1]);
-
-        return result;
+    public INDArray output(INDArray batch) {
+        // TODO: signature of output() will change to return a class that has named outputs to support network like
+        // this one (output from the value-network and another output for the policy-network
+        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
     }
 }
 
