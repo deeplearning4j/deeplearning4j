@@ -96,9 +96,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
         int shapeLength = shape.length;
         val miniBatchShape = new long[shapeLength + 1];
         miniBatchShape[0] = miniBatchSize;
-        for (int i = 1; i < miniBatchShape.length; i++) {
-            miniBatchShape[i] = shape[i - 1];
-        }
+        System.arraycopy(shape, 0, miniBatchShape, 1, miniBatchShape.length - 1);
         return miniBatchShape;
     }
 
