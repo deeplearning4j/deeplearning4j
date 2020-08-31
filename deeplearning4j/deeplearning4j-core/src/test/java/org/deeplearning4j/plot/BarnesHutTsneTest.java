@@ -50,7 +50,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.nd4j.linalg.factory.Nd4j.zeros;
 
 // import org.nd4j.jita.conf.CudaEnvironment;
 

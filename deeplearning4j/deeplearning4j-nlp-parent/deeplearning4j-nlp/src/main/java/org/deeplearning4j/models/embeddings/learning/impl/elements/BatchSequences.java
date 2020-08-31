@@ -21,7 +21,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class BatchSequences<T extends SequenceElement> {

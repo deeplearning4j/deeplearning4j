@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.clustering.kmeans;
 
-import lombok.val;
 import org.apache.commons.lang3.time.StopWatch;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.clustering.algorithm.Distance;

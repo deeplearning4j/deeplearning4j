@@ -17,7 +17,6 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.parallel.JointParallelDataSetIterator;
 import org.deeplearning4j.datasets.iterator.tools.SimpleVariableGenerator;
@@ -25,7 +24,6 @@ import org.junit.Test;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.enums.InequalityHandling;
-import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

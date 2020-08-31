@@ -32,7 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**

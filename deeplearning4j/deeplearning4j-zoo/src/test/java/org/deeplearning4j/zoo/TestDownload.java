@@ -19,7 +19,6 @@ package org.deeplearning4j.zoo;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.common.resources.DL4JResources;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.zoo.model.LeNet;
 import org.deeplearning4j.zoo.model.NASNet;
 import org.deeplearning4j.zoo.model.SimpleCNN;
@@ -32,10 +31,6 @@ import org.junit.rules.TemporaryFolder;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 

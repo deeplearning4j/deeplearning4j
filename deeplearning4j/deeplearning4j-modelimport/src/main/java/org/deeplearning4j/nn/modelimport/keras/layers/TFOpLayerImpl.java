@@ -36,7 +36,6 @@ import org.nd4j.shade.protobuf.Message;
 import org.nd4j.shade.protobuf.TextFormat;
 
 import java.util.*;
-import java.util.List;
 
 
 @Slf4j
