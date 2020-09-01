@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.nn.updater.graph;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;

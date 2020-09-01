@@ -20,7 +20,6 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.solvers.accumulation.FancyBlockingQueue;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.IndexedTail;
 import org.deeplearning4j.spark.parameterserver.networking.v1.messages.SilentUpdatesMessage;
@@ -35,8 +34,6 @@ import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 

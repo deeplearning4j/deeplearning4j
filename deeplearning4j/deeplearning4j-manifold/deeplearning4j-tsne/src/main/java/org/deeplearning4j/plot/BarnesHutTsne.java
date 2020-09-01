@@ -52,7 +52,6 @@ import java.util.*;
 
 import static org.nd4j.linalg.factory.Nd4j.*;
 import static org.nd4j.linalg.ops.transforms.Transforms.pow;
-import static org.nd4j.linalg.ops.transforms.Transforms.sign;
 
 
 /**

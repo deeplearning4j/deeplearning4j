@@ -17,7 +17,6 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.BertWordPiecePreProcessor;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;

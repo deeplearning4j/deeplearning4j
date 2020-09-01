@@ -17,10 +17,8 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
-import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.params.EmptyParamInitializer;
 
 /**
  * Upsampling base layer
