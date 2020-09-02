@@ -17,6 +17,7 @@
 package org.deeplearning4j.spark.impl.stats;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;

@@ -19,8 +19,11 @@ package org.deeplearning4j.datasets.iterator;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.dataset.api.iterator.BlockDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.BlockMultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.ArrayList;

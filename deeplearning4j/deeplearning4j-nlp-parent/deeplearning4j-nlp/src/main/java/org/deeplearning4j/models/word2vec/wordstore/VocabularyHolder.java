@@ -345,8 +345,9 @@ public class VocabularyHolder implements Serializable {
             if (word.getRetentionStep() < retentionDelay - 1) {
                 word.incrementRetentionStep();
             } else {
-                if (retentionDelay - 1 >= 0)
-                    System.arraycopy(word.getFrequencyShift(), 1, word.getFrequencyShift(), 0, retentionDelay - 1);
+                for (int x = 1; x < retentionDelay; x++) {
+                    word.getFrequencyShift()[x - 1] = word.getFrequencyShift()[x];
+                }
             }
         }
         logger.info("Scavenger was activated. Vocab size before: [" + initialSize + "],  after: [" + vocabulary.size()

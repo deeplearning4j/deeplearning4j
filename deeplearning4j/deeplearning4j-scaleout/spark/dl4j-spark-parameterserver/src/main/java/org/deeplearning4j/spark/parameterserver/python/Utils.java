@@ -20,6 +20,8 @@ import org.apache.spark.api.java.JavaRDD;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
+import javax.xml.crypto.Data;
+
 public class Utils {
 
     private static  ArrayDescriptor getArrayDescriptor(INDArray arr) throws Exception{

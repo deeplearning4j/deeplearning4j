@@ -17,7 +17,9 @@
 package org.deeplearning4j.datasets.fetchers;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.io.File;
 

@@ -19,6 +19,7 @@ package org.deeplearning4j.clustering.lsh;
 import org.deeplearning4j.BaseDL4JTest;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;

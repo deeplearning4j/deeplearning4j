@@ -18,12 +18,15 @@ package org.deeplearning4j.spark.impl.graph.scoring;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.DoubleFlatMapFunction;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import lombok.val;
 
 import java.util.ArrayList;

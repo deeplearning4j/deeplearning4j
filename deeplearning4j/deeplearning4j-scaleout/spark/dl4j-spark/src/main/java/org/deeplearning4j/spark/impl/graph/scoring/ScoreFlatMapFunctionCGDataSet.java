@@ -28,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
+import lombok.val;
 
 import java.util.ArrayList;
 import java.util.Collections;

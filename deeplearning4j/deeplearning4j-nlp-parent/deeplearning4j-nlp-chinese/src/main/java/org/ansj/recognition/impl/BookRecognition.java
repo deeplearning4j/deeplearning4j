@@ -67,7 +67,9 @@ public class BookRecognition implements Recognition {
         }
 
         if (mergeList != null) {
-            list.addAll(list);
+            for (Term term : list) {
+                list.add(term);
+            }
         }
 
         result.setTerms(list);

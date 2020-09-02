@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.impl.graph.evaluation;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.spark.impl.evaluation.EvaluationRunner;

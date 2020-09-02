@@ -38,6 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.config.Adam;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 

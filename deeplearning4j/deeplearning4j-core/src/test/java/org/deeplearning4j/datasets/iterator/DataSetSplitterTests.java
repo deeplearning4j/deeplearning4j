@@ -22,7 +22,9 @@ import org.deeplearning4j.datasets.iterator.tools.DataSetGenerator;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 

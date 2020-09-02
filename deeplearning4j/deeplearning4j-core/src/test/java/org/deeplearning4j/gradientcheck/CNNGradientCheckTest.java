@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.gradientcheck;
 
+import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;

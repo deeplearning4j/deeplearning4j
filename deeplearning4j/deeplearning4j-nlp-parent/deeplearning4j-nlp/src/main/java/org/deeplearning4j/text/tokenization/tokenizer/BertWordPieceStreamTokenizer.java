@@ -23,6 +23,7 @@ import org.apache.commons.io.IOUtils;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A tokenizer that works with a vocab from a published bert model and tokenizes a token at a time from a stream

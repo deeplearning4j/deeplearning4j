@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.earlystopping.trainer;
 
+import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
