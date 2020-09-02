@@ -45,7 +45,7 @@ public interface ITrainableNeuralNet<NET_TYPE extends ITrainableNeuralNet> exten
      * Changes this instance to be a copy of the <i>from</i> network.
      * @param from The network that will be the source of the copy.
      */
-    void copy(NET_TYPE from);
+    void copyFrom(NET_TYPE from);
 
     /**
      * Creates a clone of the network instance.

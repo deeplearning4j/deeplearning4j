@@ -1,6 +1,7 @@
-package org.deeplearning4j.rl4j.agent.learning.update.updater;
+package org.deeplearning4j.rl4j.agent.learning.update.updater.sync;
 
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
+import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterConfiguration;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,7 +11,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class GradientsNeuralNetUpdaterTest {
+public class SyncGradientsNeuralNetUpdaterTest {
 
     @Mock
     ITrainableNeuralNet currentMock;
@@ -21,9 +22,9 @@ public class GradientsNeuralNetUpdaterTest {
     @Test
     public void when_callingUpdate_expect_currentUpdatedAndtargetNotChanged() {
         // Arrange
-        GradientsNeuralNetUpdater.Configuration configuration = GradientsNeuralNetUpdater.Configuration.builder()
+        NeuralNetUpdaterConfiguration configuration = NeuralNetUpdaterConfiguration.builder()
                 .build();
-        GradientsNeuralNetUpdater sut = new GradientsNeuralNetUpdater(currentMock, targetMock, configuration);
+        SyncGradientsNeuralNetUpdater sut = new SyncGradientsNeuralNetUpdater(currentMock, targetMock, configuration);
         Gradients gradients = new Gradients(10);
 
         // Act
@@ -37,10 +38,10 @@ public class GradientsNeuralNetUpdaterTest {
     @Test
     public void when_callingUpdate_expect_targetUpdatedFromCurrentAtFrequency() {
         // Arrange
-        GradientsNeuralNetUpdater.Configuration configuration = GradientsNeuralNetUpdater.Configuration.builder()
+        NeuralNetUpdaterConfiguration configuration = NeuralNetUpdaterConfiguration.builder()
                 .targetUpdateFrequency(3)
                 .build();
-        GradientsNeuralNetUpdater sut = new GradientsNeuralNetUpdater(currentMock, targetMock, configuration);
+        SyncGradientsNeuralNetUpdater sut = new SyncGradientsNeuralNetUpdater(currentMock, targetMock, configuration);
         Gradients gradients = new Gradients(10);
 
         // Act
@@ -49,8 +50,7 @@ public class GradientsNeuralNetUpdaterTest {
         sut.update(gradients);
 
         // Assert
-        verify(currentMock, never()).copy(any());
-        verify(targetMock, times(1)).copy(currentMock);
+        verify(currentMock, never()).copyFrom(any());
+        verify(targetMock, times(1)).copyFrom(currentMock);
     }
-
 }

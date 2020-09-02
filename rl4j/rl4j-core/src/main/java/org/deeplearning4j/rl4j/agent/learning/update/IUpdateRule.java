@@ -34,4 +34,9 @@ public interface IUpdateRule<EXPERIENCE_TYPE> {
      * for all the agents.
      */
     int getUpdateCount();
+
+    /**
+     * Notify the update rule that a new training batch has been started
+     */
+    void notifyNewBatchStarted();
 }

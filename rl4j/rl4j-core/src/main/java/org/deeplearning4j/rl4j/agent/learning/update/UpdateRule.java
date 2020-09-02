@@ -51,4 +51,9 @@ public class UpdateRule<RESULT_TYPE, EXPERIENCE_TYPE> implements IUpdateRule<EXP
         ++updateCount;
     }
 
+    @Override
+    public void notifyNewBatchStarted() {
+        updater.synchronizeCurrent();
+    }
+
 }

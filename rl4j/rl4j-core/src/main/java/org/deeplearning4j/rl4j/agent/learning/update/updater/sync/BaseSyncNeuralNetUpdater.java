@@ -13,69 +13,45 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.agent.learning.update.updater;
+package org.deeplearning4j.rl4j.agent.learning.update.updater.sync;
 
-import lombok.Builder;
-import lombok.Data;
 import lombok.NonNull;
-import lombok.experimental.SuperBuilder;
-import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
+import org.deeplearning4j.rl4j.agent.learning.update.updater.INeuralNetUpdater;
+import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterConfiguration;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.nd4j.common.base.Preconditions;
 
 /**
  * A {@link INeuralNetUpdater} that updates a neural network and sync a target network at defined intervals
  */
-public class LabelsNeuralNetUpdater implements INeuralNetUpdater<FeaturesLabels> {
-
-    private final ITrainableNeuralNet current;
+public abstract class BaseSyncNeuralNetUpdater<DATA_TYPE> implements INeuralNetUpdater<DATA_TYPE> {
+    protected final ITrainableNeuralNet current;
     private final ITrainableNeuralNet target;
 
-    private int updateCount = 0;
     private final int targetUpdateFrequency;
+    private int updateCount = 0;
 
-    // TODO: Add async support
-    /**
-     * @param current The current {@link ITrainableNeuralNet network}
-     * @param target The target {@link ITrainableNeuralNet network}
-     * @param configuration The {@link Configuration} to use
-     *
-     * Note: Presently async is not supported
-     */
-    public LabelsNeuralNetUpdater(@NonNull ITrainableNeuralNet current,
-                                  @NonNull ITrainableNeuralNet target,
-                                  @NonNull Configuration configuration) {
+    protected BaseSyncNeuralNetUpdater(@NonNull ITrainableNeuralNet current,
+                                       @NonNull ITrainableNeuralNet target,
+                                       @NonNull NeuralNetUpdaterConfiguration configuration) {
         Preconditions.checkArgument(configuration.getTargetUpdateFrequency() > 0, "Configuration: targetUpdateFrequency must be greater than 0, got: ", configuration.getTargetUpdateFrequency());
+
         this.current = current;
         this.target = target;
-
         this.targetUpdateFrequency = configuration.getTargetUpdateFrequency();
     }
 
-    /**
-     * Update the current network
-     * @param featuresLabels A {@link FeaturesLabels} that will be used to update the network.
-     */
     @Override
-    public void update(FeaturesLabels featuresLabels) {
-        current.fit(featuresLabels);
-        syncTargetNetwork();
-    }
+    public abstract void update(DATA_TYPE dataType);
 
-    private void syncTargetNetwork() {
+    protected void syncTargetNetwork() {
         if(++updateCount % targetUpdateFrequency == 0) {
-            target.copy(current);
+            target.copyFrom(current);
         }
     }
 
-    @SuperBuilder
-    @Data
-    public static class Configuration {
-        /**
-         * Will synchronize the target network at every <i>targetUpdateFrequency</i> updates (default: no update)
-         */
-        @Builder.Default
-        int targetUpdateFrequency = Integer.MAX_VALUE;
+    @Override
+    public void synchronizeCurrent() {
+        // Do nothing; there is only one current network in the sync setup.
     }
-
 }

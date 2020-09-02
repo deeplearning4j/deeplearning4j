@@ -64,4 +64,15 @@ public class UpdateRuleTest {
         assertEquals(updateCountBefore + 1, updateCountAfter);
     }
 
+    @Test
+    public void when_callingNotifyNewBatchStarted_expect_synchronizeCurrentCalled() {
+        // Arrange
+
+        // Act
+        sut.notifyNewBatchStarted();
+
+        // Assert
+        verify(updater, times(1)).synchronizeCurrent();
+    }
+
 }
