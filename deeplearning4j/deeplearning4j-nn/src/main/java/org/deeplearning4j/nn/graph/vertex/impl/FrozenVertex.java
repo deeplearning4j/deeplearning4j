@@ -16,16 +16,11 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
-import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.TrainingConfig;
-import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.misc.DummyConfig;
 import org.deeplearning4j.nn.graph.vertex.BaseWrapperVertex;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.linalg.learning.config.NoOp;
 
 /**
  * FrozenVertex is used for the purposes of transfer learning

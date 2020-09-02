@@ -36,7 +36,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
-import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 @RunWith(Parameterized.class)

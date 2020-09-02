@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
 
 @Slf4j
 public class TestSameDiffConv extends BaseDL4JTest {

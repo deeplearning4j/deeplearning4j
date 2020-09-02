@@ -19,7 +19,6 @@ package org.deeplearning4j.nn.modelimport.keras.layers;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;

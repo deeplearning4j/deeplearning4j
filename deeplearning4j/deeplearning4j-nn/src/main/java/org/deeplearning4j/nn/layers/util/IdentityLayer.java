@@ -21,9 +21,6 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.learning.regularization.Regularization;
-
-import java.util.List;
 
 /**
  * Identity layer, passes data through unaltered. This is a pure utility layer needed to support

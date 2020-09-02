@@ -915,7 +915,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected int numWorkersPerNode = -1;
         protected int workerPrefetchNumBatches = 2;
         protected Repartitioner repartitioner = new DefaultRepartitioner();
-        protected Boolean workerTogglePeriodicGC = new Boolean(true);
+        protected Boolean workerTogglePeriodicGC = Boolean.TRUE;
         protected Integer workerPeriodicGCFrequency = new Integer(5000);
         protected boolean encodingDebugMode = false;
 

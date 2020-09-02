@@ -38,11 +38,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
-import static org.datavec.api.transform.ColumnType.NDArray;
 
 /**
  * Skip-Gram implementation for dl4j SequenceVectors

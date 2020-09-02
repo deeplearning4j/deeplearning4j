@@ -28,7 +28,6 @@ import org.deeplearning4j.spark.util.data.ValidationResult;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
-import java.io.EOFException;
 import java.net.URI;
 
 /**

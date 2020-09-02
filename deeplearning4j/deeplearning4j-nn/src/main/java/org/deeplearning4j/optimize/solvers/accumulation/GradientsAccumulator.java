@@ -20,7 +20,6 @@ import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
-import java.util.Queue;
 
 /**
  * @author raver119@gmail.com

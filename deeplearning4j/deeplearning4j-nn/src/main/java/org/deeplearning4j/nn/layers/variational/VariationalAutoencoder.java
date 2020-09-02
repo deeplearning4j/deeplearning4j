@@ -838,8 +838,7 @@ public class VariationalAutoencoder implements Layer {
             return;
         }
 
-        for (TrainingListener listener : listeners)
-            trainingListeners.add(listener);
+        trainingListeners.addAll(Arrays.asList(listeners));
     }
 
     @Override

@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.Convolution1DUtils;
-import org.deeplearning4j.util.ConvolutionUtils;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;

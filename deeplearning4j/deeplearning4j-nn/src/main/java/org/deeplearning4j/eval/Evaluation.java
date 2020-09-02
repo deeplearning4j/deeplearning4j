@@ -18,8 +18,6 @@ package org.deeplearning4j.eval;
 
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
-import org.nd4j.evaluation.EvaluationAveraging;
-import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;

@@ -22,8 +22,6 @@ import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.image.transform.ImageTransform;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.URL;

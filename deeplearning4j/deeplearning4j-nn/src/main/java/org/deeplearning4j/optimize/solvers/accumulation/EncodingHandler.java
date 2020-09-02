@@ -23,9 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithm;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgorithmReducer;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 

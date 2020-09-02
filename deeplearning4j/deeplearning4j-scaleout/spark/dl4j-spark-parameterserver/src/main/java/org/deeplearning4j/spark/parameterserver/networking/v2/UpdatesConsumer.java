@@ -16,28 +16,21 @@
 
 package org.deeplearning4j.spark.parameterserver.networking.v2;
 
-import io.reactivex.functions.Consumer;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
-import org.deeplearning4j.optimize.solvers.accumulation.FancyBlockingQueue;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.IndexedTail;
-import org.deeplearning4j.optimize.solvers.accumulation.SmartFancyBlockingQueue;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.v2.transport.UpdatesHandler;
-import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 

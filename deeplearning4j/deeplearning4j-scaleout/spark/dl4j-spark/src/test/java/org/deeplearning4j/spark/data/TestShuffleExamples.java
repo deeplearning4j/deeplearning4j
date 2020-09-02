@@ -16,8 +16,6 @@
 
 package org.deeplearning4j.spark.data;
 
-import org.apache.spark.HashPartitioner;
-import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.util.SparkUtils;
@@ -27,12 +25,9 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 06/01/2017.

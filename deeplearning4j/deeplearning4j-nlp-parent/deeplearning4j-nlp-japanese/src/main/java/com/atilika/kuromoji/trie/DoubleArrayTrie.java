@@ -19,7 +19,6 @@ package com.atilika.kuromoji.trie;
 import com.atilika.kuromoji.compile.ProgressLog;
 import com.atilika.kuromoji.util.KuromojiBinFilesFetcher;
 import com.atilika.kuromoji.util.ResourceResolver;
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;

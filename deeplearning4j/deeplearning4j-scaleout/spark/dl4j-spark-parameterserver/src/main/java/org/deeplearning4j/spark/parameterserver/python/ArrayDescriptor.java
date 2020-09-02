@@ -16,8 +16,6 @@
 
 package org.deeplearning4j.spark.parameterserver.python;
 
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;

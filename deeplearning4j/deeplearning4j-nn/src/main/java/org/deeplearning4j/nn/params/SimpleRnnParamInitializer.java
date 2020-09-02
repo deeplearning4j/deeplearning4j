@@ -27,7 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.*;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
-import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 public class SimpleRnnParamInitializer implements ParamInitializer {
 
