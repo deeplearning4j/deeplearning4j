@@ -123,27 +123,27 @@ public class EpsGreedy<A> extends Policy<A> {
     }
 
     public A nextAction(Observation observation) {
+        // FIXME: remove if() and content once deprecated methods are removed.
         if(actionSchema == null) {
             return this.nextAction(observation.getData());
         }
-
-        A result;
 
         double ep = getEpsilon();
         if (annealingStep % 500 == 1) {
             log.info("EP: " + ep + " " + annealingStep);
         }
 
-        if (rnd.nextDouble() > ep) {
-            result = policy.nextAction(observation);
-        }
-        else {
-            result = actionSchema.getRandomAction();
-        }
-
         ++annealingStep;
 
-        return result;
+        // TODO: This is a temporary solution while something better is developed
+        if (rnd.nextDouble() > ep) {
+            return policy.nextAction(observation);
+        }
+        // With RNNs the neural net must see *all* observations
+        if(getNeuralNet().isRecurrent()) {
+            policy.nextAction(observation); // Make the RNN see the observation
+        }
+        return actionSchema.getRandomAction();
     }
 
     public double getEpsilon() {

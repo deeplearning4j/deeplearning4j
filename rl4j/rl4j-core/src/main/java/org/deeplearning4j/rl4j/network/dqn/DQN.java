@@ -82,6 +82,7 @@ public class DQN implements IDQN<DQN> {
     }
 
     public NeuralNetOutput output(Observation observation) {
+        // TODO: Add RNN support
         return output(observation.getData());
     }
 

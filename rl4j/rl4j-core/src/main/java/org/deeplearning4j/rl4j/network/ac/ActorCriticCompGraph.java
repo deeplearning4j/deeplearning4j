@@ -18,7 +18,6 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.Getter;
-import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -192,16 +191,24 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
 
     @Override
     public NeuralNetOutput output(Observation observation) {
-        return output(observation.getData());
+        if(!isRecurrent()) {
+            return output(observation.getData());
+        }
+
+        INDArray[] cgOutput = cg.rnnTimeStep(observation.getData());
+        return packageResult(cgOutput[0], cgOutput[1]);
     }
 
     @Override
     public NeuralNetOutput output(INDArray batch) {
         INDArray[] cgOutput = cg.output(batch);
+        return packageResult(cgOutput[0], cgOutput[1]);
+    }
 
+    private NeuralNetOutput packageResult(INDArray value, INDArray policy) {
         NeuralNetOutput result = new NeuralNetOutput();
-        result.put(CommonOutputNames.ActorCritic.Value, cgOutput[0]);
-        result.put(CommonOutputNames.ActorCritic.Policy, cgOutput[1]);
+        result.put(CommonOutputNames.ActorCritic.Value, value);
+        result.put(CommonOutputNames.ActorCritic.Policy, policy);
 
         return result;
     }

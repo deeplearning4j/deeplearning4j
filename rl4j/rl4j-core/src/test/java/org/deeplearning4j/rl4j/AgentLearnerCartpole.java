@@ -1,13 +1,12 @@
 package org.deeplearning4j.rl4j;
 
 import org.apache.commons.lang3.builder.Builder;
-import org.datavec.api.transform.Operation;
 import org.deeplearning4j.rl4j.agent.Agent;
 import org.deeplearning4j.rl4j.agent.AgentLearner;
 import org.deeplearning4j.rl4j.agent.IAgentLearner;
-import org.deeplearning4j.rl4j.agent.learning.algorithm.AdvantageActorCritic;
-import org.deeplearning4j.rl4j.agent.learning.algorithm.NStepQLearning;
+import org.deeplearning4j.rl4j.agent.learning.algorithm.actorcritic.AdvantageActorCritic;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.BaseTransitionTDAlgorithm;
+import org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning.NStepQLearning;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterConfiguration;
 import org.deeplearning4j.rl4j.agent.listener.AgentListener;
 import org.deeplearning4j.rl4j.builder.AdvantageActorCriticBuilder;
@@ -28,11 +27,11 @@ import org.deeplearning4j.rl4j.network.dqn.DQNFactoryStdDense;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
+import org.deeplearning4j.rl4j.observation.transform.operation.ArrayToINDArrayTransform;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.trainer.AsyncTrainer;
 import org.deeplearning4j.rl4j.trainer.ITrainer;
 import org.deeplearning4j.rl4j.trainer.SyncTrainer;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Adam;
@@ -120,7 +119,7 @@ public class AgentLearnerCartpole {
 
         NStepQLearningBuilder.Configuration configuration = NStepQLearningBuilder.Configuration.builder()
                 .policyConfiguration(EpsGreedy.Configuration.builder()
-                        .epsilonNbStep(75000 / numThreads)
+                        .epsilonNbStep(75000  / (isAsync ? numThreads : 1))
                         .minEpsilon(0.1)
                         .build())
                 .neuralNetUpdaterConfiguration(NeuralNetUpdaterConfiguration.builder()
@@ -166,7 +165,7 @@ public class AgentLearnerCartpole {
 
     private static IDQN buildDQNNetwork() {
         DQNDenseNetworkConfiguration netConf = DQNDenseNetworkConfiguration.builder()
-                .updater(new Adam(1e-3))
+                .updater(new Adam())
                 .numHiddenNodes(40)
                 .numLayers(2)
                 .build();
@@ -176,7 +175,7 @@ public class AgentLearnerCartpole {
 
     private static IActorCritic buildActorCriticNetwork(boolean useSeparateActorCriticNetworks) {
         ActorCriticDenseNetworkConfiguration netConf =  ActorCriticDenseNetworkConfiguration.builder()
-                .updater(new Adam(1e-3))
+                .updater(new Adam())
                 .numHiddenNodes(40)
                 .numLayers(2)
                 .build();
@@ -188,12 +187,6 @@ public class AgentLearnerCartpole {
 
         ActorCriticFactoryCompGraphStdDense factory = new ActorCriticFactoryCompGraphStdDense(netConf);
         return factory.buildActorCritic(new int[] { 4 }, 2);
-    }
-    public static class ArrayToINDArrayTransform implements Operation<double[], INDArray> {
-        @Override
-        public INDArray transform(double[] data) {
-            return Nd4j.create(data);
-        }
     }
 
     private static class EpisodeScorePrinter implements AgentListener<Integer> {

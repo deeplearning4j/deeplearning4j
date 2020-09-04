@@ -41,14 +41,17 @@ public abstract class Policy<A> implements INeuralNetPolicy<A> {
 
     public abstract A nextAction(Observation obs);
 
+    @Deprecated
     public <O extends Encodable, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
         return play(mdp, (IHistoryProcessor)null);
     }
 
+    @Deprecated
     public <O extends Encodable, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, HistoryProcessor.Configuration conf) {
         return play(mdp, new HistoryProcessor(conf));
     }
 
+    @Deprecated
     @Override
     public <O extends Encodable, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
         resetNetworks();

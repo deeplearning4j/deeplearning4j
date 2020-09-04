@@ -1,5 +1,6 @@
-package org.deeplearning4j.rl4j.agent.learning.algorithm;
+package org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning;
 
+import org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning.NStepQLearning;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
@@ -20,7 +21,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
-public class NStepQLearningTest {
+public class NonRecurrentNStepQLearningTest {
 
     private static final int ACTION_SPACE_SIZE = 2;
 
@@ -38,11 +39,12 @@ public class NStepQLearningTest {
             result.put(CommonOutputNames.QValues, invocation.getArgument(0, INDArray.class).mul(-1.0));
             return result;
         });
-        when(targetMock.output(any(INDArray.class))).thenAnswer(invocation -> {
+        when(targetMock.output(any(Observation.class))).thenAnswer(invocation -> {
             NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, invocation.getArgument(0, INDArray.class).mul(-2.0));
+            result.put(CommonOutputNames.QValues, invocation.getArgument(0, Observation.class).getData().mul(-2.0));
             return result;
         });
+        when(threadCurrentMock.isRecurrent()).thenReturn(false);
 
         NStepQLearning.Configuration configuration = NStepQLearning.Configuration.builder()
             .gamma(gamma)

@@ -36,6 +36,7 @@ import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.policy.INeuralNetPolicy;
 import org.deeplearning4j.rl4j.policy.IPolicy;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.rng.Random;
 
 /**
@@ -56,6 +57,9 @@ public abstract class BaseDQNAgentLearnerBuilder<CONFIGURATION_TYPE extends Base
                                       Builder<TransformProcess> transformProcessBuilder,
                                       Random rnd) {
         super(configuration, neuralNet, environmentBuilder, transformProcessBuilder);
+
+        // TODO: remove once RNN networks states are supported with DQN
+        Preconditions.checkArgument(!neuralNet.isRecurrent(), "Recurrent networks are not yet supported with DQN.");
         this.rnd = rnd;
     }
 

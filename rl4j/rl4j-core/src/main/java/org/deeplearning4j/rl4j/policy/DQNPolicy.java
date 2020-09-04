@@ -51,7 +51,8 @@ public class DQNPolicy<OBSERVATION> extends Policy<Integer> {
 
     @Override
     public Integer nextAction(Observation obs) {
-        return nextAction(obs.getData());
+        INDArray output = neuralNet.output(obs).get(CommonOutputNames.QValues);
+        return Learning.getMaxAction(output);
     }
 
     @Deprecated

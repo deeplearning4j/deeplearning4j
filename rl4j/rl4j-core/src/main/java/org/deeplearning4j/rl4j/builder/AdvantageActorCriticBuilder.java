@@ -21,7 +21,7 @@ import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.builder.Builder;
 import org.deeplearning4j.rl4j.agent.IAgentLearner;
-import org.deeplearning4j.rl4j.agent.learning.algorithm.AdvantageActorCritic;
+import org.deeplearning4j.rl4j.agent.learning.algorithm.actorcritic.AdvantageActorCritic;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.async.AsyncSharedNetworksUpdateHandler;

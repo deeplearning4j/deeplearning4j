@@ -13,36 +13,38 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.network;
+package org.deeplearning4j.rl4j.observation.transform.operation;
 
-import org.deeplearning4j.rl4j.observation.Observation;
+import org.datavec.api.transform.Operation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * An interface defining the output aspect of a {@link NeuralNet}.
+ * A simple transform that converts a double[] into a INDArray
  */
-public interface IOutputNeuralNet {
-    /**
-     * Compute the output for the supplied observation.
-     * @param observation An {@link Observation}
-     * @return The ouptut of the network
-     */
-    NeuralNetOutput output(Observation observation);
+public class ArrayToINDArrayTransform implements Operation<double[], INDArray> {
+    private final long[] shape;
 
     /**
-     * Compute the output for the supplied batch.
-     * @param batch
-     * @return The ouptut of the network
+     * @param shape Reshapes the INDArrays with this shape
      */
-    NeuralNetOutput output(INDArray batch);
+    public ArrayToINDArrayTransform(long... shape) {
+        this.shape = shape;
+    }
 
     /**
-     * Clear the neural net of any previous state
+     * Will construct 1-D INDArrays
      */
-    void reset();
+    public ArrayToINDArrayTransform() {
+        this.shape = null;
+    }
 
-    /**
-     * @return True if the neural net is a RNN
-     */
-    boolean isRecurrent();
+    @Override
+    public INDArray transform(double[] data) {
+        INDArray result = Nd4j.create(data);
+        if(shape != null) {
+            result = result.reshape(shape);
+        }
+        return result;
+    }
 }

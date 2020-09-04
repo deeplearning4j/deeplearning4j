@@ -43,7 +43,7 @@ public class INDArrayHelper {
 
     /**
      * This will create a INDArray with <i>batchSize</i> as dimension 0 and <i>shape</i> as other dimensions.
-     * For example, if <i>batchSize</i> is 10 and shape is { 1, 3, 4 }, the resulting INDArray shape will be { 10, 3, 4}
+     * For example, if <i>batchSize</i> is 10 and shape is { 1, 3, 4 }, the resulting INDArray shape will be { 10, 3, 4 }
      * @param batchSize The size of the batch to create
      * @param shape The shape of individual elements.
      *              Note: all shapes in RL4J should have a batch size as dimension 0; in this case the batch size should be 1.
@@ -58,4 +58,25 @@ public class INDArrayHelper {
         batchShape[0] = batchSize;
         return Nd4j.create(batchShape);
     }
+
+    /**
+     * This will create a INDArray to be used with RNNs. Dimension 0 is set to 1, <i>batchSize</i> will be used as the
+     * time-step dimension (last dimension), and <i>shape</i> as other dimensions.
+     * For example, if <i>batchSize</i> is 5 and shape is { 1, 3, 1 }, the resulting INDArray shape will be { 1, 3, 5 }
+     * @param batchSize The size of the batch to create
+     * @param shape The shape of individual elements.
+     *              Note: all shapes in RL4J should have a batch size as dimension 0; in this case the batch size should be 1.
+     * @return A INDArray
+     */
+    public static INDArray createRnnBatchForShape(long batchSize, long... shape) {
+        long[] batchShape;
+
+        batchShape = new long[shape.length];
+        System.arraycopy(shape, 0, batchShape, 0, shape.length);
+
+        batchShape[0] = 1;
+        batchShape[shape.length - 1] = batchSize;
+        return Nd4j.create(batchShape);
+    }
+
 }

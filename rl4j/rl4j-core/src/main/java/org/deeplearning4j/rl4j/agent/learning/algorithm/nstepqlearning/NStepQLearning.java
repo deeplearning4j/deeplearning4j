@@ -13,16 +13,16 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.agent.learning.algorithm;
+package org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning;
 
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
+import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
-import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
@@ -42,8 +42,8 @@ public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPa
 
     private final ITrainableNeuralNet threadCurrent;
     private final IOutputNeuralNet target;
-    private final int actionSpaceSize;
     private final double gamma;
+    private final NStepQLearningHelper algorithmHelper;
 
     /**
      * @param threadCurrent The &theta;' parameters (the thread-specific network)
@@ -56,8 +56,11 @@ public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPa
                           @NonNull Configuration configuration) {
         this.threadCurrent = threadCurrent;
         this.target = target;
-        this.actionSpaceSize = actionSpaceSize;
         this.gamma = configuration.getGamma();
+
+        algorithmHelper = threadCurrent.isRecurrent()
+                ? new RecurrentNStepQLearningHelper(actionSpaceSize)
+                : new NonRecurrentNStepQLearningHelper(actionSpaceSize);
     }
 
     @Override
@@ -66,28 +69,27 @@ public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPa
 
         StateActionPair<Integer> stateActionPair = trainingBatch.get(size - 1);
 
-        INDArray data = stateActionPair.getObservation().getData();
-        INDArray features = INDArrayHelper.createBatchForShape(size, data.shape());
-        INDArray labels = Nd4j.create(size, actionSpaceSize);
+        INDArray features = algorithmHelper.createFeatures(trainingBatch);
+        INDArray allExpectedQValues = threadCurrent.output(features).get(CommonOutputNames.QValues);
+
+        INDArray labels = algorithmHelper.createLabels(size);
 
         double r;
         if (stateActionPair.isTerminal()) {
             r = 0;
         } else {
-            INDArray output = target.output(data).get(CommonOutputNames.QValues);
-            r = Nd4j.max(output).getDouble(0);
+            INDArray expectedValuesOfLast = algorithmHelper.getTargetExpectedQValuesOfLast(target, trainingBatch, features);
+            r = Nd4j.max(expectedValuesOfLast).getDouble(0);
         }
 
         for (int i = size - 1; i >= 0; --i) {
             stateActionPair = trainingBatch.get(i);
-            data = stateActionPair.getObservation().getData();
-
-            features.putRow(i, data);
 
             r = stateActionPair.getReward() + gamma * r;
-            INDArray row = threadCurrent.output(data).get(CommonOutputNames.QValues);
-            row = row.putScalar(stateActionPair.getAction(), r);
-            labels.putRow(i, row);
+            INDArray expectedQValues = algorithmHelper.getExpectedQValues(allExpectedQValues, i);
+            expectedQValues = expectedQValues.putScalar(stateActionPair.getAction(), r);
+
+            algorithmHelper.setLabels(labels, i, expectedQValues);
         }
 
         FeaturesLabels featuresLabels = new FeaturesLabels(features);

@@ -47,7 +47,16 @@ public class BoltzmannQ<OBSERVATION extends Encodable> extends Policy<Integer> {
 
     @Override
     public Integer nextAction(Observation obs) {
-        return nextAction(obs.getData());
+        INDArray output = dqn.output(obs).get(CommonOutputNames.QValues);
+        INDArray exp = exp(output);
+
+        double sum = exp.sum(1).getDouble(0);
+        double picked = rnd.nextDouble() * sum;
+        for (int i = 0; i < exp.columns(); i++) {
+            if (picked < exp.getDouble(i))
+                return i;
+        }
+        return -1;
     }
 
     @Deprecated

@@ -17,7 +17,6 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.Getter;
-import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -239,14 +238,23 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
 
     @Override
     public NeuralNetOutput output(Observation observation) {
-        return output(observation.getData());
+        if(!isRecurrent()) {
+            return output(observation.getData());
+        }
+
+        INDArray observationData = observation.getData();
+        return packageResult(valueNet.rnnTimeStep(observationData), policyNet.rnnTimeStep(observationData));
     }
 
     @Override
     public NeuralNetOutput output(INDArray batch) {
+        return packageResult(valueNet.output(batch), policyNet.output(batch));
+    }
+
+    private NeuralNetOutput packageResult(INDArray value, INDArray policy) {
         NeuralNetOutput result = new NeuralNetOutput();
-        result.put(CommonOutputNames.ActorCritic.Value, valueNet.output(batch));
-        result.put(CommonOutputNames.ActorCritic.Policy, policyNet.output(batch));
+        result.put(CommonOutputNames.ActorCritic.Value, value);
+        result.put(CommonOutputNames.ActorCritic.Policy, policy);
 
         return result;
     }

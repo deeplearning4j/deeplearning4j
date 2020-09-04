@@ -59,15 +59,27 @@ public class INDArrayHelperTest {
 
         // Assert
         // Output shape
-        assertEquals(3, output.shape().length);
-        assertEquals(2, output.shape()[0]);
-        assertEquals(3, output.shape()[1]);
-        assertEquals(4, output.shape()[2]);
+        assertArrayEquals(new long[] { 2, 3, 4 }, output.shape());
 
         // Input should remain unchanged
-        assertEquals(1, shape[0]);
-        assertEquals(3, shape[1]);
-        assertEquals(4, shape[2]);
+        assertArrayEquals(new long[] { 1, 3, 4 }, shape);
 
     }
+
+    @Test
+    public void when_callingCreateRnnBatchForShape_expect_INDArrayWithCorrectShapeAndOriginalShapeUnchanged() {
+        // Arrange
+        long[] shape = new long[] { 1, 3, 1 };
+
+        // Act
+        INDArray output = INDArrayHelper.createRnnBatchForShape(5, shape);
+
+        // Assert
+        // Output shape
+        assertArrayEquals(new long[] { 1, 3, 5 }, output.shape());
+
+        // Input should remain unchanged
+        assertArrayEquals(new long[] { 1, 3, 1 }, shape);
+    }
+
 }

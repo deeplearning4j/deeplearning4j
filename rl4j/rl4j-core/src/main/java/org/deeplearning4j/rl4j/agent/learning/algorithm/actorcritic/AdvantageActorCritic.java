@@ -13,26 +13,23 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.agent.learning.algorithm;
+package org.deeplearning4j.rl4j.agent.learning.algorithm.actorcritic;
 
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
+import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.experience.StateActionPair;
-import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
-import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
-// TODO: Add support for RNN
 /**
  * This the "Algorithm S3 Asynchronous advantage actor-critic" of <i>Asynchronous Methods for Deep Reinforcement Learning</i>
  * @see <a href="https://arxiv.org/pdf/1602.01783.pdf">Asynchronous Methods for Deep Reinforcement Learning on arXiv</a>, page 14
@@ -43,40 +40,41 @@ public class AdvantageActorCritic implements IUpdateAlgorithm<Gradients, StateAc
 
     private final ITrainableNeuralNet threadCurrent;
 
-    private final int actionSpaceSize;
     private final double gamma;
+
+    private final ActorCriticHelper algorithmHelper;
 
     public AdvantageActorCritic(@NonNull ITrainableNeuralNet threadCurrent,
                                 int actionSpaceSize,
                                 @NonNull Configuration configuration) {
         this.threadCurrent = threadCurrent;
-        this.actionSpaceSize = actionSpaceSize;
         gamma = configuration.getGamma();
+
+        algorithmHelper = threadCurrent.isRecurrent()
+                ? new RecurrentActorCriticHelper(actionSpaceSize)
+                : new NonRecurrentActorCriticHelper(actionSpaceSize);
     }
 
     @Override
     public Gradients compute(List<StateActionPair<Integer>> trainingBatch) {
         int size = trainingBatch.size();
 
-        INDArray features = INDArrayHelper.createBatchForShape(size, trainingBatch.get(0).getObservation().getData().shape());
-        INDArray values = Nd4j.create(size, 1);
-        INDArray policy = Nd4j.zeros(size, actionSpaceSize);
+        INDArray features = algorithmHelper.createFeatures(trainingBatch);
+        INDArray allExpectedValues = threadCurrent.output(features).get(CommonOutputNames.ActorCritic.Value);
+
+        INDArray values = algorithmHelper.createValueLabels(size);
+        INDArray policy = algorithmHelper.createPolicyLabels(size);
 
         StateActionPair<Integer> stateActionPair = trainingBatch.get(size - 1);
         double value;
         if (stateActionPair.isTerminal()) {
             value = 0;
         } else {
-            INDArray valueOutput = threadCurrent.output(stateActionPair.getObservation()).get(CommonOutputNames.ActorCritic.Value);
-            value = valueOutput.getDouble(0);
+            value = allExpectedValues.getDouble(size - 1);
         }
 
         for (int i = size - 1; i >= 0; --i) {
             stateActionPair = trainingBatch.get(i);
-
-            Observation observation = stateActionPair.getObservation();
-
-            features.putRow(i, observation.getData());
 
             value = stateActionPair.getReward() + gamma * value;
 
@@ -84,11 +82,9 @@ public class AdvantageActorCritic implements IUpdateAlgorithm<Gradients, StateAc
             values.putScalar(i, value);
 
             //the actor
-            double expectedV = threadCurrent.output(observation)
-                    .get(CommonOutputNames.ActorCritic.Value)
-                    .getDouble(0);
+            double expectedV = allExpectedValues.getDouble(i);
             double advantage = value - expectedV;
-            policy.putScalar(i, stateActionPair.getAction(), advantage);
+            algorithmHelper.setPolicy(policy, i, stateActionPair.getAction(), advantage);
         }
 
         FeaturesLabels featuresLabels = new FeaturesLabels(features);
