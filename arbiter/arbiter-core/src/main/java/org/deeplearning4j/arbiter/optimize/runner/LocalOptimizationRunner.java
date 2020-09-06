@@ -45,8 +45,8 @@ public class LocalOptimizationRunner extends BaseOptimizationRunner {
 
     private final int maxConcurrentTasks;
 
-    private TaskCreator taskCreator;
-    private ListeningExecutorService executor;
+    private final TaskCreator taskCreator;
+    private final ListeningExecutorService executor;
     @Setter
     private long shutdownMaxWaitMS = 2L * 24 * 60 * 60 * 1000;
 
@@ -81,7 +81,7 @@ public class LocalOptimizationRunner extends BaseOptimizationRunner {
         this.taskCreator = taskCreator;
 
         ExecutorService exec = Executors.newFixedThreadPool(maxConcurrentTasks, new ThreadFactory() {
-            private AtomicLong counter = new AtomicLong(0);
+            private final AtomicLong counter = new AtomicLong(0);
 
             @Override
             public Thread newThread(Runnable r) {

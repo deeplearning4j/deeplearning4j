@@ -32,8 +32,8 @@ import java.util.List;
 @AllArgsConstructor
 public class DL4JArbiterStatusReportingListener extends BaseTrainingListener {
 
-    private List<StatusListener> statusListeners;
-    private CandidateInfo candidateInfo;
+    private final List<StatusListener> statusListeners;
+    private final CandidateInfo candidateInfo;
 
     @Override
     public void iterationDone(Model model, int iteration, int epoch) {

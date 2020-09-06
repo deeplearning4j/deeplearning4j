@@ -47,8 +47,8 @@ public class InMemoryResultSaver implements ResultSaver {
 
     @AllArgsConstructor
     private static class InMemoryResult implements ResultReference {
-        private OptimizationResult result;
-        private Object modelResult;
+        private final OptimizationResult result;
+        private final Object modelResult;
 
         @Override
         public OptimizationResult getResult() throws IOException {

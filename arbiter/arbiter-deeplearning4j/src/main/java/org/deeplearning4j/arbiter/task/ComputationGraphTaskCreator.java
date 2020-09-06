@@ -88,15 +88,15 @@ public class ComputationGraphTaskCreator implements TaskCreator {
     @AllArgsConstructor
     private static class GraphLearningTask implements Callable<OptimizationResult> {
 
-        private Candidate candidate;
+        private final Candidate candidate;
         private DataProvider dataProvider;
         private Class<? extends DataSource> dataSource;
         private Properties dataSourceProperties;
-        private ScoreFunction scoreFunction;
-        private ModelEvaluator modelEvaluator;
-        private List<StatusListener> listeners;
-        private TaskListener taskListener;
-        private IOptimizationRunner runner;
+        private final ScoreFunction scoreFunction;
+        private final ModelEvaluator modelEvaluator;
+        private final List<StatusListener> listeners;
+        private final TaskListener taskListener;
+        private final IOptimizationRunner runner;
 
         private long startTime;
 

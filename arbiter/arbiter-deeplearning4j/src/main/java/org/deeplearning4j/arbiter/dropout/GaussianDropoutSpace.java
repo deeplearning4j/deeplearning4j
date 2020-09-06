@@ -29,7 +29,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class GaussianDropoutSpace implements ParameterSpace<IDropout> {
 
-    private ParameterSpace<Double> rate;
+    private final ParameterSpace<Double> rate;
 
     public GaussianDropoutSpace(double rate){
         this(new FixedValue<>(rate));

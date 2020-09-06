@@ -41,7 +41,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClassificationEvaluator implements ModelEvaluator {
-    private Map<String, Object> params = null;
+    private final Map<String, Object> params = null;
 
 
     @Override

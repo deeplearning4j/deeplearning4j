@@ -35,8 +35,8 @@ import java.util.concurrent.Callable;
 public class BraninFunction {
     public static class BraninSpace extends AbstractParameterSpace<BraninConfig> {
         private int[] indices;
-        private ParameterSpace<Double> first = new ContinuousParameterSpace(-5, 10);
-        private ParameterSpace<Double> second = new ContinuousParameterSpace(0, 15);
+        private final ParameterSpace<Double> first = new ContinuousParameterSpace(-5, 10);
+        private final ParameterSpace<Double> second = new ContinuousParameterSpace(0, 15);
 
         @Override
         public BraninConfig getValue(double[] parameterValues) {

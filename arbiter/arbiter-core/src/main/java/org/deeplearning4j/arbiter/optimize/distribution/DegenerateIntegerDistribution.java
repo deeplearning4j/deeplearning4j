@@ -26,7 +26,7 @@ import java.util.Arrays;
  * Degenerate distribution: i.e., integer "distribution" that is just a fixed value
  */
 public class DegenerateIntegerDistribution implements IntegerDistribution {
-    private int value;
+    private final int value;
 
     public DegenerateIntegerDistribution(int value) {
         this.value = value;

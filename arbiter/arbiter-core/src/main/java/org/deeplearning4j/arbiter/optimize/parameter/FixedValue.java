@@ -43,7 +43,7 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public class FixedValue<T> implements ParameterSpace<T> {
     @Getter
-    private Object value;
+    private final Object value;
     private int index;
 
     @JsonCreator

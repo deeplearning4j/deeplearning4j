@@ -41,7 +41,7 @@ public class ContinuousParameterSpace implements ParameterSpace<Double> {
     //Need to use custom serializers/deserializers for commons RealDistribution instances
     @JsonSerialize(using = RealDistributionSerializer.class)
     @JsonDeserialize(using = RealDistributionDeserializer.class)
-    private RealDistribution distribution;
+    private final RealDistribution distribution;
     private int index = -1;
 
     /**

@@ -73,11 +73,11 @@ public class ArbiterModule implements UIModule {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm ZZ");
     public static final String ARBITER_UI_TYPE_ID = "ArbiterUI";
 
-    private AtomicBoolean loggedArbiterAddress = new AtomicBoolean(false);
-    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
+    private final AtomicBoolean loggedArbiterAddress = new AtomicBoolean(false);
+    private final Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
     private String currentSessionID;
 
-    private Map<String, Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
+    private final Map<String, Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
 
     //Styles for UI:
     private static final StyleTable STYLE_TABLE = new StyleTable.Builder()
@@ -117,12 +117,12 @@ public class ArbiterModule implements UIModule {
             .build();
 
 
-    private StyleText STYLE_TEXT_SZ12 = new StyleText.Builder()
+    private final StyleText STYLE_TEXT_SZ12 = new StyleText.Builder()
             .fontSize(12)
             .build();
 
     //Set whitespacePre(true) to avoid losing new lines, tabs, multiple spaces etc
-    private StyleText STYLE_TEXT_SZ10_WHITESPACE_PRE = new StyleText.Builder()
+    private final StyleText STYLE_TEXT_SZ10_WHITESPACE_PRE = new StyleText.Builder()
             .fontSize(10)
             .whitespacePre(true)
             .build();

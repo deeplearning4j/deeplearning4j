@@ -30,7 +30,7 @@ public class CrossoverPointsGenerator {
     private final int minCrossovers;
     private final int maxCrossovers;
     private final RandomGenerator rng;
-    private List<Integer> parameterIndexes;
+    private final List<Integer> parameterIndexes;
 
     /**
     * Constructor

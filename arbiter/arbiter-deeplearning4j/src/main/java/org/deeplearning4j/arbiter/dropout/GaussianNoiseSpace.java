@@ -29,7 +29,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class GaussianNoiseSpace implements ParameterSpace<IDropout> {
 
-    private ParameterSpace<Double> stddev;
+    private final ParameterSpace<Double> stddev;
 
     public GaussianNoiseSpace(double stddev){
         this(new FixedValue<>(stddev));

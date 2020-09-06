@@ -52,12 +52,12 @@ public class ArbiterStatusListener implements StatusListener {
     private final StatsStorageRouter statsStorage;
 
     private String ocJson;
-    private long startTime = 0;
+    private final long startTime = 0;
 
-    private Map<Integer,Integer> candidateScoreVsIterSubsampleFreq = new ConcurrentHashMap<>();
-    private Map<Integer,Pair<IntArrayList,FloatArrayList>> candidateScoreVsIter = new ConcurrentHashMap<>();
+    private final Map<Integer,Integer> candidateScoreVsIterSubsampleFreq = new ConcurrentHashMap<>();
+    private final Map<Integer,Pair<IntArrayList,FloatArrayList>> candidateScoreVsIter = new ConcurrentHashMap<>();
 
-    private Map<Integer,ModelInfoPersistable> lastModelInfoPersistable = new ConcurrentHashMap<>();
+    private final Map<Integer,ModelInfoPersistable> lastModelInfoPersistable = new ConcurrentHashMap<>();
 
     public ArbiterStatusListener(@NonNull StatsStorageRouter statsStorage) {
         this(UUID.randomUUID().toString(), statsStorage);

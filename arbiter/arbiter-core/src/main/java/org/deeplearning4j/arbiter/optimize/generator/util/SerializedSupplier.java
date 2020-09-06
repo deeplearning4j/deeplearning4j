@@ -22,7 +22,7 @@ import java.io.*;
 
 public class SerializedSupplier<T> implements Serializable, Supplier<T> {
 
-    private byte[] asBytes;
+    private final byte[] asBytes;
 
     public SerializedSupplier(T obj){
         try(ByteArrayOutputStream baos = new ByteArrayOutputStream(); ObjectOutputStream oos = new ObjectOutputStream(baos)){

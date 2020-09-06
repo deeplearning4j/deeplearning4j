@@ -29,7 +29,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class AlphaDropoutSpace implements ParameterSpace<IDropout> {
 
-    private ParameterSpace<Double> dropout;
+    private final ParameterSpace<Double> dropout;
 
     public AlphaDropoutSpace(double activationRetainProbability){
         this(new FixedValue<>(activationRetainProbability));

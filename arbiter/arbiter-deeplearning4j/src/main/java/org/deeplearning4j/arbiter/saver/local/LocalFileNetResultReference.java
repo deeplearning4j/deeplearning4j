@@ -37,15 +37,15 @@ import java.io.ObjectInputStream;
 @AllArgsConstructor
 public class LocalFileNetResultReference implements ResultReference {
 
-    private int index;
-    private String dir;
-    private boolean isGraph;
-    private File modelFile;
-    private File scoreFile;
-    private File additionalResultsFile;
-    private File esConfigFile;
-    private File numEpochsFile;
-    private Candidate<DL4JConfiguration> candidate;
+    private final int index;
+    private final String dir;
+    private final boolean isGraph;
+    private final File modelFile;
+    private final File scoreFile;
+    private final File additionalResultsFile;
+    private final File esConfigFile;
+    private final File numEpochsFile;
+    private final Candidate<DL4JConfiguration> candidate;
 
     @Override
     public OptimizationResult getResult() throws IOException {

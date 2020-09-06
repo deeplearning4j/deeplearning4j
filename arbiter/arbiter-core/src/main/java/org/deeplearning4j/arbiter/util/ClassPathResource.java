@@ -36,9 +36,9 @@ import java.util.zip.ZipFile;
  */
 public class ClassPathResource {
 
-    private String resourceName;
+    private final String resourceName;
 
-    private static Logger log = LoggerFactory.getLogger(ClassPathResource.class);
+    private static final Logger log = LoggerFactory.getLogger(ClassPathResource.class);
 
     /**
      * Builds new ClassPathResource object

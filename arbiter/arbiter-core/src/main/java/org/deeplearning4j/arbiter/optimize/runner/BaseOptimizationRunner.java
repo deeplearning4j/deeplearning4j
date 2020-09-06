@@ -76,7 +76,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
     protected void init() {
         futureListenerExecutor = Executors.newFixedThreadPool(maxConcurrentTasks(), new ThreadFactory() {
-            private AtomicLong counter = new AtomicLong(0);
+            private final AtomicLong counter = new AtomicLong(0);
 
             @Override
             public Thread newThread(Runnable r) {
@@ -354,7 +354,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
     @AllArgsConstructor
     private class OnCompletionListener implements Runnable {
-        private Future<OptimizationResult> future;
+        private final Future<OptimizationResult> future;
 
         @Override
         public void run() {
