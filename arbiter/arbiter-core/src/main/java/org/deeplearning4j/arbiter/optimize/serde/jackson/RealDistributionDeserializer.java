@@ -33,7 +33,7 @@ public class RealDistributionDeserializer extends JsonDeserializer<RealDistribut
 
     @Override
     public RealDistribution deserialize(JsonParser p, DeserializationContext ctxt)
-                    throws IOException, JsonProcessingException {
+                    throws IOException {
         JsonNode node = p.getCodec().readTree(p);
         String simpleName = node.get("distribution").asText();
 

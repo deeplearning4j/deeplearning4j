@@ -19,7 +19,7 @@ import java.io.ObjectInputStream;
  */
 public class FixedValueDeserializer extends JsonDeserializer<FixedValue> {
     @Override
-    public FixedValue deserialize(JsonParser p, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+    public FixedValue deserialize(JsonParser p, DeserializationContext deserializationContext) throws IOException {
         JsonNode node = p.getCodec().readTree(p);
         String className = node.get("@valueclass").asText();
         Class<?> c;
