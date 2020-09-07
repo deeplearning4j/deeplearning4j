@@ -30,7 +30,7 @@ import org.junit.Test;
 
 public class TwoParentsCrossoverOperatorTests extends BaseDL4JTest {
 
-    class TestTwoParentsCrossoverOperator extends TwoParentsCrossoverOperator {
+    static class TestTwoParentsCrossoverOperator extends TwoParentsCrossoverOperator {
 
         public TestTwoParentsCrossoverOperator(TwoParentSelection parentSelection) {
             super(parentSelection);

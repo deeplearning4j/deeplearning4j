@@ -30,7 +30,7 @@ import java.util.List;
 
 public class PopulationModelTests extends BaseDL4JTest {
 
-    private class TestCullOperator implements CullOperator {
+    private static class TestCullOperator implements CullOperator {
 
         private final int culledSize;
         public boolean hasCulled = false;
@@ -55,7 +55,7 @@ public class PopulationModelTests extends BaseDL4JTest {
         }
     }
 
-    private class TestPopulationListener implements PopulationListener {
+    private static class TestPopulationListener implements PopulationListener {
 
         public List<Chromosome> population;
 
