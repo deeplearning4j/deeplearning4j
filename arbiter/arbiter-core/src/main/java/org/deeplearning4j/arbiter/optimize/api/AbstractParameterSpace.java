@@ -47,9 +47,9 @@ public abstract class AbstractParameterSpace<T> implements ParameterSpace<T> {
 
                 String name = f.getName();
                 Class<?> fieldClass = f.getType();
-                boolean isParamSpecified = ParameterSpace.class.isAssignableFrom(fieldClass);
+                boolean isParamSpacefield = ParameterSpace.class.isAssignableFrom(fieldClass);
 
-                if (!isParamSpecified) {
+                if (!isParamSpacefield) {
                     continue;
                 }
 
