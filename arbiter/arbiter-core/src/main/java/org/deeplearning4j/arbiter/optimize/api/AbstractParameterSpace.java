@@ -31,25 +31,25 @@ public abstract class AbstractParameterSpace<T> implements ParameterSpace<T> {
     public Map<String, ParameterSpace> getNestedSpaces() {
         Map<String, ParameterSpace> m = new LinkedHashMap<>();
 
-        //Need to manually build and walk the class heirarchy...
+        //Need to manually build and walk the class hierarchy...
         Class<?> currClass = this.getClass();
-        List<Class<?>> classHeirarchy = new ArrayList<>();
+        List<Class<?>> classHierarchy = new ArrayList<>();
         while (currClass != Object.class) {
-            classHeirarchy.add(currClass);
+            classHierarchy.add(currClass);
             currClass = currClass.getSuperclass();
         }
 
-        for (int i = classHeirarchy.size() - 1; i >= 0; i--) {
+        for (int i = classHierarchy.size() - 1; i >= 0; i--) {
             //Use reflection here to avoid a mass of boilerplate code...
-            Field[] allFields = classHeirarchy.get(i).getDeclaredFields();
+            Field[] allFields = classHierarchy.get(i).getDeclaredFields();
 
             for (Field f : allFields) {
 
                 String name = f.getName();
                 Class<?> fieldClass = f.getType();
-                boolean isParamSpacefield = ParameterSpace.class.isAssignableFrom(fieldClass);
+                boolean isParamSpecified = ParameterSpace.class.isAssignableFrom(fieldClass);
 
-                if (!isParamSpacefield) {
+                if (!isParamSpecified) {
                     continue;
                 }
 
