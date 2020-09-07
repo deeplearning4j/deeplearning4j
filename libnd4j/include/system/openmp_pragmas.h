@@ -59,6 +59,47 @@
 #define PRAGMA_OMP_SINGLE_ARGS(args)
 #define PRAGMA_OMP_TASK
 
+#elif defined __NEC__
+
+#define OMP_STRINGIFY(args) #args
+#define OMP_IF(args)
+#define OMP_NUM_THREADS(args)
+#define OMP_SCHEDULE(args) schedule(args)
+#define OMP_MAXT max
+#define OMP_SUMT +
+#define OMP_PRODT *
+#define OMP_REDUCTION(args) reduction(args)
+#define OMP_COLLAPSE(loops)
+#define PRAGMA_OMP_ATOMIC _Pragma(OMP_STRINGIFY(omp atomic))
+#define PRAGMA_OMP_ATOMIC_ARGS(args) _Pragma(OMP_STRINGIFY(omp atomic args))
+#define PRAGMA_OMP_CRITICAL _Pragma(OMP_STRINGIFY(omp critical))
+#define PRAGMA_OMP_SIMD
+#define PRAGMA_OMP_SIMD_ARGS(args)
+#define PRAGMA_OMP_SIMD_SUM(args)
+#define PRAGMA_OMP_SIMD_MAX(args)
+#define PRAGMA_OMP_PARALLEL _Pragma(OMP_STRINGIFY(omp parallel default(shared)))
+#define PRAGMA_OMP_PARALLEL_REDUCTION(args) _Pragma(OMP_STRINGIFY(omp parallel reduction(args) default(shared)))
+#define PRAGMA_OMP_PARALLEL_ARGS(args) _Pragma(OMP_STRINGIFY(omp parallel args default(shared)))
+#define PRAGMA_OMP_PARALLEL_THREADS(args) _Pragma(OMP_STRINGIFY(omp parallel default(shared)))
+#define PRAGMA_OMP_PARALLEL_THREADS_IF(threads, condition) _Pragma(OMP_STRINGIFY(omp parallel default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_REDUCTION(args) _Pragma(OMP_STRINGIFY(omp parallel for reduction(args) default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_ARGS(args) _Pragma(OMP_STRINGIFY(omp parallel for args default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_IF(args) _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(loops) _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_THREADS(args) _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(args) _Pragma(OMP_STRINGIFY(omp parallel for args default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threads, loops) _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(loops) _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(args) _Pragma(OMP_STRINGIFY(omp parallel for reduction(args) default(shared)))
+#define PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(args) _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
+#define PRAGMA_OMP_PARALLEL_SECTIONS _Pragma(OMP_STRINGIFY(omp parallel sections))
+#define PRAGMA_OMP_SECTION _Pragma(OMP_STRINGIFY(omp section))
+#define PRAGMA_OMP_SINGLE _Pragma(OMP_STRINGIFY(omp single))
+#define PRAGMA_OMP_SINGLE_ARGS(args) _Pragma(OMP_STRINGIFY(omp single args))
+#define PRAGMA_OMP_TASK _Pragma(OMP_STRINGIFY(omp task))
+
 #else
 
 

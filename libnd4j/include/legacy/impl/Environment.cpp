@@ -52,7 +52,12 @@ namespace sd {
         _precBoost.store(false);
         _leaks.store(false);
         _dataType.store(sd::DataType::FLOAT32);
+#ifdef __NEC__
+        // std::thread::hardware_concurrency() returns 0 on Aurora
+        _maxThreads = 8;
+#else
         _maxThreads = std::thread::hardware_concurrency();
+#endif
         _maxMasterThreads = _maxThreads.load();
 
 #ifndef ANDROID

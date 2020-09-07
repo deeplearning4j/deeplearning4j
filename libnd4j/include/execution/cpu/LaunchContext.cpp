@@ -24,7 +24,7 @@
 #include <exceptions/cuda_exception.h>
 #include <thread>
 
-#if defined(SD_IOS_BUILD) || defined(SD_APPLE_BUILD) || defined(SD_ANDROID_BUILD)
+#if defined(SD_IOS_BUILD) || defined(SD_APPLE_BUILD) || defined(SD_ANDROID_BUILD) || defined(__NEC__)
 sd::ContextBuffers contextBuffers = sd::ContextBuffers();
 #else
 thread_local sd::ContextBuffers contextBuffers = sd::ContextBuffers();
