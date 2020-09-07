@@ -34,7 +34,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class TestGeneticSearch extends BaseDL4JTest {
-    public static class TestSelectionOperator extends SelectionOperator {
+    public class TestSelectionOperator extends SelectionOperator {
 
         @Override
         public double[] buildNextGenes() {
@@ -42,7 +42,7 @@ public class TestGeneticSearch extends BaseDL4JTest {
         }
     }
 
-    public static class TestTerminationCondition implements TerminationCondition {
+    public class TestTerminationCondition implements TerminationCondition {
 
         public boolean hasAFailedCandidate = false;
         public int evalCount = 0;

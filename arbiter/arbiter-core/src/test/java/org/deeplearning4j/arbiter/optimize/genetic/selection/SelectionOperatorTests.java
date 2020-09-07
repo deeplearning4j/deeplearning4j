@@ -27,7 +27,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SelectionOperatorTests extends BaseDL4JTest {
-    private static class TestSelectionOperator extends SelectionOperator {
+    private class TestSelectionOperator extends SelectionOperator {
 
         public PopulationModel getPopulationModel() {
             return populationModel;

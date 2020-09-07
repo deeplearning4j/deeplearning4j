@@ -39,7 +39,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 public class GeneticSelectionOperatorTests extends BaseDL4JTest {
 
-    private static class TestCullOperator implements CullOperator {
+    private class TestCullOperator implements CullOperator {
 
         private final int culledSize;
 
@@ -64,7 +64,7 @@ public class GeneticSelectionOperatorTests extends BaseDL4JTest {
         }
     }
 
-    private static class GeneticSelectionOperatorTestsMutationOperator implements MutationOperator {
+    private class GeneticSelectionOperatorTestsMutationOperator implements MutationOperator {
 
         private boolean mutateResult;
 
@@ -79,7 +79,7 @@ public class GeneticSelectionOperatorTests extends BaseDL4JTest {
         }
     }
 
-    private static class GeneticSelectionOperatorTestsCrossoverOperator extends CrossoverOperator {
+    private class GeneticSelectionOperatorTestsCrossoverOperator extends CrossoverOperator {
 
         private CrossoverResult result;
 
@@ -219,7 +219,7 @@ public class GeneticSelectionOperatorTests extends BaseDL4JTest {
 
         MutationOperator mutationOperator = new GeneticSelectionOperatorTestsMutationOperator(false);
         CrossoverOperator crossoverOperator =
-                new GeneticSelectionOperatorTestsCrossoverOperator(new CrossoverResult(false, null));
+                        new GeneticSelectionOperatorTestsCrossoverOperator(new CrossoverResult(false, null));
 
         GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder().crossoverOperator(crossoverOperator)
                         .mutationOperator(mutationOperator).build();
@@ -236,7 +236,7 @@ public class GeneticSelectionOperatorTests extends BaseDL4JTest {
 
         MutationOperator mutationOperator = new GeneticSelectionOperatorTestsMutationOperator(false);
         CrossoverOperator crossoverOperator = new GeneticSelectionOperatorTestsCrossoverOperator(
-                new CrossoverResult(true, new double[]{1.0}));
+                        new CrossoverResult(true, new double[] {1.0}));
 
         GeneticSelectionOperator sut = new GeneticSelectionOperator.Builder().crossoverOperator(crossoverOperator)
                         .mutationOperator(mutationOperator).build();

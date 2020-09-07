@@ -30,7 +30,7 @@ import java.util.List;
 
 public class RatioCullOperatorTests extends BaseDL4JTest {
 
-    static class TestRatioCullOperator extends RatioCullOperator {
+    class TestRatioCullOperator extends RatioCullOperator {
 
         public TestRatioCullOperator() {
             super();
