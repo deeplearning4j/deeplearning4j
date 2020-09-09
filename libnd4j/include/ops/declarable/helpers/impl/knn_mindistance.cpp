@@ -34,7 +34,9 @@ namespace sd {
                 T po = 2.f;
                 T o = 1.f;
 
+#ifndef __NEC__
 #pragma omp simd reduction(sumT:res)
+#endif
                 for (auto e = 0; e < length; e++) {
                     T p = input[e];
                     T l = low[e];
