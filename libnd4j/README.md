@@ -218,7 +218,7 @@ for building with deeplearning4j.
 At a minimum, you will want to enable tests. An example default set of flags
 for running tests and getting cpu builds working is as follows:
 ```bash
--DSD_CPU=true -DBLAS=TRUE -DSD_ARCH=x86-64 -DSD_EXTENSION= -DSD_LIBRARY_NAME=nd4jcpu -DSD_CHECK_VECTORIZATION=OFF  -DSD_SHARED_LIB=ON -DSD_STATIC_LIB=OFF -DSD_BUILD_MINIFIER=false -DSD_ALL_OPS=true -DCMAKE_BUILD_TYPE=Release -DPACKAGING=none  -DSD_BUILD_TESTS=OFF -DCOMPUTE=all -DOPENBLAS_PATH=C:/Users/agibs/.javacpp/cache/openblas-0.3.10-1.5.4-SNAPSHOT-windows-x86_64.jar/org/bytedeco/openblas/windows-x86_64 -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE -DSD_BUILD_TESTS=YES
+-DSD_CPU=true -DBLAS=TRUE -DSD_ARCH=x86-64 -DSD_EXTENSION= -DSD_LIBRARY_NAME=nd4jcpu -DSD_CHECK_VECTORIZATION=OFF  -DSD_SHARED_LIB=ON -DSD_STATIC_LIB=OFF -DSD_BUILD_MINIFIER=false -DSD_ALL_OPS=true -DCMAKE_BUILD_TYPE=Release -DPACKAGING=none  -DSD_BUILD_TESTS=OFF -DCOMPUTE=all -DOPENBLAS_PATH=C:/Users/agibs/.javacpp/cache/openblas-0.3.10-1.5.4-windows-x86_64.jar/org/bytedeco/openblas/windows-x86_64 -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE -DSD_BUILD_TESTS=YES
 ```
 
 The way the main build script works, it dynamically generates a set of flags

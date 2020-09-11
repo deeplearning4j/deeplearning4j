@@ -195,6 +195,7 @@
                             <skip>${javacpp.compiler.skip}</skip>
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCpu</classOrPackageName>
                             <copyLibs>true</copyLibs>
+                            <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
                         </configuration>
                     </execution>
                 </executions>
