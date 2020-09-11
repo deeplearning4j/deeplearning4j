@@ -115,7 +115,7 @@ public class OptimizationConfiguration {
 
         /**
          * DataSource: defines where the data should come from for training and testing.
-         * Note that implementations must have a no-argument contsructor
+         * Note that implementations must have a no-argument constructor
          * @param dataSource           Class for the data source
          * @param dataSourceProperties May be null. Properties for configuring the data source
          */
