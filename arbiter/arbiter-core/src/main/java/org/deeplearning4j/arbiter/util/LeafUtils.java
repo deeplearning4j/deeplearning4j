@@ -42,6 +42,7 @@ public class LeafUtils {
             for (ParameterSpace q : unique) {
                 if (p == q) {
                     found = true;
+                    break;
                 }
             }
             if (!found) {
