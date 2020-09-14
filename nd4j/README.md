@@ -46,7 +46,7 @@ To install ND4J, there are a couple of approaches, and more information can be f
 
 #### Clone from the GitHub Repo
 
-https://deeplearning4j.org/docs/latest/deeplearning4j-build-from-source 
+https://deeplearning4j.konduit.ai/getting-started/build-from-source
 ## Contribute
 
 1. Check for open issues, or open a new issue to start a discussion around a feature idea or a bug.
