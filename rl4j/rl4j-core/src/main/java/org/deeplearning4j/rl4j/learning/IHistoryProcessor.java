@@ -19,7 +19,6 @@ package org.deeplearning4j.rl4j.learning;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Value;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**

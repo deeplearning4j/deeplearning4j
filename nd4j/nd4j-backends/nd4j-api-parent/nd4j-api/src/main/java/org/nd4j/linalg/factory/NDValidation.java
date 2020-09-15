@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.factory;
 
-import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

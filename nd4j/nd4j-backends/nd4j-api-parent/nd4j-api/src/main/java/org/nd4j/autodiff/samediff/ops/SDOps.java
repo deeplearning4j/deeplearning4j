@@ -18,8 +18,6 @@
 
 package org.nd4j.autodiff.samediff.ops;
 
-import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
-
 import org.nd4j.autodiff.samediff.SameDiff;
 
 public class SDOps {

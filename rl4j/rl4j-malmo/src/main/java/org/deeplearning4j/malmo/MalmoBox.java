@@ -17,7 +17,6 @@
 package org.deeplearning4j.malmo;
 
 import org.deeplearning4j.rl4j.space.Box;
-import org.nd4j.linalg.factory.Nd4j;
 
 @Deprecated
 public class MalmoBox extends Box {

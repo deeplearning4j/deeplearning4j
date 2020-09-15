@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.SquaredNormBp;
 
-import java.util.Collections;
 import java.util.List;
 
 

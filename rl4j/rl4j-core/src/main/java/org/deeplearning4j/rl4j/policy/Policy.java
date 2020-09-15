@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.rl4j.policy;
 
-import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;

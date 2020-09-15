@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.learning.config;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

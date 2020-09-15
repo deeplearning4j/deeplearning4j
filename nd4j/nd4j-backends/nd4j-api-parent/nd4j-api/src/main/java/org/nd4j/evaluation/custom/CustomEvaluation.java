@@ -29,8 +29,6 @@ import lombok.RequiredArgsConstructor;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
-import org.nd4j.evaluation.regression.RegressionEvaluation;
-import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**

@@ -24,7 +24,6 @@ import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.NormMaxBp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.Collections;
 import java.util.List;
 
 /**

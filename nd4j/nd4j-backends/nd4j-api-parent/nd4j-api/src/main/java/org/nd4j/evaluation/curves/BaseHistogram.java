@@ -16,7 +16,6 @@
 
 package org.nd4j.evaluation.curves;
 
-import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.serde.json.JsonMappers;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;

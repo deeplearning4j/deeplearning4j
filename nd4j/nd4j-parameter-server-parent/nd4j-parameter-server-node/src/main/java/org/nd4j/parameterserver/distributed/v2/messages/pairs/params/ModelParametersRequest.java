@@ -17,7 +17,6 @@
 package org.nd4j.parameterserver.distributed.v2.messages.pairs.params;
 
 import lombok.NoArgsConstructor;
-import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseRequestMessage;
 
 /**

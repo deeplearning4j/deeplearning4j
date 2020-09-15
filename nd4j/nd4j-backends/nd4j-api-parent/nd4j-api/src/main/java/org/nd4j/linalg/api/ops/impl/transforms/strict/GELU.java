@@ -19,11 +19,9 @@ package org.nd4j.linalg.api.ops.impl.transforms.strict;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 

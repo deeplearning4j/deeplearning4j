@@ -19,8 +19,6 @@ package org.nd4j.parameterserver.distributed.messages.requests;
 import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.RequestMessage;
-import org.nd4j.parameterserver.distributed.messages.complete.IntroductionCompleteMessage;
-import org.nd4j.parameterserver.distributed.messages.intercom.DistributedIntroductionMessage;
 
 /**
  * This message will be sent by each shard, during meeting

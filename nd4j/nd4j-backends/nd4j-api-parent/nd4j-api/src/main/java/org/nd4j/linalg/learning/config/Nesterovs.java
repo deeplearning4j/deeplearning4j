@@ -25,7 +25,6 @@ import org.nd4j.linalg.learning.NesterovsUpdater;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**

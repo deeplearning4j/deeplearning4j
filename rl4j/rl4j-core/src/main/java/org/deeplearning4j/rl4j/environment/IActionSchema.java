@@ -15,8 +15,6 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.environment;
 
-import lombok.Value;
-
 // Work in progress
 public interface IActionSchema<ACTION> {
     int getActionSpaceSize();
