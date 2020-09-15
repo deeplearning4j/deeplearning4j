@@ -345,7 +345,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
     @AllArgsConstructor
     @Data
-    private static class FutureDetails {
+    private class FutureDetails {
         private final Future<OptimizationResult> future;
         private final long startTime;
         private final int index;
