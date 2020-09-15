@@ -21,7 +21,7 @@ import java.util.Map;
 
 @Value
 public class StepResult {
-    private Map<String, Object> channelsData;
-    private double reward;
-    private boolean terminal;
+    Map<String, Object> channelsData;
+    double reward;
+    boolean terminal;
 }
