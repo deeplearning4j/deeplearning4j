@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
+import org.nd4j.common.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -118,8 +119,8 @@ public class KerasBatchNormalization extends KerasLayer {
                     "Try running with mode 0.");
         int batchNormAxis = getBatchNormAxis(layerConfig);
         if (!(batchNormAxis == 3 || batchNormAxis == -1))
-            log.warn("Warning: batch normalization axis " + batchNormAxis +
-                    "DL4J currently picks batch norm dimensions for you, according to industry" +
+            OneTimeLogger.warn(log,"Warning: batch normalization axis " + batchNormAxis +
+                    "\n DL4J currently picks batch norm dimensions for you, according to industry" +
                     "standard conventions. If your results do not match, please file an issue.");
 
         LayerConstraint betaConstraint = KerasConstraintUtils.getConstraintsFromConfig(

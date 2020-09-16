@@ -20,10 +20,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -43,6 +46,7 @@ import java.util.Arrays;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@Slf4j
 public abstract class InputType implements Serializable {
 
     /**
@@ -207,6 +211,9 @@ public abstract class InputType implements Serializable {
         private DataFormat timeDistributedFormat;
 
         public InputTypeFeedForward(@JsonProperty("size") long size, @JsonProperty("timeDistributedFormat") DataFormat timeDistributedFormat) {
+            if(size <= 0) {
+                OneTimeLogger.warn(log,"Assigning a size of zero. This is normally only valid in model import cases with unknown dimensions.");
+            }
             this.size = size;
             this.timeDistributedFormat = timeDistributedFormat;
         }
@@ -284,7 +291,7 @@ public abstract class InputType implements Serializable {
         @Override
         public long[] getShape(boolean includeBatchDim) {
             if (includeBatchDim){
-                if (format == RNNFormat.NCW){
+                if (format == RNNFormat.NCW) {
                     return new long[]{-1, size, timeSeriesLength};
                 }
                 else{
@@ -293,7 +300,7 @@ public abstract class InputType implements Serializable {
 
             }
             else{
-                if (format == RNNFormat.NCW){
+                if (format == RNNFormat.NCW) {
                     return new long[]{size, timeSeriesLength};
                 }
                 else{
@@ -314,6 +321,27 @@ public abstract class InputType implements Serializable {
 
         public InputTypeConvolutional(@JsonProperty("height") long height, @JsonProperty("width") long width,
                                       @JsonProperty("channels") long channels, @JsonProperty("format") CNN2DFormat format) {
+            if(height <= 0) {
+                OneTimeLogger.warn(log,"Assigning height of 0. Normally this is not valid. Exceptions for this are generally related" +
+                        "to model import and unknown dimensions");
+            }
+
+            if(width <= 0) {
+                OneTimeLogger.warn(log,"Assigning height of 0. Normally this is not valid. Exceptions for this are generally related" +
+                        "to model import and unknown dimensions");
+            }
+
+            if(width <= 0) {
+                OneTimeLogger.warn(log,"Assigning width of 0. Normally this is not valid. Exceptions for this are generally related" +
+                        "to model import and unknown dimensions");
+            }
+
+            if(channels <= 0) {
+                OneTimeLogger.warn(log,"Assigning width of 0. Normally this is not valid. Exceptions for this are generally related" +
+                        "to model import and unknown dimensions");
+            }
+
+
             this.height = height;
             this.width = width;
             this.channels = channels;

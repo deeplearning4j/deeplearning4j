@@ -212,7 +212,6 @@ public class TestPreProcessors extends BaseDL4JTest {
 
         Nd4j.getRandom().setSeed(12345);
 
-        System.out.println();
         for (int miniBatchSize : miniBatchSizes) {
             for (int timeSeriesLength : timeSeriesLengths) {
                 for (int inputHeight : inputHeights) {

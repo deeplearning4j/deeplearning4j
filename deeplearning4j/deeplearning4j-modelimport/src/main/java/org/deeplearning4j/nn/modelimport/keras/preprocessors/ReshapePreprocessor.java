@@ -148,15 +148,17 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
                 ret = InputType.feedForward(shape[1]);
                 break;
             case 3:
-                RNNFormat format = RNNFormat.NCW;
+                RNNFormat format = RNNFormat.NWC;
                 if(this.format != null && this.format instanceof RNNFormat)
-                    format = (RNNFormat)this.format;
+                    format = (RNNFormat) this.format;
 
                 ret = InputType.recurrent(shape[2], shape[1], format);
                 break;
             case 4:
                 if (inputShape.length == 1 || inputType.getType() == InputType.Type.RNN) {
-                    ret = InputType.convolutional(shape[1], shape[2], shape[3]);
+                    //note here the default is tensorflow initialization for keras.
+                    //being channels first has side effects when working with other models
+                    ret = InputType.convolutional(shape[1], shape[2], shape[3],CNN2DFormat.NHWC);
                 } else {
 
                     CNN2DFormat cnnFormat = CNN2DFormat.NCHW;

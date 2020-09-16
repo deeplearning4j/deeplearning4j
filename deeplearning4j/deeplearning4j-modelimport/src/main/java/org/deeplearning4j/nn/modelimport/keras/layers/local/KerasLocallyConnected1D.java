@@ -115,6 +115,7 @@ public class KerasLocallyConnected1D extends KerasConvolution {
         if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
         this.layer = builder.build();
+
     }
 
     /**

@@ -157,7 +157,7 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
 
         INDArray[] inputsArr = bias == null ? new INDArray[]{input, weights} : new INDArray[]{input, weights, bias};
         context.purge();
-        for( int i=0; i<inputsArr.length; i++ ){
+        for( int i = 0; i < inputsArr.length; i++) {
             context.setInputArray(i, inputsArr[i]);
         }
 

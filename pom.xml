@@ -28,7 +28,7 @@
     <packaging>pom</packaging>
 
     <name>deeplearning4j</name>
-    <description>Deeplearning4ffj Monorepo</description>
+    <description>Deeplearning4j Monorepo</description>
     <url>http://deeplearning4j.org/</url>
 
     <licenses>

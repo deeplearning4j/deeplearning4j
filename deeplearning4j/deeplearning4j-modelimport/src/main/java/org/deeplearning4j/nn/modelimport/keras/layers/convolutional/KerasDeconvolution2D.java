@@ -96,6 +96,7 @@ public class KerasDeconvolution2D extends KerasConvolution {
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(init)
+                .dataFormat(KerasConvolutionUtils.getDataFormatFromConfig(layerConfig,conf))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
@@ -113,6 +114,8 @@ public class KerasDeconvolution2D extends KerasConvolution {
         if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
         this.layer = builder.build();
+        Deconvolution2D deconvolution2D = (Deconvolution2D) layer;
+        deconvolution2D.setDefaultValueOverriden(true);
     }
 
     /**

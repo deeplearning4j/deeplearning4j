@@ -128,7 +128,8 @@ public class LayerVertex extends GraphVertex {
         else
             afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);
 
-        return layerConf.getLayer().getOutputType(layerIndex, afterPreprocessor);
+        InputType ret =  layerConf.getLayer().getOutputType(layerIndex, afterPreprocessor);
+        return ret;
     }
 
     @Override

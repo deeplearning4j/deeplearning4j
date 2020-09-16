@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.conf.graph;
 
 
 import lombok.Data;
+import lombok.Setter;
 import lombok.val;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
@@ -42,7 +43,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 @Data
 public class MergeVertex extends GraphVertex {
 
-    protected int mergeAxis = 1;       //default value for backward compatibility (deserialization of old version JSON) - NCHW and NCW format
+    @Setter
+    protected int mergeAxis = DEFAULT_MERGE_DIM;       //default value for backward compatibility (deserialization of old version JSON) - NCHW and NCW format
+
+
+    public final static int DEFAULT_MERGE_DIM = 1;
 
     @Override
     public MergeVertex clone() {
@@ -94,8 +99,8 @@ public class MergeVertex extends GraphVertex {
             //TODO
             //Merging flattened CNN format data could be messy?
             throw new InvalidInputTypeException(
-                            "Invalid input: MergeVertex cannot currently merge CNN data in flattened format. Got: "
-                                            + vertexInputs);
+                    "Invalid input: MergeVertex cannot currently merge CNN data in flattened format. Got: "
+                            + vertexInputs);
         } else if (first.getType() == InputType.Type.CNN3D) {
             // CNN3D inputs: check that the channels, width and height match:
             InputType.InputTypeConvolutional3D firstConv = (InputType.InputTypeConvolutional3D) first;
@@ -133,29 +138,60 @@ public class MergeVertex extends GraphVertex {
             int size = 0;
             InputType.Type type = null;
             RNNFormat format = null;
+            long timeSeriesLength = -1;
+            //scan for input type for recurrent
+            for (int i = 0; i < vertexInputs.length; i++) {
+                if(vertexInputs[i].getType() == InputType.Type.RNN) {
+                    if(format == null) {
+                        InputType.InputTypeRecurrent input = (InputType.InputTypeRecurrent) vertexInputs[i];
+                        format = input.getFormat();
+                        timeSeriesLength = ((InputType.InputTypeRecurrent) vertexInputs[i]).getTimeSeriesLength();
+                    }
+                    else if(format != null) {
+                        InputType.InputTypeRecurrent input = (InputType.InputTypeRecurrent) vertexInputs[i];
+                        if(input.getFormat() != null && format != input.getFormat()) {
+                            throw new IllegalArgumentException("Unable to merge inputs with 2 different layouts of input type: " + input.getType() + " and type " + vertexInputs[i].getType());
+                        }
+                    }
+                }
+            }
+
             for (int i = 0; i < vertexInputs.length; i++) {
                 if (vertexInputs[i].getType() != first.getType()) {
-                    throw new InvalidInputTypeException(
-                                    "Invalid input: MergeVertex cannot merge activations of different types:"
-                                                    + " first type = " + first.getType() + ", input type " + (i + 1)
-                                                    + " = " + vertexInputs[i].getType());
+                    if(vertexInputs[i].getType() != InputType.Type.FF && vertexInputs[i].getType() != InputType.Type.RNN)
+                        throw new InvalidInputTypeException(
+                                "Invalid input: MergeVertex cannot merge activations of different types:"
+                                        + " first type = " + first.getType() + ", input type " + (i + 1)
+                                        + " = " + vertexInputs[i].getType());
+                    else {
+                        type = InputType.Type.RNN;
+                    }
                 }
 
-                long thisSize;
+                long thisSize = 0;
                 switch (vertexInputs[i].getType()) {
                     case FF:
-                        thisSize = ((InputType.InputTypeFeedForward) vertexInputs[i]).getSize();
-                        type = InputType.Type.FF;
+                        //ignore feedforward, rnn trumps feedforward and can be merged
+                        if(format != null) {
+                            thisSize = ((InputType.InputTypeFeedForward) vertexInputs[i]).getSize();
+                            type = InputType.Type.FF;
+                        }
+                        //feedforward case
+                        else {
+                            thisSize = ((InputType.InputTypeFeedForward) vertexInputs[i]).getSize();
+                            type = InputType.Type.FF;
+                        }
                         break;
                     case RNN:
                         thisSize = ((InputType.InputTypeRecurrent) vertexInputs[i]).getSize();
-                        format = ((InputType.InputTypeRecurrent) vertexInputs[i]).getFormat();
-                        this.mergeAxis = format == RNNFormat.NCW ? 1 : 2;
-                        type = InputType.Type.RNN;
+                        //don't change dimension if it was already modified
+                        if(this.mergeAxis == DEFAULT_MERGE_DIM)
+                            this.mergeAxis = format == RNNFormat.NCW ? 1 : 2;
                         break;
                     default:
                         throw new IllegalStateException("Unknown input type: " + vertexInputs[i]); //Should never happen
                 }
+
                 if (thisSize <= 0) {//Size is not defined
                     size = -1;
                 } else {
@@ -176,8 +212,12 @@ public class MergeVertex extends GraphVertex {
                 if (type == InputType.Type.FF) {
                     return InputType.feedForward(-1);
                 } else {
-                    val tsLength = ((InputType.InputTypeRecurrent) vertexInputs[0]).getTimeSeriesLength();
-                    return InputType.recurrent(-1, tsLength, format);
+                    if(first.getType() == InputType.Type.FF) {
+                        InputType.InputTypeFeedForward inputTypeFeedForward = (InputType.InputTypeFeedForward) first;
+                        return InputType.recurrent(inputTypeFeedForward.getSize(), timeSeriesLength, format);
+                    }
+                    else
+                        return InputType.recurrent(-1, timeSeriesLength, format);
                 }
             }
 
@@ -195,9 +235,9 @@ public class MergeVertex extends GraphVertex {
             for (int i = 1; i < vertexInputs.length; i++) {
                 if (vertexInputs[i].getType() != InputType.Type.CNN) {
                     throw new InvalidInputTypeException(
-                                    "Invalid input: MergeVertex cannot process activations of different types:"
-                                                    + " first type = " + InputType.Type.CNN + ", input type " + (i + 1)
-                                                    + " = " + vertexInputs[i].getType());
+                            "Invalid input: MergeVertex cannot process activations of different types:"
+                                    + " first type = " + InputType.Type.CNN + ", input type " + (i + 1)
+                                    + " = " + vertexInputs[i].getType());
                 }
 
                 InputType.InputTypeConvolutional otherConv = (InputType.InputTypeConvolutional) vertexInputs[i];
@@ -208,15 +248,17 @@ public class MergeVertex extends GraphVertex {
 
                 if (fw != ow || fh != oh) {
                     throw new InvalidInputTypeException(
-                                    "Invalid input: MergeVertex cannot merge CNN activations of different width/heights:"
-                                                    + "first [channels,width,height] = [" + fd + "," + fw + "," + fh
-                                                    + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
+                            "Invalid input: MergeVertex cannot merge CNN activations of different width/heights:"
+                                    + "first [channels,width,height] = [" + fd + "," + fw + "," + fh
+                                    + "], input " + i + " = [" + od + "," + ow + "," + oh + "]");
                 }
 
                 depthSum += od;
             }
 
-            this.mergeAxis = format == CNN2DFormat.NCHW ? 1 : 3;
+            //don't change dimension if it was already modified
+            if(this.mergeAxis == DEFAULT_MERGE_DIM)
+                this.mergeAxis = format == CNN2DFormat.NCHW ? 1 : 3;
             return InputType.convolutional(fh, fw, depthSum, format);
         }
     }
@@ -227,8 +269,8 @@ public class MergeVertex extends GraphVertex {
 
         //TODO multiple input types
         return new LayerMemoryReport.Builder(null, MergeVertex.class, inputTypes[0], outputType).standardMemory(0, 0) //No params
-                        .workingMemory(0, 0, 0, 0) //No working memory in addition to activations/epsilons
-                        .cacheMemory(0, 0) //No caching
-                        .build();
+                .workingMemory(0, 0, 0, 0) //No working memory in addition to activations/epsilons
+                .cacheMemory(0, 0) //No caching
+                .build();
     }
 }

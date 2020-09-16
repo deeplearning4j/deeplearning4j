@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -65,6 +66,7 @@ public class KerasCropping2D extends KerasLayer {
         String croppingField = conf.getLAYER_FIELD_CROPPING();
         int[] cropping = getPaddingFromConfig(layerConfig, conf, croppingField, 2);
         Cropping2D.Builder builder = new Cropping2D.Builder(cropping)
+                .dataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;

@@ -20,6 +20,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -55,25 +56,25 @@ public class TestCompGraphCNN extends BaseDL4JTest {
 
     protected static ComputationGraphConfiguration getMultiInputGraphConfig() {
         ComputationGraphConfiguration conf =
-                        new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .graphBuilder().addInputs("input")
-                                        .setInputTypes(InputType.convolutional(32, 32, 3))
-                                        .addLayer("cnn1",
-                                                        new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3)
-                                                                        .build(),
-                                                        "input")
-                                        .addLayer("cnn2",
-                                                        new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3)
-                                                                        .build(),
-                                                        "input")
-                                        .addLayer("max1",
-                                                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                                                                        .stride(1, 1).kernelSize(2, 2).build(),
-                                                        "cnn1", "cnn2")
-                                        .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
-                                        .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).activation(Activation.SOFTMAX).build(), "dnn1")
-                                        .setOutputs("output").build();
+                new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .graphBuilder().addInputs("input")
+                        .setInputTypes(InputType.convolutional(32, 32, 3))
+                        .addLayer("cnn1",
+                                new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3)
+                                        .build(),
+                                "input")
+                        .addLayer("cnn2",
+                                new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(3).nOut(3)
+                                        .build(),
+                                "input")
+                        .addLayer("max1",
+                                new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                        .stride(1, 1).kernelSize(2, 2).build(),
+                                "cnn1", "cnn2")
+                        .addLayer("dnn1", new DenseLayer.Builder().nOut(7).build(), "max1")
+                        .addLayer("output", new OutputLayer.Builder().nIn(7).nOut(10).activation(Activation.SOFTMAX).build(), "dnn1")
+                        .setOutputs("output").build();
 
         return conf;
     }
@@ -151,23 +152,25 @@ public class TestCompGraphCNN extends BaseDL4JTest {
         DataSet trainInput;
 
         ComputationGraphConfiguration conf =
-                        new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                                        .seed(123).graphBuilder().addInputs("input")
-                                        .setInputTypes(InputType.convolutional(nChannels, imageWidth,
-                                                        imageHeight))
-                                        .addLayer("conv1", new ConvolutionLayer.Builder()
-                                                        .kernelSize(kernelHeight, kernelWidth).stride(1, 1)
-                                                        .nIn(nChannels).nOut(2).weightInit(WeightInit.XAVIER)
-                                                        .activation(Activation.RELU).build(), "input")
-                                        .addLayer("pool1",
-                                                        new SubsamplingLayer.Builder()
-                                                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
-                                                                        .kernelSize(imageHeight - kernelHeight + 1, 1)
-                                                                        .stride(1, 1).build(),
-                                                        "conv1")
-                                        .addLayer("output", new OutputLayer.Builder().nOut(classes).activation(Activation.SOFTMAX).build(), "pool1")
-                                        .setOutputs("output").build();
+                new NeuralNetConfiguration.Builder()
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .seed(123).graphBuilder().addInputs("input")
+                        .setInputTypes(InputType.convolutional(nChannels, imageWidth,
+                                imageHeight))
+                        .addLayer("conv1", new ConvolutionLayer.Builder()
+                                .kernelSize(kernelHeight, kernelWidth).stride(1, 1)
+                                .dataFormat(CNN2DFormat.NCHW)
+                                .nIn(nChannels).nOut(2).weightInit(WeightInit.XAVIER)
+                                .activation(Activation.RELU).build(), "input")
+                        .addLayer("pool1",
+                                new SubsamplingLayer.Builder()
+                                        .dataFormat(CNN2DFormat.NCHW)
+                                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                                        .kernelSize(imageHeight - kernelHeight + 1, 1)
+                                        .stride(1, 1).build(),
+                                "conv1")
+                        .addLayer("output", new OutputLayer.Builder().nOut(classes).activation(Activation.SOFTMAX).build(), "pool1")
+                        .setOutputs("output").build();
 
 
         ComputationGraph model = new ComputationGraph(conf);

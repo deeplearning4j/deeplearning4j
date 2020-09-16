@@ -1,6 +1,7 @@
 package org.nd4j.common.resources;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.common.resources.strumpf.StrumpfResolver;
 
 import java.io.File;
@@ -16,6 +17,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
+@Slf4j
 public class Resources {
     private static Resources INSTANCE = new Resources();
 
@@ -120,6 +122,7 @@ public class Resources {
     public InputStream getAsStream(String resourcePath) {
         for (Resolver r : resolvers) {
             if (r.exists(resourcePath)) {
+                log.debug("Resolved resource with resolver " + r.getClass().getName() + " for path " + resourcePath);
                 return r.asStream(resourcePath);
             }
         }

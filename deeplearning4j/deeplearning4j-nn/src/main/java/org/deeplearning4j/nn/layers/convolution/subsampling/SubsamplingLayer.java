@@ -250,6 +250,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             pad = layerConf().getPadding();
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, layerConf().getCnn2dDataFormat()); //Also performs validation
         }
+
         long outH = outSize[0];
         long outW = outSize[1];
 

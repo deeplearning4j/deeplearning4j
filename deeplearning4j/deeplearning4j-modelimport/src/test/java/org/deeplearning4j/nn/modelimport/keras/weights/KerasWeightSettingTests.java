@@ -47,6 +47,11 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 9999999L;
+    }
+
     @Test
     public void testSimpleLayersWithWeights() throws Exception {
         int[] kerasVersions = new int[]{1, 2};
@@ -224,7 +229,12 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
         INDArray input = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(input);
-        assertArrayEquals(new long[]{mb, inputLength - kernel + 1,  nOut}, output.shape());     //NWC
+        if(modelPath.contains("tensorflow"))
+            assertArrayEquals(new long[]{mb, inputLength - kernel + 1,  nOut}, output.shape());     //NWC
+        else if(modelPath.contains("theano")) {
+            assertArrayEquals(new long[]{mb, nOut,inputLength - kernel + 1}, output.shape());     //NCW
+
+        }
         logSuccess(modelPath);
     }
 
@@ -305,7 +315,11 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
         INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
-        assertArrayEquals(new long[]{mb, inputLength - kernel + 1, nOut}, output.shape());      //NWC
+        if(modelPath.contains("tensorflow"))
+            assertArrayEquals(new long[]{mb, inputLength - kernel + 1, nOut}, output.shape());      //NWC
+        else if(modelPath.contains("theano"))
+            assertArrayEquals(new long[]{mb, nOut,inputLength - kernel + 1}, output.shape());      //NCC
+
         logSuccess(modelPath);
     }
 

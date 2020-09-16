@@ -20,7 +20,9 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
@@ -159,11 +161,13 @@ public class TestVariableLengthTS extends BaseDL4JTest {
                             .updater(new Sgd(0.1)).seed(12345).list()
                             .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
-                            .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
+                            .layer(2, new LSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build())
                             .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MEAN_ABSOLUTE_ERROR).nIn(2)
                                             .nOut(1).activation(Activation.TANH).build())
                             .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                            .inputPreProcessor(2, new FeedForwardToRnnPreProcessor()).build();
+                            .inputPreProcessor(2, new FeedForwardToRnnPreProcessor())
+                    .setInputType(InputType.recurrent(2,-1, RNNFormat.NCW))
+                    .build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();

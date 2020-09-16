@@ -136,7 +136,14 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
                 InputType.InputTypeRecurrent f = (InputType.InputTypeRecurrent) inputType;
                 this.nIn = f.getSize();
             }
-        } else {
+        } else if(inputType.getType() == InputType.Type.FF) {
+            if(nIn <= 0 || override) {
+                InputType.InputTypeFeedForward feedForward = (InputType.InputTypeFeedForward) inputType;
+                this.nIn = feedForward.getSize();
+                this.inferInputLength = true;
+            }
+
+        }  else {
             super.setNIn(inputType, override);
         }
 

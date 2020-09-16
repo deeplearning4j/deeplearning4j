@@ -125,6 +125,7 @@ public class YoloGradientCheckTests extends BaseDL4JTest {
                     .convolutionMode(ConvolutionMode.Same)
                     .list()
                     .layer(new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
+                            .dataFormat(format)
                             .nIn(depthIn).nOut(yoloDepth).build())//output: (5-2+0)/1+1 = 4
                     .layer(new Yolo2OutputLayer.Builder()
                             .boundingBoxPriors(bbPrior)
