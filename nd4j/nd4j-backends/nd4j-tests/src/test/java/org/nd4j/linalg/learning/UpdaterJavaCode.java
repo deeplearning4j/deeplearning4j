@@ -23,8 +23,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.Map;
-
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 public class UpdaterJavaCode {

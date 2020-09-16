@@ -20,14 +20,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
 import org.datavec.image.loader.NativeImageLoader;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import static org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_ID_H264;
-import static org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_ID_MPEG4;
-import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_RGB0;
-import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_RGB24;
-import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_RGB8;
 
 /**
  * VideoRecorder is used to create a video from a sequence of INDArray frames. INDArrays are assumed to be in CHW format where C=3 and pixels are RGB encoded<br>

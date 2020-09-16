@@ -38,10 +38,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.bytedeco.cpython.global.python.*;
-import static org.bytedeco.cpython.global.python.Py_DecRef;
 import static org.bytedeco.numpy.global.numpy.*;
-import static org.bytedeco.numpy.global.numpy.NPY_ARRAY_CARRAY;
-import static org.bytedeco.numpy.global.numpy.PyArray_Type;
 
 @Slf4j
 public class NumpyArray extends PythonType<INDArray> {

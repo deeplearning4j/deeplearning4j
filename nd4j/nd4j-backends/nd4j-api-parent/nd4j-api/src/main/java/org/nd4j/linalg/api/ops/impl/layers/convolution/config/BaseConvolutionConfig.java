@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;

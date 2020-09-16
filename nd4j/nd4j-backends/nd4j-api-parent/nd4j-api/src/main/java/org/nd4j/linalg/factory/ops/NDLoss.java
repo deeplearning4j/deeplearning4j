@@ -18,8 +18,6 @@
 
 package org.nd4j.linalg.factory.ops;
 
-import static org.nd4j.linalg.factory.NDValidation.isSameType;
-
 import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.NDValidation;

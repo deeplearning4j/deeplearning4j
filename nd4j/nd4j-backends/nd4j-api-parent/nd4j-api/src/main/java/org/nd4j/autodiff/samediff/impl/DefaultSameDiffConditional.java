@@ -21,8 +21,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.SameDiffConditional;
 import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 
-import java.util.ArrayList;
-
 public class DefaultSameDiffConditional implements SameDiffConditional {
 
     @Override

@@ -17,7 +17,6 @@
 package org.deeplearning4j.rl4j.learning.sync;
 
 import lombok.Data;
-import lombok.Value;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

@@ -2,7 +2,6 @@ package org.deeplearning4j.rl4j.trainer;
 
 import org.apache.commons.lang3.builder.Builder;
 import org.deeplearning4j.rl4j.agent.IAgentLearner;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;

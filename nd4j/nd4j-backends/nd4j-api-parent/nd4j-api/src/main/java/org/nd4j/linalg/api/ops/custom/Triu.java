@@ -21,9 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 

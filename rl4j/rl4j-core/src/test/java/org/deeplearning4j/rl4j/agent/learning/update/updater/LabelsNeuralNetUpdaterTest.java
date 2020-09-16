@@ -1,6 +1,5 @@
 package org.deeplearning4j.rl4j.agent.learning.update.updater;
 
-import org.deeplearning4j.rl4j.agent.Agent;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.junit.Test;

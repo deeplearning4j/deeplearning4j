@@ -17,7 +17,6 @@
 package org.deeplearning4j.rl4j.util;
 
 import org.deeplearning4j.rl4j.learning.ILearning;
-import org.deeplearning4j.rl4j.learning.Learning;
 
 import java.io.IOException;
 

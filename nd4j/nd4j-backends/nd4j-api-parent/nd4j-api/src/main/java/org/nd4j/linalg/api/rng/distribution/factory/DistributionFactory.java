@@ -18,9 +18,6 @@ package org.nd4j.linalg.api.rng.distribution.factory;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
-import org.nd4j.linalg.api.rng.distribution.impl.LogNormalDistribution;
-import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
-import org.nd4j.linalg.api.rng.distribution.impl.TruncatedNormalDistribution;
 
 /**
  * Create a distribution

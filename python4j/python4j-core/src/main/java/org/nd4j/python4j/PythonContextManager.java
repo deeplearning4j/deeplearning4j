@@ -16,8 +16,6 @@
 
 package org.nd4j.python4j;
 
-import javax.lang.model.SourceVersion;
-
 
 import java.io.Closeable;
 import java.util.HashSet;

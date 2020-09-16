@@ -1,6 +1,5 @@
 package org.deeplearning4j.rl4j.learning.sync;
 
-import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.configuration.ILearningConfiguration;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
 import org.deeplearning4j.rl4j.learning.sync.support.MockStatEntry;

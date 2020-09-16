@@ -20,7 +20,6 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.nd4j.jdbc.driverfinder.DriverFinder;
 import org.nd4j.jdbc.loader.api.JDBCNDArrayIO;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.binary.BinarySerde;
 
 import javax.sql.DataSource;

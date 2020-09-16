@@ -32,7 +32,6 @@ import org.apache.commons.io.IOUtils;
 import org.bytedeco.cpython.global.python;
 
 import static org.bytedeco.cpython.global.python.*;
-import static org.bytedeco.cpython.global.python.PyImport_ImportModule;
 import static org.bytedeco.cpython.helper.python.Py_SetPath;
 
 

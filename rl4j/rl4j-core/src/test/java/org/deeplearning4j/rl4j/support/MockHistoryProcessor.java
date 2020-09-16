@@ -2,7 +2,6 @@ package org.deeplearning4j.rl4j.support;
 
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
-import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 

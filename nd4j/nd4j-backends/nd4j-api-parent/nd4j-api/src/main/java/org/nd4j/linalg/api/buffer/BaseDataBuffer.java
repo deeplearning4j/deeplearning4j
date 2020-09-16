@@ -30,10 +30,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.io.*;
 import java.nio.*;
-import java.nio.DoubleBuffer;
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
-import java.nio.LongBuffer;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
