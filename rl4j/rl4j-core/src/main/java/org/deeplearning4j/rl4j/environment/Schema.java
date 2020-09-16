@@ -20,5 +20,5 @@ import lombok.Value;
 // Work in progress
 @Value
 public class Schema<ACTION> {
-    private IActionSchema<ACTION> actionSchema;
+    IActionSchema<ACTION> actionSchema;
 }
