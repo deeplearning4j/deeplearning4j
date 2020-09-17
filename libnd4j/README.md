@@ -5,7 +5,7 @@ Native operations for nd4j. Build using cmake
 ## Prerequisites
 
 * GCC 4.9+
-* CUDA 8.0 or 9.0 (if desired)
+* CUDA Toolkit Versions 10 or 11
 * CMake 3.8 (as of Nov 2017, in near future will require 3.9)
 
 ### Additional build arguments
@@ -22,9 +22,20 @@ There's few additional arguments for `buildnativeoperations.sh` script you could
 
 [More about AutoVectorization report](auto_vectorization/AutoVectorization.md)  
 
-You can find the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus).
+You can provide the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus) or use auto.  
+Please also check your Cuda Toolkit Release notes for supported and dropped features.  
+Here is [the latest CUDA Toolkit Release note](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#deprecated-features).  
+You can find the same information for the older Toolkit versions [in the CUDA archives](https://docs.nvidia.com/cuda/archive/).  
 
-For example, a GTX 1080 has compute capability 6.1, for which you would use ```-cc 61``` (note no decimal point).
+
+| -cc and --compute option examples | description | 
+| -------- | --------  |
+|-cc all | builds for common GPUs|
+|-cc auto |tries to detect automatically  |
+|-cc Maxwell | GPU microarchitecture codename |
+|-cc 75|compute capability 7.5 without a dot|
+|-cc 7.5|compute capability 7.5 with a dot|
+|-cc "Maxwell 6.0 7.5"| space-separated multiple arguments within quotes (note: numbers only with a dot)| 
 
 
 ## OS Specific Requirements

@@ -162,7 +162,6 @@ if(SD_CUDA)
 		message("CUDA include directory: ${CUDA_INCLUDE_DIRS}")
 		include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
-
         if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
             message("Experimental mode ENABLED")
             set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
@@ -180,40 +179,25 @@ if(SD_CUDA)
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
         endif()
 
-        if(CUDA_VERSION VERSION_GREATER "9.2") # cuda 10
-            if ("${COMPUTE}" STREQUAL "all")
-                if (APPLE)
-                    set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_10 ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all -gencode arch=compute_30,code=sm_30 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60")
-                else()
-                    set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_10 ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all -gencode arch=compute_30,code=sm_30 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70")
-                endif()
-            else()
-                set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_10 ${EXPM} -w --cudart=static --expt-extended-lambda -arch=compute_${COMPUTE} -code=sm_${COMPUTE}")
-            endif()
-        elseif(CUDA_VERSION VERSION_GREATER "8.0") # cuda 9
-            if ("${COMPUTE}" STREQUAL "all")
-                if (APPLE)
-                    set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_9 ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all -gencode arch=compute_30,code=sm_30 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60")
-                else()
-                    set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_9 ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all -gencode arch=compute_30,code=sm_30 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_70,code=sm_70")
-                endif()
-            else()
-                set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_9 ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all -arch=compute_${COMPUTE} -code=sm_${COMPUTE}")
-            endif()
-        elseif (CUDA_VERSION VERSION_GREATER "7.5") # cuda 8.0
-            if ("${COMPUTE}" STREQUAL "all")
-                set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_8 ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all -gencode arch=compute_30,code=sm_30 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60")
-            else()
-                set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_8 ${EXPM} -w --cudart=static --expt-extended-lambda --Xfatbin -compress-all -arch=compute_${COMPUTE} -code=sm_${COMPUTE}")
-            endif()
+        string( TOLOWER "${COMPUTE}" COMPUTE_CMP ) 
+        if ("${COMPUTE_CMP}" STREQUAL "all")
+            CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Common")
+        elseif("${COMPUTE_CMP}" STREQUAL "auto")
+            CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Auto")
+        elseif(COMPUTE_CMP MATCHES "^[0-9]+$")
+            #matches USER COMPUTE old way 
+            set(CUDA_ARCH_FLAGS "-gencode arch=compute_${COMPUTE},code=sm_${COMPUTE} ")
         else()
-            if ("${COMPUTE}" STREQUAL "all")
-                set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_75 ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all -gencode arch=compute_30,code=sm_30 -gencode arch=compute_52,code=sm_52")
-            else()
-                set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_75 ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all -arch=compute_${COMPUTE} -code=sm_${COMPUTE}")
-            endif()
+            #matches numbers NAME | NUM.NUM | NUM.NUM(NUM.NUM) | NUM.NUM+PTX
+            #NAME: Fermi Kepler Maxwell Kepler+Tegra Kepler+Tesla Maxwell+Tegra Pascal
+            #NUM:   2.0 2.1 3.0 3.2 3.5 3.7 5.0 5.2 5.3 6.0 6.2 et cetera
+            CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "${COMPUTE}")
         endif()
-
+        # list to spaces
+        string (REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
+ 
+        set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
+ 
         file(GLOB_RECURSE PERF_SOURCES false ../include/performance/*.cpp ../include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)
         file(GLOB_RECURSE EXEC_SOURCES false ../include/execution/impl/*.cpp ../include/execution/*.cu ../include/execution/*.h)

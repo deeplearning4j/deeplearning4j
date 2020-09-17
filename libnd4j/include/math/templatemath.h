@@ -1297,7 +1297,7 @@ inline __device__ uint64_t nd4j_atomicAdd<uint64_t>(uint64_t* address, uint64_t 
 
 template <>
 inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)  {
-#if __CUDA_ARCH__ >= 700 && defined(CUDA_10)
+#if __CUDA_ARCH__ >= 700 && CUDA_VERSION_MAJOR >=10
     atomicAdd(reinterpret_cast<__half*>(address), val.data);
 #else
 	auto address_as_ull = (int*) address;
