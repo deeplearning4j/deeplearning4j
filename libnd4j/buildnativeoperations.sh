@@ -197,8 +197,16 @@ if [[ -z ${ANDROID_NDK:-} ]]; then
     export ANDROID_NDK=$HOME/Android/android-ndk/
 fi
 
+BLAS_ARG=
+SHARED_LIBS_ARG=
+
 case "$OS" in
     aurora)
+    CHIP="aurora"
+    NAME="nd4jaurora"
+    BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
+    SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON -DSD_STATIC_LIB=ON"
+    BUILD_PATH=""
     export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/aurora.cmake"
     ;;
 
@@ -437,10 +445,12 @@ if [ -z "$EXPERIMENTAL" ]; then
  EXPERIMENTAL="no"
 fi
 
-if [ "$CHIP" == "cpu" ]; then
-    BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
-else
-    BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
+if [ -z "$BLAS_ARG" ]; then
+    if [ "$CHIP" == "cpu" ]; then
+        BLAS_ARG="-DSD_CPU=true -DBLAS=TRUE"
+    else
+        BLAS_ARG="-DSD_CUDA=true -DBLAS=TRUE"
+    fi
 fi
 
 if [ -z "$NAME" ]; then
@@ -451,10 +461,12 @@ if [ -z "$NAME" ]; then
     fi
 fi
 
-if [ "$LIBTYPE" == "dynamic" ]; then
-     SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON -DSD_STATIC_LIB=OFF"
-     else
-         SHARED_LIBS_ARG="-DSD_SHARED_LIB=OFF -DSD_STATIC_LIB=ON"
+if [ -z "$SHARED_LIBS_ARG" ]; then
+    if [ "$LIBTYPE" == "dynamic" ]; then
+         SHARED_LIBS_ARG="-DSD_SHARED_LIB=ON -DSD_STATIC_LIB=OFF"
+         else
+             SHARED_LIBS_ARG="-DSD_SHARED_LIB=OFF -DSD_STATIC_LIB=ON"
+    fi
 fi
 
 if [ "$BUILD" == "release" ]; then
@@ -607,8 +619,19 @@ if [ "$MAKE_COMMAND" == "make" ]; then
 fi
 
 exec 3>&1
-eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" 2>&1 >&3 3>&-  | python3 ../../auto_vectorization/auto_vect.py   && cd ../../..
+eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS" 2>&1 >&3 3>&-  | python3 ../../auto_vectorization/auto_vect.py   && cd ../..
 exec 3>&- 
 else
-eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS"  && cd ../../..
+eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS"  && cd ../..
 fi
+
+case "$OS" in
+    aurora)
+    if [ "$BUILD" == "release" ]; then
+        BLAS_LIBS="/opt/nec/ve/nlc/2.0.0/lib/libcblas.a /opt/nec/ve/nlc/2.0.0/lib/libblas_openmp.a -fopenmp"
+    else
+        BLAS_LIBS="/opt/nec/ve/nlc/2.0.0/lib/libcblas.a /opt/nec/ve/nlc/2.0.0/lib/libblas_sequential.a"
+    fi
+    /opt/nec/ve/bin/mk_veorun_static -o blasbuild/aurora/blas/nd4jaurora blasbuild/aurora/blas/libnd4jaurorastatic.a $BLAS_LIBS
+    ;;
+esac

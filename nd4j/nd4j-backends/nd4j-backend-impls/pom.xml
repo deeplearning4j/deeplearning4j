@@ -173,6 +173,17 @@
 
     <profiles>
         <profile>
+            <id>libnd4j-aurora</id>
+            <activation>
+                <property>
+                    <name>libnd4j.aurora</name>
+                </property>
+            </activation>
+            <modules>
+                <module>nd4j-aurora</module>
+            </modules>
+        </profile>
+        <profile>
             <id>cpu</id>
             <activation>
                 <property>

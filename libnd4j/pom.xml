@@ -383,6 +383,76 @@
             </build>
         </profile>
         <profile>
+            <id>aurora</id>
+            <activation>
+                <property>
+                    <name>libnd4j.aurora</name>
+                </property>
+            </activation>
+            <properties>
+                <!-- Leave libnd4j.chip and libnd4j.classifier as is to build CPU version as well. -->
+                <!-- <libnd4j.chip>cuda</libnd4j.chip> -->
+                <!-- <libnd4j.classifier>${libnd4j.platform}-aurora</libnd4j.classifier> -->
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
+                        <configuration>
+                            <properties>${libnd4j.platform}</properties>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>javacpp-cppbuild-compile-aurora</id>
+                                <phase>compile</phase>
+                                <goals>
+                                    <goal>build</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>${libnd4j.aurora.compile.skip}</skip>
+                                    <buildCommand>
+                                        <program>bash</program>
+                                        <argument>${project.basedir}/buildnativeoperations.sh
+                                        </argument>
+                                        <argument>--build-type</argument>
+                                        <argument>${libnd4j.build}</argument>
+                                        <argument>--chip</argument>
+                                        <argument>aurora</argument>
+                                        <argument>--platform</argument>
+                                        <argument>aurora</argument>
+                                        <argument>${libnd4j.tests}</argument>
+                                        <argument>-j</argument>
+                                        <argument>${libnd4j.buildthreads}</argument>
+                                    </buildCommand>
+                                    <workingDirectory>${project.basedir}</workingDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <version>3.0.0</version>
+                        <executions>
+                            <execution>
+                                <id>libnd4j-package-aurora</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                                <configuration>
+                                    <descriptors>
+                                        <descriptor>assembly-aurora.xml</descriptor>
+                                    </descriptors>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>clean-tests</id>
             <activation>
                 <file>
