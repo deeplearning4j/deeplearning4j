@@ -1176,6 +1176,7 @@ Nd4jLong getDeviceTotalMemory(int deviceId) {
 }
 
 int memcpySync(Nd4jPointer dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4jPointer reserved) {
+    memcpy(dst, src, size);
     return 0L;
 }
 
@@ -1184,6 +1185,7 @@ int memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4j
 }
 
 int memsetSync(Nd4jPointer dst, int value, Nd4jLong size, int flags, Nd4jPointer reserved) {
+    memset(dst, value, size);
     return 0L;
 }
 

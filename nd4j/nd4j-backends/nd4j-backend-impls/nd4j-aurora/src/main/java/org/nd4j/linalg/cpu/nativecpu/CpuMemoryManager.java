@@ -18,17 +18,21 @@ package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.AllocationsTracker;
+import org.nd4j.linalg.api.memory.MemcpyDirection;
 import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.BasicMemoryManager;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.Map;
-import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 
 /**
  * @author raver119@gmail.com
@@ -90,6 +94,16 @@ public class CpuMemoryManager extends BasicMemoryManager {
     @Override
     public boolean isPeriodicGcActive() {
         return false;
+    }
+
+    @Override
+    public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
+        val perfD = PerformanceTracker.getInstance().helperStartTransaction();
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().memcpySync(dstBuffer.addressPointer(), srcBuffer.addressPointer(),
+                        srcBuffer.length() * srcBuffer.getElementSize(), 3, null);
+
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, srcBuffer.length() * srcBuffer.getElementSize(), MemcpyDirection.HOST_TO_HOST);
     }
 
     @Override
