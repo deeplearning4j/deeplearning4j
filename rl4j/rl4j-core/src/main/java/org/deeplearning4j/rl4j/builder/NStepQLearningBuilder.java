@@ -33,6 +33,7 @@ import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.policy.INeuralNetPolicy;
 import org.deeplearning4j.rl4j.policy.IPolicy;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.rng.Random;
 
 /**
@@ -52,6 +53,11 @@ public class NStepQLearningBuilder extends BaseAsyncAgentLearnerBuilder<NStepQLe
                                  Builder<TransformProcess> transformProcessBuilder,
                                  Random rnd) {
         super(configuration, neuralNet, environmentBuilder, transformProcessBuilder);
+
+        // TODO: remove once RNN networks states are stored in the experience elements
+        Preconditions.checkArgument(!neuralNet.isRecurrent() || configuration.getExperienceHandlerConfiguration().getBatchSize() == Integer.MAX_VALUE,
+                "RL with a recurrent network currently only works with whole-trajectory updates. Until RNN are fully supported, please set the batch size of your experience handler to Integer.MAX_VALUE");
+
         this.rnd = rnd;
     }
 

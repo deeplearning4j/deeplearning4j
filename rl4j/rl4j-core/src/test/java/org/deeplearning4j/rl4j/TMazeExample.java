@@ -25,9 +25,9 @@ import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.environment.StepResult;
 import org.deeplearning4j.rl4j.experience.StateActionExperienceHandler;
 import org.deeplearning4j.rl4j.mdp.TMazeEnvironment;
-import org.deeplearning4j.rl4j.network.ComputationGraphQNetwork;
+import org.deeplearning4j.rl4j.network.ActorCriticNetwork;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
-import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
+import org.deeplearning4j.rl4j.network.QNetwork;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticLoss;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
@@ -49,6 +49,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TMazeExample {
 
+    private static final boolean IS_ASYNC = false;
+    private static final int NUM_THREADS = 2;
+
     private static final int TMAZE_LENGTH = 10;
 
     private static final int NUM_INPUTS = 5;
@@ -56,10 +59,9 @@ public class TMazeExample {
 
     private static final double MIN_EPSILON = 0.1;
 
-    public static void main(String[] args) {
+    private static final int NUM_EPISODES = 3000;
 
-        boolean isAsync = false;
-        int numThreads = 2;
+    public static void main(String[] args) {
 
         Random rnd = Nd4j.getRandomFactory().getNewRandomInstance(123);
 
@@ -74,35 +76,39 @@ public class TMazeExample {
             }
         };
 
-        Builder<IAgentLearner<Integer>> builder = setupNStepQLearning(environmentBuilder, transformProcessBuilder, listeners, rnd, isAsync, numThreads);
-        //Builder<IAgentLearner<Integer>> builder = setupAdvantageActorCritic(environmentBuilder, transformProcessBuilder, listeners, rnd, isAsync);
+        //Builder<IAgentLearner<Integer>> builder = setupNStepQLearning(environmentBuilder, transformProcessBuilder, listeners, rnd, isAsync, numThreads);
+        Builder<IAgentLearner<Integer>> builder = setupAdvantageActorCritic(environmentBuilder, transformProcessBuilder, listeners, rnd);
 
         ITrainer trainer;
-        if(isAsync) {
+        if(IS_ASYNC) {
             trainer = AsyncTrainer.<Integer>builder()
                     .agentLearnerBuilder(builder)
-                    .numThreads(numThreads)
-                    .stoppingCondition(t -> t.getEpisodeCount() >= 3000)
+                    .numThreads(NUM_THREADS)
+                    .stoppingCondition(t -> t.getEpisodeCount() >= NUM_EPISODES)
                     .build();
         } else {
             trainer = SyncTrainer.<Integer>builder()
                     .agentLearnerBuilder(builder)
-                    .stoppingCondition(t -> t.getEpisodeCount() >= 3000)
+                    .stoppingCondition(t -> t.getEpisodeCount() >= NUM_EPISODES)
                     .build();
         }
 
+        long before = System.nanoTime();
         trainer.train();
+        long after = System.nanoTime();
+
+        System.out.println(String.format("Total time for %d episodes: %fs", NUM_EPISODES, (after - before) / 1e6));
     }
 
     private static Builder<IAgentLearner<Integer>> setupNStepQLearning(Builder<Environment<Integer>> environmentBuilder,
                                                                        Builder<TransformProcess> transformProcessBuilder,
                                                                        List<AgentListener<Integer>> listeners,
-                                                                       Random rnd, boolean isAsync, int numThreads) {
-        ComputationGraphQNetwork network = buildQNetwork();
+                                                                       Random rnd) {
+        ITrainableNeuralNet network = buildQNetwork();
 
         NStepQLearningBuilder.Configuration configuration = NStepQLearningBuilder.Configuration.builder()
                 .policyConfiguration(EpsGreedy.Configuration.builder()
-                        .epsilonNbStep(25000 / (isAsync ? numThreads : 1))
+                        .epsilonNbStep(25000 / (IS_ASYNC ? NUM_THREADS : 1))
                         .minEpsilon(MIN_EPSILON)
                         .build())
                 .neuralNetUpdaterConfiguration(NeuralNetUpdaterConfiguration.builder()
@@ -118,7 +124,7 @@ public class TMazeExample {
                         .maxEpisodeSteps(40)
                         .build())
                 .agentLearnerListeners(listeners)
-                .asynchronous(isAsync)
+                .asynchronous(IS_ASYNC)
                 .build();
         return new NStepQLearningBuilder(configuration, network, environmentBuilder, transformProcessBuilder, rnd);
     }
@@ -126,8 +132,8 @@ public class TMazeExample {
     private static Builder<IAgentLearner<Integer>> setupAdvantageActorCritic(Builder<Environment<Integer>> environmentBuilder,
                                                                              Builder<TransformProcess> transformProcessBuilder,
                                                                              List<AgentListener<Integer>> listeners,
-                                                                             Random rnd, boolean isAsync) {
-        ITrainableNeuralNet<ActorCriticCompGraph> network = buildActorCriticNetwork();
+                                                                             Random rnd) {
+        ITrainableNeuralNet network = buildActorCriticNetwork();
 
         AdvantageActorCriticBuilder.Configuration configuration = AdvantageActorCriticBuilder.Configuration.builder()
                 .neuralNetUpdaterConfiguration(NeuralNetUpdaterConfiguration.builder()
@@ -142,7 +148,7 @@ public class TMazeExample {
                         .maxEpisodeSteps(40)
                         .build())
                 .agentLearnerListeners(listeners)
-                .asynchronous(isAsync)
+                .asynchronous(IS_ASYNC)
                 .build();
         return new AdvantageActorCriticBuilder(configuration, network, environmentBuilder, transformProcessBuilder, rnd);
     }
@@ -164,7 +170,7 @@ public class TMazeExample {
                         .addVertex("corridor-rnn", new PreprocessorVertex(new FeedForwardToRnnPreProcessor()), "corridor-1");
     }
 
-    private static ComputationGraphQNetwork buildQNetwork() {
+    private static ITrainableNeuralNet buildQNetwork() {
         ComputationGraphConfiguration conf = buildBaseNetworkConfiguration()
                         .addLayer("output", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
                                 .nOut(NUM_ACTIONS).build(), "goal", "corridor-rnn")
@@ -174,10 +180,10 @@ public class TMazeExample {
 
         ComputationGraph model = new ComputationGraph(conf);
         model.init();
-        return new ComputationGraphQNetwork(model);
+        return new QNetwork(model);
     }
 
-    private static ITrainableNeuralNet<ActorCriticCompGraph> buildActorCriticNetwork() {
+    private static ITrainableNeuralNet buildActorCriticNetwork() {
         ComputationGraphConfiguration conf = buildBaseNetworkConfiguration()
                         .addLayer("value", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
                                 .nOut(1).build(), "goal", "corridor-rnn")
@@ -189,7 +195,7 @@ public class TMazeExample {
         ComputationGraph model = new ComputationGraph(conf);
         model.init();
 
-        return new ActorCriticCompGraph(model);
+        return new ActorCriticNetwork(model);
     }
 
     private static class EpisodeScorePrinter implements AgentListener<Integer> {

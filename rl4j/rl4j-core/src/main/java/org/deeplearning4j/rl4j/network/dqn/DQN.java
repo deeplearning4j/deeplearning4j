@@ -39,6 +39,7 @@ import java.util.Collection;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
  */
+@Deprecated
 public class DQN implements IDQN<DQN> {
 
     final protected MultiLayerNetwork mln;
@@ -82,7 +83,6 @@ public class DQN implements IDQN<DQN> {
     }
 
     public NeuralNetOutput output(Observation observation) {
-        // TODO: Add RNN support
         return output(observation.getData());
     }
 
@@ -128,9 +128,9 @@ public class DQN implements IDQN<DQN> {
 
 
     @Override
-    public Gradients computeGradients(FeaturesLabels updateLabels) {
-        mln.setInput(updateLabels.getFeatures());
-        mln.setLabels(updateLabels.getLabels(CommonLabelNames.QValues));
+    public Gradients computeGradients(FeaturesLabels featuresLabels) {
+        mln.setInput(featuresLabels.getFeatures());
+        mln.setLabels(featuresLabels.getLabels(CommonLabelNames.QValues));
         mln.computeGradientAndScore();
         Collection<TrainingListener> iterationListeners = mln.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
@@ -138,7 +138,7 @@ public class DQN implements IDQN<DQN> {
                 l.onGradientCalculation(mln);
             }
         }
-        Gradients result = new Gradients(updateLabels.getBatchSize());
+        Gradients result = new Gradients(featuresLabels.getBatchSize());
         result.putGradient(CommonGradientNames.QValues, mln.gradient());
         return result;
     }

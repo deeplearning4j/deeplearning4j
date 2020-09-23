@@ -23,7 +23,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface IOutputNeuralNet {
     /**
-     * Compute the output for the supplied observation.
+     * Compute the output for the supplied observation. Multiple calls to output() with the same observation will
+     * give the same output, even if the internal state has changed, until the network is reset or an operation
+     * that modifies it is performed (See {@link ITrainableNeuralNet#fit}, {@link ITrainableNeuralNet#applyGradients},
+     * and {@link ITrainableNeuralNet#copyFrom}).
      * @param observation An {@link Observation}
      * @return The ouptut of the network
      */

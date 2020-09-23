@@ -44,6 +44,7 @@ import java.util.Collection;
  *
  * Standard implementation of ActorCriticCompGraph
  */
+@Deprecated
 public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> {
 
     final protected ComputationGraph cg;
@@ -95,9 +96,9 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
     }
 
     @Override
-    public Gradients computeGradients(FeaturesLabels updateLabels) {
-        cg.setInput(0, updateLabels.getFeatures());
-        cg.setLabels(updateLabels.getLabels(CommonLabelNames.ActorCritic.Value), updateLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
+    public Gradients computeGradients(FeaturesLabels featuresLabels) {
+        cg.setInput(0, featuresLabels.getFeatures());
+        cg.setLabels(featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
         cg.computeGradientAndScore();
         Collection<TrainingListener> iterationListeners = cg.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
@@ -106,7 +107,7 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
             }
         }
 
-        Gradients result = new Gradients(updateLabels.getBatchSize());
+        Gradients result = new Gradients(featuresLabels.getBatchSize());
         result.putGradient(CommonGradientNames.ActorCritic.Combined, cg.gradient());
 
         return result;

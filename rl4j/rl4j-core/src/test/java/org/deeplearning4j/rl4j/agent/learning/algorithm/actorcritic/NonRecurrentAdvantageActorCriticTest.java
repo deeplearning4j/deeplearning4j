@@ -59,7 +59,7 @@ public class NonRecurrentAdvantageActorCriticTest {
                 add(new StateActionPair<Integer>(observation, action, 0.0, true));
             }
         };
-        when(threadCurrentMock.output(data)).thenReturn(neuralNetOutputMock);
+        when(threadCurrentMock.output(observation)).thenReturn(neuralNetOutputMock);
 
         // Act
         sut.compute(experience);
@@ -83,7 +83,7 @@ public class NonRecurrentAdvantageActorCriticTest {
                 add(new StateActionPair<Integer>(observation, action, 0.0, false));
             }
         };
-        when(threadCurrentMock.output(data)).thenReturn(neuralNetOutputMock);
+        when(threadCurrentMock.output(observation)).thenReturn(neuralNetOutputMock);
 
         // Act
         sut.compute(experience);
@@ -100,10 +100,10 @@ public class NonRecurrentAdvantageActorCriticTest {
     public void when_callingCompute_expect_valueAndPolicyComputedCorrectly() {
         // Arrange
         int action = 0;
-        when(threadCurrentMock.output(any(INDArray.class))).thenAnswer(invocation -> {
+        when(threadCurrentMock.output(any(Observation.class))).thenAnswer(invocation -> {
             NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.ActorCritic.Value, invocation.getArgument(0, INDArray.class).getColumn(0).mul(-1.0));
-            result.put(CommonOutputNames.ActorCritic.Policy, invocation.getArgument(0, INDArray.class).mul(-0.1));
+            result.put(CommonOutputNames.ActorCritic.Value, invocation.getArgument(0, Observation.class).getData().getColumn(0).mul(-1.0));
+            result.put(CommonOutputNames.ActorCritic.Policy, invocation.getArgument(0, Observation.class).getData().mul(-0.1));
             return result;
         });
         List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {

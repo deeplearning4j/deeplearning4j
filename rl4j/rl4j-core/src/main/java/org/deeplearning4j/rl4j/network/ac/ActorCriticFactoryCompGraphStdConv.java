@@ -47,6 +47,7 @@ import java.util.Arrays;
  *
  * Standard factory for Conv net Actor Critic
  */
+// TODO: Provide default networks before deprecating
 @Value
 public class ActorCriticFactoryCompGraphStdConv implements ActorCriticFactoryCompGraph {
 

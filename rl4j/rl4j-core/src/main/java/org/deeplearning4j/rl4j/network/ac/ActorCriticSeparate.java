@@ -41,6 +41,7 @@ import java.util.Collection;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/23/16.
  */
+@Deprecated
 public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IActorCritic<NN> {
 
     final protected MultiLayerNetwork valueNet;
@@ -97,9 +98,9 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
     }
 
     @Override
-    public Gradients computeGradients(FeaturesLabels updateLabels) {
-        valueNet.setInput(updateLabels.getFeatures());
-        valueNet.setLabels(updateLabels.getLabels(CommonLabelNames.ActorCritic.Value));
+    public Gradients computeGradients(FeaturesLabels featuresLabels) {
+        valueNet.setInput(featuresLabels.getFeatures());
+        valueNet.setLabels(featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value));
         valueNet.computeGradientAndScore();
         Collection<TrainingListener> valueIterationListeners = valueNet.getListeners();
         if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
@@ -108,8 +109,8 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
             }
         }
 
-        policyNet.setInput(updateLabels.getFeatures());
-        policyNet.setLabels(updateLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
+        policyNet.setInput(featuresLabels.getFeatures());
+        policyNet.setLabels(featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
         policyNet.computeGradientAndScore();
         Collection<TrainingListener> policyIterationListeners = policyNet.getListeners();
         if (policyIterationListeners != null && policyIterationListeners.size() > 0) {
@@ -118,7 +119,7 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
             }
         }
 
-        Gradients result = new Gradients(updateLabels.getBatchSize());
+        Gradients result = new Gradients(featuresLabels.getBatchSize());
         result.putGradient(CommonGradientNames.ActorCritic.Value, valueNet.gradient());
         result.putGradient(CommonGradientNames.ActorCritic.Policy, policyNet.gradient());
         return result;

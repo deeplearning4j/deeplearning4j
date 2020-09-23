@@ -37,7 +37,7 @@ import java.util.Random;
  */
 
 public class CartpoleNative implements MDP<Box, Integer, DiscreteSpace> {
-    public enum KinematicsIntegrators { Euler, SemiImplicitEuler };
+    public enum KinematicsIntegrators { Euler, SemiImplicitEuler }
 
     private static final int NUM_ACTIONS = 2;
     private static final int ACTION_LEFT = 0;

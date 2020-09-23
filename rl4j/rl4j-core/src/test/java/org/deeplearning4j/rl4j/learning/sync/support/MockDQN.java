@@ -79,7 +79,7 @@ public class MockDQN implements IDQN {
     }
 
     @Override
-    public Gradients computeGradients(FeaturesLabels updateLabels) {
+    public Gradients computeGradients(FeaturesLabels featuresLabels) {
         throw new UnsupportedOperationException();
     }
 

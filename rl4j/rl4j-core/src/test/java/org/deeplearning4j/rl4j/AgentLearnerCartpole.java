@@ -1,6 +1,8 @@
 package org.deeplearning4j.rl4j;
 
 import org.apache.commons.lang3.builder.Builder;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.rl4j.agent.Agent;
 import org.deeplearning4j.rl4j.agent.AgentLearner;
 import org.deeplearning4j.rl4j.agent.IAgentLearner;
@@ -17,9 +19,13 @@ import org.deeplearning4j.rl4j.environment.StepResult;
 import org.deeplearning4j.rl4j.experience.ReplayMemoryExperienceHandler;
 import org.deeplearning4j.rl4j.experience.StateActionExperienceHandler;
 import org.deeplearning4j.rl4j.mdp.CartpoleEnvironment;
+import org.deeplearning4j.rl4j.network.ActorCriticNetwork;
+import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
+import org.deeplearning4j.rl4j.network.QNetwork;
+import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticFactoryCompGraphStdDense;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticFactorySeparateStdDense;
-import org.deeplearning4j.rl4j.network.ac.IActorCritic;
+import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
 import org.deeplearning4j.rl4j.network.configuration.ActorCriticDenseNetworkConfiguration;
 import org.deeplearning4j.rl4j.network.configuration.DQNDenseNetworkConfiguration;
 import org.deeplearning4j.rl4j.network.dqn.DQNFactory;
@@ -41,11 +47,13 @@ import java.util.List;
 
 public class AgentLearnerCartpole {
 
-    public static void main(String[] args) {
+    private static final boolean IS_ASYNC = false;
+    private static final int NUM_THREADS = 2;
+    private static final boolean USE_SEPARATE_NETWORKS = false;
 
-        boolean isAsync = true;
-        int numThreads = 2;
-        boolean useSeparateActorCriticNetworks = true;
+    private static final int NUM_EPISODES = 3000;
+
+    public static void main(String[] args) {
 
         Builder<Environment<Integer>> environmentBuilder = CartpoleEnvironment::new;
         Builder<TransformProcess> transformProcessBuilder = () -> TransformProcess.builder()
@@ -60,32 +68,37 @@ public class AgentLearnerCartpole {
             }
         };
 
-        //Builder<IAgentLearner<Integer>> builder = setupDoubleDQN(environmentBuilder, transformProcessBuilder, listeners, rnd, isAsync);
-        //Builder<IAgentLearner<Integer>> builder = setupNStepQLearning(environmentBuilder, transformProcessBuilder, listeners, rnd, isAsync, numThreads);
-        Builder<IAgentLearner<Integer>> builder = setupAdvantageActorCritic(environmentBuilder, transformProcessBuilder, listeners, rnd, isAsync, useSeparateActorCriticNetworks);
+        //Builder<IAgentLearner<Integer>> builder = setupDoubleDQN(environmentBuilder, transformProcessBuilder, listeners, rnd);
+        //Builder<IAgentLearner<Integer>> builder = setupNStepQLearning(environmentBuilder, transformProcessBuilder, listeners, rnd);
+        Builder<IAgentLearner<Integer>> builder = setupAdvantageActorCritic(environmentBuilder, transformProcessBuilder, listeners, rnd);
 
         ITrainer trainer;
-        if(isAsync) {
+        if(IS_ASYNC) {
             trainer = AsyncTrainer.<Integer>builder()
-                .agentLearnerBuilder(builder)
-                .numThreads(numThreads)
-                .stoppingCondition(t -> t.getEpisodeCount() >= 5000)
-                .build();
+                    .agentLearnerBuilder(builder)
+                    .numThreads(NUM_THREADS)
+                    .stoppingCondition(t -> t.getEpisodeCount() >= NUM_EPISODES)
+                    .build();
         } else {
             trainer = SyncTrainer.<Integer>builder()
-                .agentLearnerBuilder(builder)
-                .stoppingCondition(t -> t.getEpisodeCount() >= 5000)
-                .build();
+                    .agentLearnerBuilder(builder)
+                    .stoppingCondition(t -> t.getEpisodeCount() >= NUM_EPISODES)
+                    .build();
         }
 
+        long before = System.nanoTime();
         trainer.train();
+        long after = System.nanoTime();
+
+
+        System.out.println(String.format("Total time for %d episodes: %fs", NUM_EPISODES, (after - before) / 1e6));
     }
 
     private static Builder<IAgentLearner<Integer>> setupDoubleDQN(Builder<Environment<Integer>> environmentBuilder,
-                                                           Builder<TransformProcess> transformProcessBuilder,
-                                                           List<AgentListener<Integer>> listeners,
-                                                           Random rnd, boolean isAsync) {
-        IDQN network = buildDQNNetwork();
+                                                                  Builder<TransformProcess> transformProcessBuilder,
+                                                                  List<AgentListener<Integer>> listeners,
+                                                                  Random rnd) {
+        ITrainableNeuralNet network = buildDQNNetwork();
 
         DoubleDQNBuilder.Configuration configuration = DoubleDQNBuilder.Configuration.builder()
                 .policyConfiguration(EpsGreedy.Configuration.builder()
@@ -106,20 +119,20 @@ public class AgentLearnerCartpole {
                         .maxEpisodeSteps(200)
                         .build())
                 .agentLearnerListeners(listeners)
-                .asynchronous(isAsync)
+                .asynchronous(IS_ASYNC)
                 .build();
         return new DoubleDQNBuilder(configuration, network, environmentBuilder, transformProcessBuilder, rnd);
     }
 
     private static Builder<IAgentLearner<Integer>> setupNStepQLearning(Builder<Environment<Integer>> environmentBuilder,
-                                                                Builder<TransformProcess> transformProcessBuilder,
-                                                                List<AgentListener<Integer>> listeners,
-                                                                Random rnd, boolean isAsync, int numThreads) {
-        IDQN network = buildDQNNetwork();
+                                                                       Builder<TransformProcess> transformProcessBuilder,
+                                                                       List<AgentListener<Integer>> listeners,
+                                                                       Random rnd) {
+        ITrainableNeuralNet network = buildDQNNetwork();
 
         NStepQLearningBuilder.Configuration configuration = NStepQLearningBuilder.Configuration.builder()
                 .policyConfiguration(EpsGreedy.Configuration.builder()
-                        .epsilonNbStep(75000  / (isAsync ? numThreads : 1))
+                        .epsilonNbStep(75000  / (IS_ASYNC ? NUM_THREADS : 1))
                         .minEpsilon(0.1)
                         .build())
                 .neuralNetUpdaterConfiguration(NeuralNetUpdaterConfiguration.builder()
@@ -134,16 +147,16 @@ public class AgentLearnerCartpole {
                         .maxEpisodeSteps(200)
                         .build())
                 .agentLearnerListeners(listeners)
-                .asynchronous(isAsync)
+                .asynchronous(IS_ASYNC)
                 .build();
         return new NStepQLearningBuilder(configuration, network, environmentBuilder, transformProcessBuilder, rnd);
     }
 
     private static Builder<IAgentLearner<Integer>> setupAdvantageActorCritic(Builder<Environment<Integer>> environmentBuilder,
-                                                                      Builder<TransformProcess> transformProcessBuilder,
-                                                                      List<AgentListener<Integer>> listeners,
-                                                                      Random rnd, boolean isAsync, boolean useSeparateNetworks) {
-        IActorCritic network = buildActorCriticNetwork(useSeparateNetworks);
+                                                                             Builder<TransformProcess> transformProcessBuilder,
+                                                                             List<AgentListener<Integer>> listeners,
+                                                                             Random rnd) {
+        ITrainableNeuralNet network = buildActorCriticNetwork();
 
         AdvantageActorCriticBuilder.Configuration configuration = AdvantageActorCriticBuilder.Configuration.builder()
                 .neuralNetUpdaterConfiguration(NeuralNetUpdaterConfiguration.builder()
@@ -158,35 +171,38 @@ public class AgentLearnerCartpole {
                         .maxEpisodeSteps(200)
                         .build())
                 .agentLearnerListeners(listeners)
-                .asynchronous(isAsync)
+                .asynchronous(IS_ASYNC)
                 .build();
         return new AdvantageActorCriticBuilder(configuration, network, environmentBuilder, transformProcessBuilder, rnd);
     }
 
-    private static IDQN buildDQNNetwork() {
+    private static ITrainableNeuralNet buildDQNNetwork() {
         DQNDenseNetworkConfiguration netConf = DQNDenseNetworkConfiguration.builder()
                 .updater(new Adam())
                 .numHiddenNodes(40)
                 .numLayers(2)
                 .build();
         DQNFactory factory = new DQNFactoryStdDense(netConf);
-        return factory.buildDQN(new int[] { 4 }, 2);
+        IDQN dqnNetwork = factory.buildDQN(new int[] { 4 }, 2);
+        return new QNetwork((MultiLayerNetwork)dqnNetwork.getNeuralNetworks()[0]);
     }
 
-    private static IActorCritic buildActorCriticNetwork(boolean useSeparateActorCriticNetworks) {
+    private static ITrainableNeuralNet buildActorCriticNetwork() {
         ActorCriticDenseNetworkConfiguration netConf =  ActorCriticDenseNetworkConfiguration.builder()
                 .updater(new Adam())
                 .numHiddenNodes(40)
                 .numLayers(2)
                 .build();
 
-        if(useSeparateActorCriticNetworks) {
+        if(USE_SEPARATE_NETWORKS) {
             ActorCriticFactorySeparateStdDense factory = new ActorCriticFactorySeparateStdDense(netConf);
-            return factory.buildActorCritic(new int[] { 4 }, 2);
+            ActorCriticSeparate network =  factory.buildActorCritic(new int[] { 4 }, 2);
+            return new ActorCriticNetwork((MultiLayerNetwork)network.getNeuralNetworks()[0], (MultiLayerNetwork)network.getNeuralNetworks()[1]);
         }
 
         ActorCriticFactoryCompGraphStdDense factory = new ActorCriticFactoryCompGraphStdDense(netConf);
-        return factory.buildActorCritic(new int[] { 4 }, 2);
+        ActorCriticCompGraph network = factory.buildActorCritic(new int[] { 4 }, 2);
+        return new ActorCriticNetwork((ComputationGraph) network.getNeuralNetworks()[0]);
     }
 
     private static class EpisodeScorePrinter implements AgentListener<Integer> {
@@ -208,7 +224,7 @@ public class AgentLearnerCartpole {
 
         @Override
         public void onAfterEpisode(Agent agent) {
-            System.out.println(String.format("[%s] Episode %d : score = %.0f", agent.getId(), episodeCount, agent.getReward()));
+            System.out.println(String.format("[%s] Episode %4d : score = %3d", agent.getId(), episodeCount, (int)agent.getReward()));
             ++episodeCount;
         }
     }

@@ -55,10 +55,6 @@ public abstract class BaseAsyncAgentLearnerBuilder<CONFIGURATION_TYPE extends Ba
         super(configuration, neuralNet, environmentBuilder, transformProcessBuilder);
 
         asyncSharedNetworksUpdateHandler = buildAsyncSharedNetworksUpdateHandler();
-
-        // TODO: remove once RNN networks states are stored in the experience elements
-        Preconditions.checkArgument(!neuralNet.isRecurrent() || configuration.getExperienceHandlerConfiguration().getBatchSize() == Integer.MAX_VALUE,
-                "RL with a recurrent network currently only works with whole-trajectory updates. Until RNN are fully supported, please set the batch size of your experience handler to Integer.MAX_VALUE");
     }
 
     @Override

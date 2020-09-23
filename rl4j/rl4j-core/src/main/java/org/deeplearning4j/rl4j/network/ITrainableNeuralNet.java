@@ -30,10 +30,10 @@ public interface ITrainableNeuralNet<NET_TYPE extends ITrainableNeuralNet> exten
 
     /**
      * Use the supplied <i>feature-labels</i> to compute the {@link Gradients} on the neural network.
-     * @param updateLabels The feature-labels
+     * @param featuresLabels The feature-labels
      * @return The computed {@link Gradients}
      */
-    Gradients computeGradients(FeaturesLabels updateLabels);
+    Gradients computeGradients(FeaturesLabels featuresLabels);
 
     /**
      * Applies a {@link Gradients} to the network

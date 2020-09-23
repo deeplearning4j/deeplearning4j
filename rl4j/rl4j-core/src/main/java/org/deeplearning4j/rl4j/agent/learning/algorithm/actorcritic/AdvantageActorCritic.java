@@ -60,7 +60,6 @@ public class AdvantageActorCritic implements IUpdateAlgorithm<Gradients, StateAc
         int size = trainingBatch.size();
 
         INDArray features = algorithmHelper.createFeatures(trainingBatch);
-        INDArray allExpectedValues = threadCurrent.output(features).get(CommonOutputNames.ActorCritic.Value);
 
         INDArray values = algorithmHelper.createValueLabels(size);
         INDArray policy = algorithmHelper.createPolicyLabels(size);
@@ -70,7 +69,7 @@ public class AdvantageActorCritic implements IUpdateAlgorithm<Gradients, StateAc
         if (stateActionPair.isTerminal()) {
             value = 0;
         } else {
-            value = allExpectedValues.getDouble(size - 1);
+            value = threadCurrent.output(trainingBatch.get(size - 1).getObservation()).get(CommonOutputNames.ActorCritic.Value).getDouble(0);
         }
 
         for (int i = size - 1; i >= 0; --i) {
@@ -82,7 +81,7 @@ public class AdvantageActorCritic implements IUpdateAlgorithm<Gradients, StateAc
             values.putScalar(i, value);
 
             //the actor
-            double expectedV = allExpectedValues.getDouble(i);
+            double expectedV = threadCurrent.output(trainingBatch.get(i).getObservation()).get(CommonOutputNames.ActorCritic.Value).getDouble(0);
             double advantage = value - expectedV;
             algorithmHelper.setPolicy(policy, i, stateActionPair.getAction(), advantage);
         }
