@@ -46,6 +46,7 @@ import java.util.Arrays;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
  */
+// TODO: Provide default networks before deprecating
 @Value
 public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySeparate {
 

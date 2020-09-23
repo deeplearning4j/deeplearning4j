@@ -19,7 +19,9 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -28,9 +30,11 @@ import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -83,9 +87,9 @@ public class KerasConvolution1D extends KerasConvolution {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         hasBias = getHasBiasFromConfig(layerConfig, conf);
+        //dl4j weights are 128,20,3,1 keras are 128,100,3,1
         numTrainableParams = hasBias ? 2 : 1;
         int[] dilationRate = getDilationRate(layerConfig, 1, conf, false);
-
         LayerConstraint biasConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_B_CONSTRAINT(), conf, kerasMajorVersion);
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
@@ -101,7 +105,8 @@ public class KerasConvolution1D extends KerasConvolution {
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1,  conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)
-                .stride(getStrideFromConfig(layerConfig, 1, conf)[0]).rnnDataFormat(dimOrder == DimOrder.TENSORFLOW? RNNFormat.NWC: RNNFormat.NCW);
+                .stride(getStrideFromConfig(layerConfig, 1, conf)[0])
+                .rnnDataFormat(dimOrder == DimOrder.TENSORFLOW ? RNNFormat.NWC: RNNFormat.NCW);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
         if (hasBias)
             builder.biasInit(0.0);
@@ -113,7 +118,20 @@ public class KerasConvolution1D extends KerasConvolution {
             builder.constrainBias(biasConstraint);
         if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
+        if(inputShape != null) {
+            if(dimOrder == DimOrder.THEANO) {
+                builder.nIn(inputShape[0]);
+            }
+            else {
+                builder.nIn(inputShape[1]);
+            }
+        }
+
         this.layer = builder.build();
+        //set this in order to infer the dimensional format
+        Convolution1DLayer convolution1DLayer = (Convolution1DLayer) this.layer;
+        convolution1DLayer.setCnn2dDataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW);
+        convolution1DLayer.setDefaultValueOverriden(true);
     }
 
     /**
@@ -176,7 +194,7 @@ public class KerasConvolution1D extends KerasConvolution {
             INDArray paramValue;
             switch (this.getDimOrder()) {
                 case TENSORFLOW:
-                    paramValue = kerasParamValue.permute(2, 1, 0);
+                    paramValue = kerasParamValue;
                     paramValue = paramValue.reshape(
                             paramValue.size(0), paramValue.size(1),
                             paramValue.size(2), 1);
@@ -187,13 +205,14 @@ public class KerasConvolution1D extends KerasConvolution {
                     long k = kerasParamValue.size(0);
                     long nIn = kerasParamValue.size(1);
                     long nOut = kerasParamValue.size(2);
-                    paramValue = kerasParamValue.permute(2, 1, 0).dup('c').reshape(nOut, nIn, k, 1);
+                    paramValue = kerasParamValue.dup('c').reshape(nOut, nIn, k, 1);
                     break;
                 default:
                     throw new InvalidKerasConfigurationException("Unknown keras backend " + this.getDimOrder());
             }
 
             this.weights.put(ConvolutionParamInitializer.WEIGHT_KEY, paramValue);
+            
         } else
             throw new InvalidKerasConfigurationException(
                     "Parameter " + conf.getKERAS_PARAM_NAME_W() + " does not exist in weights");

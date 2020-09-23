@@ -16,10 +16,12 @@
 
 package org.deeplearning4j.spark.impl.multilayer.evaluation;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.spark.impl.evaluation.EvaluationRunner;
 import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.util.Collections;

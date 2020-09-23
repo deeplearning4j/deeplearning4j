@@ -52,8 +52,8 @@ public class KerasYolo9000PredictTest extends BaseDL4JTest {
     private static final String DL4J_MODEL_FILE_NAME = ".";
     private static ImagePreProcessingScaler IMAGE_PREPROCESSING_SCALER = new ImagePreProcessingScaler(0, 1);
 
-    @Ignore
     @Test
+    @Ignore("Need to manually download file for ylo.")
     public void testYoloPredictionImport() throws Exception {
 
 

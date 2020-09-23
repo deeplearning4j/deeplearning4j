@@ -128,7 +128,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
             end = 0;
         }
         epsilon = permuteIfNWC(epsilon);
-        for( long i = tsLength-1; i>= end; i--){
+        for( long i = tsLength - 1; i >= end; i--) {
             INDArray dldaCurrent = epsilon.get(all(), all(), point(i)).dup();
             INDArray aCurrent = p.getFirst().get(all(), all(), point(i));
             INDArray zCurrent = p.getSecond().get(all(), all(), point(i));
@@ -148,7 +148,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
             //Handle masking
             INDArray maskCol = null;
-            if( maskArray != null){
+            if( maskArray != null) {
                 //Mask array: shape [minibatch, tsLength]
                 //If mask array is present (for example, with bidirectional RNN) -> need to zero out these errors to
                 // avoid using errors from a masked time step to calculate the parameter gradients
@@ -257,7 +257,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
 
         IActivation a = layerConf().getActivationFn();
 
-        for( int i=0; i<tsLength; i++ ){
+        for( int i = 0; i < tsLength; i++) {
             //out = activationFn(in*w + last*rw + bias)
             INDArray currOut = out.get(all(), all(), point(i)); //F order
             INDArray currIn = input.get(all(), all(), point(i));
@@ -269,7 +269,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
                 Nd4j.gemm(currIn, w, currOut, false, false, 1.0, 1.0);  //beta = 1.0 to keep previous contents (bias)
             }
 
-            if(i > 0 || prevStepOut != null){
+            if(i > 0 || prevStepOut != null) {
                 if(hasLayerNorm()){
                     INDArray currRecPreNorm = forBackprop ? recPreNorm.get(all(), all(), point(i)) : workspaceMgr.createUninitialized(ArrayType.FF_WORKING_MEM, currOut.dataType(), currOut.shape(), 'f');;
                     Nd4j.gemm(prevStepOut, rw, currRecPreNorm, false, false, 1.0, 0.0);
@@ -297,7 +297,7 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         }
 
         //Apply mask, if present:
-        if(maskArray != null){
+        if(maskArray != null) {
             //Mask should be shape [minibatch, tsLength]
             INDArray mask = maskArray.castTo(dataType);
             Nd4j.getExecutioner().exec(new BroadcastMulOp(out, mask, out, 0, 2));

@@ -231,7 +231,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         JsonNode vertexNode = vertices.get(layerName);
                         JsonNode layerVertexNode = vertexNode.get("LayerVertex");
                         if (layerVertexNode == null || !layerVertexNode.has("layerConf")
-                                        || !layerVertexNode.get("layerConf").has("layer")) {
+                                || !layerVertexNode.get("layerConf").has("layer")) {
                             continue;
                         }
                         JsonNode layerWrapperNode = layerVertexNode.get("layerConf").get("layer");
@@ -250,7 +250,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
                     } catch (IOException e) {
                         log.warn("Layer with null ActivationFn field or pre-0.7.2 activation function detected: could not parse JSON",
-                                        e);
+                                e);
                     }
                 }
 
@@ -381,7 +381,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         for (String s : networkInputs) {
             if (vertices.containsKey(s)) {
                 throw new IllegalStateException("Invalid configuration: name \"" + s
-                                + "\" is present in both network inputs and graph vertices/layers");
+                        + "\" is present in both network inputs and graph vertices/layers");
             }
         }
 
@@ -394,7 +394,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             for (String inputName : e.getValue()) {
                 if (!vertices.containsKey(inputName) && !networkInputs.contains(inputName)) {
                     throw new IllegalStateException("Invalid configuration: Vertex \"" + nodeName + "\" has input \""
-                                    + inputName + "\" that does not exist");
+                            + inputName + "\" that does not exist");
                 }
             }
         }
@@ -451,13 +451,32 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     }
 
     /**
+     * Add preprocessors automatically, given the specified types of inputs for the network. Inputs are specified using the
+     * {@link InputType} class, in the same order in which the inputs were defined in the original configuration.<br>
+     * For example, in a network with two inputs: a convolutional input (28x28x1 images) and feed forward inputs, use
+     * {@code .addPreProcessors(InputType.convolutional(28,28,1),InputType.feedForward())}.<br>
+     * For the CNN->Dense and CNN->RNN transitions, the nIns on the Dense/RNN layers will also be added automatically.
+     * <b>NOTE</b>: This method will be called automatically when using the
+     * {@link GraphBuilder#setInputTypes(InputType...)} functionality.
+     * See that method for details.
+     * @param forceOverrideInputs  whether to forcibly over ride inputs or not
+     *                             when setting up pre processing
+     * @param inputTypes  the input types to set
+     */
+    public void addPreProcessors(boolean forceOverrideInputs,InputType... inputTypes) {
+        getLayerActivationTypes(true,forceOverrideInputs, inputTypes);
+    }
+
+
+
+    /**
      * For the given input shape/type for the network, return a map of activation sizes for each layer and vertex
      * in the graph. Note that this method will automatically add preprocessors if required, to handle (for example)
      * the transition between CNN and dense layers.
      * @param inputTypes                Input types for the network
      * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
      */
-    public Map<String,InputType> getLayerActivationTypes(InputType... inputTypes){
+    public Map<String,InputType> getLayerActivationTypes(InputType... inputTypes) {
         return getLayerActivationTypes(true, inputTypes);
     }
 
@@ -467,10 +486,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      * layer types such as convolutional -> dense, for example)
      * @param addPreprocIfNecessary     If true: add any required preprocessors, in the process of calculating the layer
      *                                  activation sizes
+     * @param overrideInputs            whether to forcibly over ride inputs when
+     *                                  setting inputs
      * @param inputTypes                Input types for the network
      * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
      */
-    public Map<String,InputType> getLayerActivationTypes(boolean addPreprocIfNecessary, InputType... inputTypes){
+    public Map<String,InputType> getLayerActivationTypes(boolean addPreprocIfNecessary,boolean overrideInputs, InputType... inputTypes) {
 
         if (inputTypes == null || inputTypes.length != networkInputs.size()) {
             throw new IllegalArgumentException(
@@ -521,7 +542,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     InputPreProcessor ip = lv.getPreProcessor();
                     afterPreproc = ip.getOutputType(layerInput);
                 }
-                l.setNIn(afterPreproc, false);
+
+                l.setNIn(afterPreproc, overrideInputs);
 
                 currLayerIdx++;
             } else {
@@ -539,6 +561,19 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         return vertexOutputs;
+    }
+
+    /**
+     * For the given input shape/type for the network, return a map of activation sizes for each layer and vertex
+     * in the graph. Note that this method can also add preprocessors if required (to handle transitions between some
+     * layer types such as convolutional -> dense, for example)
+     * @param addPreprocIfNecessary     If true: add any required preprocessors, in the process of calculating the layer
+     *                                  activation sizes
+     * @param inputTypes                Input types for the network
+     * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
+     */
+    public Map<String,InputType> getLayerActivationTypes(boolean addPreprocIfNecessary, InputType... inputTypes) {
+        return getLayerActivationTypes(addPreprocIfNecessary,true,inputTypes);
     }
 
     private Map<String, List<String>> verticesOutputTo() {
@@ -601,8 +636,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 continue;
             if (!set.isEmpty())
                 throw new IllegalStateException(
-                                "Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
-                                                + "cycle includes vertex \"" + entry.getKey() + "\")");
+                        "Invalid configuration: cycle detected in graph. Cannot calculate topological ordering with graph cycle ("
+                                + "cycle includes vertex \"" + entry.getKey() + "\")");
         }
 
         return topologicalOrdering;
@@ -652,7 +687,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
 
             InputType outputFromVertex =
-                            gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
+                    gv.getOutputType(currLayerIdx, inputTypeList.toArray(new InputType[inputTypeList.size()]));
             vertexOutputs.put(s, outputFromVertex);
 
             MemoryReport mr = gv.getMemoryReport(inputTypeList.toArray(new InputType[inputTypeList.size()]));
@@ -661,7 +696,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         }
 
         return new NetworkMemoryReport(memoryReportMap, ComputationGraphConfiguration.class, "ComputationGraph",
-                        inputTypes);
+                inputTypes);
     }
 
     @Data
@@ -841,7 +876,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *                     on a combination of the two.
          */
         public GraphBuilder addLayer(String layerName, Layer layer, InputPreProcessor preProcessor,
-                        String... layerInputs) {
+                                     String... layerInputs) {
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
             addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
@@ -877,7 +912,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          *                     on a combination of the two.
          */
         public GraphBuilder layer(String layerName, Layer layer, InputPreProcessor preProcessor,
-                                     String... layerInputs) {
+                                  String... layerInputs) {
             return addLayer(layerName, layer, preProcessor, layerInputs);
         }
 
@@ -974,9 +1009,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 if (networkInputs.size() > 0 &&     //If no network inputs have been set here - can't valid number of input types here...
                         networkInputTypes.size() + inputTypes.length != networkInputs.size()) {
                     throw new IllegalArgumentException(
-                        "Invalid number of InputTypes: " +
-                        "existing inputTypes ("+networkInputTypes.size()+") + additional inputTypes ("+inputTypes.length+")" +
-                        " != number of network inputs ("+networkInputs.size()+")");
+                            "Invalid number of InputTypes: " +
+                                    "existing inputTypes ("+networkInputTypes.size()+") + additional inputTypes ("+inputTypes.length+")" +
+                                    " != number of network inputs ("+networkInputs.size()+")");
                 }
                 Collections.addAll(networkInputTypes, inputTypes);
             }
@@ -1212,7 +1247,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 }
             }
 
-            if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig){
+            if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig) {
                 //Check for invalid combination - tbptt plus LastTimeStepLayer or
                 for(Map.Entry<String,GraphVertex> e : vertices.entrySet()){
                     GraphVertex gv = e.getValue();

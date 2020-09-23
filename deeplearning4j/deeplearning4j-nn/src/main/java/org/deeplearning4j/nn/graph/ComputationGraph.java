@@ -24,6 +24,8 @@ import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
+import org.deeplearning4j.util.*;
 import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.deeplearning4j.exception.DL4JException;
@@ -55,10 +57,6 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
-import org.deeplearning4j.util.CrashReportingUtil;
-import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.util.NetworkUtils;
-import org.deeplearning4j.util.OutputLayerUtil;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
@@ -511,11 +509,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for (; i < configuration.getNetworkInputs().size(); i++) {
             numParamsForVertex[i] = 0; //No parameters for input vertices
         }
-        for(; i<topologicalOrder.length; i++ ){
+        for(; i < topologicalOrder.length; i++) {
             String name = indices.getIdxToName().get(i);
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
             n.setDataType(netDtype);
             numParamsForVertex[i] = n.numParams(true);
+            if(numParamsForVertex[i] < 0)
+                throw new DL4JInvalidConfigException("Layer " + name + " had parameters < 0 " + numParamsForVertex[i]);
             numParams += numParamsForVertex[i];
         }
 
@@ -1499,7 +1499,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         int graphVertexIndexOfLayer = layers[layerTillIndex].getIndex();
         try{
             return ffToLayerActivationsDetached(train, FwdPassType.STANDARD, false, graphVertexIndexOfLayer,
-                null, inputs, inputMaskArrays, labelMaskArrays, true);
+                    null, inputs, inputMaskArrays, labelMaskArrays, true);
         } catch (OutOfMemoryError e){
             CrashReportingUtil.writeMemoryCrashDump(this, e);
             throw e;
@@ -1908,8 +1908,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @return Map of activations (including the input), detached from any workspace
      */
     protected synchronized Map<String,INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
-                                                                int layerIndex, int[] excludeIdxs, @NonNull INDArray[] features,
-                                                                INDArray[] fMask, INDArray[] lMask, boolean clearLayers){
+                                                                             int layerIndex, int[] excludeIdxs, @NonNull INDArray[] features,
+                                                                             INDArray[] fMask, INDArray[] lMask, boolean clearLayers){
         if(layerIndex < 0 || layerIndex >= topologicalOrder.length){
             throw new IllegalArgumentException("Invalid layer index - index must be >= 0 and < " + topologicalOrder.length
                     + ", got index " + layerIndex);
@@ -2063,8 +2063,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * otherwise)
      */
     protected synchronized Map<String,INDArray> ffToLayerActivationsInWS(boolean train, int layerIndex, int[] excludeIdxs,
-                                                            FwdPassType fwdPassType, boolean storeLastForTBPTT,
-                                                            INDArray[] input, INDArray[] fMask, INDArray[] lMask, boolean clearInputs) {
+                                                                         FwdPassType fwdPassType, boolean storeLastForTBPTT,
+                                                                         INDArray[] input, INDArray[] fMask, INDArray[] lMask, boolean clearInputs) {
         if(layerIndex != -1 && (layerIndex < 0 || layerIndex >= topologicalOrder.length)){
             throw new IllegalArgumentException("Invalid input index - index must be >= 0 and < " + topologicalOrder.length
                     + ", got index " + layerIndex);
@@ -2213,7 +2213,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             throw new IllegalArgumentException("Invalid number of input arrays: network has " + numInputArrays
                     + " inputs, got " + features.length + " input arrays");
         }
-        for( int i=0; i<layerIndexes.length; i++ ) {
+        for( int i = 0; i < layerIndexes.length; i++) {
             if(layerIndexes[i] < 0 || layerIndexes[i] >= topologicalOrder.length) {
                 throw new IllegalArgumentException("Invalid input index - index must be >= 0 and < " + topologicalOrder.length
                         + ", got index " + layerIndexes[i]);
@@ -2245,7 +2245,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Put another way: this is the step that it's safe to deallocate the layer's activations by closing the
         // corresponding workspace
         int[] vertexOutputsFullyConsumedByStep = new int[topologicalOrder.length];
-        for(GraphVertex gv : vertices){
+        for(GraphVertex gv : vertices) {
             int idx = gv.getVertexIndex();
             int maxStepOfOutputTo = -1;
             VertexIndices[] outputsTo = gv.getOutputVertices();
@@ -2267,7 +2267,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //Do forward pass according to the topological ordering of the network
         INDArray[] outputs = new INDArray[layerIndexes.length];
         int stopIndex = -1;
-        for( int i=0; i<layerIndexes.length; i++ ){
+        for( int i = 0; i < layerIndexes.length; i++) {
             stopIndex = Math.max(stopIndex, ArrayUtils.indexOf(topologicalOrder, layerIndexes[i]));
         }
         List<LayerWorkspaceMgr> allWorkspaceManagers = new ArrayList<>();
@@ -2283,6 +2283,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         try {
             for (int i = 0; i <= stopIndex; i++) {
                 GraphVertex current = vertices[topologicalOrder[i]];
+                GraphVertex prev = i > 0 ? vertices[topologicalOrder[i - 1]] : null;
+
                 String vName = current.getVertexName();
                 int vIdx = current.getVertexIndex();
 
@@ -2370,14 +2372,72 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 try (MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
                     VertexIndices[] inputsTo = current.getOutputVertices();
 
-                    INDArray out;
+                    INDArray out = null;
                     if (current.isInputVertex()) {
                         out = features[vIdx];
                     } else {
 
                         if (fwdPassType == FwdPassType.STANDARD) {
                             //Standard feed-forward case
-                            out = current.doForward(train, workspaceMgr);
+
+                            if(i > 0 && current.hasLayer() && prev.hasLayer() &&
+                                    ConvolutionUtils.layerHasConvolutionLayout(prev.getLayer().conf().getLayer())
+                                    && ConvolutionUtils.layerHasConvolutionLayout(current.getLayer().conf().getLayer())) {
+
+                                /**
+                                 * Not QUITE the proper fix, but getting close.
+                                 * Able to detect this happens mid graph and do something about it.
+                                 * Need to play with output sizes a bit to make sure we put the right parameters in there to get
+                                 * correct behavior.
+                                 */
+                                CNN2DFormat preLayerFormat = ConvolutionUtils.getFormatForLayer(prev.getLayer().conf().getLayer());
+                                CNN2DFormat currLayerFormat = ConvolutionUtils.getFormatForLayer(current.getLayer().conf().getLayer());
+                                if(preLayerFormat != currLayerFormat) {
+                                    int inputIdx = -1;
+                                    for(int inputVertex = 0; inputVertex < current.getInputVertices().length; inputVertex++) {
+                                        if(current.getInputVertices()[inputVertex].getVertexIndex() == prev.getVertexIndex()) {
+                                            inputIdx = inputVertex;
+                                        }
+                                    }
+
+                                    //NHWC case
+                                    if(preLayerFormat == CNN2DFormat.NCHW) {
+                                        current.setInput(inputIdx,current.getInputs()[inputIdx].permute(0,3,1,2),workspaceMgr);
+                                    }
+                                    //NCHW case
+                                    else if(preLayerFormat == CNN2DFormat.NHWC) {
+                                        current.setInput(inputIdx,current.getInputs()[inputIdx].permute(0,2,3,1),workspaceMgr);
+
+                                    }
+                                    else
+                                        throw new IllegalStateException("No CNN2DDataFormat type found for previous layer!");
+
+                                    out = current.doForward(train, workspaceMgr);
+                                }
+                                else
+                                    out = current.doForward(train, workspaceMgr);
+                            } else    if(i > 0 && current.hasLayer() && prev.hasLayer() &&
+                                    Convolution1DUtils.hasRnnDataFormat(prev.getLayer().conf().getLayer())
+                                    && Convolution1DUtils.hasRnnDataFormat(current.getLayer().conf().getLayer())) {
+                                RNNFormat preLayerFormat = Convolution1DUtils.getRnnFormatFromLayer(prev.getLayer().conf().getLayer());
+                                RNNFormat currLayerFormat = Convolution1DUtils.getRnnFormatFromLayer(current.getLayer().conf().getLayer());
+                                int inputIdx = -1;
+                                for(int inputVertex = 0; inputVertex < current.getInputVertices().length; inputVertex++) {
+                                    if(current.getInputVertices()[inputVertex].getVertexIndex() == prev.getVertexIndex()) {
+                                        inputIdx = inputVertex;
+                                    }
+                                }
+                                //permute for next layer
+                                if(preLayerFormat != currLayerFormat) {
+                                    current.setInput(inputIdx,current.getInputs()[inputIdx].permute(0,2,1),workspaceMgr);
+                                }
+
+                                out = current.doForward(train, workspaceMgr);
+
+
+                            }  else {
+                                out = current.doForward(train, workspaceMgr);
+                            }
                         } else if (fwdPassType == FwdPassType.RNN_TIMESTEP) {
                             if (current.hasLayer()) {
                                 //Layer
@@ -4399,7 +4459,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             } else {
                 line = new String[]{currentVertexName + " (" + className + ")", in + "," + out, paramCount, paramShape, connections, inShape, outShape};
             }
-            for( int i=0; i<line.length; i++ ){
+            for( int i = 0; i < line.length; i++) {
                 maxLength[i] = Math.max(maxLength[i], line[i] == null ? 0 : line[i].length());
             }
             lines.add(line);

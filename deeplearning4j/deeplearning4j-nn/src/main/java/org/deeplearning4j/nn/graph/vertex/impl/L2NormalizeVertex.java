@@ -80,9 +80,9 @@ public class L2NormalizeVertex extends BaseGraphVertex {
         INDArray x = inputs[0];
         int[] dimensions = getDimensions(x);
 
-        INDArray xNorm2 = x.norm2(dimensions);
+        INDArray xNorm2 = x.norm2(true,dimensions);
         Transforms.max(xNorm2, eps, false);
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)){
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
             if (x.rank() == 2) {
                 return x.divColumnVector(xNorm2);
             } else {

@@ -17,6 +17,7 @@
 package org.nd4j.linalg.dataset.api.preprocessor;
 
 import lombok.extern.slf4j.Slf4j;
+import net.jcip.annotations.NotThreadSafe;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -44,6 +45,7 @@ import static org.junit.Assert.assertTrue;
  */
 @Slf4j
 @RunWith(Parameterized.class)
+@NotThreadSafe
 public class UnderSamplingPreProcessorTest extends BaseNd4jTest {
     int shortSeq = 10000;
     int longSeq = 20020; //not a perfect multiple of windowSize

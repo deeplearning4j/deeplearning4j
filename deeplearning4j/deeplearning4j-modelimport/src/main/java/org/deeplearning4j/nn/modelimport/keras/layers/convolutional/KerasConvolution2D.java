@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.weights.IWeightInit;
+import oshi.jna.platform.windows.PowrProf;
 
 import java.util.Map;
 
@@ -98,12 +99,12 @@ public class KerasConvolution2D extends KerasConvolution {
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(init)
+                .dataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
-                .stride(getStrideFromConfig(layerConfig, 2, conf))
-                .dataFormat((dimOrder==DimOrder.TENSORFLOW)? CNN2DFormat.NHWC:CNN2DFormat.NCHW);
+                .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
         if (hasBias)
             builder.biasInit(0.0);
@@ -116,6 +117,9 @@ public class KerasConvolution2D extends KerasConvolution {
         if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
         this.layer = builder.build();
+        ConvolutionLayer convolutionLayer = (ConvolutionLayer) layer;
+        convolutionLayer.setDefaultValueOverriden(true);
+
     }
 
     /**

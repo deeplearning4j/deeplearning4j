@@ -17,7 +17,6 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.Getter;
-import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -27,6 +26,10 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
+import org.deeplearning4j.rl4j.network.CommonGradientNames;
+import org.deeplearning4j.rl4j.network.CommonLabelNames;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
+import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,6 +41,7 @@ import java.util.Collection;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/23/16.
  */
+@Deprecated
 public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IActorCritic<NN> {
 
     final protected MultiLayerNetwork valueNet;
@@ -68,10 +72,8 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
     }
 
     public void fit(INDArray input, INDArray[] labels) {
-
         valueNet.fit(input, labels[0]);
         policyNet.fit(input, labels[1]);
-
     }
 
     public INDArray[] outputAll(INDArray batch) {
@@ -91,28 +93,76 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
 
     @Override
     public void fit(FeaturesLabels featuresLabels) {
-        // TODO: signature of fit() will change from DataSet to a class that has named labels to support network like
-        // this one (labels for the value-network and another labels for the policy-network
-        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+        valueNet.fit(featuresLabels.getFeatures(), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value));
+        policyNet.fit(featuresLabels.getFeatures(), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
     }
 
     @Override
-    public Gradients computeGradients(FeaturesLabels updateLabels) {
-        // TODO
-        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    public Gradients computeGradients(FeaturesLabels featuresLabels) {
+        valueNet.setInput(featuresLabels.getFeatures());
+        valueNet.setLabels(featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value));
+        valueNet.computeGradientAndScore();
+        Collection<TrainingListener> valueIterationListeners = valueNet.getListeners();
+        if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
+            for (TrainingListener l : valueIterationListeners) {
+                l.onGradientCalculation(valueNet);
+            }
+        }
+
+        policyNet.setInput(featuresLabels.getFeatures());
+        policyNet.setLabels(featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
+        policyNet.computeGradientAndScore();
+        Collection<TrainingListener> policyIterationListeners = policyNet.getListeners();
+        if (policyIterationListeners != null && policyIterationListeners.size() > 0) {
+            for (TrainingListener l : policyIterationListeners) {
+                l.onGradientCalculation(policyNet);
+            }
+        }
+
+        Gradients result = new Gradients(featuresLabels.getBatchSize());
+        result.putGradient(CommonGradientNames.ActorCritic.Value, valueNet.gradient());
+        result.putGradient(CommonGradientNames.ActorCritic.Policy, policyNet.gradient());
+        return result;
     }
 
     @Override
     public void applyGradients(Gradients gradients) {
-        // TODO
-        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+        int batchSize = (int)gradients.getBatchSize();
+        MultiLayerConfiguration valueConf = valueNet.getLayerWiseConfigurations();
+        int valueIterationCount = valueConf.getIterationCount();
+        int valueEpochCount = valueConf.getEpochCount();
+        Gradient valueGradient = gradients.getGradient(CommonGradientNames.ActorCritic.Value);
+        valueNet.getUpdater().update(valueNet, valueGradient, valueIterationCount, valueEpochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
+        valueNet.params().subi(valueGradient.gradient());
+        Collection<TrainingListener> valueIterationListeners = valueNet.getListeners();
+        if (valueIterationListeners != null && valueIterationListeners.size() > 0) {
+            for (TrainingListener listener : valueIterationListeners) {
+                listener.iterationDone(valueNet, valueIterationCount, valueEpochCount);
+            }
+        }
+        valueConf.setIterationCount(valueIterationCount + 1);
+
+        MultiLayerConfiguration policyConf = policyNet.getLayerWiseConfigurations();
+        int policyIterationCount = policyConf.getIterationCount();
+        int policyEpochCount = policyConf.getEpochCount();
+        Gradient policyGradient = gradients.getGradient(CommonGradientNames.ActorCritic.Policy);
+        policyNet.getUpdater().update(policyNet, policyGradient, policyIterationCount, policyEpochCount, batchSize, LayerWorkspaceMgr.noWorkspaces());
+        policyNet.params().subi(policyGradient.gradient());
+        Collection<TrainingListener> policyIterationListeners = policyNet.getListeners();
+        if (policyIterationListeners != null && policyIterationListeners.size() > 0) {
+            for (TrainingListener listener : policyIterationListeners) {
+                listener.iterationDone(policyNet, policyIterationCount, policyEpochCount);
+            }
+        }
+        policyConf.setIterationCount(policyIterationCount + 1);
     }
 
-    public void copy(NN from) {
+    public void copyFrom(NN from) {
         valueNet.setParams(from.valueNet.params());
         policyNet.setParams(from.policyNet.params());
     }
 
+    @Deprecated
     public Gradient[] gradient(INDArray input, INDArray[] labels) {
         valueNet.setInput(input);
         valueNet.setLabels(labels[0]);
@@ -136,7 +186,7 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
         return new Gradient[] {valueNet.gradient(), policyNet.gradient()};
     }
 
-
+    @Deprecated
     public void applyGradient(Gradient[] gradient, int batchSize) {
         MultiLayerConfiguration valueConf = valueNet.getLayerWiseConfigurations();
         int valueIterationCount = valueConf.getIterationCount();
@@ -188,17 +238,26 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
     }
 
     @Override
-    public INDArray output(Observation observation) {
-        // TODO: signature of output() will change to return a class that has named outputs to support network like
-        // this one (output from the value-network and another output for the policy-network
-        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    public NeuralNetOutput output(Observation observation) {
+        if(!isRecurrent()) {
+            return output(observation.getData());
+        }
+
+        INDArray observationData = observation.getData();
+        return packageResult(valueNet.rnnTimeStep(observationData), policyNet.rnnTimeStep(observationData));
     }
 
     @Override
-    public INDArray output(INDArray batch) {
-        // TODO: signature of output() will change to return a class that has named outputs to support network like
-        // this one (output from the value-network and another output for the policy-network
-        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    public NeuralNetOutput output(INDArray batch) {
+        return packageResult(valueNet.output(batch), policyNet.output(batch));
+    }
+
+    private NeuralNetOutput packageResult(INDArray value, INDArray policy) {
+        NeuralNetOutput result = new NeuralNetOutput();
+        result.put(CommonOutputNames.ActorCritic.Value, value);
+        result.put(CommonOutputNames.ActorCritic.Policy, policy);
+
+        return result;
     }
 }
 

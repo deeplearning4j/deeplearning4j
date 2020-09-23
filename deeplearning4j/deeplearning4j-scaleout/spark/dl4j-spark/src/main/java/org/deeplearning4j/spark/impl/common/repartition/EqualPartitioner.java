@@ -17,9 +17,12 @@
 package org.deeplearning4j.spark.impl.common.repartition;
 
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaRDD;
+
+import java.util.Random;
 
 /**
  * This is a custom partitioner (used in conjunction with {@link JavaRDD#zipWithIndex()} to repartition a RDD.

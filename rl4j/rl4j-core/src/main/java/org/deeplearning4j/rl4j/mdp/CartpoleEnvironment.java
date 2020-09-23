@@ -16,7 +16,7 @@ public class CartpoleEnvironment implements Environment<Integer> {
 
     private final Schema<Integer> schema;
 
-    public enum KinematicsIntegrators { Euler, SemiImplicitEuler };
+    public enum KinematicsIntegrators { Euler, SemiImplicitEuler }
 
     private static final double gravity = 9.8;
     private static final double massCart = 1.0;

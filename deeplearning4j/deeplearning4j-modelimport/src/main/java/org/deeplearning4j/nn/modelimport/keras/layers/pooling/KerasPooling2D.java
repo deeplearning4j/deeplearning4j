@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.pooling;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -61,6 +62,7 @@ public class KerasPooling2D extends KerasLayer {
         SubsamplingLayer.Builder builder = new SubsamplingLayer.Builder(
                 KerasPoolingUtils.mapPoolingType(this.className, conf)).name(this.layerName)
                 .dropOut(this.dropout)
+                .dataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
@@ -68,6 +70,9 @@ public class KerasPooling2D extends KerasLayer {
         if (padding != null)
             builder.padding(padding);
         this.layer = builder.build();
+        SubsamplingLayer subsamplingLayer = (SubsamplingLayer) layer;
+        //ensure the default value stays
+        subsamplingLayer.setDefaultValueOverridden(true);
         this.vertex = null;
     }
 

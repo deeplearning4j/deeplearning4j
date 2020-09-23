@@ -25,7 +25,8 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.base.Preconditions;
@@ -33,6 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
 import org.nd4j.linalg.api.shape.Shape;
@@ -160,6 +162,107 @@ public class ConvolutionUtils {
     }
 
     /**
+     * Returns true if a layer has a
+     * {@link CNN2DFormat} property.
+     * This is currently in use for:
+     * {@link ConvolutionLayer},
+     * {@link SubsamplingLayer},
+     * {@link Upsampling2D},
+     * {@link SpaceToBatchLayer},
+     * {@link SpaceToDepthLayer},
+     * {@link ZeroPaddingLayer},
+     * {@link SeparableConvolution2D},
+     * {@link Cropping2D},
+     * {@link DepthwiseConvolution2D}
+     * @param layer the layer to check
+     * @return true if the layer is one of the above types, false otherwise
+     */
+    public static boolean layerHasConvolutionLayout(Layer layer) {
+        return layer instanceof ConvolutionLayer ||
+                layer instanceof SubsamplingLayer ||
+                layer instanceof SpaceToBatchLayer ||
+                layer instanceof Upsampling2D ||
+                layer instanceof SpaceToDepthLayer ||
+                layer instanceof ZeroPaddingLayer ||
+                layer instanceof SeparableConvolution2D ||
+                layer instanceof Deconvolution2D ||
+                layer instanceof Cropping2D ||
+                layer instanceof DepthwiseConvolution2D;
+    }
+
+    /**
+     * Get the format for a given layer.
+     * {@link #layerHasConvolutionLayout(Layer)}
+     * should return true on the given {@link Layer}
+     * type or an {@link IllegalArgumentException}
+     * will be thrown
+     * @param layer the input layer
+     * @return the {@link CNN2DFormat} for the given
+     * layer
+     */
+    public static CNN2DFormat getFormatForLayer(Layer layer) {
+       if(layer instanceof Convolution1DLayer) {
+           Convolution1DLayer convolution1DLayer = (Convolution1DLayer) layer;
+           return convolution1DLayer.getCnn2dDataFormat();
+       } else if(layer instanceof ConvolutionLayer) {
+            ConvolutionLayer convolutionLayer = (ConvolutionLayer) layer;
+            return convolutionLayer.getCnn2dDataFormat();
+        } else if(layer instanceof SubsamplingLayer) {
+            SubsamplingLayer subsamplingLayer = (SubsamplingLayer) layer;
+            return subsamplingLayer.getCnn2dDataFormat();
+        } else if(layer instanceof SpaceToBatchLayer) {
+            SpaceToBatchLayer spaceToBatchLayer = (SpaceToBatchLayer) layer;
+            return spaceToBatchLayer.getFormat();
+        } else if(layer instanceof Upsampling2D) {
+            Upsampling2D upsampling2D = (Upsampling2D) layer;
+            return upsampling2D.getFormat();
+        } else if(layer instanceof SpaceToDepthLayer) {
+            SpaceToDepthLayer spaceToDepthLayer = (SpaceToDepthLayer) layer;
+            return spaceToDepthLayer.getDataFormat();
+        } else if(layer instanceof ZeroPaddingLayer) {
+            ZeroPaddingLayer zeroPaddingLayer = (ZeroPaddingLayer) layer;
+            return zeroPaddingLayer.getDataFormat();
+        } else if(layer instanceof SeparableConvolution2D) {
+           SeparableConvolution2D separableConvolution2D = (SeparableConvolution2D) layer;
+           return separableConvolution2D.getCnn2dDataFormat();
+       } else if(layer instanceof Deconvolution2D) {
+           Deconvolution2D deconvolution2D = (Deconvolution2D) layer;
+           return deconvolution2D.getCnn2dDataFormat();
+       } else if(layer instanceof DepthwiseConvolution2D) {
+           DepthwiseConvolution2D depthwiseConvolution2D = (DepthwiseConvolution2D) layer;
+           return depthwiseConvolution2D.getCnn2dDataFormat();
+       } else if(layer instanceof Cropping2D) {
+           Cropping2D cropping2D = (Cropping2D) layer;
+           return cropping2D.getDataFormat();
+       }
+        else throw new IllegalArgumentException("Illegal type given " + layer.getClass().getName());
+    }
+
+
+    /**
+     * Convert {@link ConvolutionMode}
+     * to {@link PaddingMode}
+     * {@link ConvolutionMode#Same} : {@link PaddingMode#SAME}
+     * {@link ConvolutionMode#Strict}, {@link ConvolutionMode#Truncate} : {@link PaddingMode#VALID}
+     * {@link ConvolutionMode#Causal} : {@link PaddingMode#VALID}
+     * @param convolutionMode the input {@link ConvolutionMode}
+     * @return the equivalent {@link PaddingMode}
+     */
+    public static PaddingMode paddingModeForConvolutionMode(ConvolutionMode convolutionMode) {
+        switch(convolutionMode) {
+            case Same:
+                return PaddingMode.SAME;
+            case Causal:
+               return PaddingMode.CAUSAL;
+            case Strict:
+            case Truncate:
+                return PaddingMode.VALID;
+            default:
+                throw new IllegalArgumentException("Invalid input convolution mode: " + convolutionMode);
+        }
+    }
+
+    /**
      * Get the output size (height/width) for the given input data and CNN configuration
      *
      * @param inputData       Input data
@@ -175,7 +278,8 @@ public class ConvolutionUtils {
                                       ConvolutionMode convolutionMode, int[] dilation, CNN2DFormat format) {
         int hDim = 2;
         int wDim = 3;
-        if(format == CNN2DFormat.NHWC){
+
+        if(format == CNN2DFormat.NHWC) {
             hDim = 1;
             wDim = 2;
         }
@@ -381,10 +485,12 @@ public class ConvolutionUtils {
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         int[] outPad = new int[kernel.length];
         boolean allGt0 = true;
-        for( int i=0; i<kernel.length; i++ ){
+
+        for( int i = 0; i < kernel.length; i++) {
             outPad[i] = ((outSize[i] - 1) * strides[i] + eKernel[i] - inSize[i]) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
             allGt0 &= outPad[i] >= 0;
         }
+
         Preconditions.checkState(allGt0, "Invalid padding values calculated: %s - layer configuration is invalid? Input size %s, output size %s, kernel %s, strides %s, dilation %s",
                 outPad, inSize, outSize, kernel, strides, dilation);
 

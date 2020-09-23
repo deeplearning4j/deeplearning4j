@@ -15,17 +15,16 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.builder;
 
-import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.experimental.SuperBuilder;
 import org.apache.commons.lang3.builder.Builder;
 import org.deeplearning4j.rl4j.agent.IAgentLearner;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.BaseTransitionTDAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.INeuralNetUpdater;
-import org.deeplearning4j.rl4j.agent.learning.update.updater.LabelsNeuralNetUpdater;
+import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterConfiguration;
+import org.deeplearning4j.rl4j.agent.learning.update.updater.sync.SyncLabelsNeuralNetUpdater;
 import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.environment.IActionSchema;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
@@ -37,6 +36,7 @@ import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.policy.INeuralNetPolicy;
 import org.deeplearning4j.rl4j.policy.IPolicy;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.rng.Random;
 
 /**
@@ -47,20 +47,19 @@ import org.nd4j.linalg.api.rng.Random;
  *
  * Used as the base of DQN builders.
  */
-public abstract class BaseDQNAgentLearnerBuilder extends BaseAgentLearnerBuilder<Integer, Transition<Integer>, FeaturesLabels> {
-
-    @Getter(AccessLevel.PROTECTED)
-    private final Configuration configuration;
+public abstract class BaseDQNAgentLearnerBuilder<CONFIGURATION_TYPE extends BaseDQNAgentLearnerBuilder.Configuration> extends BaseAgentLearnerBuilder<Integer, Transition<Integer>, FeaturesLabels, CONFIGURATION_TYPE> {
 
     private final Random rnd;
 
-    public BaseDQNAgentLearnerBuilder(Configuration configuration,
+    public BaseDQNAgentLearnerBuilder(CONFIGURATION_TYPE configuration,
                                       ITrainableNeuralNet neuralNet,
                                       Builder<Environment<Integer>> environmentBuilder,
                                       Builder<TransformProcess> transformProcessBuilder,
                                       Random rnd) {
         super(configuration, neuralNet, environmentBuilder, transformProcessBuilder);
-        this.configuration = configuration;
+
+        // TODO: remove once RNN networks states are supported with DQN
+        Preconditions.checkArgument(!neuralNet.isRecurrent(), "Recurrent networks are not yet supported with DQN.");
         this.rnd = rnd;
     }
 
@@ -78,7 +77,11 @@ public abstract class BaseDQNAgentLearnerBuilder extends BaseAgentLearnerBuilder
 
     @Override
     protected INeuralNetUpdater<FeaturesLabels> buildNeuralNetUpdater() {
-        return new LabelsNeuralNetUpdater(networks.getThreadCurrentNetwork(), networks.getTargetNetwork(), configuration.getNeuralNetUpdaterConfiguration());
+        if(configuration.isAsynchronous()) {
+            throw new UnsupportedOperationException("Only synchronized use is currently supported");
+        }
+
+        return new SyncLabelsNeuralNetUpdater(networks.getThreadCurrentNetwork(), networks.getTargetNetwork(), configuration.getNeuralNetUpdaterConfiguration());
     }
 
     @EqualsAndHashCode(callSuper = true)
@@ -87,7 +90,7 @@ public abstract class BaseDQNAgentLearnerBuilder extends BaseAgentLearnerBuilder
     public static class Configuration extends BaseAgentLearnerBuilder.Configuration<Integer> {
         EpsGreedy.Configuration policyConfiguration;
         ReplayMemoryExperienceHandler.Configuration experienceHandlerConfiguration;
-        LabelsNeuralNetUpdater.Configuration neuralNetUpdaterConfiguration;
+        NeuralNetUpdaterConfiguration neuralNetUpdaterConfiguration;
         BaseTransitionTDAlgorithm.Configuration updateAlgorithmConfiguration;
     }
 }

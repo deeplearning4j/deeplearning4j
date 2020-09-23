@@ -105,18 +105,20 @@ public class KerasEmbedding extends KerasLayer {
                     "in DL4J, apply masking as a pre-processing step to your input." +
                     "See https://deeplearning4j.konduit.ai/models/recurrent#masking-one-to-many-many-to-one-and-sequence-classification for more on this.");
 
-        IWeightInit init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(),
-                enforceTrainingConfig, conf, kerasMajorVersion);
+        IWeightInit init = getWeightInitFromConfig(layerConfig,
+                conf.getLAYER_FIELD_EMBEDDING_INIT(),
+                enforceTrainingConfig,
+                conf, kerasMajorVersion);
 
         LayerConstraint embeddingConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_EMBEDDINGS_CONSTRAINT(), conf, kerasMajorVersion);
-
+        int nOutFromConfig = getNOutFromConfig(layerConfig, conf);
         EmbeddingSequenceLayer.Builder builder = new EmbeddingSequenceLayer.Builder()
                 .name(this.layerName)
                 .nIn(inputDim)
                 .inputLength(inputLength)
                 .inferInputLength(inferInputLength)
-                .nOut(getNOutFromConfig(layerConfig, conf))
+                .nOut(nOutFromConfig)
                 .dropOut(this.dropout).activation(Activation.IDENTITY)
                 .weightInit(init)
                 .biasInit(0.0)
@@ -127,6 +129,8 @@ public class KerasEmbedding extends KerasLayer {
         if (embeddingConstraint != null)
             builder.constrainWeights(embeddingConstraint);
         this.layer = builder.build();
+
+        this.inputShape = new int[]{inputDim,1};
     }
 
     /**

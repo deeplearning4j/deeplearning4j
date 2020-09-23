@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.samediff.testlayers;
 
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLambdaVertex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;

@@ -21,31 +21,37 @@ import org.nd4j.python4j.PythonContextManager;
 import org.nd4j.python4j.PythonExecutioner;
 import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.python4j.PythonGIL;
+
 import javax.annotation.concurrent.NotThreadSafe;
 
 @NotThreadSafe
 public class PythonContextManagerTest {
 
     @Test
-    public void testInt() throws Exception{
-        Python.setContext("context1");
-        Python.exec("a = 1");
-       Python.setContext("context2");
-        Python.exec("a = 2");
-        Python.setContext("context3");
-        Python.exec("a = 3");
+    public void testInt() throws Exception {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            Python.setContext("context1");
+            Python.exec("a = 1");
+            Python.setContext("context2");
+            Python.exec("a = 2");
+            Python.setContext("context3");
+            Python.exec("a = 3");
 
 
-        Python.setContext("context1");
-        Assert.assertEquals(1, PythonExecutioner.getVariable("a").toInt());
+            Python.setContext("context1");
+            Assert.assertEquals(1, PythonExecutioner.getVariable("a").toInt());
 
-        Python.setContext("context2");
-        Assert.assertEquals(2, PythonExecutioner.getVariable("a").toInt());
+            Python.setContext("context2");
+            Assert.assertEquals(2, PythonExecutioner.getVariable("a").toInt());
 
-        Python.setContext("context3");
-        Assert.assertEquals(3, PythonExecutioner.getVariable("a").toInt());
+            Python.setContext("context3");
+            Assert.assertEquals(3, PythonExecutioner.getVariable("a").toInt());
 
-        PythonContextManager.deleteNonMainContexts();
+            PythonContextManager.deleteNonMainContexts();
+
+        }
+
     }
 
 }

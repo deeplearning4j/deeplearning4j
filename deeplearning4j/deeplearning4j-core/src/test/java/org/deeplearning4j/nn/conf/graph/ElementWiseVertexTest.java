@@ -42,6 +42,8 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Map;
 
+import static org.junit.Assert.assertArrayEquals;
+
 /**
  * Created by binesh on 6/14/2017.
  */

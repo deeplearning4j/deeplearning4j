@@ -18,8 +18,13 @@ package org.deeplearning4j.eval;
 
 import org.nd4j.shade.guava.collect.HashMultiset;
 import org.nd4j.shade.guava.collect.Multiset;
+import lombok.Getter;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @deprecated Use {@link org.nd4j.evaluation.classification.ConfusionMatrix}

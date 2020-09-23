@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
@@ -42,6 +43,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -306,11 +308,12 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .layer(new EmbeddingSequenceLayer.Builder().inputLength(inputLength)
                         .hasBias(true).nIn(nClassesIn).nOut(embeddingDim).build())
                 .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
+                .setInputType(InputType.recurrent(nClassesIn,inputLength,RNNFormat.NCW))
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(new DenseLayer.Builder().nIn(nClassesIn).nOut(embeddingDim).activation(Activation.IDENTITY).build())
                 .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
-                .setInputType(InputType.recurrent(nClassesIn))
+                .setInputType(InputType.recurrent(nClassesIn,inputLength,RNNFormat.NCW))
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -357,29 +360,32 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
 
     @Test
     public void testEmbeddingLayerRNN() {
-
         int nClassesIn = 10;
+        int batchSize = 3;
+        int timeSeriesLength = 8;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
                 .dataType(DataType.DOUBLE)
                 .list()
                 .layer(0, new EmbeddingLayer.Builder().hasBias(true).nIn(nClassesIn).nOut(5).build())
-                .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
+                .layer(1, new LSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                         .activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                 .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
+                .setInputType(InputType.recurrent(nClassesIn,timeSeriesLength, RNNFormat.NCW))
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH)
                 .weightInit(WeightInit.XAVIER)
                 .dataType(DataType.DOUBLE)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nClassesIn).nOut(5).activation(Activation.IDENTITY).build())
-                .layer(1, new GravesLSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
+                .layer(1, new LSTM.Builder().nIn(5).nOut(7).activation(Activation.SOFTSIGN).build())
                 .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(7).nOut(4)
                         .activation(Activation.SOFTMAX).build())
                 .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
                 .inputPreProcessor(1, new FeedForwardToRnnPreProcessor())
+                .setInputType(InputType.recurrent(nClassesIn,timeSeriesLength, RNNFormat.NCW))
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -389,8 +395,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
 
         net2.setParams(net.params().dup());
 
-        int batchSize = 3;
-        int timeSeriesLength = 8;
+      ;
         INDArray inEmbedding = Nd4j.create(batchSize, 1, timeSeriesLength);
         INDArray inOneHot = Nd4j.create(batchSize, nClassesIn, timeSeriesLength);
         INDArray outLabels = Nd4j.create(batchSize, 4, timeSeriesLength);
@@ -450,11 +455,13 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                         .layer(0, new EmbeddingLayer.Builder().hasBias(true).activation(Activation.TANH).nIn(numInputClasses)
                                 .nOut(5).build())
                         .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
-                        .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
+                        .layer(2, new LSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
                         .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
                                 .nOut(4).build())
                         .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                        .inputPreProcessor(2, new FeedForwardToRnnPreProcessor()).build();
+                        .inputPreProcessor(2, new FeedForwardToRnnPreProcessor())
+                        .setInputType(InputType.recurrent(numInputClasses,timeSeriesLength, RNNFormat.NCW))
+                        .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
                 net.init();
@@ -465,11 +472,13 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                         .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5)
                                 .build())
                         .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
-                        .layer(2, new GravesLSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
+                        .layer(2, new LSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
                         .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
                                 .nOut(4).build())
                         .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
-                        .inputPreProcessor(2, new FeedForwardToRnnPreProcessor()).build();
+                        .inputPreProcessor(2, new FeedForwardToRnnPreProcessor())
+                        .setInputType(InputType.recurrent(numInputClasses,timeSeriesLength, RNNFormat.NCW))
+                        .build();
 
                 MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
                 net2.init();
@@ -611,7 +620,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                                 .layer(2, new LSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
                                 .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
                                         .nOut(4).build())
-                                .setInputType(InputType.recurrent(1)).build();
+                                .setInputType(InputType.recurrent(numInputClasses,timeSeriesLength,RNNFormat.NCW)).build();
 
                         MultiLayerNetwork net = new MultiLayerNetwork(conf);
                         net.init();
@@ -622,10 +631,10 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                                 .layer(0, new DenseLayer.Builder().activation(Activation.TANH).nIn(numInputClasses).nOut(5)
                                         .build())
                                 .layer(1, new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(4).build())
-                                .layer(2, new LSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).build())
+                                .layer(2, new LSTM.Builder().activation(Activation.TANH).nIn(4).nOut(3).dataFormat(RNNFormat.NCW).build())
                                 .layer(3, new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(3)
                                         .nOut(4).build())
-                                .setInputType(InputType.recurrent(1)).build();
+                                .setInputType(InputType.recurrent(numInputClasses,1,RNNFormat.NCW)).build();
 
                         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
                         net2.init();

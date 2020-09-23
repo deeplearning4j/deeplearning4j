@@ -166,6 +166,58 @@ public class ElementWiseVertex extends GraphVertex {
                 }
             }
         }
+
+        if(vertexInputs.length < 2)
+            return vertexInputs[0];
+
+        if(first.getType() == InputType.Type.FF) {
+            //could be 1s and a higher value. broadcast to the higher value where possible
+            InputType.InputTypeFeedForward maxInputType = null;
+            for(int i = 0 ; i < vertexInputs.length; i++) {
+                InputType.InputTypeFeedForward feedForward = (InputType.InputTypeFeedForward) vertexInputs[i];
+                if(maxInputType == null)
+                    maxInputType = feedForward;
+                else {
+                    if(maxInputType.getSize() < feedForward.getSize()) {
+                        maxInputType = feedForward;
+                    }
+                }
+            }
+
+            return maxInputType;
+        } else if(first.getType() == InputType.Type.CNNFlat) {
+            //could be 1s and a higher value. broadcast to the higher value where possible
+            InputType.InputTypeConvolutionalFlat maxInputType = null;
+            for(int i = 0 ; i < vertexInputs.length; i++) {
+                InputType.InputTypeConvolutionalFlat feedForward = (InputType.InputTypeConvolutionalFlat) vertexInputs[i];
+                if(maxInputType == null)
+                    maxInputType = feedForward;
+                else {
+                    if(maxInputType.getFlattenedSize() < feedForward.getFlattenedSize()) {
+                        maxInputType = feedForward;
+                    }
+                }
+            }
+
+            return maxInputType;
+        } else if(first.getType() == InputType.Type.RNN) {
+            //could be 1s and a higher value. broadcast to the higher value where possible
+            InputType.InputTypeRecurrent maxInputType = null;
+            for(int i = 0 ; i < vertexInputs.length; i++) {
+                InputType.InputTypeRecurrent feedForward = (InputType.InputTypeRecurrent) vertexInputs[i];
+                if(maxInputType == null)
+                    maxInputType = feedForward;
+                else {
+                    if(maxInputType.getTimeSeriesLength() < feedForward.getTimeSeriesLength()) {
+                        maxInputType = feedForward;
+                    }
+                }
+            }
+
+            return maxInputType;
+        }
+
+
         return first; //Same output shape/size as
     }
 

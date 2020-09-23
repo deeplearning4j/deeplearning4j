@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.preprocessor;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -28,6 +29,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
 import org.nd4j.shade.jackson.databind.jsontype.NamedType;
+
+import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

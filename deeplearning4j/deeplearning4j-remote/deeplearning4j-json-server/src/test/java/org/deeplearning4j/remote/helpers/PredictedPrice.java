@@ -21,6 +21,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.remote.clients.serde.JsonDeserializer;
 import org.nd4j.remote.clients.serde.JsonSerializer;
 

@@ -29,7 +29,8 @@ import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.IUpdateRule;
 import org.deeplearning4j.rl4j.agent.learning.update.UpdateRule;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.INeuralNetUpdater;
-import org.deeplearning4j.rl4j.agent.learning.update.updater.LabelsNeuralNetUpdater;
+import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterConfiguration;
+import org.deeplearning4j.rl4j.agent.learning.update.updater.sync.SyncLabelsNeuralNetUpdater;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.experience.ReplayMemoryExperienceHandler;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
@@ -38,13 +39,14 @@ import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
@@ -110,10 +112,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             ? new DoubleDQN(qNetwork, target, aglorithmConfiguration)
             : new StandardDQN(qNetwork, target, aglorithmConfiguration);
 
-        LabelsNeuralNetUpdater.Configuration neuralNetUpdaterConfiguration = LabelsNeuralNetUpdater.Configuration.builder()
+        NeuralNetUpdaterConfiguration neuralNetUpdaterConfiguration = NeuralNetUpdaterConfiguration.builder()
             .targetUpdateFrequency(conf.getTargetDqnUpdateFreq())
                 .build();
-        INeuralNetUpdater<FeaturesLabels> updater = new LabelsNeuralNetUpdater(qNetwork, target, neuralNetUpdaterConfiguration);
+        INeuralNetUpdater<FeaturesLabels> updater = new SyncLabelsNeuralNetUpdater(qNetwork, target, neuralNetUpdaterConfiguration);
         IUpdateRule<Transition<Integer>> updateRule = new UpdateRule<FeaturesLabels, Transition<Integer>>(updateAlgorithm, updater);
 
         ReplayMemoryExperienceHandler.Configuration experienceHandlerConfiguration = ReplayMemoryExperienceHandler.Configuration.builder()
@@ -162,7 +164,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         //if step of training, just repeat lastAction
         if (!obs.isSkipped()) {
-            INDArray qs = getQNetwork().output(obs);
+            INDArray qs = getQNetwork().output(obs).get(CommonOutputNames.QValues);
             int maxAction = Learning.getMaxAction(qs);
             maxQ = qs.getDouble(maxAction);
 

@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationELU;
+import org.nd4j.linalg.activations.impl.ActivationLReLU;
 
 import java.util.Map;
 

@@ -77,7 +77,9 @@ public class StackVertex extends BaseGraphVertex {
 
         // create the new shape
         outShape[0] = nStack * inShape[0];
-        System.arraycopy(inShape, 1, outShape, 1, inShape.length - 1);
+        for (int i = 1; i < inShape.length; i++) {
+            outShape[i] = inShape[i];
+        }
 
         boolean variableLengthTS = false;
         if (inShape.length == 3) {

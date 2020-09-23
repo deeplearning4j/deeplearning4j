@@ -19,7 +19,12 @@ package org.deeplearning4j.util;
 
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
@@ -39,10 +44,86 @@ public class Convolution1DUtils {
     private Convolution1DUtils() {
     }
 
+
     public static int getOutputSize(INDArray inputData, int kernel, int strides, int padding,
                                     ConvolutionMode convolutionMode) {
         return getOutputSize(inputData, kernel, strides, padding, convolutionMode, ONE);
     }
+
+    /**
+     * Returns true if the given layer has an
+     * {@link RNNFormat}.
+     * This is true for:
+     * {@link Convolution1DLayer},
+     * {@link Subsampling1DLayer}
+     * {@link SimpleRnn}
+     * {@link LSTM}
+     * {@link EmbeddingSequenceLayer}
+     * @param layer the layer to test
+     * @return true if the input layer has an rnn format
+     * false otherwise
+     */
+    public static boolean hasRnnDataFormat(Layer layer) {
+        return layer instanceof Convolution1D ||
+                layer instanceof Convolution1DLayer ||
+                layer instanceof Subsampling1DLayer ||
+                layer instanceof SimpleRnn ||
+                layer instanceof LSTM ||
+                layer instanceof EmbeddingSequenceLayer;
+    }
+
+    /**
+     * Get the {@link RNNFormat} for the given layer.
+     * Throws an {@link IllegalArgumentException}
+     * if a layer doesn't have an rnn format
+     * @param layer the layer to get the format for
+     * @return the format for the layer
+     */
+    public static RNNFormat getRnnFormatFromLayer(Layer layer) {
+        Preconditions.checkState(hasRnnDataFormat(layer),"Layer of type " + layer.getClass().getName() + " and name " + layer.getLayerName() + " does not have an RNNFormat");
+        if(layer instanceof SimpleRnn) {
+            SimpleRnn simpleRnn = (SimpleRnn) layer;
+            return simpleRnn.getRnnDataFormat();
+        } else if(layer instanceof Convolution1D) {
+            Convolution1D convolution1D = (Convolution1D) layer;
+            return convolution1D.getRnnDataFormat();
+        } else if(layer instanceof Convolution1DLayer) {
+            Convolution1DLayer convolution1DLayer = (Convolution1DLayer) layer;
+            return convolution1DLayer.getRnnDataFormat();
+        } else if(layer instanceof Subsampling1DLayer) {
+            Subsampling1DLayer subsampling1DLayer = (Subsampling1DLayer) layer;
+            return subsampling1DLayer.getCnn2dDataFormat() == CNN2DFormat.NCHW ? RNNFormat.NCW : RNNFormat.NWC;
+        } else if(layer instanceof LSTM) {
+            LSTM lstm = (LSTM) layer;
+            return lstm.getRnnDataFormat();
+        } else if(layer instanceof EmbeddingSequenceLayer) {
+            EmbeddingSequenceLayer embeddingSequenceLayer = (EmbeddingSequenceLayer) layer;
+            return embeddingSequenceLayer.getOutputFormat();
+        }
+        else {
+            throw new IllegalArgumentException("Illegal layer type " + layer.getClass().getName() + " and name " + layer.getLayerName());
+        }
+    }
+
+    /**
+     * Reshapes the given weight
+     * array or weight gradient
+     * to work with the specified
+     * {@link RNNFormat}
+     * @param w the weight array or gradient
+     * @param rnnFormat the {@link RNNFormat} to use
+     * @return the reshaped array.
+     */
+    public static INDArray reshapeWeightArrayOrGradientForFormat(INDArray w, RNNFormat rnnFormat) {
+        if(rnnFormat == RNNFormat.NWC)
+            w = w.reshape(w.ordering(), w.size(0), w.size(1), w.size(2)).permute(2, 1, 0);   //[oC, iC, k, 1] to [k, iC, oC]
+        else {
+            w = w.reshape(w.ordering(),w.size(2),w.size(1),w.size(0));
+        }
+
+        return w;
+    }
+
 
     /**
      * Get the output size (height) for the given input data and CNN1D configuration

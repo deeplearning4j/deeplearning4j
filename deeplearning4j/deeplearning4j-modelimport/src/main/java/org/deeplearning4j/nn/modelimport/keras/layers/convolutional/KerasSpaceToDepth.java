@@ -54,7 +54,8 @@ public class KerasSpaceToDepth extends KerasLayer {
         // in the hdf5 file outside of the serialized lambda function (that we can't really well deserialize).
         SpaceToDepthLayer.Builder builder = new SpaceToDepthLayer.Builder()
                 .blocks(2)
-                .dataFormat(SpaceToDepthLayer.DataFormat.NCHW)
+                //the default data format is tensorflow/NWHC for keras import
+                .dataFormat(SpaceToDepthLayer.DataFormat.NHWC)
                 .name(layerName);
 
         this.layer = builder.build();

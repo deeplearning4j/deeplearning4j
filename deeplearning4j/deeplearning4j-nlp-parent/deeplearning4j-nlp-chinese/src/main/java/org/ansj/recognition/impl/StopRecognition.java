@@ -48,7 +48,9 @@ public class StopRecognition implements Recognition {
      * @return
      */
     public StopRecognition insertStopWords(String... stopWords) {
-        stop.addAll(Arrays.asList(stopWords));
+        for (String words : stopWords) {
+            stop.add(words);
+        }
         return this;
     }
 
@@ -58,7 +60,9 @@ public class StopRecognition implements Recognition {
      * @param stopWords
      */
     public void insertStopNatures(String... stopNatures) {
-        natureStop.addAll(Arrays.asList(stopNatures));
+        for (String natureStr : stopNatures) {
+            natureStop.add(natureStr);
+        }
     }
 
     /**

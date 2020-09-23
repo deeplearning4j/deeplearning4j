@@ -126,6 +126,7 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
+                .dataFormat(KerasConvolutionUtils.getDataFormatFromConfig(layerConfig,conf))
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
         if (hasBias)
@@ -141,6 +142,8 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
         if (pointWiseWeightConstraint != null)
             builder.constrainPointWise(pointWiseWeightConstraint);
         this.layer = builder.build();
+        SeparableConvolution2D separableConvolution2D = (SeparableConvolution2D) layer;
+        separableConvolution2D.setDefaultValueOverriden(true);
     }
 
     /**

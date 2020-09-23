@@ -205,7 +205,9 @@ public class KerasTokenizer {
         ArrayList<String> sortedVocabulary = new ArrayList<>();
         if (outOfVocabularyToken != null)
             sortedVocabulary.add(outOfVocabularyToken);
-        sortedVocabulary.addAll(sortedWordCounts.keySet());
+        for (String word: sortedWordCounts.keySet()) {
+            sortedVocabulary.add(word);
+        }
 
         for (int i = 0; i < sortedVocabulary.size(); i++)
             wordIndex.put(sortedVocabulary.get(i), i+1);

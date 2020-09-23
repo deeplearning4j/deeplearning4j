@@ -16,7 +16,6 @@
 package org.nd4j.nativeblas;
 
 import org.nd4j.linalg.factory.Environment;
-import org.nd4j.nativeblas.Nd4jCuda;
 
 /**
  * CUDA backend implementation of {@link Environment}

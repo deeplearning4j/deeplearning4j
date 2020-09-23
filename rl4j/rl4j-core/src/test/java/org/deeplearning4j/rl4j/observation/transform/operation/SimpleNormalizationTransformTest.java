@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.observation.transform.operation;
 
+import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

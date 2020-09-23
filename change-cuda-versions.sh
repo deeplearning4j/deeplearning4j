@@ -49,7 +49,7 @@ check_cuda_version "$VERSION"
 case $VERSION in
   11.0)
     VERSION2="8.0"
-    VERSION3="1.5.4-SNAPSHOT"
+    VERSION3="1.5.4"
     ;;
   10.2)
     VERSION2="7.6"

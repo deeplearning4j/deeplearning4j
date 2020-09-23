@@ -22,6 +22,7 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -343,6 +344,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 .layer(1, new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build())
                                 .validateOutputLayerConfig(false)
+                                 .setInputType(InputType.recurrent(nIn,tsLength, RNNFormat.NCW))
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -370,11 +372,13 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 .dataType(DataType.DOUBLE)
                                 .dist(new NormalDistribution(0, 2)).seed(12345)
                                 .graphBuilder().addInputs("in")
-                                .addLayer("0", new SimpleRnn.Builder().nIn(nIn).nOut(layerSize)
+                                .addLayer("0", new SimpleRnn.Builder().nOut(layerSize)
                                                 .activation(Activation.TANH).build(), "in")
                                 .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build(), "0")
-                                .setOutputs("1").validateOutputLayerConfig(false).build();
+                                .setOutputs("1").validateOutputLayerConfig(false)
+                        .setInputTypes(InputType.recurrent(nIn,tsLength,RNNFormat.NCW))
+                        .build();
 
                 ComputationGraph graph = new ComputationGraph(cg);
                 graph.init();

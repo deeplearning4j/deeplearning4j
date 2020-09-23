@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
+import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
 /**
  * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br> Note that

@@ -50,6 +50,7 @@ import org.nd4j.weightinit.impl.XavierInitScheme;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 @Slf4j
 public class CompareTrainingImplementations extends BaseDL4JTest {

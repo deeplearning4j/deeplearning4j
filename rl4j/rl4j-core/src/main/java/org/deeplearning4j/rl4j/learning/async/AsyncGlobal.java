@@ -104,7 +104,7 @@ public class AsyncGlobal<NN extends NeuralNet> implements IAsyncGlobal<NN> {
             if (targetUpdateFrequency != -1 && workerUpdateCount % targetUpdateFrequency == 0) {
                 log.info("Updating target network at updates={} steps={}", workerUpdateCount, stepCount);
             } else {
-                target.copy(current);
+                target.copyFrom(current);
             }
         } finally {
             updateLock.unlock();

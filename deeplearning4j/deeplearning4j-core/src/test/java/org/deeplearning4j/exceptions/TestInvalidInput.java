@@ -60,25 +60,6 @@ public class TestInvalidInput extends BaseDL4JTest {
         }
     }
 
-    @Test
-    public void testInputNinMismatchOutputLayer() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(20).build())
-                        .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.SOFTMAX).build()).build();
-
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
-
-        try {
-            net.feedForward(Nd4j.create(1, 10));
-            fail("Expected DL4JException");
-        } catch (DL4JException e) {
-            System.out.println("testInputNinMismatchOutputLayer(): " + e.getMessage());
-        } catch (Exception e) {
-            log.error("",e);
-            fail("Expected DL4JException");
-        }
-    }
 
     @Test
     public void testLabelsNOutMismatchOutputLayer() {
@@ -104,7 +85,7 @@ public class TestInvalidInput extends BaseDL4JTest {
     @Test
     public void testLabelsNOutMismatchRnnOutputLayer() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(5).nOut(5).build())
+                        .layer(0, new LSTM.Builder().nIn(5).nOut(5).build())
                         .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);

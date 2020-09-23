@@ -172,7 +172,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          *
          */
         protected int depthMultiplier = 1;
-        protected CNN2DFormat dataFormat = CNN2DFormat.NCHW;
+        protected CNN2DFormat dataFormat;
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
             super(kernelSize, stride, padding);

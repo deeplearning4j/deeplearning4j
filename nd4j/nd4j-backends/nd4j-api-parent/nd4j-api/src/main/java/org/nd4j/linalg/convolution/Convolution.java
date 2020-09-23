@@ -24,7 +24,11 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.Arrays;
+import java.util.List;
 
 
 /**
@@ -190,8 +194,24 @@ public class Convolution {
         return im2col.outputArguments().get(0);
     }
 
+    /**
+     * Execute im2col. Note the input must be NCHW.
+     * @param img the input image in NCHW
+     * @param kh
+     * @param kw
+     * @param sy
+     * @param sx
+     * @param ph
+     * @param pw
+     * @param dH
+     * @param dW
+     * @param isSameMode
+     * @param out
+     * @return
+     */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
                                   INDArray out) {
+
         Im2col im2col = Im2col.builder()
                 .outputs(new INDArray[]{out})
                 .inputArrays(new INDArray[]{img})

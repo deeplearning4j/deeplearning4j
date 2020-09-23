@@ -17,7 +17,9 @@
 package org.deeplearning4j.datasets.fetchers;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.Timeout;
 
 import java.io.File;
 
@@ -31,7 +33,7 @@ public class SvhnDataFetcherTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 480_000L;    //Shouldn't take this long but slow download or drive access on CI machines may need extra time.
+        return 480_000_000L;    //Shouldn't take this long but slow download or drive access on CI machines may need extra time.
     }
 
     @Test

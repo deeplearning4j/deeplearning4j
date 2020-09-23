@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
 
 /**
  * Created by jeffreytang on 7/21/15.
@@ -58,7 +59,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || (inputType.getType() != InputType.Type.FF
-                        && inputType.getType() != InputType.Type.CNNFlat)) {
+                        && inputType.getType() != InputType.Type.CNNFlat && inputType.getType() != InputType.Type.RNN)) {
             throw new IllegalStateException("Invalid input type (layer name=\"" + getLayerName()
                             + "\"): expected FeedForward input type. Got: " + inputType);
         }
@@ -67,6 +68,9 @@ public abstract class FeedForwardLayer extends BaseLayer {
             if (inputType.getType() == InputType.Type.FF) {
                 InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
                 this.nIn = f.getSize();
+            } else if(inputType.getType() == InputType.Type.RNN) {
+                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                this.nIn = recurrent.getSize() * recurrent.getTimeSeriesLength();
             } else {
                 InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType;
                 this.nIn = f.getFlattenedSize();

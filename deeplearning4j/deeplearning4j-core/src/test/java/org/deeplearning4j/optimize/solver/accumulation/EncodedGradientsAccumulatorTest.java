@@ -23,8 +23,11 @@ import org.deeplearning4j.optimize.solvers.accumulation.EncodedGradientsAccumula
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.FixedThresholdAlgorithm;
 import org.junit.Test;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.util.PrintAffinity;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.OpaqueDataBuffer;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;

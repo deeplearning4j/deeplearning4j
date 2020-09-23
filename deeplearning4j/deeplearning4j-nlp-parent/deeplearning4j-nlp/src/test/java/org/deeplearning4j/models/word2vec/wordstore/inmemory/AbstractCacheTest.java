@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.models.word2vec.wordstore.inmemory;
 
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;

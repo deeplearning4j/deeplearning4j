@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -154,6 +155,7 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
                 .hasBias(hasBias)
+                .dataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);
         if (hasBias)
@@ -167,6 +169,8 @@ public class KerasDepthwiseConvolution2D extends KerasConvolution {
         if (depthWiseWeightConstraint != null)
             builder.constrainWeights(depthWiseWeightConstraint);
         this.layer = builder.build();
+        DepthwiseConvolution2D depthwiseConvolution2D = (DepthwiseConvolution2D) layer;
+        depthwiseConvolution2D.setDefaultValueOverriden(true);
     }
 
     /**

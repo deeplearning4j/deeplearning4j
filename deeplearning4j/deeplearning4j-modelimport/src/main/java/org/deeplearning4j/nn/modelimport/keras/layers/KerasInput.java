@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -102,6 +103,7 @@ public class KerasInput extends KerasLayer {
         this.inboundLayerNames = new ArrayList<>();
         this.layer = null;
         this.vertex = null;
+
         if (this.inputShape.length > 4)
             throw new UnsupportedKerasConfigurationException(
                     "Inputs with " + this.inputShape.length + " dimensions not supported");

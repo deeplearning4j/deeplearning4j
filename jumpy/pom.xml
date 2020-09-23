@@ -181,17 +181,4 @@
         </plugins>
     </build>
 
-    <profiles>
-        <profile>
-            <id>nd4j-backend</id>
-            <activation>
-                <property>
-                    <name>libnd4j.cuda</name>
-                </property>
-            </activation>
-            <properties>
-                <nd4j.backend>nd4j-cuda-${libnd4j.cuda}</nd4j.backend>
-            </properties>
-        </profile>
-    </profiles>
 </project>
