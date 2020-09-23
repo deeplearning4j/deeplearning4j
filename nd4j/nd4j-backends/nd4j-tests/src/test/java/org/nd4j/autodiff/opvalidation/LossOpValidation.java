@@ -36,7 +36,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertNotEquals;
 
 @Slf4j
 public class LossOpValidation extends BaseOpValidation {

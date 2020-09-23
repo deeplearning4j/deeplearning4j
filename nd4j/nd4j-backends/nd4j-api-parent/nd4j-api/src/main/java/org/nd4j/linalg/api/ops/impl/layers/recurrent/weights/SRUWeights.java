@@ -3,10 +3,8 @@ package org.nd4j.linalg.api.ops.impl.layers.recurrent.weights;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell;
 

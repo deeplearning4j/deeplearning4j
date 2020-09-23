@@ -7,7 +7,6 @@ import org.datavec.image.transform.ColorConversionTransform;
 import org.datavec.image.transform.CropImageTransform;
 import org.datavec.image.transform.MultiImageTransform;
 import org.datavec.image.transform.ResizeImageTransform;
-import org.datavec.image.transform.ShowImageTransform;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.mdp.MDP;

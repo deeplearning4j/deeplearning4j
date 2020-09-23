@@ -5,7 +5,7 @@ package org.nd4j.graph;
 import java.nio.*;
 import java.lang.*;
 import java.nio.ByteOrder;
-import java.util.*;
+
 import com.google.flatbuffers.*;
 
 @SuppressWarnings("unused")

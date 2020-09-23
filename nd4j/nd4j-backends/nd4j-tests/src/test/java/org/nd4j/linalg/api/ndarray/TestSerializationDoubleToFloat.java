@@ -32,7 +32,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.io.*;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**

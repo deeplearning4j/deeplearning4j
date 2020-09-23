@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.malmo;
 
-import org.deeplearning4j.rl4j.space.Box;
 import org.json.JSONObject;
 
 import org.nd4j.linalg.api.ndarray.INDArray;

@@ -29,10 +29,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 
-import org.bytedeco.ffmpeg.avcodec.*;
 import org.bytedeco.opencv.opencv_core.*;
-import org.bytedeco.opencv.opencv_imgproc.*;
-import static org.bytedeco.ffmpeg.global.avcodec.*;
+
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 

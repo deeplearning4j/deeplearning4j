@@ -35,7 +35,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.Tri;
 import org.nd4j.linalg.api.ops.custom.Triu;
-import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -53,7 +52,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertArrayEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j

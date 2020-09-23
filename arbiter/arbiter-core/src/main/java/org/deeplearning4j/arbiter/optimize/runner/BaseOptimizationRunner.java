@@ -330,8 +330,7 @@ public abstract class BaseOptimizationRunner implements IOptimizationRunner {
 
     @Override
     public List<CandidateInfo> getCandidateStatus() {
-        List<CandidateInfo> list = new ArrayList<>(currentStatus.values());
-        return list;
+        return new ArrayList<>(currentStatus.values());
     }
 
     private boolean terminate() {

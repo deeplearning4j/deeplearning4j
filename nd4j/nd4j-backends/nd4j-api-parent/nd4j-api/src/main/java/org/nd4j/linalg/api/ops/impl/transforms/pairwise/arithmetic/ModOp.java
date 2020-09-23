@@ -23,7 +23,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.ModBpOp;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**

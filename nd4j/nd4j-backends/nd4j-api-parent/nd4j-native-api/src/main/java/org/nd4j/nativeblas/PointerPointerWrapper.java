@@ -17,7 +17,6 @@
 package org.nd4j.nativeblas;
 
 import org.bytedeco.javacpp.LongPointer;
-import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.PointerPointer;
 
 /**

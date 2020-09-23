@@ -22,7 +22,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.dataset.api.preprocessor.*;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.CustomSerializerStrategy;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;

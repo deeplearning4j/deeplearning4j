@@ -23,7 +23,6 @@ import net.ericaro.neoitertools.Itertools;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.LongUtils;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 
