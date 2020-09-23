@@ -20,7 +20,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**A Hadoop writable class for a pair of byte arrays, plus the original URIs (as Strings) of the files they came from

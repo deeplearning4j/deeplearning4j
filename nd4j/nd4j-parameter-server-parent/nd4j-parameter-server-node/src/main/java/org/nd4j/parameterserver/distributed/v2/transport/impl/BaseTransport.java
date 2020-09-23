@@ -37,7 +37,6 @@ import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.Handshak
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.ping.PingMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.ping.PongMessage;
-import org.nd4j.parameterserver.distributed.v2.messages.MessagesHistoryHolder;
 import org.nd4j.parameterserver.distributed.v2.transport.RestartCallback;
 import org.nd4j.parameterserver.distributed.v2.transport.Transport;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;

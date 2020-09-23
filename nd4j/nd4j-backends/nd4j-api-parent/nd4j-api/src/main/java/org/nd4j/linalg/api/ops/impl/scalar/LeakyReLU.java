@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.nd4j.autodiff.samediff.SDVariable;

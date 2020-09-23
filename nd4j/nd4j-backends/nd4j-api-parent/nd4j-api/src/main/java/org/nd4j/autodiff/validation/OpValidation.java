@@ -76,8 +76,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryMinimalRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.GELUDerivative;
@@ -101,7 +99,6 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.Set;
 
 /**
  * Main test case runner for validating ops used in SameDiff.<br>

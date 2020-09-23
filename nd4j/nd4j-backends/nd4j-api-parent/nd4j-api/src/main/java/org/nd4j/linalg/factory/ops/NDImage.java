@@ -18,8 +18,6 @@
 
 package org.nd4j.linalg.factory.ops;
 
-import static org.nd4j.linalg.factory.NDValidation.isSameType;
-
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.enums.ImageResizeMethod;
 import org.nd4j.linalg.api.ndarray.INDArray;

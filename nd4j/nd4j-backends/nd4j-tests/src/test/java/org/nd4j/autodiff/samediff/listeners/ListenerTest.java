@@ -17,7 +17,6 @@
 package org.nd4j.autodiff.samediff.listeners;
 
 import org.junit.Test;
-import org.nd4j.autodiff.listeners.*;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.listeners.records.LossCurve;

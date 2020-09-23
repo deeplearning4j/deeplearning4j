@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.conf.constraint.MaxNormConstraint;
 import org.deeplearning4j.nn.conf.constraint.MinMaxNormConstraint;
 import org.deeplearning4j.nn.conf.constraint.NonNegativeConstraint;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
-import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;

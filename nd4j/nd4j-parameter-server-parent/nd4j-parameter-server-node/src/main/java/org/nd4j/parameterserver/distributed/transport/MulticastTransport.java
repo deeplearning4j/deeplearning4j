@@ -21,7 +21,6 @@ import io.aeron.FragmentAssembler;
 import io.aeron.driver.MediaDriver;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.agrona.CloseHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;

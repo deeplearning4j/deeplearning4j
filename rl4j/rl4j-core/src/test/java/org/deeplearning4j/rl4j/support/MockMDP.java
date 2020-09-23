@@ -5,7 +5,6 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.observation.transform.EncodableToINDArrayTransform;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.observation.transform.filter.UniformSkippingFilter;
-import org.deeplearning4j.rl4j.observation.transform.legacy.EncodableToImageWritableTransform;
 import org.deeplearning4j.rl4j.observation.transform.operation.HistoryMergeTransform;
 import org.deeplearning4j.rl4j.observation.transform.operation.SimpleNormalizationTransform;
 import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.CircularFifoStore;

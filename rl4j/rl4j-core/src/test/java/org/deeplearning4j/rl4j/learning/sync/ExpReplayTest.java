@@ -3,7 +3,6 @@ package org.deeplearning4j.rl4j.learning.sync;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.support.MockRandom;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;

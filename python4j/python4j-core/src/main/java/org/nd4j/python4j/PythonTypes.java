@@ -18,18 +18,10 @@ package org.nd4j.python4j;
 
 
 import org.bytedeco.cpython.PyObject;
-import org.bytedeco.javacpp.BytePointer;
-import org.bytedeco.javacpp.Pointer;
-import sun.nio.ch.DirectBuffer;
 
-import java.lang.reflect.Field;
-import java.nio.Buffer;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
 
 import static org.bytedeco.cpython.global.python.*;
-import static org.bytedeco.cpython.global.python.Py_DecRef;
 
 public class PythonTypes {
 

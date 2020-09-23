@@ -20,9 +20,6 @@ import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.samediff.SDVariable;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
 @Data
 @Builder
 public class GRUCellConfiguration {
