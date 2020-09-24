@@ -14,12 +14,8 @@
 # SPDX-License-Identifier: Apache-2.0
 ################################################################################
 
-
-
-
 from setuptools import setup
 from setuptools import find_packages
-
 
 setup(name='pydatavec',
       version='0.1.2',
@@ -36,7 +32,7 @@ setup(name='pydatavec',
           'Topic :: Software Development :: Libraries'
       ],
       keywords='python java datavec etl deeplearning4j',
-      url='https://github.com/deeplearning4j/deeplearning4j.git',
+      url='https://github.com/eclipse/deeplearning4j.git',
       license='Apache',
       setup_requires=['Cython', 'pytest-runner'],
       install_requires=[
