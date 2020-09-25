@@ -82,6 +82,7 @@ public class NativeOpsHolder {
             Properties props = Nd4jContext.getInstance().getConf();
 
             String name = System.getProperty(Nd4j.NATIVE_OPS, props.get(Nd4j.NATIVE_OPS).toString());
+            if(name != null) name = name.trim();
             Class<? extends NativeOps> nativeOpsClazz = Class.forName(name).asSubclass(NativeOps.class);
             deviceNativeOps = nativeOpsClazz.newInstance();
 

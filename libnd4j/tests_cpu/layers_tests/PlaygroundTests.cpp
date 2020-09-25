@@ -49,7 +49,7 @@
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/reductions.h>
 #include <helpers/LoopsCoordsHelper.h>
-
+#include <build_info.h>
 using namespace sd;
 using namespace sd::graph;
 
@@ -66,6 +66,9 @@ TEST_F(PlaygroundTests, test_avx) {
     nd4j_printf("Optimal level: %i; Binary level: %i;\n", ::optimalLevel(), ::binaryLevel());
 }
 
+TEST_F(PlaygroundTests, buildver) {
+    nd4j_printf("%s\n", buildInfo());
+}
 
 TEST_F(PlaygroundTests, test_biasAdd_1) {
     auto x = NDArrayFactory::create<float>('c', {512, 3072});
