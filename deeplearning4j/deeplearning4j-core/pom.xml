@@ -190,5 +190,17 @@
                 </dependency>
             </dependencies>
         </profile>
+
+        <profile>
+            <id>test-nd4j-aurora</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-aurora</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 </project>

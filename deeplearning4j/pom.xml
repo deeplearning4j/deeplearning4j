@@ -225,7 +225,7 @@
                             <skip>${skipBackendChoice}</skip>
                             <rules>
                                 <requireActiveProfile>
-                                    <profiles>test-nd4j-native,test-nd4j-cuda-10.2</profiles>
+                                    <profiles>test-nd4j-native,test-nd4j-cuda-10.2,test-nd4j-aurora</profiles>
                                     <all>false</all>
                                 </requireActiveProfile>
                             </rules>
