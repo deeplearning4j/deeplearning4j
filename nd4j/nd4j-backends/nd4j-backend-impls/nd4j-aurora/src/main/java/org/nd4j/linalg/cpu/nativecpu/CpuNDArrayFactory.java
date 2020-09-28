@@ -561,9 +561,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
             nativeOps.tear(null,
-                    ((BaseCpuDataBuffer) tensor.data()).getOpaqueDataBuffer(), (LongPointer) tensor.shapeInfoDataBuffer().pointer(), null,
-                    targets, (LongPointer) result[0].shapeInfoDataBuffer().pointer(),
-                    (LongPointer) tadBuffers.getFirst().pointer(), new LongPointerWrapper(tadBuffers.getSecond().pointer())
+                    ((BaseCpuDataBuffer) tensor.data()).getOpaqueDataBuffer(), (LongPointer) tensor.shapeInfoDataBuffer().addressPointer(), null,
+                    targets, (LongPointer) result[0].shapeInfoDataBuffer().addressPointer(),
+                    (LongPointer) tadBuffers.getFirst().addressPointer(), new LongPointerWrapper(tadBuffers.getSecond().addressPointer())
             );
 
         if (nativeOps.lastErrorCode() != 0)

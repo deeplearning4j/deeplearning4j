@@ -330,6 +330,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         this.isDebug.set(reallyEnable);
     }
 
+    protected void initialize(PagedPointer ptr, long requiredMemory) {
+        Pointer.memset(ptr, 0, requiredMemory);
+    }
+
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataType type, boolean initialize) {
         /*
             just two options here:
@@ -386,7 +390,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                                 id, requiredMemory, numElements, prevOffset, hostOffset.get(), ptr.address());
 
             if (initialize)
-                Pointer.memset(ptr, 0, requiredMemory);
+                initialize(ptr, requiredMemory);
 
             return ptr;
         } else {
