@@ -603,7 +603,9 @@ void NativeOpExecutioner::execReduceFloat(sd::LaunchContext  *lc,
 
     const sd::LoopKind::Kind kindOfLoop = sd::LoopKind::deduceKindOfLoopTadXZ(hXShapeInfo, hZShapeInfo, tadShapeInfo);
 
-    samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance()->maxMasterThreads());
+    func(0, 0, shape::length(hZShapeInfo), 1);
+
+    //samediff::Threads::parallel_tad(func, 0, shape::length(hZShapeInfo), 1, kindOfLoop == sd::LoopKind::Kind::SMALLARR2DX ? 1 : sd::Environment::getInstance()->maxMasterThreads());
 }
 
 ////////////////////////////////////////////////////////////////////////

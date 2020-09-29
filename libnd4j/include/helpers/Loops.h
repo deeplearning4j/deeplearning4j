@@ -272,7 +272,7 @@ namespace sd {
         const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
 
         const Nd4jLong zLen = shape::length(zShapeInfo);
-        const Nd4jLong tadLen = shape::length(tadShapeInfo);
+        const uint tadLen = static_cast<uint>(shape::length(tadShapeInfo));
 
         const uint tadEws = shape::elementWiseStride(tadShapeInfo);
         const uint zEws = shape::elementWiseStride(zShapeInfo);

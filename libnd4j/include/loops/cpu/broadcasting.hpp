@@ -155,7 +155,7 @@ namespace broadcast {
                     }
                 } else if(kindOfLoop == sd::LoopKind::BROADCAST_SCALAR_X){
                     // this loop effectively turns broadcast into series of scalar ops
-                    auto loopLength = yShapeInfo[shape::rank(yShapeInfo)];
+                    unsigned int loopLength = yShapeInfo[shape::rank(yShapeInfo)];
 
                     for (auto i = start; i < stop; i++) {
                         auto oY = y + (i * loopLength);
@@ -169,7 +169,7 @@ namespace broadcast {
                     }
                 } else if(kindOfLoop == sd::LoopKind::BROADCAST_SCALAR_Y){
                     // this loop effectively turns broadcast into series of scalar ops
-                    auto loopLength = xShapeInfo[shape::rank(xShapeInfo)];
+                    unsigned int loopLength = xShapeInfo[shape::rank(xShapeInfo)];
 
                     for (auto i = start; i < stop; i++) {
                         auto oX = x + (i * loopLength);
@@ -686,37 +686,37 @@ static void execRank4(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const 
     Nd4jLong yStrd3 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 0);
     Nd4jLong zStrd3 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 0);
 
-     auto func = PRAGMA_THREADS_FOR_3D {
+     //auto func = PRAGMA_THREADS_FOR_3D {
 
-        for (auto i0 = start_x; i0 < stop_x; ++i0) {
-            for (auto i1 = start_y; i1 < stop_y; ++i1) {
-                for (auto i2 = start_z; i2 < stop_z; ++i2) {
+#pragma omp parallel for collapse(3)
+        for (auto i0 = 0; i0 < zAxis0; ++i0) {
+            for (auto i1 = 0; i1 < zAxis1; ++i1) {
+                for (auto i2 = 0; i2 < zAxis2; ++i2) {
 
                     auto x2 = x + i0 * xStrd0 + i1 * xStrd1 + i2 * xStrd2;
                     auto y2 = y + i0 * yStrd0 + i1 * yStrd1 + i2 * yStrd2;
                     auto z2 = z + i0 * zStrd0 + i1 * zStrd1 + i2 * zStrd2;
 
-                    if(zStrd3 == 1 && xStrd3 == 1 && yStrd3 == 0)
-                        for (uint i3 = 0; i3 < zAxis3; ++i3)
-                            z2[i3] = OpType::op(x2[i3], *y2);
-                    else if(zStrd3 == 1 && xStrd3 == 0 && yStrd3 == 1)
-                        for (uint i3 = 0; i3 < zAxis3; ++i3)
-                            z2[i3] = OpType::op(*x2, y2[i3]);
-                    else if(zStrd3 == 1 && xStrd3 == 1 && yStrd3 == 1)
-                        for (uint i3 = 0; i3 < zAxis3; ++i3)
-                            z2[i3] = OpType::op(x2[i3], y2[i3]);
-                    else
-                        for (uint i3 = 0; i3 < zAxis3; ++i3)
-                            z2[i3 * zStrd3] = OpType::op(x2[i3 * xStrd3], y2[i3 * yStrd3]);
+                            if(zStrd3 == 1 && xStrd3 == 1 && yStrd3 == 0)
+                                for (uint i3 = 0; i3 < zAxis3; ++i3)
+                                    z2[i3] = OpType::op(x2[i3], *y2);
+                            else if(zStrd3 == 1 && xStrd3 == 0 && yStrd3 == 1)
+                                for (uint i3 = 0; i3 < zAxis3; ++i3)
+                                    z2[i3] = OpType::op(*x2, y2[i3]);
+                            else if(zStrd3 == 1 && xStrd3 == 1 && yStrd3 == 1)
+                                for (uint i3 = 0; i3 < zAxis3; ++i3)
+                                    z2[i3] = OpType::op(x2[i3], y2[i3]);
+                            else
+                                for (uint i3 = 0; i3 < zAxis3; ++i3)
+                                    z2[i3 * zStrd3] = OpType::op(x2[i3 * xStrd3], y2[i3 * yStrd3]);
+                        }
+                    }
                 }
-            }
+
+            //};
+            //samediff::Threads::parallel_for(func,  0,zAxis0,1,  0,zAxis1,1,  0,zAxis2,1);
         }
-    };
-
-    samediff::Threads::parallel_for(func,  0,zAxis0,1,  0,zAxis1,1,  0,zAxis2,1);
-}
-
-////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////
 template <typename X, typename  Y, typename Z, typename OpType>
 static void execRank5(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const Nd4jLong *yShapeInfo, Z* z, const Nd4jLong *zShapeInfo) {
 

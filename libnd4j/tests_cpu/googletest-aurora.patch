@@ -19,3 +19,31 @@ diff -ruN googletest-src/googletest/cmake/internal_utils.cmake googletest-src-au
    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "SunPro")
      set(cxx_exception_flags "-features=except")
      # Sun Pro doesn't provide macros to indicate whether exceptions and
+diff -ruN googletest-src/googletest/include/gtest/internal/gtest-port.h googletest-src-aurora/googletest/include/gtest/internal/gtest-port.h
+--- googletest-src/googletest/include/gtest/internal/gtest-port.h	2019-07-16 16:34:21.519045775 +0900
++++ googletest-src-aurora/googletest/include/gtest/internal/gtest-port.h	2019-07-16 16:36:26.749066361 +0900
+@@ -766,7 +766,12 @@
+ #   undef _TR1_FUNCTIONAL  // Allows the user to #include
+                         // <tr1/functional> if they choose to.
+ #  else
++#ifdef __NEC__
++#   include <tuple>  // NOLINT
++#else
+ #   include <tr1/tuple>  // NOLINT
++#endif
++
+ #  endif  // !GTEST_HAS_RTTI && GTEST_GCC_VER_ < 40302
+ 
+ // VS 2010 now has tr1 support.
+@@ -774,7 +779,11 @@
+ #  include <tuple>  // IWYU pragma: export  // NOLINT
+ 
+ # else  // GTEST_USE_OWN_TR1_TUPLE
++#ifdef __NEC__
++#  include <tuple>  // IWYU pragma: export  // NOLINT
++#else
+ #  include <tr1/tuple>  // IWYU pragma: export  // NOLINT
++#endif
+ # endif  // GTEST_USE_OWN_TR1_TUPLE
+ 
+ #endif  // GTEST_HAS_TR1_TUPLE

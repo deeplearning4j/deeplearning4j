@@ -17,6 +17,10 @@ option(FLATBUFFERS_BUILD_FLATC "Enable the build of the flatbuffers compiler" OF
 set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FORCE)
 
 set(CMAKE_CXX_STANDARD 11)
+
+
+include(GenCompilation)
+
 if (SD_CUDA)
     enable_language(CUDA)
     set(CMAKE_CUDA_STANDARD 11)
@@ -31,13 +35,18 @@ set(MSVC_RT_LIB "MultiThreadedDLL")
 
 set(SD_X86_BUILD false)
 
-if (NOT SD_IOS_BUILD AND NOT SD_ANDROID_BUILD AND NOT ${SD_ARCH} MATCHES "power*" AND NOT ${SD_ARCH} MATCHES "arm*" AND NOT ${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
+if (NOT SD_IOS_BUILD AND NOT SD_ANDROID_BUILD AND NOT ${SD_ARCH} MATCHES "power*" AND NOT ${SD_ARCH} MATCHES "arm*" AND NOT SD_AURORA_BUILD)
     set(SD_X86_BUILD true)
 endif()
 
 # -fsanitize=address
 # -fsanitize=leak
-if (SD_ANDROID_BUILD)
+if (SD_AURORA_BUILD)
+    message("Aurora build in process")
+    set(SD_X86_BUILD false)
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -fPIC -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA_BUILD=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fPIC -DSD_AURORA_BUILD=true")
+elseif (SD_ANDROID_BUILD)
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
 elseif (APPLE)
@@ -90,9 +99,41 @@ if(NOT SD_CUDA)
     # we need this definition to avoid global memory use within mkldnn
     add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
 
-    # there's a chance, we have no BLAS provided externally
-    if ("${OPENBLAS_PATH}" STREQUAL "")
-        #we don't want OpenBLAS on Apple
+    if (SD_AURORA_BUILD)
+        include_directories("/opt/nec/ve/nlc/2.0.0/include")
+
+        # FIXME: we don't want sequential version in master
+        SET(BLAS_LIBNAME "blas_openmp")
+        SET(CBLAS_LIBNAME "cblas")
+
+        find_library(BLAS_LIBRARY ${BLAS_LIBNAME}
+                HINTS /opt/nec/ve/nlc/2.0.0
+                PATH_SUFFIXES lib)
+
+        find_library(CBLAS_LIBRARY ${CBLAS_LIBNAME}
+                HINTS /opt/nec/ve/nlc/2.0.0
+                PATH_SUFFIXES lib)
+
+        if (BLAS_LIBRARY)
+            set(HAVE_OPENBLAS 1)
+
+            SET(_TMP_B "")
+            string(REGEX REPLACE "\\.so$" ".a" _TMP_B "${BLAS_LIBRARY}")
+            set(BLAS_LIBRARY "${_TMP_B}")
+
+            SET(_TMP_B "")
+            string(REGEX REPLACE "\\.so$" ".a" _TMP_B "${CBLAS_LIBRARY}")
+            set(CBLAS_LIBRARY "${_TMP_B}")
+
+            set(BLAS_LIBRARIES ${CBLAS_LIBRARY} ${BLAS_LIBRARY})
+            add_definitions(-D__EXTERNAL_BLAS__=true)
+        else()
+            message(FATAL_ERROR "Unable to find BLAS")
+        endif()
+    elseif ("${OPENBLAS_PATH}" STREQUAL "")
+        # there's a chance, we have no BLAS provided externally, so we'll look for it
+        #we don't want static OpenBLAS on Apple
+        set(BLA_STATIC ON)
         if (NOT APPLE)
             # note: this is not a typo
             set(BLA_VENDOR "OpenBLAS")

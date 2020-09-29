@@ -39,10 +39,10 @@ if (SD_CUDA)
     endif()
 endif()
 
-# -fsanitize=address
-# -fsanitize=leak
-if (APPLE)
-    set(CMAKE_CXX_FLAGS  " -fPIC -D__APPLE_OS__=true")
+if (SD_AURORA_BUILD)
+    # nothing
+elseif (APPLE)
+    set(CMAKE_CXX_FLAGS  " -fPIC  -fmax-errors=2 -D__APPLE_OS__=true")
 elseif(WIN32)
     if (SD_CPU)
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fPIC -march=native -mtune=native -O3")

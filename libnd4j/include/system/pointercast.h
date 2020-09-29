@@ -60,7 +60,12 @@ typedef int Nd4jStatus;
 #define ND4J_STATUS_MAYBE   119
 
 
-#ifdef _MSC_VER
+#ifdef __NEC__
+
+#include <map>
+#define MAP_IMPL std::map
+
+#elif _MSC_VER
 
 #include <map>
 #define MAP_IMPL std::map

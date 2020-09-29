@@ -3,8 +3,14 @@ project(dev_tests)
 message("Starting up tests build")
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake" ${CMAKE_MODULE_PATH})
 
+if (SD_AURORA_BUILD)
+    set(GTEST_CFG "CMakeLists.txt.gtest_aurora.in")
+else()
+    set(GTEST_CFG "CMakeLists.txt.gtest.in")
+endif()
+
 # Download and unpack googletest at configure time
-configure_file(../CMakeLists.txt.in googletest-download/CMakeLists.txt)
+configure_file(../${GTEST_CFG} googletest-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
   RESULT_VARIABLE result
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )
@@ -225,6 +231,12 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(MINGW) AND NOT(APPLE))
     SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
 endif()
 
+    file(GLOB_RECURSE COMPILATION_UNITS false ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in 
+    ../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in)
+
+    foreach(FL_ITEM ${COMPILATION_UNITS})   
+        genCompilation(FL_ITEM)
+    endforeach() 
 
 # this function strips path from file name, basically making up short file name, i.e. file.cpp
 function(SHORTNAME LONG_NAME OUTPUT)

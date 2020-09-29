@@ -269,32 +269,11 @@ sd::NDArray* MmulHelper::mmul(const sd::NDArray* A, const sd::NDArray* B, sd::ND
                 yT = new NDArray(y->permute(permut));
         }
 
-        if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
-
-            if(xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
-                xT = new NDArray(x->reshape(x->ordering(), {1, x->lengthOf()})); // please note x is not transposed in this case (since xRank=1)
-                zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
-            }
-
-            mmul(xT, yT, zT, alpha, beta);
+        if (xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
+                xT = new NDArray(x->reshape(x->ordering(), { 1, x->lengthOf() })); // please note x is not transposed in this case (since xRank=1)
+                zT = new NDArray(z->reshape(z->ordering(), { 1, z->lengthOf() }));
         }
-        else {  // rest cases -  batched mmul
-
-            const int batchRank = xRank - 2;
-            std::vector<int> dimsToExclude(batchRank);
-            for(int i = 0; i < batchRank; ++i)
-                dimsToExclude[i] = i;
-
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(xT->shapeInfo(), dimsToExclude);
-
-//PRAGMA_OMP_PARALLEL_FOR
-            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-                auto xSubArr = (*xT)(i, dimsToExclude);
-                auto ySubArr = (*yT)(i, dimsToExclude);
-                auto zSubArr = (*zT)(i, dimsToExclude);
-                mmul(&xSubArr, &ySubArr, &zSubArr, alpha, beta);
-            }
-        }
+        mmul(xT, yT, zT, alpha, beta);
 
         if(xT != x)
             delete xT;

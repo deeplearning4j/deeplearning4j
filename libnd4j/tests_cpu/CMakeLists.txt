@@ -1,8 +1,15 @@
 cmake_minimum_required(VERSION 3.15)
 project(tests_cpu)
 
+if (SD_AURORA_BUILD)
+  set(GTEST_CFG "CMakeLists.txt.gtest_aurora.in")
+else()
+  set(GTEST_CFG "CMakeLists.txt.gtest.in")
+endif()
+
+
 # Download and unpack googletest at configure time
-configure_file(CMakeLists.txt.in googletest-download/CMakeLists.txt)
+configure_file(${GTEST_CFG} googletest-download/CMakeLists.txt)
 execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
   RESULT_VARIABLE result
   WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/googletest-download )

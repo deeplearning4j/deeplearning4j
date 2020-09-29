@@ -195,16 +195,16 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     if(forgetBias != 0.0)
         zf += forgetBias;
 
-    PRAGMA_OMP_PARALLEL
-    PRAGMA_OMP_SINGLE
+    //PRAGMA_OMP_PARALLEL
+    //PRAGMA_OMP_SINGLE
     {
-        PRAGMA_OMP_TASK
+      //  PRAGMA_OMP_TASK
         zz.applyTransform(transform::Tanh, *z);      //z = tanh(zz)
 
-        PRAGMA_OMP_TASK
+        //PRAGMA_OMP_TASK
         zi.applyTransform(transform::Sigmoid, *i);   //i = sigmoid(zi)
 
-        PRAGMA_OMP_TASK
+        //PRAGMA_OMP_TASK
         zf.applyTransform(transform::Sigmoid, *f);   //f = sigmoid(zf);
     }
 

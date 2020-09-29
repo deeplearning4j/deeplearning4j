@@ -60,6 +60,11 @@ namespace sd {
 #endif
         _maxMasterThreads = _maxThreads.load();
 
+#ifdef __NEC__
+    // FIXME: it should be 8, once it stops crashing
+    _maxThreads = 8;
+#endif
+
 #ifndef ANDROID
         const char* omp_threads = std::getenv("OMP_NUM_THREADS");
         if (omp_threads != nullptr) {

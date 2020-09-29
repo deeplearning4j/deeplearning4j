@@ -86,7 +86,7 @@ ELSEIF(${SD_EXTENSION} MATCHES "avx2")
     message("Building AVX2 binary...")
     set(ARCH_TUNE "-mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mprefetchwt1 -DSD_F16C=true -DF_AVX2=true")
 ELSEIF(${CMAKE_SYSTEM_NAME} MATCHES "Aurora")
-    set_source_files_properties(../include/loops/cpu/compilation_units/reduce_float_0.cpp ../include/loops/cpu/compilation_units/reduce_float_3.cpp ../include/loops/cpu/compilation_units/broadcast_p3.cpp ../include/loops/cpu/compilation_units/broadcast_p4.cpp ../include/loops/cpu/compilation_units/broadcast_p12.cpp PROPERTIES COMPILE_FLAGS "-O0 -fno-openmp -fno-inline-functions")
+    set_source_files_properties(../include/graph/impl/GraphHolder.cpp PROPERTIES COMPILE_FLAGS -g0)
 ELSE()
     if ("${SD_ARCH}" STREQUAL "x86-64")
         message("Building x86_64 binary...")
@@ -228,6 +228,14 @@ if(SD_CUDA)
         file(GLOB_RECURSE LEGACY_SOURCES false ../include/legacy/impl/*.cpp  ../include/legacy/*.cu ../include/legacy/*.h)
         file(GLOB_RECURSE LOOPS_SOURCES_CUDA false ../include/loops/*.cu)
 
+
+        file(GLOB_RECURSE COMPILATION_UNITS false ../include/loops/cuda/compilation_units/*.cu.in
+          ../include/ops/impl/compilation_units/*.cpp.in)
+
+        foreach(FL_ITEM ${COMPILATION_UNITS})   
+            genCompilation(FL_ITEM)
+        endforeach() 
+
         if (HAVE_CUDNN)
             message("cuDNN included")
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
@@ -236,7 +244,9 @@ if(SD_CUDA)
 		add_library(samediff_obj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES}
                 ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                 ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
-                ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES})
+                ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES}
+				${CUSTOMOPS_GENERIC_SOURCES}
+				)
 
         if (WIN32)
             message("MSVC runtime for library: ${MSVC_RT_LIB}")
@@ -295,6 +305,15 @@ elseif(SD_CPU)
     file(GLOB_RECURSE HELPERS_SOURCES false ../include/helpers/*.cpp ../include/helpers/*.h)
     file(GLOB_RECURSE LEGACY_SOURCES false ../include/legacy/impl/*.cpp  ../include/legacy/cpu/*.cpp ../include/legacy/*.h)
     file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/*.cpp ../include/loops/*.h)
+
+
+    file(GLOB_RECURSE COMPILATION_UNITS false ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in 
+    ../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in
+    ../include/ops/impl/compilation_units/*.cpp.in)
+
+    foreach(FL_ITEM ${COMPILATION_UNITS})   
+        genCompilation(FL_ITEM)
+    endforeach() 
 
     if (SD_X86_BUILD)
         # we disable platform optimizations for certains files for linux/macos

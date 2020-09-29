@@ -55,7 +55,6 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
             }
         }
         else {
-
             if(input->rankOf() == 1 && output->rankOf() == 1) {
 
                 auto func = PRAGMA_THREADS_FOR {
@@ -86,11 +85,13 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
 
                 if (shape::order(inTadShapeInfo) == shape::order(outTadShapeInfo) && shape::order(inTadShapeInfo) == 'c' && input->dataType() == output->dataType() && shape::elementWiseStride(inTadShapeInfo) == 1 && shape::elementWiseStride(outTadShapeInfo) == 1) {
 
-                    auto func = PRAGMA_THREADS_FOR {
+                    auto inOffsets = inTadPack.primaryOffsets();
+                    auto outOffsets = outTadPack.primaryOffsets();
 
-                        for (auto i = start; i < stop; i++) {
-                            auto inBuff  =  input->bufferWithOffset(inTadPack.primaryOffsets()[indices->e<Nd4jLong>(i)]);
-                            auto outBuff = output->bufferWithOffset(outTadPack.primaryOffsets()[i]);
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto i = 0; i < numOfSubArrs; i++) {
+                            auto inBuff  =  input->bufferWithOffset(inOffsets[indices->e<Nd4jLong>(i)]);
+                            auto outBuff = output->bufferWithOffset(outOffsets[i]);
 
                             memcpy(outBuff, inBuff, shape::length(inTadShapeInfo) * input->sizeOfT());
                         }
@@ -141,7 +142,7 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
 
                     for (auto i = start; i < stop; i++) {
                         auto inBuff  =  input->bufferWithOffset(inTadPack.primaryOffsets()[intArgs[i + 1]]);
-                        void* outBuff = output->bufferWithOffset(outTadPack.primaryOffsets()[i]);
+                        auto outBuff = output->bufferWithOffset(outTadPack.primaryOffsets()[i]);
 
                         std::memcpy(outBuff, inBuff, shape::length(inTadShapeInfo) * input->sizeOfT());
                     }

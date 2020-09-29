@@ -196,7 +196,6 @@ namespace sd {
             auto vid = flatVariable->id();
             this->_id = vid->first();
             this->_index = vid->second();
-
             if (flatVariable->name() != nullptr && flatVariable->name()->size() != 0)
                 this->_name = flatVariable->name()->str();
 
@@ -204,8 +203,8 @@ namespace sd {
             _readOnly = false;
 
             int8_t *buffer = nullptr;
-
-            switch (flatVariable->variabletype()) {
+            auto varType = flatVariable->variabletype();
+            switch (varType) {
                 case VarType_VARIABLE: {
 
                         // ?????

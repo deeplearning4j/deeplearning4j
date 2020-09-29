@@ -219,12 +219,13 @@ TEST_F(DeclarableOpsTests19, test_threshold_encode_decode) {
     ASSERT_EQ(Status::OK(), status);
 
     // checking equality of all dedoded bits
+#if 0
     for (int e = 0; e < initial.lengthOf(); e++) {
         auto f = initial.e<float>(e);
         if (f != 1.0f)
             nd4j_printf("initial[%i] = %f\n", e, f);
     }
-
+#endif
     ASSERT_EQ(exp, initial);
 }
 
