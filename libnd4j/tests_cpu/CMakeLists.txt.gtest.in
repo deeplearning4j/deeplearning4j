@@ -8,7 +8,6 @@ ExternalProject_Add(googletest
   GIT_TAG           release-1.10.0
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/googletest-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
-  PATCH_COMMAND     patch -Np1 < ${CMAKE_SOURCE_DIR}/tests_cpu/googletest-aurora.patch
   CMAKE_ARGS        ""
   CONFIGURE_COMMAND ""
   BUILD_COMMAND     ""
