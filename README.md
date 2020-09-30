@@ -24,7 +24,7 @@ The DL4J stack comprises of:
 
 All projects in the DL4J ecosystem support Windows, Linux and macOS. Hardware support includes CUDA GPUs (10.0, 10.1, 10.2 except OSX), x86 CPU (x86_64, avx2, avx512), ARM CPU (arm, arm64, armhf) and PowerPC (ppc64le).
 
-## Using Eclipse Deeplearning4J in your project
+## Using Eclipse Deeplearning4J in your project - An Amazing Project
 
 Deeplearning4J has quite a few dependencies. For this reason we only support usage with a build tool.
 
