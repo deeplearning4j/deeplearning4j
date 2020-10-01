@@ -390,9 +390,14 @@ namespace samediff {
 #ifdef _OPENMP
 
 		if (tryAcquire(numThreads)) {
+			auto span = delta / numThreads;
 			#pragma omp parallel for
-		    for (int e = start; e < stop; e++) {
-			    function(omp_get_thread_num(), e, e + 1, increment);
+		    for (int e = 0; e < numThreads; e++) {
+				auto start_ = span * e + start;
+				auto stop_ = start_ + span; 
+				if (e == numThreads - 1)
+					stop_ = stop;
+			    function(e, start_,stop_, increment);
 		    }
 			freeThreads(numThreads);
 			return numThreads;
@@ -699,7 +704,7 @@ namespace samediff {
 
 #ifdef _OPENMP
 		if (tryAcquire(numThreads)) {
-			#pragma omp parallel for num_threads(numThreads)
+			#pragma omp parallel for
             for (int e = 0; e < numThreads; e++) {
 			    auto start_ = span * e + start;
 			    auto stop_ = span * (e + 1) + start;
@@ -762,7 +767,7 @@ namespace samediff {
 #ifdef _OPENMP
 
         if (tryAcquire(numThreads)) {
-			#pragma omp parallel for num_threads(numThreads)
+			#pragma omp parallel for
         	for (int e = 0; e < numThreads; e++) {
 				auto start_ = span * e + start;
 				auto stop_ = span * (e + 1) + start;
