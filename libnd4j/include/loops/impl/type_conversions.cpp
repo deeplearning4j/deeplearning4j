@@ -106,7 +106,7 @@ namespace sd {
         auto l = static_cast<int>(N);
         z[1] = l;
 
-#ifdef _OPENMP
+#if defined(_OPENMP) && !defined(__NEC__)
         int threads = OmpLaunchHelper::betterThreads(N);
         auto span = OmpLaunchHelper::betterSpan(N, threads);
 #else
