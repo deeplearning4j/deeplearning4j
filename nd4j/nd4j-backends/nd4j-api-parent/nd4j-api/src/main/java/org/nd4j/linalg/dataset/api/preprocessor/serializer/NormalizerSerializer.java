@@ -18,6 +18,7 @@ package org.nd4j.linalg.dataset.api.preprocessor.serializer;
 
 import lombok.NonNull;
 import lombok.Value;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 
 import java.io.*;
@@ -215,7 +216,7 @@ public class NormalizerSerializer {
      * @throws IOException
      * @throws IllegalArgumentException if the data format is invalid
      */
-    private Header parseHeader(InputStream stream) throws IOException, ClassNotFoundException {
+    private Header parseHeader(InputStream stream) throws IOException {
         DataInputStream dis = new DataInputStream(stream);
         // Check if the stream starts with the expected header
         String header = dis.readUTF();
@@ -237,8 +238,9 @@ public class NormalizerSerializer {
         if (type.equals(NormalizerType.CUSTOM)) {
             // For custom serializers, the next value is a string with the class opName
             String strategyClassName = dis.readUTF();
-            //noinspection unchecked
-            return new Header(type, (Class<? extends NormalizerSerializerStrategy>) Class.forName(strategyClassName));
+            Class<? extends NormalizerSerializerStrategy> strategyClass = ND4JClassLoading
+                    .loadClassByName(strategyClassName);
+            return new Header(type, strategyClass);
         } else {
             return new Header(type, null);
         }

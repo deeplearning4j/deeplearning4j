@@ -25,14 +25,13 @@ import org.datavec.api.io.serializers.SerializationFactory;
 import org.datavec.api.io.serializers.Serializer;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 /**
- * @deprecated Use {@link org.nd4j.common.util.ReflectionUtils}
+ * @deprecated Use {@link org.nd4j.common.io.ReflectionUtils}
  */
 @Deprecated
-public class ReflectionUtils extends org.nd4j.common.util.ReflectionUtils {
+public class ReflectionUtils {
 
     private static final Class<?>[] EMPTY_ARRAY = new Class[] {};
     private static SerializationFactory serialFactory = null;
@@ -48,18 +47,7 @@ public class ReflectionUtils extends org.nd4j.common.util.ReflectionUtils {
      */
     @SuppressWarnings("unchecked")
     public static <T> T newInstance(Class<T> theClass, Configuration conf) {
-        T result;
-        try {
-            Constructor<T> meth = (Constructor<T>) CONSTRUCTOR_CACHE.get(theClass);
-            if (meth == null) {
-                meth = theClass.getDeclaredConstructor(EMPTY_ARRAY);
-                meth.setAccessible(true);
-                CONSTRUCTOR_CACHE.put(theClass, meth);
-            }
-            result = meth.newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        T result = org.nd4j.common.io.ReflectionUtils.newInstance(theClass);
         setConf(result, conf);
         return result;
     }

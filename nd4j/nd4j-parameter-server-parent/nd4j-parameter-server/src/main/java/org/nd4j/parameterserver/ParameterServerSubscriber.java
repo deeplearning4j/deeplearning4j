@@ -21,6 +21,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JClassLoading;
+import org.nd4j.common.io.ReflectionUtils;
 import org.nd4j.shade.guava.primitives.Ints;
 
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -290,12 +292,10 @@ public class ParameterServerSubscriber implements AutoCloseable {
                     case TIME_DELAYED:
                         break;
                     case CUSTOM:
-                        try {
-                            updater = (ParameterServerUpdater) Class.forName(System.getProperty(CUSTOM_UPDATE_TYPE))
-                                            .newInstance();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
+                        String parameterServerUpdateType = System.getProperty(CUSTOM_UPDATE_TYPE);
+                        Class<ParameterServerUpdater> updaterClass = ND4JClassLoading
+                                .loadClassByName(parameterServerUpdateType);
+                        updater = ReflectionUtils.newInstance(updaterClass);
                         break;
                     default:
                         throw new IllegalStateException("Illegal opType of updater");

@@ -16,6 +16,8 @@
 
 package org.nd4j.common.base;
 
+import org.nd4j.common.config.ND4JClassLoading;
+
 import java.util.*;
 
 /**
@@ -23,24 +25,20 @@ import java.util.*;
  *
  * @author Alex Black
  */
-public class Preconditions {
-
-    private static final Map<String,PreconditionsFormat> formatters = new HashMap<>();
-
+public final class Preconditions {
+    private static final Map<String,PreconditionsFormat> FORMATTERS = new HashMap<>();
     static {
-        ServiceLoader<PreconditionsFormat> sl = ServiceLoader.load(PreconditionsFormat.class);
-        Iterator<PreconditionsFormat> iter = sl.iterator();
-        while(iter.hasNext()){
-            PreconditionsFormat pf = iter.next();
+        ServiceLoader<PreconditionsFormat> sl = ND4JClassLoading.loadService(PreconditionsFormat.class);
+        for (PreconditionsFormat pf : sl) {
             List<String> formatTags = pf.formatTags();
             for(String s : formatTags){
-                formatters.put(s, pf);
+                FORMATTERS.put(s, pf);
             }
         }
-
     }
 
-    private Preconditions(){ }
+    private Preconditions() {
+    }
 
     /**
      * Check the specified boolean argument. Throws an IllegalArgumentException if {@code b} is false
@@ -664,7 +662,7 @@ public class Preconditions {
 
             int nextCustom = -1;
             String nextCustomTag = null;
-            for(String s : formatters.keySet()){
+            for(String s : FORMATTERS.keySet()){
                 int idxThis = message.indexOf(s, indexOfStart);
                 if(idxThis > 0 && (nextCustom < 0 || idxThis < nextCustom)){
                     nextCustom = idxThis;
@@ -696,7 +694,7 @@ public class Preconditions {
                 } else {
                     //Custom tag
                     sb.append(message.substring(indexOfStart, nextCustom));
-                    String s = formatters.get(nextCustomTag).format(nextCustomTag, args[i]);
+                    String s = FORMATTERS.get(nextCustomTag).format(nextCustomTag, args[i]);
                     sb.append(s);
                     indexOfStart = nextCustom + nextCustomTag.length();
                 }
