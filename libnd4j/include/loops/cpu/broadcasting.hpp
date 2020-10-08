@@ -553,26 +553,30 @@ static void execRank1(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const 
     Nd4jLong yStrd0 = shape::strideAt(yShapeInfo, 0);
     Nd4jLong zStrd0 = shape::strideAt(zShapeInfo, 0);
 
-    auto func = PRAGMA_THREADS_FOR{
+    //auto func = PRAGMA_THREADS_FOR{
 
         if(zStrd0 == 1 && xStrd0 == 1 && yStrd0 == 0) {
-            for (auto i0 = start; i0 < stop; ++i0)
+#pragma omp parallel for
+            for (uint i0 = 0; i0 < zAxis0; ++i0)
                 z[i0] = OpType::op(x[i0], *y);
         }
         else if(zStrd0 == 1 && xStrd0 == 0 && yStrd0 == 1) {
-            for (auto i0 = start; i0 < stop; ++i0)
+#pragma omp parallel for
+            for (uint i0 = 0; i0 < zAxis0; ++i0)
                 z[i0] = OpType::op(*x, y[i0]);
         }
         else if(zStrd0 == 1 && xStrd0 == 1 && yStrd0 == 1) {
-            for (auto i0 = start; i0 < stop; ++i0)
+#pragma omp parallel for
+            for (uint i0 = 0; i0 < zAxis0; ++i0)
                 z[i0] = OpType::op(x[i0], y[i0]);
         }
         else {
-            for (auto i0 = start; i0 < stop; ++i0)
+#pragma omp parallel for
+            for (uint i0 = 0; i0 < zAxis0; ++i0)
                 z[i0 * zStrd0] = OpType::op(x[i0 * xStrd0], y[i0 * yStrd0]);
         }
-    };
-    samediff::Threads::parallel_tad(func, 0, zAxis0);
+    //};
+    //samediff::Threads::parallel_tad(func, 0, zAxis0);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -589,30 +593,27 @@ static void execRank2(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const 
     Nd4jLong yStrd1 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 0);
     Nd4jLong zStrd1 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 1 : 0);
 
-    auto func = PRAGMA_THREADS_FOR{
 
-        for (auto i0 = start; i0 < stop; ++i0) {
+#pragma omp parallel for
+        for (uint i0 = 0; i0 < zAxis0; ++i0) {
 
             auto x0 = x + i0 * xStrd0;
             auto y0 = y + i0 * yStrd0;
             auto z0 = z + i0 * zStrd0;
 
-            if(zStrd1 == 1 && xStrd1 == 1 && yStrd1 == 0)
+            if (zStrd1 == 1 && xStrd1 == 1 && yStrd1 == 0)
                 for (uint i1 = 0; i1 < zAxis1; ++i1)
                     z0[i1] = OpType::op(x0[i1], *y0);
-            else if(zStrd1 == 1 && xStrd1 == 0 && yStrd1 == 1)
+            else if (zStrd1 == 1 && xStrd1 == 0 && yStrd1 == 1)
                 for (uint i1 = 0; i1 < zAxis1; ++i1)
                     z0[i1] = OpType::op(*x0, y0[i1]);
-            else if(zStrd1 == 1 && xStrd1 == 1 && yStrd1 == 1)
+            else if (zStrd1 == 1 && xStrd1 == 1 && yStrd1 == 1)
                 for (uint i1 = 0; i1 < zAxis1; ++i1)
                     z0[i1] = OpType::op(x0[i1], y0[i1]);
             else
                 for (uint i1 = 0; i1 < zAxis1; ++i1)
                     z0[i1 * zStrd1] = OpType::op(x0[i1 * xStrd1], y0[i1 * yStrd1]);
         }
-    };
-
-    samediff::Threads::parallel_tad(func, 0, zAxis0);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -634,10 +635,9 @@ static void execRank3(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const 
     Nd4jLong yStrd2 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 0);
     Nd4jLong zStrd2 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 2 : 0);
 
-      auto func = PRAGMA_THREADS_FOR_2D {
-
-        for (auto i0 = start_x; i0 < stop_x; ++i0) {
-            for (auto i1 = start_y; i1 < stop_y; ++i1) {
+#pragma omp parallel for collapse(2)
+        for (uint i0 = 0; i0 < zAxis0; ++i0) {
+            for (uint i1 = 0; i1 < zAxis1; ++i1) {
 
                 auto x1 = x + i0 * xStrd0 + i1 * xStrd1;
                 auto y1 = y + i0 * yStrd0 + i1 * yStrd1;
@@ -657,9 +657,6 @@ static void execRank3(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const 
                         z1[i2 * zStrd2] = OpType::op(x1[i2 * xStrd2], y1[i2 * yStrd2]);
             }
         }
-    };
-
-    samediff::Threads::parallel_for(func, 0,zAxis0,1,  0,zAxis1,1);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -686,12 +683,10 @@ static void execRank4(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const 
     Nd4jLong yStrd3 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 0);
     Nd4jLong zStrd3 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 3 : 0);
 
-     //auto func = PRAGMA_THREADS_FOR_3D {
-
 #pragma omp parallel for collapse(3)
-        for (auto i0 = 0; i0 < zAxis0; ++i0) {
-            for (auto i1 = 0; i1 < zAxis1; ++i1) {
-                for (auto i2 = 0; i2 < zAxis2; ++i2) {
+        for (uint i0 = 0; i0 < zAxis0; ++i0) {
+            for (uint i1 = 0; i1 < zAxis1; ++i1) {
+                for (uint i2 = 0; i2 < zAxis2; ++i2) {
 
                     auto x2 = x + i0 * xStrd0 + i1 * xStrd1 + i2 * xStrd2;
                     auto y2 = y + i0 * yStrd0 + i1 * yStrd1 + i2 * yStrd2;
@@ -712,10 +707,8 @@ static void execRank4(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const 
                         }
                     }
                 }
+        };
 
-            //};
-            //samediff::Threads::parallel_for(func,  0,zAxis0,1,  0,zAxis1,1,  0,zAxis2,1);
-        }
         ////////////////////////////////////////////////////////////////////////
 template <typename X, typename  Y, typename Z, typename OpType>
 static void execRank5(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const Nd4jLong *yShapeInfo, Z* z, const Nd4jLong *zShapeInfo) {
@@ -745,11 +738,10 @@ static void execRank5(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const 
     Nd4jLong yStrd4 = shape::strideAt(yShapeInfo, shape::order(zShapeInfo) == 'c' ? 4 : 0);
     Nd4jLong zStrd4 = shape::strideAt(zShapeInfo, shape::order(zShapeInfo) == 'c' ? 4 : 0);
 
-    auto func = PRAGMA_THREADS_FOR_3D {
-
-        for (auto i0 = start_x; i0 < stop_x; ++i0) {
-            for (auto i1 = start_y; i1 < stop_y; ++i1) {
-                for (auto i2 = start_z; i2 < stop_z; ++i2) {
+#pragma omp parallel for collapse(3)
+        for (uint i0 = 0; i0 < zAxis0; ++i0) {
+            for (uint i1 = 0; i1 < zAxis1; ++i1) {
+                for (uint i2 = 0; i2 < zAxis2; ++i2) {
                     for (uint i3 = 0; i3 < zAxis3; ++i3) {
 
                         auto x3 = x + i0 * xStrd0 + i1 * xStrd1 + i2 * xStrd2 + i3 * xStrd3;
@@ -772,9 +764,6 @@ static void execRank5(const X *x, const Nd4jLong *xShapeInfo, const Y *y, const 
                 }
             }
         }
-    };
-
-    samediff::Threads::parallel_for(func,  0,zAxis0,1,  0,zAxis1,1,  0,zAxis2,1);
 }
 
 ////////////////////////////////////////////////////////////////////////

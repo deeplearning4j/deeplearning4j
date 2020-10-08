@@ -88,15 +88,13 @@ void gather(sd::LaunchContext * context, const NDArray* input, const NDArray* in
                     auto inOffsets = inTadPack.primaryOffsets();
                     auto outOffsets = outTadPack.primaryOffsets();
 
-                    auto func = PRAGMA_THREADS_FOR {
-                        for (auto i = 0; i < numOfSubArrs; i++) {
+#pragma omp parallel for
+                        for (Nd4jLong i = 0; i < numOfSubArrs; i++) {
                             auto inBuff  =  input->bufferWithOffset(inOffsets[indices->e<Nd4jLong>(i)]);
                             auto outBuff = output->bufferWithOffset(outOffsets[i]);
 
                             memcpy(outBuff, inBuff, shape::length(inTadShapeInfo) * input->sizeOfT());
                         }
-                    };
-                    samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
                 }
                 else {
                     auto func = PRAGMA_THREADS_FOR {

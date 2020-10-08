@@ -193,12 +193,12 @@ void ScalarTransform<X, Y, Z>::transform(const void *vx, Nd4jLong xEws,
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
     if (xEws == 1 && zEws == 1) {
-        PRAGMA_OMP_SIMD
+#pragma omp parallel for
         for (auto i = start; i < stop; i++)
             z[i] = OpType::op(x[i], scalar, extraParams);
     }
     else {
-        PRAGMA_OMP_SIMD
+#pragma omp parallel for
         for (auto i = start; i < stop; i++)
             z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
     }

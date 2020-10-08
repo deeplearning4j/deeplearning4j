@@ -69,12 +69,12 @@ namespace functions {
             auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
             if (xEws == 1 && yEws == 1 && zEws == 1) {
-                PRAGMA_OMP_SIMD
+#pragma omp parallel for
                 for (auto i = start; i < stop; i++)
                         z[i] = OpType::op(x[i], y[i], extraParams);
             }
             else {
-                PRAGMA_OMP_SIMD
+#pragma omp parallel for
                 for (auto i = start; i < stop; i++)
                     z[i*zEws] = OpType::op(x[i*xEws], y[i*yEws], extraParams);
             }
