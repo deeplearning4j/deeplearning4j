@@ -20,6 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.config.ND4JClassLoading;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -55,7 +56,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
         }
 
         this.path = pathToUse;
-        this.classLoader = classLoader != null ? classLoader : ClassUtils.getDefaultClassLoader();
+        this.classLoader = classLoader != null ? classLoader : ND4JClassLoading.getNd4jClassloader();
     }
 
     public ClassPathResource(String path, Class<?> clazz) {
@@ -283,7 +284,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
         StringBuilder builder = new StringBuilder("class path resource [");
         String pathToUse = this.path;
         if (this.clazz != null && !pathToUse.startsWith("/")) {
-            builder.append(ClassUtils.classPackageAsResourcePath(this.clazz));
+            builder.append(ResourceUtils.classPackageAsResourcePath(this.clazz));
             builder.append('/');
         }
 
@@ -320,7 +321,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     private URL getUrl() {
         ClassLoader loader = null;
         try {
-            loader = Thread.currentThread().getContextClassLoader();
+            loader = ND4JClassLoading.getNd4jClassloader();
         } catch (Exception e) {
             // do nothing
         }

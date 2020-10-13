@@ -16,9 +16,12 @@
 
 package org.nd4j.common.io;
 
+import org.nd4j.common.config.ND4JClassLoading;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.*;
+import java.util.Objects;
 
 
 public abstract class ResourceUtils {
@@ -54,7 +57,7 @@ public abstract class ResourceUtils {
         Assert.notNull(resourceLocation, "Resource location must not be null");
         if (resourceLocation.startsWith("classpath:")) {
             String ex = resourceLocation.substring("classpath:".length());
-            URL ex2 = ClassUtils.getDefaultClassLoader().getResource(ex);
+            URL ex2 = ND4JClassLoading.getNd4jClassloader().getResource(ex);
             if (ex2 == null) {
                 String description = "class path resource [" + ex + "]";
                 throw new FileNotFoundException(description + " cannot be resolved to URL because it does not exist");
@@ -80,7 +83,7 @@ public abstract class ResourceUtils {
         if (resourceLocation.startsWith("classpath:")) {
             String ex = resourceLocation.substring("classpath:".length());
             String description = "class path resource [" + ex + "]";
-            URL url = ClassUtils.getDefaultClassLoader().getResource(ex);
+            URL url = ND4JClassLoading.getNd4jClassloader().getResource(ex);
             if (url == null) {
                 throw new FileNotFoundException(description + " cannot be resolved to absolute file path "
                                 + "because it does not reside in the file system");
@@ -169,5 +172,18 @@ public abstract class ResourceUtils {
 
     public static void useCachesIfNecessary(URLConnection con) {
         con.setUseCaches(con.getClass().getSimpleName().startsWith("JNLP"));
+    }
+
+    public static String classPackageAsResourcePath(Class<?> clazz) {
+        Objects.requireNonNull(clazz);
+
+        String className = clazz.getName();
+        int packageEndIndex = className.lastIndexOf(46);
+        if (packageEndIndex == -1) {
+            return "";
+        } else {
+            String packageName = className.substring(0, packageEndIndex);
+            return packageName.replace('.', '/');
+        }
     }
 }

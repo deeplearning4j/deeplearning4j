@@ -17,11 +17,13 @@
 package org.nd4j.jdbc.driverfinder;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JClassLoading;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Driver;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -45,22 +47,19 @@ public class DriverFinder {
                 discoverDriverClazz();
             try {
                 driver = clazz.newInstance();
-            } catch (InstantiationException e) {
-                log.error("",e);
-            } catch (IllegalAccessException e) {
+            } catch (InstantiationException | IllegalAccessException e) {
                 log.error("",e);
             }
         }
         return driver;
     }
 
-
     private static void discoverDriverClazz() {
         //All JDBC4 compliant drivers support ServiceLoader mechanism for discovery - https://stackoverflow.com/a/18297412
-        ServiceLoader<Driver> drivers = ServiceLoader.load(Driver.class);
+        ServiceLoader<Driver> drivers = ND4JClassLoading.loadService(Driver.class);
         Set<Class<? extends Driver>> driverClasses = new HashSet<>();
-        for(Driver d : drivers){
-            driverClasses.add(d.getClass());
+        for(Driver driver : drivers){
+            driverClasses.add(driver.getClass());
         }
 
         if(driverClasses.isEmpty()){
@@ -79,16 +78,13 @@ public class DriverFinder {
                     throw new RuntimeException(e);
                 }
 
-                String clazz = props.getProperty(JDBC_KEY);
-                if (clazz == null)
-                    throw new IllegalStateException("Unable to find jdbc driver. Please specify a "
-                            + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
-                try {
-                    DriverFinder.clazz = (Class<? extends Driver>) Class.forName(clazz);
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalStateException("Unable to find jdbc driver. Please specify a "
-                            + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
-                }
+                String jdbcKeyClassName = props.getProperty(JDBC_KEY);
+                Objects.requireNonNull(jdbcKeyClassName, "Unable to find jdbc driver. Please specify a "
+                        + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
+
+                DriverFinder.clazz = ND4JClassLoading.loadClassByName(jdbcKeyClassName);
+                Objects.requireNonNull(DriverFinder.clazz, "Unable to find jdbc driver. Please specify a "
+                        + ND4j_JDBC_PROPERTIES + " with the key " + JDBC_KEY);
             }
         }
     }

@@ -18,6 +18,7 @@
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
@@ -25,6 +26,7 @@ import org.nd4j.common.io.Resource;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLClassLoader;
 import java.security.PrivilegedActionException;
 import java.util.*;
 
@@ -160,14 +162,12 @@ public abstract class Nd4jBackend {
         String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
         boolean logInit = Boolean.parseBoolean(logInitProperty);
 
-        List<Nd4jBackend> backends = new ArrayList<>(1);
-        ServiceLoader<Nd4jBackend> loader = ServiceLoader.load(Nd4jBackend.class);
+        List<Nd4jBackend> backends = new ArrayList<>();
+        ServiceLoader<Nd4jBackend> loader = ND4JClassLoading.loadService(Nd4jBackend.class);
         try {
-
-            Iterator<Nd4jBackend> backendIterator = loader.iterator();
-            while (backendIterator.hasNext())
-                backends.add(backendIterator.next());
-
+            for (Nd4jBackend nd4jBackend : loader) {
+                backends.add(nd4jBackend);
+            }
         } catch (ServiceConfigurationError serviceError) {
             // a fatal error due to a syntax or provider construction error.
             // backends mustn't throw an exception during construction.
@@ -244,7 +244,7 @@ public abstract class Nd4jBackend {
     public static synchronized void loadLibrary(File jar) throws NoAvailableBackendException {
         try {
             /*We are using reflection here to circumvent encapsulation; addURL is not public*/
-            java.net.URLClassLoader loader = (java.net.URLClassLoader) ClassLoader.getSystemClassLoader();
+            java.net.URLClassLoader loader = (URLClassLoader) ND4JClassLoading.getNd4jClassloader();
             java.net.URL url = jar.toURI().toURL();
             /*Disallow if already loaded*/
             for (java.net.URL it : java.util.Arrays.asList(loader.getURLs())) {

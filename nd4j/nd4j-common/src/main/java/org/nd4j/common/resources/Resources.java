@@ -2,6 +2,7 @@ package org.nd4j.common.resources;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.resources.strumpf.StrumpfResolver;
 
 import java.io.File;
@@ -24,15 +25,12 @@ public class Resources {
     protected final List<Resolver> resolvers;
 
     protected Resources() {
-
-        ServiceLoader<Resolver> loader = ServiceLoader.load(Resolver.class);
-        Iterator<Resolver> iter = loader.iterator();
+        ServiceLoader<Resolver> loader = ND4JClassLoading.loadService(Resolver.class);
 
         resolvers = new ArrayList<>();
         resolvers.add(new StrumpfResolver());
-        while (iter.hasNext()) {
-            Resolver r = iter.next();
-            resolvers.add(r);
+        for (Resolver resolver : loader) {
+            resolvers.add(resolver);
         }
 
         //Sort resolvers by priority: check resolvers with lower numbers first
@@ -42,8 +40,6 @@ public class Resources {
                 return Integer.compare(r1.priority(), r2.priority());
             }
         });
-
-
     }
 
     /**
