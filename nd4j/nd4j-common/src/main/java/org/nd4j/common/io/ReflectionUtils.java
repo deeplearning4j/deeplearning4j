@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public abstract class ReflectionUtils {
@@ -395,6 +396,40 @@ public abstract class ReflectionUtils {
                     field.set(dest, srcValue);
                 }
             }, COPYABLE_FIELDS);
+        }
+    }
+
+    /**
+     * Create a new instance of the specified {@link Class} by invoking
+     * the constructor whose argument list matches the types of the supplied
+     * arguments.
+     *
+     * <p>Provided class must have a public constructor.</p>
+     *
+     * @param clazz the class to instantiate; never {@code null}
+     * @param args the arguments to pass to the constructor, none of which may
+     *             be {@code null}
+     * @return the new instance; never {@code null}
+     */
+    public static <T> T newInstance(Class<T> clazz, Object... args) {
+        Objects.requireNonNull(clazz, "Class must not be null");
+        Objects.requireNonNull(args, "Argument array must not be null");
+        if (Arrays.asList(args).contains(null)) {
+            throw new RuntimeException("Individual arguments must not be null");
+        }
+
+        try {
+            Class<?>[] parameterTypes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
+            Constructor<T> constructor = clazz.getDeclaredConstructor(parameterTypes);
+
+            if (!Modifier.isPublic(constructor.getModifiers())) {
+                throw new IllegalArgumentException(String.format(
+                        "Class [%s] must have public constructor in order to be instantiated.", clazz.getName()));
+            }
+
+            return constructor.newInstance(args);
+        } catch (Throwable instantiationException) {
+            throw new RuntimeException(instantiationException);
         }
     }
 

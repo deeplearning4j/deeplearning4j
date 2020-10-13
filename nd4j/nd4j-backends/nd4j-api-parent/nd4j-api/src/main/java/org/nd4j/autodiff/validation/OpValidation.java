@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.validation;
 
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.api.ops.custom.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
@@ -613,14 +614,8 @@ public class OpValidation {
         allOps = new ArrayList<>(gradCheckCoverageCountPerClass.keySet());
         for (ClassPath.ClassInfo c : info) {
             //Load method: Loads (but doesn't link or initialize) the class.
-            Class<?> clazz;
-            try {
-                clazz = Class.forName(c.getName());
-            } catch (ClassNotFoundException e) {
-                //Should never happen as  this was found on the classpath
-                throw new RuntimeException(e);
-            }
-
+            Class<?> clazz = ND4JClassLoading.loadClassByName(c.getName());
+            Objects.requireNonNull(clazz);
 
             if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || !DifferentialFunction.class.isAssignableFrom(clazz))
                 continue;
