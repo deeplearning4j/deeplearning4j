@@ -42,9 +42,9 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  *
- * This is dl4j implementation of Inception Resnet V2 base on this paper
+ * This is dl4j implementation of Inception ResNet V2 base on this paper
  * https://arxiv.org/pdf/1602.07261v1.pdf
- * and reference this source code  https://github.com/titu1994/Inception-v4
+ * and reference this repository  https://github.com/titu1994/Inception-v4
  *
  * Convolution2D subsample in keras=dl4j strides
  * Convolution2D border_mode in keras=dl4j convolutionMode
