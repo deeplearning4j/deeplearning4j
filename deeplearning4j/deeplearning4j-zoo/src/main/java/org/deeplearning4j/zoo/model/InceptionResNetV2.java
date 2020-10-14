@@ -53,11 +53,11 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 @AllArgsConstructor
 @Builder
 @Slf4j
-public class InceptionResnetV2 extends ZooModel {
+public class InceptionResNetV2 extends ZooModel {
 
-    @Builder.Default private long seed = 1234;
-    @Builder.Default private int[] inputShape = new int[] {3, 299, 299};
-    @Builder.Default private int numClasses = 0;
+    @Builder.Default private final  long seed = 1234;
+    @Builder.Default private  int[] inputShape = new int[] {3, 299, 299};
+    @Builder.Default private  int numClasses = 0;
     @Builder.Default private IUpdater updater =new Adam(0.0001);
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
     @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
@@ -75,7 +75,7 @@ public class InceptionResnetV2 extends ZooModel {
 
 	private static String CNN ="cnn";
 
-    private InceptionResnetV2() {
+    private InceptionResNetV2() {
 
 	}
 
@@ -145,7 +145,7 @@ public class InceptionResnetV2 extends ZooModel {
 		graphBuilder=buildInceptionStem(graphBuilder, input);
 
 
-        input=createLayerName("stem", ACTIVATION_LAYER,0,16);
+		input=createLayerName("stem", ACTIVATION_LAYER,0,16);
 
         int inceptionABatchSize=5;
 
