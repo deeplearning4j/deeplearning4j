@@ -44,8 +44,10 @@ endif()
 if (SD_AURORA_BUILD)
     message("Aurora build in process")
     set(SD_X86_BUILD false)
-    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -fPIC -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA_BUILD=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -fPIC -DSD_AURORA_BUILD=true")
+    set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -w -O3 -fPIC -finline-functions -finline-max-times=64 -finline-max-depth=64 -fno-inline-copy-arguments -fdiag-inline=2 -fdiag-parallel=2 -fdiag-vector=2 -DSD_AURORA_BUILD=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -w -g -O0 -fPIC -DSD_AURORA_BUILD=true")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.0.0/lib/")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,muldefs,-rpath,/opt/nec/ve/nlc/2.0.0/lib/")
 elseif (SD_ANDROID_BUILD)
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
@@ -101,6 +103,7 @@ if(NOT SD_CUDA)
 
     if (SD_AURORA_BUILD)
         include_directories("/opt/nec/ve/nlc/2.0.0/include")
+        link_directories("/opt/nec/ve/nlc/2.0.0/lib/")
 
         # FIXME: we don't want sequential version in master
         SET(BLAS_LIBNAME "blas_openmp")
@@ -116,15 +119,6 @@ if(NOT SD_CUDA)
 
         if (BLAS_LIBRARY)
             set(HAVE_OPENBLAS 1)
-
-            SET(_TMP_B "")
-            string(REGEX REPLACE "\\.so$" ".a" _TMP_B "${BLAS_LIBRARY}")
-            set(BLAS_LIBRARY "${_TMP_B}")
-
-            SET(_TMP_B "")
-            string(REGEX REPLACE "\\.so$" ".a" _TMP_B "${CBLAS_LIBRARY}")
-            set(CBLAS_LIBRARY "${_TMP_B}")
-
             set(BLAS_LIBRARIES ${CBLAS_LIBRARY} ${BLAS_LIBRARY})
             add_definitions(-D__EXTERNAL_BLAS__=true)
         else()
