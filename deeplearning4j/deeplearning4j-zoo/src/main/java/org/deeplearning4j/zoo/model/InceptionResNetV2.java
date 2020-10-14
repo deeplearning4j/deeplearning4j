@@ -57,23 +57,23 @@ public class InceptionResNetV2 extends ZooModel {
 
     @Builder.Default private final  long seed = 1234;
     @Builder.Default private  int[] inputShape = new int[] {3, 299, 299};
-    @Builder.Default private  int numClasses = 0;
-    @Builder.Default private IUpdater updater =new Adam(0.0001);
-    @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
-    @Builder.Default private WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
-    @Builder.Default private ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
+    @Builder.Default private final  int numClasses = 0;
+    @Builder.Default private final IUpdater updater =new Adam(0.0001);
+    @Builder.Default private final CacheMode cacheMode = CacheMode.NONE;
+    @Builder.Default private final WorkspaceMode workspaceMode = WorkspaceMode.ENABLED;
+    @Builder.Default private final ConvolutionLayer.AlgoMode cudnnAlgoMode = ConvolutionLayer.AlgoMode.PREFER_FASTEST;
 
 
 
-	private static String ACTIVATION_LAYER ="activation-layer";
+	private static final String ACTIVATION_LAYER ="activation-layer";
 
-	private static String MERGE_VERTEX ="merge-vertex";
+	private static final String MERGE_VERTEX ="merge-vertex";
 
-	private static String MAX_POOLING ="max-pooling";
+	private static final String MAX_POOLING ="max-pooling";
 
-	private static String AVG_POOLING ="avg-pooling";
+	private static final String AVG_POOLING ="avg-pooling";
 
-	private static String CNN ="cnn";
+	private static final String CNN ="cnn";
 
     private InceptionResNetV2() {
 
