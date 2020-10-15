@@ -627,11 +627,7 @@ fi
 
 case "$OS" in
     aurora)
-    if [ "$BUILD" == "release" ]; then
-        BLAS_LIBS="/opt/nec/ve/nlc/2.0.0/lib/libcblas.a /opt/nec/ve/nlc/2.0.0/lib/libblas_openmp.a -fopenmp"
-    else
-        BLAS_LIBS="/opt/nec/ve/nlc/2.0.0/lib/libcblas.a /opt/nec/ve/nlc/2.0.0/lib/libblas_sequential.a"
-    fi
+    BLAS_LIBS="/opt/nec/ve/nlc/2.0.0/lib/libcblas.a /opt/nec/ve/nlc/2.0.0/lib/libblas_openmp.a -fopenmp"
     /opt/nec/ve/bin/mk_veorun_static -o blasbuild/aurora/blas/nd4jaurora blasbuild/aurora/blas/libnd4jaurorastatic.a $BLAS_LIBS
     ;;
 esac

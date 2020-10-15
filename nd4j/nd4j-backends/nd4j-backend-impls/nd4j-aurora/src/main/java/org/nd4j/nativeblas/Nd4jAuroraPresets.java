@@ -55,5 +55,6 @@ public class Nd4jAuroraPresets implements InfoMapper, BuildEnabled {
 
     @Override
     public void map(InfoMap infoMap) {
+        infoMap.put(new Info("char").cast().valueTypes("byte").pointerTypes("BytePointer", "ByteBuffer", "byte[]", "String"));
     }
 }
