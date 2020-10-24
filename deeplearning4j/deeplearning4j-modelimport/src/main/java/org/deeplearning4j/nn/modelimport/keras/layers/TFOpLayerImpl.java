@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
@@ -110,7 +111,7 @@ public class TFOpLayerImpl extends AbstractLayer<TFOpLayer> {
             org.nd4j.shade.protobuf.ByteString serialized = graphDef.toByteString();
             byte[] graphBytes = serialized.toByteArray();
 
-            ServiceLoader<TFGraphRunnerService> sl = ServiceLoader.load(TFGraphRunnerService.class);
+            ServiceLoader<TFGraphRunnerService> sl = DL4JClassLoading.loadService(TFGraphRunnerService.class);
             Iterator<TFGraphRunnerService> iter = sl.iterator();
             if (!iter.hasNext()){
                 throw new RuntimeException("The model contains a Tensorflow Op, which requires the nd4j-tensorflow dependency to execute.");

@@ -33,6 +33,12 @@
             <artifactId>nd4j-common</artifactId>
             <version>${nd4j.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -43,5 +49,4 @@
             <id>test-nd4j-cuda-11.0</id>
         </profile>
     </profiles>
-
 </project>

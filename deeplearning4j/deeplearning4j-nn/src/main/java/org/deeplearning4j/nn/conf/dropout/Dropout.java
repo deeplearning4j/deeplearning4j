@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.base.Preconditions;
@@ -132,25 +133,20 @@ public class Dropout implements IDropout {
      */
     protected void initializeHelper(DataType dataType){
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+
         if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.dropout.CudnnDropoutHelper")
-                        .asSubclass(DropoutHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnDropoutHelper successfully initialized");
-                if (!helper.checkSupported()) {
-                    helper = null;
-                }
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnDropoutHelper", t);
-                }
-                //Unlike other layers, don't warn here about CuDNN not found - if the user has any other layers that can
-                // benefit from them cudnn, they will get a warning from those
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.dropout.CudnnDropoutHelper",
+                    DropoutHelper.class,
+                    dataType);
+            log.debug("CudnnDropoutHelper successfully initialized");
+            if (!helper.checkSupported()) {
+                helper = null;
             }
         }
+
         initializedHelper = true;
     }
-
 
     @Override
     public INDArray applyDropout(INDArray inputActivations, INDArray output, int iteration, int epoch, LayerWorkspaceMgr workspaceMgr) {

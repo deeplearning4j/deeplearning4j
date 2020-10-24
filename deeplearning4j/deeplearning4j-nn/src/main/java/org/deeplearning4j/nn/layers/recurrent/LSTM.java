@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -58,21 +59,13 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.recurrent.CudnnLSTMHelper")
-                        .asSubclass(LSTMHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnLSTMHelper successfully initialized");
-                if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
-                    helper = null;
-                }
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnLSTMHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.recurrent.CudnnLSTMHelper",
+                    LSTMHelper.class,
+                    dataType);
+            log.debug("CudnnLSTMHelper successfully initialized");
+            if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
+                helper = null;
             }
         }
         /*

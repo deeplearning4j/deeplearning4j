@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.models.sequencevectors.functions;
 
 import lombok.NonNull;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -42,24 +43,17 @@ public abstract class BaseTokenizerFunction implements Serializable {
         String tpClassName = this.configurationBroadcast.getValue().getTokenPreProcessor();
 
         if (tfClassName != null && !tfClassName.isEmpty()) {
-            try {
-                tokenizerFactory = (TokenizerFactory) Class.forName(tfClassName).newInstance();
+            tokenizerFactory = DL4JClassLoading.createNewInstance(tfClassName);
 
-                if (tpClassName != null && !tpClassName.isEmpty()) {
-                    try {
-                        tokenPreprocessor = (TokenPreProcess) Class.forName(tpClassName).newInstance();
-                    } catch (Exception e) {
-                        throw new RuntimeException("Unable to instantiate TokenPreProcessor.", e);
-                    }
-                }
-
-                if (tokenPreprocessor != null) {
-                    tokenizerFactory.setTokenPreProcessor(tokenPreprocessor);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Unable to instantiate TokenizerFactory.", e);
+            if (tpClassName != null && !tpClassName.isEmpty()) {
+                tokenPreprocessor = DL4JClassLoading.createNewInstance(tpClassName);
             }
-        } else
+
+            if (tokenPreprocessor != null) {
+                tokenizerFactory.setTokenPreProcessor(tokenPreprocessor);
+            }
+        } else {
             throw new RuntimeException("TokenizerFactory wasn't defined.");
+        }
     }
 }
