@@ -16,11 +16,21 @@
 
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.arbiter.TestUtils;
 import org.deeplearning4j.arbiter.conf.updater.SgdSpace;
-import org.deeplearning4j.arbiter.layers.*;
+import org.deeplearning4j.arbiter.layers.ActivationLayerSpace;
+import org.deeplearning4j.arbiter.layers.BatchNormalizationSpace;
+import org.deeplearning4j.arbiter.layers.ConvolutionLayerSpace;
+import org.deeplearning4j.arbiter.layers.Deconvolution2DLayerSpace;
+import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
+import org.deeplearning4j.arbiter.layers.EmbeddingLayerSpace;
+import org.deeplearning4j.arbiter.layers.GravesBidirectionalLSTMLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.BooleanSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
@@ -31,6 +41,14 @@ import org.deeplearning4j.nn.conf.constraint.MaxNormConstraint;
 import org.deeplearning4j.nn.conf.constraint.MinMaxNormConstraint;
 import org.deeplearning4j.nn.conf.constraint.NonNegativeConstraint;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
+import org.deeplearning4j.nn.conf.layers.ActivationLayer;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.Convolution2D;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.Deconvolution2D;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -41,13 +59,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.*;
-
 public class TestLayerSpace extends BaseDL4JTest {
 
     @Test
     public void testBasic1() {
-
         DenseLayer expected = new DenseLayer.Builder().nOut(13).activation(Activation.RELU).build();
 
         DenseLayerSpace space = new DenseLayerSpace.Builder().nOut(13).activation(Activation.RELU).build();
@@ -188,8 +203,6 @@ public class TestLayerSpace extends BaseDL4JTest {
             ActivationLayer al = als.getValue(d);
             IActivation activation = al.getActivationFn();
 
-//            System.out.println(activation);
-
             assertTrue(containsActivationFunction(actFns, activation));
         }
     }
@@ -225,8 +238,6 @@ public class TestLayerSpace extends BaseDL4JTest {
             EmbeddingLayer el = els.getValue(d);
             IActivation activation = el.getActivationFn();
             long nOut = el.getNOut();
-
-//            System.out.println(activation + "\t" + nOut);
 
             assertTrue(containsActivationFunction(actFns, activation));
             assertTrue(nOut >= 10 && nOut <= 20);
@@ -292,8 +303,6 @@ public class TestLayerSpace extends BaseDL4JTest {
             IActivation activation = el.getActivationFn();
             long nOut = el.getNOut();
             double forgetGate = el.getForgetGateBiasInit();
-
-//            System.out.println(activation + "\t" + nOut + "\t" + forgetGate);
 
             assertTrue(containsActivationFunction(actFns, activation));
             assertTrue(nOut >= 10 && nOut <= 20);
