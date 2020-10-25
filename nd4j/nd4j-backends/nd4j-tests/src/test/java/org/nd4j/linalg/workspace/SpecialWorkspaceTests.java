@@ -16,6 +16,11 @@
 
 package org.nd4j.linalg.workspace;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.After;
@@ -25,18 +30,21 @@ import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.LocationPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.api.memory.abstracts.Nd4jWorkspace;
 
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
-
-import static org.junit.Assert.*;
 
 /**
  * @author raver119@gmail.com
@@ -60,9 +68,15 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testVariableTimeSeries1() {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(3.0)
-                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.EXTERNAL)
-                        .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.ENDOFBUFFER_REACHED).build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration
+                .builder()
+                .initialSize(0)
+                .overallocationLimit(3.0)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policySpill(SpillPolicy.EXTERNAL)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                .build();
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
             Nd4j.create(500);
@@ -70,7 +84,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         }
 
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1");
-//        workspace.enableDebug(true);
 
         assertEquals(0, workspace.getStepNumber());
 
@@ -125,7 +138,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         log.info("Workspace state after first block: ---------------------------------------------------------");
         Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
 
-
         log.info("--------------------------------------------------------------------------------------------");
 
         // we just do huge loop now, with pinned stuff in it
@@ -144,7 +156,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         assertNotEquals(0, workspace.getNumberOfPinnedAllocations());
         assertEquals(0, workspace.getNumberOfExternalAllocations());
 
-
         // and we do another clean loo, without pinned stuff in it, to ensure all pinned allocates are gone
         for (int i = 0; i < 100; i++) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
@@ -158,11 +169,9 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         assertEquals(0, workspace.getNumberOfPinnedAllocations());
         assertEquals(0, workspace.getNumberOfExternalAllocations());
 
-
         log.info("Workspace state after second block: ---------------------------------------------------------");
         Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
     }
-
 
     @Test
     public void testVariableTimeSeries2() {
@@ -179,8 +188,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
             Nd4j.create(500);
         }
 
-
-
         assertEquals(0, workspace.getStepNumber());
 
         long requiredMemory = 1000 * Nd4j.sizeOfDataType();
@@ -188,7 +195,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         assertEquals(requiredMemory, workspace.getSpilledSize());
         assertEquals(shiftedSize, workspace.getInitialBlockSize());
         assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());
-
 
         for (int i = 0; i < 100; i++) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
@@ -206,7 +212,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getSpilledSize());
         assertEquals(0, workspace.getPinnedSize());
-
     }
 
     @Test
@@ -238,7 +243,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         assertEquals(exp, result);
     }
 
-
     @Test
     public void testAlignment_1() {
         WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
@@ -259,7 +263,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
             }
         }
     }
-
 
     @Test
     public void testNoOpExecution_1() {
@@ -423,7 +426,6 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
         Files.delete(tmpFile);
     }
-
 
     @Test
     public void testMigrateToWorkspace(){

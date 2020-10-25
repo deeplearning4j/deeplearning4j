@@ -21,6 +21,21 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.activations.impl.ActivationCube;
+import org.nd4j.linalg.activations.impl.ActivationELU;
+import org.nd4j.linalg.activations.impl.ActivationGELU;
+import org.nd4j.linalg.activations.impl.ActivationHardSigmoid;
+import org.nd4j.linalg.activations.impl.ActivationHardTanH;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.activations.impl.ActivationRReLU;
+import org.nd4j.linalg.activations.impl.ActivationRationalTanh;
+import org.nd4j.linalg.activations.impl.ActivationReLU;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
+import org.nd4j.linalg.activations.impl.ActivationSoftPlus;
+import org.nd4j.linalg.activations.impl.ActivationSoftSign;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -73,7 +88,6 @@ public class TestActivation extends BaseNd4jTest {
         double[] dIn = in.data().asDouble();
 
         for( int i=0; i<max.length; i++ ){
-//            System.out.println("i = " + i);
             ActivationReLU r = new ActivationReLU(max[i], threshold[i], negativeSlope[i]);
             INDArray out = r.getActivation(in.dup(), true);
             double[] exp = new double[dIn.length];
@@ -145,7 +159,6 @@ public class TestActivation extends BaseNd4jTest {
 
         for (int i = 0; i < activations.length; i++) {
             String asJson = mapper.writeValueAsString(activations[i]);
-//            System.out.println(asJson);
 
             JsonNode node = mapper.readTree(asJson);
 

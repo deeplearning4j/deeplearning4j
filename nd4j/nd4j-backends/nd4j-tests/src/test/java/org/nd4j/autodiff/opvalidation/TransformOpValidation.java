@@ -48,8 +48,26 @@ import org.nd4j.linalg.api.ops.impl.shape.MergeMax;
 import org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Min;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.ASinh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Erf;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Erfc;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.HardSigmoid;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoid;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SELU;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Swish;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -2059,9 +2077,6 @@ public class TransformOpValidation extends BaseOpValidation {
         );
 
         assertNull(err);
-
-
-
     }
 
     @Test
@@ -2084,7 +2099,6 @@ public class TransformOpValidation extends BaseOpValidation {
         assertNull(err);
 
     }
-
 
     @Test
     public void testEmbeddingLookup() {
@@ -2243,11 +2257,5 @@ public class TransformOpValidation extends BaseOpValidation {
                     .gradientCheck(true));
             assertNull(err);
         }
-
-
     }
-
-
-
-    }
-
+}

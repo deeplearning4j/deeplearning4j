@@ -16,6 +16,13 @@
 
 package org.nd4j.linalg;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -23,10 +30,18 @@ import lombok.var;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
+import org.nd4j.common.util.MathUtils;
 import org.nd4j.enums.WeightsFormat;
 import org.nd4j.imports.TFGraphs.NodeReader;
 import org.nd4j.linalg.api.blas.Level1;
@@ -47,6 +62,14 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMax;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMin;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMax;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMin;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThanOrEqual;
@@ -64,6 +87,11 @@ import org.nd4j.linalg.api.ops.impl.reduce.custom.LogSumExp;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Norm1;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2;
 import org.nd4j.linalg.api.ops.impl.reduce.same.Sum;
+import org.nd4j.linalg.api.ops.impl.reduce3.CosineDistance;
+import org.nd4j.linalg.api.ops.impl.reduce3.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.reduce3.HammingDistance;
+import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
 import org.nd4j.linalg.api.ops.impl.scalar.ReplaceNans;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
@@ -73,8 +101,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpaceND;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set;
@@ -94,20 +122,28 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.common.primitives.Pair;
-import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.common.util.MathUtils;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
-
-import static org.junit.Assert.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * NDArrayTests
@@ -147,8 +183,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void after() throws Exception {
         Nd4j.setDataType(initialType);
     }
-
-
 
     @Test
     public void testArangeNegative() {
@@ -241,9 +275,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray inDup = in.dup();
 
-//        System.out.println(in);
-//        System.out.println(inDup);
-
         assertEquals(arr, in); //Passes:   Original array "in" is OK, but array "inDup" is not!?
         assertEquals(in, inDup); //Fails
     }
@@ -310,7 +341,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(assertion,test);
     }
 
-
     @Test
     public void testAudoBroadcastAddMatrix() {
         INDArray arr = Nd4j.linspace(1,4,4, DataType.DOUBLE).reshape(2,2);
@@ -335,7 +365,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(getFailureMessage(), true, Arrays.equals(new long[] {3, 3}, a.shape()));
 
     }
-
 
     @Test
     public void testTensorAlongDimension() {
@@ -537,7 +566,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(testR2, r2);
 
     }
-
 
     @Test
     public void testGetColumns() {
@@ -2719,7 +2747,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, zOutCF); //fails
     }
 
-
     @Test
     public void testBroadcastDiv() {
         INDArray num = Nd4j.create(new double[] {1.00, 1.00, 1.00, 1.00, 2.00, 2.00, 2.00, 2.00, 1.00, 1.00, 1.00, 1.00,
@@ -2752,7 +2779,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             assertEquals(exp, out);
         }
     }
-
 
     @Test
     public void testBroadcastMult() {
@@ -2795,7 +2821,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray actual = Nd4j.getExecutioner().exec(new BroadcastAddOp(num, denom, dup, -1));
         assertEquals(expected, actual);
     }
-
 
     @Test
     public void testDimension() {
@@ -4595,8 +4620,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 -1.25485503673});
 
         INDArray reduced = Nd4j.getExecutioner().exec(new CosineDistance(haystack, needle, 1));
-//        log.info("Reduced: {}", reduced);
-
 
         INDArray exp = Nd4j.create(new double[] {0.577452, 0.0, 1.80182});
         assertEquals(exp, reduced);
@@ -4606,9 +4629,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             double res = Nd4j.getExecutioner().execAndReturn(new CosineDistance(row, needle)).z().getDouble(0);
             assertEquals("Failed at " + i, reduced.getDouble(i), res, 1e-5);
         }
-        //cosinedistance([-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)
-        //cosinedistance([.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)
-
     }
 
     @Test
@@ -4677,8 +4697,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             double res = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(x, needle)).getFinalResult()
                     .doubleValue();
             assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
-
-//            log.info("Euclidean: {} vs {} is {}", x, needle, res);
         }
     }
 
@@ -4698,8 +4716,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             double res = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(x, needle)).getFinalResult()
                     .doubleValue();
             assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
-
-//            log.info("Euclidean: {} vs {} is {}", x, needle, res);
         }
     }
 
@@ -4720,8 +4736,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             double res = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(x, needle)).getFinalResult()
                     .doubleValue();
             assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
-
-//            log.info("Cosine: {} vs {} is {}", x, needle, res);
         }
     }
 
@@ -4755,7 +4769,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
-
     @Test
     public void testAtan2_1() {
         INDArray x = Nd4j.create(10).assign(-1.0);
@@ -4766,7 +4779,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(exp, z);
     }
-
 
     @Test
     public void testAtan2_2() {
@@ -4779,7 +4791,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, z);
     }
 
-
     @Test
     public void testJaccardDistance1() {
         INDArray x = Nd4j.create(new double[] {0, 1, 0, 0, 1, 0});
@@ -4789,7 +4800,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(0.75, val, 1e-5);
     }
-
 
     @Test
     public void testJaccardDistance2() {
@@ -4811,7 +4821,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(2.0 / 6, val, 1e-5);
     }
 
-
     @Test
     public void testHammingDistance2() {
         INDArray x = Nd4j.create(new double[] {0, 0, 0, 1, 0, 0});
@@ -4822,7 +4831,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(3.0 / 6, val, 1e-5);
     }
 
-
     @Test
     public void testHammingDistance3() {
         INDArray x = Nd4j.create(DataType.DOUBLE, 10, 6);
@@ -4831,7 +4839,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             x.getRow(r).putScalar(p, 1);
         }
 
-//        log.info("X: {}", x);
         INDArray y = Nd4j.create(new double[] {0, 0, 0, 0, 1, 0});
 
         INDArray res = Nd4j.getExecutioner().exec(new HammingDistance(x, y, 1));
@@ -4845,7 +4852,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
     }
-
 
     @Test
     public void testAllDistances1() {
@@ -4878,7 +4884,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
     }
-
 
     @Test
     public void testAllDistances2() {
@@ -4940,7 +4945,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
-
     @Test
     public void testAllDistances3_Large() {
         INDArray initialX = Nd4j.create(5, 2000);
@@ -4968,12 +4972,10 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 double res = result.getDouble(x, y);
                 double exp = Transforms.euclideanDistance(rowX, initialY.getRow(y).dup());
 
-                //log.info("Expected [{}, {}]: {}",x, y, exp);
                 assertEquals("Failed for [" + x + ", " + y + "]", exp, res, 0.001);
             }
         }
     }
-
 
     @Test
     public void testAllDistances3_Large_Columns() {
@@ -5004,7 +5006,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
     }
-
 
     @Test
     public void testAllDistances4_Large_Columns() {
@@ -5095,8 +5096,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
-
-
     @Test
     public void testAllDistances3() {
         Nd4j.getRandom().setSeed(123);
@@ -5121,7 +5120,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             }
         }
     }
-
 
     @Test
     public void testStridedTransforms1() {
@@ -5176,7 +5174,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
-
     @Test
     public void testEntropy3() {
         INDArray x = Nd4j.rand(1, 100);
@@ -5197,7 +5194,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, res, 1e-5);
     }
 
-
     protected double getShannonEntropy(double[] array) {
         double ret = 0;
         for (double x : array) {
@@ -5207,11 +5203,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         return -ret;
     }
 
-
     protected double getLogEntropy(double[] array) {
         return Math.log(MathUtils.entropy(array));
     }
-
 
     @Test
     public void testReverse1() {
@@ -5227,8 +5221,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testReverse2() {
         INDArray array = Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
         INDArray exp = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
-
-//        log.info("Array shapeInfo: {}", array.shapeInfoJava());
 
         INDArray rev = Nd4j.reverse(array);
 
@@ -5278,7 +5270,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(rev == array);
     }
 
-
     @Test
     public void testNativeSortView1() {
         INDArray matrix = Nd4j.create(10, 10);
@@ -5290,9 +5281,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
 
         Nd4j.sort(matrix.getColumn(0), true);
-
-
-//        log.info("Matrix: {}", matrix);
 
         assertEquals(exp, matrix.getColumn(0));
     }
@@ -5384,9 +5372,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Transforms.reverse(array, false);
 
-//        log.info("Reversed shapeInfo: {}", array.shapeInfoJava());
-//        log.info("Reversed: {}", array);
-
         Transforms.reverse(array, false);
 
         val jexp = exp.data().asInt();
@@ -5401,9 +5386,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val exp = array.dup(array.ordering());
 
         val reversed = Transforms.reverse(array, true);
-
-//        log.info("Reversed: {}", reversed);
-
         val rereversed = Transforms.reverse(reversed, true);
 
         val jexp = exp.data().asInt();
@@ -5445,8 +5427,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray array = Nd4j.linspace(1, 2017152, 2017152, DataType.DOUBLE).reshape(1, -1);
         INDArray exp = array.dup();
         Transforms.reverse(array, false);
-//        log.info("Reverse: {}", array);
-
 
         long time1 = System.currentTimeMillis();
         INDArray res = Nd4j.sort(array, true);
@@ -5464,7 +5444,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         Nd4j.shuffle(dps, 0);
 
         assertNotEquals(exp1, dps);
-
 
         for (int r = 0; r < array.rows(); r++) {
             array.getRow(r).assign(dps);
@@ -5484,7 +5463,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             assertEquals("Failed at " + r, exp1, d);
         }
     }
-
 
     protected boolean checkIfUnique(INDArray array, int iteration) {
         var jarray = array.data().asInt();
@@ -5698,7 +5676,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
-
     @Test
     public void testBroadcastAMax() {
         INDArray matrix = Nd4j.create(5, 5);
@@ -5714,7 +5691,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
             assertEquals(Nd4j.create(new double[] {1, 2, 3, -4, -5}), matrix.getRow(r));
         }
     }
-
 
     @Test
     public void testBroadcastAMin() {
@@ -5767,7 +5743,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, res);
     }
 
-
     @Test
     public void testRDiv1() {
         val argX = Nd4j.create(3).assign(2.0);
@@ -5788,7 +5763,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(array, arrayF);
         assertEquals(arrayC, arrayF);
     }
-
 
     @Test
     public void testMatchTransform() {
@@ -5838,10 +5812,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         val a = Nd4j.linspace(1, x * A1 * A2, x * A1 * A2, DataType.DOUBLE).reshape(x, A1, A2);
         val b = Nd4j.linspace(1, x * B1 * B2, x * B1 * B2, DataType.DOUBLE).reshape(x, B1, B2);
-
-        //
-
-        //log.info("C shape: {}", Arrays.toString(c.shapeInfoDataBuffer().asInt()));
     }
 
     @Test
