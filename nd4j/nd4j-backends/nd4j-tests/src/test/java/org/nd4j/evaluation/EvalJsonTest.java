@@ -17,6 +17,12 @@
 package org.nd4j.evaluation;
 
 import org.junit.Test;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.EvaluationBinary;
+import org.nd4j.evaluation.classification.EvaluationCalibration;
+import org.nd4j.evaluation.classification.ROC;
+import org.nd4j.evaluation.classification.ROCBinary;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.evaluation.curves.Histogram;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
@@ -99,8 +105,6 @@ public class EvalJsonTest extends BaseNd4jTest {
         roc.eval(evalLabel, evalProb);
 
         regressionEvaluation.eval(Nd4j.rand(10, 3), Nd4j.rand(10, 3));
-
-
 
         for (IEvaluation e : arr) {
             String json = e.toJson();

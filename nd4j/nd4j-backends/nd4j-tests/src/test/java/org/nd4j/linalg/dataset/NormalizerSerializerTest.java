@@ -22,6 +22,14 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.dataset.api.preprocessor.AbstractDataSetNormalizer;
+import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
+import org.nd4j.linalg.dataset.api.preprocessor.MinMaxStrategy;
+import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerHybrid;
+import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerMinMaxScaler;
+import org.nd4j.linalg.dataset.api.preprocessor.MultiNormalizerStandardize;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.CustomSerializerStrategy;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
@@ -65,7 +73,6 @@ public class NormalizerSerializerTest extends BaseNd4jTest {
 
         ImagePreProcessingScaler restored = SUT.restore(tmpFile);
         assertEquals(imagePreProcessingScaler,restored);
-
     }
 
     @Test

@@ -17,6 +17,13 @@
 package org.nd4j.autodiff.samediff.listeners;
 
 import org.junit.Test;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.BaseListener;
+import org.nd4j.autodiff.listeners.Listener;
+import org.nd4j.autodiff.listeners.ListenerResponse;
+import org.nd4j.autodiff.listeners.ListenerVariables;
+import org.nd4j.autodiff.listeners.Loss;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.listeners.records.LossCurve;
@@ -351,7 +358,7 @@ public class ListenerTest extends BaseNd4jTest {
         }
 
         @Override
-        public void iterationDone(SameDiff sd, At at, MultiDataSet dataSet, Loss loss) {
+        public void iterationDone(final SameDiff sd, final At at, final MultiDataSet dataSet, final Loss loss) {
             iterationDoneCount++;
         }
 

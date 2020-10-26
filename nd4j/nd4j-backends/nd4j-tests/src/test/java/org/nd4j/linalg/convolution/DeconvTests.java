@@ -1,8 +1,13 @@
 package org.nd4j.linalg.convolution;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.resources.Resources;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -10,12 +15,13 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.common.resources.Resources;
 
 import java.io.File;
-import java.util.*;
-
-import static org.junit.Assert.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class DeconvTests extends BaseNd4jTest {
 
@@ -33,10 +39,10 @@ public class DeconvTests extends BaseNd4jTest {
 
     @Test
     public void compareKeras() throws Exception {
-        File f = testDir.newFolder();
-        Resources.copyDirectory("keras/deconv", f);
+        File newFolder = testDir.newFolder();
+        new ClassPathResource("keras/deconv/").copyDirectory(newFolder);
 
-        File[] files = f.listFiles();
+        File[] files = newFolder.listFiles();
 
         Set<String> tests = new HashSet<>();
         for(File file : files){
@@ -64,10 +70,10 @@ public class DeconvTests extends BaseNd4jTest {
             int d = Integer.parseInt(nums[5]);
             boolean nchw = s.contains("nchw");
 
-            INDArray w = Nd4j.readNpy(new File(f, s + "_W.npy"));
-            INDArray b = Nd4j.readNpy(new File(f, s + "_b.npy"));
-            INDArray in = Nd4j.readNpy(new File(f, s + "_in.npy")).castTo(DataType.FLOAT);
-            INDArray expOut = Nd4j.readNpy(new File(f, s + "_out.npy"));
+            INDArray w = Nd4j.readNpy(new File(newFolder, s + "_W.npy"));
+            INDArray b = Nd4j.readNpy(new File(newFolder, s + "_b.npy"));
+            INDArray in = Nd4j.readNpy(new File(newFolder, s + "_in.npy")).castTo(DataType.FLOAT);
+            INDArray expOut = Nd4j.readNpy(new File(newFolder, s + "_out.npy"));
 
             CustomOp op = DynamicCustomOp.builder("deconv2d")
                     .addInputs(in, w, b)

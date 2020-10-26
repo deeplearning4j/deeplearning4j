@@ -128,7 +128,6 @@
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- https://maven.apache.org/surefire/maven-surefire-plugin/examples/fork-options-and-parallel-execution.html -->
         <dependency>
             <groupId>com.github.stephenc.jcip</groupId>
             <artifactId>jcip-annotations</artifactId>

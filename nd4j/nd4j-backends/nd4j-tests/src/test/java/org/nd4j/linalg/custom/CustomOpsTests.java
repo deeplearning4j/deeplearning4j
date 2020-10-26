@@ -26,6 +26,37 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.custom.AdjustContrast;
+import org.nd4j.linalg.api.ops.custom.AdjustHue;
+import org.nd4j.linalg.api.ops.custom.AdjustSaturation;
+import org.nd4j.linalg.api.ops.custom.BetaInc;
+import org.nd4j.linalg.api.ops.custom.BitCast;
+import org.nd4j.linalg.api.ops.custom.CompareAndBitpack;
+import org.nd4j.linalg.api.ops.custom.DivideNoNan;
+import org.nd4j.linalg.api.ops.custom.DrawBoundingBoxes;
+import org.nd4j.linalg.api.ops.custom.FakeQuantWithMinMaxVarsPerChannel;
+import org.nd4j.linalg.api.ops.custom.Flatten;
+import org.nd4j.linalg.api.ops.custom.FusedBatchNorm;
+import org.nd4j.linalg.api.ops.custom.HsvToRgb;
+import org.nd4j.linalg.api.ops.custom.KnnMinDistance;
+import org.nd4j.linalg.api.ops.custom.Lgamma;
+import org.nd4j.linalg.api.ops.custom.LinearSolve;
+import org.nd4j.linalg.api.ops.custom.Logdet;
+import org.nd4j.linalg.api.ops.custom.Lstsq;
+import org.nd4j.linalg.api.ops.custom.Lu;
+import org.nd4j.linalg.api.ops.custom.MatrixBandPart;
+import org.nd4j.linalg.api.ops.custom.Polygamma;
+import org.nd4j.linalg.api.ops.custom.RandomCrop;
+import org.nd4j.linalg.api.ops.custom.RgbToGrayscale;
+import org.nd4j.linalg.api.ops.custom.RgbToHsv;
+import org.nd4j.linalg.api.ops.custom.RgbToYiq;
+import org.nd4j.linalg.api.ops.custom.RgbToYuv;
+import org.nd4j.linalg.api.ops.custom.Roll;
+import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.api.ops.custom.ToggleBits;
+import org.nd4j.linalg.api.ops.custom.TriangularSolve;
+import org.nd4j.linalg.api.ops.custom.YiqToRgb;
+import org.nd4j.linalg.api.ops.custom.YuvToRgb;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.controlflow.Where;
@@ -373,7 +404,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
         Nd4j.getExecutioner().exec(op);
 
-//        log.info("Matrix: {}", matrix);
         assertEquals(exp0, matrix.getRow(0));
         assertEquals(exp1, matrix.getRow(1));
         assertEquals(exp0, matrix.getRow(2));
@@ -1384,8 +1414,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray y = Nd4j.linspace(DataType.FLOAT, -5, 9, 1).reshape(3, 3);
         val c =  Conditions.equals(0.0);
 
-//        System.out.println("Y:\n" + y);
-
         INDArray z = x.match(y, c);
         INDArray exp = Nd4j.createFromArray(new boolean[][]{
                 {false, false, false},
@@ -1395,7 +1423,6 @@ public class CustomOpsTests extends BaseNd4jTest {
 
         assertEquals(exp, z);
     }
-
 
     @Test
     public void testCreateOp_1() {
@@ -1862,10 +1889,8 @@ public class CustomOpsTests extends BaseNd4jTest {
         System.out.println("in: " + in.shapeInfoToString());
         System.out.println("inBadStrides: " + inBadStrides.shapeInfoToString());
 
-
         INDArray out = Nd4j.create(DataType.FLOAT, 2, 12, 3, 3);
         INDArray out2 = out.like();
-
 
         CustomOp op1 = DynamicCustomOp.builder("space_to_depth")
                 .addInputs(in)
