@@ -2,6 +2,7 @@ package org.deeplearning4j.rl4j.support;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
@@ -105,6 +106,11 @@ public class MockNeuralNet implements NeuralNet {
 
     @Override
     public NeuralNetOutput output(INDArray batch) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public NeuralNetOutput output(Features features) {
         throw new UnsupportedOperationException();
     }
 }

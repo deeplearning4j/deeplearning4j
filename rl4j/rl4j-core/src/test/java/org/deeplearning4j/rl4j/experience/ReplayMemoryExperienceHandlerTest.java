@@ -1,7 +1,6 @@
 package org.deeplearning4j.rl4j.experience;
 
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -57,19 +56,19 @@ public class ReplayMemoryExperienceHandlerTest {
         sut.setFinalObservation(new Observation(Nd4j.create(new double[] { 3.0 })));
 
         // Assert
-        ArgumentCaptor<Transition<Integer>> argument = ArgumentCaptor.forClass(Transition.class);
+        ArgumentCaptor<StateActionRewardState<Integer>> argument = ArgumentCaptor.forClass(StateActionRewardState.class);
         verify(expReplayMock, times(2)).store(argument.capture());
-        List<Transition<Integer>> transitions = argument.getAllValues();
+        List<StateActionRewardState<Integer>> stateActionRewardStates = argument.getAllValues();
 
-        assertEquals(1.0, transitions.get(0).getObservation().getData().getDouble(0), 0.00001);
-        assertEquals(1, (int)transitions.get(0).getAction());
-        assertEquals(1.0, transitions.get(0).getReward(), 0.00001);
-        assertEquals(2.0, transitions.get(0).getNextObservation().getDouble(0), 0.00001);
+        assertEquals(1.0, stateActionRewardStates.get(0).getObservation().getData().getDouble(0), 0.00001);
+        assertEquals(1, (int) stateActionRewardStates.get(0).getAction());
+        assertEquals(1.0, stateActionRewardStates.get(0).getReward(), 0.00001);
+        assertEquals(2.0, stateActionRewardStates.get(0).getNextObservation().getChannelData(0).getDouble(0), 0.00001);
 
-        assertEquals(2.0, transitions.get(1).getObservation().getData().getDouble(0), 0.00001);
-        assertEquals(2, (int)transitions.get(1).getAction());
-        assertEquals(2.0, transitions.get(1).getReward(), 0.00001);
-        assertEquals(3.0, transitions.get(1).getNextObservation().getDouble(0), 0.00001);
+        assertEquals(2.0, stateActionRewardStates.get(1).getObservation().getData().getDouble(0), 0.00001);
+        assertEquals(2, (int) stateActionRewardStates.get(1).getAction());
+        assertEquals(2.0, stateActionRewardStates.get(1).getReward(), 0.00001);
+        assertEquals(3.0, stateActionRewardStates.get(1).getNextObservation().getChannelData(0).getDouble(0), 0.00001);
 
     }
 
@@ -84,11 +83,11 @@ public class ReplayMemoryExperienceHandlerTest {
         sut.addExperience(new Observation(Nd4j.create(new double[] { 3.0 })), 3, 3.0, false);
 
         // Assert
-        ArgumentCaptor<Transition<Integer>> argument = ArgumentCaptor.forClass(Transition.class);
+        ArgumentCaptor<StateActionRewardState<Integer>> argument = ArgumentCaptor.forClass(StateActionRewardState.class);
         verify(expReplayMock, times(1)).store(argument.capture());
-        Transition<Integer> transition = argument.getValue();
+        StateActionRewardState<Integer> stateActionRewardState = argument.getValue();
 
-        assertEquals(1, (int)transition.getAction());
+        assertEquals(1, (int) stateActionRewardState.getAction());
     }
 
     @Test

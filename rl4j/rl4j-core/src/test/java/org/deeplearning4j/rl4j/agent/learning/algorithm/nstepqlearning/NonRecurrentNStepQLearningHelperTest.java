@@ -1,14 +1,12 @@
 package org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning;
 
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
-import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -21,33 +19,6 @@ import static org.mockito.Mockito.*;
 public class NonRecurrentNStepQLearningHelperTest {
 
     private final NonRecurrentNStepQLearningHelper sut = new NonRecurrentNStepQLearningHelper(3);
-
-    @Test
-    public void when_callingCreateFeatures_expect_INDArrayWithCorrectShape() {
-        // Arrange
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
-            {
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { 1.1, 1.2 }).reshape(1, 2)), 0, 1.0, false));
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { 2.1, 2.2 }).reshape(1, 2)), 1, 2.0, false));
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { 3.1, 3.2 }).reshape(1, 2)), 2, 3.0, false));
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { 4.1, 4.2 }).reshape(1, 2)), 3, 4.0, false));
-            }
-        };
-
-        // Act
-        INDArray result = sut.createFeatures(experience);
-
-        // Assert
-        assertArrayEquals(new long[] { 4, 2 }, result.shape());
-        assertEquals(1.1, result.getDouble(0, 0), 0.00001);
-        assertEquals(1.2, result.getDouble(0, 1), 0.00001);
-        assertEquals(2.1, result.getDouble(1, 0), 0.00001);
-        assertEquals(2.2, result.getDouble(1, 1), 0.00001);
-        assertEquals(3.1, result.getDouble(2, 0), 0.00001);
-        assertEquals(3.2, result.getDouble(2, 1), 0.00001);
-        assertEquals(4.1, result.getDouble(3, 0), 0.00001);
-        assertEquals(4.2, result.getDouble(3, 1), 0.00001);
-    }
 
     @Test
     public void when_callingCreateValueLabels_expect_INDArrayWithCorrectShape() {
@@ -93,12 +64,12 @@ public class NonRecurrentNStepQLearningHelperTest {
     public void when_callingGetTargetExpectedQValuesOfLast_expect_INDArrayWithCorrectShape() {
         // Arrange
         IOutputNeuralNet targetMock = mock(IOutputNeuralNet.class);
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { 1.1, 1.2 }).reshape(1, 2)), 0, 1.0, false));
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { 2.1, 2.2 }).reshape(1, 2)), 1, 2.0, false));
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { 3.1, 3.2 }).reshape(1, 2)), 2, 3.0, false));
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { 4.1, 4.2 }).reshape(1, 2)), 3, 4.0, false));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { 1.1, 1.2 }).reshape(1, 2)), 0, 1.0, false));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { 2.1, 2.2 }).reshape(1, 2)), 1, 2.0, false));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { 3.1, 3.2 }).reshape(1, 2)), 2, 3.0, false));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { 4.1, 4.2 }).reshape(1, 2)), 3, 4.0, false));
             }
         };
         final NeuralNetOutput neuralNetOutput = new NeuralNetOutput();

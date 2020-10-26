@@ -66,6 +66,7 @@ public class INDArrayHelper {
      * @param batchSize The size of the batch to create
      * @param shape The shape of individual elements.
      *              Note: all shapes in RL4J should have a batch size as dimension 0; in this case the batch size should be 1.
+     *                    And recurrent INDArrays should have their time-serie dimension as the last.
      * @return A INDArray
      */
     public static INDArray createRnnBatchForShape(long batchSize, long... shape) {

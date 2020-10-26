@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -48,7 +49,7 @@ public class MultiLayerNetworkHandlerTest {
             when(modelMock.getOutputLayer()).thenReturn(new RnnOutputLayer(null, null));
         }
 
-        sut = new MultiLayerNetworkHandler(modelMock, LABEL_NAME, GRADIENT_NAME);
+        sut = new MultiLayerNetworkHandler(modelMock, LABEL_NAME, GRADIENT_NAME, 1);
     }
 
     @Test
@@ -87,8 +88,9 @@ public class MultiLayerNetworkHandlerTest {
     public void when_callingPerformFit_expect_fitCalledOnModelWithCorrectLabels() {
         // Arrange
         setup(false);
-        INDArray features = Nd4j.rand(1, 2);
+        INDArray featuresData = Nd4j.rand(1, 2);
         INDArray labels = Nd4j.rand(1, 2);
+        Features features = new Features(new INDArray[] { Nd4j.rand(1, 2), featuresData });
         FeaturesLabels featuresLabels = new FeaturesLabels(features);
         featuresLabels.putLabels("TEST_LABEL", labels);
 
@@ -100,7 +102,7 @@ public class MultiLayerNetworkHandlerTest {
         ArgumentCaptor<INDArray> labelsCaptor = ArgumentCaptor.forClass(INDArray.class);
         verify(modelMock, times(1)).fit(featuresCaptor.capture(), labelsCaptor.capture());
         INDArray featuresArg = featuresCaptor.getValue();
-        assertSame(featuresArg, features);
+        assertSame(featuresArg, featuresData);
         INDArray labelsArg = labelsCaptor.getValue();
         assertSame(labelsArg, labels);
     }
@@ -109,8 +111,9 @@ public class MultiLayerNetworkHandlerTest {
     public void when_callingperformGradientsComputation_expect_modelCalledWithCorrectFeaturesLabels() {
         // Arrange
         setup(false);
-        INDArray features = Nd4j.rand(1, 2);
+        INDArray featuresData = Nd4j.rand(1, 2);
         INDArray labels = Nd4j.rand(1, 2);
+        Features features = new Features(new INDArray[] { Nd4j.rand(1, 2), featuresData });
         FeaturesLabels featuresLabels = new FeaturesLabels(features);
         featuresLabels.putLabels("TEST_LABEL", labels);
 
@@ -118,7 +121,7 @@ public class MultiLayerNetworkHandlerTest {
         sut.performGradientsComputation(featuresLabels);
 
         // Assert
-        verify(modelMock, times(1)).setInput(features);
+        verify(modelMock, times(1)).setInput(featuresData);
 
         ArgumentCaptor<INDArray> labelsCaptor = ArgumentCaptor.forClass(INDArray.class);
         verify(modelMock, times(1)).setLabels(labelsCaptor.capture());
@@ -170,12 +173,12 @@ public class MultiLayerNetworkHandlerTest {
     }
 
     @Test
-    public void when_callingRecurrentStepOutput_expect_recurrentStepCalledWithObservationData() {
+    public void when_callingRecurrentStepOutput_expect_recurrentStepCalledWithObservation() {
         // Arrange
         setup(false);
         Observation observationMock = mock(Observation.class);
         INDArray observationData = Nd4j.rand(1, 2);
-        when(observationMock.getData()).thenReturn(observationData);
+        when(observationMock.getChannelData(1)).thenReturn(observationData);
 
         // Act
         sut.recurrentStepOutput(observationMock);
@@ -185,16 +188,17 @@ public class MultiLayerNetworkHandlerTest {
     }
 
     @Test
-    public void when_callingBatchOutput_expect_outputCalledWithBatch() {
+    public void when_callingFeaturesBatchOutput_expect_outputCalledWithBatch() {
         // Arrange
         setup(false);
-        INDArray batch = Nd4j.rand(1, 2);
+        INDArray channelData = Nd4j.rand(1, 2);
+        Features features = new Features(new INDArray[] { Nd4j.rand(1, 2), channelData });
 
         // Act
-        sut.batchOutput(batch);
+        sut.batchOutput(features);
 
         // Assert
-        verify(modelMock, times(1)).output(batch);
+        verify(modelMock, times(1)).output(channelData);
     }
 
     @Test
@@ -240,7 +244,7 @@ public class MultiLayerNetworkHandlerTest {
         setup(false);
         INDArray params = Nd4j.rand(1, 2);
         when(modelMock.params()).thenReturn(params);
-        MultiLayerNetworkHandler from = new MultiLayerNetworkHandler(modelMock, null, null);
+        MultiLayerNetworkHandler from = new MultiLayerNetworkHandler(modelMock, null, null, 0);
 
         // Act
         sut.copyFrom(from);

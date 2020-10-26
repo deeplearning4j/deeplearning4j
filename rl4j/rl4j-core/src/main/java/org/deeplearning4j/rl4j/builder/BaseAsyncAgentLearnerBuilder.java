@@ -28,11 +28,10 @@ import org.deeplearning4j.rl4j.agent.learning.update.updater.async.AsyncSharedNe
 import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.experience.StateActionExperienceHandler;
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
-import org.nd4j.common.base.Preconditions;
 
 /**
  * A base {@link IAgentLearner} builder that should be helpful in several common asynchronous scenarios. <p/>
@@ -44,7 +43,7 @@ import org.nd4j.common.base.Preconditions;
  * <li>a {@link AsyncGradientsNeuralNetUpdater gradient neural net updater}</li>
  * @param <CONFIGURATION_TYPE> The type of the configuration
  */
-public abstract class BaseAsyncAgentLearnerBuilder<CONFIGURATION_TYPE extends BaseAsyncAgentLearnerBuilder.Configuration> extends BaseAgentLearnerBuilder<Integer, StateActionPair<Integer>, Gradients, CONFIGURATION_TYPE> {
+public abstract class BaseAsyncAgentLearnerBuilder<CONFIGURATION_TYPE extends BaseAsyncAgentLearnerBuilder.Configuration> extends BaseAgentLearnerBuilder<Integer, StateActionReward<Integer>, Gradients, CONFIGURATION_TYPE> {
 
     private final AsyncSharedNetworksUpdateHandler asyncSharedNetworksUpdateHandler;
 
@@ -58,7 +57,7 @@ public abstract class BaseAsyncAgentLearnerBuilder<CONFIGURATION_TYPE extends Ba
     }
 
     @Override
-    protected ExperienceHandler<Integer, StateActionPair<Integer>> buildExperienceHandler() {
+    protected ExperienceHandler<Integer, StateActionReward<Integer>> buildExperienceHandler() {
         return new StateActionExperienceHandler<Integer>(configuration.getExperienceHandlerConfiguration());
     }
 

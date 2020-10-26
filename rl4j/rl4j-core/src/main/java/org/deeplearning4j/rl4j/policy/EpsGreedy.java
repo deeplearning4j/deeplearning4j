@@ -125,7 +125,7 @@ public class EpsGreedy<A> extends Policy<A> {
     public A nextAction(Observation observation) {
         // FIXME: remove if() and content once deprecated methods are removed.
         if(actionSchema == null) {
-            return this.nextAction(observation.getData());
+            return this.nextAction(observation.getChannelData(0));
         }
 
         double ep = getEpsilon();

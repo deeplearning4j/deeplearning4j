@@ -18,6 +18,7 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -25,6 +26,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.CommonGradientNames;
@@ -90,14 +92,14 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
 
     @Override
     public void fit(FeaturesLabels featuresLabels) {
-        INDArray[] features = new INDArray[] { featuresLabels.getFeatures() };
+        INDArray[] features = new INDArray[] { featuresLabels.getFeatures().get(0) };
         INDArray[] labels = new INDArray[] { featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy) };
         cg.fit(features, labels);
     }
 
     @Override
     public Gradients computeGradients(FeaturesLabels featuresLabels) {
-        cg.setInput(0, featuresLabels.getFeatures());
+        cg.setInput(0, featuresLabels.getFeatures().get(0));
         cg.setLabels(featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
         cg.computeGradientAndScore();
         Collection<TrainingListener> iterationListeners = cg.getListeners();
@@ -193,10 +195,10 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
     @Override
     public NeuralNetOutput output(Observation observation) {
         if(!isRecurrent()) {
-            return output(observation.getData());
+            return output(observation.getChannelData(0));
         }
 
-        INDArray[] cgOutput = cg.rnnTimeStep(observation.getData());
+        INDArray[] cgOutput = cg.rnnTimeStep(observation.getChannelData(0));
         return packageResult(cgOutput[0], cgOutput[1]);
     }
 
@@ -204,6 +206,11 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
     public NeuralNetOutput output(INDArray batch) {
         INDArray[] cgOutput = cg.output(batch);
         return packageResult(cgOutput[0], cgOutput[1]);
+    }
+
+    @Override
+    public NeuralNetOutput output(Features features) {
+        throw new NotImplementedException("Not implemented in legacy classes");
     }
 
     private NeuralNetOutput packageResult(INDArray value, INDArray policy) {

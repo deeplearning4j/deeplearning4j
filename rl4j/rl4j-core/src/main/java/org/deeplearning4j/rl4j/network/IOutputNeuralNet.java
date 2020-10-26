@@ -15,6 +15,7 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.network;
 
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -37,7 +38,14 @@ public interface IOutputNeuralNet {
      * @param batch
      * @return The ouptut of the network
      */
-    NeuralNetOutput output(INDArray batch);
+    NeuralNetOutput output(INDArray batch); // FIXME: Remove once legacy classes are gone
+
+    /**
+     * Compute the output for the supplied batch.
+     * @param features A {@link Features} instance
+     * @return The ouptut of the network
+     */
+    NeuralNetOutput output(Features features);
 
     /**
      * Clear the neural net of any previous state

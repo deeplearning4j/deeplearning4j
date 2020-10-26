@@ -21,7 +21,6 @@ import lombok.EqualsAndHashCode;
 import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.rng.Random;
 
@@ -29,20 +28,20 @@ import java.util.List;
 
 /**
  * A experience handler that stores the experience in a replay memory. See https://arxiv.org/abs/1312.5602
- * The experience container is a {@link Transition Transition} that stores the tuple observation-action-reward-nextObservation,
+ * The experience container is a {@link StateActionRewardState Transition} that stores the tuple observation-action-reward-nextObservation,
  * as well as whether or the not the episode ended after the Transition
  *
  * @param <A> Action type
  */
 @EqualsAndHashCode
-public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, Transition<A>> {
+public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, StateActionRewardState<A>> {
     private static final int DEFAULT_MAX_REPLAY_MEMORY_SIZE = 150000;
     private static final int DEFAULT_BATCH_SIZE = 32;
     private final int batchSize;
 
     private IExpReplay<A> expReplay;
 
-    private Transition<A> pendingTransition;
+    private StateActionRewardState<A> pendingStateActionRewardState;
 
     public ReplayMemoryExperienceHandler(IExpReplay<A> expReplay) {
         this.expReplay = expReplay;
@@ -55,12 +54,12 @@ public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, Tr
 
     public void addExperience(Observation observation, A action, double reward, boolean isTerminal) {
         setNextObservationOnPending(observation);
-        pendingTransition = new Transition<>(observation, action, reward, isTerminal);
+        pendingStateActionRewardState = new StateActionRewardState<>(observation, action, reward, isTerminal);
     }
 
     public void setFinalObservation(Observation observation) {
         setNextObservationOnPending(observation);
-        pendingTransition = null;
+        pendingStateActionRewardState = null;
     }
 
     @Override
@@ -77,19 +76,19 @@ public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, Tr
      * @return A batch of experience selected from the replay memory. The replay memory is unchanged after the call.
      */
     @Override
-    public List<Transition<A>> generateTrainingBatch() {
+    public List<StateActionRewardState<A>> generateTrainingBatch() {
         return expReplay.getBatch();
     }
 
     @Override
     public void reset() {
-        pendingTransition = null;
+        pendingStateActionRewardState = null;
     }
 
     private void setNextObservationOnPending(Observation observation) {
-        if(pendingTransition != null) {
-            pendingTransition.setNextObservation(observation);
-            expReplay.store(pendingTransition);
+        if(pendingStateActionRewardState != null) {
+            pendingStateActionRewardState.setNextObservation(observation);
+            expReplay.store(pendingStateActionRewardState);
         }
     }
 

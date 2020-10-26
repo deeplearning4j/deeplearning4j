@@ -1,9 +1,8 @@
 package org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning;
 
-import org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning.NStepQLearning;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.*;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Test;
@@ -34,11 +33,12 @@ public class NonRecurrentNStepQLearningTest {
     NStepQLearning sut;
 
     private void setup(double gamma) {
-        when(threadCurrentMock.output(any(INDArray.class))).thenAnswer(invocation -> {
+        when(threadCurrentMock.output(any(Observation.class))).thenAnswer(invocation -> {
             NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, invocation.getArgument(0, INDArray.class).mul(-1.0));
+            result.put(CommonOutputNames.QValues, invocation.getArgument(0, Observation.class).getChannelData(0).mul(-1.0));
             return result;
         });
+
         when(targetMock.output(any(Observation.class))).thenAnswer(invocation -> {
             NeuralNetOutput result = new NeuralNetOutput();
             result.put(CommonOutputNames.QValues, invocation.getArgument(0, Observation.class).getData().mul(-2.0));
@@ -59,9 +59,9 @@ public class NonRecurrentNStepQLearningTest {
         setup(1.0);
 
         final Observation observation = new Observation(Nd4j.zeros(1, 2));
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(observation, action, 0.0, true));
+                add(new StateActionReward<Integer>(observation, action, 0.0, true));
             }
         };
 
@@ -83,9 +83,9 @@ public class NonRecurrentNStepQLearningTest {
         setup(1.0);
 
         final Observation observation = new Observation(Nd4j.create(new double[] { -123.0, -234.0 }).reshape(1, 2));
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(observation, action, 0.0, false));
+                add(new StateActionReward<Integer>(observation, action, 0.0, false));
             }
         };
 
@@ -106,10 +106,10 @@ public class NonRecurrentNStepQLearningTest {
         double gamma = 0.9;
         setup(gamma);
 
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { -1.1, -1.2 }).reshape(1, 2)), 0, 1.0, false));
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { -2.1, -2.2 }).reshape(1, 2)), 1, 2.0, true));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { -1.1, -1.2 }).reshape(1, 2)), 0, 1.0, false));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { -2.1, -2.2 }).reshape(1, 2)), 1, 2.0, true));
             }
         };
 
@@ -121,7 +121,7 @@ public class NonRecurrentNStepQLearningTest {
         verify(threadCurrentMock, times(1)).computeGradients(argument.capture());
 
         // input side -- should be a stack of observations
-        INDArray featuresValues = argument.getValue().getFeatures();
+        INDArray featuresValues = argument.getValue().getFeatures().get(0);
         assertEquals(-1.1, featuresValues.getDouble(0, 0), 0.00001);
         assertEquals(-1.2, featuresValues.getDouble(0, 1), 0.00001);
         assertEquals(-2.1, featuresValues.getDouble(1, 0), 0.00001);

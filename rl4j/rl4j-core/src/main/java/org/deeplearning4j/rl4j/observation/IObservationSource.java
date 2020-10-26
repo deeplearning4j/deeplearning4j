@@ -13,37 +13,8 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-package org.deeplearning4j.rl4j.experience;
+package org.deeplearning4j.rl4j.observation;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import org.deeplearning4j.rl4j.observation.Observation;
-
-/**
- * A simple experience container. Used by {@link StateActionExperienceHandler StateActionExperienceHandler}.
- *
- * @param <A> Action type
- *
- * @author Alexandre Boulanger
- */
-@AllArgsConstructor
-public class StateActionPair<A> {
-
-    /**
-     * The observation before the action is taken
-     */
-    @Getter
-    private final Observation observation;
-
-    @Getter
-    private final A action;
-
-    @Getter
-    private final double reward;
-
-    /**
-     * True if the episode ended after the action has been taken.
-     */
-    @Getter
-    private final boolean terminal;
+public interface IObservationSource {
+    Observation getObservation();
 }
