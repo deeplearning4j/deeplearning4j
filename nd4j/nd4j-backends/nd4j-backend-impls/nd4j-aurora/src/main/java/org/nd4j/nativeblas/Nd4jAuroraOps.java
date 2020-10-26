@@ -98,7 +98,7 @@ public class Nd4jAuroraOps implements NativeOps {
         return p;
     }
 
-    public String callString(String symname, Object... args) {
+    public synchronized String callString(String symname, Object... args) {
         BytePointer dst = new BytePointer(64 * 1024);
         long src = callLong(symname, args);
         int error = veo_read_mem(proc, dst, src, 1);
@@ -120,7 +120,7 @@ public class Nd4jAuroraOps implements NativeOps {
         return s;
     }
 
-    public Object call(String symname, Object... args) {
+    public synchronized Object call(String symname, Object... args) {
         log.debug("call(" + symname + ", " + Arrays.deepToString(args) + ")");
 
         long sym = veo_get_sym(proc, handle, symname);
@@ -292,7 +292,7 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
-    public int setDevice(int deviceId) {
+    public synchronized int setDevice(int deviceId) {
         this.deviceId = deviceId;
         if (ctx != null) {
             veo_context_close(ctx);
@@ -320,7 +320,7 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
-    public Pointer mallocDevice(long memorySize, int deviceId, int flags) {
+    public synchronized Pointer mallocDevice(long memorySize, int deviceId, int flags) {
         log.debug("mallocDevice(" + memorySize + ")");
         long[] addr = {0};
         int error = veo_alloc_mem(proc, addr, memorySize);
@@ -333,7 +333,7 @@ public class Nd4jAuroraOps implements NativeOps {
     }
 
     @Override
-    public int freeDevice(Pointer p, int deviceId) {
+    public synchronized int freeDevice(Pointer p, int deviceId) {
         log.debug("freeDevice(" + p + ")");
         int i = veo_free_mem(proc, p.address());
         if (i != 0) {
@@ -353,7 +353,7 @@ public class Nd4jAuroraOps implements NativeOps {
      * @return
      */
     @Override
-    public int memcpySync(Pointer dst, Pointer src, long size, int flags, Pointer reserved) {
+    public synchronized int memcpySync(Pointer dst, Pointer src, long size, int flags, Pointer reserved) {
         if (log.isDebugEnabled()) {
             log.debug("memcpySync(" + dst + ", " + src + ", " + size + ", " + flags + ")");
         }
