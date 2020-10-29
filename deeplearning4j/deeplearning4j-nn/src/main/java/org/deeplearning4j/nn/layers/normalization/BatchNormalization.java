@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -75,24 +76,18 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.normalization.CudnnBatchNormalizationHelper")
-                        .asSubclass(BatchNormalizationHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnBatchNormalizationHelper successfully initialized");
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnBatchNormalizationHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
-            }
-        } else if("CPU".equalsIgnoreCase(backend)){
+
+        if ("CUDA".equalsIgnoreCase(backend)) {
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.normalization.CudnnBatchNormalizationHelper",
+                    BatchNormalizationHelper.class,
+                    dataType);
+            log.debug("CudnnBatchNormalizationHelper successfully initialized");
+        } else if ("CPU".equalsIgnoreCase(backend)){
             helper = new MKLDNNBatchNormHelper(dataType);
             log.trace("Created MKLDNNBatchNormHelper, layer {}", layerConf().getLayerName());
         }
+
         if (helper != null && !helper.checkSupported(layerConf().getEps(), layerConf().isLockGammaBeta())) {
             log.debug("Removed helper {} as not supported with epsilon {}, lockGammaBeta={}", helper.getClass(), layerConf().getEps(), layerConf().isLockGammaBeta());
             helper = null;

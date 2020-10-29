@@ -19,6 +19,7 @@ package org.deeplearning4j;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
@@ -66,23 +67,23 @@ public class LayerHelperValidationUtil {
 
     public static void disableCppHelpers(){
         try {
-            Class<?> c = Class.forName("org.nd4j.nativeblas.Nd4jCpu$Environment");
-            Method m = c.getMethod("getInstance");
-            Object instance = m.invoke(null);
-            Method m2 = c.getMethod("allowHelpers", boolean.class);
-            m2.invoke(instance, false);
+            Class<?> clazz = DL4JClassLoading.loadClassByName("org.nd4j.nativeblas.Nd4jCpu$Environment");
+            Method getInstance = clazz.getMethod("getInstance");
+            Object instance = getInstance.invoke(null);
+            Method allowHelpers = clazz.getMethod("allowHelpers", boolean.class);
+            allowHelpers.invoke(instance, false);
         } catch (Throwable t){
             throw new RuntimeException(t);
         }
     }
 
     public static void enableCppHelpers(){
-        try{
-            Class<?> c = Class.forName("org.nd4j.nativeblas.Nd4jCpu$Environment");
-            Method m = c.getMethod("getInstance");
-            Object instance = m.invoke(null);
-            Method m2 = c.getMethod("allowHelpers", boolean.class);
-            m2.invoke(instance, true);
+        try {
+            Class<?> clazz = DL4JClassLoading.loadClassByName("org.nd4j.nativeblas.Nd4jCpu$Environment");
+            Method getInstance = clazz.getMethod("getInstance");
+            Object instance = getInstance.invoke(null);
+            Method allowHelpers = clazz.getMethod("allowHelpers", boolean.class);
+            allowHelpers.invoke(instance, true);
         } catch (Throwable t){
             throw new RuntimeException(t);
         }

@@ -17,12 +17,14 @@
 package org.deeplearning4j.spark.text.functions;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.spark.api.java.function.Function;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.NGramTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,35 +46,33 @@ public class TokenizerFunction implements Function<String, List<String>> {
     }
 
     @Override
-    public List<String> call(String v1) throws Exception {
-        if (tokenizerFactory == null)
+    public List<String> call(String str) {
+        if (tokenizerFactory == null) {
             tokenizerFactory = getTokenizerFactory();
-        if (v1.isEmpty())
-            return Arrays.asList("");
-        return tokenizerFactory.create(v1).getTokens();
+        }
+
+        if (str.isEmpty()) {
+            return Collections.singletonList("");
+        }
+
+        return tokenizerFactory.create(str).getTokens();
     }
 
     private TokenizerFactory getTokenizerFactory() {
-        try {
-            TokenPreProcess tokenPreProcessInst = null;
-            // token preprocess CAN be undefined
-            if (tokenizerPreprocessorClazz != null && !tokenizerPreprocessorClazz.isEmpty()) {
-                Class<? extends TokenPreProcess> clazz =
-                                (Class<? extends TokenPreProcess>) Class.forName(tokenizerPreprocessorClazz);
-                tokenPreProcessInst = clazz.newInstance();
-            }
+        TokenPreProcess tokenPreProcessInst = null;
 
-            Class<? extends TokenizerFactory> clazz2 =
-                            (Class<? extends TokenizerFactory>) Class.forName(tokenizerFactoryClazz);
-            tokenizerFactory = clazz2.newInstance();
-            if (tokenPreProcessInst != null)
-                tokenizerFactory.setTokenPreProcessor(tokenPreProcessInst);
-            if (nGrams > 1) {
-                tokenizerFactory = new NGramTokenizerFactory(tokenizerFactory, nGrams, nGrams);
-            }
-        } catch (Exception e) {
-            log.error("",e);
+        if (StringUtils.isNotEmpty(tokenizerPreprocessorClazz)) {
+            tokenPreProcessInst = DL4JClassLoading.createNewInstance(tokenizerPreprocessorClazz);
         }
+
+        tokenizerFactory = DL4JClassLoading.createNewInstance(tokenizerFactoryClazz);
+
+        if (tokenPreProcessInst != null)
+            tokenizerFactory.setTokenPreProcessor(tokenPreProcessInst);
+        if (nGrams > 1) {
+            tokenizerFactory = new NGramTokenizerFactory(tokenizerFactory, nGrams, nGrams);
+        }
+
         return tokenizerFactory;
     }
 

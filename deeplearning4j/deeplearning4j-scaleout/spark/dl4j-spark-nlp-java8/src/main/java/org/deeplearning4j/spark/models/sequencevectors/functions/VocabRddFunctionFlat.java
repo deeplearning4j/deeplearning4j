@@ -19,6 +19,7 @@ package org.deeplearning4j.spark.models.sequencevectors.functions;
 import lombok.NonNull;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -56,12 +57,8 @@ public class VocabRddFunctionFlat<T extends SequenceElement> implements FlatMapF
             configuration = vectorsConfigurationBroadcast.getValue();
 
         if (ela == null) {
-            try {
-                ela = (SparkElementsLearningAlgorithm) Class.forName(configuration.getElementsLearningAlgorithm())
-                        .newInstance();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            String className = configuration.getElementsLearningAlgorithm();
+            ela = DL4JClassLoading.createNewInstance(className);
         }
         driver = ela.getTrainingDriver();
 

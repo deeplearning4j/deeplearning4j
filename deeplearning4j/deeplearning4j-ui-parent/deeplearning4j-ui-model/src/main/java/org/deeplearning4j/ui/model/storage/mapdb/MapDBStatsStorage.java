@@ -18,6 +18,7 @@ package org.deeplearning4j.ui.model.storage.mapdb;
 
 import lombok.Data;
 import lombok.NonNull;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.core.storage.*;
 import org.deeplearning4j.ui.model.storage.FileStatsStorage;
 import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
@@ -318,26 +319,18 @@ public class MapDBStatsStorage extends BaseCollectionStatsStorage {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public T deserialize(@NonNull DataInput2 input, int available) throws IOException {
             int classIdx = input.readInt();
             String className = getClassForInt(classIdx);
-            Class<?> clazz;
-            try {
-                clazz = Class.forName(className);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e); //Shouldn't normally happen...
-            }
-            Persistable p;
-            try {
-                p = (Persistable) clazz.newInstance();
-            } catch (InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-            int remainingLength = available - 4; //-4 for int class index
+
+            Persistable persistable = DL4JClassLoading.createNewInstance(className);
+
+            int remainingLength = available - 4; // -4 for int class index
             byte[] temp = new byte[remainingLength];
             input.readFully(temp);
-            p.decode(temp);
-            return (T) p;
+            persistable.decode(temp);
+            return (T) persistable;
         }
 
         @Override

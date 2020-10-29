@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.val;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -167,7 +168,7 @@ public class GravesLSTMTest extends BaseDL4JTest {
         actHelper.setAccessible(true);
 
         //Call activateHelper with both forBackprop == true, and forBackprop == false and compare
-        Class<?> innerClass = Class.forName("org.deeplearning4j.nn.layers.recurrent.FwdPassReturn");
+        Class<?> innerClass = DL4JClassLoading.loadClassByName("org.deeplearning4j.nn.layers.recurrent.FwdPassReturn");
 
         Object oFalse = actHelper.invoke(lstm, false, null, null, false, LayerWorkspaceMgr.noWorkspacesImmutable()); //GravesLSTM.FwdPassReturn object; want fwdPassOutput INDArray
         Object oTrue = actHelper.invoke(lstm, false, null, null, true, LayerWorkspaceMgr.noWorkspacesImmutable()); //want fwdPassOutputAsArrays object

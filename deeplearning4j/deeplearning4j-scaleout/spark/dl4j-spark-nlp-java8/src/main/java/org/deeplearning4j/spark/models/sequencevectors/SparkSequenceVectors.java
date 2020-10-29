@@ -25,6 +25,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
@@ -161,14 +162,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         validateConfiguration();
 
         if (ela == null) {
-            try {
-                ela = (SparkElementsLearningAlgorithm) Class.forName(configuration.getElementsLearningAlgorithm())
-                                .newInstance();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            String className = configuration.getElementsLearningAlgorithm();
+            ela = DL4JClassLoading.createNewInstance(className);
         }
-
 
         if (workers > 1) {
             log.info("Repartitioning corpus to {} parts...", workers);
