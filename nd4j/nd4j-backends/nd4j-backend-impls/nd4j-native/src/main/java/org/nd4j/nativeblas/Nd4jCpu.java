@@ -3135,9 +3135,21 @@ public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPoin
 
 
 // special sort impl for sorting out COO indices and values
-public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, Pointer values, @Cast("Nd4jLong") long length, int rank);
-public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, Pointer values, @Cast("Nd4jLong") long length, int rank);
-public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, Pointer values, @Cast("Nd4jLong") long length, int rank);
+public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                @Cast("Nd4jLong*") LongPointer indices,
+                                Pointer x,
+                                @Cast("Nd4jLong") long length,
+                                @Cast("const Nd4jLong*") LongPointer xShapeInfo);
+public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                @Cast("Nd4jLong*") LongBuffer indices,
+                                Pointer x,
+                                @Cast("Nd4jLong") long length,
+                                @Cast("const Nd4jLong*") LongBuffer xShapeInfo);
+public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                @Cast("Nd4jLong*") long[] indices,
+                                Pointer x,
+                                @Cast("Nd4jLong") long length,
+                                @Cast("const Nd4jLong*") long[] xShapeInfo);
 
 
 public native @Cast("Nd4jLong*") LongPointer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") String fileName, @Cast("Nd4jLong") long length);

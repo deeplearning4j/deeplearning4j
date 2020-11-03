@@ -28,6 +28,7 @@
 #include <ops/specials_sparse.h>
 #include <execution/LaunchContext.h>
 #include <array/ArrayOptions.h>
+#include <helpers/shape.h>
 
 /**
  * Native op executioner:
@@ -652,8 +653,11 @@ static void execTransformBool(sd::LaunchContext  *lc,
         BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortTadGeneric(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);
     }
 
-    inline static void execSortCooIndices(Nd4jLong *indices, void *values, Nd4jLong length, int rank) {
-        sd::sparse::SparseUtils<Nd4jLong>::sortCooIndicesGeneric(indices, reinterpret_cast<Nd4jLong *>(values), length, rank);
+    inline static void execSortCooIndices(Nd4jLong *indices, void *x, Nd4jLong length, const Nd4jLong *xShapeInfo) {
+        auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+        int rank = shape::rank(xShapeInfo);
+
+        BUILD_SINGLE_SELECTOR(xType, sd::sparse::SparseUtils, ::sortCooIndicesGeneric(indices, x, length, rank), LIBND4J_TYPES);
     }
 
 

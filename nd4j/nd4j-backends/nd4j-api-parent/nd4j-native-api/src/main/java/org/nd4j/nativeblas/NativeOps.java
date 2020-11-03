@@ -1022,7 +1022,7 @@ public interface NativeOps {
                  boolean descending);
 
 
-    void sortCooIndices(PointerPointer extraPointers, @Cast("Nd4jLong *") LongPointer indices, Pointer values, long length, int rank);
+    void sortCooIndices(PointerPointer extraPointers, @Cast("Nd4jLong *") LongPointer indices, Pointer x, long length, @Cast("Nd4jLong *") LongPointer shapeInfo);
 
 
     LongPointer mmapFile(PointerPointer extraPointers, String fileName, long length);
