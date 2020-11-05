@@ -1843,6 +1843,14 @@ void sortCooIndices(Nd4jPointer *extraPointers,
     }
 }
 
+void ravelMultiIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo, int mode) {
+    NativeOpExecutioner::execRavelMultiIndex(indices, flatIndices, length, shapeInfo, mode);
+}
+
+void unravelIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo) {
+    NativeOpExecutioner::execUnravelIndex(indices, flatIndices, length, shapeInfo);
+}
+
 Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong const* hXShapeInfo, Nd4jLong N, int *dz, float threshold) {
     return NativeOpExecutioner::encodeBitmap(hX, hXShapeInfo, N, dz, threshold);
 }

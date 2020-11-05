@@ -1482,6 +1482,30 @@ ND4J_EXPORT void sortCooIndices(Nd4jPointer *extraPointers,
                                 Nd4jLong length,
                                 const Nd4jLong *xShapeInfo);
 
+/**
+ *
+ * @param extraPointers     not used
+ * @param indices           DataBuffer containing COO indices for a sparse matrix that is to be raveled/flattened
+ * @param flatIndices       DataBuffer where the raveled/flattened indices are to be written to
+ * @param length            number of non-zero entries (length of flatIndices)
+ * @param fullShapeBuffer   DataBuffer with ShapeInfo for the full matrix to be flattened
+ * @param mode              clipMode determines the strategy to use if some of the the passed COO indices does
+ *                          not fit into the shape determined by fullShapeBuffer
+ *                              0   throw an exception (default)
+ *                              1   wrap around shape
+ *                              2   clip to shape
+ */
+ND4J_EXPORT void ravelMultiIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo, int mode);
+
+/**
+ *
+ * @param extraPointers     not used
+ * @param indices           DataBuffer where the unraveled COO indices are to be written
+ * @param flatIndices       DataBuffer containing the raveled/flattened indices to be unravel
+ * @param length            number of non-zero entries (length of flatIndices)
+ * @param fullShapeBuffer   DataBuffer with ShapeInfo for the full matrix to be unraveled
+ */
+ND4J_EXPORT void unravelIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo);
 
 ND4J_EXPORT Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length);
 
