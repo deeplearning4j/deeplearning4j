@@ -17,6 +17,7 @@
 package org.nd4j.parameterserver.distributed.training;
 
 import lombok.NonNull;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.logic.Storage;
@@ -52,13 +53,14 @@ public class TrainerProvider {
     }
 
     protected void loadProviders(){
-        ServiceLoader<TrainingDriver> serviceLoader = ServiceLoader.load(TrainingDriver.class);
-        for(TrainingDriver d : serviceLoader){
-            trainers.put(d.targetMessageClass(), d);
+        ServiceLoader<TrainingDriver> serviceLoader = ND4JClassLoading.loadService(TrainingDriver.class);
+        for (TrainingDriver trainingDriver : serviceLoader){
+            trainers.put(trainingDriver.targetMessageClass(), trainingDriver);
         }
 
-        if (trainers.size() < 1)
+        if (trainers.isEmpty()) {
             throw new ND4JIllegalStateException("No TrainingDrivers were found via ServiceLoader mechanism");
+        }
     }
 
     public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport,
@@ -72,8 +74,6 @@ public class TrainerProvider {
             trainer.init(voidConfiguration, transport, storage, clipboard);
         }
     }
-
-
 
     @SuppressWarnings("unchecked")
     protected <T extends TrainingMessage> TrainingDriver<T> getTrainer(T message) {

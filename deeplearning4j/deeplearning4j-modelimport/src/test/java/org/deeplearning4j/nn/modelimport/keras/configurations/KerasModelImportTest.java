@@ -18,15 +18,23 @@ package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.common.resources.Resources;
+import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -34,12 +42,32 @@ import static org.junit.Assert.assertNotNull;
  */
 @Slf4j
 public class KerasModelImportTest extends BaseDL4JTest {
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 9999999999999L;
+    }
 
     @Test
     public void testH5WithoutTensorflowScope() throws Exception {
         MultiLayerNetwork model = loadModel("modelimport/keras/tfscope/model.h5");
         assertNotNull(model);
     }
+
+    @Test
+    public void testNCHWNWHCChangeImport() {
+        MultiLayerNetwork model = loadModel("modelimport/keras/weights/conv2dnchw/simpleconv2d.hdf5");
+        MultiLayerConfiguration multiLayerConfiguration = model.getLayerWiseConfigurations();
+        ConvolutionLayer convolutionLayer = (ConvolutionLayer) multiLayerConfiguration.getConf(0).getLayer();
+        assertEquals(CNN2DFormat.NCHW,convolutionLayer.getCnn2dDataFormat());
+        SubsamplingLayer subsamplingLayer = (SubsamplingLayer) multiLayerConfiguration.getConf(1).getLayer();
+        assertEquals(CNN2DFormat.NHWC,subsamplingLayer.getCnn2dDataFormat());
+        ConvolutionLayer convolutionLayer1 = (ConvolutionLayer) multiLayerConfiguration.getConf(2).getLayer();
+        assertEquals(CNN2DFormat.NHWC,convolutionLayer1.getCnn2dDataFormat());
+
+        model.output(Nd4j.zeros(1,1,28,28));
+        assertNotNull(model);
+    }
+
 
     @Test
     public void testH5WithTensorflowScope() throws Exception {

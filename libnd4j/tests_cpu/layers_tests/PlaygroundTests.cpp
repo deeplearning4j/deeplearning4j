@@ -49,7 +49,7 @@
 #include <ops/declarable/helpers/axis.h>
 #include <ops/declarable/helpers/reductions.h>
 #include <helpers/LoopsCoordsHelper.h>
-
+#include <build_info.h>
 using namespace sd;
 using namespace sd::graph;
 
@@ -66,6 +66,9 @@ TEST_F(PlaygroundTests, test_avx) {
     nd4j_printf("Optimal level: %i; Binary level: %i;\n", ::optimalLevel(), ::binaryLevel());
 }
 
+TEST_F(PlaygroundTests, buildver) {
+    nd4j_printf("%s\n", buildInfo());
+}
 
 TEST_F(PlaygroundTests, test_biasAdd_1) {
     auto x = NDArrayFactory::create<float>('c', {512, 3072});
@@ -1132,6 +1135,26 @@ TEST_F(PlaygroundTests, lstmLayerCellBp_1) {
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, true, true, true, true, true, true});
 }
 
+TEST_F(PlaygroundTests, my) {
+
+    const int N = 40;
+
+    NDArray x('c', {256,256,128,128}, sd::DataType::FLOAT32);
+    NDArray z1('c', {256,2,128}, sd::DataType::DOUBLE);
+    NDArray z = z1({0,0,0,1,0,0});
+    z.printShapeInfo();
+
+    auto timeStart = std::chrono::system_clock::now();
+    for (int i = 0; i < N; ++i) {
+        // x.reduceAlongDimension(sd::reduce::Mean, z, {1,3});
+        x.applyBroadcast(sd::broadcast::Ops::Add, {1,3}, z, x);
+    }
+    auto timeEnd = std::chrono::system_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
+
+    printf("old %ld\n", time);
+}
+
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, lstmLayer_bp_1) {
@@ -1657,52 +1680,4 @@ TEST_F(DeclarableOpsTests15, gru_bp_1) {
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 }
 
-#include<ops/declarable/helpers/transforms.h>
-//////////////////////////////////////////////////////////////////////
-TEST_F(PlaygroundTests, my) {
-
-    const int N = 10;
-
-    NDArray input('c', {8000000}, sd::DataType::INT32);
-    input.linspace(1);
-    NDArray output = input.dup();
-
-
-    sd::graph::RandomGenerator rng;
-
-    sd::ops::helpers::randomShuffle(input.getContext(), input, output, rng, true);
-
-    // auto timeStart = std::chrono::system_clock::now();
-    // for (int i = 0; i < N; ++i)
-    //     sd::ops::helpers::randomShuffle(input.getContext(), input, output, rng, true);
-    // auto timeEnd = std::chrono::system_clock::now();
-    // auto time = std::chrono::duration_cast<std::chrono::microseconds> ((timeEnd - timeStart) / N).count();
-    // printf("time: %i \n", time);
-
-    // bool hasDublicates = false;
-    // for(int i = 0; i < output.lengthOf() - 1; ++i)
-    //     for(int j = i+1; j < output.lengthOf(); ++j)
-    //         if(output.t<int>(i) == output.t<int>(j)) {
-    //             hasDublicates = true;
-    //             i = output.lengthOf();
-    //             break;
-    //         }
-
-    ASSERT_TRUE(!input.equalsTo(output));
-
-    bool hasDublicates = false;
-    for(int i = 0; i < input.lengthOf() - 1; ++i)
-        for(int j = i+1; j < input.lengthOf(); ++j)
-            if(input.t<int>(i) == input.t<int>(j)) {
-                hasDublicates = true;
-                i = input.lengthOf();
-                break;
-            }
-    ASSERT_TRUE(!hasDublicates);
-}
-
-
-}
-
 */
-

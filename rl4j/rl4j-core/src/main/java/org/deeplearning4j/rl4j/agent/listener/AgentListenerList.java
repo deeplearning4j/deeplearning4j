@@ -86,4 +86,16 @@ public class AgentListenerList<ACTION> {
 
         return true;
     }
+
+    /**
+     * This method will notify all listeners that an episode has finished.
+     *
+     * @param agent The agent that generated the event.
+     */
+    public void notifyAfterEpisode(Agent<ACTION> agent) {
+        for (AgentListener<ACTION> listener : listeners) {
+            listener.onAfterEpisode(agent);
+        }
+    }
+
 }

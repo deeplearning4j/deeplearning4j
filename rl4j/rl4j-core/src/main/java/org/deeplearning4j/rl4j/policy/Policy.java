@@ -21,10 +21,10 @@ import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 
 /**
@@ -36,18 +36,21 @@ import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
  */
 public abstract class Policy<A> implements INeuralNetPolicy<A> {
 
-    public abstract NeuralNet getNeuralNet();
+    public abstract IOutputNeuralNet getNeuralNet();
 
     public abstract A nextAction(Observation obs);
 
+    @Deprecated
     public <O extends Encodable, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp) {
         return play(mdp, (IHistoryProcessor)null);
     }
 
+    @Deprecated
     public <O extends Encodable, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, HistoryProcessor.Configuration conf) {
         return play(mdp, new HistoryProcessor(conf));
     }
 
+    @Deprecated
     @Override
     public <O extends Encodable, AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
         resetNetworks();
@@ -106,5 +109,4 @@ public abstract class Policy<A> implements INeuralNetPolicy<A> {
 
         return new Learning.InitMdp(0, observation, reward);
     }
-
 }

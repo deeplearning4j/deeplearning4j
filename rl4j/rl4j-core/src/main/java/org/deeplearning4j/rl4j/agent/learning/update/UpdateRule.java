@@ -16,6 +16,7 @@
 package org.deeplearning4j.rl4j.agent.learning.update;
 
 import lombok.Getter;
+import lombok.NonNull;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.INeuralNetUpdater;
 
@@ -37,8 +38,8 @@ public class UpdateRule<RESULT_TYPE, EXPERIENCE_TYPE> implements IUpdateRule<EXP
     @Getter
     private int updateCount = 0;
 
-    public UpdateRule(IUpdateAlgorithm<RESULT_TYPE, EXPERIENCE_TYPE> updateAlgorithm,
-                      INeuralNetUpdater<RESULT_TYPE> updater) {
+    public UpdateRule(@NonNull IUpdateAlgorithm<RESULT_TYPE, EXPERIENCE_TYPE> updateAlgorithm,
+                      @NonNull INeuralNetUpdater<RESULT_TYPE> updater) {
         this.updateAlgorithm = updateAlgorithm;
         this.updater = updater;
     }
@@ -48,6 +49,11 @@ public class UpdateRule<RESULT_TYPE, EXPERIENCE_TYPE> implements IUpdateRule<EXP
         RESULT_TYPE featuresLabels = updateAlgorithm.compute(trainingBatch);
         updater.update(featuresLabels);
         ++updateCount;
+    }
+
+    @Override
+    public void notifyNewBatchStarted() {
+        updater.synchronizeCurrent();
     }
 
 }

@@ -46,14 +46,14 @@ public class Text extends BinaryComparable implements WritableComparable<BinaryC
 
     private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY = new ThreadLocal<CharsetEncoder>() {
         protected CharsetEncoder initialValue() {
-            return Charset.forName("UTF-8").newEncoder().onMalformedInput(CodingErrorAction.REPORT)
+            return StandardCharsets.UTF_8.newEncoder().onMalformedInput(CodingErrorAction.REPORT)
                             .onUnmappableCharacter(CodingErrorAction.REPORT);
         }
     };
 
     private static ThreadLocal<CharsetDecoder> DECODER_FACTORY = new ThreadLocal<CharsetDecoder>() {
         protected CharsetDecoder initialValue() {
-            return Charset.forName("UTF-8").newDecoder().onMalformedInput(CodingErrorAction.REPORT)
+            return StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
                             .onUnmappableCharacter(CodingErrorAction.REPORT);
         }
     };

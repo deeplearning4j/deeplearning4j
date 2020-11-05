@@ -18,7 +18,6 @@ package org.datavec.local.transforms;
 
 
 import org.datavec.local.transforms.functions.FlatMapFunctionAdapter;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.List;
 

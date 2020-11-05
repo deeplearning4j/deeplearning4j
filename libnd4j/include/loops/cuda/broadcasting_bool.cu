@@ -295,20 +295,15 @@ __device__ void BroadcastBool<X,Z>::transformCuda(const void *vx, const Nd4jLong
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int xCoords[MAX_RANK], yCoords[MAX_RANK], zCoords[MAX_RANK];
+    int coords[MAX_RANK];
 
     for (int i = tid; i < zLen; i += blockDim.x * gridDim.x) {
 
-        shape::index2coords(i, zShapeInfo, zCoords);
+        shape::index2coords(i, zShapeInfo, coords);
 
-        for (uint j = 0; j < rank; ++j) {
-            xCoords[j] = shape::sizeAt(xShapeInfo, j) == 1 ? 0 : zCoords[j];
-            yCoords[j] = shape::sizeAt(yShapeInfo, j) == 1 ? 0 : zCoords[j];
-        }
-
-        const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
-        const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, xCoords);
-        const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, yCoords);
+        const auto zOffset = shape::getOffset(zShapeInfo, coords);
+        const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords);
+        const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, coords);
 
         z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
     }

@@ -22,7 +22,7 @@
 
 #ifndef INDEXREDUCE_H_
 #define INDEXREDUCE_H_
-#include "../helpers/shape.h"
+#include <helpers/shape.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -63,7 +63,7 @@ namespace functions {
                                      const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset);
 
     template<typename OpType>
-	static __device__ void aggregatePartials(IndexValue<X> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *extraParams);
+	static __device__ void aggregatePartials(IndexValue<X> *sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *extraParams);
 
 
     template<typename OpType>

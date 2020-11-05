@@ -16,14 +16,12 @@
 
 package org.datavec.api.records.reader.impl.transform;
 
-import lombok.AllArgsConstructor;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.InputSplit;
-import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
 

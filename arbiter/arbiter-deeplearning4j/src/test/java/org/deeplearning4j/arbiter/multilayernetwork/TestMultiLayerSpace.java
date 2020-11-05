@@ -56,7 +56,6 @@ import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
@@ -384,8 +383,7 @@ public class TestMultiLayerSpace extends BaseDL4JTest {
 
 
         double[] ones = new double[numParams];
-        for (int i = 0; i < ones.length; i++)
-            ones[i] = 1.0;
+        Arrays.fill(ones, 1.0);
 
         configuration = mls.getValue(ones);
 

@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -66,6 +67,7 @@ public class KerasZeroPadding2D extends KerasLayer {
         String paddingField = conf.getLAYER_FIELD_ZERO_PADDING();
         ZeroPaddingLayer.Builder builder = new ZeroPaddingLayer.Builder(
                 getPaddingFromConfig(layerConfig, conf, paddingField, 2))
+                .dataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .name(this.layerName).dropOut(this.dropout);
         this.layer = builder.build();
         this.vertex = null;

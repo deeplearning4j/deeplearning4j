@@ -25,8 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Iterator;
-
 /**
  * Base distribution derived from apache commons math
  * http://commons.apache.org/proper/commons-math/

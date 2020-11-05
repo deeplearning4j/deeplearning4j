@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
@@ -85,8 +86,14 @@ public class KerasMerge extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         this.mergeMode = mergeMode;
-        if (this.mergeMode == null)
+
+        if (this.mergeMode == null) {
             this.vertex = new MergeVertex();
+            MergeVertex mergeVertex = (MergeVertex) this.vertex;
+            if(hasMergeAxis(layerConfig)) {
+                mergeVertex.setMergeAxis(getMergeAxisFromConfig(layerConfig));
+            }
+        }
         else
             this.vertex = new ElementWiseVertex(mergeMode);
     }
@@ -103,8 +110,14 @@ public class KerasMerge extends KerasLayer {
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
         this.mergeMode = getMergeMode(layerConfig);
-        if (this.mergeMode == null)
+
+        if (this.mergeMode == null) {
             this.vertex = new MergeVertex();
+            MergeVertex mergeVertex = (MergeVertex) this.vertex;
+            if(hasMergeAxis(layerConfig)) {
+                mergeVertex.setMergeAxis(getMergeAxisFromConfig(layerConfig));
+            }
+        }
         else
             this.vertex = new ElementWiseVertex(mergeMode);
     }
@@ -152,4 +165,20 @@ public class KerasMerge extends KerasLayer {
     public InputType getOutputType(InputType... inputType) {
         return this.vertex.getOutputType(-1, inputType);
     }
+
+    private boolean hasMergeAxis(Map<String,Object> config) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(config, conf);
+        return innerConfig.containsKey(conf.getLAYER_FIELD_CONSTRAINT_DIM());
+    }
+
+    private Integer getMergeAxisFromConfig(Map<String,Object> config) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(config, conf);
+        if(innerConfig.containsKey(conf.getLAYER_FIELD_CONSTRAINT_DIM())) {
+            Integer dim = (Integer) innerConfig.get(conf.getLAYER_FIELD_CONSTRAINT_DIM());
+            return dim;
+        }
+
+        return null;
+    }
+
 }

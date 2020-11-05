@@ -15,9 +15,7 @@
  ******************************************************************************/
 
 
-import org.nd4j.python4j.PythonException;
-import org.nd4j.python4j.PythonObject;
-import org.nd4j.python4j.PythonTypes;
+import org.nd4j.python4j.*;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,33 +28,39 @@ public class PythonCollectionsTest {
 
     @Test
     public void testPythonDictFromMap() throws PythonException {
-        Map map = new HashMap();
-        map.put("a", 1);
-        map.put(1, "a");
-        map.put("list1", Arrays.asList(1, 2.0, 3, 4f));
-        Map innerMap = new HashMap();
-        innerMap.put("b", 2);
-        innerMap.put(2, "b");
-        map.put("innermap", innerMap);
-        map.put("list2", Arrays.asList(4, "5", innerMap, false, true));
-        PythonObject dict = PythonTypes.convert(map);
-        Map map2 = PythonTypes.DICT.toJava(dict);
-        Assert.assertEquals(map.toString(), map2.toString());
+      try(PythonGIL pythonGIL = PythonGIL.lock()) {
+          Map map = new HashMap();
+          map.put("a", 1);
+          map.put(1, "a");
+          map.put("list1", Arrays.asList(1, 2.0, 3, 4f));
+          Map innerMap = new HashMap();
+          innerMap.put("b", 2);
+          innerMap.put(2, "b");
+          map.put("innermap", innerMap);
+          map.put("list2", Arrays.asList(4, "5", innerMap, false, true));
+          PythonObject dict = PythonTypes.convert(map);
+          Map map2 = PythonTypes.DICT.toJava(dict);
+          Assert.assertEquals(map.toString(), map2.toString());
+      }
+
     }
 
     @Test
     public void testPythonListFromList() throws PythonException{
-        List<Object> list = new ArrayList<>();
-        list.add(1);
-        list.add("2");
-        list.add(Arrays.asList("a", 1.0, 2f, 10, true, false));
-        Map map = new HashMap();
-        map.put("a", 1);
-        map.put(1, "a");
-        map.put("list1", Arrays.asList(1, 2.0, 3, 4f));
-        list.add(map);
-        PythonObject dict = PythonTypes.convert(list);
-        List list2 = PythonTypes.LIST.toJava(dict);
-        Assert.assertEquals(list.toString(), list2.toString());
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            List<Object> list = new ArrayList<>();
+            list.add(1);
+            list.add("2");
+            list.add(Arrays.asList("a", 1.0, 2f, 10, true, false));
+            Map map = new HashMap();
+            map.put("a", 1);
+            map.put(1, "a");
+            map.put("list1", Arrays.asList(1, 2.0, 3, 4f));
+            list.add(map);
+            PythonObject dict = PythonTypes.convert(list);
+            List list2 = PythonTypes.LIST.toJava(dict);
+            Assert.assertEquals(list.toString(), list2.toString());
+        }
+
     }
 }

@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
@@ -67,7 +68,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf, networkDataType);
+                new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -81,8 +82,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex
-                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                            + inputType);
+                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                    + inputType);
         }
         InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType;
         long inputTsLength = it.getTimeSeriesLength();
@@ -92,7 +93,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
             outLength = -1;
         } else {
             outLength = Convolution1DUtils.getOutputSize(inputTsLength, kernelSize[0], stride[0], padding[0],
-                            convolutionMode, dilation[0]);
+                    convolutionMode, dilation[0]);
         }
 
         return InputType.recurrent(nOut, outLength, rnnDataFormat);
@@ -102,21 +103,25 @@ public class Convolution1DLayer extends ConvolutionLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer name = \"" + getLayerName()
-                            + "\"): expect RNN input type with size > 0. Got: " + inputType);
+                    + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
         InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
         if (nIn <= 0 || override) {
             this.nIn = r.getSize();
         }
-        this.rnnDataFormat = r.getFormat();
+        if(this.rnnDataFormat == null || override)
+            this.rnnDataFormat = r.getFormat();
+
+        if(this.cnn2dDataFormat == null || override)
+            this.cnn2dDataFormat = rnnDataFormat == RNNFormat.NCW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Convolution1D layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
 
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, rnnDataFormat,getLayerName());
@@ -137,7 +142,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
 
-        public Builder rnnDataFormat(RNNFormat rnnDataFormat){
+        public Builder rnnDataFormat(RNNFormat rnnDataFormat) {
             this.rnnDataFormat = rnnDataFormat;
             return this;
         }

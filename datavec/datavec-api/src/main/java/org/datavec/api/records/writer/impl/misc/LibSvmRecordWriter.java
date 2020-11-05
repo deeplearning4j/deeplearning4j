@@ -17,10 +17,6 @@
 package org.datavec.api.records.writer.impl.misc;
 
 import lombok.extern.slf4j.Slf4j;
-import org.datavec.api.conf.Configuration;
-
-import java.io.File;
-import java.io.FileNotFoundException;
 
 
 /**

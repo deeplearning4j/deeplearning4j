@@ -47,7 +47,7 @@ public class KerasModelImport {
      * @return ComputationGraph
      * @see ComputationGraph
      */
-    public static ComputationGraph importKerasModelAndWeights( InputStream modelHdf5Stream, boolean enforceTrainingConfig)
+    public static ComputationGraph importKerasModelAndWeights(InputStream modelHdf5Stream, boolean enforceTrainingConfig)
             throws IOException, UnsupportedKerasConfigurationException, InvalidKerasConfigurationException{
         File f = null;
         try{

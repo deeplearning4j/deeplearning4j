@@ -28,8 +28,10 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfigurationFactory;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasConvolutionUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasRegularizerUtils;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
@@ -62,6 +64,7 @@ public class KerasLayer {
     protected double dropout = 1.0; // Dropout
     protected Integer kerasMajorVersion = 2; // Set 2 as default for now
     protected KerasLayerConfiguration conf;
+
 
     /**
      * Constructor with Keras version only.
@@ -248,7 +251,7 @@ public class KerasLayer {
     /**
      * Set list of inbound layers.
      *
-     * @param inboundLayerNames list of inbound layer naems
+     * @param inboundLayerNames list of inbound layer names
      */
     public void setInboundLayerNames(List<String> inboundLayerNames) {
         this.inboundLayerNames = new ArrayList<>(inboundLayerNames);
@@ -323,7 +326,18 @@ public class KerasLayer {
             /* Copy weights. */
             for (String paramName : layer.paramTable().keySet()) {
                 try {
-                    layer.setParam(paramName, this.weights.get(paramName));
+                    long[] dl4jWeights = layer.paramTable().get(paramName).shape();
+                    long[] kerasWeights = weights.get(paramName).shape();
+                    INDArray variable = this.weights.get(paramName);
+                    if(!Arrays.equals(dl4jWeights,kerasWeights) &&
+                            ArrayUtil.prod(dl4jWeights) == ArrayUtil.prod(kerasWeights)) {
+                        layer.setParam(paramName, variable.reshape(dl4jWeights));
+                    }
+                    else {
+                        layer.setParam(paramName, variable);
+
+                    }
+
                 } catch (Exception e) {
                     log.error(e.getMessage());
                     throw new InvalidKerasConfigurationException(e.getMessage()

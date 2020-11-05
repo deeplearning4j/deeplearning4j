@@ -15,6 +15,7 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.network;
 
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -23,16 +24,36 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public interface IOutputNeuralNet {
     /**
-     * Compute the output for the supplied observation.
+     * Compute the output for the supplied observation. Multiple calls to output() with the same observation will
+     * give the same output, even if the internal state has changed, until the network is reset or an operation
+     * that modifies it is performed (See {@link ITrainableNeuralNet#fit}, {@link ITrainableNeuralNet#applyGradients},
+     * and {@link ITrainableNeuralNet#copyFrom}).
      * @param observation An {@link Observation}
      * @return The ouptut of the network
      */
-    INDArray output(Observation observation);
+    NeuralNetOutput output(Observation observation);
 
     /**
      * Compute the output for the supplied batch.
      * @param batch
      * @return The ouptut of the network
      */
-    INDArray output(INDArray batch);
+    NeuralNetOutput output(INDArray batch); // FIXME: Remove once legacy classes are gone
+
+    /**
+     * Compute the output for the supplied batch.
+     * @param features A {@link Features} instance
+     * @return The ouptut of the network
+     */
+    NeuralNetOutput output(Features features);
+
+    /**
+     * Clear the neural net of any previous state
+     */
+    void reset();
+
+    /**
+     * @return True if the neural net is a RNN
+     */
+    boolean isRecurrent();
 }

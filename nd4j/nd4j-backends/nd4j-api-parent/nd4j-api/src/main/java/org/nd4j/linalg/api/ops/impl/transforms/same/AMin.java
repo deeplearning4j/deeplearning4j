@@ -20,7 +20,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseReduceSameOp;
 import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.MinBp;
 

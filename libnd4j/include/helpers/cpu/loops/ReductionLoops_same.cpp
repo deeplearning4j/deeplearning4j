@@ -26,23 +26,23 @@ namespace sd {
 
     template<typename X>
     template <typename OpType>
-    void ReductionSameLoops<X>::innerloopReduce(const X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop) {
+    void ReductionSameLoops<X>::innerloopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong* xShapeInfo, X* z, const Nd4jLong* zShapeInfo, const int* dims, X* extraParams) {
 #ifndef INLINE_LOOPS
-        ReductionLoops<X,X,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams, start, stop);
+        ReductionLoops<X,X,X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #endif
     }
 
     template<typename X>
-    void ReductionSameLoops<X>::wrapper(const int opNum, const X *vx, const Nd4jLong *xShapeInfo, X *vz,
-                                        const Nd4jLong *zShapeInfo, const Nd4jLong *tadShapeInfo,
-                                        const Nd4jLong *tadOffsets,
-                                           X *vextraParams, int64_t start, int64_t stop) {
+    void ReductionSameLoops<X>::wrapper(const int opNum, sd::memory::Workspace* workspace,
+                                        const X *vx, const Nd4jLong *xShapeInfo,
+                                        X *z, const Nd4jLong *zShapeInfo,
+                                        const int *dims, X *vextraParams) {
 #ifndef INLINE_LOOPS
         auto x = reinterpret_cast<X *>(vx);
         auto z = reinterpret_cast<X *>(vz);
         auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-        DISPATCH_BY_OPNUM_T(innerloopReduce, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams, start, stop), REDUCE_SAME_OPS);
+        DISPATCH_BY_OPNUM_T(innerloopReduce, PARAMS(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams), REDUCE_SAME_OPS);
 #endif
     }
 

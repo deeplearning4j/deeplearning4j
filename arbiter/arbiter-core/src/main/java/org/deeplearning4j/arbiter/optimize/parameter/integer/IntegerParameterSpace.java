@@ -132,9 +132,7 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
         if (distribution == null ? other.distribution != null
                         : !DistributionUtils.distributionEquals(distribution, other.distribution))
             return false;
-        if (this.index != other.index)
-            return false;
-        return true;
+        return this.index == other.index;
     }
 
     public int hashCode() {

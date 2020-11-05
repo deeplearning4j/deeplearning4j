@@ -23,6 +23,8 @@ import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
+import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -39,7 +41,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -100,6 +101,8 @@ public class QLearningDiscreteTest {
         when(mockQlearningConfiguration.getRewardFactor()).thenReturn(rewardFactor);
         when(mockQlearningConfiguration.getExpRepMaxSize()).thenReturn(maxExperienceReplay);
         when(mockQlearningConfiguration.getSeed()).thenReturn(123L);
+        when(mockQlearningConfiguration.getTargetDqnUpdateFreq()).thenReturn(1);
+        when(mockDQN.clone()).thenReturn(mockDQN);
 
         if(learningBehavior != null) {
             qLearningDiscrete = mock(
@@ -153,7 +156,9 @@ public class QLearningDiscreteTest {
 
         // An example observation and 2 Q values output (2 actions)
         Observation observation = new Observation(Nd4j.zeros(observationShape));
-        when(mockDQN.output(eq(observation))).thenReturn(Nd4j.create(new float[] {1.0f, 0.5f}));
+        NeuralNetOutput netOutputResult = new NeuralNetOutput();
+        netOutputResult.put(CommonOutputNames.QValues, Nd4j.create(new float[] {1.0f, 0.5f}));
+        when(mockDQN.output(eq(observation))).thenReturn(netOutputResult);
 
         when(mockMDP.step(anyInt())).thenReturn(new StepReply<>(new Observation(Nd4j.zeros(observationShape)), 0, false, null));
 

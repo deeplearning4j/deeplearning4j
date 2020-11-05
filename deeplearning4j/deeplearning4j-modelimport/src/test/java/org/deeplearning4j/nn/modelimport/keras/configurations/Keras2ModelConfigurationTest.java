@@ -205,7 +205,17 @@ public class Keras2ModelConfigurationTest extends BaseDL4JTest {
 
     @Test
     public void embeddingLSTMMaskZeroTest() throws Exception {
-        runModelConfigTest("modelimport/keras/configs/keras2/embedding_lstm_calculator.json");
+        String path = "modelimport/keras/configs/keras2/embedding_lstm_calculator.json";
+        try(InputStream is = Resources.asStream(path)) {
+            ComputationGraphConfiguration config =
+                    new KerasModel().modelBuilder().modelJsonInputStream(is)
+                            .enforceTrainingConfig(false).buildModel().getComputationGraphConfiguration();
+            ComputationGraph model = new ComputationGraph(config);
+            model.init();
+            INDArray output = model.outputSingle(Nd4j.zeros(1,3));
+            System.out.println(output.shapeInfoToString());
+        }
+
     }
 
     @Test
@@ -217,6 +227,11 @@ public class Keras2ModelConfigurationTest extends BaseDL4JTest {
     @Test
     public void simpleAddLayerTest() throws Exception {
         runModelConfigTest("modelimport/keras/configs/keras2/simple_add_tf_keras_2.json");
+    }
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 999999999L;
     }
 
     @Test
@@ -257,7 +272,8 @@ public class Keras2ModelConfigurationTest extends BaseDL4JTest {
         }
     }
 
-    @Test @Ignore("AB 2019/11/23 - known issue - see https://github.com/eclipse/deeplearning4j/issues/8373 and https://github.com/eclipse/deeplearning4j/issues/8441")
+    @Test
+    //@Ignore("AB 2019/11/23 - known issue - see https://github.com/eclipse/deeplearning4j/issues/8373 and https://github.com/eclipse/deeplearning4j/issues/8441")
     public void ReshapeEmbeddingConcatTest() throws Exception{
         try(InputStream is = Resources.asStream("/modelimport/keras/configs/keras2/reshape_embedding_concat.json")) {
             ComputationGraphConfiguration config =

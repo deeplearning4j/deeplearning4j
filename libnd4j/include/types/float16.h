@@ -30,7 +30,7 @@ struct bfloat16;
 #ifdef __CUDACC__
 #include <cuda_fp16.h>
 
-#ifndef CUDA_8
+#if CUDA_VERSION_MAJOR != 8
 // CUDA_9 and above
 
 struct ihalf : public __half {
@@ -271,7 +271,7 @@ struct float16 {
             auto t = __float2half_rn(rhs);
             auto b = *(data.getXP());
 
-            #ifdef CUDA_8
+            #if CUDA_VERSION_MAJOR == 8
             *(data.getXP()) = t;
             #else
             data.assign(t);
@@ -361,7 +361,7 @@ struct float16 {
         local_def friend float16 operator*(const float16& a, const float16& b) { return __hmul(a.data, b.data); }
 
         local_def friend float16 operator/(const float16& a, const float16& b) {
-            #ifdef CUDA_8
+            #if CUDA_VERSION_MAJOR == 8
                 return hdiv(a.data, b.data);
             #else
                 return __hdiv(a.data, b.data);

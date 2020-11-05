@@ -21,8 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.cpython.PyThreadState;
 
 import static org.bytedeco.cpython.global.python.*;
-import static org.bytedeco.cpython.global.python.PyEval_RestoreThread;
-import static org.bytedeco.cpython.global.python.PyEval_SaveThread;
 
 
 @Slf4j

@@ -15,6 +15,9 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.experience;
 
+import lombok.Builder;
+import lombok.Data;
+import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.rl4j.observation.Observation;
 
 import java.util.ArrayList;
@@ -28,35 +31,36 @@ import java.util.List;
  *
  * @author Alexandre Boulanger
  */
-public class StateActionExperienceHandler<A> implements ExperienceHandler<A, StateActionPair<A>> {
+public class StateActionExperienceHandler<A> implements ExperienceHandler<A, StateActionReward<A>> {
+    private static final int DEFAULT_BATCH_SIZE = 8;
 
     private final int batchSize;
 
     private boolean isFinalObservationSet;
 
-    public StateActionExperienceHandler(int batchSize) {
-        this.batchSize = batchSize;
+    public StateActionExperienceHandler(Configuration configuration) {
+        this.batchSize = configuration.getBatchSize();
     }
 
-    private List<StateActionPair<A>> stateActionPairs = new ArrayList<>();
+    private List<StateActionReward<A>> stateActionRewards = new ArrayList<>();
 
     public void setFinalObservation(Observation observation) {
         isFinalObservationSet = true;
     }
 
     public void addExperience(Observation observation, A action, double reward, boolean isTerminal) {
-        stateActionPairs.add(new StateActionPair<A>(observation, action, reward, isTerminal));
+        stateActionRewards.add(new StateActionReward<A>(observation, action, reward, isTerminal));
     }
 
     @Override
     public int getTrainingBatchSize() {
-        return stateActionPairs.size();
+        return stateActionRewards.size();
     }
 
     @Override
     public boolean isTrainingBatchReady() {
-        return stateActionPairs.size() >= batchSize
-                || (isFinalObservationSet && stateActionPairs.size() > 0);
+        return stateActionRewards.size() >= batchSize
+                || (isFinalObservationSet && stateActionRewards.size() > 0);
     }
 
     /**
@@ -66,17 +70,26 @@ public class StateActionExperienceHandler<A> implements ExperienceHandler<A, Sta
      * @return The list of experience elements
      */
     @Override
-    public List<StateActionPair<A>> generateTrainingBatch() {
-        List<StateActionPair<A>> result = stateActionPairs;
-        stateActionPairs = new ArrayList<>();
+    public List<StateActionReward<A>> generateTrainingBatch() {
+        List<StateActionReward<A>> result = stateActionRewards;
+        stateActionRewards = new ArrayList<>();
 
         return result;
     }
 
     @Override
     public void reset() {
-        stateActionPairs = new ArrayList<>();
+        stateActionRewards = new ArrayList<>();
         isFinalObservationSet = false;
     }
 
+    @SuperBuilder
+    @Data
+    public static class Configuration {
+        /**
+         * The default training batch size. Default is 8.
+         */
+        @Builder.Default
+        private int batchSize = DEFAULT_BATCH_SIZE;
+    }
 }

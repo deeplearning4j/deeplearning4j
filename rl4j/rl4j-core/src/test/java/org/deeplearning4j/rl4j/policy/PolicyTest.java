@@ -23,12 +23,14 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
@@ -94,7 +96,7 @@ public class PolicyTest {
         }
 
         @Override
-        public Gradients computeGradients(FeaturesLabels updateLabels) {
+        public Gradients computeGradients(FeaturesLabels featuresLabels) {
             throw new UnsupportedOperationException();
         }
 
@@ -104,7 +106,7 @@ public class PolicyTest {
         }
 
         @Override
-        public void copy(NN from) {
+        public void copyFrom(NN from) {
             throw new UnsupportedOperationException();
         }
 
@@ -144,12 +146,17 @@ public class PolicyTest {
         }
 
         @Override
-        public INDArray output(Observation observation) {
+        public NeuralNetOutput output(Observation observation) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public INDArray output(INDArray batch) {
+        public NeuralNetOutput output(INDArray batch) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public NeuralNetOutput output(Features features) {
             throw new UnsupportedOperationException();
         }
     }
@@ -161,11 +168,7 @@ public class PolicyTest {
         MultiLayerNetwork mln = new MultiLayerNetwork(new NeuralNetConfiguration.Builder().seed(555).list()
                 .layer(0, new OutputLayer.Builder().nOut(1).lossFunction(LossFunctions.LossFunction.XENT).activation(Activation.SIGMOID).build()).build());
 
-        ACPolicy policy = new ACPolicy(new DummyAC(cg));
-        assertNotNull(policy.rnd);
-
-        policy = new ACPolicy(new DummyAC(mln));
-        assertNotNull(policy.rnd);
+        ACPolicy policy = new ACPolicy(new DummyAC(mln), true, Nd4j.getRandom());
 
         INDArray input = Nd4j.create(new double[] {1.0, 0.0}, new long[]{1,2});
         for (int i = 0; i < 100; i++) {

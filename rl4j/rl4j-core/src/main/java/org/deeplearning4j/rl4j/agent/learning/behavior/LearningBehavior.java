@@ -16,6 +16,7 @@
 package org.deeplearning4j.rl4j.agent.learning.behavior;
 
 import lombok.Builder;
+import lombok.NonNull;
 import org.deeplearning4j.rl4j.agent.learning.update.IUpdateRule;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -30,7 +31,12 @@ import org.deeplearning4j.rl4j.observation.Observation;
 @Builder
 public class LearningBehavior<ACTION, EXPERIENCE_TYPE> implements ILearningBehavior<ACTION> {
 
+    private boolean hasBatchChanged = false;
+
+    @NonNull
     private final ExperienceHandler<ACTION, EXPERIENCE_TYPE> experienceHandler;
+
+    @NonNull
     private final IUpdateRule<EXPERIENCE_TYPE> updateRule;
 
     @Override
@@ -42,7 +48,7 @@ public class LearningBehavior<ACTION, EXPERIENCE_TYPE> implements ILearningBehav
     public void handleNewExperience(Observation observation, ACTION action, double reward, boolean isTerminal) {
         experienceHandler.addExperience(observation, action, reward, isTerminal);
         if(experienceHandler.isTrainingBatchReady()) {
-            updateRule.update(experienceHandler.generateTrainingBatch());
+            handleBatch();
         }
     }
 
@@ -50,7 +56,22 @@ public class LearningBehavior<ACTION, EXPERIENCE_TYPE> implements ILearningBehav
     public void handleEpisodeEnd(Observation finalObservation) {
         experienceHandler.setFinalObservation(finalObservation);
         if(experienceHandler.isTrainingBatchReady()) {
-            updateRule.update(experienceHandler.generateTrainingBatch());
+            handleBatch();
+        }
+    }
+
+    private void handleBatch() {
+        updateRule.update(experienceHandler.generateTrainingBatch());
+        hasBatchChanged = true;
+    }
+
+    /**
+     * Will notify the update rule if a new training batch has been started
+     */
+    public void notifyBeforeStep() {
+        if(hasBatchChanged) {
+            updateRule.notifyNewBatchStarted();
+            hasBatchChanged = false;
         }
     }
 }

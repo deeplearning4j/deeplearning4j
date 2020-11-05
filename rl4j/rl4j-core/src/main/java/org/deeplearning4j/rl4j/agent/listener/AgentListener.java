@@ -63,4 +63,12 @@ public interface AgentListener<ACTION> {
      * @return A {@link ListenerResponse}.
      */
     AgentListener.ListenerResponse onAfterStep(Agent agent, StepResult stepResult);
+
+    /**
+     * Called after the episode has ended.
+     *
+     * @param agent The agent that generated the event
+     *
+     */
+    void onAfterEpisode(Agent agent);
 }

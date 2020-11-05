@@ -142,7 +142,10 @@ public class PythonNumpyMultiThreadTest {
 
     @Test
     public void testMultiThreading3() throws Throwable {
-        PythonContextManager.deleteNonMainContexts();
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+
+        }
 
         String code = "c = a + b";
         final PythonJob job = new PythonJob("job1", code, false);

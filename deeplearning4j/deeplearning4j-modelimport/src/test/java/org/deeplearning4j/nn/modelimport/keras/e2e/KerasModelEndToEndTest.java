@@ -34,6 +34,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.Hdf5Archive;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -89,7 +90,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 180000L;     //Most benchmarks should run very quickly; large timeout is to avoid issues with unusually slow download of test resources
+        return 900000000L;     //Most benchmarks should run very quickly; large timeout is to avoid issues with unusually slow download of test resources
     }
 
     @Test(expected = IllegalStateException.class)
@@ -297,6 +298,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     @Test
+    @Ignore("Neither keras or tfkeras can load this.")
     public void importDcganMnistGenerator() throws Exception {
         importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
     }
@@ -311,9 +313,9 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         INDArray[] output = model.output(input);
     }
 
-    @Test @Ignore   //AB 2020/04/22 Ignored until Keras model import updated to use NHWC support
+    @Test    //AB 2020/04/22 Ignored until Keras model import updated to use NHWC support
     public void importAcganGenerator() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
+         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
         //System.out.println(model.summary()) ;
         INDArray latent = Nd4j.create(10, 100);
         INDArray label = Nd4j.create(10, 1);
@@ -462,12 +464,12 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * InceptionV3
      */
     @Test
-    @Ignore
+    //note this is actually keras 1 and its input dimension ordering is channels first
     // Takes unreasonably long, but works
     public void importInception() throws Exception {
         ComputationGraph graph = importFunctionalModelH5Test(
                 "modelimport/keras/examples/inception/inception_v3_complete.h5");
-        INDArray input = Nd4j.ones(10, 299, 299, 3);        //TF = channels last = NHWC
+        INDArray input = Nd4j.ones(10, 3,299, 299);        //TH = channels first = NCHW
         graph.output(input);
         System.out.println(graph.summary());
     }
@@ -510,7 +512,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * Seq2seq model
      */
     @Test
-    @Ignore // does not work yet, needs DL4J enhancements
+     // does not work yet, needs DL4J enhancements
     public void importSeq2Seq() throws Exception {
         importFunctionalModelH5Test("modelimport/keras/examples/seq2seq/full_model_seq2seq_5549.h5");
 
@@ -524,14 +526,16 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * - Separate (policy and value) residual architecture
      * - Separate (policy and value) convolutional architecture
      */
-    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
     public void importSepConvPolicy() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_policy.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
     public void importSepResPolicy() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_policy.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
@@ -539,28 +543,38 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
 
-    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
     public void importSepConvValue() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_value.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test()  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
     public void importSepResValue() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
+        String filePath = "C:\\Users\\agibs\\Documents\\GitHub\\keras1-import-test\\sep_res_value.h5";
+        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(filePath)
+                .enforceTrainingConfig(false);
+
+        KerasModel model = builder.buildModel();
+        ComputationGraph compGraph = model.getComputationGraph();
+        //ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
-        model.output(input);
+        compGraph.output(input);
     }
 
-    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
     public void importDualRes() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_res.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test @Ignore //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test() //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
     public void importDualConv() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_conv.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
@@ -575,14 +589,22 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/48net_complete.h5");
     }
 
+    @Test()
+    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    public void testNCHWNWHCChangeImportModel() throws Exception {
+        ComputationGraph computationGraph = importFunctionalModelH5Test("modelimport/keras/weights/simpleconv2d_model.hdf5");
+        computationGraph.output(Nd4j.zeros(1,1,28,28));
+
+    }
+
+
     @Test
-    @Ignore
     // TODO: fails, since we can't use OldSoftMax on >2D data (here: convolution layer)
     // TODO: also related to #6339, fix this together
     public void importMTCNN2D() throws Exception {
         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/12net.h5",
                 new int[] {24, 24, 3}, false);
-        INDArray input = Nd4j.create(10, 3, 24, 24);
+        INDArray input = Nd4j.create(10,  24, 24,3);
         model.output(input);
 //        System.out.println(model.summary());
     }
@@ -605,7 +627,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testCausalCon1D() throws Exception {
+    public void testCausalConv1D() throws Exception {
         String[] names = new String[]{
                 "causal_conv1d_k2_s1_d1_cl_model.h5",
                 "causal_conv1d_k2_s1_d2_cl_model.h5",
@@ -621,11 +643,14 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                 "causal_conv1d_k4_s3_d1_cl_model.h5"
         };
 
-        for(String name : names ){
+        for(String name : names) {
             System.out.println("Starting test: " + name);
             String modelPath = "modelimport/keras/examples/causal_conv1d/" + name;
-            String inputsOutputPath = "modelimport/keras/examples/causal_conv1d/" + (name.substring(0,name.length()-"model.h5".length()) + "inputs_and_outputs.h5");
-
+            String inputsOutputPath = "modelimport/keras/examples/causal_conv1d/" + (name.substring(0,name.length() - "model.h5".length()) + "inputs_and_outputs.h5");
+            //TODO:
+            /**
+             * Difference in weights. Same elements, but loaded differently. Likely acceptable difference. Need to confirm though.
+             */
             MultiLayerNetwork net = importEndModelTest(modelPath, inputsOutputPath, true, true,
                     true, true, false, null, null);
             Layer l = net.getLayer(0);
@@ -635,7 +660,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testCon1D() throws Exception {
+    public void testConv1D() throws Exception {
         String[] names = new String[]{
                 "conv1d_k2_s1_d1_cf_same_model.h5",
                 "conv1d_k2_s1_d1_cf_valid_model.h5",
@@ -687,7 +712,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                 "conv1d_k4_s3_d1_cl_valid_model.h5",
         };
 
-        for(String name : names ){
+        for(String name : names) {
             System.out.println("Starting test: " + name);
             String modelPath = "modelimport/keras/examples/conv1d/" + name;
             String inputsOutputPath = "modelimport/keras/examples/conv1d/" + (name.substring(0,name.length()-"model.h5".length()) + "inputs_and_outputs.h5");
@@ -696,6 +721,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                     true, true, false, null, null); //f, f2);
         }
     }
+
 
     @Test
     public void testActivationLayers() throws Exception {
@@ -794,7 +820,10 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                     String layerName = model.getLayerNames().get(i);
                     if (activationsKeras.containsKey(layerName)) {
                         INDArray activationsDl4j = model.feedForwardToLayer(i, input, false).get(i + 1);
+                        long[] shape = activationsDl4j.shape();
                         INDArray exp = activationsKeras.get(layerName);
+                        Nd4j.getExecutioner().enableDebugMode(true);
+                        Nd4j.getExecutioner().enableVerboseMode(true);
                         if(expectedPreProc != null)
                             exp = expectedPreProc.apply(layerName, exp);
                         compareINDArrays(layerName, exp, activationsDl4j, EPS);
@@ -808,7 +837,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                 compareINDArrays("predictions", predictionsKeras, predictionsDl4j, EPS);
                 INDArray outputs = getOutputs(outputsArchive, true)[0];
 
-                if(outputs.rank() == 1){
+                if(outputs.rank() == 1) {
                     outputs = outputs.reshape(outputs.length(), 1);
                 }
                 val nOut = (int) outputs.size(-1);
@@ -856,7 +885,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
 
     private static Map<String, INDArray> getActivations(Hdf5Archive archive, boolean tensorFlowImageDimOrdering)
             throws Exception {
-        Map<String, INDArray> activations = new HashMap<String, INDArray>();
+        Map<String, INDArray> activations = new HashMap<>();
         for (String layerName : archive.getDataSets(GROUP_ACTIVATIONS)) {
             INDArray activation = archive.readDataSet(layerName, GROUP_ACTIVATIONS);
             activations.put(layerName, activation);

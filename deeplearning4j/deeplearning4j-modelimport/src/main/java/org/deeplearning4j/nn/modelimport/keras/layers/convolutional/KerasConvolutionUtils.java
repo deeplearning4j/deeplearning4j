@@ -16,11 +16,16 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -33,6 +38,9 @@ import java.util.Map;
  * @author Max Pumperla
  */
 public class KerasConvolutionUtils {
+
+
+
 
     /**
      * Get (convolution) stride from Keras layer configuration.
@@ -122,6 +130,28 @@ public class KerasConvolutionUtils {
                 atrousRate = null;
         }
         return atrousRate;
+
+    }
+
+
+    /**
+     * Return the {@link CNN2DFormat}
+     * from the configuration .
+     * If the value is {@link KerasLayerConfiguration#getDIM_ORDERING_TENSORFLOW()}
+     * then the value is {@link CNN2DFormat#NHWC}
+     * else it's {@link KerasLayerConfiguration#getDIM_ORDERING_THEANO()}
+     * which is {@link CNN2DFormat#NCHW}
+     * @param layerConfig the layer configuration to get the values from
+     * @param layerConfiguration the keras configuration used for retrieving
+     *                           values from the configuration
+     * @return the {@link CNN2DFormat} given the configuration
+     * @throws InvalidKerasConfigurationException
+     */
+    public static CNN2DFormat getDataFormatFromConfig(Map<String,Object> layerConfig,KerasLayerConfiguration layerConfiguration) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig,layerConfiguration);
+        String dataFormat = innerConfig.containsKey(layerConfiguration.getLAYER_FIELD_DIM_ORDERING()) ?
+                innerConfig.get(layerConfiguration.getLAYER_FIELD_DIM_ORDERING()).toString() : "channels_last";
+        return dataFormat.equals("channels_last") ? CNN2DFormat.NHWC : CNN2DFormat.NCHW;
 
     }
 

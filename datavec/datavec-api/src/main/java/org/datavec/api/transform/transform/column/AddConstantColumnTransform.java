@@ -53,8 +53,7 @@ public class AddConstantColumnTransform implements Transform {
 
     @Override
     public Schema transform(Schema inputSchema) {
-        List<ColumnMetaData> outMeta = new ArrayList<>();
-        outMeta.addAll(inputSchema.getColumnMetaData());
+        List<ColumnMetaData> outMeta = new ArrayList<>(inputSchema.getColumnMetaData());
 
         ColumnMetaData newColMeta = newColumnType.newColumnMetaData(newColumnName);
         outMeta.add(newColMeta);

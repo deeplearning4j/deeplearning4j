@@ -58,8 +58,11 @@ public class PythonNumpyJobTest {
     }
 
     @Test
-    public void testNumpyJobBasic(){
-        PythonContextManager.deleteNonMainContexts();
+    public void testNumpyJobBasic() {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+        }
+
         List<PythonVariable> inputs = new ArrayList<>();
         INDArray x = Nd4j.ones(dataType, 2, 3);
         INDArray y = Nd4j.zeros(dataType, 2, 3);
@@ -88,39 +91,45 @@ public class PythonNumpyJobTest {
     }
 
     @Test
-    public void testNumpyJobReturnAllVariables(){
-        PythonContextManager.deleteNonMainContexts();
-        List<PythonVariable> inputs = new ArrayList<>();
-        INDArray x = Nd4j.ones(dataType, 2, 3);
-        INDArray y = Nd4j.zeros(dataType, 2, 3);
-        INDArray z = (dataType == DataType.BOOL)?x:x.mul(y.add(2));
-        PythonType<INDArray> arrType = PythonTypes.get("numpy.ndarray");
-        inputs.add(new PythonVariable<>("x", arrType, x));
-        inputs.add(new PythonVariable<>("y", arrType, y));
-        String code = (dataType == DataType.BOOL)?"z = x":"z = x * (y + 2)";
+    public void testNumpyJobReturnAllVariables() {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+            List<PythonVariable> inputs = new ArrayList<>();
+            INDArray x = Nd4j.ones(dataType, 2, 3);
+            INDArray y = Nd4j.zeros(dataType, 2, 3);
+            INDArray z = (dataType == DataType.BOOL)?x:x.mul(y.add(2));
+            PythonType<INDArray> arrType = PythonTypes.get("numpy.ndarray");
+            inputs.add(new PythonVariable<>("x", arrType, x));
+            inputs.add(new PythonVariable<>("y", arrType, y));
+            String code = (dataType == DataType.BOOL)?"z = x":"z = x * (y + 2)";
 
-        PythonJob job = new PythonJob("job1", code, false);
-        List<PythonVariable> outputs = job.execAndReturnAllVariables(inputs);
+            PythonJob job = new PythonJob("job1", code, false);
+            List<PythonVariable> outputs = job.execAndReturnAllVariables(inputs);
 
-        INDArray x2 = (INDArray) outputs.get(0).getValue();
-        INDArray y2 = (INDArray) outputs.get(1).getValue();
-        INDArray z2 = (INDArray) outputs.get(2).getValue();
+            INDArray x2 = (INDArray) outputs.get(0).getValue();
+            INDArray y2 = (INDArray) outputs.get(1).getValue();
+            INDArray z2 = (INDArray) outputs.get(2).getValue();
 
-        if (dataType == DataType.BFLOAT16){
-            x = x.castTo(DataType.FLOAT);
-            y = y.castTo(DataType.FLOAT);
-            z = z.castTo(DataType.FLOAT);
+            if (dataType == DataType.BFLOAT16){
+                x = x.castTo(DataType.FLOAT);
+                y = y.castTo(DataType.FLOAT);
+                z = z.castTo(DataType.FLOAT);
+            }
+            Assert.assertEquals(x, x2);
+            Assert.assertEquals(y, y2);
+            Assert.assertEquals(z, z2);
         }
-        Assert.assertEquals(x, x2);
-        Assert.assertEquals(y, y2);
-        Assert.assertEquals(z, z2);
+
 
     }
 
 
     @Test
-    public void testMultipleNumpyJobsParallel(){
-        PythonContextManager.deleteNonMainContexts();
+    public void testMultipleNumpyJobsParallel() {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+        }
+
         String code1 =(dataType == DataType.BOOL)?"z = x":"z = x + y";
         PythonJob job1 = new PythonJob("job1", code1, false);
 
@@ -156,9 +165,11 @@ public class PythonNumpyJobTest {
 
 
     @Test
-    public synchronized void  testNumpyJobSetupRun(){
-        if (dataType == DataType.BOOL)return;
-        PythonContextManager.deleteNonMainContexts();
+    public synchronized void  testNumpyJobSetupRun() {
+        if (dataType == DataType.BOOL) return;
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+        }
         String code = "five=None\n" +
                 "def setup():\n" +
                 "    global five\n"+
@@ -200,7 +211,9 @@ public class PythonNumpyJobTest {
     @Test
     public void testNumpyJobSetupRunAndReturnAllVariables(){
         if (dataType == DataType.BOOL)return;
-        PythonContextManager.deleteNonMainContexts();
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+        }
         String code = "five=None\n" +
                 "c=None\n"+
                 "def setup():\n" +
@@ -232,14 +245,17 @@ public class PythonNumpyJobTest {
         assertEquals(Nd4j.ones((dataType == DataType.BFLOAT16)? DataType.FLOAT: dataType, 2, 3).mul(12),
                 outputs.get(1).getValue());
 
-
     }
+
+
+
 
     @Test
     public void testMultipleNumpyJobsSetupRunParallel(){
         if (dataType == DataType.BOOL)return;
-        PythonContextManager.deleteNonMainContexts();
-
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            PythonContextManager.deleteNonMainContexts();
+        }
         String code1 = "five=None\n" +
                 "def setup():\n" +
                 "    global five\n"+
@@ -296,8 +312,8 @@ public class PythonNumpyJobTest {
 
         assertEquals(Nd4j.ones((dataType == DataType.BFLOAT16)? DataType.FLOAT: dataType, 2, 3).mul(2),
                 outputs.get(0).getValue());
-
-
     }
+
+
 
 }

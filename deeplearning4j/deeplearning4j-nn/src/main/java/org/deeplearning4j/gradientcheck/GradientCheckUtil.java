@@ -198,7 +198,7 @@ public class GradientCheckUtil {
                         .exitOnFirstError(exitOnFirstError).input(input).labels(labels).inputMask(inputMask).labelMask(labelMask).subset(subset).maxPerParam(maxPerParam).excludeParams(excludeParams).callEachIter(c));
     }
 
-    public static boolean checkGradients(MLNConfig c){
+    public static boolean checkGradients(MLNConfig c) {
 
         //Basic sanity checks on input:
         if (c.epsilon <= 0.0 || c.epsilon > 0.1)
@@ -512,6 +512,7 @@ public class GradientCheckUtil {
         if(c.callEachIter != null){
             c.callEachIter.accept(c.net);
         }
+
         c.net.computeGradientAndScore();
         Pair<Gradient, Double> gradAndScore = c.net.gradientAndScore();
 

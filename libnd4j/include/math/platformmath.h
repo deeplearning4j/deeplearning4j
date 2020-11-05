@@ -45,7 +45,7 @@ union BPAIR {
 };
 
 #define math_def __host__ __device__
-#ifdef CUDA_8
+#if CUDA_VERSION_MAJOR == 8
 typedef union {
         struct {
             half H;

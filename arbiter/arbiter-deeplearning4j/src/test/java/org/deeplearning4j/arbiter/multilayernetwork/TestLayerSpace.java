@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.conf.constraint.MaxNormConstraint;
 import org.deeplearning4j.nn.conf.constraint.MinMaxNormConstraint;
 import org.deeplearning4j.nn.conf.constraint.NonNegativeConstraint;
 import org.deeplearning4j.nn.conf.constraint.UnitNormConstraint;
-import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -42,8 +41,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestLayerSpace extends BaseDL4JTest {
 
@@ -256,7 +254,7 @@ public class TestLayerSpace extends BaseDL4JTest {
             }
         }
         Deconvolution2D actual = deconvd2dls.getValue(new double[]{0.9});
-        assertTrue(!actual.hasBias());
+        assertFalse(actual.hasBias());
         assertEquals(ArrayUtils.toString(new int[] {2,1} ),ArrayUtils.toString(actual.getDilation()));
     }
 

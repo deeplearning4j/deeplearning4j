@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.validation;
 
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.api.ops.custom.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
@@ -76,8 +77,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryMinimalRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.GELUDerivative;
@@ -101,7 +100,6 @@ import java.io.IOException;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.*;
-import java.util.Set;
 
 /**
  * Main test case runner for validating ops used in SameDiff.<br>
@@ -616,14 +614,8 @@ public class OpValidation {
         allOps = new ArrayList<>(gradCheckCoverageCountPerClass.keySet());
         for (ClassPath.ClassInfo c : info) {
             //Load method: Loads (but doesn't link or initialize) the class.
-            Class<?> clazz;
-            try {
-                clazz = Class.forName(c.getName());
-            } catch (ClassNotFoundException e) {
-                //Should never happen as  this was found on the classpath
-                throw new RuntimeException(e);
-            }
-
+            Class<?> clazz = ND4JClassLoading.loadClassByName(c.getName());
+            Objects.requireNonNull(clazz);
 
             if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || !DifferentialFunction.class.isAssignableFrom(clazz))
                 continue;

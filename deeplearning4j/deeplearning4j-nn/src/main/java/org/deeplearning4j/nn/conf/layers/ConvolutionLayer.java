@@ -30,6 +30,7 @@ import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -55,7 +56,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
     protected boolean cudnnAllowFallback = true;
-    protected CNN2DFormat cnn2dDataFormat = CNN2DFormat.NCHW;
+    protected CNN2DFormat cnn2dDataFormat = CNN2DFormat.NCHW; //default value for legacy serialization reasons
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
+    private boolean defaultValueOverriden = false;
 
     /**
      * The "PREFER_FASTEST" mode will pick the fastest algorithm for the specified parameters from the {@link FwdAlgo},
@@ -169,7 +173,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
         LayerValidation.assertNInNOutSet("ConvolutionLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.ConvolutionLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf, networkDataType);
+                new org.deeplearning4j.nn.layers.convolution.ConvolutionLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -188,32 +192,35 @@ public class ConvolutionLayer extends FeedForwardLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                    + "\"): Expected CNN input, got " + inputType);
         }
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                        nOut, layerIndex, getLayerName(), cnn2dDataFormat, ConvolutionLayer.class);
+                nOut, layerIndex, getLayerName(), cnn2dDataFormat, ConvolutionLayer.class);
     }
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                    + "\"): Expected CNN input, got " + inputType);
         }
 
-        if (nIn <= 0 || override) {
+        if (!defaultValueOverriden || nIn <= 0 || override) {
             InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
             this.nIn = c.getChannels();
+            this.cnn2dDataFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
         }
-        this.cnn2dDataFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
+
+        if(cnn2dDataFormat == null || override)
+            this.cnn2dDataFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Convolution layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
@@ -231,7 +238,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
 
         //During forward pass: im2col array, mmul (result activations), in-place broadcast add
         val im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0]
-                        * kernelSize[1];
+                * kernelSize[1];
 
         //During training: have im2col array, in-place gradient calculation, then epsilons...
         //But: im2col array may be cached...
@@ -262,10 +269,10 @@ public class ConvolutionLayer extends FeedForwardLayer {
         }
 
         return new LayerMemoryReport.Builder(layerName, ConvolutionLayer.class, inputType, outputType)
-                        .standardMemory(paramSize, updaterStateSize)
-                        //im2col caching -> only variable size caching
-                        .workingMemory(0, im2colSizePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainWorkingMemoryPerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cachedPerEx).build();
+                .standardMemory(paramSize, updaterStateSize)
+                //im2col caching -> only variable size caching
+                .workingMemory(0, im2colSizePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainWorkingMemoryPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cachedPerEx).build();
 
     }
 
@@ -490,6 +497,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
                     " convolutional neural network layers");
             this.convolutionMode = convolutionMode;
         }
+
 
         /**
          * If true (default): include bias parameters in the model. False: no bias.

@@ -15,6 +15,7 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.observation.transform;
 
+import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -47,6 +48,7 @@ import java.util.Map;
 public class TransformProcess {
 
     private final List<Map.Entry<String, Object>> operations;
+    @Getter
     private final String[] channelNames;
     private final HashSet<String> operationsChannelNames;
 
@@ -146,8 +148,11 @@ public class TransformProcess {
             channelsData.replace(channelName, INDArrayHelper.forceCorrectShape(finalChannelData));
         }
 
-        // TODO: Add support to multi-channel observations
-        INDArray data = ((INDArray) channelsData.get(channelNames[0]));
+        INDArray[] data = new INDArray[channelNames.length];
+        for(int i = 0; i < channelNames.length; ++i) {
+            data[i] = ((INDArray) channelsData.get(channelNames[i]));
+        }
+
         return new Observation(data);
     }
 
@@ -218,11 +223,6 @@ public class TransformProcess {
             for(String channelName : channelNames) {
                 Preconditions.checkNotNull(channelName, "Error: got a null channel name");
                 requiredChannelNames.add(channelName);
-            }
-
-            // TODO: Remove when multi-channel observation is supported
-            if(channelNames.length != 1) {
-                throw new NotImplementedException("Multi-channel observations is not presently supported.");
             }
 
             return new TransformProcess(this, channelNames);

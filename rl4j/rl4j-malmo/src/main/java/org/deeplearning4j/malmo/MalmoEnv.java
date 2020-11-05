@@ -21,7 +21,6 @@ import java.nio.file.Paths;
 
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 
 import com.microsoft.msr.malmo.AgentHost;
@@ -35,7 +34,6 @@ import com.microsoft.msr.malmo.WorldState;
 import lombok.Setter;
 import lombok.Getter;
 
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -2,6 +2,7 @@
 
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~ Copyright (c) 2020 Konduit K.K.
   ~
   ~ This program and the accompanying materials are made available under the
   ~ terms of the Apache License, Version 2.0 which is available at
@@ -17,8 +18,8 @@
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -141,10 +142,10 @@
     </modules>
 
     <scm>
-        <connection>scm:git://github.com:deeplearning4j/deeplearning4j.git</connection>
-        <developerConnection>scm:git:git@github.com:deeplearning4j/deeplearning4j.git
+        <connection>scm:git://github.com:eclipse/deeplearning4j.git</connection>
+        <developerConnection>scm:git:git@github.com:eclipse/deeplearning4j.git
         </developerConnection>
-        <url>git@github.com:deeplearning4j/deeplearning4j.git</url>
+        <url>git@github.com:eclipse/deeplearning4j.git</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -161,18 +162,6 @@
                 <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
             </snapshots>
         </repository>
-        <repository>
-            <id>maven-restlet</id>
-            <name>Public online Restlet repository</name>
-            <url>http://maven.restlet.org</url>
-            <releases>
-                <enabled>true</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
-            </snapshots>
-        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -182,18 +171,6 @@
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
             <releases>
                 <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-                <updatePolicy>daily</updatePolicy>  <!-- Optional, update daily -->
-            </snapshots>
-        </pluginRepository>
-        <pluginRepository>
-            <id>maven-restlet</id>
-            <name>Public online Restlet repository</name>
-            <url>http://maven.restlet.org</url>
-            <releases>
-                <enabled>true</enabled>
             </releases>
             <snapshots>
                 <enabled>true</enabled>
@@ -220,7 +197,11 @@
         <maven.compiler.target>1.7</maven.compiler.target>
         <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
         <maven.compiler.testSource>1.8</maven.compiler.testSource>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <encoding>UTF-8</encoding>
+        <project.build.sourceEncoding>${encoding}</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>${encoding}</project.reporting.outputEncoding>
+        <project.resources.sourceEncoding>${encoding}</project.resources.sourceEncoding>
+        <archetype.encoding>${encoding}</archetype.encoding>
 
         <deeplearning4j.version>1.0.0-SNAPSHOT</deeplearning4j.version>
         <dl4j.version>1.0.0-SNAPSHOT</dl4j.version>
@@ -242,7 +223,6 @@
         <httpmime.version>4.5.3</httpmime.version>
         <janino.version>2.7.8</janino.version>
         <javassist.version>3.19.0-GA</javassist.version>
-        <jaxb.version>2.2.11</jaxb.version>
         <jets3t.version>0.7.1</jets3t.version>
         <jetty.version>9.4.10.v20180503</jetty.version>
         <jersey.version>2.29</jersey.version>
@@ -257,9 +237,9 @@
         <servlet.version>3.1.0</servlet.version>
         <snakeyaml.version>1.12</snakeyaml.version>
         <snappy.version>1.1.2.6</snappy.version>
+        <!-- FIXME: Might need be synced with all modules that uses spring-core plugin (nd4j-cuda-11.0, nd4j-tests, nd4j-common-tests) -->
         <spring.version>5.1.1.RELEASE</spring.version>
         <t-digest.version>3.2</t-digest.version>
-
         <oshi.version>3.4.2</oshi.version>
         <kafka.version>0.8.2.2</kafka.version>
         <typesafe.config.version>1.3.0</typesafe.config.version>
@@ -280,35 +260,39 @@
         <unirest.version>1.4.9</unirest.version>
         <reflections.version>0.9.10</reflections.version>
         <breeze.version>1.0</breeze.version>
+        <byteunits.version>0.9.1</byteunits.version>
 
-        <javacpp.parser.skip>false</javacpp.parser.skip>     <!-- To skip header file parsing phase: -Djavacpp.parser.skip=true  -->
-        <javacpp.compiler.skip>false</javacpp.compiler.skip> <!-- To skip native compilation phase: -Djavacpp.compiler.skip=true -->
+        <!-- To skip header file parsing phase: -Djavacpp.parser.skip=true  -->
+        <javacpp.parser.skip>false</javacpp.parser.skip>
+        <!-- To skip native compilation phase: -Djavacpp.compiler.skip=true -->
+        <javacpp.compiler.skip>false</javacpp.compiler.skip>
         <javacpp.platform.root/>      <!-- -Djavacpp.platform.root=/path/to/android-ndk/ -->
         <javacpp.platform.compiler/>  <!-- -Djavacpp.platform.compiler=/path/to/arm-linux-androideabi-g++ -->
         <javacpp.platform.sysroot/>   <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.5.3</javacpp.version>
-        <javacpp-presets.version>1.5.3</javacpp-presets.version>
-        <javacv.version>1.5.3</javacv.version>
+        <javacpp.version>1.5.4</javacpp.version>
+        <javacpp-presets.version>1.5.4</javacpp-presets.version>
+        <javacv.version>1.5.4</javacv.version>
 
-        <python.version>3.7.7</python.version>
+        <python.version>3.7.9</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
-        <numpy.version>1.18.2</numpy.version>
+        <numpy.version>1.19.1</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
-        <openblas.version>0.3.9-1</openblas.version>
-        <mkl.version>2020.1</mkl.version>
-        <opencv.version>4.3.0</opencv.version>
-        <ffmpeg.version>4.2.2</ffmpeg.version>
-        <leptonica.version>1.79.0</leptonica.version>
+        <openblas.version>0.3.10</openblas.version>
+
+        <mkl.version>2020.3</mkl.version>
+        <opencv.version>4.4.0</opencv.version>
+        <ffmpeg.version>4.3.1</ffmpeg.version>
+        <leptonica.version>1.80.0</leptonica.version>
         <hdf5.version>1.12.0</hdf5.version>
         <ale.version>0.6.1</ale.version>
-        <gym.version>0.17.1</gym.version>
-        <tensorflow.version>1.15.2</tensorflow.version>
+        <gym.version>0.17.2</gym.version>
+        <tensorflow.version>1.15.3</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
-
+        <archunit.version>0.14.1</archunit.version>
         <commons-compress.version>1.18</commons-compress.version>
         <commonsmath.version>3.5</commonsmath.version>
         <commonslang.version>3.6</commonslang.version>
@@ -331,6 +315,7 @@
         <args4j.version>2.0.29</args4j.version>
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
+        <archunit.version>0.14.1</archunit.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.10.1</jackson.version>
         <jackson.databind.version>2.10.3</jackson.databind.version>
@@ -340,17 +325,21 @@
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.7.1</lucene-solr.version>
         <json.version>20131018</json.version>
-        <google.protobuf.version>2.6.1</google.protobuf.version>
+        <google.protobuf.version>3.8.0</google.protobuf.version>
+        <google.protobuf.solr.version>2.6.1</google.protobuf.solr.version>
         <failIfNoTests>false</failIfNoTests>
-        <hadoop.version>2.2.0</hadoop.version>  <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
+        <!-- Hadoop version used by Spark 1.6.3 and 2.2.1 (and likely others) -->
+        <hadoop.version>2.2.0</hadoop.version>
         <camel.version>2.16.3</camel.version>
         <zookeeper.version>3.4.6</zookeeper.version>
         <agrona.version>0.5.4</agrona.version>
         <mapdb.version>3.0.5</mapdb.version>
         <sqlite.version>3.15.1</sqlite.version>
-        <playframework.version>2.7.3</playframework.version>    <!-- 2.7.3 has Scala 2.11, 2.12 and 2.13 support only (no 2.10) -->
+        <!-- 2.7.3 has Scala 2.11, 2.12 and 2.13 support only (no 2.10) -->
+        <playframework.version>2.7.3</playframework.version>
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
-        <guava.version>28.0-jre</guava.version>
+        <guava.jre.version>28.0-jre</guava.jre.version>
+        <guava.android.version>28.0-android</guava.android.version>
         <gson.version>2.8.0</gson.version>
         <fbs.version>1.2.0-3f79e055</fbs.version>
         <threadly.version>4.10.0</threadly.version>
@@ -358,7 +347,8 @@
 
         <flatbuffers.version>1.10.0</flatbuffers.version>
         <grpc.version>1.14.0</grpc.version>
-        <javax.version>1.2</javax.version>
+        <javax.annotation-api.version>1.2</javax.annotation-api.version>
+        <javax.activation.version>1.1.1</javax.activation.version>
         <jaxb.version>2.3.0</jaxb.version>
 
         <maven-gpg-plugin.version>1.6</maven-gpg-plugin.version>
@@ -379,13 +369,20 @@
         <maven-surefire.version>${maven-surefire-plugin.version}</maven-surefire.version>
         <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
         <maven-lint-plugin.version>0.0.11</maven-lint-plugin.version>
-        <maven-formatter-plugin.version>2.0.0</maven-formatter-plugin.version>
+        <maven-formatter-plugin.version>2.12.1</maven-formatter-plugin.version>
         <maven-lifecycle-mapping-plugin.version>1.0.0</maven-lifecycle-mapping-plugin.version>
         <maven-lifecycle-mapping.version>${maven-lifecycle-mapping-plugin.version}
         </maven-lifecycle-mapping.version>
         <maven-shade-plugin.version>3.2.1</maven-shade-plugin.version>
         <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
+        <maven-dependency-plugin.version>3.0.0</maven-dependency-plugin.version>
+        <maven-invoker-plugin.version>2.2</maven-invoker-plugin.version>
+        <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
+        <maven-replacer-plugin.version>1.5.3</maven-replacer-plugin.version>
+        <protoc-jar-maven-plugin.version>3.8.0</protoc-jar-maven-plugin.version>
         <mockito.version>2.2.6</mockito.version>
+        <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
+        <jetspeed-mvn-maven-plugin.version>2.3.1</jetspeed-mvn-maven-plugin.version>
 
         <!-- base versions -->
         <!-- Scala 2.11.x -->
@@ -405,112 +402,201 @@
         <pydatavec.test.skip>false</pydatavec.test.skip>
         <pydl4j.test.skip>false</pydl4j.test.skip>
         <skipBackendChoice>false</skipBackendChoice>
-        <skipTestResourceEnforcement>false
-        </skipTestResourceEnforcement> <!-- Test resource profile must be enabled unless using -DskipTests etc -->
+        <!-- Test resource profile must be enabled unless using -DskipTests etc -->
+        <skipTestResourceEnforcement>false</skipTestResourceEnforcement>
+        <findbugs-annotations.version>1.3.9-1</findbugs-annotations.version>
+
+        <byteunits.version>0.9.1</byteunits.version>
+        <neoitertools.version>1.0.0</neoitertools.version>
+        <rxjava.version>2.2.0</rxjava.version>
     </properties>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>${maven-compiler-plugin.version}</version>
+                    <configuration>
+                        <source>${maven.compiler.source}</source>
+                        <target>${maven.compiler.target}</target>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>1.4.1</version>
+                    <executions>
+                        <execution>
+                            <id>enforce-maven</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <requireMavenVersion>
+                                        <version>3.3</version>
+                                        <message>Please install maven 3.3 or higher</message>
+                                    </requireMavenVersion>
+                                </rules>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>enforce-excluded-dependencies</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <rules>
+                                    <bannedDependencies>
+                                        <excludes>
+                                            <exclude>org.projectlombok:*:*:*:compile</exclude>
+                                        </excludes>
+                                    </bannedDependencies>
+                                </rules>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <!-- Configuration for git-commit-id plugin - used with ND4J version check functionality -->
+                <plugin>
+                    <groupId>pl.project13.maven</groupId>
+                    <artifactId>git-commit-id-plugin</artifactId>
+                    <version>${maven-git-commit-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>revision</goal>
+                            </goals>
+                            <phase>generate-resources</phase>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                        <generateGitPropertiesFilename>
+                            ${project.basedir}/target/generated-sources/src/main/resources/org/eclipse/${project.groupId}-${project.artifactId}-git.properties
+                        </generateGitPropertiesFilename>
+                        <gitDescribe>
+                            <skip>true</skip>
+                        </gitDescribe>
+                    </configuration>
+                </plugin>
+                <!-- Add generated git.properties files resource directory, for output of git-commit-id plugin -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>${maven-build-helper-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <id>add-resource</id>
+                            <phase>generate-resources</phase>
+                            <goals>
+                                <goal>add-resource</goal>
+                            </goals>
+                            <configuration>
+                                <resources>
+                                    <resource>
+                                        <directory>
+                                            ${project.basedir}/target/generated-sources/src/main/resources
+                                        </directory>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>com.lewisd</groupId>
+                                        <artifactId>lint-maven-plugin</artifactId>
+                                        <versionRange>[0.0.11,)</versionRange>
+                                        <goals>
+                                            <goal>check</goal>
+                                        </goals>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore/>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>net.revelc.code.formatter</groupId>
+                    <artifactId>formatter-maven-plugin</artifactId>
+                    <version>${maven-formatter-plugin.version}</version>
+                    <configuration>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <configFile>${session.executionRootDirectory}/../contrib/formatter.xml</configFile>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven-source-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
                 <version>1.4.1</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.8</version>
                 <executions>
                     <execution>
-                        <id>enforce-maven</id>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
                         <goals>
-                            <goal>enforce</goal>
+                            <goal>deploy</goal>
                         </goals>
-                        <configuration>
-                            <rules>
-                                <requireMavenVersion>
-                                    <version>3.3</version>
-                                    <message>Please install maven 3.3 or higher</message>
-                                </requireMavenVersion>
-                                <bannedDependencies>
-                                    <excludes>
-                                        <exclude>org.projectlombok:*:*:*:compile</exclude>
-                                    </excludes>
-                                </bannedDependencies>
-                            </rules>
-                        </configuration>
                     </execution>
                 </executions>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>sonatype-nexus-snapshots</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
+                </configuration>
             </plugin>
         </plugins>
     </build>
 
     <profiles>
-
-        <profile>
-            <id>doclint-java8-disable</id>
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <configuration>
-                            <doclint>none</doclint>
-                            <failOnError>false</failOnError>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>sonatype-nexus</id>
-            <activation>
-                <property>
-                    <name>local.software.repository</name>
-                    <value>sonatype</value>
-                </property>
-            </activation>
-            <distributionManagement>
-                <repository>
-                    <id>sonatype-nexus-releases</id>
-                    <name>Nexus Release Repository</name>
-                    <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-                <snapshotRepository>
-                    <id>sonatype-nexus-snapshots</id>
-                    <name>Sonatype Nexus snapshot repository</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-            </distributionManagement>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-deploy-plugin</artifactId>
-                        <version>${maven-deploy-plugin.version}</version>
-                        <configuration>
-                            <skip>true</skip>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <version>1.6.6</version>
-                        <executions>
-                            <execution>
-                                <id>default-deploy</id>
-                                <phase>deploy</phase>
-                                <goals>
-                                    <goal>deploy</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <serverId>sonatype-nexus-snapshots</serverId>
-                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                            <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
         <!-- This controls skipping the test backend choice enforcement below -->
         <profile>
             <id>skipTestCompileAndRun</id>
@@ -526,6 +612,7 @@
                 <jumpy.test.skip>true</jumpy.test.skip>
                 <pydatavec.test.skip>true</pydatavec.test.skip>
                 <pydl4j.test.skip>true</pydl4j.test.skip>
+                <scala.test.skip>true</scala.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
@@ -543,12 +630,11 @@
                 <jumpy.test.skip>true</jumpy.test.skip>
                 <pydatavec.test.skip>true</pydatavec.test.skip>
                 <pydl4j.test.skip>true</pydl4j.test.skip>
+                <scala.test.skip>true</scala.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
             </properties>
         </profile>
-        <!-- end of backend choice enforcement control -->
-
         <!--
         testresources profile must be running when executing tests. However, maven enforcer plugin seems to be unable
          to enforce only when actually running tests - so we'll skip the enforcement (using profiles skipTestRun and skipTestCompileAndRun)
@@ -594,21 +680,33 @@
             </build>
         </profile>
         <profile>
-            <id>release-sign-artifacts</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>true</value>
-                </property>
-            </activation>
+            <id>release</id>
+            <properties>
+                <maven.test.skip>true</maven.test.skip>
+            </properties>
             <build>
                 <plugins>
                     <plugin>
-                        <artifactId>maven-gpg-plugin</artifactId>
-                        <version>1.6</version>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>${maven-javadoc-plugin.version}</version>
                         <configuration>
-                            <passphrase>${gpg.passphrase}</passphrase>
+                            <doclint>all,-missing</doclint>
+                            <quiet>true</quiet>
                         </configuration>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>${maven-gpg-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -623,48 +721,13 @@
             </build>
         </profile>
         <profile>
-            <id>release</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <version>${maven-source-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <version>${maven-javadoc-plugin.version}</version>
-                        <configuration>
-                            <additionalparam>-Xdoclint:none</additionalparam>
-                            <quiet>true</quiet>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
             <id>trimSnapshots</id>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>build-helper-maven-plugin</artifactId>
-                        <version>1.7</version>
+                        <version>${maven-build-helper-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>remove-old-artifacts</id>
@@ -699,7 +762,6 @@
                 </plugins>
             </build>
         </profile>
-
         <profile>
             <id>libnd4jhome-defined</id>
             <activation>
@@ -722,20 +784,18 @@
                 <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
             </properties>
         </profile>
-
         <!-- For Android: -Dplatform=android-arm -->
         <profile>
             <id>javacpp-platform-default</id>
             <activation>
                 <property>
-                  <name>!javacpp.platform</name>
+                    <name>!javacpp.platform</name>
                 </property>
             </activation>
             <properties>
                 <javacpp.platform>${os.name}-${os.arch}</javacpp.platform>
             </properties>
         </profile>
-
         <!-- Profiles to set the default javacpp.platform property: If someone knows a better way to do this, please do let me know! -->
         <profile>
             <id>linux</id>
@@ -883,7 +943,6 @@
                 <os.arch>x86_64</os.arch>
             </properties>
         </profile>
-
         <!-- Integration Tests Profile. By default (when this profile is not enabled) unit tests are run only.
              Note also that some tests may run fewer/quicker cases for unit tests vs. integration tests
         -->

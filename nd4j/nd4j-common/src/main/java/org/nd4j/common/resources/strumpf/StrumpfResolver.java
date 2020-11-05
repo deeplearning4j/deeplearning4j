@@ -1,6 +1,7 @@
 package org.nd4j.common.resources.strumpf;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -33,6 +34,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Slf4j
 public class StrumpfResolver implements Resolver {
     public static final String DEFAULT_CACHE_DIR = new File(System.getProperty("user.home"), ".cache/nd4j/test_resources").getAbsolutePath();
     public static final String REF = ".resource_reference";
@@ -169,8 +171,8 @@ public class StrumpfResolver implements Resolver {
 
     @Override
     public InputStream asStream(String resourcePath) {
-
         File f = asFile(resourcePath);
+        log.debug("Resolved resource " + resourcePath + " as file at absolute path " + f.getAbsolutePath());
         try {
             return new BufferedInputStream(new FileInputStream(f));
         } catch (FileNotFoundException e) {

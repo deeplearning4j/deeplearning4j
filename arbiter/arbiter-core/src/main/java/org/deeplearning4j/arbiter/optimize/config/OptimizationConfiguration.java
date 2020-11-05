@@ -29,7 +29,6 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -116,7 +115,7 @@ public class OptimizationConfiguration {
 
         /**
          * DataSource: defines where the data should come from for training and testing.
-         * Note that implementations must have a no-argument contsructor
+         * Note that implementations must have a no-argument constructor
          * @param dataSource           Class for the data source
          * @param dataSourceProperties May be null. Properties for configuring the data source
          */

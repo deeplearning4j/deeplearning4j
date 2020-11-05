@@ -40,6 +40,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  *
  */
+// TODO: Provide default networks before deprecating
 @Value
 public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCompGraph {
 

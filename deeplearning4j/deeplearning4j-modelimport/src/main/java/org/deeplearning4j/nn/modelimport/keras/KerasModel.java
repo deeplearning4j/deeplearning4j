@@ -18,12 +18,10 @@ package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.conf.BackpropType;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasModelConfiguration;
@@ -32,13 +30,15 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.layers.KerasLoss;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
+import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasRnnUtils;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasOptimizerUtils;
-import org.nd4j.linalg.learning.config.IUpdater;
+import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.linalg.learning.config.IUpdater;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -175,6 +175,10 @@ public class KerasModel {
                     " separately no training configuration is attached.");
         }
 
+        if(inputShape == null) {
+            inputShape = layersOrdered.get(0).inputShape;
+        }
+
         /* Infer output types for each layer. */
         this.outputTypes = inferOutputTypes(inputShape);
 
@@ -288,12 +292,33 @@ public class KerasModel {
     Map<String, InputType> inferOutputTypes(int[] inputShape)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, InputType> outputTypes = new HashMap<>();
+        int kerasLayerIdx = 0;
         for (KerasLayer layer : this.layersOrdered) {
             InputType outputType;
             if (layer instanceof KerasInput) {
-                if (inputShape != null) {
+                if (inputShape != null && layer.inputShape == null) {
                     layer.inputShape = inputShape;
                 }
+
+                KerasInput kerasInput = (KerasInput) layer;
+                Layer layer1 = layersOrdered.get(kerasLayerIdx + 1).layer;
+                //no dim order, try to pull it from the next layer if there is one
+                if(ConvolutionUtils.layerHasConvolutionLayout(layer1)) {
+                    CNN2DFormat formatForLayer = ConvolutionUtils.getFormatForLayer(layer1);
+                    if(formatForLayer == CNN2DFormat.NCHW) {
+                        dimOrder = KerasLayer.DimOrder.THEANO;
+                    }  else if(formatForLayer == CNN2DFormat.NHWC) {
+                        dimOrder = KerasLayer.DimOrder.TENSORFLOW;
+                    } else {
+                        dimOrder = KerasLayer.DimOrder.NONE;
+                    }
+                } else if(KerasRnnUtils.isRnnLayer(layersOrdered.get(kerasLayerIdx + 1))) {
+                    if(kerasInput.inputShape == null)
+                        kerasInput.inputShape =  layersOrdered.get(kerasLayerIdx + 1).inputShape;
+                }
+
+                if(dimOrder != null)
+                    layer.setDimOrder(dimOrder);
                 outputType = layer.getOutputType();
                 this.truncatedBPTT = ((KerasInput) layer).getTruncatedBptt();
             } else {
@@ -302,9 +327,13 @@ public class KerasModel {
                 for (String inboundLayerName : layer.getInboundLayerNames())
                     inputTypes[i++] = outputTypes.get(inboundLayerName);
                 outputType = layer.getOutputType(inputTypes);
+
+
             }
             outputTypes.put(layer.getLayerName(), outputType);
+            kerasLayerIdx++;
         }
+
         return outputTypes;
     }
 
@@ -338,11 +367,13 @@ public class KerasModel {
 
         /* Build InputType array of input layer types, add to ComputationGraph. */
         List<InputType> inputTypeList = new ArrayList<>();
-        for (String inputLayerName : this.inputLayerNames)
+        List<InputType> initialInputTypes = new ArrayList<>();
+        for (String inputLayerName : this.inputLayerNames) {
+            this.layers.get(inputLayerName);
             inputTypeList.add(this.layers.get(inputLayerName).getOutputType());
-        InputType[] inputTypes = new InputType[inputTypeList.size()];
-        inputTypeList.toArray(inputTypes);
-        graphBuilder.setInputTypes(inputTypes);
+
+        }
+
 
         /* Build String array of output layer names, add to ComputationGraph. */
         String[] outputLayerNameArray = new String[this.outputLayerNames.size()];
@@ -358,10 +389,31 @@ public class KerasModel {
             String[] inboundLayerNamesArray = new String[inboundLayerNames.size()];
             inboundLayerNames.toArray(inboundLayerNamesArray);
 
-            /* Get inbound InputTypes and InputPreProcessor, if necessary. */
             List<InputType> inboundTypeList = new ArrayList<>();
-            for (String layerName : inboundLayerNames)
-                inboundTypeList.add(this.outputTypes.get(layerName));
+
+            /* Get inbound InputTypes and InputPreProcessor, if necessary. */
+            if(!inboundLayerNames.isEmpty()) {
+                InputType[] inputTypes2 = new InputType[inboundLayerNames.size()];
+                int inboundIdx = 0;
+                for (String layerName : inboundLayerNames) {
+                    KerasLayer prevLayer = layers.get(layerName);
+                    if(prevLayer.isInputPreProcessor()) {
+                        InputType inputType = this.outputTypes.get(layerName);
+                        InputPreProcessor preprocessor = prevLayer.getInputPreprocessor(inputType);
+                        InputType outputType = preprocessor.getOutputType(inputType);
+                        inputTypes2[inboundIdx] = outputType;
+                        inboundIdx++;
+                    }
+                    else {
+                        InputType inputType = this.outputTypes.get(layerName);
+                        inputTypes2[inboundIdx] = inputType;
+                        inboundIdx++;
+                    }
+
+                    inboundTypeList.add(this.outputTypes.get(layerName));
+                }
+            }
+
             InputType[] inboundTypeArray = new InputType[inboundTypeList.size()];
             inboundTypeList.toArray(inboundTypeArray);
             InputPreProcessor preprocessor = layer.getInputPreprocessor(inboundTypeArray);
@@ -381,6 +433,10 @@ public class KerasModel {
                 graphBuilder.addVertex(layer.getLayerName(), new PreprocessorVertex(preprocessor),
                         inboundLayerNamesArray);
             }
+
+            if(layer instanceof KerasInput) {
+                initialInputTypes.add(this.outputTypes.get(layer.layerName));
+            }
         }
         graphBuilder.setInputPreProcessors(preprocessors);
 
@@ -391,7 +447,10 @@ public class KerasModel {
         else
             graphBuilder.backpropType(BackpropType.Standard);
 
-        return graphBuilder.build();
+        ComputationGraphConfiguration build = graphBuilder.build();
+        //note we don't forcibly over ride inputs when doing keras import. They are already set.
+        build.addPreProcessors(false,initialInputTypes.toArray(new InputType[initialInputTypes.size()]));
+        return build;
     }
 
     /**

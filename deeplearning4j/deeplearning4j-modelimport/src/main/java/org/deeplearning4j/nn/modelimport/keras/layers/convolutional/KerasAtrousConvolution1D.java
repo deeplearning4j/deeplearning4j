@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -93,6 +94,7 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 1, conf, kerasMajorVersion)[0])
                 .hasBias(hasBias)
+                .rnnDataFormat(dimOrder == DimOrder.TENSORFLOW ? RNNFormat.NWC : RNNFormat.NCW)
                 .stride(getStrideFromConfig(layerConfig, 1, conf)[0]);
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 1, conf, kerasMajorVersion);
         if (hasBias)
@@ -104,6 +106,8 @@ public class KerasAtrousConvolution1D extends KerasConvolution {
         if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
         this.layer = builder.build();
+        Convolution1DLayer convolution1DLayer = (Convolution1DLayer) layer;
+        convolution1DLayer.setDefaultValueOverriden(true);
     }
 
     /**

@@ -274,7 +274,7 @@ namespace sd {
                         dLdw->assign(E.reduceNumber(reduce::Sum));
                     else if(weights != weightsBroad) {
                         std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-                        E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
+                        E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
                     }
                     else
                         dLdw->assign(E);
@@ -301,7 +301,7 @@ namespace sd {
                             *dLdw = 0.;
                         else if(weights != weightsBroad) {
                             std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-                            ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
+                            ((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
                         }
                         else
                             dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));
@@ -329,7 +329,7 @@ namespace sd {
                             dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
                         else if(weights != weightsBroad) {
                             std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-                            E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
+                            E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
                             *dLdw /= numOfNonZeroWeightsScalar;
                         }
                         else

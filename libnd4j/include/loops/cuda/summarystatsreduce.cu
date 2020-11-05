@@ -52,12 +52,12 @@ void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeI
 		 */
         template<typename X, typename Z>
         template<typename OpType>
-        _CUDA_D void SummaryStatsReduce<X,Z>::aggregatePartials(SummaryStatsData<X> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *vextraParams) {
+        _CUDA_D void SummaryStatsReduce<X,Z>::aggregatePartials(SummaryStatsData<X> *sPartials, Nd4jLong tid, Nd4jLong numElements, void *vextraParams) {
             // start the shared memory loop on the next power of 2 less
             // than the block size.  If block size is not a power of 2,
             // accumulate the intermediate sums in the remainder range.
+
             auto extraParams = static_cast<Z*>(vextraParams);
-            SummaryStatsData<X> *sPartials = *sPartialsRef;
             Nd4jLong floorPow2 = blockDim.x;
 
             if (floorPow2 & (floorPow2 - 1)) {
@@ -123,12 +123,7 @@ void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeI
 
             int numElements = blockDim.x;
             //shared memory space for storing intermediate results
-            __shared__ SummaryStatsData<X> *sPartials;
-            if(threadIdx.x == 0) {
-                extern __shared__ unsigned char shmem[];
-                sPartials = reinterpret_cast<SummaryStatsData<X>*>(shmem);
-            }
-            __syncthreads();
+            __shared__ SummaryStatsData<X> sPartials[CUDA_BLOCK_SIZE];
 
             Z startingVal = startingValue(dx);
 
@@ -211,7 +206,7 @@ void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeI
                             sPartials[threadIdx.x] = update(sPartials[threadIdx.x], OpType::op(indexVal2, extraParams), extraParams);
                         }
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+                        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
@@ -237,7 +232,7 @@ void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeI
                         }
 
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
+                        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength), extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
@@ -274,7 +269,7 @@ void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeI
                 sPartials[threadIdx.x] = reduction;
 
                 __syncthreads();
-                aggregatePartials<OpType>(&sPartials, threadIdx.x, blockDim.x, extraParams);
+                aggregatePartials<OpType>(sPartials, threadIdx.x, blockDim.x, extraParams);
                 __syncthreads();
 
                 if (gridDim.x > 1) {
@@ -311,7 +306,7 @@ void _CUDA_G summaryStatsReduceT(int op, void const* dx, Nd4jLong const* xShapeI
                         }
 
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, gridDim.x, extraParams);
+                        aggregatePartials<OpType>(sPartials, threadIdx.x, gridDim.x, extraParams);
                         __syncthreads();
 
                         if (tid == 0) {

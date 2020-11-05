@@ -22,7 +22,6 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 

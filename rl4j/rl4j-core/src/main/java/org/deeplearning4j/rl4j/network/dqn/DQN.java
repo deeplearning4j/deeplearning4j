@@ -16,16 +16,20 @@
 
 package org.deeplearning4j.rl4j.network.dqn;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.CommonGradientNames;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
+import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,6 +41,7 @@ import java.util.Collection;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
  */
+@Deprecated
 public class DQN implements IDQN<DQN> {
 
     final protected MultiLayerNetwork mln;
@@ -71,25 +76,37 @@ public class DQN implements IDQN<DQN> {
         fit(input, labels[0]);
     }
 
-    public INDArray output(INDArray batch) {
-        return mln.output(batch);
+    public NeuralNetOutput output(INDArray batch) {
+        NeuralNetOutput result = new NeuralNetOutput();
+        result.put(CommonOutputNames.QValues, mln.output(batch));
+
+        return result;
     }
 
-    public INDArray output(Observation observation) {
-        return this.output(observation.getData());
+    @Override
+    public NeuralNetOutput output(Features features) {
+        NeuralNetOutput result = new NeuralNetOutput();
+        result.put(CommonOutputNames.QValues, mln.output(features.get(0)));
+
+        return result;
     }
 
+    public NeuralNetOutput output(Observation observation) {
+        return output(observation.getChannelData(0));
+    }
+
+    @Deprecated
     public INDArray[] outputAll(INDArray batch) {
-        return new INDArray[] {output(batch)};
+        return new INDArray[] {output(batch).get(CommonOutputNames.QValues)};
     }
 
     @Override
     public void fit(FeaturesLabels featuresLabels) {
-        fit(featuresLabels.getFeatures(), featuresLabels.getLabels(CommonLabelNames.QValues));
+        fit(featuresLabels.getFeatures().get(0), featuresLabels.getLabels(CommonLabelNames.QValues));
     }
 
     @Override
-    public void copy(DQN from) {
+    public void copyFrom(DQN from) {
         mln.setParams(from.mln.params());
     }
 
@@ -120,9 +137,9 @@ public class DQN implements IDQN<DQN> {
 
 
     @Override
-    public Gradients computeGradients(FeaturesLabels updateLabels) {
-        mln.setInput(updateLabels.getFeatures());
-        mln.setLabels(updateLabels.getLabels(CommonLabelNames.QValues));
+    public Gradients computeGradients(FeaturesLabels featuresLabels) {
+        mln.setInput(featuresLabels.getFeatures().get(0));
+        mln.setLabels(featuresLabels.getLabels(CommonLabelNames.QValues));
         mln.computeGradientAndScore();
         Collection<TrainingListener> iterationListeners = mln.getListeners();
         if (iterationListeners != null && iterationListeners.size() > 0) {
@@ -130,7 +147,7 @@ public class DQN implements IDQN<DQN> {
                 l.onGradientCalculation(mln);
             }
         }
-        Gradients result = new Gradients(updateLabels.getBatchSize());
+        Gradients result = new Gradients(featuresLabels.getBatchSize());
         result.putGradient(CommonGradientNames.QValues, mln.gradient());
         return result;
     }

@@ -16,7 +16,6 @@
 
 package org.datavec.api.transform.quality.columns;
 
-import com.clearspring.analytics.stream.cardinality.CardinalityMergeException;
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

@@ -17,7 +17,6 @@
 package org.datavec.api.writable.comparator;
 
 import lombok.AllArgsConstructor;
-import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.Comparator;

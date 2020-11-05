@@ -19,6 +19,8 @@ import lombok.Value;
 
 // Work in progress
 public interface IActionSchema<ACTION> {
+    int getActionSpaceSize();
+
     ACTION getNoOp();
 
     // Review: A schema should be data-only and not have behavior

@@ -16,6 +16,9 @@
 
 package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
+import lombok.NonNull;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -30,30 +33,27 @@ public abstract class BaseDQNAlgorithm extends BaseTransitionTDAlgorithm {
     private final IOutputNeuralNet targetQNetwork;
 
     /**
-     * In litterature, this corresponds to Q{net}(s(t+1), a)
+     * In literature, this corresponds to Q<sub>net</sub>(s(t+1), a)
      */
-    protected INDArray qNetworkNextObservation;
+    protected INDArray qNetworkNextFeatures;
 
     /**
-     * In litterature, this corresponds to Q{tnet}(s(t+1), a)
+     * In literature, this corresponds to Q<sub>tnet</sub>(s(t+1), a)
      */
-    protected INDArray targetQNetworkNextObservation;
+    protected INDArray targetQNetworkNextFeatures;
 
-    protected BaseDQNAlgorithm(IOutputNeuralNet qNetwork, IOutputNeuralNet targetQNetwork, double gamma) {
-        super(qNetwork, gamma);
-        this.targetQNetwork = targetQNetwork;
-    }
-
-    protected BaseDQNAlgorithm(IOutputNeuralNet qNetwork, IOutputNeuralNet targetQNetwork, double gamma, double errorClamp) {
-        super(qNetwork, gamma, errorClamp);
+    protected BaseDQNAlgorithm(IOutputNeuralNet qNetwork,
+                               @NonNull IOutputNeuralNet targetQNetwork,
+                               BaseTransitionTDAlgorithm.Configuration configuration) {
+        super(qNetwork, configuration);
         this.targetQNetwork = targetQNetwork;
     }
 
     @Override
-    protected void initComputation(INDArray observations, INDArray nextObservations) {
-        super.initComputation(observations, nextObservations);
+    protected void initComputation(Features features, Features nextFeatures) {
+        super.initComputation(features, nextFeatures);
 
-        qNetworkNextObservation = qNetwork.output(nextObservations);
-        targetQNetworkNextObservation = targetQNetwork.output(nextObservations);
+        qNetworkNextFeatures = qNetwork.output(nextFeatures).get(CommonOutputNames.QValues);
+        targetQNetworkNextFeatures = targetQNetwork.output(nextFeatures).get(CommonOutputNames.QValues);
     }
 }

@@ -454,17 +454,24 @@ void execReduceSame2(Nd4jPointer *extraPointers,
         auto dimension = reinterpret_cast<int *>(dbDimension->primary());
         int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo,
-                                                                                dimension,
-                                                                                shape::length(hDimensionShape));
+        const auto zLen = shape::length(hZShapeInfo);
 
+        std::vector<int> dimensions(dimension, dimension + dimensionLength);
+
+        const Nd4jLong* zShapeInfoH = hZShapeInfo;
+
+        if(shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
+            auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+            zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+        }
+
+        std::vector<int> dims = (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
         LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
         NativeOpExecutioner::execReduceSame(&lc, opNum,
                 dbX->primary(), hXShapeInfo, dbX->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo).special(),
                 extraParams,
-                dbZ->primary(), hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo).special(),
-                dimension, dimensionLength,
-                tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                dbZ->primary(), zShapeInfoH, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH).special(),
+                dims.data(), dims.size());
 
         InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
     } catch (std::exception &e) {
@@ -487,17 +494,25 @@ void execReduceLong2(Nd4jPointer *extraPointers,
         auto dimension = reinterpret_cast<int *>(dbDimension->primary());
         int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo,
-                                                                                dimension,
-                                                                                shape::length(hDimensionShape));
+        const auto zLen = shape::length(hZShapeInfo);
+
+        std::vector<int> dimensions(dimension, dimension + dimensionLength);
+
+        const Nd4jLong* zShapeInfoH = hZShapeInfo;
+
+        if(shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
+            auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+            zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+        }
+
+        std::vector<int> dims = (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
 
         LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
         NativeOpExecutioner::execReduceLong(&lc, opNum,
                 dbX->primary(), hXShapeInfo, dbX->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo).special(),
                 extraParams,
-                dbZ->primary(), hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo).special(),
-                dimension, dimensionLength,
-                tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                dbZ->primary(), zShapeInfoH, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH).special(),
+                dims.data(), dims.size());
 
         InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
     } catch (std::exception &e) {
@@ -562,17 +577,25 @@ void execReduceBool2(Nd4jPointer *extraPointers,
         auto dimension = reinterpret_cast<int *>(dbDimension->primary());
         int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo,
-                                                                                dimension,
-                                                                                shape::length(hDimensionShape));
+        const auto zLen = shape::length(hZShapeInfo);
+
+        std::vector<int> dimensions(dimension, dimension + dimensionLength);
+
+        const Nd4jLong* zShapeInfoH = hZShapeInfo;
+
+        if(shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
+            auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+            zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+        }
+
+        std::vector<int> dims = (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
 
         LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
         NativeOpExecutioner::execReduceBool(&lc, opNum,
                 dbX->primary(), hXShapeInfo, dbX->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo).special(),
                 extraParams,
-                dbZ->primary(), hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo).special(),
-                dimension, dimensionLength,
-                tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                dbZ->primary(), zShapeInfoH, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH).special(),
+                dims.data(), dims.size());
 
         InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
     } catch (std::exception &e) {
@@ -690,17 +713,25 @@ void execReduceFloat2(Nd4jPointer *extraPointers,
         auto dimension = reinterpret_cast<int *>(dbDimension->primary());
         int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo,
-                                                                                dimension,
-                                                                                shape::length(hDimensionShape));
+        const auto zLen = shape::length(hZShapeInfo);
+
+        std::vector<int> dimensions(dimension, dimension + dimensionLength);
+
+        const Nd4jLong* zShapeInfoH = hZShapeInfo;
+
+        if(shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
+            auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+            zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+        }
+
+        std::vector<int> dims = (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
 
         LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
         NativeOpExecutioner::execReduceFloat(&lc, opNum,
                 dbX->primary(), hXShapeInfo, dbX->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo).special(),
                 extraParams,
-                dbZ->primary(), hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo).special(),
-                dimension, dimensionLength,
-                tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                dbZ->primary(), zShapeInfoH, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH).special(),
+                dims.data(), dims.size());
 
         InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
     } catch (std::exception &e) {

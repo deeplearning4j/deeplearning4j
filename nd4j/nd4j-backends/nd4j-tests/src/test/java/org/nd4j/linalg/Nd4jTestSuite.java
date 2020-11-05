@@ -17,10 +17,10 @@
 package org.nd4j.linalg;
 
 import org.junit.runners.BlockJUnit4ClassRunner;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
 
@@ -32,19 +32,15 @@ import java.util.ServiceLoader;
  *
  * @author Adam Gibson
  */
-
 public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
     //the system property for what backends should run
     public final static String BACKENDS_TO_LOAD = "backends";
-    private static List<Nd4jBackend> backends;
+    private static List<Nd4jBackend> BACKENDS;
     static {
-        ServiceLoader<Nd4jBackend> loadedBackends = ServiceLoader.load(Nd4jBackend.class);
-        Iterator<Nd4jBackend> backendIterator = loadedBackends.iterator();
-        backends = new ArrayList<>();
-        while (backendIterator.hasNext())
-            backends.add(backendIterator.next());
-
-
+        ServiceLoader<Nd4jBackend> loadedBackends = ND4JClassLoading.loadService(Nd4jBackend.class);
+        for (Nd4jBackend backend : loadedBackends) {
+            BACKENDS.add(backend);
+        }
     }
 
     /**
@@ -55,7 +51,6 @@ public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
     public Nd4jTestSuite(Class<?> klass) throws Throwable {
         super(klass);
     }
-
 
     /**
      * Based on the jvm arguments, an empty list is returned

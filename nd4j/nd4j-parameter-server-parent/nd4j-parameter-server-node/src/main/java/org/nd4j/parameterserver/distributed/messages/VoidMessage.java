@@ -16,13 +16,13 @@
 
 package org.nd4j.parameterserver.distributed.messages;
 
-import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.io.input.ClassLoaderObjectInputStream;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
-import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
+import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -52,17 +52,16 @@ public interface VoidMessage extends Serializable {
 
     UnsafeBuffer asUnsafeBuffer();
 
+    @SuppressWarnings("unchecked")
     static <T extends VoidMessage> T fromBytes(byte[] array) {
-        try {
-            ObjectInputStream in = new ClassLoaderObjectInputStream(Thread.currentThread().getContextClassLoader(),
-                            new ByteArrayInputStream(array));
+        ClassLoader classloader = ND4JClassLoading.getNd4jClassloader();
 
-            T result = (T) in.readObject();
-            return result;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(array);
+             ObjectInputStream ois = new ClassLoaderObjectInputStream(classloader, bis)) {
+            return (T) ois.readObject();
+        } catch (Exception objectReadException) {
+            throw new RuntimeException(objectReadException);
         }
-        //return SerializationUtils.deserialize(array);
     }
 
     /**

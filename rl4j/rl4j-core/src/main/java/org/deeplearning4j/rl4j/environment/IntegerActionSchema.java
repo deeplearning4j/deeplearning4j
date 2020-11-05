@@ -15,13 +15,16 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.environment;
 
+import lombok.Getter;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
 // Work in progress
 public class IntegerActionSchema implements IActionSchema<Integer> {
 
-    private final int numActions;
+    @Getter
+    private final int actionSpaceSize;
+
     private final int noOpAction;
     private final Random rnd;
 
@@ -30,7 +33,7 @@ public class IntegerActionSchema implements IActionSchema<Integer> {
     }
 
     public IntegerActionSchema(int numActions, int noOpAction, Random rnd) {
-        this.numActions = numActions;
+        this.actionSpaceSize = numActions;
         this.noOpAction = noOpAction;
         this.rnd = rnd;
     }
@@ -42,6 +45,6 @@ public class IntegerActionSchema implements IActionSchema<Integer> {
 
     @Override
     public Integer getRandomAction() {
-        return rnd.nextInt(numActions);
+        return rnd.nextInt(actionSpaceSize);
     }
 }

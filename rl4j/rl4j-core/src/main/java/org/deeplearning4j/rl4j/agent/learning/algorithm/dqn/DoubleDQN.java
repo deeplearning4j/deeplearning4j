@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,27 +30,25 @@ public class DoubleDQN extends BaseDQNAlgorithm {
 
     private static final int ACTION_DIMENSION_IDX = 1;
 
-    // In litterature, this corresponds to: max_{a}Q(s_{t+1}, a)
+    // In literature, this corresponds to: max<sub>a</sub> Q(s<sub>t+1</sub>, a)
     private INDArray maxActionsFromQNetworkNextObservation;
 
-    public DoubleDQN(IOutputNeuralNet qNetwork, IOutputNeuralNet targetQNetwork, double gamma) {
-        super(qNetwork, targetQNetwork, gamma);
-    }
-
-    public DoubleDQN(IOutputNeuralNet qNetwork, IOutputNeuralNet targetQNetwork, double gamma, double errorClamp) {
-        super(qNetwork, targetQNetwork, gamma, errorClamp);
+    public DoubleDQN(IOutputNeuralNet qNetwork,
+                     IOutputNeuralNet targetQNetwork,
+                     BaseTransitionTDAlgorithm.Configuration configuration) {
+        super(qNetwork, targetQNetwork, configuration);
     }
 
     @Override
-    protected void initComputation(INDArray observations, INDArray nextObservations) {
-        super.initComputation(observations, nextObservations);
+    protected void initComputation(Features features, Features nextFeatures) {
+        super.initComputation(features, nextFeatures);
 
-        maxActionsFromQNetworkNextObservation = Nd4j.argMax(qNetworkNextObservation, ACTION_DIMENSION_IDX);
+        maxActionsFromQNetworkNextObservation = Nd4j.argMax(qNetworkNextFeatures, ACTION_DIMENSION_IDX);
     }
 
     /**
-     * In litterature, this corresponds to:<br />
-     *      Q(s_t, a_t) = R_{t+1} + \gamma * Q_{tar}(s_{t+1}, max_{a}Q(s_{t+1}, a))
+     * In literature, this corresponds to:<br />
+     *      Q(s<sub>t</sub>, a<sub>t</sub>) = R<sub>t+1</sub> + &gamma; * Q<sub>tar</sub>(s<sub>t+1</sub>, max<sub>a</sub> Q(s<sub>t+1</sub>, a))
      * @param batchIdx The index in the batch of the current transition
      * @param reward The reward of the current transition
      * @param isTerminal True if it's the last transition of the "game"
@@ -59,7 +58,7 @@ public class DoubleDQN extends BaseDQNAlgorithm {
     protected double computeTarget(int batchIdx, double reward, boolean isTerminal) {
         double yTarget = reward;
         if (!isTerminal) {
-            yTarget += gamma * targetQNetworkNextObservation.getDouble(batchIdx, maxActionsFromQNetworkNextObservation.getInt(batchIdx));
+            yTarget += gamma * targetQNetworkNextFeatures.getDouble(batchIdx, maxActionsFromQNetworkNextObservation.getInt(batchIdx));
         }
 
         return yTarget;

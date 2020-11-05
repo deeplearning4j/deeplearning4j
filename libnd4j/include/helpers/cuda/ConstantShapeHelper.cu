@@ -24,6 +24,7 @@
 #include <helpers/ShapeBuilders.h>
 #include <execution/AffinityManager.h>
 #include <helpers/ConstantHelper.h>
+#include <helpers/ShapeUtils.h>
 #include <array/PrimaryPointerDeallocator.h>
 #include <array/CudaPointerDeallocator.h>
 
@@ -186,5 +187,39 @@ ConstantShapeBuffer&  ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcas
 
     return bufferForShapeInfo(descriptor);
 }
+
+////////////////////////////////////////////////////////////////////////
+ConstantShapeBuffer& ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const Nd4jLong* inShapeInfo, const std::vector<int> &dimsWithUnities, sd::memory::Workspace* workspace) {
+
+    Nd4jLong* newShapeInfo = nullptr;
+    ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities.size()), Nd4jLong);
+
+    int temp;
+    if(dimsWithUnities.size() == 1 && shape::isCommonVector(inShapeInfo, temp) && temp == dimsWithUnities[0]) {
+        auto dims = ShapeUtils::evalDimsToExclude(shape::rank(inShapeInfo), {temp});
+        shape::excludeUnitiesFromShapeInfo(inShapeInfo, dims.data(), dims.size(), newShapeInfo);
+    } else {
+        shape::excludeUnitiesFromShapeInfo(inShapeInfo, dimsWithUnities.data(), dimsWithUnities.size(), newShapeInfo);
+    }
+
+    ShapeDescriptor descriptor(newShapeInfo);
+
+    RELEASE(newShapeInfo, workspace);
+
+    return bufferForShapeInfo(descriptor);
+}
+
+////////////////////////////////////////////////////////////////////////
+ConstantShapeBuffer& ConstantShapeHelper::createSubArrShapeInfo(const Nd4jLong* inShapeInfo, const int* dims, const int dimsSize, sd::memory::Workspace* workspace) {
+
+    Nd4jLong* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, workspace);
+
+    ShapeDescriptor descriptor(newShapeInfo);
+
+    RELEASE(newShapeInfo, workspace);
+
+    return bufferForShapeInfo(descriptor);
+}
+
 
 }

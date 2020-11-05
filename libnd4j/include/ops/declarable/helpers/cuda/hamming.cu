@@ -30,13 +30,7 @@ namespace sd {
                 auto y = reinterpret_cast<const X*>(vy);
                 auto z = reinterpret_cast<Z*>(vz);
 
-                __shared__ Nd4jLong *shared;
-
-                if (threadIdx.x == 0) {
-                    extern __shared__ unsigned char shmem[];
-                    shared = reinterpret_cast<Nd4jLong*>(shmem);
-                }
-                __syncthreads();
+                __shared__ Nd4jLong shared[CUDA_BLOCK_SIZE];
 
                 // we want to nullify temporary memory before accumulating intermediate results
                 shared[threadIdx.x] = 0;
@@ -82,7 +76,7 @@ namespace sd {
 
             template <typename X, typename Z>
             static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z) {
-                _hammingKernel<X, Z><<<256, 256, 256 * sizeof(Nd4jLong) + 256, *context->getCudaStream()>>>(x.specialBuffer(), x.specialShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.specialBuffer(), nullptr, x.lengthOf());
+                _hammingKernel<X, Z><<<256, CUDA_BLOCK_SIZE, 1024, *context->getCudaStream()>>>(x.specialBuffer(), x.specialShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.specialBuffer(), nullptr, x.lengthOf());
             }
 
             void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {

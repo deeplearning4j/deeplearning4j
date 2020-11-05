@@ -21,6 +21,7 @@ import org.hsqldb.jdbc.JDBCDataSource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,12 +47,11 @@ public class HSqlLoaderTest extends BaseND4JTest {
     @BeforeClass
     public static void init() throws Exception  {
         hsqlLoader = new HsqlLoader(dataSource(),JDBC_URL,TABLE_NAME,ID_COLUMN_NAME,COLUMN_NAME);
-        Class.forName("org.hsqldb.jdbc.JDBCDriver");
+        ND4JClassLoading.loadClassByName("org.hsqldb.jdbc.JDBCDriver");
 
         // initialize database
         initDatabase();
     }
-
 
     public static DataSource dataSource() {
         if (dataSource != null)
@@ -64,8 +64,6 @@ public class HSqlLoaderTest extends BaseND4JTest {
         HSqlLoaderTest.dataSource = dataSource;
         return dataSource;
     }
-
-
 
     @AfterClass
     public static void destroy() throws SQLException {
@@ -131,6 +129,4 @@ public class HSqlLoaderTest extends BaseND4JTest {
 
 
     }
-
-
 }

@@ -175,6 +175,8 @@ public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
 
         InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         val outSize = c.getChannels() * c.getHeight() * c.getWidth();
+        //h=2,w=1,c=5 pre processor: 0,0,NCHW (broken)
+        //h=2,w=2,c=3, cnn=2,2,3, NCHW
         return InputType.feedForward(outSize);
     }
 

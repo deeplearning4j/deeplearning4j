@@ -18,7 +18,6 @@ package org.nd4j.parameterserver.distributed.messages.aggregations;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 import org.nd4j.parameterserver.distributed.messages.complete.InitializationCompleteMessage;
 
 /**

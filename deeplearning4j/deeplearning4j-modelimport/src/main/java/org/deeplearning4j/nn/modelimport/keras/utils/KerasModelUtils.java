@@ -79,7 +79,7 @@ public class KerasModelUtils {
         for (String layerName : layerNames) {
             if (kerasLayers.get(layerName).getNumParams() > 0)
                 throw new InvalidKerasConfigurationException(
-                        "Attemping to copy weights for layer not in model (named " + layerName + ")");
+                        "Attempting to copy weights for layer not in model (named " + layerName + ")");
         }
         return model;
     }

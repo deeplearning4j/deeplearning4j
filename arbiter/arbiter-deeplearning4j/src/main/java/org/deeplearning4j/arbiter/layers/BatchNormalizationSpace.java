@@ -86,13 +86,13 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
         if (constrainBeta != null){
             List<LayerConstraint> c = constrainBeta.getValue(values);
             if(c != null){
-                builder.constrainBeta(c.toArray(new LayerConstraint[c.size()]));
+                builder.constrainBeta(c.toArray(new LayerConstraint[0]));
             }
         }
         if (constrainGamma != null){
             List<LayerConstraint> c = constrainGamma.getValue(values);
             if(c != null){
-                builder.constrainGamma(c.toArray(new LayerConstraint[c.size()]));
+                builder.constrainGamma(c.toArray(new LayerConstraint[0]));
             }
         }
     }

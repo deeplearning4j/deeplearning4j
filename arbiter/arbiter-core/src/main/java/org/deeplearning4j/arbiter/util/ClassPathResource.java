@@ -221,8 +221,7 @@ public class ClassPathResource {
                         throw new FileNotFoundException("Resource " + this.resourceName + " not found");
                 }
 
-                InputStream stream = zipFile.getInputStream(entry);
-                return stream;
+                return zipFile.getInputStream(entry);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

@@ -16,9 +16,12 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
+import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
@@ -29,6 +32,20 @@ import java.util.Map;
  * @author Max Pumperla
  */
 public class KerasRnnUtils {
+
+    /**
+     * Returns true if the given layer is an
+     * {@link KerasLSTM}, {@link KerasSimpleRnn},
+     * {@link KerasBidirectional}
+     * @param kerasLayer the input layer
+     * @return
+     */
+    public static boolean isRnnLayer(KerasLayer kerasLayer) {
+        return kerasLayer instanceof KerasLSTM ||
+                kerasLayer instanceof KerasSimpleRnn ||
+                kerasLayer instanceof KerasBidirectional ||
+                kerasLayer instanceof KerasEmbedding;
+    }
 
     /**
      * Get unroll parameter to decide whether to unroll RNN with BPTT or not.

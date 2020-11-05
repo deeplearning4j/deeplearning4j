@@ -89,8 +89,12 @@ static void depthwiseConv2dCUDNN(const LaunchContext* context,
 
     // algorithm description
     cudnnConvolutionFwdAlgo_t algo;
-    err = cudnnGetConvolutionForwardAlgorithm(*handle, x, w, conv, z, CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, &algo);
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed", err);
+    cudnnConvolutionFwdAlgoPerf_t algoPerf;
+    int count = 0;
+    //err = cudnnGetConvolutionForwardAlgorithm(*handle, x, w, conv, z, CUDNN_CONVOLUTION_FWD_PREFER_FASTEST, 0, &algo);
+    err = cudnnFindConvolutionForwardAlgorithm(*handle, x, w, conv, z, 1, &count, &algoPerf);
+    if (err != 0 || count == 0) throw sd::cuda_exception::build("depthwiseConv2dCUDNN: cudnnGetConvolutionForwardAlgorithm failed", err);
+    algo = algoPerf.algo;
 
     // allocate auxiliary device memory, abbreviation ws means workspace
     size_t wsSize;
@@ -206,13 +210,20 @@ static void depthwiseConv2dBpCUDNN(const LaunchContext* context,
 
     // gradW algorithm description
     cudnnConvolutionBwdFilterAlgo_t algoGradW;
-    err = cudnnGetConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, &algoGradW);
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed", err);
+    cudnnConvolutionBwdFilterAlgoPerf_t algoGradWPerf;
+    int count = 0;
+    //err = cudnnGetConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, &algoGradW);
+    err = cudnnFindConvolutionBackwardFilterAlgorithm(*handle, x, dz, conv, dw, 1, &count, &algoGradWPerf);
+    if (err != 0 || count == 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardFilterAlgorithm failed", err);
+    algoGradW = algoGradWPerf.algo;
 
     // gradI algorithm description
     cudnnConvolutionBwdDataAlgo_t algoGradI;
-    err = cudnnGetConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0, &algoGradI);
-    if (err != 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed", err);
+    cudnnConvolutionBwdDataAlgoPerf_t algoGradIPerf;
+    //err = cudnnGetConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0, &algoGradI);
+    err = cudnnFindConvolutionBackwardDataAlgorithm(*handle, dw, dz, conv, x, 1, &count, &algoGradIPerf);
+    if (err != 0 || count == 0) throw sd::cuda_exception::build("depthwiseConv2dBpCUDNN: cudnnGetConvolutionBackwardDataAlgorithm failed", err);
+    algoGradI = algoGradIPerf.algo;
 
     // allocate auxiliary device memory for gradW calculation, abbreviation ws means workspace
     size_t wsGradWSize;

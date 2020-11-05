@@ -18,13 +18,11 @@ package org.nd4j.linalg.api.ops.impl.reduce.floating;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.api.ops.impl.reduce.bp.Norm2Bp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.util.Collections;
 import java.util.List;
 
 /**

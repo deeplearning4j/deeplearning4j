@@ -89,7 +89,7 @@ public class MergeVertex extends BaseGraphVertex {
         }
 
         INDArray[] in = new INDArray[inputs.length];
-        for( int i=0; i<in.length; i++ ){
+        for( int  i= 0; i < in.length; i++) {
             in[i] = inputs[i].castTo(dataType); //No-op if correct type
         }
 
@@ -113,7 +113,7 @@ public class MergeVertex extends BaseGraphVertex {
             }
         }
 
-        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)){
+        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)) {
             INDArray out = Nd4j.concat(mergeAxis, in);
             return out;
         }

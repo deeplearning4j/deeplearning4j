@@ -168,4 +168,14 @@ public interface UIServer {
      * @param stopCallback callback {@link Promise} to notify on completion
      */
     void stopAsync(Promise<Void> stopCallback);
+
+    /**
+     * Get shutdown hook of UI server, that will stop the server when the Runtime is stopped.
+     * You may de-register this shutdown hook with {@link Runtime#removeShutdownHook(Thread)},
+     * and add your own hook with {@link Runtime#addShutdownHook(Thread)}
+     * @return shutdown hook
+     */
+    static Thread getShutdownHook() {
+        return VertxUIServer.getShutdownHook();
+    };
 }

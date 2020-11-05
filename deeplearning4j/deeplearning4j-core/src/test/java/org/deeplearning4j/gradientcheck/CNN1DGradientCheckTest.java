@@ -22,10 +22,12 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
+import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.Convolution1DUtils;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -38,6 +40,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -93,6 +97,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                             .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                             .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
                                     .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
+                                    .rnnDataFormat(RNNFormat.NCW)
                                     .build())
                             .layer(new LocallyConnected1D.Builder().activation(afn).kernelSize(kernel)
                                     .stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2).hasBias(false)
@@ -171,15 +176,15 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
-                                        .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
+                                        .stride(stride).padding(padding).nOut(convNOut1)
                                         .build())
                                 .layer(new Cropping1D.Builder(cropping).build())
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
-                                        .stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2)
+                                        .stride(stride).padding(padding).nOut(convNOut2)
                                         .build())
                                 .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                                .setInputType(InputType.recurrent(convNIn, length)).build();
+                                .setInputType(InputType.recurrent(convNIn, length,RNNFormat.NCW)).build();
 
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
@@ -252,18 +257,18 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
-                                        .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
+                                        .stride(stride).padding(padding).nOut(convNOut1)
                                         .build())
                                 .layer(new ZeroPadding1DLayer.Builder(zeroPadding).build())
                                 .layer(new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
-                                        .stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2)
+                                        .stride(stride).padding(padding).nOut(convNOut2)
                                         .build())
                                 .layer(new ZeroPadding1DLayer.Builder(0).build())
                                 .layer(new Subsampling1DLayer.Builder(poolingType).kernelSize(kernel)
                                         .stride(stride).padding(padding).pnorm(pnorm).build())
                                 .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                                .setInputType(InputType.recurrent(convNIn, length)).build();
+                                .setInputType(InputType.recurrent(convNIn, length,RNNFormat.NCW)).build();
 
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
@@ -331,16 +336,16 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                                 .updater(new NoOp())
                                 .dist(new NormalDistribution(0, 1)).convolutionMode(ConvolutionMode.Same).list()
                                 .layer(0, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
-                                        .stride(stride).padding(padding).nIn(convNIn).nOut(convNOut1)
+                                        .stride(stride).padding(padding).nOut(convNOut1)
                                         .build())
                                 .layer(1, new Convolution1DLayer.Builder().activation(afn).kernelSize(kernel)
-                                        .stride(stride).padding(padding).nIn(convNOut1).nOut(convNOut2)
+                                        .stride(stride).padding(padding).nOut(convNOut2)
                                         .build())
                                 .layer(2, new Subsampling1DLayer.Builder(poolingType).kernelSize(kernel)
                                         .stride(stride).padding(padding).pnorm(pnorm).build())
                                 .layer(3, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                                         .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                                .setInputType(InputType.recurrent(convNIn, length)).build();
+                                .setInputType(InputType.recurrent(convNIn, length,RNNFormat.NCW)).build();
 
                         String json = conf.toJson();
                         MultiLayerConfiguration c2 = MultiLayerConfiguration.fromJson(json);
@@ -383,7 +388,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                 new SubsamplingLayer.PoolingType[] {SubsamplingLayer.PoolingType.MAX, SubsamplingLayer.PoolingType.AVG};
 
         for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
-            for(ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Same, ConvolutionMode.Truncate}){
+            for(ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Same, ConvolutionMode.Truncate}) {
                 for( int stride : new int[]{1, 2}){
                     String s = cm + ", stride=" + stride + ", pooling=" + poolingType;
                     log.info("Starting test: " + s);
@@ -397,11 +402,13 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                             .seed(12345)
                             .list()
                             .layer(new Convolution1DLayer.Builder().kernelSize(2)
+                                    .rnnDataFormat(RNNFormat.NCW)
                                     .stride(stride).nIn(convNIn).nOut(convNOut1)
                                     .build())
                             .layer(new Subsampling1DLayer.Builder(poolingType).kernelSize(2)
                                     .stride(stride).pnorm(pnorm).build())
                             .layer(new Convolution1DLayer.Builder().kernelSize(2)
+                                    .rnnDataFormat(RNNFormat.NCW)
                                     .stride(stride).nIn(convNOut1).nOut(convNOut2)
                                     .build())
                             .layer(new GlobalPoolingLayer(PoolingType.AVG))
@@ -451,7 +458,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testCnn1Causal() {
+    public void testCnn1Causal() throws Exception {
         int convNIn = 2;
         int convNOut1 = 3;
         int convNOut2 = 4;
@@ -463,7 +470,6 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
         int[] strides   =  {1,   2,  1,  2,  1,  1};
         boolean[] masks =  {false, true, false, true, false, true};
         boolean[] hasB  =  {true, false, true, false, true, true};
-
         for (int i = 0; i < lengths.length; i++) {
             int length = lengths[i];
             int k = kernels[i];
@@ -472,7 +478,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
             boolean mask = masks[i];
             boolean hasBias = hasB[i];
             //TODO has bias
-            String s = "k=" + k + ", s=" + st + "d=" + d + ", seqLen=" + length;
+            String s = "k=" + k + ", s=" + st + " d=" + d + ", seqLen=" + length;
             log.info("Starting test: " + s);
             Nd4j.getRandom().setSeed(12345);
 
@@ -487,16 +493,16 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
                             .dilation(d)
                             .hasBias(hasBias)
                             .convolutionMode(ConvolutionMode.Causal)
-                            .stride(st).nIn(convNIn).nOut(convNOut1)
+                            .stride(st).nOut(convNOut1)
                             .build())
                     .layer(new Convolution1DLayer.Builder().kernelSize(k)
                             .dilation(d)
                             .convolutionMode(ConvolutionMode.Causal)
-                            .stride(st).nIn(convNOut1).nOut(convNOut2)
+                            .stride(st).nOut(convNOut2)
                             .build())
                     .layer(new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                             .activation(Activation.SOFTMAX).nOut(finalNOut).build())
-                    .setInputType(InputType.recurrent(convNIn, length)).build();
+                    .setInputType(InputType.recurrent(convNIn, length,RNNFormat.NCW)).build();
 
             MultiLayerNetwork net = new MultiLayerNetwork(conf);
             net.init();
@@ -506,7 +512,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
             if (mask) {
                 fm = Nd4j.create(2, length);
                 fm.get(NDArrayIndex.point(0), NDArrayIndex.all()).assign(1);
-                fm.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, length-2)).assign(1);
+                fm.get(NDArrayIndex.point(1), NDArrayIndex.interval(0, length - 2)).assign(1);
             }
 
             long outSize1 = Convolution1DUtils.getOutputSize(length, k, st, 0, ConvolutionMode.Causal, d);

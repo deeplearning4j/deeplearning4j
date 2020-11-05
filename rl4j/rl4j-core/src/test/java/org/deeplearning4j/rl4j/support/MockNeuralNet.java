@@ -2,10 +2,12 @@ package org.deeplearning4j.rl4j.support;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,7 +50,7 @@ public class MockNeuralNet implements NeuralNet {
     }
 
     @Override
-    public Gradients computeGradients(FeaturesLabels updateLabels) {
+    public Gradients computeGradients(FeaturesLabels featuresLabels) {
         throw new UnsupportedOperationException();
     }
 
@@ -58,7 +60,7 @@ public class MockNeuralNet implements NeuralNet {
     }
 
     @Override
-    public void copy(ITrainableNeuralNet from) {
+    public void copyFrom(ITrainableNeuralNet from) {
         ++copyCallCount;
     }
 
@@ -98,12 +100,17 @@ public class MockNeuralNet implements NeuralNet {
     }
 
     @Override
-    public INDArray output(Observation observation) {
+    public NeuralNetOutput output(Observation observation) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray output(INDArray batch) {
+    public NeuralNetOutput output(INDArray batch) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public NeuralNetOutput output(Features features) {
         throw new UnsupportedOperationException();
     }
 }

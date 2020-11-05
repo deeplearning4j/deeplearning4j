@@ -20,6 +20,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
@@ -97,6 +98,17 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         //No op: subsampling layer doesn't have nIn value
+        if(cnn2dDataFormat == null || override) {
+            if(inputType.getType() == InputType.Type.RNN) {
+                InputType.InputTypeRecurrent inputTypeConvolutional = (InputType.InputTypeRecurrent) inputType;
+                this.cnn2dDataFormat = inputTypeConvolutional.getFormat() == RNNFormat.NCW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
+
+            } else if(inputType.getType() == InputType.Type.CNN) {
+                InputType.InputTypeConvolutional inputTypeConvolutional = (InputType.InputTypeConvolutional) inputType;
+                this.cnn2dDataFormat = inputTypeConvolutional.getFormat();
+            }
+
+        }
     }
 
     @Override

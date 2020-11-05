@@ -26,20 +26,19 @@ namespace sd {
 
     template<typename X, typename Z>
     template <typename OpType>
-    void ReductionBoolLoops<X, Z>::innerloopReduce(const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const Nd4jLong* tadShapeInfo, const Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop) {
+    void ReductionBoolLoops<X, Z>::innerloopReduce(sd::memory::Workspace* workspace, const X* x, const Nd4jLong* xShapeInfo, Z* z, const Nd4jLong* zShapeInfo, const int* dims, X* extraParams) {
 #ifndef INLINE_LOOPS
-        ReductionLoops<X,Z,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams, start, stop);
+        ReductionLoops<X,Z,X>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
 #endif
     }
 
     template<typename X, typename Y>
-    void ReductionBoolLoops<X, Y>::wrapper(const int opNum,
+    void ReductionBoolLoops<X, Y>::wrapper(const int opNum, sd::memory::Workspace* workspace,
                                            const X *x, const Nd4jLong *xShapeInfo,
                                            Y *z, const Nd4jLong *zShapeInfo,
-                                           const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets,
-                                           X *extraParams, int64_t start, int64_t stop) {
+                                           const int *dims, X *extraParams) {
 #ifndef INLINE_LOOPS
-        DISPATCH_BY_OPNUM_TT(innerloopReduce, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams, start, stop), REDUCE_BOOL_OPS);
+        DISPATCH_BY_OPNUM_TT(innerloopReduce, PARAMS(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams), REDUCE_BOOL_OPS);
 #endif
     }
 

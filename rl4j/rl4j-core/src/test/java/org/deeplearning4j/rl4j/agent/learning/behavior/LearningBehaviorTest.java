@@ -130,4 +130,30 @@ public class LearningBehaviorTest {
 
         verify(updateRuleMock, times(1)).update(trainingBatch);
     }
+
+    @Test
+    public void when_notifyBeforeStepAndBatchUnchanged_expect_notifyNewBatchStartedNotCalled() {
+        // Arrange
+
+        // Act
+        sut.notifyBeforeStep();
+
+        // Assert
+        verify(updateRuleMock, never()).notifyNewBatchStarted();
+    }
+
+    @Test
+    public void when_notifyBeforeStepAndBatchChanged_expect_notifyNewBatchStartedCalledOnce() {
+        // Arrange
+        when(experienceHandlerMock.isTrainingBatchReady()).thenReturn(true);
+
+        // Act
+        sut.handleNewExperience(null, 0, 0, false); // mark as batch has changed
+        sut.notifyBeforeStep(); // Should call notify
+        sut.notifyBeforeStep(); // Should not call notify
+
+        // Assert
+        verify(updateRuleMock, times(1)).notifyNewBatchStarted();
+    }
+
 }

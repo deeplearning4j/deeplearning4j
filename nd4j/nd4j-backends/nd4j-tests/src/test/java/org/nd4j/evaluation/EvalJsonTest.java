@@ -17,7 +17,6 @@
 package org.nd4j.evaluation;
 
 import org.junit.Test;
-import org.nd4j.evaluation.classification.*;
 import org.nd4j.evaluation.curves.Histogram;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;

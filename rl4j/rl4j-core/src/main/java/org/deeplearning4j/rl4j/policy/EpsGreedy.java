@@ -18,12 +18,14 @@
 package org.deeplearning4j.rl4j.policy;
 
 import lombok.Builder;
+import lombok.Data;
 import lombok.NonNull;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.environment.IActionSchema;
 import org.deeplearning4j.rl4j.learning.IEpochTrainer;
 import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.network.NeuralNet;
+import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -45,7 +47,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class EpsGreedy<A> extends Policy<A> {
 
     final private INeuralNetPolicy<A> policy;
-    final private int updateStart;
+    final private int annealingStart;
     final private int epsilonNbStep;
     final private Random rnd;
     final private double minEpsilon;
@@ -61,14 +63,14 @@ public class EpsGreedy<A> extends Policy<A> {
     @Deprecated
     public <OBSERVATION extends Encodable, AS extends ActionSpace<A>> EpsGreedy(Policy<A> policy,
                                                                                 MDP<Encodable, A, ActionSpace<A>> mdp,
-                                                                                int updateStart,
+                                                                                int annealingStart,
                                                                                 int epsilonNbStep,
                                                                                 Random rnd,
                                                                                 double minEpsilon,
                                                                                 IEpochTrainer learning) {
         this.policy = policy;
         this.mdp = mdp;
-        this.updateStart = updateStart;
+        this.annealingStart = annealingStart;
         this.epsilonNbStep = epsilonNbStep;
         this.rnd = rnd;
         this.minEpsilon = minEpsilon;
@@ -77,17 +79,17 @@ public class EpsGreedy<A> extends Policy<A> {
         this.actionSchema = null;
     }
 
-    public EpsGreedy(@NonNull Policy<A> policy, @NonNull IActionSchema<A> actionSchema, double minEpsilon, int updateStart, int epsilonNbStep) {
-        this(policy, actionSchema, minEpsilon, updateStart, epsilonNbStep, null);
+    public EpsGreedy(@NonNull Policy<A> policy, @NonNull IActionSchema<A> actionSchema, double minEpsilon, int annealingStart, int epsilonNbStep) {
+        this(policy, actionSchema, minEpsilon, annealingStart, epsilonNbStep, null);
     }
 
     @Builder
-    public EpsGreedy(@NonNull INeuralNetPolicy<A> policy, @NonNull IActionSchema<A> actionSchema, double minEpsilon, int updateStart, int epsilonNbStep, Random rnd) {
+    public EpsGreedy(@NonNull INeuralNetPolicy<A> policy, @NonNull IActionSchema<A> actionSchema, double minEpsilon, int annealingStart, int epsilonNbStep, Random rnd) {
         this.policy = policy;
 
         this.rnd = rnd == null ? Nd4j.getRandom() : rnd;
         this.minEpsilon = minEpsilon;
-        this.updateStart = updateStart;
+        this.annealingStart = annealingStart;
         this.epsilonNbStep = epsilonNbStep;
         this.actionSchema = actionSchema;
 
@@ -95,10 +97,15 @@ public class EpsGreedy<A> extends Policy<A> {
         this.learning = null;
     }
 
-    public NeuralNet getNeuralNet() {
+    public EpsGreedy(INeuralNetPolicy<A> policy, IActionSchema<A> actionSchema, @NonNull Configuration configuration, Random rnd) {
+        this(policy, actionSchema, configuration.getMinEpsilon(), configuration.getAnnealingStart(), configuration.getEpsilonNbStep(), rnd);
+    }
+
+    public IOutputNeuralNet getNeuralNet() {
         return policy.getNeuralNet();
     }
 
+    @Deprecated
     public A nextAction(INDArray input) {
 
         double ep = getEpsilon();
@@ -116,31 +123,41 @@ public class EpsGreedy<A> extends Policy<A> {
     }
 
     public A nextAction(Observation observation) {
+        // FIXME: remove if() and content once deprecated methods are removed.
         if(actionSchema == null) {
-            return this.nextAction(observation.getData());
+            return this.nextAction(observation.getChannelData(0));
         }
-
-        A result;
 
         double ep = getEpsilon();
         if (annealingStep % 500 == 1) {
             log.info("EP: " + ep + " " + annealingStep);
         }
 
-        if (rnd.nextDouble() > ep) {
-            result = policy.nextAction(observation);
-        }
-        else {
-            result = actionSchema.getRandomAction();
-        }
-
         ++annealingStep;
 
-        return result;
+        // TODO: This is a temporary solution while something better is developed
+        if (rnd.nextDouble() > ep) {
+            return policy.nextAction(observation);
+        }
+        // With RNNs the neural net must see *all* observations
+        if(getNeuralNet().isRecurrent()) {
+            policy.nextAction(observation); // Make the RNN see the observation
+        }
+        return actionSchema.getRandomAction();
     }
 
     public double getEpsilon() {
         int step = actionSchema != null ? annealingStep : learning.getStepCount();
-        return Math.min(1.0, Math.max(minEpsilon, 1.0 - (step - updateStart) * 1.0 / epsilonNbStep));
+        return Math.min(1.0, Math.max(minEpsilon, 1.0 - (step - annealingStart) * 1.0 / epsilonNbStep));
+    }
+
+    @SuperBuilder
+    @Data
+    public static class Configuration {
+        @Builder.Default
+        final int annealingStart = 0;
+
+        final int epsilonNbStep;
+        final double minEpsilon;
     }
 }

@@ -30,6 +30,7 @@ import java.io.OutputStream;
  * The first output quantify the advantage provided by getting to one state
  * while the other choose among a set of action which is the best one.
  */
+@Deprecated
 public interface IActorCritic<NN extends IActorCritic> extends NeuralNet<NN> {
 
     //FIRST SHOULD BE VALUE AND SECOND IS SOFTMAX POLICY. DONT MESS THIS UP OR ELSE ASYNC THREAD IS BROKEN (maxQ) !

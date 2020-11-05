@@ -26,86 +26,104 @@ public class PythonPrimitiveTypesTest {
 
     @Test
     public void testInt() throws PythonException {
-        long j = 3;
-        PythonObject p = PythonTypes.INT.toPython(j);
-        long j2 = PythonTypes.INT.toJava(p);
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            long j = 3;
+            PythonObject p = PythonTypes.INT.toPython(j);
+            long j2 = PythonTypes.INT.toJava(p);
 
-        Assert.assertEquals(j, j2);
+            Assert.assertEquals(j, j2);
 
-        PythonObject p2 = PythonTypes.convert(j);
-        long j3 = PythonTypes.INT.toJava(p2);
+            PythonObject p2 = PythonTypes.convert(j);
+            long j3 = PythonTypes.INT.toJava(p2);
 
-        Assert.assertEquals(j, j3);
+            Assert.assertEquals(j, j3);
+        }
+
     }
 
     @Test
-    public void testStr() throws PythonException{
-        String s = "abcd";
-        PythonObject p = PythonTypes.STR.toPython(s);
-        String s2 = PythonTypes.STR.toJava(p);
+    public void testStr() throws PythonException {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            String s = "abcd";
+            PythonObject p = PythonTypes.STR.toPython(s);
+            String s2 = PythonTypes.STR.toJava(p);
 
-        Assert.assertEquals(s, s2);
+            Assert.assertEquals(s, s2);
 
-        PythonObject p2 = PythonTypes.convert(s);
-        String s3 = PythonTypes.STR.toJava(p2);
+            PythonObject p2 = PythonTypes.convert(s);
+            String s3 = PythonTypes.STR.toJava(p2);
 
-        Assert.assertEquals(s, s3);
+            Assert.assertEquals(s, s3);
+        }
+
     }
 
     @Test
-    public void testFloat() throws PythonException{
-        double f = 7;
-        PythonObject p = PythonTypes.FLOAT.toPython(f);
-        double f2 = PythonTypes.FLOAT.toJava(p);
+    public void testFloat() throws PythonException {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            double f = 7;
+            PythonObject p = PythonTypes.FLOAT.toPython(f);
+            double f2 = PythonTypes.FLOAT.toJava(p);
 
-        Assert.assertEquals(f, f2, 1e-5);
+            Assert.assertEquals(f, f2, 1e-5);
 
-        PythonObject p2 = PythonTypes.convert(f);
-        double f3 = PythonTypes.FLOAT.toJava(p2);
+            PythonObject p2 = PythonTypes.convert(f);
+            double f3 = PythonTypes.FLOAT.toJava(p2);
 
-        Assert.assertEquals(f, f3, 1e-5);
+            Assert.assertEquals(f, f3, 1e-5);
+        }
+
     }
 
     @Test
     public void testBool() throws PythonException{
-        boolean b = true;
-        PythonObject p = PythonTypes.BOOL.toPython(b);
-        boolean b2 = PythonTypes.BOOL.toJava(p);
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            boolean b = true;
+            PythonObject p = PythonTypes.BOOL.toPython(b);
+            boolean b2 = PythonTypes.BOOL.toJava(p);
 
-        Assert.assertEquals(b, b2);
+            Assert.assertEquals(b, b2);
 
-        PythonObject p2 = PythonTypes.convert(b);
-        boolean b3 = PythonTypes.BOOL.toJava(p2);
+            PythonObject p2 = PythonTypes.convert(b);
+            boolean b3 = PythonTypes.BOOL.toJava(p2);
 
-        Assert.assertEquals(b, b3);
+            Assert.assertEquals(b, b3);
+        }
+
     }
     @Test
     public void testBytes() {
-        byte[] bytes = new byte[256];
-        for (int i = 0; i < 256; i++) {
-            bytes[i] = (byte) i;
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            byte[] bytes = new byte[256];
+            for (int i = 0; i < 256; i++) {
+                bytes[i] = (byte) i;
+            }
+            List<PythonVariable> inputs = new ArrayList<>();
+            inputs.add(new PythonVariable<>("b1", PythonTypes.BYTES, bytes));
+            List<PythonVariable> outputs = new ArrayList<>();
+            outputs.add(new PythonVariable<>("b2", PythonTypes.BYTES));
+            String code = "b2=b1";
+            PythonExecutioner.exec(code, inputs, outputs);
+            Assert.assertArrayEquals(bytes, (byte[]) outputs.get(0).getValue());
         }
-        List<PythonVariable> inputs = new ArrayList<>();
-        inputs.add(new PythonVariable<>("b1", PythonTypes.BYTES, bytes));
-        List<PythonVariable> outputs = new ArrayList<>();
-        outputs.add(new PythonVariable<>("b2", PythonTypes.BYTES));
-        String code = "b2=b1";
-        PythonExecutioner.exec(code, inputs, outputs);
-        Assert.assertArrayEquals(bytes, (byte[]) outputs.get(0).getValue());
+
     }
 
     @Test
     public void testBytes2() {
-        byte[] bytes = new byte[]{97, 98, 99};
-        List<PythonVariable> inputs = new ArrayList<>();
-        inputs.add(new PythonVariable<>("b1", PythonTypes.BYTES, bytes));
-        List<PythonVariable> outputs = new ArrayList<>();
-        outputs.add(new PythonVariable<>("s1", PythonTypes.STR));
-        outputs.add(new PythonVariable<>("b2", PythonTypes.BYTES));
-        String code = "s1 = ''.join(chr(c) for c in b1)\nb2=b'def'";
-        PythonExecutioner.exec(code, inputs, outputs);
-        Assert.assertEquals("abc", outputs.get(0).getValue());
-        Assert.assertArrayEquals(new byte[]{100, 101, 102}, (byte[]) outputs.get(1).getValue());
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            byte[] bytes = new byte[]{97, 98, 99};
+            List<PythonVariable> inputs = new ArrayList<>();
+            inputs.add(new PythonVariable<>("b1", PythonTypes.BYTES, bytes));
+            List<PythonVariable> outputs = new ArrayList<>();
+            outputs.add(new PythonVariable<>("s1", PythonTypes.STR));
+            outputs.add(new PythonVariable<>("b2", PythonTypes.BYTES));
+            String code = "s1 = ''.join(chr(c) for c in b1)\nb2=b'def'";
+            PythonExecutioner.exec(code, inputs, outputs);
+            Assert.assertEquals("abc", outputs.get(0).getValue());
+            Assert.assertArrayEquals(new byte[]{100, 101, 102}, (byte[]) outputs.get(1).getValue());
+
+        }
     }
 
 }
