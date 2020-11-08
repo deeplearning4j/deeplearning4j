@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
- *
+ * Copyright (c) 2019-2020 Konduit K.K.
+ * 
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -16,11 +17,12 @@
 
 //
 //  @author raver119@gmail.com
-//
+//  @author AbdelRauf 
 
 #include <array/ShapeDescriptor.h>
 #include <helpers/shape.h>
 #include <helpers/ShapeBuilders.h>
+#include <helpers/LoopsCoordsHelper.h>
 
 namespace sd {
 
@@ -77,6 +79,7 @@ namespace sd {
                 shapeInfo[2 + _rank * 2] = _ews;
                 shapeInfo[2] = _strides[0];
                 shapeInfo[2 + _rank * 2 + 1] = _order;
+                if (_manualAllocSize > 0) ArrayOptions::flagAsPaddedBuffer(shapeInfo);
                 return shapeInfo;
             }
             default: {
@@ -86,7 +89,7 @@ namespace sd {
                     shapeInfo[e + 1 + _rank] = _strides[e];
 
                 shapeInfo[2 + _rank * 2] = _ews;
-
+                if (_manualAllocSize > 0) ArrayOptions::flagAsPaddedBuffer(shapeInfo);
                 return shapeInfo;
             }
         }
@@ -252,11 +255,80 @@ namespace sd {
     }
 
     Nd4jLong ShapeDescriptor::arrLength() const {
-
+        //when _ews == 1 allocation length is also array length
         Nd4jLong len = 1;
-        for (const auto &dim : const_cast<ShapeDescriptor *>(this)->shape())
+        for (const auto& dim : _shape)
             len *= dim;
         return len;
+    }
+
+    Nd4jLong ShapeDescriptor::allocLength() const {
+        Nd4jLong len = 1;
+        if (_ews == 1 && _rank>1) {
+            //calculate using max stride
+            int ind = _order == 'c' ? 0:  _rank - 1;
+            return _shape[ind] * _strides[ind];
+        }
+        for (int i = 0; i < _rank; i++) {
+            len += (_shape[i] - 1) * _strides[i];
+        }
+        return len;
+    }
+
+    Nd4jLong ShapeDescriptor::fullAllocLength() const {
+        if (_manualAllocSize > 0) return _manualAllocSize;
+        int ind = _order == 'c' ? 0 : _rank - 1;
+        return _shape[ind] * _strides[ind]; 
+    }
+
+    Nd4jLong ShapeDescriptor::allowedMaxOffset() const {
+        return fullAllocLength() - allocLength();
+    }
+
+    Nd4jLong ShapeDescriptor::offsetInFull(const std::vector<Nd4jLong>& paddings) const {
+        if (paddings.empty() ) return 0L;
+        //assumes it was allocated fully 
+        auto min_rank = _strides.size() > paddings.size() ? _strides.size() : paddings.size();
+        auto offset = offset_from_coords(_strides.data(), paddings.data(), min_rank);
+        if (offset <= allowedMaxOffset()) return offset;
+        return -1L;
+    }
+
+    Nd4jLong ShapeDescriptor::validate() const {
+        auto status = SHAPE_DESC_OK;
+        bool is_continous = true;
+        if (_rank != _shape.size() || _rank > MAX_RANK) status |= SHAPE_DESC_INCORRECT_RANK;
+        bool ranks_match = (_strides.size() == _shape.size());
+        if (!ranks_match) status = status | SHAPE_DESC_INCORRECT_STRIDES;
+        if (_rank > 0 && ranks_match) {
+            if (_order == 'c') {
+                for (int j = _rank - 2; j >= 0; j--) {
+                    Nd4jLong currentStride = _strides[j];
+                    Nd4jLong allowedStride = _strides[j + 1] * _shape[j + 1];
+                    if (currentStride < allowedStride) {
+                        status = status | SHAPE_DESC_INCORRECT_STRIDES;
+                        break;
+                    }
+                    is_continous = is_continous & (currentStride == allowedStride);
+                }
+            }
+            else {
+                for (int j = 1; j < _rank; j++) {
+                    Nd4jLong currentStride = _strides[j];
+                    Nd4jLong allowedStride = _strides[j - 1] * _shape[j - 1];
+                    if (currentStride < allowedStride) {
+                        status = status | SHAPE_DESC_INCORRECT_STRIDES;
+                        break;
+                    }
+                    is_continous = is_continous & (currentStride == allowedStride);
+                }
+            }
+
+            int index = (_order == 'c') ? _rank - 1 : 0;
+            auto correctEws = is_continous ? _strides[index] : 0;
+            if (correctEws != _ews) status = status | SHAPE_DESC_INCORRECT_EWS;
+        }
+        return status;
     }
 
     char ShapeDescriptor::order() const {
@@ -293,7 +365,7 @@ namespace sd {
     ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape,
                                      const std::vector<Nd4jLong> &strides) : _dataType(type), _order(order),
                                                                              _shape(shape) {
-
+        _rank = shape.size();
         if (strides.empty() && !shape.empty()) {
             _strides.resize(shape.size());
             if (order == 'c')
@@ -353,6 +425,57 @@ namespace sd {
 
         return descriptor;
     }
+
+    ShapeDescriptor ShapeDescriptor::paddedBufferDescriptor(const DataType type, const char order, const std::vector<Nd4jLong>& shape, const std::vector<Nd4jLong>& paddings) {
+        ShapeDescriptor descriptor;
+        descriptor._dataType = type;
+        descriptor._order = order;
+        descriptor._shape = shape;
+        descriptor._rank = shape.size();
+        descriptor._strides.resize(shape.size());
+        descriptor._empty = false;
+        if (descriptor._rank < 1) {
+            descriptor._ews = 1;
+            return descriptor;
+        }
+        //calculate strides with paddings
+        int min_rank = descriptor._rank > paddings.size() ? paddings.size() : descriptor._rank;
+        bool is_continous = true;
+        if (order == 'c') {
+            
+            descriptor._strides[descriptor._rank - 1] = 1L;
+            for (int j = descriptor._rank - 2; j >= 0; j--) {
+                Nd4jLong pad = (j + 1 < min_rank) ? paddings[j + 1] : 0;
+                descriptor._strides[j] = descriptor._strides[j + 1] * (descriptor._shape[j + 1] + pad);
+                descriptor._empty = descriptor._empty | (descriptor._shape[j + 1] == 0);
+                if (pad != 0) is_continous = false;
+            }
+            if (!is_continous && descriptor._rank > 0) {
+                Nd4jLong size_pad =  paddings.size()>0 ? paddings[0] : 0;
+                //alloc size should be supplied manually as we dont have place to store it
+                descriptor._manualAllocSize = descriptor._strides[0] * (descriptor._shape[0] + size_pad);
+            }
+        }
+        else {
+            descriptor._strides[0] = 1L;
+            for (int j = 1; j < descriptor._rank; j++) {
+                Nd4jLong pad = (j - 1 < min_rank) ? paddings[j - 1] : 0;
+                descriptor._strides[j] = descriptor._strides[j - 1] * (descriptor._shape[j - 1] + pad);
+                descriptor._empty = descriptor._empty | (descriptor._shape[j - 1] == 0);
+                if (pad != 0) is_continous = false;
+            }
+            if (!is_continous && descriptor._rank > 0) {
+                Nd4jLong size_pad =  paddings.size()>=descriptor._rank  ? paddings[descriptor._rank-1] : 0;
+                //alloc size should be supplied manually as we dont have place to store it
+                descriptor._manualAllocSize = descriptor._strides[descriptor._rank-1] * (descriptor._shape[descriptor._rank-1] + size_pad);
+            }
+        }
+
+        descriptor._ews = is_continous ? 1 : 0;
+        return descriptor;
+    }
+
+
 }
 
 namespace std {

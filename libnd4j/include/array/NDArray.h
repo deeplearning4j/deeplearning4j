@@ -464,6 +464,11 @@ namespace sd {
         FORCEINLINE Nd4jLong bufferOffset() const;
 
         /**
+         *  checks if array has padded buffer
+         */
+        FORCEINLINE bool hasPaddedBuffer() const;
+
+        /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
         void* specialBuffer();
@@ -1927,6 +1932,11 @@ const Nd4jLong* NDArray::specialShapeInfo() const {
 ////////////////////////////////////////////////////////////////////////
 Nd4jLong NDArray::bufferOffset() const {
     return _offset;
+}
+
+////////////////////////////////////////////////////////////////////////
+bool NDArray::hasPaddedBuffer() const {
+    return ArrayOptions::hasPaddedBuffer(_shapeInfo);
 }
 
 

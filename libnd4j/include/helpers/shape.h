@@ -1342,20 +1342,20 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
  * @return the strides for a matrix of n dimensions
  */
     INLINEDEF _CUDA_HD Nd4jLong * calcStridesFortran(Nd4jLong const* shape, int rank, int startNum) {
-        if (isVector(shape, rank)) {
+        // if (isVector(shape, rank)) {
 
-            traceNew(5);
+        //     traceNew(5);
 
-            Nd4jLong *ret = new Nd4jLong[2];
-            for (int i = 0; i < 2; i++)
-                ret[i] = 1;
-            return ret;
+        //     Nd4jLong *ret = new Nd4jLong[2];
+        //     for (int i = 0; i < 2; i++)
+        //         ret[i] = 1;
+        //     return ret;
 
-        }
+        // }
 
         int dimensions = rank;
 
-        traceNew(6);
+        traceNew(5);
 
         Nd4jLong *stride = new Nd4jLong[dimensions];
         Nd4jLong st = startNum;
@@ -1368,12 +1368,12 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
     }
 
     INLINEDEF _CUDA_HD Nd4jLong * calcStridesFortran(Nd4jLong const* shape, int rank, int startNum, Nd4jLong *ret) {
-        if (isVector(shape, rank)) {
-            for (int i = 0; i < rank; i++)
-                ret[i] = 1;
-            return ret;
+        // if (isVector(shape, rank)) {
+        //     for (int i = 0; i < rank; i++)
+        //         ret[i] = 1;
+        //     return ret;
 
-        }
+        // }
 
         //int dimensions = rank;
 

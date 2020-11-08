@@ -86,6 +86,8 @@
 // flag for signed/unsigned integers
 #define ARRAY_UNSIGNED 8388608
 
+// flag for arrays with padded buffer
+#define ARRAY_HAS_PADDED_BUFFER  (1<<25)
 
 namespace sd {
     class ND4J_EXPORT ArrayOptions {
@@ -117,6 +119,8 @@ namespace sd {
 
         static FORCEINLINE _CUDA_HD bool hasExtraProperties(Nd4jLong *shapeInfo);
 
+        static FORCEINLINE _CUDA_HD bool hasPaddedBuffer(const Nd4jLong* shapeInfo);
+        static FORCEINLINE _CUDA_HD void flagAsPaddedBuffer(Nd4jLong* shapeInfo);
 
         static FORCEINLINE _CUDA_HD void resetDataType(Nd4jLong *shapeInfo);
         static FORCEINLINE _CUDA_HD void setDataType(Nd4jLong *shapeInfo, const sd::DataType dataType);
@@ -281,6 +285,20 @@ namespace sd {
             if (!hasPropertyBitSet(shapeInfo, v))
                 setPropertyBit(shapeInfo, v);
         }
+    }
+
+    FORCEINLINE _CUDA_HD void ArrayOptions::flagAsPaddedBuffer(Nd4jLong* shapeInfo) {
+        if (!isNewFormat(shapeInfo))
+            return ;
+
+        return setPropertyBit(shapeInfo, ARRAY_HAS_PADDED_BUFFER);
+    }
+
+    FORCEINLINE _CUDA_HD bool ArrayOptions::hasPaddedBuffer(const Nd4jLong* shapeInfo) {
+        if (!isNewFormat(shapeInfo))
+            return false;
+
+        return hasPropertyBitSet(shapeInfo, ARRAY_HAS_PADDED_BUFFER);
     }
 
     FORCEINLINE _CUDA_HD void ArrayOptions::resetDataType(Nd4jLong *shapeInfo) {
