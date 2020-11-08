@@ -36,6 +36,59 @@
 
 namespace sd {
 
+    ND4J_EXPORT NDArray NDArrayFactory::create(const ShapeDescriptor& shapeDescriptor, sd::LaunchContext * context){
+        auto status = shapeDescriptor.validate();
+        if(status !=  SHAPE_DESC_OK){
+            nd4j_printf("NDArrayFactory::create: ShapeDescriptor status code [%d]\n", status );
+            throw std::invalid_argument("NDArrayFactory::create: invalid ShapeDescriptor ");
+        }
+        Nd4jLong allocSize = shapeDescriptor.allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor.dataType());
+        std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(allocSize, shapeDescriptor.dataType(), context->getWorkspace());
+        NDArray result(buffer, shapeDescriptor, context);
+        result.nullify();
+        return result;
+    }
+
+    ND4J_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong>& shape, sd::DataType dataType, const std::vector<Nd4jLong>& paddings, const std::vector<Nd4jLong> &startOffset, sd::LaunchContext * context) {
+        if ((int)shape.size() > MAX_RANK)
+            throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32");
+
+        auto shapeDescriptor = ShapeDescriptor::paddedBufferDescriptor(dataType, order, shape, paddings);
+
+        //we will use fullAllocation
+        Nd4jLong allocSize = shapeDescriptor.fullAllocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor.dataType());
+        std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(allocSize, shapeDescriptor.dataType(), context->getWorkspace());
+        //lets find offset
+        auto offset = shapeDescriptor.offsetInFull(startOffset);
+        if (offset < 0) {
+            throw std::invalid_argument("NDArrayFactory::create: startOffset for padded NDArray is out of range");
+        }
+
+        NDArray result(buffer, shapeDescriptor, context, offset);
+        result.nullify();
+        return result;
+    }
+
+    ND4J_EXPORT NDArray NDArrayFactory::create(const ShapeDescriptor& shapeDescriptor, const std::vector<Nd4jLong>& startOffset, sd::LaunchContext * context) {
+        auto status = shapeDescriptor.validate();
+        if (status != SHAPE_DESC_OK) {
+            nd4j_printf("NDArrayFactory::create: ShapeDescriptor status code [%d]\n", status);
+            throw std::invalid_argument("NDArrayFactory::create: invalid ShapeDescriptor ");
+        }
+        //we will use fullAllocation
+        Nd4jLong allocSize = shapeDescriptor.fullAllocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor.dataType());
+        std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(allocSize, shapeDescriptor.dataType(), context->getWorkspace());
+        //lets find offset
+        auto offset = shapeDescriptor.offsetInFull(startOffset);
+        if (offset < 0) {
+            throw std::invalid_argument("NDArrayFactory::create: startOffset for padded NDArray is out of range");
+        }
+
+        NDArray result(buffer, shapeDescriptor, context, offset);
+        result.nullify();
+        return result;
+    }
+
     ////////////////////////////////////////////////////////////////////////
     template <>
     ND4J_EXPORT NDArray NDArrayFactory::create<bool>(const char order, const std::vector<Nd4jLong> &shape, const std::vector<bool> &data, sd::LaunchContext * context) {
