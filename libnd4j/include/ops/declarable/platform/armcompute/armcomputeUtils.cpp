@@ -77,13 +77,16 @@ Arm_DataType getArmType ( const DataType &dType){
 
     return ret;
 }
+
 bool isArmcomputeFriendly(const NDArray& arr) {
   auto dType = getArmType(arr.dataType());
   int rank = (int)(arr.rankOf());
+  int ind = arr.ordering() == 'c' ? rank-1 : 0;
+  auto arrStrides = arr.stridesOf();
   return dType != Arm_DataType::UNKNOWN && 
          rank<=arm_compute::MAX_DIMS &&
          arr.ordering() == 'c' &&
-         arr.ews()==1 ;
+         arrStrides[ind] == 1 ;
 }
 
 Arm_TensorInfo getArmTensorInfo(int rank, Nd4jLong* bases,sd::DataType ndArrayType, arm_compute::DataLayout layout) {
@@ -130,12 +133,13 @@ Arm_TensorInfo getArmTensorInfo(const NDArray& arr,
   for (int i = rank; i < arm_compute::MAX_DIMS; i++) {
     shape[i] = 1;
   }
-  size_t total_size;
-  size_t size_ind = rank - 1;
-  total_size = shape[size_ind] * strides[size_ind];
-
+  //size_t total_size;
+  //size_t size_ind = rank - 1;
+  //total_size = shape[size_ind] * strides[size_ind];
+  auto total_size = arr.getDataBuffer()->getLenInBytes();
+  auto offset = arr.bufferOffset() * element_size;
   Arm_TensorInfo info;
-  info.init(shape, numChannels, dType, strides, 0, total_size);
+  info.init(shape, numChannels, dType, strides, offset, total_size);
   info.set_data_layout(layout);
 
   return info;
@@ -153,19 +157,19 @@ Arm_Tensor getArmTensor(const NDArray& arr, arm_compute::DataLayout layout) {
   auto info = getArmTensorInfo(arr, layout);
   Arm_Tensor tensor;
   tensor.allocator()->init(info);
-  void* buff = (void*)arr.buffer();
+  //get without offset
+  void* buff = arr.getDataBuffer()->primary();
   tensor.allocator()->import_memory(buff);
   return tensor;
 }
 
-void copyFromTensor(const Arm_Tensor& inTensor, NDArray& output) {
-    //only for C order
+void copyFromTensor(const Arm_Tensor& inTensor, sd::NDArray& output) {
     //only for C order
     if (output.ordering() != 'c') return;
-    auto shapeInfo = output.shapeInfo();
-    auto bases = &(shapeInfo[1]);
-    Nd4jLong rank = shapeInfo[0];
-    auto strides = output.stridesOf();
+    const Nd4jLong* shapeInfo = output.shapeInfo();
+    const Nd4jLong* bases = &(shapeInfo[1]);
+    const Nd4jLong rank = shapeInfo[0];
+    const Nd4jLong* strides = output.stridesOf();
     int width = bases[rank - 1];
     uint8_t* outputBuffer = (uint8_t*)output.buffer(); 
     size_t offset = 0;
@@ -175,7 +179,7 @@ void copyFromTensor(const Arm_Tensor& inTensor, NDArray& output) {
     int element_size = inTensor.info()->element_size();
     window.use_tensor_dimensions(inTensor.info()->tensor_shape(), /* first_dimension =*/arm_compute::Window::DimY);
 
-//    if (output.ews() == 1) {
+    if (output.ews() == 1) {
         auto copySize = width * element_size;
         auto dest = outputBuffer;
         arm_compute::execute_window_loop(window, [&](const arm_compute::Coordinates& id)
@@ -185,31 +189,28 @@ void copyFromTensor(const Arm_Tensor& inTensor, NDArray& output) {
                 dest += copySize;
             },
             tensor_it);
-    // }
-    // else {
-    //     Nd4jLong coords[MAX_RANK] = {};
-    //     if(strides[rank-1]!=1){
-    //             throw std::runtime_error(  "not implemented for subarrays whose last stride is not 1");
-    //         //TODO: implement to work with all subarrays properly
-    //     }
-    //     arm_compute::execute_window_loop(window, [&](const arm_compute::Coordinates& id)
-    //         {
-    //             auto src = tensor_it.ptr();
-    //             auto dest = outputBuffer + offset * element_size;
-    //             memcpy(dest, src, width * element_size);
-    //             offset = sd::inc_coords(bases, strides, coords, offset, rank, 1);
-    //         },
-    //         tensor_it);
-    // }
+    }
+    else {
+        Nd4jLong coords[MAX_RANK] = {};
+        auto copySize = width * element_size;
+        arm_compute::execute_window_loop(window, [&](const arm_compute::Coordinates& id)
+            {
+                auto src = tensor_it.ptr();
+                auto dest = outputBuffer + offset * element_size;
+                memcpy(dest, src, copySize);
+                offset = sd::inc_coords(bases, strides, coords, offset, rank, 1);
+            },
+            tensor_it);
+    }
 }
 
-void copyToTensor(const NDArray& input, Arm_Tensor& outTensor) {
+void copyToTensor(const sd::NDArray& input, Arm_Tensor& outTensor) {
     //only for C order
     if (input.ordering() != 'c') return;
-    auto shapeInfo = input.shapeInfo();
-    auto bases = &(shapeInfo[1]);
-    Nd4jLong rank = shapeInfo[0];
-    auto strides = input.stridesOf();
+    const Nd4jLong* shapeInfo = input.shapeInfo();
+    const Nd4jLong* bases = &(shapeInfo[1]);
+    const Nd4jLong rank = shapeInfo[0];
+    const Nd4jLong* strides = input.stridesOf();
     uint8_t *inputBuffer = (uint8_t*)input.buffer(); 
     int width = bases[rank - 1];
     size_t offset = 0; 
@@ -219,38 +220,36 @@ void copyToTensor(const NDArray& input, Arm_Tensor& outTensor) {
 
     window.use_tensor_dimensions(outTensor.info()->tensor_shape(), /* first_dimension =*/arm_compute::Window::DimY);
     
-// if (input.ews() == 1) {
+    if (input.ews() == 1) {
 
-     auto copySize = width * element_size;
-     auto src = inputBuffer;
-     arm_compute::execute_window_loop(window, [&](const arm_compute::Coordinates& id)
+        auto copySize = width * element_size;
+        auto src = inputBuffer;
+        arm_compute::execute_window_loop(window, [&](const arm_compute::Coordinates& id)
          {
              auto dest = tensor_it.ptr(); 
              memcpy(dest,src, copySize);
              src += copySize;
          },
          tensor_it);
-//  }
-//  else {
-//      Nd4jLong coords[MAX_RANK] = {};
-//         if(strides[rank-1]!=1){
-//                 throw std::runtime_error(  "not implemented for subarrays whose last stride is not 1");
-//             //TODO: implement to work with all subarrays properly
-//         }     
-//      arm_compute::execute_window_loop(window, [&](const arm_compute::Coordinates& id)
-//          {
-//              auto dest = tensor_it.ptr();
-//              auto src = inputBuffer + offset * element_size;
-//              offset = sd::inc_coords(bases, strides, coords, offset, rank, 1);
-//          },
-//          tensor_it);
-//  }
+    }
+    else {
+        Nd4jLong coords[MAX_RANK] = {};
+        auto copySize = width * element_size;
+        arm_compute::execute_window_loop(window, [&](const arm_compute::Coordinates& id)
+         {
+             auto dest = tensor_it.ptr();
+             auto src = inputBuffer + offset * element_size;
+             memcpy(dest, src, copySize);
+             offset = sd::inc_coords(bases, strides, coords, offset, rank, 1);
+         },
+         tensor_it);
+   }
 }
 
 
 // armcompute should be built with debug option
 void print_tensor(Arm_ITensor& tensor, const char* msg) {
-    auto info = tensor.info();
+  auto info = tensor.info();
   auto padding = info->padding();
   std::cout << msg << "\ntotal: " << info->total_size() << "\n";
 
