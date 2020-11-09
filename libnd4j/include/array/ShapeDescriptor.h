@@ -47,7 +47,7 @@ class ND4J_EXPORT ShapeDescriptor {
         char _order = 'c';
         DataType _dataType;
         bool _empty = false;
-        Nd4jLong _manualAllocSize = 0;
+        Nd4jLong _paddedAllocSize = 0;
 
     public:
         ShapeDescriptor(const ShapeDescriptor &other);
@@ -76,15 +76,6 @@ class ND4J_EXPORT ShapeDescriptor {
 
         //returns minimal allocation length
         Nd4jLong allocLength() const;
-
-        //returns maximum available offset if the buffer is allocated fully
-        Nd4jLong allowedMaxOffset() const;
-
-        //return full allocated buffer length for padded buffers
-        Nd4jLong fullAllocLength() const;
-
-        //returns offset for the given padding if the buffer is sufficient
-        Nd4jLong offsetInFull(const std::vector<Nd4jLong>& paddings) const;
 
         //returns Status for the correctness
         Nd4jLong validate() const;

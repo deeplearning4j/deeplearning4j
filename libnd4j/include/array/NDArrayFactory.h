@@ -61,9 +61,7 @@ namespace sd {
 
         static NDArray create(const ShapeDescriptor& shapeDescriptor, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
 
-        static NDArray create(const ShapeDescriptor& shapeDescriptor, const std::vector<Nd4jLong>& startOffset, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
-
-        static NDArray create(const char order, const std::vector<Nd4jLong>& shape, sd::DataType dataType, const std::vector<Nd4jLong>& paddings, const std::vector<Nd4jLong>& startOffset, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
+        static NDArray create(const char order, const std::vector<Nd4jLong>& shape, sd::DataType dataType, const std::vector<Nd4jLong>& paddings, const std::vector<Nd4jLong>& paddingOffsets, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
 
 
         template <typename T>

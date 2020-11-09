@@ -324,13 +324,9 @@ TEST_F(ConstantShapeHelperTests, ShapeDescriptor_paddedBuffer) {
         ASSERT_TRUE(shapeDesc5.validate() == SHAPE_DESC_OK);
         ASSERT_TRUE(shapeDesc6.validate() == SHAPE_DESC_OK);
 
-        ASSERT_TRUE(shapeDesc1.allocLength() <= shapeDesc2.allocLength());
-        ASSERT_TRUE(shapeDesc3.allocLength() <= shapeDesc4.allocLength());
-        ASSERT_TRUE(shapeDesc5.allocLength() <= shapeDesc6.allocLength());
-
-        ASSERT_TRUE(shapeDesc1.fullAllocLength() == shapeDesc2.fullAllocLength());
-        ASSERT_TRUE(shapeDesc3.fullAllocLength() == shapeDesc4.fullAllocLength());
-        ASSERT_TRUE(shapeDesc5.fullAllocLength() == shapeDesc6.fullAllocLength());
+        ASSERT_TRUE(shapeDesc1.allocLength() == shapeDesc2.allocLength());
+        ASSERT_TRUE(shapeDesc3.allocLength() == shapeDesc4.allocLength());
+        ASSERT_TRUE(shapeDesc5.allocLength() == shapeDesc6.allocLength());
 
         const auto& v1 = shapeDesc1.strides();
         const auto& v2 = shapeDesc2.strides();

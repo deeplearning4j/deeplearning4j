@@ -22,7 +22,7 @@
 #include <array/ShapeDescriptor.h>
 #include <helpers/shape.h>
 #include <helpers/ShapeBuilders.h>
-#include <helpers/LoopsCoordsHelper.h>
+
 
 namespace sd {
 
@@ -79,7 +79,7 @@ namespace sd {
                 shapeInfo[2 + _rank * 2] = _ews;
                 shapeInfo[2] = _strides[0];
                 shapeInfo[2 + _rank * 2 + 1] = _order;
-                if (_manualAllocSize > 0) ArrayOptions::flagAsPaddedBuffer(shapeInfo);
+                if (_paddedAllocSize > 0) ArrayOptions::flagAsPaddedBuffer(shapeInfo);
                 return shapeInfo;
             }
             default: {
@@ -89,7 +89,7 @@ namespace sd {
                     shapeInfo[e + 1 + _rank] = _strides[e];
 
                 shapeInfo[2 + _rank * 2] = _ews;
-                if (_manualAllocSize > 0) ArrayOptions::flagAsPaddedBuffer(shapeInfo);
+                if (_paddedAllocSize > 0) ArrayOptions::flagAsPaddedBuffer(shapeInfo);
                 return shapeInfo;
             }
         }
@@ -263,6 +263,7 @@ namespace sd {
     }
 
     Nd4jLong ShapeDescriptor::allocLength() const {
+        if (_paddedAllocSize > 0) return _paddedAllocSize;
         Nd4jLong len = 1;
         if (_ews == 1 && _rank>1) {
             //calculate using max stride
@@ -273,25 +274,6 @@ namespace sd {
             len += (_shape[i] - 1) * _strides[i];
         }
         return len;
-    }
-
-    Nd4jLong ShapeDescriptor::fullAllocLength() const {
-        if (_manualAllocSize > 0) return _manualAllocSize;
-        int ind = _order == 'c' ? 0 : _rank - 1;
-        return _shape[ind] * _strides[ind]; 
-    }
-
-    Nd4jLong ShapeDescriptor::allowedMaxOffset() const {
-        return fullAllocLength() - allocLength();
-    }
-
-    Nd4jLong ShapeDescriptor::offsetInFull(const std::vector<Nd4jLong>& paddings) const {
-        if (paddings.empty() ) return 0L;
-        //assumes it was allocated fully 
-        auto min_rank = _strides.size() > paddings.size() ? _strides.size() : paddings.size();
-        auto offset = offset_from_coords(_strides.data(), paddings.data(), min_rank);
-        if (offset <= allowedMaxOffset()) return offset;
-        return -1L;
     }
 
     Nd4jLong ShapeDescriptor::validate() const {
@@ -453,7 +435,7 @@ namespace sd {
             if (!is_continous && descriptor._rank > 0) {
                 Nd4jLong size_pad =  paddings.size()>0 ? paddings[0] : 0;
                 //alloc size should be supplied manually as we dont have place to store it
-                descriptor._manualAllocSize = descriptor._strides[0] * (descriptor._shape[0] + size_pad);
+                descriptor._paddedAllocSize = descriptor._strides[0] * (descriptor._shape[0] + size_pad);
             }
         }
         else {
@@ -467,7 +449,7 @@ namespace sd {
             if (!is_continous && descriptor._rank > 0) {
                 Nd4jLong size_pad =  paddings.size()>=descriptor._rank  ? paddings[descriptor._rank-1] : 0;
                 //alloc size should be supplied manually as we dont have place to store it
-                descriptor._manualAllocSize = descriptor._strides[descriptor._rank-1] * (descriptor._shape[descriptor._rank-1] + size_pad);
+                descriptor._paddedAllocSize = descriptor._strides[descriptor._rank-1] * (descriptor._shape[descriptor._rank-1] + size_pad);
             }
         }
 
