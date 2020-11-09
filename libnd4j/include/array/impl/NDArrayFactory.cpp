@@ -72,7 +72,7 @@ namespace sd {
             }
         }
 
-        Nd4jLong offset = offset_from_coords(shapeDescriptor.strides().data(), paddings.data(), check_size);
+        Nd4jLong offset = offset_from_coords(shapeDescriptor.strides().data(), paddingOffsets.data(), check_size);
 
         NDArray result(buffer, shapeDescriptor, context, offset);
         result.nullify();
