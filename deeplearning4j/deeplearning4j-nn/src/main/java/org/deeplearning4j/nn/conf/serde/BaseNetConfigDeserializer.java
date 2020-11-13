@@ -43,6 +43,7 @@ import org.nd4j.shade.jackson.databind.deser.std.StdDeserializer;
 import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -268,14 +269,17 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
 
     //Changed after 0.7.1 from "activationFunction" : "softmax" to "activationFn" : <object>
     protected void handleActivationBackwardCompatibility(BaseLayer baseLayer, ObjectNode on){
-
         if(baseLayer.getActivationFn() == null && on.has("activationFunction")){
             String afn = on.get("activationFunction").asText();
             IActivation a = null;
             try {
-                a = getMap().get(afn.toLowerCase()).newInstance();
-            } catch (InstantiationException | IllegalAccessException e){
-                //Ignore
+                a = getMap()
+                        .get(afn.toLowerCase())
+                        .getDeclaredConstructor()
+                        .newInstance();
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException instantiationException){
+                log.error(instantiationException.getMessage());
             }
             baseLayer.setActivationFn(a);
         }

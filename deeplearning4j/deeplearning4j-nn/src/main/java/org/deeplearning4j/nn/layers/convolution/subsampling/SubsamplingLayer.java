@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -30,16 +31,14 @@ import org.deeplearning4j.nn.layers.mkldnn.MKLDNNSubsamplingHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.primitives.Pair;
-import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.Arrays;
-
 
 /**
  * Subsampling layer.
@@ -64,27 +63,21 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+
         if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper")
-                        .asSubclass(SubsamplingHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnSubsamplingHelper successfully initialized");
-                if (!helper.checkSupported()) {
-                    helper = null;
-                }
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnSubsamplingHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper",
+                    SubsamplingHelper.class,
+                    dataType);
+            log.debug("CudnnSubsamplingHelper successfully initialized");
+            if (!helper.checkSupported()) {
+                helper = null;
             }
         } else if("CPU".equalsIgnoreCase(backend) ){
             helper = new MKLDNNSubsamplingHelper(dataType);
             log.trace("Created MKL-DNN helper: MKLDNNSubsamplingHelper, layer {}", layerConf().getLayerName());
         }
+
         if (helper != null && !helper.checkSupported()) {
             log.debug("Removed helper {} as not supported", helper.getClass());
             helper = null;

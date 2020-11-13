@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.time;
 
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.common.config.DL4JSystemProperties;
 
 import java.lang.reflect.Method;
@@ -62,9 +63,9 @@ public class TimeSourceProvider {
      */
     public static TimeSource getInstance(String className) {
         try {
-            Class<?> c = Class.forName(className);
-            Method m = c.getMethod("getInstance");
-            return (TimeSource) m.invoke(null);
+            Class<?> clazz = DL4JClassLoading.loadClassByName(className);
+            Method getInstance = clazz.getMethod("getInstance");
+            return (TimeSource) getInstance.invoke(null);
         } catch (Exception e) {
             throw new RuntimeException("Error getting TimeSource instance for class \"" + className + "\"", e);
         }

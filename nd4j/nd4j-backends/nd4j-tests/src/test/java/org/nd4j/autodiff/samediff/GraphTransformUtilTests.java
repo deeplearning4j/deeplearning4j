@@ -18,6 +18,11 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.nd4j.autodiff.samediff.transform.GraphTransformUtil;
+import org.nd4j.autodiff.samediff.transform.OpPredicate;
+import org.nd4j.autodiff.samediff.transform.SubGraph;
+import org.nd4j.autodiff.samediff.transform.SubGraphPredicate;
+import org.nd4j.autodiff.samediff.transform.SubGraphProcessor;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;

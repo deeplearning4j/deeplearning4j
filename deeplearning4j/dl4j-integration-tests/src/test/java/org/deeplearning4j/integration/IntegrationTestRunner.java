@@ -22,6 +22,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.integration.util.CountingMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
@@ -127,7 +128,7 @@ public class IntegrationTestRunner {
         }
 
         for (ClassPath.ClassInfo c : info) {
-            Class<?> clazz = Class.forName(c.getName());
+            Class<?> clazz = DL4JClassLoading.loadClassByName(c.getName());
             if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface())
                 continue;
 

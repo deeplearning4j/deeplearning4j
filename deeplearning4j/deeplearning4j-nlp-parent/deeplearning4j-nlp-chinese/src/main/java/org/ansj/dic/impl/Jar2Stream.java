@@ -3,6 +3,7 @@ package org.ansj.dic.impl;
 import org.ansj.dic.DicReader;
 import org.ansj.dic.PathToStream;
 import org.ansj.exception.LibraryException;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 
 import java.io.InputStream;
 
@@ -17,12 +18,16 @@ public class Jar2Stream extends PathToStream {
     @Override
     public InputStream toStream(String path) {
         if (path.contains("|")) {
-            String[] split = path.split("\\|");
-            try {
-                return Class.forName(split[0].substring(6)).getResourceAsStream(split[1].trim());
-            } catch (ClassNotFoundException e) {
-                throw new LibraryException(e);
+            String[] tokens = path.split("\\|");
+            String className = tokens[0].substring(6);
+            String resourceName = tokens[1].trim();
+
+            Class<Object> resourceClass = DL4JClassLoading.loadClassByName(className);
+            if (resourceClass == null) {
+                throw new LibraryException(String.format("Class '%s' was not found.", className));
             }
+
+            return resourceClass.getResourceAsStream(resourceName);
         } else {
             return DicReader.getInputStream(path.substring(6));
         }

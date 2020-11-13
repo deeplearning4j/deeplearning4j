@@ -16,7 +16,9 @@
 
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -36,9 +38,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.common.primitives.Triple;
-import org.nd4j.common.util.OneTimeLogger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
@@ -65,10 +64,9 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * <p>
  * Created by nyghtowl on 10/29/15.
  */
+@Slf4j
 public class LocalResponseNormalization
-                extends AbstractLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
-    protected static final Logger log =
-                    LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
+        extends AbstractLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
 
     protected LocalResponseNormalizationHelper helper = null;
     protected int helperCountFail = 0;
@@ -86,19 +84,11 @@ public class LocalResponseNormalization
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelper")
-                        .asSubclass(LocalResponseNormalizationHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnLocalResponseNormalizationHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
-            }
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelper",
+                    LocalResponseNormalizationHelper.class,
+                    dataType);
+            log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
         }
         //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/deeplearning4j/deeplearning4j/issues/7272
 //        else if("CPU".equalsIgnoreCase(backend)){

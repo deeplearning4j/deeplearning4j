@@ -26,6 +26,12 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.Step;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Sigmoid;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 import org.nd4j.linalg.factory.Nd4j;
@@ -83,7 +89,6 @@ public class DerivativeTests extends BaseNd4jTest {
             assertEquals(expOut[i], zPrime.getDouble(i), 1e-1);
         }
     }
-
 
     @Test
     public void testRectifiedLinearDerivative() {
@@ -166,11 +171,7 @@ public class DerivativeTests extends BaseNd4jTest {
         }
 
         INDArray z = Transforms.hardSigmoid(xArr, true);
-        INDArray zPrime = Nd4j.getExecutioner().exec(new HardSigmoidDerivative(xArr.dup()));
-
-//        System.out.println(xArr);
-//        System.out.println(z);
-//        System.out.println(zPrime);
+        INDArray zPrime = Nd4j.getExecutioner().exec(new HardSigmoidDerivative(xArr.dup()));;
 
         for (int i = 0; i < expHSOut.length; i++) {
             double relErrorHS =

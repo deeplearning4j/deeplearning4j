@@ -22,6 +22,14 @@ import static org.junit.Assert.fail;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 public class ConvConfigTests extends BaseNd4jTest {
@@ -486,8 +494,6 @@ public class ConvConfigTests extends BaseNd4jTest {
             assertTrue(e.getMessage().contains("Dilation depth"));
         }
     }
-
-
 
     @Test
     public void testConv1D(){

@@ -102,7 +102,6 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
         }
     }
 
-
     private class ReaderThread<T> extends Thread implements Runnable {
         private BlockingQueue<T> buffer;
         private Iterator<T> iterator;
