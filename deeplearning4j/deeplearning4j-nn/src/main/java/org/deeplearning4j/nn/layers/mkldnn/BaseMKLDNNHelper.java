@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.layers.mkldnn;
 
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.lang.reflect.Method;
@@ -47,12 +48,11 @@ public class BaseMKLDNNHelper {
         }
 
         try{
-            Class<?> c = Class.forName("org.nd4j.nativeblas.Nd4jCpu$Environment");
-            Method m = c.getMethod("getInstance");
-            Object instance = m.invoke(null);
-            Method m2 = c.getMethod("isUseMKLDNN");
-            boolean b = (Boolean)m2.invoke(instance);
-            return b;
+            Class<?> clazz = DL4JClassLoading.loadClassByName("org.nd4j.nativeblas.Nd4jCpu$Environment");
+            Method getInstance = clazz.getMethod("getInstance");
+            Object instance = getInstance.invoke(null);
+            Method isUseMKLDNNMethod = clazz.getMethod("isUseMKLDNN");
+            return (boolean) isUseMKLDNNMethod.invoke(instance);
         } catch (Throwable t ){
             FAILED_CHECK = new AtomicBoolean(true);
             return false;

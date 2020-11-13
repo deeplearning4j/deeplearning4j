@@ -20,6 +20,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -73,19 +74,15 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
         if (vectorsConfiguration == null)
             vectorsConfiguration = configurationBroadcast.getValue();
 
+        String elementsLearningAlgorithm = vectorsConfiguration.getElementsLearningAlgorithm();
         if (paramServer == null) {
             paramServer = VoidParameterServer.getInstance();
 
-            if (elementsLearningAlgorithm == null) {
-                try {
-                    elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class
-                                    .forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+            if (this.elementsLearningAlgorithm == null) {
+                this.elementsLearningAlgorithm = DL4JClassLoading.createNewInstance(elementsLearningAlgorithm);
             }
 
-            driver = elementsLearningAlgorithm.getTrainingDriver();
+            driver = this.elementsLearningAlgorithm.getTrainingDriver();
 
             // FIXME: init line should probably be removed, basically init happens in VocabRddFunction
             paramServer.init(paramServerConfigurationBroadcast.getValue(), new RoutedTransport(), driver);
@@ -98,32 +95,22 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
             shallowVocabCache = vocabCacheBroadcast.getValue();
 
 
-        if (elementsLearningAlgorithm == null && vectorsConfiguration.getElementsLearningAlgorithm() != null) {
+        if (this.elementsLearningAlgorithm == null && elementsLearningAlgorithm != null) {
             // TODO: do ELA initialization
-            try {
-                elementsLearningAlgorithm = (SparkElementsLearningAlgorithm) Class
-                                .forName(vectorsConfiguration.getElementsLearningAlgorithm()).newInstance();
-                elementsLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            this.elementsLearningAlgorithm = DL4JClassLoading.createNewInstance(elementsLearningAlgorithm);
+            this.elementsLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
         }
 
-        if (sequenceLearningAlgorithm == null && vectorsConfiguration.getSequenceLearningAlgorithm() != null) {
+        String sequenceLearningAlgorithm = vectorsConfiguration.getSequenceLearningAlgorithm();
+        if (this.sequenceLearningAlgorithm == null && sequenceLearningAlgorithm != null) {
             // TODO: do SLA initialization
-            try {
-                sequenceLearningAlgorithm = (SparkSequenceLearningAlgorithm) Class
-                                .forName(vectorsConfiguration.getSequenceLearningAlgorithm()).newInstance();
-                sequenceLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            this.sequenceLearningAlgorithm = DL4JClassLoading.createNewInstance(sequenceLearningAlgorithm);
+            this.sequenceLearningAlgorithm.configure(shallowVocabCache, null, vectorsConfiguration);
         }
 
-        if (elementsLearningAlgorithm == null && sequenceLearningAlgorithm == null) {
+        if (this.elementsLearningAlgorithm == null && this.sequenceLearningAlgorithm == null) {
             throw new ND4JIllegalStateException("No LearningAlgorithms specified!");
         }
-
 
         /*
          at this moment we should have everything ready for actual initialization
@@ -139,7 +126,7 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
         }
 
         // do the same with labels, transfer them, if any
-        if (sequenceLearningAlgorithm != null && vectorsConfiguration.isTrainSequenceVectors()) {
+        if (this.sequenceLearningAlgorithm != null && vectorsConfiguration.isTrainSequenceVectors()) {
             for (T label : sequence.getSequenceLabels()) {
                 ShallowSequenceElement reduced = shallowVocabCache.tokenFor(label.getStorageId());
 
@@ -157,7 +144,7 @@ public class TrainingFunction<T extends SequenceElement> implements VoidFunction
         // FIXME: temporary hook
         if (sequence.size() > 0)
             paramServer.execDistributed(
-                            elementsLearningAlgorithm.frameSequence(mergedSequence, new AtomicLong(119), 25e-3));
+                            this.elementsLearningAlgorithm.frameSequence(mergedSequence, new AtomicLong(119), 25e-3));
         else
             log.warn("Skipping empty sequence...");
 

@@ -14,7 +14,6 @@ Please search for the latest version on search.maven.org.
 Or use the versions displayed in:
 https://github.com/eclipse/deeplearning4j-examples/blob/master/pom.xml
 
-
 ---
 ## Main Features
 
@@ -47,6 +46,29 @@ To install ND4J, there are a couple of approaches, and more information can be f
 #### Clone from the GitHub Repo
 
 https://deeplearning4j.org/docs/latest/deeplearning4j-build-from-source 
+
+#### Build from sources
+
+To build `ND4J` from sources launch from the present directory:
+
+```shell script
+$ mvn clean install -DskipTests=true
+``` 
+
+To run tests using CPU or CUDA backend run the following.
+
+For CPU:
+
+```shell script
+$ mvn clean test -P testresources -P nd4j-testresources -P nd4j-tests-cpu -P nd4j-tf-cpu
+```
+
+For CUDA:
+
+```shell script
+$ mvn clean test -P testresources -P nd4j-testresources -P nd4j-tests-cuda -P nd4j-tf-gpu
+```
+
 ## Contribute
 
 1. Check for open issues, or open a new issue to start a discussion around a feature idea or a bug.

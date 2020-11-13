@@ -35,7 +35,7 @@ import java.util.ServiceLoader;
 public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
     //the system property for what backends should run
     public final static String BACKENDS_TO_LOAD = "backends";
-    private static List<Nd4jBackend> BACKENDS;
+    private static List<Nd4jBackend> BACKENDS = new ArrayList<>();
     static {
         ServiceLoader<Nd4jBackend> loadedBackends = ND4JClassLoading.loadService(Nd4jBackend.class);
         for (Nd4jBackend backend : loadedBackends) {

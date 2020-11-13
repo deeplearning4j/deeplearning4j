@@ -19,6 +19,7 @@ package org.deeplearning4j.ui.i18n;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.ui.api.I18N;
 import org.deeplearning4j.ui.api.UIModule;
 
@@ -100,13 +101,13 @@ public class DefaultI18N implements I18N {
     }
 
     private synchronized void loadLanguages(){
-        ServiceLoader<UIModule> sl = ServiceLoader.load(UIModule.class);
+        ServiceLoader<UIModule> loadedModules = DL4JClassLoading.loadService(UIModule.class);
 
-        for(UIModule m : sl){
-            List<I18NResource> resources = m.getInternationalizationResources();
-            for(I18NResource r : resources){
+        for (UIModule module : loadedModules){
+            List<I18NResource> resources = module.getInternationalizationResources();
+            for(I18NResource resource : resources){
                 try {
-                    String path = r.getResource();
+                    String path = resource.getResource();
                     int idxLast = path.lastIndexOf('.');
                     if (idxLast < 0) {
                         log.warn("Skipping language resource file: cannot infer language: {}", path);
@@ -116,9 +117,9 @@ public class DefaultI18N implements I18N {
                     String langCode = path.substring(idxLast + 1).toLowerCase();
                     Map<String, String> map = messagesByLanguage.computeIfAbsent(langCode, k -> new HashMap<>());
 
-                    parseFile(r, map);
+                    parseFile(resource, map);
                 } catch (Throwable t){
-                    log.warn("Error parsing UI I18N content file; skipping: {}", r.getResource(), t);
+                    log.warn("Error parsing UI I18N content file; skipping: {}", resource.getResource(), t);
                     languageLoadingException = t;
                 }
             }

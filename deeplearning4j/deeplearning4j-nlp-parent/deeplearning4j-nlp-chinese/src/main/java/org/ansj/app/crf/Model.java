@@ -60,15 +60,13 @@ public abstract class Model {
 
     /**
      * 模型读取
-     * 
-     * @param path
-     * @return
-     * @return
-     * @throws Exception
+     *
      */
-    public static Model load(Class<? extends Model> c, InputStream is) throws Exception {
-        Model model = c.newInstance();
-        return model.loadModel(is);
+    public static Model load(Class<? extends Model> modelClass, InputStream inputStream) throws Exception {
+        return modelClass
+                .getDeclaredConstructor()
+                .newInstance()
+                .loadModel(inputStream);
     }
 
     /**

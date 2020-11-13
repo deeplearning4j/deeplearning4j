@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.broadcast.Broadcast;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
@@ -65,13 +66,8 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
         long seqLen = 0;
 
         if (ela == null) {
-            try {
-                ela = (SparkElementsLearningAlgorithm) Class
-                                .forName(vectorsConfigurationBroadcast.getValue().getElementsLearningAlgorithm())
-                                .newInstance();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            String elementsLearningAlgorithm = vectorsConfigurationBroadcast.getValue().getElementsLearningAlgorithm();
+            ela = DL4JClassLoading.createNewInstance(elementsLearningAlgorithm);
         }
         driver = ela.getTrainingDriver();
 

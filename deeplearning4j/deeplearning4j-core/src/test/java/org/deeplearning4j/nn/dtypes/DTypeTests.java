@@ -16,28 +16,96 @@
 
 package org.deeplearning4j.nn.dtypes;
 
-import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
-import org.deeplearning4j.nn.conf.preprocessor.*;
-import org.deeplearning4j.nn.modelimport.keras.layers.TFOpLayer;
-import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
-import org.nd4j.linalg.profiler.ProfilerConfig;
-import org.nd4j.shade.guava.collect.ImmutableSet;
-import org.nd4j.shade.guava.reflect.ClassPath;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
-import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
 import org.deeplearning4j.nn.conf.dropout.AlphaDropout;
 import org.deeplearning4j.nn.conf.dropout.GaussianDropout;
 import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
 import org.deeplearning4j.nn.conf.dropout.SpatialDropout;
-import org.deeplearning4j.nn.conf.graph.*;
+import org.deeplearning4j.nn.conf.graph.AttentionVertex;
+import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
+import org.deeplearning4j.nn.conf.graph.FrozenVertex;
+import org.deeplearning4j.nn.conf.graph.GraphVertex;
+import org.deeplearning4j.nn.conf.graph.L2NormalizeVertex;
+import org.deeplearning4j.nn.conf.graph.L2Vertex;
+import org.deeplearning4j.nn.conf.graph.LayerVertex;
+import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.graph.PoolHelperVertex;
+import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
+import org.deeplearning4j.nn.conf.graph.ReshapeVertex;
+import org.deeplearning4j.nn.conf.graph.ScaleVertex;
+import org.deeplearning4j.nn.conf.graph.ShiftVertex;
+import org.deeplearning4j.nn.conf.graph.StackVertex;
+import org.deeplearning4j.nn.conf.graph.SubsetVertex;
+import org.deeplearning4j.nn.conf.graph.UnstackVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.ReverseTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.ActivationLayer;
+import org.deeplearning4j.nn.conf.layers.AutoEncoder;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.CapsuleLayer;
+import org.deeplearning4j.nn.conf.layers.CapsuleStrengthLayer;
+import org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer;
+import org.deeplearning4j.nn.conf.layers.Cnn3DLossLayer;
+import org.deeplearning4j.nn.conf.layers.CnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.Convolution1D;
+import org.deeplearning4j.nn.conf.layers.Convolution2D;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.Deconvolution2D;
+import org.deeplearning4j.nn.conf.layers.Deconvolution3D;
+import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.DepthwiseConvolution2D;
+import org.deeplearning4j.nn.conf.layers.DropoutLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
+import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
+import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.LSTM;
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.LearnedSelfAttentionLayer;
+import org.deeplearning4j.nn.conf.layers.LocalResponseNormalization;
+import org.deeplearning4j.nn.conf.layers.LocallyConnected1D;
+import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
+import org.deeplearning4j.nn.conf.layers.LossLayer;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.PReLULayer;
+import org.deeplearning4j.nn.conf.layers.Pooling1D;
+import org.deeplearning4j.nn.conf.layers.Pooling2D;
+import org.deeplearning4j.nn.conf.layers.PoolingType;
+import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
+import org.deeplearning4j.nn.conf.layers.RecurrentAttentionLayer;
+import org.deeplearning4j.nn.conf.layers.RnnLossLayer;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.SelfAttentionLayer;
+import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
+import org.deeplearning4j.nn.conf.layers.SpaceToBatchLayer;
+import org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer;
+import org.deeplearning4j.nn.conf.layers.Subsampling1DLayer;
+import org.deeplearning4j.nn.conf.layers.Subsampling3DLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.Upsampling1D;
+import org.deeplearning4j.nn.conf.layers.Upsampling2D;
+import org.deeplearning4j.nn.conf.layers.Upsampling3D;
+import org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer;
+import org.deeplearning4j.nn.conf.layers.ZeroPadding3DLayer;
+import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping1D;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
@@ -49,16 +117,24 @@ import org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
+import org.deeplearning4j.nn.conf.layers.recurrent.TimeDistributed;
 import org.deeplearning4j.nn.conf.layers.util.MaskLayer;
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.ComposableInputPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnn3DPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.util.IdentityLayer;
+import org.deeplearning4j.nn.modelimport.keras.layers.TFOpLayer;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.KerasFlattenRnnPreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.PermutePreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.TensorFlowCnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
@@ -77,12 +153,17 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
+import org.nd4j.linalg.profiler.ProfilerConfig;
+import org.nd4j.shade.guava.collect.ImmutableSet;
+import org.nd4j.shade.guava.reflect.ClassPath;
 
 import java.io.IOException;
 import java.lang.reflect.Modifier;
-import java.util.*;
-
-import static org.junit.Assert.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 public class DTypeTests extends BaseDL4JTest {
@@ -120,20 +201,17 @@ public class DTypeTests extends BaseDL4JTest {
         Set<Class<?>> preprocClasses = new HashSet<>();
         Set<Class<?>> vertexClasses = new HashSet<>();
         for (ClassPath.ClassInfo ci : info) {
-            Class<?> clazz;
-            try {
-                clazz = Class.forName(ci.getName());
-            } catch (ClassNotFoundException e) {
-                //Should never happen as  this was found on the classpath
-                throw new RuntimeException(e);
-            }
+            Class<?> clazz = DL4JClassLoading.loadClassByName(ci.getName());
 
-            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || TFOpLayer.class == clazz) {     //Skip TFOpLayer here - dtype depends on imported model dtype
+            if (Modifier.isAbstract(clazz.getModifiers()) || clazz.isInterface() || TFOpLayer.class == clazz) {
+                // Skip TFOpLayer here - dtype depends on imported model dtype
                 continue;
             }
 
-            if (clazz.getName().toLowerCase().contains("custom") || clazz.getName().contains("samediff.testlayers")
-                    || clazz.getName().toLowerCase().contains("test") || ignoreClasses.contains(clazz)) {
+            if (clazz.getName().toLowerCase().contains("custom")
+                    || clazz.getName().contains("samediff.testlayers")
+                    || clazz.getName().toLowerCase().contains("test")
+                    || ignoreClasses.contains(clazz)) {
                 continue;
             }
 

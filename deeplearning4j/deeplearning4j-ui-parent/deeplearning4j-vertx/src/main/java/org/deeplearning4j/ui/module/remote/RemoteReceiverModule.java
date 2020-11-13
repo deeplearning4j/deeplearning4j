@@ -22,6 +22,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.core.storage.*;
 import org.deeplearning4j.core.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.ui.api.HttpMethod;
@@ -154,9 +155,12 @@ public class RemoteReceiverModule implements UIModule {
     private StorageMetaData getMetaData(String dataClass, String content) {
         StorageMetaData meta;
         try {
-            Class<?> c = Class.forName(dataClass);
-            if (StorageMetaData.class.isAssignableFrom(c)) {
-                meta = (StorageMetaData) c.newInstance();
+            Class<?> clazz = DL4JClassLoading.loadClassByName(dataClass);
+            if (StorageMetaData.class.isAssignableFrom(clazz)) {
+                meta = clazz
+                        .asSubclass(StorageMetaData.class)
+                        .getDeclaredConstructor()
+                        .newInstance();
             } else {
                 log.warn("Skipping invalid remote data: class {} in not an instance of {}", dataClass,
                                 StorageMetaData.class.getName());
@@ -179,11 +183,14 @@ public class RemoteReceiverModule implements UIModule {
     }
 
     private Persistable getPersistable(String dataClass, String content) {
-        Persistable p;
+        Persistable persistable;
         try {
-            Class<?> c = Class.forName(dataClass);
-            if (Persistable.class.isAssignableFrom(c)) {
-                p = (Persistable) c.newInstance();
+            Class<?> clazz = DL4JClassLoading.loadClassByName(dataClass);
+            if (Persistable.class.isAssignableFrom(clazz)) {
+                persistable = clazz
+                        .asSubclass(Persistable.class)
+                        .getDeclaredConstructor()
+                        .newInstance();
             } else {
                 log.warn("Skipping invalid remote data: class {} in not an instance of {}", dataClass,
                                 Persistable.class.getName());
@@ -196,12 +203,12 @@ public class RemoteReceiverModule implements UIModule {
 
         try {
             byte[] bytes = DatatypeConverter.parseBase64Binary(content);
-            p.decode(bytes);
+            persistable.decode(bytes);
         } catch (Exception e) {
             log.warn("Skipping invalid remote data: exception encountered when deserializing data", e);
             return null;
         }
 
-        return p;
+        return persistable;
     }
 }

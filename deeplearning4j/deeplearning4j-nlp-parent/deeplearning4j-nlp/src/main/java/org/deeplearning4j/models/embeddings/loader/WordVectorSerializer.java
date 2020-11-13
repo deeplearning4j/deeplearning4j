@@ -17,44 +17,20 @@
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
-
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.apache.commons.lang3.StringUtils;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.common.util.DL4JFileUtils;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -94,12 +70,37 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.storage.CompressedRamStorage;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
 /**
  * This is utility class, providing various methods for WordVectors serialization
@@ -2676,26 +2677,23 @@ public class WordVectorSerializer {
     }
 
     protected static TokenizerFactory getTokenizerFactory(VectorsConfiguration configuration) {
-        if (configuration == null)
+        if (configuration == null) {
             return null;
-
-        if (configuration.getTokenizerFactory() != null && !configuration.getTokenizerFactory().isEmpty()) {
-            try {
-                TokenizerFactory factory =
-                                (TokenizerFactory) Class.forName(configuration.getTokenizerFactory()).newInstance();
-
-                if (configuration.getTokenPreProcessor() != null && !configuration.getTokenPreProcessor().isEmpty()) {
-                    TokenPreProcess preProcessor =
-                                    (TokenPreProcess) Class.forName(configuration.getTokenPreProcessor()).newInstance();
-                    factory.setTokenPreProcessor(preProcessor);
-                }
-
-                return factory;
-
-            } catch (Exception e) {
-                log.error("Can't instantiate saved TokenizerFactory: {}", configuration.getTokenizerFactory());
-            }
         }
+
+        String tokenizerFactoryClassName = configuration.getTokenizerFactory();
+        if (StringUtils.isNotEmpty(tokenizerFactoryClassName)) {
+            TokenizerFactory factory = DL4JClassLoading.createNewInstance(tokenizerFactoryClassName);
+
+            String tokenPreProcessorClassName = configuration.getTokenPreProcessor();
+            if (StringUtils.isNotEmpty(tokenPreProcessorClassName)) {
+                TokenPreProcess preProcessor = DL4JClassLoading.createNewInstance(tokenizerFactoryClassName);
+                factory.setTokenPreProcessor(preProcessor);
+            }
+
+            return factory;
+        }
+
         return null;
     }
 

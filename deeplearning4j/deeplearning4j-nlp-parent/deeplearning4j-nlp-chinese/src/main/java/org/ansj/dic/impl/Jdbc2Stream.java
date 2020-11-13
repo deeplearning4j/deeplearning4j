@@ -2,6 +2,7 @@ package org.ansj.dic.impl;
 
 import org.ansj.dic.PathToStream;
 import org.ansj.exception.LibraryException;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,20 +23,26 @@ public class Jdbc2Stream extends PathToStream {
 
     private static final byte[] LINE = "\n".getBytes();
 
+    private static final String[] JDBC_DRIVERS = {
+            "org.h2.Driver",
+            "com.ibm.db2.jcc.DB2Driver",
+            "org.hsqldb.jdbcDriver",
+            "org.gjt.mm.mysql.Driver",
+            "oracle.jdbc.OracleDriver",
+            "org.postgresql.Driver",
+            "net.sourceforge.jtds.jdbc.Driver",
+            "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+            "org.sqlite.JDBC",
+            "com.mysql.jdbc.Driver"
+    };
+
     static {
-        String[] drivers = {"org.h2.Driver", "com.ibm.db2.jcc.DB2Driver", "org.hsqldb.jdbcDriver",
-                        "org.gjt.mm.mysql.Driver", "oracle.jdbc.OracleDriver", "org.postgresql.Driver",
-                        "net.sourceforge.jtds.jdbc.Driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-                        "org.sqlite.JDBC", "com.mysql.jdbc.Driver"};
-        for (String driverClassName : drivers) {
-            try {
-                try {
-                    Thread.currentThread().getContextClassLoader().loadClass(driverClassName);
-                } catch (ClassNotFoundException e) {
-                    Class.forName(driverClassName);
-                }
-            } catch (Throwable e) {
-            }
+        loadJdbcDrivers();
+    }
+
+    static void loadJdbcDrivers() {
+        for (String driverClassName : JDBC_DRIVERS) {
+            DL4JClassLoading.loadClassByName(driverClassName);
         }
     }
 

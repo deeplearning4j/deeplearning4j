@@ -5,6 +5,7 @@ import org.ansj.dic.impl.Jar2Stream;
 import org.ansj.dic.impl.Jdbc2Stream;
 import org.ansj.dic.impl.Url2Stream;
 import org.ansj.exception.LibraryException;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 
 import java.io.InputStream;
 
@@ -25,7 +26,8 @@ public abstract class PathToStream {
             } else if (path.startsWith("jar://")) {
                 return new Jar2Stream().toStream(path);
             } else if (path.startsWith("class://")) {
-                ((PathToStream) Class.forName(path.substring(8).split("\\|")[0]).newInstance()).toStream(path);
+                // Probably unused
+                return loadClass(path);
             } else if (path.startsWith("http://") || path.startsWith("https://")) {
                 return new Url2Stream().toStream(path);
             } else {
@@ -34,9 +36,17 @@ public abstract class PathToStream {
         } catch (Exception e) {
             throw new LibraryException(e);
         }
-        throw new LibraryException("not find method type in path " + path);
     }
 
     public abstract InputStream toStream(String path);
 
+    static InputStream loadClass(String path) {
+        String className = path
+                .substring("class://".length())
+                .split("\\|")[0];
+
+        return DL4JClassLoading
+                .createNewInstance(className, PathToStream.class)
+                .toStream(path);
+    }
 }

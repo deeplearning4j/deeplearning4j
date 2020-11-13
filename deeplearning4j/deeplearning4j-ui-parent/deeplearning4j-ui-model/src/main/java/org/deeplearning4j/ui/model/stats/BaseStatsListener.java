@@ -19,6 +19,7 @@ package org.deeplearning4j.ui.model.stats;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.StorageMetaData;
 import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
@@ -696,11 +697,14 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
             return devPointers.get(device);
         }
         try {
-            Class<?> c = Class.forName("org.nd4j.jita.allocator.pointers.CudaPointer");
-            Constructor<?> constructor = c.getConstructor(long.class);
-            Pointer p = (Pointer) constructor.newInstance((long) device);
-            devPointers.put(device, p);
-            return p;
+            Pointer pointer = DL4JClassLoading.createNewInstance(
+                    "org.nd4j.jita.allocator.pointers.CudaPointer",
+                    Pointer.class,
+                    new Class[] { long.class },
+                    (long) device);
+
+            devPointers.put(device, pointer);
+            return pointer;
         } catch (Throwable t) {
             devPointers.put(device, null); //Stops attempting the failure again later...
             return null;
@@ -711,9 +715,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         ModelInfo modelInfo = getModelInfo(model);
         int examplesThisMinibatch = 0;
         if (model instanceof MultiLayerNetwork) {
-            examplesThisMinibatch = ((MultiLayerNetwork) model).batchSize();
+            examplesThisMinibatch = model.batchSize();
         } else if (model instanceof ComputationGraph) {
-            examplesThisMinibatch = ((ComputationGraph) model).batchSize();
+            examplesThisMinibatch = model.batchSize();
         } else if (model instanceof Layer) {
             examplesThisMinibatch = ((Layer) model).getInputMiniBatchSize();
         }

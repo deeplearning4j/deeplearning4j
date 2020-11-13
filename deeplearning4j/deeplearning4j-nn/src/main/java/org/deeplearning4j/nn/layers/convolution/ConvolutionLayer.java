@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.layers.convolution;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -73,26 +74,19 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.convolution.CudnnConvolutionHelper")
-                        .asSubclass(ConvolutionHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnConvolutionHelper successfully initialized");
-                if (!helper.checkSupported()) {
-                    helper = null;
-                }
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnConvolutionHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.convolution.CudnnConvolutionHelper",
+                    ConvolutionHelper.class,
+                    dataType);
+            log.debug("CudnnConvolutionHelper successfully initialized");
+            if (!helper.checkSupported()) {
+                helper = null;
             }
         } else if("CPU".equalsIgnoreCase(backend)){
             helper = new MKLDNNConvHelper(dataType);
             log.trace("Created MKLDNNConvHelper, layer {}", layerConf().getLayerName());
         }
+
         if (helper != null && !helper.checkSupported()) {
             log.debug("Removed helper {} as not supported", helper.getClass());
             helper = null;
