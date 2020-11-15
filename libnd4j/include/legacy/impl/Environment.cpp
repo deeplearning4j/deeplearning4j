@@ -111,7 +111,7 @@ namespace sd {
          * If this env var is defined - we'll disallow use of platform-specific helpers (mkldnn, cudnn, etc)
          */
         const char* forbid_helpers = std::getenv("SD_FORBID_HELPERS");
-        if (max_master_threads != nullptr) {
+        if (forbid_helpers != nullptr) {
             _allowHelpers = false;
         }
 
