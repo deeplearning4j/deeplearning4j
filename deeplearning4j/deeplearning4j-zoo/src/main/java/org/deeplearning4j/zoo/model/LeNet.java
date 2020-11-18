@@ -55,7 +55,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 public class LeNet extends ZooModel {
 
     @Builder.Default private long seed = 1234;
-    @Builder.Default private int[] inputShape = new int[] {3, 224, 224};
+    @Builder.Default private int[] inputShape = new int[] {1, 28, 28};
     @Builder.Default private int numClasses = 0;
     @Builder.Default private IUpdater updater = new AdaDelta();
     @Builder.Default private CacheMode cacheMode = CacheMode.NONE;
