@@ -718,6 +718,28 @@ public class ArrayUtil {
      * @param strides the strides to compute
      * @return the offset for the given shape,offset,and strides
      */
+    public static long calcOffset(long[] shape, long[] offsets, long[] strides) {
+        if (shape.length != offsets.length || shape.length != strides.length)
+            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
+
+        long ret = 0;
+        for (int i = 0; i < offsets.length; i++) {
+            if (shape[i] == 1)
+                continue;
+            ret += offsets[i] * strides[i];
+        }
+
+        return ret;
+    }
+
+    /**
+     * Compute the offset
+     * based on teh shape strides and offsets
+     * @param shape the shape to compute
+     * @param offsets the offsets to compute
+     * @param strides the strides to compute
+     * @return the offset for the given shape,offset,and strides
+     */
     public static long calcOffsetLong(List<Integer> shape, List<Integer> offsets, List<Integer> strides) {
         if (shape.size() != offsets.size() || shape.size() != strides.size())
             throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");

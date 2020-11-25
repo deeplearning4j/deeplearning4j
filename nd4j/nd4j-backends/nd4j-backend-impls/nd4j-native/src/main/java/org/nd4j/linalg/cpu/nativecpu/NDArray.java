@@ -466,6 +466,11 @@ public class NDArray extends BaseNDArray {
         super(shape, buffer);
     }
 
+    public NDArray(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
+            MemoryWorkspace workspace){
+        super(dataType, shape, paddings, paddingOffsets, ordering, workspace);
+    }
+
     private Object writeReplace() throws java.io.ObjectStreamException {
         return new BaseNDArrayProxy(this);
     }

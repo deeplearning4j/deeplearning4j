@@ -26,6 +26,7 @@
 #include <vector>
 #include <system/dll.h>
 #include <system/pointercast.h>
+#include <array/ArrayOptions.h>
 #include <array/DataType.h>
 #include <initializer_list>
 
@@ -46,7 +47,7 @@ class ND4J_EXPORT ShapeDescriptor {
         Nd4jLong _ews = 1;
         char _order = 'c';
         DataType _dataType;
-        bool _empty = false;
+        Nd4jLong _extraProperties = 0;
         Nd4jLong _paddedAllocSize = 0;
 
     public:
@@ -57,11 +58,12 @@ class ND4J_EXPORT ShapeDescriptor {
         explicit ShapeDescriptor(const Nd4jLong *shapeInfo, const Nd4jLong *dtypeOverride, const Nd4jLong *orderOverride);
         explicit ShapeDescriptor(const DataType type, const Nd4jLong length);
         explicit ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const int rank);
-        explicit ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const Nd4jLong *strides, const int rank, Nd4jLong ews, const bool empty);
         explicit ShapeDescriptor(const DataType type, const char order, const std::initializer_list<Nd4jLong> &shape);
         explicit ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape);
         explicit ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides);
         explicit ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape, const std::vector<Nd4jLong> &strides, const Nd4jLong ews);
+        explicit ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const Nd4jLong *strides, const int rank, Nd4jLong ews, Nd4jLong extras);
+
         ShapeDescriptor() = default;
         ~ShapeDescriptor() = default;
 
@@ -93,6 +95,7 @@ class ND4J_EXPORT ShapeDescriptor {
         bool operator<(const ShapeDescriptor &other) const;
 
         Nd4jLong* toShapeInfo() const;
+
 
 
         static ShapeDescriptor emptyDescriptor(const DataType type);

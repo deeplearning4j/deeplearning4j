@@ -3409,10 +3409,14 @@ int dataTypeFromNpyHeader(void *header) {
 }
 
 OpaqueConstantShapeBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, sd::DataType dtype, char order, Nd4jLong ews, bool empty) {
+    return shapeBufferEx(rank, shape, strides, dtype, order, ews, empty ? ARRAY_EMPTY : 0);
+}
+
+OpaqueConstantShapeBuffer* shapeBufferEx(int rank, Nd4jLong *shape, Nd4jLong *strides, sd::DataType dtype, char order, Nd4jLong ews, Nd4jLong extras) {
     try {
         auto buffer = new ConstantShapeBuffer();
         *buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(
-                ShapeDescriptor(dtype, order, shape, strides, rank, ews, empty));
+                ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras));
         return buffer;
     } catch (std::exception &e) {
         sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -3471,11 +3475,11 @@ Nd4jLong getConstantDataBufferSizeOf(sd::ConstantDataBuffer* dbf) {
     return dbf->sizeOf();
 }
 
-Nd4jPointer getConstantShapeBufferPrimary(sd::ConstantShapeBuffer* dbf) {
+Nd4jPointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer* dbf) {
   return const_cast<Nd4jLong*>(dbf->primary());
 }
 
-Nd4jPointer getConstantShapeBufferSpecial(sd::ConstantShapeBuffer* dbf) {
+Nd4jPointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer* dbf) {
   return const_cast<Nd4jLong*>(dbf->special());
 }
 

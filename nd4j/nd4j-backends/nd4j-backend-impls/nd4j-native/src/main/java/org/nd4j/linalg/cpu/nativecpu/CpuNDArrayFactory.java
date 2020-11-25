@@ -1088,4 +1088,10 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         val list = new ArrayList<String>(strings);
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }
+
+    @Override
+    public INDArray create(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
+            MemoryWorkspace workspace) { 
+        return new NDArray(dataType, shape, paddings, paddingOffsets, ordering, workspace);
+    }
 }

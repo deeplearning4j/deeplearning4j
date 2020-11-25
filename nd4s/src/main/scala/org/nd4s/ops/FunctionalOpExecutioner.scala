@@ -491,6 +491,23 @@ class FunctionalOpExecutioner extends OpExecutioner {
                       empty: Boolean): DataBuffer = ???
 
   /**
+    * This method returns shapeInfo DataBuffer
+    *
+    * @param shape
+    * @param stride
+    * @param elementWiseStride
+    * @param order
+    * @param dtype
+    * @return
+    */
+  def createShapeInfo(shape: Array[Long],
+                      stride: Array[Long],
+                      elementWiseStride: Long,
+                      order: Char,
+                      dtype: DataType,
+                      extras: Long): DataBuffer = ???
+
+  /**
     * This method returns host/device tad buffers
     */
   def tadShapeInfoAndOffsets(array: INDArray, dimension: Array[Int]): TadPack = ???

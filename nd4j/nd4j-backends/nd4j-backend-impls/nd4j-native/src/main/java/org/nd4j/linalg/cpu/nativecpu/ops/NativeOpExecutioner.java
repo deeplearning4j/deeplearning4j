@@ -2025,6 +2025,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
+        val dbf = loop.shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
+        val result = new LongBuffer(loop.getConstantShapeBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
+
+        loop.deleteConstantShapeBuffer(dbf);
+
+        return result;
+    }
+
+    @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
         OpaqueTadPack pack = loop.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new IntPointer(dimension), dimension.length);
 

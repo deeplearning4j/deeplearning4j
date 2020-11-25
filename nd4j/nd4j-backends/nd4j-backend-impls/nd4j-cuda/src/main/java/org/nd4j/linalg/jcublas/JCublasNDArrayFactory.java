@@ -1598,4 +1598,10 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray sortCooIndices(INDArray x) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public INDArray create(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
+            MemoryWorkspace workspace) { 
+        return new JCublasNDArray(dataType, shape, paddings, paddingOffsets, ordering, workspace);
+    }
 }

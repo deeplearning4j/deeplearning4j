@@ -41,10 +41,16 @@ public class ArrayOptionsHelper {
     public static final long DTYPE_UTF8_BIT = 1048576;
     public static final long DTYPE_UNSIGNED_BIT = 8388608;
 
+    public static final long HAS_PADDED_BUFFER = (1<<25);
+
     public static boolean hasBitSet(long[] shapeInfo, long bit) {
         val opt = Shape.options(shapeInfo);
 
         return hasBitSet(opt, bit);
+    }
+
+    public static long setOptionBit(long extras, long bit) {
+        return extras | bit;
     }
 
     public static void setOptionBit(long[] storage, ArrayType type) {

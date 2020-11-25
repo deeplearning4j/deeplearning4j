@@ -1123,6 +1123,8 @@ public interface NativeOps {
 
     OpaqueConstantShapeBuffer shapeBuffer(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, boolean empty);
 
+    OpaqueConstantShapeBuffer shapeBufferEx(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, long extras);
+
     OpaqueConstantDataBuffer constantBufferDouble(int dtype, DoublePointer data, int length);
 
     OpaqueConstantDataBuffer constantBufferLong(int dtype, LongPointer data, int length);
