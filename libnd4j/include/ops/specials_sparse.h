@@ -60,7 +60,7 @@ namespace sd {
             static Nd4jLong coo_quickSort_findPivot(Nd4jLong *indices, T *array, Nd4jLong left, Nd4jLong right,
                                                     int rank);
 
-            static void sortCooIndicesGeneric(Nd4jLong *indices, T *values, Nd4jLong length, int rank);
+            static void sortCooIndicesGeneric(Nd4jLong *indices, void *vx, Nd4jLong length, int rank);
         };
     }
 }

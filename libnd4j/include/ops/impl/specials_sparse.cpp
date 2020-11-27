@@ -209,7 +209,8 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         }
 
         template <typename T>
-        void SparseUtils<T>::sortCooIndicesGeneric(Nd4jLong *indices, T *values, Nd4jLong length, int rank) {
+        void SparseUtils<T>::sortCooIndicesGeneric(Nd4jLong *indices, void *vx, Nd4jLong length, int rank) {
+        auto values = reinterpret_cast<T *>(vx);
 #ifdef _OPENMP
             coo_quickSort_parallel(indices, values, length, omp_get_max_threads(), rank);
 #else

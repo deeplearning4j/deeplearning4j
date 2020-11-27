@@ -2560,7 +2560,7 @@ void sortTad(Nd4jPointer *extraPointers,
     }
 }
 
-void sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, void *values, Nd4jLong length, int rank) {
+void sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, void *values, Nd4jLong length, const Nd4jLong *xShapeInfo) {
 	throw std::runtime_error("sortCooIndices:: Not implemented yet");
 }
 

@@ -1476,7 +1476,11 @@ ND4J_EXPORT void sortTadByValue(Nd4jPointer *extraPointers,
 
 
 // special sort impl for sorting out COO indices and values
-ND4J_EXPORT void sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, void *values, Nd4jLong length, int rank);
+ND4J_EXPORT void sortCooIndices(Nd4jPointer *extraPointers,
+                                Nd4jLong *indices,
+                                void *x,
+                                Nd4jLong length,
+                                const Nd4jLong *xShapeInfo);
 
 
 ND4J_EXPORT Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length);
