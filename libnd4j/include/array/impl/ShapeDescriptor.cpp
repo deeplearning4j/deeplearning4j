@@ -339,6 +339,7 @@ namespace sd {
         _order = other._order;
         _shape = other._shape;
         _strides = other._strides;
+        _paddedAllocSize = other._paddedAllocSize;
     }
 
 //////////////////////////////////////////////////////////////////////////
