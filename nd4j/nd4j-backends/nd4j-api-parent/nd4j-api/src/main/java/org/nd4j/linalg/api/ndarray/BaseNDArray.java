@@ -358,14 +358,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 }
             }   
         }
-        if(!zeroOffset || paddingOffsetsInvalid) throw new IllegalArgumentException("If PaddingOffsets is not empty or zero length then its length should match the length of Paddings and also its elements should not be greater");
+        if(!zeroOffset && paddingOffsetsInvalid) throw new IllegalArgumentException("If PaddingOffsets is not empty or zero length then its length should match the length of Paddings and also its elements should not be greater");
 
         long[] paddedStride = ordering == 'c' ? ArrayUtil.calcStrides(paddedShape,1): ArrayUtil.calcStridesFortran(paddedShape,1);
-        long paddedAllocSize = ordering == 'c' ? paddedShape[rank-1] * paddedStride[rank-1] : paddedShape[0] * paddedStride[0];
+        long paddedAllocSize = ordering == 'c' ? paddedShape[0] * paddedStride[0] : paddedShape[rank-1] * paddedStride[rank-1];
 
         long offset = (empty || ews == 1 || zeroOffset) ? 0 :  ArrayUtil.calcOffset(paddedShape, paddingOffsets, paddedStride);
-        val buffer = Nd4j.createBuffer(type, paddedAllocSize, false, workspace);
-        this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, paddedAllocSize) : buffer ;
+        DataBuffer buffer = Nd4j.createBuffer(type, paddedAllocSize, false, workspace);
+        this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, paddedAllocSize - offset) : buffer ;
         long extras  = ArrayOptionsHelper.setOptionBit(0, type);
         if(empty) extras = ArrayOptionsHelper.setOptionBit(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
         else if(ews!=1) extras = ArrayOptionsHelper.setOptionBit(extras, ArrayOptionsHelper.HAS_PADDED_BUFFER);
