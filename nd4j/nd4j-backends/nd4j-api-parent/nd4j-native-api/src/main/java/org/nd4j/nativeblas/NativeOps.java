@@ -1025,6 +1025,32 @@ public interface NativeOps {
     void sortCooIndices(PointerPointer extraPointers, @Cast("Nd4jLong *") LongPointer indices, Pointer x, long length, @Cast("Nd4jLong *") LongPointer shapeInfo);
 
 
+    /**
+     *
+     * @param extraPointers     not used
+     * @param indices           DataBuffer containing COO indices for a sparse matrix that is to be raveled/flattened
+     * @param flatIndices       DataBuffer where the raveled/flattened indices are to be written to
+     * @param length            number of non-zero entries (length of flatIndices)
+     * @param shapeInfo   DataBuffer with ShapeInfo for the full matrix to be flattened
+     * @param mode              clipMode determines the strategy to use if some of the the passed COO indices does
+     *                          not fit into the shape determined by fullShapeBuffer
+     *                              0   throw an exception (default)
+     *                              1   wrap around shape
+     *                              2   clip to shape
+     */
+    void ravelMultiIndex(PointerPointer extraPointers, @Cast("Nd4jLong *") LongPointer indices, @Cast("Nd4jLong *") LongPointer flatIndices, long length, @Cast("Nd4jLong *") LongPointer shapeInfo, int mode);
+
+    /**
+     *
+     * @param extraPointers     not used
+     * @param indices           DataBuffer where the unraveled COO indices are to be written
+     * @param flatIndices       DataBuffer containing the raveled/flattened indices to be unravel
+     * @param length            number of non-zero entries (length of flatIndices)
+     * @param shapeInfo   DataBuffer with ShapeInfo for the full matrix to be unraveled
+     */
+    void unravelIndex(PointerPointer extraPointers, @Cast("Nd4jLong *") LongPointer indices, @Cast("Nd4jLong *") LongPointer flatIndices, long length, @Cast("Nd4jLong *") LongPointer shapeInfo);
+
+
     LongPointer mmapFile(PointerPointer extraPointers, String fileName, long length);
 
     void munmapFile(PointerPointer extraPointers, LongPointer ptrMap, long length);
