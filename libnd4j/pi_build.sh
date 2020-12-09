@@ -1,12 +1,12 @@
-#!/bin/bash
+#!/usr/bin/env bash
 TARGET=armv7-a
 BLAS_TARGET_NAME=ARMV7
 ARMCOMPUTE_TARGET=armv7a
 #BASE_DIR=${HOME}/pi
 #https://stackoverflow.com/questions/59895/how-to-get-the-source-directory-of-a-bash-script-from-within-the-script-itself
 SOURCE="${BASH_SOURCE[0]}"
-ARMCOMPUTE_DEBUG=0
-LIBND4J_BUILD_MODE=Release
+ARMCOMPUTE_DEBUG=1
+LIBND4J_BUILD_MODE=Debug
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
   DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
   SOURCE="$(readlink "$SOURCE")"
@@ -118,7 +118,6 @@ export PI_FOLDER=${CROSS_COMPILER_DIR}
 export PI_SYS_ROOT=${PI_FOLDER}/${PREFIX}/libc
 export BINUTILS_BIN=${PI_FOLDER}/${PREFIX}/bin
 export RPI_BIN_PREFIX=${PI_FOLDER}/bin/arm-linux-gnueabihf
-export RPI_BIN=${RPI_BIN_PREFIX}
 export PI_SYS_ROOT=${PI_FOLDER}/arm-linux-gnueabihf/libc
 export LD_LIBRARY_PATH=${PI_FOLDER}/lib:$LD_LIBRARY_PATH
 export CC=${RPI_BIN_PREFIX}-gcc
@@ -179,37 +178,7 @@ cd ${BASE_DIR}
 fi
 check_requirements "${ARMCOMPUTE_DIR}/build/libarm_compute-static.a" "${ARMCOMPUTE_DIR}/build/libarm_compute_core-static.a"
 
-TOOLCHAIN=${LIBND4J_SRC_DIR}/cmake/rpi.cmake
-#fix ld by changing , as it did not work
-
-if [ ! -f ${BINUTILS_BIN}/ld.original ]; then
-mv ${BINUTILS_BIN}/ld ${BINUTILS_BIN}/ld.original
-fi
-rm -f ${BINUTILS_BIN}/ld  
->${BINUTILS_BIN}/ld  cat <<EOF
-#!/bin/bash
-${BINUTILS_BIN}/ld.gold --long-plt \$*
-
-EOF
-
-chmod +x ${BINUTILS_BIN}/ld
-${BINUTILS_BIN}/ld --version
-
-message "build cmake for LIBND4J. output: ${LIBND4J_BUILD_DIR}"
-mkdir -p ${LIBND4J_BUILD_DIR}
-cmake_cmd="${CMAKE} -G \"Unix Makefiles\"  -B${LIBND4J_BUILD_DIR} -S${LIBND4J_SRC_DIR}  -DCMAKE_BUILD_TYPE=${LIBND4J_BUILD_MODE} -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DSD_SANITIZE=OFF -DSD_ALL_OPS=true  -DSD_CPU=true -DSD_LIBRARY_NAME=nd4jcpu -DSD_BUILD_TESTS=ON -DSD_ARM_BUILD=true -DOPENBLAS_PATH=${THIRD_PARTY} -DSD_ARCH=${TARGET} -DARMCOMPUTE_ROOT=${ARMCOMPUTE_DIR} -DHELPERS_armcompute=${HAS_ARMCOMPUTE}"
-
-message $cmake_cmd
-eval $cmake_cmd
-
-#build
 message "lets build"
-
-cd ${LIBND4J_BUILD_DIR}
-make VERBOSE=1 -j $(nproc)
-
-
-
-
-
-
+export ARMCOMPUTE_ROOT="${ARMCOMPUTE_DIR}"
+bash ./buildnativeoperations.sh -o linux-rpi32 -t -h armcompute -V -j $(nproc)
+ 

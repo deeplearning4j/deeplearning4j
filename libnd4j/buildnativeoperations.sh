@@ -47,6 +47,15 @@ fi
 
 }
 
+#fix py debug linkage manually and also makes it use gold
+fix_pi_linker() {
+  if [ ! -f ${BINUTILS_BIN}/ld.original ]; then
+    mv ${BINUTILS_BIN}/ld ${BINUTILS_BIN}/ld.original
+  fi
+  rm -f ${BINUTILS_BIN}/ld
+  printf '#!/usr/bin/env bash\n'"${BINUTILS_BIN}/ld.gold --long-plt \$*">${BINUTILS_BIN}/ld
+  chmod +x ${BINUTILS_BIN}/ld 
+}
 
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
@@ -198,6 +207,17 @@ if [[ -z ${ANDROID_NDK:-} ]]; then
 fi
 
 case "$OS" in
+    linux-rpi32)
+      if [ -z "$ARCH" ]; then
+        ARCH="armv7-a"
+      fi
+      export PREFIX=arm-linux-gnueabihf
+      export BINUTILS_BIN=${PI_FOLDER}/${PREFIX}/bin
+      export RPI_BIN=${PI_FOLDER}/bin/${PREFIX}
+      fix_pi_linker
+      export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake -DSD_ARM_BUILD=true -DSD_SANITIZE=OFF "
+    ;;
+
     linux-armhf)
       export RPI_BIN=$RPI_HOME/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/arm-linux-gnueabihf
       export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake -DSD_ARM_BUILD=true"
