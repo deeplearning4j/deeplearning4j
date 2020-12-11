@@ -207,7 +207,7 @@ if [[ -z ${ANDROID_NDK:-} ]]; then
 fi
 
 case "$OS" in
-    linux-rpi32)
+    linux-armhf)
       if [ -z "$ARCH" ]; then
         ARCH="armv7-a"
       fi
@@ -216,14 +216,6 @@ case "$OS" in
       export RPI_BIN=${PI_FOLDER}/bin/${PREFIX}
       fix_pi_linker
       export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake -DSD_ARM_BUILD=true -DSD_SANITIZE=OFF "
-    ;;
-
-    linux-armhf)
-      export RPI_BIN=$RPI_HOME/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/arm-linux-gnueabihf
-      export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake -DSD_ARM_BUILD=true"
-      if [ -z "$ARCH" ]; then
-        ARCH="armv7-r"
-      fi
     ;;
 
     linux-arm64)

@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+
+BUILD_USING_MAVEN=
+if [ "$1" = "maven" ]  ||  [ "$1" = "mvn" ]; then
+	BUILD_USING_MAVEN="maven"
+fi
+
 TARGET=armv7-a
 BLAS_TARGET_NAME=ARMV7
 ARMCOMPUTE_TARGET=armv7a
@@ -130,6 +136,7 @@ export AR="${BINUTILS_BIN}/ar"
 
 check_requirements ${RPI_BIN_PREFIX}-gcc
 
+if [ -z "${BUILD_USING_MAVEN}" ] ;then
 #lets build OpenBlas 
 if [ ! -d "${OPENBLAS_DIR}" ]; then 
 	message "download OpenBLAS"
@@ -151,8 +158,9 @@ if [ ! -f "${THIRD_PARTY}/lib/libopenblas.so" ]; then
 
 fi
 check_requirements ${THIRD_PARTY}/lib/libopenblas.so
+export OPENBLAS_PATH=${THIRD_PARTY}
 
-
+fi # end if [ -z "${BUILD_USING_MAVEN}"];then
 
 if [ ! -d ${SCONS_LOCAL_DIR} ]; then
 	#out file
@@ -178,7 +186,16 @@ cd ${BASE_DIR}
 fi
 check_requirements "${ARMCOMPUTE_DIR}/build/libarm_compute-static.a" "${ARMCOMPUTE_DIR}/build/libarm_compute_core-static.a"
 
-message "lets build"
 export ARMCOMPUTE_ROOT="${ARMCOMPUTE_DIR}"
-bash ./buildnativeoperations.sh -o linux-rpi32 -t -h armcompute -V -j $(nproc)
+export OS_PLATFORM=linux-armhf 
+
+if [ -z "${BUILD_USING_MAVEN}" ] ;then
+message "lets build just library"
+bash ./buildnativeoperations.sh -o ${OS_PLATFORM} -t -h armcompute -V -j $(nproc)
+else
+cd ..  
+export JAVA_LIBRARY_PATH=${PI_FOLDER}/${PREFIX}/lib 
+message "lets build jars"
+mvn  install  -Dlibnd4j.platform=${OS_PLATFORM} -Dlibnd4j.helper=armcompute  -Djavacpp.platform=${OS_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${CXX} -Djava.library.path=${JAVA_LIBRARY_PATH} -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+fi
  
