@@ -11,8 +11,8 @@ ARMCOMPUTE_TARGET=armv7a
 #BASE_DIR=${HOME}/pi
 #https://stackoverflow.com/questions/59895/how-to-get-the-source-directory-of-a-bash-script-from-within-the-script-itself
 SOURCE="${BASH_SOURCE[0]}"
-ARMCOMPUTE_DEBUG=1
-LIBND4J_BUILD_MODE=Debug
+ARMCOMPUTE_DEBUG=0
+LIBND4J_BUILD_MODE=Release
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
   DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
   SOURCE="$(readlink "$SOURCE")"
@@ -191,11 +191,12 @@ export OS_PLATFORM=linux-armhf
 
 if [ -z "${BUILD_USING_MAVEN}" ] ;then
 message "lets build just library"
-bash ./buildnativeoperations.sh -o ${OS_PLATFORM} -t -h armcompute -V -j $(nproc)
+DHELPER="  -h armcompute "
+bash ./buildnativeoperations.sh -o ${OS_PLATFORM} -t ${DHELPER} -V -j $(nproc)
 else
 cd ..  
 export JAVA_LIBRARY_PATH=${PI_FOLDER}/${PREFIX}/lib 
 message "lets build jars"
-mvn  install  -Dlibnd4j.platform=${OS_PLATFORM} -Dlibnd4j.helper=armcompute  -Djavacpp.platform=${OS_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${CXX} -Djava.library.path=${JAVA_LIBRARY_PATH} -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+DHELPER=" -Dlibnd4j.helper=armcompute "
+mvn  install  -Dlibnd4j.platform=${OS_PLATFORM}   -Djavacpp.platform=${OS_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${CXX} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER} -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
 fi
- 

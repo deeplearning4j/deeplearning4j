@@ -100,6 +100,7 @@ namespace sd {
         static FORCEINLINE _CUDA_HD bool hasPropertyBitSet(const Nd4jLong *shapeInfo, int property);
         static FORCEINLINE _CUDA_HD bool togglePropertyBit(Nd4jLong *shapeInfo, int property);
         static FORCEINLINE _CUDA_HD void unsetPropertyBit(Nd4jLong *shapeInfo, int property);
+
         static FORCEINLINE _CUDA_HD void setPropertyBit(Nd4jLong *shapeInfo, int property);
         static FORCEINLINE _CUDA_HD void setPropertyBits(Nd4jLong *shapeInfo, std::initializer_list<int> properties);
 
@@ -123,6 +124,7 @@ namespace sd {
         static FORCEINLINE _CUDA_HD void flagAsPaddedBuffer(Nd4jLong* shapeInfo);
 
         static FORCEINLINE _CUDA_HD void resetDataType(Nd4jLong *shapeInfo);
+        static FORCEINLINE _CUDA_HD Nd4jLong propertyWithoutDataType(const Nd4jLong *shapeInfo);
         static FORCEINLINE _CUDA_HD void setDataType(Nd4jLong *shapeInfo, const sd::DataType dataType);
 
         static FORCEINLINE _CUDA_HD void copyDataType(Nd4jLong* to, const Nd4jLong* from);
@@ -257,7 +259,7 @@ namespace sd {
     }
 
     FORCEINLINE _CUDA_HD void ArrayOptions::unsetPropertyBit(Nd4jLong *shapeInfo, int property) {
-        extra(shapeInfo) &= property;
+        extra(shapeInfo) &= ~property;
     }
 
     FORCEINLINE _CUDA_HD SparseType ArrayOptions::sparseType(const Nd4jLong *shapeInfo) {
@@ -301,17 +303,23 @@ namespace sd {
         return hasPropertyBitSet(shapeInfo, ARRAY_HAS_PADDED_BUFFER);
     }
 
+    FORCEINLINE _CUDA_HD Nd4jLong ArrayOptions::propertyWithoutDataType(const Nd4jLong *shapeInfo){
+        Nd4jLong property = shapeInfo[shapeInfo[0] + shapeInfo[0] + 1];
+        property = property & (~ARRAY_BOOL);
+        property = property & (~ARRAY_HALF);
+        property = property & (~ARRAY_BHALF);
+        property = property & (~ARRAY_FLOAT);
+        property = property & (~ARRAY_DOUBLE);
+        property = property & (~ARRAY_INT);
+        property = property & (~ARRAY_LONG);
+        property = property & (~ARRAY_CHAR);
+        property = property & (~ARRAY_SHORT);
+        property = property & (~ARRAY_UNSIGNED);
+        return property;
+    }
+
     FORCEINLINE _CUDA_HD void ArrayOptions::resetDataType(Nd4jLong *shapeInfo) {
-        unsetPropertyBit(shapeInfo, ARRAY_BOOL);
-        unsetPropertyBit(shapeInfo, ARRAY_HALF);
-        unsetPropertyBit(shapeInfo, ARRAY_BHALF);
-        unsetPropertyBit(shapeInfo, ARRAY_FLOAT);
-        unsetPropertyBit(shapeInfo, ARRAY_DOUBLE);
-        unsetPropertyBit(shapeInfo, ARRAY_INT);
-        unsetPropertyBit(shapeInfo, ARRAY_LONG);
-        unsetPropertyBit(shapeInfo, ARRAY_CHAR);
-        unsetPropertyBit(shapeInfo, ARRAY_SHORT);
-        unsetPropertyBit(shapeInfo, ARRAY_UNSIGNED);
+        extra(shapeInfo) = propertyWithoutDataType(shapeInfo);
     }
 
     FORCEINLINE _CUDA_HD void ArrayOptions::setDataType(Nd4jLong *shapeInfo, const sd::DataType dataType) {

@@ -109,7 +109,10 @@ Arm_TensorInfo getArmTensorInfo(int rank, Nd4jLong* bases,sd::DataType ndArrayTy
 Arm_TensorInfo getArmTensorInfo(const NDArray& arr,
                                 arm_compute::DataLayout layout) {
   auto dType = getArmType(arr.dataType());
-
+  
+ 
+  internal_print_nd_shape(arr,"shape")  ;
+  internal_print_nd_array(arr,"data")  ;
   //
   constexpr int numChannels = 1;
   int rank = (int)(arr.rankOf());
@@ -124,20 +127,26 @@ Arm_TensorInfo getArmTensorInfo(const NDArray& arr,
   Arm_Strides strides;
   shape.set_num_dimensions(rank);
   strides.set_num_dimensions(rank);
-  size_t element_size = arm_compute::data_size_from_type(dType);
+  size_t element_size = arr.sizeOfT();
   for (int i = 0, j = rank - 1; i < rank; i++, j--) {
     shape[i] = static_cast<uint32_t>(bases[j]);
-    strides[i] = static_cast<uint32_t>(arrStrides[j]) * element_size;
+    strides[i] = static_cast<uint32_t>(arrStrides[j] * element_size);
   }
   // fill the rest unused with 1
   for (int i = rank; i < arm_compute::MAX_DIMS; i++) {
     shape[i] = 1;
   }
-  //size_t total_size;
+  
+  size_t total_size = arr.lengthOf() * element_size;
+  size_t offset=0;
   //size_t size_ind = rank - 1;
   //total_size = shape[size_ind] * strides[size_ind];
-  auto total_size = arr.getDataBuffer()->getLenInBytes();
-  auto offset = arr.bufferOffset() * element_size;
+  if (arr.hasPaddedBuffer()){
+      internal_printf("---has padded buffer %d\n",0);
+      total_size = arr.getDataBuffer()->getLenInBytes();
+      offset = arr.bufferOffset() * element_size;
+  } 
+  internal_printf(":: offset %d el size %d  arr.getDataBuffer()->getLenInBytes() %d lengthof %d \n",(int)arr.bufferOffset(), (int)element_size, (int)arr.getDataBuffer()->getLenInBytes(),  (int)arr.lengthOf());
   Arm_TensorInfo info;
   info.init(shape, numChannels, dType, strides, offset, total_size);
   info.set_data_layout(layout);

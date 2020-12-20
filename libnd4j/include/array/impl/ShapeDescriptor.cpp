@@ -60,7 +60,7 @@ namespace sd {
 
     Nd4jLong *ShapeDescriptor::toShapeInfo() const {
         //for empy array use original
-        if (_extraProperties & ARRAY_EMPTY) {
+        if (isEmpty()) {
             if (_rank == 0)
                 return ShapeBuilders::emptyShapeInfo(_dataType);
             else {
@@ -105,7 +105,6 @@ namespace sd {
             shape::calcStrides(_shape.data(), _shape.size(), _strides.data());
         else
             shape::calcStridesFortran(_shape.data(), _shape.size(), _strides.data());
-
 
         for (auto v:_shape) {
             if (v == 0) {
@@ -156,9 +155,8 @@ namespace sd {
                     break;
                 }
             }
-
             // no point calculating strides for empty arrays
-            if (!_extraProperties) {
+            if (!isEmpty()) {
                 if (order == 'c')
                     shape::calcStrides(_shape.data(), shape.size(), _strides.data());
                 else
@@ -212,10 +210,9 @@ namespace sd {
         _ews = shape::elementWiseStride(shapeInfo);
         _rank = shape::rank(shapeInfo);
 
+        _extraProperties = ArrayOptions::propertyWithoutDataType(shapeInfo);
         if (inheritDtype)
             _dataType = ArrayOptions::dataType(shapeInfo);
-
-        if(shape::isEmpty(shapeInfo)) _extraProperties |= ARRAY_EMPTY;
 
         for (int e = 0; e < _rank; e++) {
             _shape.emplace_back(shapeInfo[e + 1]);
