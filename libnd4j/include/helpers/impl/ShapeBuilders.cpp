@@ -146,6 +146,7 @@ Nd4jLong* ShapeBuilders::createSubArrShapeInfo(const Nd4jLong* inShapeInfo, cons
     ALLOCATE(subArrShapeInfo, workspace, shape::shapeInfoLength(dimsSize), Nd4jLong);
 
     subArrShapeInfo[0] = dimsSize;                                 // rank
+    subArrShapeInfo[2*dimsSize+1] = 0;
     sd::ArrayOptions::copyDataType(subArrShapeInfo, inShapeInfo);  // type
     subArrShapeInfo[2*dimsSize + 3] = shape::order(inShapeInfo);   // order
 

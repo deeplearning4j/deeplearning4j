@@ -140,7 +140,7 @@ ConstantShapeBuffer& ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcast
     ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(maxShapeInfo)), Nd4jLong);
 
     newShapeInfo[0] = shape::rank(maxShapeInfo);
-
+    newShapeInfo[2*shape::rank(maxShapeInfo)+1] = 0;
     sd::ArrayOptions::copyDataType(newShapeInfo, minShapeInfo);                     // type
     newShapeInfo[2 * newShapeInfo[0] + 2] = shape::elementWiseStride(minShapeInfo); // ews
     newShapeInfo[2 * newShapeInfo[0] + 3] = shape::order(minShapeInfo);             // order
