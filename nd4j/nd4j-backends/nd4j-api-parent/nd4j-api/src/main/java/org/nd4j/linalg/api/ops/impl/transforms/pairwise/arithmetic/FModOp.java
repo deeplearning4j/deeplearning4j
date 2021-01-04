@@ -78,7 +78,7 @@ public class FModOp extends BaseTransformSameOp {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException();
+        return "FloorMod";
     }
 
     @Override

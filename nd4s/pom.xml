@@ -29,7 +29,7 @@
     </parent>
 
     <groupId>org.nd4j</groupId>
-    <artifactId>nd4s_${scala.binary.version}</artifactId>
+    <artifactId>nd4s_2.11</artifactId>
 
     <name>nd4s</name>
 

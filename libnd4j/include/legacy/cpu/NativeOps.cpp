@@ -1832,15 +1832,23 @@ void sortTad(Nd4jPointer *extraPointers,
 
 void sortCooIndices(Nd4jPointer *extraPointers,
         Nd4jLong *indices,
-        void *values,
+        void *x,
         Nd4jLong length,
-        int rank) {
+        const Nd4jLong *xShapeInfo) {
     try {
-        NativeOpExecutioner::execSortCooIndices(indices, values, length, rank);
+        NativeOpExecutioner::execSortCooIndices(indices, x, length, xShapeInfo);
     } catch (std::exception &e) {
         sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
         sd::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
+}
+
+void ravelMultiIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo, int mode) {
+    NativeOpExecutioner::execRavelMultiIndex(indices, flatIndices, length, shapeInfo, mode);
+}
+
+void unravelIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo) {
+    NativeOpExecutioner::execUnravelIndex(indices, flatIndices, length, shapeInfo);
 }
 
 Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong const* hXShapeInfo, Nd4jLong N, int *dz, float threshold) {

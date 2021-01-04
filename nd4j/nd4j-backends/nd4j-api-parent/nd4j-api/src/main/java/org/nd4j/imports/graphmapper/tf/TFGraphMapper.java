@@ -257,7 +257,7 @@ public class TFGraphMapper {
                         }
 
 
-                        org.tensorflow.framework.DataType tfDtype = attrMap.get("dtype").getType();
+                        org.tensorflow.framework.DataType  tfDtype = attrMap.get("dtype").getType();
                         org.nd4j.linalg.api.buffer.DataType dt = convertType(tfDtype);
                         sd.placeHolder(name, dt, shape);
                     } else {
@@ -764,7 +764,7 @@ public class TFGraphMapper {
                             } else if (!setList.getBList().isEmpty()) {
                                 break;
                             } else if (!setList.getFList().isEmpty()) {
-                                val floats = Floats.toArray(setList.getFList());
+                                val floats = Floats.toArray((Collection<? extends Number>) setList.getFList());
                                 if (adapter != null) {
                                     adapter.mapAttributeFor(floats, currentField, on);
                                 } else

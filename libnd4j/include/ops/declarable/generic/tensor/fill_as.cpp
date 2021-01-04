@@ -29,7 +29,7 @@ namespace sd {
             auto output = OUTPUT_VARIABLE(0);
 
             if (block.width() > 1) {
-                auto s = INPUT_VARIABLE(1);
+                auto s = INPUT_VARIABLE(0);
                 output->assign(s);
             } else if (block.numT() > 0) {
                 output->assign(T_ARG(0));

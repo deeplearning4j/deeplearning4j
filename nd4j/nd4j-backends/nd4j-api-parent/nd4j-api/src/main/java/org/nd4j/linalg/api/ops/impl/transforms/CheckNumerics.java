@@ -77,7 +77,8 @@ public class CheckNumerics extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 datatype in, got %s", inputDataTypes);
+        //input data types may be less than 2 for import, only first one matters anyways
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() <= 2, "Expected 2 datatype in, got %s", inputDataTypes);
         Preconditions.checkState(inputDataTypes.get(0).isFPType(), "Input datatype must be a floating point type, got %s", inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));
     }

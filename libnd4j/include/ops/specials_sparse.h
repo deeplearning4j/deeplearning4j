@@ -23,7 +23,13 @@
 #ifndef LIBND4J_SPECIALS_SPARSE_H
 #define LIBND4J_SPECIALS_SPARSE_H
 
+#define ND4J_CLIPMODE_THROW 0
+#define ND4J_CLIPMODE_WRAP 1
+#define ND4J_CLIPMODE_CLIP 2
+
 #include <system/pointercast.h>
+#include <system/dll.h>
+
 
 namespace sd {
     namespace sparse {
@@ -60,7 +66,26 @@ namespace sd {
             static Nd4jLong coo_quickSort_findPivot(Nd4jLong *indices, T *array, Nd4jLong left, Nd4jLong right,
                                                     int rank);
 
-            static void sortCooIndicesGeneric(Nd4jLong *indices, T *values, Nd4jLong length, int rank);
+            static void sortCooIndicesGeneric(Nd4jLong *indices, void *vx, Nd4jLong length, int rank);
+
+
+        };
+
+        class ND4J_EXPORT IndexUtils {
+            public:
+            /**
+             * Converts indices in COO format into an array of flat indices
+             *
+             * based on numpy.ravel_multi_index
+             */
+            static void ravelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo, int mode);
+
+            /**
+             * Converts flat indices to index matrix in COO format
+             *
+             * based on numpy.unravel_index
+             */
+            static void unravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo);
         };
     }
 }

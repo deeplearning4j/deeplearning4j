@@ -131,7 +131,7 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "stridedslice";
+        return "strided_slice";
     }
 
 

@@ -2560,9 +2560,18 @@ void sortTad(Nd4jPointer *extraPointers,
     }
 }
 
-void sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, void *values, Nd4jLong length, int rank) {
+void sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, void *values, Nd4jLong length, const Nd4jLong *xShapeInfo) {
 	throw std::runtime_error("sortCooIndices:: Not implemented yet");
 }
+
+void ravelMultiIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo, int mode) {
+    throw std::runtime_error("ravelMultiIndex:: Not implemented yet");
+}
+
+void unravelIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo) {
+    throw std::runtime_error("unravelIndex:: Not implemented yet");
+}
+
 
 Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length) {
 	return nullptr;

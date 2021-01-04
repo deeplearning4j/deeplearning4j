@@ -29,6 +29,8 @@ import static org.junit.Assert.assertEquals;
 
 public class OnnxRuntimeRunnerTests {
 
+
+
     @Test
     public void testAdd() throws Exception {
         ClassPathResource classPathResource = new ClassPathResource("add.onnx");

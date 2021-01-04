@@ -178,7 +178,7 @@
                 </property>
             </activation>
             <properties>
-                <nd4j.backend>nd4j-cuda-${libnd4j.cuda}</nd4j.backend>
+                <nd4j.backend>nd4j-cuda-11.0</nd4j.backend>
             </properties>
         </profile>
     </profiles>

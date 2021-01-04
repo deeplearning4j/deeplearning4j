@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
@@ -30,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 public class UniqueWithCounts extends DynamicCustomOp {
     public static final DataType DEFAULT_IDX_DTYPE = DataType.INT;
     private DataType idxDataType;
@@ -66,8 +68,10 @@ public class UniqueWithCounts extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), dataTypes);
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        Preconditions.checkState(dataTypes != null && dataTypes.size() >= 1, "Expected exactly 1 or more input datatypes for %s, got %s", getClass(), dataTypes);
+        if(dataTypes.size() > 1)
+            log.warn("Using returning first data type of type " + dataTypes.get(0) + " for input");
         DataType d = (idxDataType == null ? DEFAULT_IDX_DTYPE : idxDataType);
         return Arrays.asList(dataTypes.get(0), d, d);
     }

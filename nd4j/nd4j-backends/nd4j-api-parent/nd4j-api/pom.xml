@@ -35,6 +35,8 @@
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <byteunits.version>0.9.1</byteunits.version>
+        <neoitertools.version>1.0.0</neoitertools.version>
     </properties>
 
     <dependencies>
@@ -47,6 +49,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math3</artifactId>
             <version>${commons-math3.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons-lang3.version}</version>
         </dependency>
         <!-- Tensorflow import -->
         <dependency>
@@ -153,10 +160,12 @@
                             <includeDirectories>
                                 <include>src/main/protobuf/tf</include>
                                 <include>src/main/protobuf/onnx</include>
+                                <include>src/main/protobuf/nd4j</include>
                             </includeDirectories>
                             <inputDirectories>
                                 <include>src/main/protobuf/tf/tensorflow</include>
                                 <include>src/main/protobuf/onnx</include>
+                                <include>src/main/protobuf/nd4j</include>
                             </inputDirectories>
                             <addSources>main</addSources>
                             <cleanOutputFolder>false</cleanOutputFolder>
@@ -174,6 +183,7 @@
                         <include>${project.build.sourceDirectory}/org/tensorflow/**</include>
                         <include>${project.build.sourceDirectory}/tensorflow/**</include>
                         <include>${project.build.sourceDirectory}/onnx/**</include>
+                        <include>${project.build.sourceDirectory}/org/nd4j/ir/**</include>
                     </includes>
                     <token>com.google.protobuf.</token>
                     <value>org.nd4j.shade.protobuf.</value>

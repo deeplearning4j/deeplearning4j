@@ -3135,10 +3135,50 @@ public native void sortTadByValue(@Cast("Nd4jPointer*") PointerPointer extraPoin
 
 
 // special sort impl for sorting out COO indices and values
-public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, Pointer values, @Cast("Nd4jLong") long length, int rank);
-public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, Pointer values, @Cast("Nd4jLong") long length, int rank);
-public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, Pointer values, @Cast("Nd4jLong") long length, int rank);
+public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                @Cast("Nd4jLong*") LongPointer indices,
+                                Pointer x,
+                                @Cast("Nd4jLong") long length,
+                                @Cast("const Nd4jLong*") LongPointer xShapeInfo);
+public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                @Cast("Nd4jLong*") LongBuffer indices,
+                                Pointer x,
+                                @Cast("Nd4jLong") long length,
+                                @Cast("const Nd4jLong*") LongBuffer xShapeInfo);
+public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                @Cast("Nd4jLong*") long[] indices,
+                                Pointer x,
+                                @Cast("Nd4jLong") long length,
+                                @Cast("const Nd4jLong*") long[] xShapeInfo);
 
+/**
+ *
+ * @param extraPointers     not used
+ * @param indices           DataBuffer containing COO indices for a sparse matrix that is to be raveled/flattened
+ * @param flatIndices       DataBuffer where the raveled/flattened indices are to be written to
+ * @param length            number of non-zero entries (length of flatIndices)
+ * @param fullShapeBuffer   DataBuffer with ShapeInfo for the full matrix to be flattened
+ * @param mode              clipMode determines the strategy to use if some of the the passed COO indices does
+ *                          not fit into the shape determined by fullShapeBuffer
+ *                              0   throw an exception (default)
+ *                              1   wrap around shape
+ *                              2   clip to shape
+ */
+public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, @Cast("Nd4jLong*") LongPointer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongPointer shapeInfo, int mode);
+public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, @Cast("Nd4jLong*") LongBuffer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongBuffer shapeInfo, int mode);
+public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, @Cast("Nd4jLong*") long[] flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") long[] shapeInfo, int mode);
+
+/**
+ *
+ * @param extraPointers     not used
+ * @param indices           DataBuffer where the unraveled COO indices are to be written
+ * @param flatIndices       DataBuffer containing the raveled/flattened indices to be unravel
+ * @param length            number of non-zero entries (length of flatIndices)
+ * @param fullShapeBuffer   DataBuffer with ShapeInfo for the full matrix to be unraveled
+ */
+public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, @Cast("Nd4jLong*") LongPointer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongPointer shapeInfo);
+public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, @Cast("Nd4jLong*") LongBuffer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongBuffer shapeInfo);
+public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, @Cast("Nd4jLong*") long[] flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") long[] shapeInfo);
 
 public native @Cast("Nd4jLong*") LongPointer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") String fileName, @Cast("Nd4jLong") long length);
 public native @Cast("Nd4jLong*") LongBuffer mmapFile(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("char*") BytePointer fileName, @Cast("Nd4jLong") long length);

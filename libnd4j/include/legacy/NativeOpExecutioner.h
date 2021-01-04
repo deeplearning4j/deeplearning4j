@@ -28,6 +28,7 @@
 #include <ops/specials_sparse.h>
 #include <execution/LaunchContext.h>
 #include <array/ArrayOptions.h>
+#include <helpers/shape.h>
 
 /**
  * Native op executioner:
@@ -652,10 +653,20 @@ static void execTransformBool(sd::LaunchContext  *lc,
         BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortTadGeneric(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);
     }
 
-    inline static void execSortCooIndices(Nd4jLong *indices, void *values, Nd4jLong length, int rank) {
-        sd::sparse::SparseUtils<Nd4jLong>::sortCooIndicesGeneric(indices, reinterpret_cast<Nd4jLong *>(values), length, rank);
+    inline static void execSortCooIndices(Nd4jLong *indices, void *x, Nd4jLong length, const Nd4jLong *xShapeInfo) {
+        auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+        int rank = shape::rank(xShapeInfo);
+
+        BUILD_SINGLE_SELECTOR(xType, sd::sparse::SparseUtils, ::sortCooIndicesGeneric(indices, x, length, rank), LIBND4J_TYPES);
     }
 
+    inline static void execRavelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo, int mode) {
+        sd::sparse::IndexUtils::ravelMultiIndex(indices, flatIndices, length, shapeInfo, mode);
+    }
+
+    inline static void execUnravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo) {
+        sd::sparse::IndexUtils::unravelIndex(indices, flatIndices, length, shapeInfo);
+    }
 
     inline static Nd4jLong encodeBitmap(void *dx, const Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
         auto xType = sd::ArrayOptions::dataType(xShapeInfo);

@@ -213,7 +213,7 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "mmul";
+        return "matmul";
     }
 
 

@@ -302,7 +302,7 @@ public class MaxPooling2D extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected 1 input data type for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && !inputDataTypes.isEmpty(), "Expected at least 1 input data type for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));
     }
 }

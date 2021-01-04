@@ -321,7 +321,7 @@
         <jackson.databind.version>2.10.3</jackson.databind.version>
         <shaded.snakeyaml.version>1.24</shaded.snakeyaml.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
-        <lombok.version>1.18.12</lombok.version>
+        <lombok.version>1.18.16</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.7.1</lucene-solr.version>
         <json.version>20131018</json.version>
@@ -356,7 +356,7 @@
         <maven-javadoc-plugin.version>3.0.1</maven-javadoc-plugin.version>
         <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
         <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
-        <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.8.1</maven-compiler-plugin.version>
         <maven-scala-plugin.version>3.3.1</maven-scala-plugin.version>
         <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
         <sbt-compiler-maven-plugin.version>1.0.0</sbt-compiler-maven-plugin.version>

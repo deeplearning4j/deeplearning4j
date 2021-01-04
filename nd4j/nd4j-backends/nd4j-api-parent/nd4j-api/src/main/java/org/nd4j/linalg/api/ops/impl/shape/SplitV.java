@@ -93,7 +93,7 @@ public class SplitV extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //Output types are same as first input type - just numSplits of them...
         List<DataType> out = new ArrayList<>(numSplit);
-        for( int i=0; i<numSplit; i++ ){
+        for( int i = 0; i < numSplit; i++) {
             out.add(dataTypes.get(0));
         }
         return out;
