@@ -252,11 +252,13 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         private void removeObject(INDArray array){
             long length = array.data().length();
             int idx = Arrays.binarySearch(lengths, 0, size, length);
-            Preconditions.checkState(idx > 0, "Cannot remove array from ArrayStore: no array with this length exists in the cache");
+            Preconditions.checkState(idx >= 0,
+                    "Cannot remove array from ArrayStore: no array with this length exists in the cache");
             boolean found = false;
             int i = 0;
-            while(!found && i <= size && lengths[i] == length){
-                found = sorted[i++] == array; //Object equality
+            while (!found && i < size) {
+                found = sorted[i] == array && lengths[i] == length; //Object and length equality
+                ++i;
             }
             Preconditions.checkState(found, "Cannot remove array: not found in ArrayCache");
             removeIdx(i - 1);
