@@ -304,7 +304,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
     @Override
     public void ensureLocation(INDArray array, Location location) {
         // to location to ensure for empty array
-        if (array.isEmpty() || array.isS())
+        if (array == null || array.isEmpty() || array.isS())
             return;
 
         // let's make sure host pointer actually exists
