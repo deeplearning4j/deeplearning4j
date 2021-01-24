@@ -369,13 +369,17 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
         //Check port property
         int port = instancePort == null ? DEFAULT_UI_PORT : instancePort;
-        String portProp = System.getenv(DL4JSystemProperties.UI_SERVER_PORT_PROPERTY);
+        String portProp = System.getProperty(DL4JSystemProperties.UI_SERVER_PORT_PROPERTY);
         if(portProp != null && !portProp.isEmpty()){
             try{
                 port = Integer.parseInt(portProp);
             } catch (NumberFormatException e){
                 log.warn("Error parsing port property {}={}", DL4JSystemProperties.UI_SERVER_PORT_PROPERTY, portProp);
             }
+        }
+
+	if (port < 0 || port > 0xFFFF) {
+            throw new IllegalStateException("Valid port range is 0 <= port <= 65535. The given port was " + port);
         }
 
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
