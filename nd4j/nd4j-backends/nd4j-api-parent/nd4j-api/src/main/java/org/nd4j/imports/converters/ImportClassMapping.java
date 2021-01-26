@@ -302,6 +302,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.shape.DiagPart.class,
             org.nd4j.linalg.api.ops.impl.shape.ExpandDims.class,
             org.nd4j.linalg.api.ops.impl.shape.Eye.class,
+            org.nd4j.linalg.api.ops.impl.shape.Flatten2D.class,
             org.nd4j.linalg.api.ops.impl.shape.Gather.class,
             org.nd4j.linalg.api.ops.impl.shape.GatherNd.class,
             org.nd4j.linalg.api.ops.impl.shape.Linspace.class,

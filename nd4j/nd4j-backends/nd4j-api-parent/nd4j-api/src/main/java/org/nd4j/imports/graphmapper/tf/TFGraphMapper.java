@@ -19,6 +19,7 @@ package org.nd4j.imports.graphmapper.tf;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -41,6 +42,7 @@ import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.protobuf.Message;
 import org.nd4j.shade.protobuf.TextFormat;
 import org.tensorflow.framework.*;
+import org.apache.commons.collections4.set.ListOrderedSet;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -165,12 +167,17 @@ public class TFGraphMapper {
         If we can build the graph incrementally, we can make sure that the added variables are set up with the correct
         datatype and (once implemented) greedy shape inference
          */
+
+        List<String> variablesAdded = new ArrayList<>();
+        List<String> opsAdded = new ArrayList<>();
+        List<String> opsImported = new ArrayList<>();
+        List<String> opsRemoved = new ArrayList<>();
         Set<String> availableToAddSet = new HashSet<>();            //TODO maybe unnecessary?
         Queue<NodeDef> availableToAdd = new LinkedList<>();
 
         Map<String, NodeDef> remainingNodes = new HashMap<>();          //All other nodes, not in availableToAdd
 
-        Map<String, Set<String>> nodeInputTo = new HashMap<>();     // For op x -> y, x is key, y is value. Note that these are OP names not VARIABLE names
+        Map<String, ListOrderedSet<String>> nodeInputTo = new HashMap<>();     // For op x -> y, x is key, y is value. Note that these are OP names not VARIABLE names
 
         int nNodes = tfGraph.getNodeCount();
 
@@ -193,8 +200,9 @@ public class TFGraphMapper {
                     inOpName = stripVarSuffix(inOpName);
 
                     if (!nodeInputTo.containsKey(inOpName)) {
-                        nodeInputTo.put(inOpName, new HashSet<String>());
+                        nodeInputTo.put(inOpName, new ListOrderedSet<String>());
                     }
+
                     nodeInputTo.get(inOpName).add(name);
                 }
             }
@@ -213,7 +221,7 @@ public class TFGraphMapper {
             availableToAddSet.remove(name);
 
             log.trace("Adding operation to graph: {} (name={})", opName, name);
-
+            opsAdded.add(opName + "," + name);
             boolean skipCase = false;
             if(opFilter != null && opFilter.skipOp(nd, sd, nd.getAttrMap(), tfGraph)){
                 log.debug("Skipping op {} of type {} due to op filter", name, opName);
@@ -293,7 +301,7 @@ public class TFGraphMapper {
                             String origInName = nd.getInput(i);
                             String inName = stripControl(origInName);
 
-                            if(inName.endsWith(":0")){
+                            if(inName.endsWith(":0")) {
                                 //Strip ":0" suffix. Some ops can depend on placeholders, like "image_tensor:0" but in SameDiff this is a variable called "image_tensor"
                                 inName = inName.substring(0, inName.length()-2);
                             }
@@ -391,10 +399,12 @@ public class TFGraphMapper {
 
                             sd.getVariables().put(varName, outVars[i]);
                             log.trace("Added variable to graph: {} (output of op {})", varName, name);
+                            variablesAdded.add(varName + "," + name);
                         }
                         sd.getOps().get(name).setOutputsOfOp(outNames);
 
                         log.trace("Imported op: {} (name={})", opName, name);
+                        opsImported.add(opName + "," + name);
                     }
                 } else {
                     //Import override case
@@ -483,6 +493,7 @@ public class TFGraphMapper {
 
             //Finally, remove the just processed op from remainingNodes map:
             remainingNodes.remove(name);
+            opsRemoved.add(name);
         }
 
         //Post process the control dependencies, if any (done after because dependencies may not exist when imported)
@@ -510,7 +521,19 @@ public class TFGraphMapper {
         }
 
         Preconditions.checkState(remainingNodes.isEmpty(), "%s Unprocessed nodes: %s", remainingNodes.size(), remainingNodes.keySet());
+        try {
+            FileUtils.writeLines(new File("variables-added-old.txt"),variablesAdded);
+            FileUtils.writeLines(new File("ops-imported-old.txt"),opsImported);
+            FileUtils.writeLines(new File("ops-added-old.txt"),opsAdded);
+            FileUtils.writeLines(new File("ops-removed-old.txt"),opsRemoved);
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        log.trace("Variables added " + variablesAdded);
+        log.trace("Ops imported " + opsImported);
+        log.trace("Ops added" + opsAdded);
+        log.trace("Ops removed " + opsRemoved);
         return sd;
     }
 

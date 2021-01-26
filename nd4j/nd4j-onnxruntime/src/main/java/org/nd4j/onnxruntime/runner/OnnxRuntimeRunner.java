@@ -44,18 +44,15 @@ public class OnnxRuntimeRunner implements Closeable  {
     private SessionOptions sessionOptions;
     private   static Env env;
     private Pointer bp;
-    private List<String> inputNames,outputNames;
 
 
     @Builder
-    public OnnxRuntimeRunner(String modelUri,List<String> inputs,List<String> outputs) {
+    public OnnxRuntimeRunner(String modelUri) {
         if(env == null) {
             env = new Env(ONNXUtils.getOnnxLogLevelFromLogger(log), new BytePointer("nd4j-serving-onnx-session-" + UUID.randomUUID().toString()));
             env.retainReference();
         }
 
-        this.inputNames = inputs;
-        this.outputNames = outputs;
         sessionOptions = new SessionOptions();
         sessionOptions.SetGraphOptimizationLevel(ORT_ENABLE_EXTENDED);
         sessionOptions.SetIntraOpNumThreads(1);

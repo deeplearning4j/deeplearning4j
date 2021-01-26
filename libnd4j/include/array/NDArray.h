@@ -1744,7 +1744,7 @@ bool NDArray::isEmpty() const {
     if (this->_shapeInfo == nullptr)
         return false;
 
-    return ArrayOptions::arrayType(this->shapeInfo()) == ArrayType::EMPTY;
+    return ArrayOptions::arrayType(this->shapeInfo()) == ArrayType::EMPTY || this->lengthOf() < 1;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1781,9 +1781,11 @@ T& NDArray::r(const Nd4jLong i) {
 
     // if (i >= _length)
     //     throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
-    if (DataTypeUtils::fromT<T>() != _dataType)
+    auto inputDtype = DataTypeUtils::fromT<T>();
+    if (inputDtype != _dataType) {
+        nd4j_printf("Expected data type was %d but was %d\n",_dataType,inputDtype);
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
-
+    }
     syncToHost();
     tickWriteHost();
 
@@ -1796,9 +1798,11 @@ T& NDArray::r(const Nd4jLong i, const Nd4jLong j) {
 
     if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
             throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
-    if (DataTypeUtils::fromT<T>() != _dataType)
+    auto inputDtype = DataTypeUtils::fromT<T>();
+    if (inputDtype != _dataType) {
+        nd4j_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
         throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
-
+    }
     syncToHost();
     tickWriteHost();
 
@@ -1839,8 +1843,11 @@ T NDArray::t(const Nd4jLong i) const {
 
     // if (i >= _length)
     //     throw std::invalid_argument("NDArray::t(i): input index is out of array length !");
-    if (DataTypeUtils::fromT<T>() != _dataType)
+    auto inputDtype = DataTypeUtils::fromT<T>();
+    if (inputDtype != _dataType) {
+        nd4j_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
         throw std::invalid_argument("NDArray::t(i): type of array is not equal to template type T!");
+    }
 
     syncToHost();
 
@@ -1853,9 +1860,11 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
 
     if (rankOf() != 2 || i >= sizeAt(0) || j >= sizeAt(1))
             throw std::invalid_argument("NDArray::t(i,j): one of input indexes is out of array length or rank!=2 !");
-    if (DataTypeUtils::fromT<T>() != _dataType)
+     auto inputDtype = DataTypeUtils::fromT<T>();
+    if (inputDtype != _dataType) {
+        nd4j_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
         throw std::invalid_argument("NDArray::t(i,j): type of array is not equal to template type T!");
-
+    }
     syncToHost();
 
     return *(reinterpret_cast<const T*>(bufferWithOffset(i * strideAt(0) + j * strideAt(1))));
@@ -1867,9 +1876,11 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
 
     if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
         throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=3!");
-    if (DataTypeUtils::fromT<T>() != _dataType)
+     auto inputDtype = DataTypeUtils::fromT<T>();
+    if (inputDtype != _dataType) {
+        nd4j_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
         throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
-
+    }
     syncToHost();
 
     return *(reinterpret_cast<const T*>(bufferWithOffset(i * strideAt(0) + j * strideAt(1) + k * strideAt(2))));
@@ -1881,9 +1892,11 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLon
 
     if (rankOf() != 4 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2) || w >= sizeAt(3))
         throw std::invalid_argument("NDArray::t(i,j,k,w): one of input indexes is out of array length or rank!=4!");
-    if (DataTypeUtils::fromT<T>() != _dataType)
+     auto inputDtype = DataTypeUtils::fromT<T>();
+    if (inputDtype != _dataType) {
+        nd4j_printf("Expected data type was %d but was %d\n", _dataType, inputDtype);
         throw std::invalid_argument("NDArray::t(i,j,k,w): type of array is not equal to template type T!");
-
+    }
     syncToHost();
 
     return *(reinterpret_cast<const T*>(bufferWithOffset(i * strideAt(0) + j * strideAt(1) + k * strideAt(2) + w * strideAt(3))));

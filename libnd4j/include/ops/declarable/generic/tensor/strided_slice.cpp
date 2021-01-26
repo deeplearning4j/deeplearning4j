@@ -302,7 +302,7 @@ namespace sd {
         CUSTOM_OP_IMPL(strided_slice, 1, 1, false, 0, 5) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
-            if (z->isEmpty()) {
+            if (z->isEmpty() || z->lengthOf() == 0) {
                 return ND4J_STATUS_OK;
             }
 
@@ -430,7 +430,7 @@ namespace sd {
 
                 RELEASE(subArrShapeInfo,  block.getWorkspace());
             }
-            else if (!z->isEmpty()){
+            else if (!z->isEmpty()) {
                 z->assign(x->e(0));
             }
             return Status::OK();
@@ -469,7 +469,7 @@ namespace sd {
                 for (int e = 5; e < block.getIArguments()->size(); e++)
                     args.emplace_back(INT_ARG(e));
 
-                // FIXME: propably template required here
+                // FIXME: probably template required here
                 ShapeUtils::copyVectorPart(begin, args, elements, 0);
                 ShapeUtils::copyVectorPart(end, args, elements, elements);
                 ShapeUtils::copyVectorPart(strides, args, elements, elements * 2);
@@ -526,9 +526,11 @@ namespace sd {
 //                } else {
 //                    newShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
 //                }
+                nd4j_printf("Returning new shape %d\n",0);
                 return SHAPELIST(newShape);
             }
 
+            nd4j_printf("Returning empty shape info %d\n",0);
             return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape)));
         }
 

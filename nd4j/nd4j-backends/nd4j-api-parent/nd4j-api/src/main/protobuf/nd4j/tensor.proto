@@ -206,5 +206,10 @@ message TensorProto {
   // When this field is present, the data_type field MUST be
   // UINT32 or UINT64
   repeated uint64 uint64_data = 11 [packed = true];
+
+  // For half values (tensorflow compatibility)
+  repeated int32 half_val = 15 [packed = true];
+  //boolean values
+  repeated bool  bool_val = 16 [packed = true];
 }
 

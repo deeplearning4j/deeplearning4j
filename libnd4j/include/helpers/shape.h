@@ -2617,7 +2617,7 @@ INLINEDEF _CUDA_HD int numOfNonUnitDims(const int rank, const Nd4jLong* inShape)
     }
 
     INLINEDEF _CUDA_HD bool isEmpty(const Nd4jLong *shapeInfo) {
-        return ((shape::extra(const_cast<Nd4jLong*>(shapeInfo)) & ARRAY_EMPTY) == ARRAY_EMPTY);
+        return ((shape::extra(const_cast<Nd4jLong*>(shapeInfo)) & ARRAY_EMPTY) == ARRAY_EMPTY) || (!shape::isScalar(shapeInfo) && shape::length(shapeInfo) < 1);
     }
 
 
@@ -2996,9 +2996,9 @@ INLINEDEF _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, cons
         if (0 == rank(shapeInfo))
             return 1;
         if (dim >= 0)
-            return shapeInfo[1+dim];
+            return shapeInfo[1 + dim];
         else
-            return shapeInfo[1+(rank(shapeInfo) + dim)];
+            return shapeInfo[1 + (rank(shapeInfo) + dim)];
     }
 
     INLINEDEF _CUDA_HD Nd4jLong strideAt(const Nd4jLong *shapeInfo, const int dim) {
@@ -3019,6 +3019,9 @@ INLINEDEF _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, cons
     INLINEDEF _CUDA_HD bool equalsSoft(const Nd4jLong *shapeA, const Nd4jLong *shapeB) {
         if (shapeA[0] != shapeB[0])
             return false;
+
+        if(shape::isEmpty(shapeA) && shape::isEmpty(shapeB))
+            return true;
 
         if (shapeA[0] == 0)
             return true;

@@ -51,6 +51,8 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
+import static org.nd4j.imports.VariableUtils.stripVarSuffix;
+
 /**
  * InferenceSession: Performs inference (forward pass) on a SameDiff instance to get the outputs of the requested nodes.<br>
  * Dynamically (in AbstractSession) calculates the required subgraph to execute to get the required outputs.<br>
@@ -271,7 +273,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 continue;   //Switch case: we only ever get one of 2 outputs, other is null (branch not executed)
 
             String name = outVarNames.get(i);
-            Variable v = sameDiff.getVariables().get(name);
+            Variable v = sameDiff.getVariables().get(stripVarSuffix(name));
             List<String> inputsForOps = v.getInputsForOp();
             if (inputsForOps != null) {
                 for (String opName : inputsForOps) {
@@ -891,6 +893,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
                 boolean isOutput = allReqVariables.contains(outNames[i]);
                 INDArray out = mmgr.allocate(isOutput, reqShape);
+                if(reqShape.isEmpty() && !out.isEmpty()) {
+                    throw new IllegalStateException("Output shape was empty, but created array was not.");
+                }
                 oc.setOutputArray(i, out);
             }
 

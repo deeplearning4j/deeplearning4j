@@ -140,7 +140,7 @@ public class AvgPooling2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        if(config == null && iArguments.size() > 0){
+        if(config == null && iArguments.size() > 0) {
             //Perhaps loaded from FlatBuffers - hence we have IArgs but not Config object
             config = Pooling2DConfig.builder()
                     .kH(iArguments.get(0))
@@ -157,6 +157,7 @@ public class AvgPooling2D extends DynamicCustomOp {
                     .type(Pooling2D.Pooling2DType.AVG)
                     .build();
         }
+
         return config.toProperties();
     }
 

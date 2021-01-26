@@ -209,7 +209,7 @@ public class LegacyOpMapper {
         }
     }
 
-    public static Class<?> transformSameOpClass(int opNum){
+    public static Class<?> transformSameOpClass(int opNum) {
         switch (opNum){
             case 0:
                 return Abs.class;
@@ -225,12 +225,16 @@ public class LegacyOpMapper {
                 return Cube.class;
             case 7:
                 return OneMinus.class;
+            case 8:
+                return org.nd4j.linalg.api.ops.impl.transforms.same.Min.class;
             case 11:
                 return Reciprocal.class;
             case 12:
                 return Square.class;
             case 13:
                 return CompareAndSet.class;
+            case 15:
+                return FModOp.class;
             case 17:
                 return Ceil.class;
             case 18:

@@ -55,7 +55,7 @@ public class TensorArrayConcat extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarrayconcatv3";
+        return "stack_list";
     }
 
     @Override
@@ -69,7 +69,7 @@ public class TensorArrayConcat extends BaseTensorOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(java.util.List<org.nd4j.linalg.api.buffer.DataType> inputDataType){
+    public List<DataType> calculateOutputDataTypes(java.util.List<org.nd4j.linalg.api.buffer.DataType> inputDataType) {
         //Same output type as the TensorArray - which is defined by input 0
         SDVariable tArr = arg(0);
         TensorArray t3 = (TensorArray) sameDiff.getVariableOutputOp(tArr.name());

@@ -41,13 +41,13 @@ public class Enter extends BaseCompatOp {
         super(sameDiff, inputs);
     }
 
-    public Enter(SameDiff sameDiff, String frameName, SDVariable input){
+    public Enter(SameDiff sameDiff, String frameName, SDVariable input ){
         super(sameDiff, new SDVariable[]{input});
         this.frameName = frameName;
         isConstant = input.isConstant();
     }
 
-    public Enter(SameDiff sameDiff, String frameName, SDVariable input, boolean isConstant){
+    public Enter(SameDiff sameDiff, String frameName, SDVariable input, boolean isConstant) {
         super(sameDiff, new SDVariable[]{input});
         this.frameName = frameName;
         this.isConstant = isConstant;

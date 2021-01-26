@@ -150,7 +150,7 @@ public class TFTensorMappers {
                 case VALUE_COUNT:
                     int n = valueCount();
                     T array = newArray(n);
-                    for( int i=0; i<n; i++ ){
+                    for( int i = 0; i < n; i++) {
                         getValue(array, i);
                     }
                     out = arrayFor(shape, array);
@@ -200,7 +200,7 @@ public class TFTensorMappers {
 
         @Override
         public void getValue(float[] jArr, Buffer buffer, int i){
-            throw new UnsupportedOperationException("Not yet implemnted: FP16 reading from buffer");
+            throw new UnsupportedOperationException("Not yet implemented: FP16 reading from buffer");
         }
 
         @Override

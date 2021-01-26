@@ -161,6 +161,8 @@ public class Mmul extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
+        if(mt == null)
+            return Collections.emptyMap();
         return mt.toProperties();
     }
 
@@ -174,7 +176,7 @@ public class Mmul extends DynamicCustomOp {
         return "mt";
     }
 
-    public void setPropertiesForFunction(Map<String,Object> properties){
+    public void setPropertiesForFunction(Map<String,Object> properties) {
         if(mt == null)
             mt = MMulTranspose.builder().build();
         mt.setProperties(properties);
@@ -290,7 +292,7 @@ public class Mmul extends DynamicCustomOp {
         map.put("transposeA",transposeA);
         map.put("transposeB",transposeB);
 
-        for(String s : tensorflowNames()){
+        for(String s : tensorflowNames()) {
             ret.put(s,map);
         }
         ret.put(onnxName(),map);
@@ -299,8 +301,10 @@ public class Mmul extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 inputs to mmul op, got %s", dataTypes);
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+       if(!dArguments.isEmpty())
+           return Collections.singletonList(dArguments.get(0));
+        Preconditions.checkState(dataTypes != null && dataTypes.size() >= 2, "Expected at least 2 inputs to mmul op, got %s", dataTypes);
         Preconditions.checkState(dataTypes.get(0).isFPType() && dataTypes.get(1).isFPType(), "Inputs to mmul op must both be a floating" +
                 "point type: got %s", dataTypes);
         return Collections.singletonList(dataTypes.get(0));

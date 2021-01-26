@@ -2,6 +2,7 @@ package org.nd4j.autodiff.samediff.array;
 
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.ArrayHolder;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
@@ -42,7 +43,8 @@ public class ThreadSafeArrayHolder implements ArrayHolder {
         if (array.isView())
             array = array.dup();    //Device local doesn't support views
         if (!map.containsKey(name)) {
-            DeviceLocalNDArray dla = new DeviceLocalNDArray(array, lazyInit);
+            INDArray toBroadcast = array.dataType() == DataType.UTF8 ? array.dup() : array;
+            DeviceLocalNDArray dla = new DeviceLocalNDArray(toBroadcast, lazyInit);
             map.put(name, dla);
         } else {
             DeviceLocalNDArray dla = map.get(name);

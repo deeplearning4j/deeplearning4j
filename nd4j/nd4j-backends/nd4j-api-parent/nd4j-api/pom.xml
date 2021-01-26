@@ -55,6 +55,11 @@
             <artifactId>commons-lang3</artifactId>
             <version>${commons-lang3.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+            <version>${commons-collections4.version}</version>
+        </dependency>
         <!-- Tensorflow import -->
         <dependency>
             <groupId>com.google.flatbuffers</groupId>

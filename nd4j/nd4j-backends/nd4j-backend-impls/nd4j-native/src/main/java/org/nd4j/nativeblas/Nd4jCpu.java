@@ -23181,6 +23181,27 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+//         #if NOT_EXCLUDED(OP_flatten_2d)
+            @Namespace("sd::ops") public static class flatten_2d extends DeclarableCustomOp {
+                static { Loader.load(); }
+                /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                public flatten_2d(Pointer p) { super(p); }
+                /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                public flatten_2d(long size) { super((Pointer)null); allocateArray(size); }
+                private native void allocateArray(long size);
+                @Override public flatten_2d position(long position) {
+                    return (flatten_2d)super.position(position);
+                }
+                @Override public flatten_2d getPointer(long i) {
+                    return new flatten_2d(this).position(position + i);
+                }
+            
+                                                                                    public flatten_2d() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
 //         #if NOT_EXCLUDED(OP_reshape)
         @Namespace("sd::ops") public static class reshape extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -23322,7 +23343,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public broadcast_to() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }        
+                                                                                }
 //         #endif
 
 

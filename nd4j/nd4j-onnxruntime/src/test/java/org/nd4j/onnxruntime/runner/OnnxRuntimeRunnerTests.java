@@ -38,8 +38,6 @@ public class OnnxRuntimeRunnerTests {
         INDArray x = Nd4j.scalar(1.0f).reshape(1,1);
         INDArray y = Nd4j.scalar(1.0f).reshape(1,1);
         OnnxRuntimeRunner onnxRuntimeRunner = OnnxRuntimeRunner.builder()
-                .inputs(Arrays.asList("x","y"))
-                .outputs(Arrays.asList("z"))
                 .modelUri(f.getAbsolutePath())
                 .build();
         Map<String,INDArray> inputs = new LinkedHashMap<>();

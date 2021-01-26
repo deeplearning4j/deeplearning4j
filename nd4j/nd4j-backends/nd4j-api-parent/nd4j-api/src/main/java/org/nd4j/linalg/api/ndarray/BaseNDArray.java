@@ -3761,7 +3761,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         long prod = ArrayUtil.prodLong(shape);
 
-        if (prod != this.length()){
+        if (prod != this.length()) {
             throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.length() + "]. Original shape: "+Arrays.toString(this.shape())+" New Shape: "+Arrays.toString(newShape));
         }
 
@@ -4944,7 +4944,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     @Override
-    public String toString(@NonNull NDArrayStrings options){
+    public String toString(@NonNull NDArrayStrings options) {
         if(wasClosed())
             return "<Closed NDArray, id=" + getId() + ", dtype=" + dataType() + ", shape=" + Arrays.toString(shape()) + ">";
         if (!isCompressed() && !preventUnpack)

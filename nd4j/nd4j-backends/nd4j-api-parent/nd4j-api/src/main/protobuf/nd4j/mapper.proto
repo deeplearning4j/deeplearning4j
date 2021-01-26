@@ -2,6 +2,7 @@ syntax = "proto3";
 package org.nd4j.ir;
 option java_outer_classname = "MapperNamespace";
 
+import "op.proto";
 
 message MappingRule {
   string ruleName = 1;
@@ -22,6 +23,20 @@ message MappingRule {
   repeated string outputDataTypeName = 16;
   map<string,string> inputToOutput = 17;
   string ruleType = 18;
+  repeated TransformerArgs transformerArgs = 19;
+  string inputFrameworkOpName = 20;
+
+}
+
+
+message TransformerArgs {
+  string key = 1;
+  repeated ArgDescriptor transformerArgs = 2;
+}
+
+message MappingDefinitionSet {
+  repeated MapperDeclaration mappings = 1;
+  repeated string name = 2;
 }
 
 
@@ -29,9 +44,10 @@ message MappingRule {
 message MapperDeclaration {
   string frameworkName = 1;
   string opName = 2;
+  string inputFrameworkOpName = 3;
   //the rules to apply for attributes
-  repeated MappingRule rule = 3;
-  map<int64,int64> indexOverrides = 4;
+  repeated MappingRule rule = 4;
+  map<int64,int64> indexOverrides = 5;
 
 }
 

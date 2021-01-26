@@ -198,12 +198,12 @@ public class DeConv2DTF extends DynamicCustomOp {
 
 
         Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
+        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
+        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
+        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
+        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
+        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
         onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
         onnxMappings.put("isNHWC", new StringEqualsAdapter("NHWC"));
 

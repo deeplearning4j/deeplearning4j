@@ -5601,6 +5601,56 @@ public final class TensorNamespace {
      * <code>repeated uint64 uint64_data = 11 [packed = true];</code>
      */
     long getUint64Data(int index);
+
+    /**
+     * <pre>
+     * For half values (tensorflow compatibility)
+     * </pre>
+     *
+     * <code>repeated int32 half_val = 15 [packed = true];</code>
+     */
+    java.util.List<java.lang.Integer> getHalfValList();
+    /**
+     * <pre>
+     * For half values (tensorflow compatibility)
+     * </pre>
+     *
+     * <code>repeated int32 half_val = 15 [packed = true];</code>
+     */
+    int getHalfValCount();
+    /**
+     * <pre>
+     * For half values (tensorflow compatibility)
+     * </pre>
+     *
+     * <code>repeated int32 half_val = 15 [packed = true];</code>
+     */
+    int getHalfVal(int index);
+
+    /**
+     * <pre>
+     *boolean values
+     * </pre>
+     *
+     * <code>repeated bool bool_val = 16 [packed = true];</code>
+     */
+    java.util.List<java.lang.Boolean> getBoolValList();
+    /**
+     * <pre>
+     *boolean values
+     * </pre>
+     *
+     * <code>repeated bool bool_val = 16 [packed = true];</code>
+     */
+    int getBoolValCount();
+    /**
+     * <pre>
+     *boolean values
+     * </pre>
+     *
+     * <code>repeated bool bool_val = 16 [packed = true];</code>
+     */
+    boolean getBoolVal(int index);
   }
   /**
    * <pre>
@@ -5632,6 +5682,8 @@ public final class TensorNamespace {
       dataLocation_ = 0;
       doubleData_ = emptyDoubleList();
       uint64Data_ = emptyLongList();
+      halfVal_ = emptyIntList();
+      boolVal_ = emptyBooleanList();
     }
 
     @java.lang.Override
@@ -5849,6 +5901,48 @@ public final class TensorNamespace {
               dataLocation_ = rawValue;
               break;
             }
+            case 120: {
+              if (!((mutable_bitField0_ & 0x00000100) != 0)) {
+                halfVal_ = newIntList();
+                mutable_bitField0_ |= 0x00000100;
+              }
+              halfVal_.addInt(input.readInt32());
+              break;
+            }
+            case 122: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000100) != 0) && input.getBytesUntilLimit() > 0) {
+                halfVal_ = newIntList();
+                mutable_bitField0_ |= 0x00000100;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                halfVal_.addInt(input.readInt32());
+              }
+              input.popLimit(limit);
+              break;
+            }
+            case 128: {
+              if (!((mutable_bitField0_ & 0x00000200) != 0)) {
+                boolVal_ = newBooleanList();
+                mutable_bitField0_ |= 0x00000200;
+              }
+              boolVal_.addBoolean(input.readBool());
+              break;
+            }
+            case 130: {
+              int length = input.readRawVarint32();
+              int limit = input.pushLimit(length);
+              if (!((mutable_bitField0_ & 0x00000200) != 0) && input.getBytesUntilLimit() > 0) {
+                boolVal_ = newBooleanList();
+                mutable_bitField0_ |= 0x00000200;
+              }
+              while (input.getBytesUntilLimit() > 0) {
+                boolVal_.addBoolean(input.readBool());
+              }
+              input.popLimit(limit);
+              break;
+            }
             default: {
               if (!parseUnknownField(
                   input, unknownFields, extensionRegistry, tag)) {
@@ -5887,6 +5981,12 @@ public final class TensorNamespace {
         }
         if (((mutable_bitField0_ & 0x00000020) != 0)) {
           externalData_ = java.util.Collections.unmodifiableList(externalData_);
+        }
+        if (((mutable_bitField0_ & 0x00000100) != 0)) {
+          halfVal_.makeImmutable(); // C
+        }
+        if (((mutable_bitField0_ & 0x00000200) != 0)) {
+          boolVal_.makeImmutable(); // C
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
@@ -7142,6 +7242,76 @@ public final class TensorNamespace {
     }
     private int uint64DataMemoizedSerializedSize = -1;
 
+    public static final int HALF_VAL_FIELD_NUMBER = 15;
+    private org.nd4j.shade.protobuf.Internal.IntList halfVal_;
+    /**
+     * <pre>
+     * For half values (tensorflow compatibility)
+     * </pre>
+     *
+     * <code>repeated int32 half_val = 15 [packed = true];</code>
+     */
+    public java.util.List<java.lang.Integer>
+        getHalfValList() {
+      return halfVal_;
+    }
+    /**
+     * <pre>
+     * For half values (tensorflow compatibility)
+     * </pre>
+     *
+     * <code>repeated int32 half_val = 15 [packed = true];</code>
+     */
+    public int getHalfValCount() {
+      return halfVal_.size();
+    }
+    /**
+     * <pre>
+     * For half values (tensorflow compatibility)
+     * </pre>
+     *
+     * <code>repeated int32 half_val = 15 [packed = true];</code>
+     */
+    public int getHalfVal(int index) {
+      return halfVal_.getInt(index);
+    }
+    private int halfValMemoizedSerializedSize = -1;
+
+    public static final int BOOL_VAL_FIELD_NUMBER = 16;
+    private org.nd4j.shade.protobuf.Internal.BooleanList boolVal_;
+    /**
+     * <pre>
+     *boolean values
+     * </pre>
+     *
+     * <code>repeated bool bool_val = 16 [packed = true];</code>
+     */
+    public java.util.List<java.lang.Boolean>
+        getBoolValList() {
+      return boolVal_;
+    }
+    /**
+     * <pre>
+     *boolean values
+     * </pre>
+     *
+     * <code>repeated bool bool_val = 16 [packed = true];</code>
+     */
+    public int getBoolValCount() {
+      return boolVal_.size();
+    }
+    /**
+     * <pre>
+     *boolean values
+     * </pre>
+     *
+     * <code>repeated bool bool_val = 16 [packed = true];</code>
+     */
+    public boolean getBoolVal(int index) {
+      return boolVal_.getBoolean(index);
+    }
+    private int boolValMemoizedSerializedSize = -1;
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -7222,6 +7392,20 @@ public final class TensorNamespace {
       }
       if (dataLocation_ != org.nd4j.ir.TensorNamespace.TensorProto.DataLocation.DEFAULT.getNumber()) {
         output.writeEnum(14, dataLocation_);
+      }
+      if (getHalfValList().size() > 0) {
+        output.writeUInt32NoTag(122);
+        output.writeUInt32NoTag(halfValMemoizedSerializedSize);
+      }
+      for (int i = 0; i < halfVal_.size(); i++) {
+        output.writeInt32NoTag(halfVal_.getInt(i));
+      }
+      if (getBoolValList().size() > 0) {
+        output.writeUInt32NoTag(130);
+        output.writeUInt32NoTag(boolValMemoizedSerializedSize);
+      }
+      for (int i = 0; i < boolVal_.size(); i++) {
+        output.writeBoolNoTag(boolVal_.getBoolean(i));
       }
       unknownFields.writeTo(output);
     }
@@ -7345,6 +7529,31 @@ public final class TensorNamespace {
         size += org.nd4j.shade.protobuf.CodedOutputStream
           .computeEnumSize(14, dataLocation_);
       }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < halfVal_.size(); i++) {
+          dataSize += org.nd4j.shade.protobuf.CodedOutputStream
+            .computeInt32SizeNoTag(halfVal_.getInt(i));
+        }
+        size += dataSize;
+        if (!getHalfValList().isEmpty()) {
+          size += 1;
+          size += org.nd4j.shade.protobuf.CodedOutputStream
+              .computeInt32SizeNoTag(dataSize);
+        }
+        halfValMemoizedSerializedSize = dataSize;
+      }
+      {
+        int dataSize = 0;
+        dataSize = 1 * getBoolValList().size();
+        size += dataSize;
+        if (!getBoolValList().isEmpty()) {
+          size += 2;
+          size += org.nd4j.shade.protobuf.CodedOutputStream
+              .computeInt32SizeNoTag(dataSize);
+        }
+        boolValMemoizedSerializedSize = dataSize;
+      }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
       return size;
@@ -7390,6 +7599,10 @@ public final class TensorNamespace {
           .equals(other.getDoubleDataList())) return false;
       if (!getUint64DataList()
           .equals(other.getUint64DataList())) return false;
+      if (!getHalfValList()
+          .equals(other.getHalfValList())) return false;
+      if (!getBoolValList()
+          .equals(other.getBoolValList())) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -7446,6 +7659,14 @@ public final class TensorNamespace {
       if (getUint64DataCount() > 0) {
         hash = (37 * hash) + UINT64_DATA_FIELD_NUMBER;
         hash = (53 * hash) + getUint64DataList().hashCode();
+      }
+      if (getHalfValCount() > 0) {
+        hash = (37 * hash) + HALF_VAL_FIELD_NUMBER;
+        hash = (53 * hash) + getHalfValList().hashCode();
+      }
+      if (getBoolValCount() > 0) {
+        hash = (37 * hash) + BOOL_VAL_FIELD_NUMBER;
+        hash = (53 * hash) + getBoolValList().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -7622,6 +7843,10 @@ public final class TensorNamespace {
         bitField0_ = (bitField0_ & ~0x00000040);
         uint64Data_ = emptyLongList();
         bitField0_ = (bitField0_ & ~0x00000080);
+        halfVal_ = emptyIntList();
+        bitField0_ = (bitField0_ & ~0x00000100);
+        boolVal_ = emptyBooleanList();
+        bitField0_ = (bitField0_ & ~0x00000200);
         return this;
       }
 
@@ -7703,6 +7928,16 @@ public final class TensorNamespace {
           bitField0_ = (bitField0_ & ~0x00000080);
         }
         result.uint64Data_ = uint64Data_;
+        if (((bitField0_ & 0x00000100) != 0)) {
+          halfVal_.makeImmutable();
+          bitField0_ = (bitField0_ & ~0x00000100);
+        }
+        result.halfVal_ = halfVal_;
+        if (((bitField0_ & 0x00000200) != 0)) {
+          boolVal_.makeImmutable();
+          bitField0_ = (bitField0_ & ~0x00000200);
+        }
+        result.boolVal_ = boolVal_;
         onBuilt();
         return result;
       }
@@ -7864,6 +8099,26 @@ public final class TensorNamespace {
           } else {
             ensureUint64DataIsMutable();
             uint64Data_.addAll(other.uint64Data_);
+          }
+          onChanged();
+        }
+        if (!other.halfVal_.isEmpty()) {
+          if (halfVal_.isEmpty()) {
+            halfVal_ = other.halfVal_;
+            bitField0_ = (bitField0_ & ~0x00000100);
+          } else {
+            ensureHalfValIsMutable();
+            halfVal_.addAll(other.halfVal_);
+          }
+          onChanged();
+        }
+        if (!other.boolVal_.isEmpty()) {
+          if (boolVal_.isEmpty()) {
+            boolVal_ = other.boolVal_;
+            bitField0_ = (bitField0_ & ~0x00000200);
+          } else {
+            ensureBoolValIsMutable();
+            boolVal_.addAll(other.boolVal_);
           }
           onChanged();
         }
@@ -9662,6 +9917,196 @@ public final class TensorNamespace {
         onChanged();
         return this;
       }
+
+      private org.nd4j.shade.protobuf.Internal.IntList halfVal_ = emptyIntList();
+      private void ensureHalfValIsMutable() {
+        if (!((bitField0_ & 0x00000100) != 0)) {
+          halfVal_ = mutableCopy(halfVal_);
+          bitField0_ |= 0x00000100;
+         }
+      }
+      /**
+       * <pre>
+       * For half values (tensorflow compatibility)
+       * </pre>
+       *
+       * <code>repeated int32 half_val = 15 [packed = true];</code>
+       */
+      public java.util.List<java.lang.Integer>
+          getHalfValList() {
+        return ((bitField0_ & 0x00000100) != 0) ?
+                 java.util.Collections.unmodifiableList(halfVal_) : halfVal_;
+      }
+      /**
+       * <pre>
+       * For half values (tensorflow compatibility)
+       * </pre>
+       *
+       * <code>repeated int32 half_val = 15 [packed = true];</code>
+       */
+      public int getHalfValCount() {
+        return halfVal_.size();
+      }
+      /**
+       * <pre>
+       * For half values (tensorflow compatibility)
+       * </pre>
+       *
+       * <code>repeated int32 half_val = 15 [packed = true];</code>
+       */
+      public int getHalfVal(int index) {
+        return halfVal_.getInt(index);
+      }
+      /**
+       * <pre>
+       * For half values (tensorflow compatibility)
+       * </pre>
+       *
+       * <code>repeated int32 half_val = 15 [packed = true];</code>
+       */
+      public Builder setHalfVal(
+          int index, int value) {
+        ensureHalfValIsMutable();
+        halfVal_.setInt(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * For half values (tensorflow compatibility)
+       * </pre>
+       *
+       * <code>repeated int32 half_val = 15 [packed = true];</code>
+       */
+      public Builder addHalfVal(int value) {
+        ensureHalfValIsMutable();
+        halfVal_.addInt(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * For half values (tensorflow compatibility)
+       * </pre>
+       *
+       * <code>repeated int32 half_val = 15 [packed = true];</code>
+       */
+      public Builder addAllHalfVal(
+          java.lang.Iterable<? extends java.lang.Integer> values) {
+        ensureHalfValIsMutable();
+        org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
+            values, halfVal_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       * For half values (tensorflow compatibility)
+       * </pre>
+       *
+       * <code>repeated int32 half_val = 15 [packed = true];</code>
+       */
+      public Builder clearHalfVal() {
+        halfVal_ = emptyIntList();
+        bitField0_ = (bitField0_ & ~0x00000100);
+        onChanged();
+        return this;
+      }
+
+      private org.nd4j.shade.protobuf.Internal.BooleanList boolVal_ = emptyBooleanList();
+      private void ensureBoolValIsMutable() {
+        if (!((bitField0_ & 0x00000200) != 0)) {
+          boolVal_ = mutableCopy(boolVal_);
+          bitField0_ |= 0x00000200;
+         }
+      }
+      /**
+       * <pre>
+       *boolean values
+       * </pre>
+       *
+       * <code>repeated bool bool_val = 16 [packed = true];</code>
+       */
+      public java.util.List<java.lang.Boolean>
+          getBoolValList() {
+        return ((bitField0_ & 0x00000200) != 0) ?
+                 java.util.Collections.unmodifiableList(boolVal_) : boolVal_;
+      }
+      /**
+       * <pre>
+       *boolean values
+       * </pre>
+       *
+       * <code>repeated bool bool_val = 16 [packed = true];</code>
+       */
+      public int getBoolValCount() {
+        return boolVal_.size();
+      }
+      /**
+       * <pre>
+       *boolean values
+       * </pre>
+       *
+       * <code>repeated bool bool_val = 16 [packed = true];</code>
+       */
+      public boolean getBoolVal(int index) {
+        return boolVal_.getBoolean(index);
+      }
+      /**
+       * <pre>
+       *boolean values
+       * </pre>
+       *
+       * <code>repeated bool bool_val = 16 [packed = true];</code>
+       */
+      public Builder setBoolVal(
+          int index, boolean value) {
+        ensureBoolValIsMutable();
+        boolVal_.setBoolean(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       *boolean values
+       * </pre>
+       *
+       * <code>repeated bool bool_val = 16 [packed = true];</code>
+       */
+      public Builder addBoolVal(boolean value) {
+        ensureBoolValIsMutable();
+        boolVal_.addBoolean(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       *boolean values
+       * </pre>
+       *
+       * <code>repeated bool bool_val = 16 [packed = true];</code>
+       */
+      public Builder addAllBoolVal(
+          java.lang.Iterable<? extends java.lang.Boolean> values) {
+        ensureBoolValIsMutable();
+        org.nd4j.shade.protobuf.AbstractMessageLite.Builder.addAll(
+            values, boolVal_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <pre>
+       *boolean values
+       * </pre>
+       *
+       * <code>repeated bool bool_val = 16 [packed = true];</code>
+       */
+      public Builder clearBoolVal() {
+        boolVal_ = emptyBooleanList();
+        bitField0_ = (bitField0_ & ~0x00000200);
+        onChanged();
+        return this;
+      }
       @java.lang.Override
       public final Builder setUnknownFields(
           final org.nd4j.shade.protobuf.UnknownFieldSet unknownFields) {
@@ -9776,7 +10221,7 @@ public final class TensorNamespace {
       "sion\022\023\n\tdim_value\030\001 \001(\003H\000\022\023\n\tdim_param\030\002" +
       " \001(\tH\000B\007\n\005value\"X\n\016ValueInfoProto\022\014\n\004nam" +
       "e\030\001 \001(\t\022$\n\004type\030\002 \001(\0132\026.org.nd4j.ir.Type" +
-      "Proto\022\022\n\ndoc_string\030\003 \001(\t\"\360\003\n\013TensorProt" +
+      "Proto\022\022\n\ndoc_string\030\003 \001(\t\"\234\004\n\013TensorProt" +
       "o\022\014\n\004dims\030\001 \003(\003\022\021\n\tdata_type\030\002 \001(\005\0221\n\007se" +
       "gment\030\003 \001(\0132 .org.nd4j.ir.TensorProto.Se" +
       "gment\022\026\n\nfloat_data\030\004 \003(\002B\002\020\001\022\026\n\nint32_d" +
@@ -9787,15 +10232,16 @@ public final class TensorNamespace {
       "EntryProto\022<\n\rdata_location\030\016 \001(\0162%.org." +
       "nd4j.ir.TensorProto.DataLocation\022\027\n\013doub" +
       "le_data\030\n \003(\001B\002\020\001\022\027\n\013uint64_data\030\013 \003(\004B\002" +
-      "\020\001\032%\n\007Segment\022\r\n\005begin\030\001 \001(\003\022\013\n\003end\030\002 \001(" +
-      "\003\")\n\014DataLocation\022\013\n\007DEFAULT\020\000\022\014\n\010EXTERN" +
-      "AL\020\001*\332\001\n\010DataType\022\r\n\tUNDEFINED\020\000\022\t\n\005FLOA" +
-      "T\020\001\022\t\n\005UINT8\020\002\022\010\n\004INT8\020\003\022\n\n\006UINT16\020\004\022\t\n\005" +
-      "INT16\020\005\022\t\n\005INT32\020\006\022\t\n\005INT64\020\007\022\n\n\006STRING\020" +
-      "\010\022\010\n\004BOOL\020\t\022\013\n\007FLOAT16\020\n\022\n\n\006DOUBLE\020\013\022\n\n\006" +
-      "UINT32\020\014\022\n\n\006UINT64\020\r\022\r\n\tCOMPLEX64\020\016\022\016\n\nC" +
-      "OMPLEX128\020\017\022\014\n\010BFLOAT16\020\020B\021B\017TensorNames" +
-      "paceb\006proto3"
+      "\020\001\022\024\n\010half_val\030\017 \003(\005B\002\020\001\022\024\n\010bool_val\030\020 \003" +
+      "(\010B\002\020\001\032%\n\007Segment\022\r\n\005begin\030\001 \001(\003\022\013\n\003end\030" +
+      "\002 \001(\003\")\n\014DataLocation\022\013\n\007DEFAULT\020\000\022\014\n\010EX" +
+      "TERNAL\020\001*\332\001\n\010DataType\022\r\n\tUNDEFINED\020\000\022\t\n\005" +
+      "FLOAT\020\001\022\t\n\005UINT8\020\002\022\010\n\004INT8\020\003\022\n\n\006UINT16\020\004" +
+      "\022\t\n\005INT16\020\005\022\t\n\005INT32\020\006\022\t\n\005INT64\020\007\022\n\n\006STR" +
+      "ING\020\010\022\010\n\004BOOL\020\t\022\013\n\007FLOAT16\020\n\022\n\n\006DOUBLE\020\013" +
+      "\022\n\n\006UINT32\020\014\022\n\n\006UINT64\020\r\022\r\n\tCOMPLEX64\020\016\022" +
+      "\016\n\nCOMPLEX128\020\017\022\014\n\010BFLOAT16\020\020B\021B\017TensorN" +
+      "amespaceb\006proto3"
     };
     descriptor = org.nd4j.shade.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -9842,7 +10288,7 @@ public final class TensorNamespace {
     internal_static_org_nd4j_ir_TensorProto_fieldAccessorTable = new
       org.nd4j.shade.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_org_nd4j_ir_TensorProto_descriptor,
-        new java.lang.String[] { "Dims", "DataType", "Segment", "FloatData", "Int32Data", "StringData", "Int64Data", "Name", "DocString", "RawData", "ExternalData", "DataLocation", "DoubleData", "Uint64Data", });
+        new java.lang.String[] { "Dims", "DataType", "Segment", "FloatData", "Int32Data", "StringData", "Int64Data", "Name", "DocString", "RawData", "ExternalData", "DataLocation", "DoubleData", "Uint64Data", "HalfVal", "BoolVal", });
     internal_static_org_nd4j_ir_TensorProto_Segment_descriptor =
       internal_static_org_nd4j_ir_TensorProto_descriptor.getNestedTypes().get(0);
     internal_static_org_nd4j_ir_TensorProto_Segment_fieldAccessorTable = new

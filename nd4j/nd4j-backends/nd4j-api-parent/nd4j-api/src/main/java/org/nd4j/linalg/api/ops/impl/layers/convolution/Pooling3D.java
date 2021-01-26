@@ -165,14 +165,15 @@ public abstract class Pooling3D extends DynamicCustomOp {
         int[] strides = new int[3];
         int[] padding = new int[3];
         int[] kernel = new int[3];
-        for( int i=0; i<3; i++ ) {
+        for( int i = 0; i < 3; i++) {
             //TF values here have 5 values: minibatch and Channels at positions 0 and 4, which are almost always 1
-            strides[i] = tfStrides.get(i+1).intValue();
+            strides[i] = tfStrides.get(i + 1).intValue();
             if(tfPadding != null && tfPadding.size() > 0) {
                 //Empty for SAME mode
                 padding[i] = tfPadding.get(i + 1).intValue();
             }
-            kernel[i] = tfKernels.get(i+1).intValue();
+
+            kernel[i] = tfKernels.get(i + 1).intValue();
         }
 
         Pooling3DType type;

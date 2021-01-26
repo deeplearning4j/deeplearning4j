@@ -37,7 +37,7 @@ public class TensorArraySize extends BaseTensorOp {
 
    @Override
    public String opName() {
-      return "tensorarraysizev3";
+      return "size_list";
    }
 
    @Override

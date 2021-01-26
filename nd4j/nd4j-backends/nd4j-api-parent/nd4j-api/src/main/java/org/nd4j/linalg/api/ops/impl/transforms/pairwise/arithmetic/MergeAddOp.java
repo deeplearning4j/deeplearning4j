@@ -77,9 +77,9 @@ public class MergeAddOp extends BaseDynamicTransformOp {
 
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         DataType first = dataTypes.get(0);
-        for( int i=1; i<dataTypes.size(); i++ ){
+        for( int i = 1; i < dataTypes.size(); i++) {
             Preconditions.checkState(first == dataTypes.get(i), "Expected all input datatypes to be the same: first input is %s, input %s is %s", first, i, dataTypes.get(i));
         }
         return Collections.singletonList(first);

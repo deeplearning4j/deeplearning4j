@@ -43,7 +43,7 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.common.util.MathUtils;
 import org.nd4j.enums.WeightsFormat;
-import org.nd4j.imports.TFGraphs.NodeReader;
+import org.nd4j.imports.tfgraphs.NodeReader;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.blas.params.GemmParams;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
