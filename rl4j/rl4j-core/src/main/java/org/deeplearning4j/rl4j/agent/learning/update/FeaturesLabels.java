@@ -26,14 +26,14 @@ import java.util.HashMap;
 public class FeaturesLabels {
 
     @Getter
-    private final INDArray features;
+    private final Features features;
 
     private final HashMap<String, INDArray> labels = new HashMap<String, INDArray>();
 
     /**
      * @param features
      */
-    public FeaturesLabels(INDArray features) {
+    public FeaturesLabels(Features features) {
         this.features = features;
     }
 
@@ -41,7 +41,7 @@ public class FeaturesLabels {
      * @return The number of examples in features and each labels.
      */
     public long getBatchSize() {
-        return features.shape()[0];
+        return features.getBatchSize();
     }
 
     /**

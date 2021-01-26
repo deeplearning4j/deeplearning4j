@@ -16,11 +16,11 @@
 package org.deeplearning4j.rl4j.learning.async;
 
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 
 import java.util.List;
 
 public interface UpdateAlgorithm<NN extends NeuralNet> {
-    Gradient[] computeGradients(NN current, List<StateActionPair<Integer>> experience);
+    Gradient[] computeGradients(NN current, List<StateActionReward<Integer>> experience);
 }

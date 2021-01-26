@@ -1,13 +1,16 @@
 '''
 @author : Abdelrauf rauf@konduit.ai
 '''
-import re
+import argparse
 import sys
+import re
 import os
 import subprocess
 import fnmatch
 import json
 import gzip
+import argparse
+
 try:
     from bigGzipJson import json_gzip_extract_objects
 except ImportError:
@@ -17,22 +20,124 @@ from multiprocessing import  Pool, Manager ,cpu_count
 import traceback
 import html
 
-mtch = re.compile(r"[^/]*([^:]+)\:(\d+)\:(\d+)\:(.*)")
-replace_msg = re.compile(r"(\d+)?\.?(\d+)?_?\d+\.?(\d+)?")
-progress_msg = re.compile(r"\s{0,4}\[\s{0,2}\d+\%\]")
-file_dir_strip = str(Path(os.getcwd()))
-pp_index = file_dir_strip.rfind("libnd4j")
-if pp_index>=0:
-    file_dir_strip =file_dir_strip[:pp_index+len("libnd4j")]
-BASE_URL = "https://github.com/eclipse/deeplearning4j/tree/master/libnd4j/"
-if BASE_URL.endswith("/")==False:
-    BASE_URL = BASE_URL + "/"
-#print(file_dir_strip)
+# compiler_name :[ (check_operation, version, name_entry), ..]
+# positions playes role as checking will stop if it finds non empty entry
+STDIN_COMPILER_ENTRY = { 'gcc' : [('<','9','gcc_old')], 'g++' : [('<','9','gcc_old'), ('t','_','')],'nc++' :[('t','_', 'ncxx')] }
+
+#  FSAVE_SUPPORT compiler_name : (check_operation, version ) True or False
+# if you want to make it false for all just put 'f' and 't' for true case
+FSAVE_SUPPORT = { 'gcc' : ('>=','9'),  'g++' : ('>=','9'), 'nc++' : ('f','_')}
+
+stdin_parser    = None
+HAS_FSAVE       = False
+
+FALLBACK_TO_FSAVE_FILES  = True
+FSAVE_INVERTED_INDEX     = False
+
+number_replace        = re.compile(r"(\d+)?\.?(\d+)?_?\d+\.?(\d+)?")
+cmake_build_progress  = re.compile(r"\s{0,4}\[\s{0,2}\d+\%\]")
+
+internal_match = 'deeplearning4j'+os.path.sep+'libnd4j'+os.path.sep
+internal_match_replace = "./"
+
+BASE_URL = ''
+
+FSAVE_IGNORE_EXTERNALS = True
+FSAVE_SHOW_SUCCESSFULS = True
+
+def general_stdin_parser(std_success_msg, std_fail_msg , std_line_regex_str):
+    '''
+    General Parser from success and error message and line regex extractor
+    Parameters:
+    std_line_regex_str: it should match group(1) to file, group(2) to line_number and group(3) to message
+    '''
+    matcher = re.compile(std_line_regex_str)
+    def local_parser(line, helper_storage):
+        #for generic we will parsing stdin input line by line
+        #so we dont need any storage
+        parse_info = ParseInfo()
+        x = matcher.match(line)
+        parse_info.external_source = True
+        if x:
+            #print(line)
+            file_name =x.group(1).strip()
+            ppos = file_name.find(internal_match)
+            if  ppos>=0:
+                file_name = internal_match_replace + file_name[ppos+len(internal_match):]
+                parse_info.external_source = False
+            parse_info.line_pos = int(x.group(2))
+            msg = x.group(3).lower().strip()
+            parse_info.file_name = file_name
+            if std_fail_msg in msg:
+                msg = number_replace.sub("_numb",msg.replace(std_fail_msg,"fail:"))
+                parse_info.msg =  msg.strip()
+                parse_info.miss  = 1
+                parse_info.success = 0
+                #print(parse_info.__dict__)
+                return parse_info
+            elif std_success_msg in msg: 
+                parse_info.msg =  msg.strip()
+                parse_info.miss  = 0
+                parse_info.success = 1
+                #print(parse_info.__dict__)
+                return parse_info
+        return None
+
+    return local_parser
+
+
+# entry:  parser list for compilers that can parse compilers output and return Parse_info
+# the signature of the parser function   is `Parse_info parser_function_name_(line, helper_storage)`
+# Please note that Parse_info members should be the same as we defined in `general_stdin_parser local_parser`
+# the line is a compiler output. helper_storage is a dict and can be used as a state storage 
+# to parse multi-line and et cetera, as parser called for each line.
+STDIN_PARSERS = { 'gcc_old' : general_stdin_parser('loop vectorized', 'note: not vectorized:', r"[^/]*([^:]+)\:(\d+)\:\d+\:(.*)" ),
+                  'ncxx'    : general_stdin_parser("vectorized loop", "unvectorized loop",     r'[^/]+([^,]+)\,\s*line\s*(\d+)\:(.*)')
+}
+
+
+
+def version_check( version1, version2, op='>='):
+    op_list = {"<": (lambda x,y: x<y), "==": (lambda x,y: x==y),
+          "<=": (lambda x,y: x<y), "!=": (lambda x,y: x!=y),
+               ">": (lambda x,y: x>y), ">=": (lambda x,y: x>=y),
+               'f': (lambda x,y:   False),'t': (lambda x,y: True)
+               
+          }
+    return op_list[op](version1.split('.'),version2.split('.'))
+
+
+def init_global_options(args):
+    global stdin_parser
+    global HAS_FSAVE
+    global BASE_URL
+    global FSAVE_INVERTED_INDEX
+
+    FSAVE_INVERTED_INDEX = args.inverted_index
+    BASE_URL  = args.base_url
+    if BASE_URL.endswith("/")==False:
+        BASE_URL = BASE_URL + "/"
+
+    entry_name = ''
+
+    if args.compiler in STDIN_COMPILER_ENTRY:
+        for x in STDIN_COMPILER_ENTRY[args.compiler]:
+            ret = version_check(args.compiler_version,x[1],x[0])
+            if ret == True:
+                entry_name = x[2]
+                break
+    
+    if len(entry_name)>0:          
+        stdin_parser    = STDIN_PARSERS[entry_name]
+    if args.compiler in FSAVE_SUPPORT:
+        x = FSAVE_SUPPORT[args.compiler]
+        HAS_FSAVE = version_check(args.compiler_version,x[1],x[0])
+
 class info:
     def __repr__(self):
         return str(self.__dict__) 
 
-FSAVE_IGNORE_EXTERNALS = True
+
 
 def get_cxx_filt_result(strx):
     if len(strx)<1:
@@ -63,22 +168,10 @@ def get_obj_json_gz(filename):
         return json.loads(f.read().decode('utf-8'))[-1]
 
 
-
-def get_msg(msg):
-    msg = msg.lower().strip() 
-    if "note: not vectorized:" in msg:
-        msg = replace_msg.sub("_numb",msg.replace("note: not vectorized:",""))
-        return( 0, 1, msg.strip()) 
-    elif "loop vectorized" in msg: 
-        return (1, 0, None)
-    # elif msg.startswith("missed")==False:
-    #     msg = replace_msg.sub("_numb",msg)
-    #     return( 0, 0, msg.strip())         
-    return None
-
+class ParseInfo:
+    pass
 
  
-
 class File_Info:
     '''
     Holds information about vectorized and miss vectorized lines for one file
@@ -121,9 +214,17 @@ class File_Info:
         if success and "loop vectorized" in msg:
             v.optimized +=1
             self.total_opted +=1
+            if FSAVE_SHOW_SUCCESSFULS==True:
+                if "success" in v.miss_details2:
+                    ls = v.miss_details2.get("success") 
+                    ls.add(function)
+                else:
+                    ls =set()
+                    v.miss_details2["success"]=ls
+                    ls.add(function)
         elif success==False and "not vectorized:" in msg:
             #reduce this msg
-            msg = msg.replace("not vectorized:","")
+            msg = msg.replace("not vectorized:","").strip()
             v.missed +=1
             self.total_missed +=1
             msg = sys.intern(msg)
@@ -136,15 +237,15 @@ class File_Info:
                 ls.add(function)
         return self
 
-    def add(self, line_pos, msg_x):
+    def add(self, line_pos, msg, success, missed):
         v = self.add_line(line_pos)
-        if msg_x is not None:
-                v.optimized += msg_x[0]
-                v.missed += msg_x[1]
-                self.total_opted += msg_x[0]
-                self.total_missed += msg_x[1]
-                if msg_x[2] is not None:
-                    v.miss_details.add(msg_x[2])
+        if msg is not None:
+                v.optimized += success
+                v.missed += missed
+                self.total_opted  += success
+                self.total_missed += missed
+                if msg is not None:
+                    v.miss_details.add(msg)
         return self
     
 
@@ -170,8 +271,9 @@ def process_gzip_json_new(json_gz_fname,list_Queue):
         if len(x['message'])>0 and 'location' in x:
             line = int(x['location']['line'])
             file_name = x['location']['file'].strip()
-            if  file_dir_strip in file_name:
-                file_name = file_name.replace(file_dir_strip,'./')
+            ppos = file_name.find(internal_match)
+            if  ppos>=0:
+                file_name = internal_match_replace + file_name[ppos+len(internal_match):]
                 external_source = False
             msg = x['message'][0]
             success = x['kind'] == 'success'
@@ -240,8 +342,8 @@ def consume_processed_new(list_Queue , c_index):
     print("generate report for consumer {0} {1}".format(c_index,len(info_)))
     try:
         uniq_ind = str(c_index)+'_' if len(list_Queue)>1  else ''
-        generate_report(wr_fname,info_ ,only_body = False, unique_id_prefix = uniq_ind,fsave_format = True, function_list= func_list)
-        print(" consumer {0} saved output into {1}".format(c_index,wr_fname))
+        wr = generate_report(wr_fname,info_ ,only_body = False, unique_id_prefix = uniq_ind,fsave_format = True, function_list= func_list)
+        print(" consumer {0} saved output into {1}".format(c_index, wr))
     except Exception as e:
         print(traceback.format_exc())
 
@@ -249,28 +351,27 @@ def consume_processed_new(list_Queue , c_index):
 
 def obtain_info_from(input_):
     info_ = dict()
+    parser_storage = dict() #can be used for parsing multi-lines
+    if HAS_FSAVE ==True or stdin_parser is None:
+        #just print progress
+        for line in input_:
+            if cmake_build_progress.match(line):
+                #actually we redirect only, stderr so this should not happen
+                print("__"+line.strip())
+            elif "error" in line or "Error" in line:
+                print("****"+line.strip())
+        return info_
     for line in input_:
-        x = mtch.match(line)
-        external_source = True
-        if x:
-            file_name =x.group(1).strip()
-            if  file_dir_strip in file_name:
-                file_name = file_name.replace(file_dir_strip,'')
-                external_source = False
-            line_number = int(x.group(2))
-            msg = x.group(4).lower()
-            msg = msg.replace(file_dir_strip,'./')
-            msg_x = get_msg(msg)
-            if msg_x is None:
-                continue
-            if file_name in info_:
+        x = stdin_parser(line, parser_storage)
+        if x is not None:
+            if x.file_name in info_:
                 #ignore col_number
-                info_[file_name].add(line_number,msg_x)
+                info_[x.file_name].add(x.line_pos, x.msg, x.success, x.miss)
+                info_[x.file_name].external = x.external_source
             else:
-                #print("{0} {1}".format(file_name,external_source))
-                info_[file_name] = File_Info().add(line_number,msg_x)
-                info_[file_name].external = external_source
-        elif progress_msg.match(line):
+                info_[x.file_name] = File_Info().add(x.line_pos, x.msg, x.success, x.miss)
+                info_[x.file_name].external = x.external_source
+        elif cmake_build_progress.match(line):
             #actually we redirect only, stderr so this should not happen
             print("__"+line.strip())
         elif "error" in line or "Error" in line:
@@ -324,6 +425,13 @@ def footer():
     return '\n</body></html>'
 
 
+  
+def get_compressed_indices_list(set_a):
+    new_list = sorted(list(set_a)) 
+    for i in range(len(new_list)-1,0,-1):
+        new_list[i] = new_list[i] - new_list[i-1] 
+    return new_list
+
 def get_compressed_indices(set_a):
     a_len = len(set_a)
     if a_len<=1:
@@ -350,10 +458,10 @@ def get_content(k, v,  unique_id_prefix = '', fsave_format=False):
     inc_id = 0
     for fk,fv in sorted(v.infos.items()):
         if fsave_format==True:
-            inner_str+='<div><div><a>{0}</a></div><div>{1}</div><div>{2}</div><input type="checkbox" id="c{3}{4}"><label for="c{3}{4}"></label><ul>'.format(
+            inner_str+='<div><div><a>{0}</a></div><div>{1}</div><div>{2}</div><input type="checkbox" id="{3}c{4}"><label for="{3}c{4}"></label><ul>'.format(
             fk,fv.optimized,fv.missed,unique_id_prefix,inc_id)
         else:    
-            inner_str+='<div><div><a href=".{0}#L{1}">{1}</a></div><div>{2}</div><div>{3}</div><input type="checkbox" id="c{4}{5}"><label for="c{4}{5}"></label><ul>'.format(
+            inner_str+='<div><div><a href=".{0}#L{1}">{1}</a></div><div>{2}</div><div>{3}</div><input type="checkbox" id="{4}c{5}"><label for="{4}c{5}"></label><ul>'.format(
             k,fk,fv.optimized,fv.missed,unique_id_prefix,inc_id)
         inc_id+=1
         if fsave_format==True:
@@ -448,12 +556,49 @@ def additional_tags(fsave):
     </div>
     '''
 
+class Json_reverse:
+    pass
+
+def generate_inverted_index(output_name, info_ , function_list ):
+    temp_str =''  
+    output_name = output_name.replace(".html","_inverted_index")
+    rev_index = Json_reverse()
+    rev_index.functions =[get_cxx_filt_result(k) for k,v in sorted(function_list.items(), key=lambda x: x[1])]
+    rev_index.msg_entries = {}
+    message_list =dict()
+    rev_index.files = list()
+    doc_i = 0
+    for doc_name,v in  info_.items():
+        for line_pos,info in v.infos.items():
+            for msg,func_indices in info.miss_details2.items():
+                    #we index msgs here, as previously it was not done
+                    msg_index = len(message_list)
+                    if msg in message_list:
+                        msg_index = message_list[msg]
+                    else:
+                        message_list[msg] = msg_index
+                    ## postings
+                    if not msg_index in rev_index.msg_entries:
+                        rev_index.msg_entries[msg_index] = list()
+                    rev_index.msg_entries[msg_index].append([doc_i,line_pos, get_compressed_indices_list(func_indices)])          
+        doc_i = doc_i + 1
+        rev_index.files.append(doc_name)
+    rev_index.messages = [k for k,v in sorted(message_list.items(), key=lambda x: x[1])]
+    with open(output_name+ ".json","w") as f:    
+        json.dump(rev_index.__dict__, f)
+    return (output_name+ ".json")
+
+
+    
+
 def generate_report(output_name,info_ ,only_body = False, unique_id_prefix='',fsave_format = False , function_list = None):
     '''
       Generate Auto-Vectorization Report in html format
     '''
+    temp_str =''
+    if FSAVE_INVERTED_INDEX == True and fsave_format == True:
+        return generate_inverted_index(output_name,info_ ,  function_list )
 
-    temp_str =''    
     if fsave_format ==True:
         # we gonna dump function_list as key list sorted by value
         #and use it as jscript array  
@@ -491,7 +636,10 @@ def generate_report(output_name,info_ ,only_body = False, unique_id_prefix='',fs
         if len(temp_str)>0:
             f.write(temp_str)
         if only_body==False:
-            f.write(footer())           
+            f.write(footer())  
+
+    return (output_name, output_name+".js") if fsave_format ==True else  (output_name)
+
 
 
 def fsave_report_launch(json_gz_list):
@@ -521,20 +669,40 @@ def fsave_report_launch(json_gz_list):
             cs.wait()
  
 
+class ArgumentParser(argparse.ArgumentParser):
 
+    def error(self, message):
+        self.print_help(sys.stderr)
+        self.exit(2, ' error: {0}\n'.format ( message))
 
 def main():
-    if "--fsave" in sys.argv:
+    parser =  ArgumentParser(description='Auto vectorization report')
+    parser.add_argument('--fsave', action='store_true', help='looks for json files generated by -fsave-optimization-record flag instead of waiting for the stdin')
+    parser.add_argument('--inverted_index', action='store_true', help='generate inverted_index for -fsave-optimization-record in json format')
+    parser.add_argument('--base_url', default='https://github.com/eclipse/deeplearning4j/tree/master/libnd4j/', help='url link for source code line view')
+    parser.add_argument('--compiler', choices=['gcc','nc++'], default = 'gcc')
+    parser.add_argument('--compiler_version',default='')
+    args = parser.parse_args()
+    init_global_options(args)
+    
+    if args.fsave:
         json_gz_list = internal_glob(".","*.json.gz")
         fsave_report_launch(json_gz_list)
         return        
+    #initialize globals
     
     file_info = obtain_info_from(sys.stdin)
+
+    if HAS_FSAVE==True:
+        json_gz_list = internal_glob(".","*.json.gz")
+        fsave_report_launch(json_gz_list)  
+        return
+
     if len(file_info)>0:
         #print(file_info)
         print("---generating vectorization html report--")
         generate_report("vecmiss.html", file_info)
-    else:
+    elif FALLBACK_TO_FSAVE_FILES == True:
         # lets check if we got fsave files
         json_gz_list = internal_glob(".","*.json.gz")
         fsave_report_launch(json_gz_list)

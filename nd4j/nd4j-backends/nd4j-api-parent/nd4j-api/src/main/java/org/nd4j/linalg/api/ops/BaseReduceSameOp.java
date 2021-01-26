@@ -122,7 +122,7 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
                 "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
         Preconditions.checkState(dataTypes.size() == 1 || dataTypes.get(1).isIntType(), "When executing reductions" +
-                "with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
+                " with 2 inputs, second input (axis) must be an integer datatype for %s, got %s", getClass(), dataTypes);
         return Collections.singletonList(dataTypes.get(0));
     }
 }

@@ -20,6 +20,7 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
+import org.deeplearning4j.rl4j.experience.StateActionRewardState;
 import org.nd4j.linalg.api.rng.Random;
 
 import java.util.ArrayList;
@@ -39,7 +40,7 @@ public class ExpReplay<A> implements IExpReplay<A> {
     final private Random rnd;
 
     //Implementing this as a circular buffer queue
-    private CircularFifoQueue<Transition<A>> storage;
+    private CircularFifoQueue<StateActionRewardState<A>> storage;
 
     public ExpReplay(int maxSize, int batchSize, Random rnd) {
         this.batchSize = batchSize;
@@ -47,8 +48,8 @@ public class ExpReplay<A> implements IExpReplay<A> {
         storage = new CircularFifoQueue<>(maxSize);
     }
 
-    public ArrayList<Transition<A>> getBatch(int size) {
-        ArrayList<Transition<A>> batch = new ArrayList<>(size);
+    public ArrayList<StateActionRewardState<A>> getBatch(int size) {
+        ArrayList<StateActionRewardState<A>> batch = new ArrayList<>(size);
         int storageSize = storage.size();
         int actualBatchSize = Math.min(storageSize, size);
 
@@ -64,19 +65,19 @@ public class ExpReplay<A> implements IExpReplay<A> {
         }
 
         for (int i = 0; i < actualBatchSize; i ++) {
-            Transition<A> trans = storage.get(actualIndex[i]);
+            StateActionRewardState<A> trans = storage.get(actualIndex[i]);
             batch.add(trans.dup());
         }
 
         return batch;
     }
 
-    public ArrayList<Transition<A>> getBatch() {
+    public ArrayList<StateActionRewardState<A>> getBatch() {
         return getBatch(batchSize);
     }
 
-    public void store(Transition<A> transition) {
-        storage.add(transition);
+    public void store(StateActionRewardState<A> stateActionRewardState) {
+        storage.add(stateActionRewardState);
         //log.info("size: "+storage.size());
     }
 

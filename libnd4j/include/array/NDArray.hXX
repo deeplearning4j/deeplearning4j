@@ -1218,9 +1218,9 @@ void NDArray::assign(const T& value, bool allowParallelism) {
     // just fire scalar
     auto temp = NDArrayFactory::create(dataType(), value, this->getContext());
 
-    NDArray::prepareSpecialUse({this}, {&temp});
+    NDArray::prepareSpecialUse(std::vector<const NDArray*>{this}, std::vector<const NDArray*>{&temp});
     NativeOpExecutioner::execScalar(getContext(), sd::scalar::CopyPws, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), temp.buffer(), temp.shapeInfo(), temp.specialBuffer(), temp.specialShapeInfo(), nullptr, allowParallelism);
-    NDArray::registerSpecialUse({this}, {&temp});
+    NDArray::registerSpecialUse(std::vector<const NDArray*>{this}, std::vector<const NDArray*>{&temp});
 }
 template ND4J_EXPORT void NDArray::assign(const double& value, bool allowParallelism);
 template ND4J_EXPORT void NDArray::assign(const float& value, bool allowParallelism);

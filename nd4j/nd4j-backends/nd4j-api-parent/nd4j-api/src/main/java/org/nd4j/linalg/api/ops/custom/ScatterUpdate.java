@@ -31,14 +31,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ScatterUpdate implements CustomOp {
+public class ScatterUpdate extends DynamicCustomOp {
     protected CustomOp op;
 
     // update operation: 0 - add; 1 - sub; 2 - mul; 3 - div; 4 - rsub; 5 - rdiv; 6 - assign
     public enum UpdateOp {
         ADD,
         SUBTRACT,
-        MILTIPLY,
+        MULTIPLY,
         DIVIDE,
         RSUBTRACT,
         RDIVIDE,
@@ -76,6 +76,12 @@ public class ScatterUpdate implements CustomOp {
                 .callInplace(true)
                 .addIntegerArguments(iargs)
                 .build();
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        DynamicCustomOp dynamicCustomOp = (DynamicCustomOp)  op;
+        return dynamicCustomOp.calculateOutputDataTypes(dataTypes);
     }
 
     /**

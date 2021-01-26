@@ -15,10 +15,7 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.agent.learning.algorithm.actorcritic;
 
-import org.deeplearning4j.rl4j.experience.StateActionPair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.List;
 
 /**
  * A base helper class for the Actor Critic update algorithm. The algorithm is the same whether it's used with a RNN or
@@ -26,24 +23,6 @@ import java.util.List;
  * and {@link RecurrentActorCriticHelper} handle the differences.
  */
 public abstract class ActorCriticHelper {
-    /**
-     * Create a feature INDArray, filled with the observations from the trainingBatch
-     * @param trainingBatch An experience training batch
-     * @return A INDArray filled with the observations from the trainingBatch
-     */
-    public INDArray createFeatures(List<StateActionPair<Integer>> trainingBatch) {
-        int size = trainingBatch.size();
-        long[] observationShape = trainingBatch.get(0).getObservation().getData().shape();
-        INDArray features = createFeatureArray(size, observationShape);
-        for(int i = 0; i < size; ++i) {
-            setFeature(features, i, trainingBatch.get(i).getObservation().getData());
-        }
-
-        return features;
-    }
-    protected abstract INDArray createFeatureArray(int size, long[] observationShape);
-    protected abstract void setFeature(INDArray features, long idx, INDArray data);
-
     /**
      * Create an empty INDArray to be used as the value array
      * @param trainingBatchSize the size of the training batch

@@ -33,7 +33,7 @@ import java.util.Map;
 
 public class Merge extends BaseCompatOp {
 
-    public Merge(SameDiff sd, SDVariable[] inputs){
+    public Merge(SameDiff sd, SDVariable ... inputs){
         super(sd, inputs);
     }
 
@@ -41,9 +41,7 @@ public class Merge extends BaseCompatOp {
         super(inputs);
     }
 
-    public Merge(){
-        
-    }
+    public Merge(){ }
 
     /**
      * WARNING: do not change without changing serialization methods
@@ -53,9 +51,6 @@ public class Merge extends BaseCompatOp {
     public static final String OP_NAME = "merge";
     public static final int OP_NUM = 60;
 
-    public Merge(SameDiff sd, SDVariable a, SDVariable b){
-        this(sd, new SDVariable[]{a, b});
-    }
 
     @Override
     public String opName() {
@@ -71,7 +66,7 @@ public class Merge extends BaseCompatOp {
     public SDVariable[] outputVariables() {
         return super.outputVariables();
     }
-
+    //rnn/TensorArrayStack/TensorArrayGatherV3
     @Override
     public String tensorflowName() {
         return "Merge";

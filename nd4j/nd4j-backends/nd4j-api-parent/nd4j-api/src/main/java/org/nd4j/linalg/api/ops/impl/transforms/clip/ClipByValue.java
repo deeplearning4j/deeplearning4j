@@ -28,6 +28,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,8 @@ public class ClipByValue extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), inputDataTypes);
-        return inputDataTypes;
+        Preconditions.checkState(inputDataTypes != null && !inputDataTypes.isEmpty() , "Expected at least 1 input datatype for %s, got %s", getClass(), inputDataTypes);
+        //get the final data type (sometimes model import passes in 2 dummy data types that aren't relevant)
+        return Arrays.asList(inputDataTypes.get(inputDataTypes.size() - 1));
     }
 }

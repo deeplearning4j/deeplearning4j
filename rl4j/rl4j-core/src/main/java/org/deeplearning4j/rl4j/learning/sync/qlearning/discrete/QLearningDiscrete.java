@@ -36,7 +36,7 @@ import org.deeplearning4j.rl4j.experience.ReplayMemoryExperienceHandler;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
+import org.deeplearning4j.rl4j.experience.StateActionRewardState;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
@@ -108,7 +108,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 .gamma(conf.getGamma())
                 .errorClamp(conf.getErrorClamp())
                 .build();
-        IUpdateAlgorithm<FeaturesLabels, Transition<Integer>> updateAlgorithm = conf.isDoubleDQN()
+        IUpdateAlgorithm<FeaturesLabels, StateActionRewardState<Integer>> updateAlgorithm = conf.isDoubleDQN()
             ? new DoubleDQN(qNetwork, target, aglorithmConfiguration)
             : new StandardDQN(qNetwork, target, aglorithmConfiguration);
 
@@ -116,14 +116,14 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             .targetUpdateFrequency(conf.getTargetDqnUpdateFreq())
                 .build();
         INeuralNetUpdater<FeaturesLabels> updater = new SyncLabelsNeuralNetUpdater(qNetwork, target, neuralNetUpdaterConfiguration);
-        IUpdateRule<Transition<Integer>> updateRule = new UpdateRule<FeaturesLabels, Transition<Integer>>(updateAlgorithm, updater);
+        IUpdateRule<StateActionRewardState<Integer>> updateRule = new UpdateRule<FeaturesLabels, StateActionRewardState<Integer>>(updateAlgorithm, updater);
 
         ReplayMemoryExperienceHandler.Configuration experienceHandlerConfiguration = ReplayMemoryExperienceHandler.Configuration.builder()
             .maxReplayMemorySize(conf.getExpRepMaxSize())
             .batchSize(conf.getBatchSize())
             .build();
-        ExperienceHandler<Integer, Transition<Integer>> experienceHandler = new ReplayMemoryExperienceHandler(experienceHandlerConfiguration, random);
-        return LearningBehavior.<Integer, Transition<Integer>>builder()
+        ExperienceHandler<Integer, StateActionRewardState<Integer>> experienceHandler = new ReplayMemoryExperienceHandler(experienceHandlerConfiguration, random);
+        return LearningBehavior.<Integer, StateActionRewardState<Integer>>builder()
                 .experienceHandler(experienceHandler)
                 .updateRule(updateRule)
                 .build();

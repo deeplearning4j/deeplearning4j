@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
@@ -151,6 +152,11 @@ public class PolicyTest {
 
         @Override
         public NeuralNetOutput output(INDArray batch) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public NeuralNetOutput output(Features features) {
             throw new UnsupportedOperationException();
         }
     }

@@ -29,7 +29,7 @@ import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.environment.IActionSchema;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.experience.ReplayMemoryExperienceHandler;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
+import org.deeplearning4j.rl4j.experience.StateActionRewardState;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
@@ -47,7 +47,7 @@ import org.nd4j.linalg.api.rng.Random;
  *
  * Used as the base of DQN builders.
  */
-public abstract class BaseDQNAgentLearnerBuilder<CONFIGURATION_TYPE extends BaseDQNAgentLearnerBuilder.Configuration> extends BaseAgentLearnerBuilder<Integer, Transition<Integer>, FeaturesLabels, CONFIGURATION_TYPE> {
+public abstract class BaseDQNAgentLearnerBuilder<CONFIGURATION_TYPE extends BaseDQNAgentLearnerBuilder.Configuration> extends BaseAgentLearnerBuilder<Integer, StateActionRewardState<Integer>, FeaturesLabels, CONFIGURATION_TYPE> {
 
     private final Random rnd;
 
@@ -71,7 +71,7 @@ public abstract class BaseDQNAgentLearnerBuilder<CONFIGURATION_TYPE extends Base
     }
 
     @Override
-    protected ExperienceHandler<Integer, Transition<Integer>> buildExperienceHandler() {
+    protected ExperienceHandler<Integer, StateActionRewardState<Integer>> buildExperienceHandler() {
         return new ReplayMemoryExperienceHandler(configuration.getExperienceHandlerConfiguration(), rnd);
     }
 

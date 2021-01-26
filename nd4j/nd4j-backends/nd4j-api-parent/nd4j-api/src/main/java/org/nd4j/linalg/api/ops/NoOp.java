@@ -87,7 +87,7 @@ public class NoOp extends DynamicCustomOp {
 
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(){
+    public List<LongShapeDescriptor> calculateOutputShape() {
         if(inputArguments != null && !inputArguments.isEmpty()){
             return Collections.singletonList(inputArguments.get(0).shapeDescriptor());
         }

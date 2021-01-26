@@ -34,8 +34,8 @@ namespace sd {
             double on(1.0f); // T_ARG(0);
             double off(0.0f); //T_ARG(1);
 
-            auto depth = -1; //INT_ARG(0);
-            auto axis = -1; //INT_ARG(1);
+            auto axis = -1; //INT_ARG(0);
+            auto depth = -1; //INT_ARG(1);
 
             if (block.numI() > 0)
                 axis = INT_ARG(0);

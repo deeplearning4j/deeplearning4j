@@ -139,9 +139,9 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
 
         // at this point we should have fully allocated buffer, time to fill length
         val headerLength = (strings.size() + 1) * 8;
-        val headerPointer = new LongPointer(this.pointer);
-        val dataPointer = new BytePointer(this.pointer);
-
+        val headerPointer = new LongPointer(getPointer());
+        val dataPointer = new BytePointer(getPointer());
+        this.pointer.retainReference();
         numWords = strings.size();
 
         long cnt = 0;
@@ -163,15 +163,20 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         headerPointer.put(cnt, currentLength);
     }
 
-    public String getString(long index) {
+    
+    private synchronized Pointer getPointer() {
+        return this.pointer;
+    }
+
+    public synchronized String getString(long index) {
         if (index > numWords)
             throw new IllegalArgumentException("Requested index [" + index + "] is above actual number of words stored: [" + numWords + "]");
 
-        val headerPointer = new LongPointer(this.pointer);
-        val dataPointer = (BytePointer) (this.pointer);
+        val headerPointer = new LongPointer(getPointer());
+        val dataPointer = (BytePointer) (getPointer());
 
         val start = headerPointer.get(index);
-        val end = headerPointer.get(index+1);
+        val end = headerPointer.get(index + 1);
 
         if (end - start > Integer.MAX_VALUE)
             throw new IllegalStateException("Array is too long for Java");

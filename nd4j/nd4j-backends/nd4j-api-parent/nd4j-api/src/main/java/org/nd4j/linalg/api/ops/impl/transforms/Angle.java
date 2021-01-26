@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
@@ -45,5 +46,10 @@ public class Angle extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        return dataTypes;
     }
 }

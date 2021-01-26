@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -40,10 +41,10 @@ public class StandardDQN extends BaseDQNAlgorithm {
 
 
     @Override
-    protected void initComputation(INDArray observations, INDArray nextObservations) {
-        super.initComputation(observations, nextObservations);
+    protected void initComputation(Features features, Features nextFeatures) {
+        super.initComputation(features, nextFeatures);
 
-        maxActionsFromQTargetNextObservation = Nd4j.max(targetQNetworkNextObservation, ACTION_DIMENSION_IDX);
+        maxActionsFromQTargetNextObservation = Nd4j.max(targetQNetworkNextFeatures, ACTION_DIMENSION_IDX);
     }
 
     /**

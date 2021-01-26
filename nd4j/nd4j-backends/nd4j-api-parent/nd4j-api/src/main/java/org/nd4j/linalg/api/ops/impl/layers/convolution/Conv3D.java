@@ -161,13 +161,13 @@ public class Conv3D extends DynamicCustomOp {
         tfAdapters.put("kH", new NDArrayShapeAdapter(1));
         tfAdapters.put("kW", new NDArrayShapeAdapter(2));
 
-        tfAdapters.put("sD", new IntArrayIntIndexAdpater(1));
-        tfAdapters.put("sH", new IntArrayIntIndexAdpater(2));
-        tfAdapters.put("sW", new IntArrayIntIndexAdpater(3));
+        tfAdapters.put("sD", new IntArrayIntIndexAdapter(1));
+        tfAdapters.put("sH", new IntArrayIntIndexAdapter(2));
+        tfAdapters.put("sW", new IntArrayIntIndexAdapter(3));
 
-        tfAdapters.put("pD", new IntArrayIntIndexAdpater(1));
-        tfAdapters.put("pH", new IntArrayIntIndexAdpater(2));
-        tfAdapters.put("pW", new IntArrayIntIndexAdpater(3));
+        tfAdapters.put("pD", new IntArrayIntIndexAdapter(1));
+        tfAdapters.put("pH", new IntArrayIntIndexAdapter(2));
+        tfAdapters.put("pW", new IntArrayIntIndexAdapter(3));
 
 
         tfAdapters.put("isSameMode", new StringNotEqualsAdapter("VALID"));

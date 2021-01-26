@@ -86,7 +86,7 @@ public class InTopK extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //3rd input: dynamic K value
-        Preconditions.checkState(dataTypes != null && (dataTypes.size() == 2 || dataTypes.size() == 3), "Expected 2 or 3 input datatypes for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkState(dataTypes != null && !dataTypes.isEmpty(), "Expected at  least 1 input data types. for %s, got %s", getClass(), dataTypes);
         return Collections.singletonList(DataType.BOOL);
     }
 }

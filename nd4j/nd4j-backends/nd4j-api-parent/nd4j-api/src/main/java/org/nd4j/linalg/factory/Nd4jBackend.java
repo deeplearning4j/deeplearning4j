@@ -148,6 +148,10 @@ public abstract class Nd4jBackend {
 
     public abstract Environment getEnvironment();
 
+    /**
+     * Get the build information of the backend
+     */
+    public abstract String buildInfo();
 
     /**
      * Loads the best available backend.

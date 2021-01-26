@@ -96,7 +96,9 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "array/TadDescriptor.h",
                         "array/TadPack.h",
                         "helpers/DebugInfo.h",
-                        "ops/declarable/CustomOperations.h"},
+                        "ops/declarable/CustomOperations.h",
+                        "build_info.h",
+                    },
                         exclude = {"ops/declarable/headers/activations.h",
                                 "ops/declarable/headers/boolean.h",
                                 "ops/declarable/headers/broadcastable.h",
@@ -159,7 +161,7 @@ public class Nd4jCudaPresets implements LoadEnabled, InfoMapper {
     public void map(InfoMap infoMap) {
         infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE",
                              "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
-                .put(new Info("NativeOps.h").objectify())
+                .put(new Info("NativeOps.h", "build_info.h").objectify())
                 .put(new Info("OpaqueTadPack").pointerTypes("OpaqueTadPack"))
                 .put(new Info("OpaqueResultWrapper").pointerTypes("OpaqueResultWrapper"))
                 .put(new Info("OpaqueShapeList").pointerTypes("OpaqueShapeList"))

@@ -87,6 +87,11 @@ public class BitCast extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        if(dtype == null) {
+            if(!iArguments.isEmpty()) {
+                dtype = DataType.fromInt(iArguments.get(0).intValue());
+            }
+        }
         return Collections.singletonList(dtype);
     }
 }

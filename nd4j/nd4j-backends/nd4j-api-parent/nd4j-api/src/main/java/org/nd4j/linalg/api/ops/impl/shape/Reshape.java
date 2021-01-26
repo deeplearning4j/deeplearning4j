@@ -57,14 +57,14 @@ public class Reshape extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{i_v, shape});
     }
 
-    public Reshape(INDArray in, long... shape){
+    public Reshape(INDArray in, long... shape) {
         super(new INDArray[]{in}, null);
         this.shape = shape;
         addIArgument(shape);
     }
 
 
-    public Reshape(@NonNull INDArray in, @NonNull INDArray shape, INDArray out){
+    public Reshape(@NonNull INDArray in, @NonNull INDArray shape, INDArray out) {
         super(null, new INDArray[]{in, shape}, wrapOrNull(out), null, (List<Integer>)null);
     }
 

@@ -15,6 +15,7 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.network;
 
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -73,11 +74,17 @@ public interface INetworkHandler {
     INDArray[] recurrentStepOutput(Observation observation);
 
     /**
+     * @param observation An {@link Observation}
+     * @return The output of the observation computed without using or updating the network state.
+     */
+    INDArray[] stepOutput(Observation observation);
+
+    /**
      * Compute the output of a batch
-     * @param batch A {@link INDArray}
+     * @param features A {@link Features} instance
      * @return The output of the batch. The current state of the network is not used or changed.
      */
-    INDArray[] batchOutput(INDArray batch);
+    INDArray[] batchOutput(Features features);
 
     /**
      * Clear all network state.

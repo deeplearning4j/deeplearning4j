@@ -2,6 +2,7 @@ package org.deeplearning4j.rl4j.support;
 
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
@@ -57,6 +58,11 @@ public class MockDQN implements IDQN {
         NeuralNetOutput result = new NeuralNetOutput();
         result.put(CommonOutputNames.QValues, batch);
         return result;
+    }
+
+    @Override
+    public NeuralNetOutput output(Features features) {
+        throw new UnsupportedOperationException();
     }
 
     @Override

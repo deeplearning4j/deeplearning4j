@@ -12,18 +12,6 @@ public class RecurrentActorCriticHelperTest {
     private final RecurrentActorCriticHelper sut = new RecurrentActorCriticHelper(3);
 
     @Test
-    public void when_callingCreateFeatureArray_expect_INDArrayWithCorrectShape() {
-        // Arrange
-        long[] observationShape = new long[] { 1, 2, 1 };
-
-        // Act
-        INDArray result = sut.createFeatureArray(4, observationShape);
-
-        // Assert
-        assertArrayEquals(new long[] { 1, 2, 4 }, result.shape());
-    }
-
-    @Test
     public void when_callingCreateValueLabels_expect_INDArrayWithCorrectShape() {
         // Arrange
 

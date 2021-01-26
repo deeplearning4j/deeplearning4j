@@ -1,5 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~ Copyright (c) 2020 Konduit K.K.
   ~
   ~ This program and the accompanying materials are made available under the
   ~ terms of the Apache License, Version 2.0 which is available at
@@ -14,16 +16,11 @@
   ~ SPDX-License-Identifier: Apache-2.0
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
-
-    <groupId>org.nd4j</groupId>
-    <artifactId>nd4j-jdbc-api</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
-
-    <name>nd4j-jdbc-api</name>
-    <url>http://maven.apache.org</url>
 
     <parent>
         <groupId>org.nd4j</groupId>
@@ -31,10 +28,9 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <artifactId>nd4j-jdbc-api</artifactId>
 
+    <name>nd4j-jdbc-api</name>
 
     <dependencies>
         <dependency>
@@ -45,7 +41,6 @@
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
     </dependencies>
 

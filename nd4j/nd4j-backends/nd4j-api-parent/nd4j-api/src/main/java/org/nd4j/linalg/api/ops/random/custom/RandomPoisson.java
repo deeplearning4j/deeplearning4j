@@ -29,6 +29,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,7 @@ public class RandomPoisson extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+       //TODO: change op descriptor to have proper data type matching java
         if(attributesForNode.containsKey("dtype")) {
             outputDataType = DataTypeAdapter.dtypeConv(attributesForNode.get("dtype").getType());
         }
@@ -73,6 +75,9 @@ public class RandomPoisson extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes.size() == 2, "Expected exactly 2 input datatypes for %s, got %s",
                 getClass(), inputDataTypes.size());
+
+        if(!dArguments.isEmpty())
+            return Arrays.asList(dArguments.get(0));
         return Collections.singletonList(outputDataType);
     }
 }

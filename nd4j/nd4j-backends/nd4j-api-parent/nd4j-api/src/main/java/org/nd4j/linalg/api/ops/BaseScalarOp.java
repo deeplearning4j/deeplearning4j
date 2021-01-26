@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -196,8 +197,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //All scalar ops: output type is same as input type
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype %s, got input %s", getClass(), dataTypes);
-        return dataTypes;
+        Preconditions.checkState(dataTypes != null && dataTypes.size() >= 1, "Expected 1 or more input datatype %s, got input %s", getClass(), dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

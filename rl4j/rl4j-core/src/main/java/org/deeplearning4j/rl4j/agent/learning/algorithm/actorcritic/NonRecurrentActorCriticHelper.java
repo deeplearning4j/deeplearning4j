@@ -31,11 +31,6 @@ public class NonRecurrentActorCriticHelper extends ActorCriticHelper {
     }
 
     @Override
-    protected INDArray createFeatureArray(int size, long[] observationShape) {
-        return INDArrayHelper.createBatchForShape(size, observationShape);
-    }
-
-    @Override
     public INDArray createValueLabels(int trainingBatchSize) {
         return Nd4j.create(trainingBatchSize, 1);
     }
@@ -43,11 +38,6 @@ public class NonRecurrentActorCriticHelper extends ActorCriticHelper {
     @Override
     public INDArray createPolicyLabels(int trainingBatchSize) {
         return Nd4j.zeros(trainingBatchSize, actionSpaceSize);
-    }
-
-    @Override
-    protected void setFeature(INDArray features, long idx, INDArray data) {
-        features.putRow(idx, data);
     }
 
     @Override

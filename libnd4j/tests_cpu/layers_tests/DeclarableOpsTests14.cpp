@@ -2117,6 +2117,34 @@ TEST_F(DeclarableOpsTests14, Reshape2) {
     delete variableSpace;
 }
 
+TEST_F(DeclarableOpsTests14, Flatten2d1) {
+    auto x = NDArrayFactory::create<float>('c', { 3, 4, 5 });
+    auto zAssertion = NDArrayFactory::create<float>('c', { 3, 20 });
+
+    sd::ops::flatten_2d op;
+    auto result = op.evaluate({ &x }, {}, { 1 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(result.at(0)->isSameShape(zAssertion));
+}
+
+TEST_F(DeclarableOpsTests14, Flatten2d2) {
+    auto x = NDArrayFactory::create<float>('c', { 2,3, 4, 5 });
+    auto zAssertion = NDArrayFactory::create<float>('c', { 6, 20 });
+
+    sd::ops::flatten_2d op;
+    auto result = op.evaluate({ &x }, {}, { -2 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(result.at(0)->isSameShape(zAssertion));
+}
+
 TEST_F(DeclarableOpsTests14, Reshape3) {
     auto x = NDArrayFactory::create<float>('c', { 3, 4, 5 });
 

@@ -49,7 +49,7 @@ public class ArrayOptionsHelper {
 
     public static void setOptionBit(long[] storage, ArrayType type) {
         int length = Shape.shapeInfoLength(storage);
-        storage[length - 3] = setOptionBit(storage[length-3], type);
+        storage[length - 3] = setOptionBit(storage[length - 3], type);
     }
 
     public static boolean hasBitSet(long storage, long bit) {

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~ Copyright (c) 2020 Konduit K.K.
   ~
   ~ This program and the accompanying materials are made available under the
   ~ terms of the Apache License, Version 2.0 which is available at
@@ -18,10 +19,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    
+
     <parent>
-        <artifactId>deeplearning4j-parent</artifactId>
         <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
@@ -29,11 +30,15 @@
 
     <artifactId>dl4j-integration-tests</artifactId>
 
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api
-            </artifactId>          <!-- Version set by deeplearning4j-parent dependency management -->
+            <artifactId>slf4j-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -58,17 +63,13 @@
         <!-- For unit tests -->
         <dependency>
             <groupId>junit</groupId>
-            <artifactId>junit
-            </artifactId>          <!-- Version set by deeplearning4j-parent dependency management -->
-            <scope>test</scope>
+            <artifactId>junit</artifactId>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic
-            </artifactId> <!-- Version set by deeplearning4j-parent dependency management -->
+            <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-common-tests</artifactId>
@@ -101,18 +102,6 @@
                 </configuration>
             </plugin>
         </plugins>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 
     <profiles>

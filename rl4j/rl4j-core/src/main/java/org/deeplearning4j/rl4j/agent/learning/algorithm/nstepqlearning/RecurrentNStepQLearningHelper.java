@@ -15,8 +15,8 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning;
 
-import org.deeplearning4j.rl4j.experience.StateActionPair;
-import org.deeplearning4j.rl4j.helper.INDArrayHelper;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,16 +42,6 @@ public class RecurrentNStepQLearningHelper extends NStepQLearningHelper {
     }
 
     @Override
-    protected INDArray createFeatureArray(int size, long[] observationShape) {
-        return INDArrayHelper.createRnnBatchForShape(size, observationShape);
-    }
-
-    @Override
-    protected void setFeature(INDArray features, long idx, INDArray data) {
-        getElementAtIndex(features, idx).assign(data);
-    }
-
-    @Override
     public INDArray getExpectedQValues(INDArray allExpectedQValues, int idx) {
         return getElementAtIndex(allExpectedQValues, idx);
     }
@@ -62,7 +52,7 @@ public class RecurrentNStepQLearningHelper extends NStepQLearningHelper {
     }
 
     @Override
-    public INDArray getTargetExpectedQValuesOfLast(IOutputNeuralNet target, List<StateActionPair<Integer>> trainingBatch, INDArray features) {
+    public INDArray getTargetExpectedQValuesOfLast(IOutputNeuralNet target, List<StateActionReward<Integer>> trainingBatch, Features features) {
         return getElementAtIndex(target.output(features).get(CommonOutputNames.QValues), trainingBatch.size() - 1);
     }
 

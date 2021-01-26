@@ -826,6 +826,7 @@ public class FlatBuffersMapper {
         } else {
             dims = new int[0];
         }
+
         Map<String, Object> fnProps = node.propertiesForFunction();
         int[] flatProperties = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps);
         int propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProperties);

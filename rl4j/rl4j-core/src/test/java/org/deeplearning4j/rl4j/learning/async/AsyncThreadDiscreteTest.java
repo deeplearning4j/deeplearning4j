@@ -207,7 +207,7 @@ public class AsyncThreadDiscreteTest {
 
             boolean isSkipped = stepCount.incrementAndGet() % skipFrames != 0;
 
-            Observation mockObs = new Observation(isSkipped ? null : Nd4j.create(observationShape));
+            Observation mockObs = isSkipped ? Observation.SkippedObservation : new Observation(Nd4j.create(observationShape));
             return new StepReply<>(mockObs, 0.0, false, null);
         });
 

@@ -65,7 +65,9 @@ public class AvgPooling3D extends Pooling3D {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        return config.toProperties();
+        if(config != null)
+            return config.toProperties();
+        return Collections.emptyMap();
     }
 
     @Override

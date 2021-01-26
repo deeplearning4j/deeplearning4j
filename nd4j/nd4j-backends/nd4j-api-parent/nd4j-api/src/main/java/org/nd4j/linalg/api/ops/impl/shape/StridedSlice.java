@@ -131,7 +131,7 @@ public class StridedSlice extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "stridedslice";
+        return "strided_slice";
     }
 
 
@@ -270,7 +270,7 @@ public class StridedSlice extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 4),
                 "Expected 1 or 4 input datatypes for %s, got %s", getClass(), dataTypes);
         //Output type is same as input type. 1 or 4 depending on whether using iargs or arrays (for TF import etc)

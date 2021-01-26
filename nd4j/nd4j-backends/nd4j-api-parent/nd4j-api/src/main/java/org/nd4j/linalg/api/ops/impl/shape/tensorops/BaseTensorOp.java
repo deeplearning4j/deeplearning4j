@@ -81,7 +81,7 @@ public abstract class BaseTensorOp extends DynamicCustomOp {
     }
 
     @Override
-    public int getNumOutputs(){
+    public int getNumOutputs() {
         //1 output in allay cases - sometimes just a dummy output, however
         return 1;
     }

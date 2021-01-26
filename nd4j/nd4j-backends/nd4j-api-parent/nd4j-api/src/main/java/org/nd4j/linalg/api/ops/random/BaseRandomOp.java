@@ -80,9 +80,7 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty(), "Expected no input data types for %s, got %s", getClass().getName(), inputDataTypes);
-        //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         return Collections.singletonList(DataType.FLOAT);
     }
 

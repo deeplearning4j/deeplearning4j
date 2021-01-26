@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.rl4j.learning.sync;
 
+import org.deeplearning4j.rl4j.experience.StateActionRewardState;
+
 import java.util.ArrayList;
 
 /**
@@ -40,13 +42,13 @@ public interface IExpReplay<A> {
     /**
      * @return a batch of uniformly sampled transitions
      */
-    ArrayList<Transition<A>> getBatch();
+    ArrayList<StateActionRewardState<A>> getBatch();
 
     /**
      *
-     * @param transition a new transition to store
+     * @param stateActionRewardState a new transition to store
      */
-    void store(Transition<A> transition);
+    void store(StateActionRewardState<A> stateActionRewardState);
 
     /**
      * @return The desired size of batches

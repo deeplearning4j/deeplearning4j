@@ -20,9 +20,11 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.SuperBuilder;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesBuilder;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
@@ -38,12 +40,13 @@ import java.util.List;
  * <p/>
  * Note: The output of threadCurrent must contain a channel named "Q".
  */
-public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPair<Integer>> {
+public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionReward<Integer>> {
 
     private final ITrainableNeuralNet threadCurrent;
     private final IOutputNeuralNet target;
     private final double gamma;
     private final NStepQLearningHelper algorithmHelper;
+    private final FeaturesBuilder featuresBuilder;
 
     /**
      * @param threadCurrent The &theta;' parameters (the thread-specific network)
@@ -61,21 +64,22 @@ public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPa
         algorithmHelper = threadCurrent.isRecurrent()
                 ? new RecurrentNStepQLearningHelper(actionSpaceSize)
                 : new NonRecurrentNStepQLearningHelper(actionSpaceSize);
+
+        featuresBuilder = new FeaturesBuilder(threadCurrent.isRecurrent());
     }
 
     @Override
-    public Gradients compute(List<StateActionPair<Integer>> trainingBatch) {
+    public Gradients compute(List<StateActionReward<Integer>> trainingBatch) {
         int size = trainingBatch.size();
 
-        StateActionPair<Integer> stateActionPair = trainingBatch.get(size - 1);
+        StateActionReward<Integer> stateActionReward = trainingBatch.get(size - 1);
 
-        INDArray features = algorithmHelper.createFeatures(trainingBatch);
-        INDArray allExpectedQValues = threadCurrent.output(features).get(CommonOutputNames.QValues);
+        Features features = featuresBuilder.build(trainingBatch);
 
         INDArray labels = algorithmHelper.createLabels(size);
 
         double r;
-        if (stateActionPair.isTerminal()) {
+        if (stateActionReward.isTerminal()) {
             r = 0;
         } else {
             INDArray expectedValuesOfLast = algorithmHelper.getTargetExpectedQValuesOfLast(target, trainingBatch, features);
@@ -83,11 +87,11 @@ public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionPa
         }
 
         for (int i = size - 1; i >= 0; --i) {
-            stateActionPair = trainingBatch.get(i);
+            stateActionReward = trainingBatch.get(i);
 
-            r = stateActionPair.getReward() + gamma * r;
-            INDArray expectedQValues = algorithmHelper.getExpectedQValues(allExpectedQValues, i);
-            expectedQValues = expectedQValues.putScalar(stateActionPair.getAction(), r);
+            r = stateActionReward.getReward() + gamma * r;
+            INDArray expectedQValues = threadCurrent.output(stateActionReward.getObservation()).get(CommonOutputNames.QValues);
+            expectedQValues = expectedQValues.putScalar(stateActionReward.getAction(), r);
 
             algorithmHelper.setLabels(labels, i, expectedQValues);
         }

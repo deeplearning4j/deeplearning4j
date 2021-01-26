@@ -259,8 +259,8 @@ set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/mai
 # Set package information
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Native operations for nd4j.")
 set(CPACK_PACKAGE_RELEASE 1)
-set(CPACK_PACKAGE_CONTACT "raver119 <raver119@skymind.io>")
-set(CPACK_PACKAGE_VENDOR "Skymind")
+set(CPACK_PACKAGE_CONTACT "agibsonccc <adam@skymind.global>")
+set(CPACK_PACKAGE_VENDOR "Eclipse")
 set(CPACK_SETDESTDIR "false")
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/lib")
 set(CPACK_PACKAGE_NAME "libnd4j")

@@ -91,6 +91,8 @@ public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        if(dArguments != null && !dArguments.isEmpty())
+            return Arrays.asList(dArguments.get(0));
         return Collections.singletonList(inputDataTypes.get(1));    //Same as predictions (logits)
     }
 

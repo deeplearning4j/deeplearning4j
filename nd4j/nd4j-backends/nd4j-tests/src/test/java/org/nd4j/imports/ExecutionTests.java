@@ -23,7 +23,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.OpValidationSuite;
-import org.nd4j.imports.TFGraphs.TFGraphTestZooModels;
+import org.nd4j.imports.tfgraphs.TFGraphTestZooModels;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
