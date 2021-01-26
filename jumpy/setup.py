@@ -14,10 +14,8 @@
 # SPDX-License-Identifier: Apache-2.0
 ################################################################################
 
-
 from setuptools import setup
 from setuptools import find_packages
-
 
 setup(name='jumpy',
       version='0.2.4',
@@ -35,7 +33,7 @@ setup(name='jumpy',
           'Topic :: Software Development :: Libraries',
       ],
       keywords='numpy jumpy java nd4j deeplearning4j',
-      url='https://github.com/deeplearning4j/deeplearning4j.git',
+      url='https://github.com/eclipse/deeplearning4j.git',
       license='Apache',
       setup_requires=['Cython', 'pytest-runner'],
       install_requires=['Cython', 'requests', 'pydl4j', 'numpy'],

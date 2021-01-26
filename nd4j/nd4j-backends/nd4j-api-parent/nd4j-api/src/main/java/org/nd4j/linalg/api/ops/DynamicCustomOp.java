@@ -566,7 +566,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             } else {
                 String[] inputNames = sameDiff.getInputsForOp(this);
                 String[] arrayShapes = new String[inputNames.length];
-                for( int i=0; i<inputNames.length; i++ ){
+                for( int i = 0; i < inputNames.length; i++) {
                     INDArray arr = sameDiff.getVariable(inputNames[i]).getArr();
                     arrayShapes[i] = (arr == null ? "<no array present>" : Arrays.toString(arr.shape()));
                 }
@@ -846,7 +846,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          * multiple times and it will add arguments to a list.
          * PLEASE NOTE: this method does NOT validate values.
          *
-         * @param iargs
+         * @param bargs
          * @return
          */
         public DynamicCustomOpsBuilder addBooleanArguments(boolean... bargs) {

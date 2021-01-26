@@ -26,7 +26,7 @@ import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.async.AsyncSharedNetworksUpdateHandler;
 import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.environment.IActionSchema;
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
@@ -69,7 +69,7 @@ public class NStepQLearningBuilder extends BaseAsyncAgentLearnerBuilder<NStepQLe
     }
 
     @Override
-    protected IUpdateAlgorithm<Gradients, StateActionPair<Integer>> buildUpdateAlgorithm() {
+    protected IUpdateAlgorithm<Gradients, StateActionReward<Integer>> buildUpdateAlgorithm() {
         IActionSchema<Integer> actionSchema = getEnvironment().getSchema().getActionSchema();
         return new NStepQLearning(networks.getThreadCurrentNetwork(), networks.getTargetNetwork(), actionSchema.getActionSpaceSize(), configuration.getNstepQLearningConfiguration());
     }

@@ -1085,7 +1085,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     public INDArray create(Collection<String> strings, long[] shape, char order) {
         val pairShape = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order, DataType.UTF8);
         val buffer = new Utf8Buffer(strings);
-        val list = new ArrayList<String>(strings);
+        val list = new ArrayList<>(strings);
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
     }
 }

@@ -53,6 +53,10 @@ namespace sd {
         DECLARE_CUSTOM_OP(expand_dims, 1, 1, false, 0, -2);
         #endif
 
+        #if NOT_EXCLUDED(OP_flatten_2d)
+            DECLARE_CUSTOM_OP(flatten_2d, 1, 1, false, 0, 1);
+        #endif
+
         #if NOT_EXCLUDED(OP_reshape)
         DECLARE_CUSTOM_OP(reshape, 1, 1, false, 0, -2);
         #endif
@@ -92,7 +96,7 @@ namespace sd {
          *  shape array - array containing shape be broadcasted to
          */
         #if NOT_EXCLUDED(OP_broadcast_to)
-        DECLARE_CUSTOM_OP(broadcast_to, 2, 1, false, 0, 0);        
+        DECLARE_CUSTOM_OP(broadcast_to, 2, 1, false, 0, 0);
         #endif
 
 

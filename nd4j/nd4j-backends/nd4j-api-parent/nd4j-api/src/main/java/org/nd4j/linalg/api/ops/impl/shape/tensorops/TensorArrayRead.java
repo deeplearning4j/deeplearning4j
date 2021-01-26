@@ -51,7 +51,7 @@ public class TensorArrayRead extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarrayreadv3";
+        return "read_list";
     }
 
     @Override
@@ -66,16 +66,23 @@ public class TensorArrayRead extends BaseTensorOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType) {
         //Same output type as the TensorArray - which is defined by input 0
-        DataType dt;
-        if(importDataType != null){
+        DataType dt = null;
+        if(importDataType != null) {
             dt = importDataType;
         } else {
-            SDVariable tArr = arg(0);
-            DifferentialFunction op = sameDiff.getVariableOutputOp(tArr.name());
-            TensorArray t3 = (TensorArray) op;
-            dt = t3.getTensorArrayDataType();
+            for(int i = 0; i < args().length; i++) {
+                SDVariable tArr = arg(i);
+                DifferentialFunction op = sameDiff.getVariableOutputOp(tArr.name());
+                if(op instanceof TensorArray) {
+                    TensorArray t3 = (TensorArray) op;
+                    dt = t3.getTensorArrayDataType();
+                    break;
+                }
+
+            }
+
         }
         return Collections.singletonList(dt);
     }

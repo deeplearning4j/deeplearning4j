@@ -320,6 +320,25 @@ public class TransformProcessTest {
         sut.transform(channelsData, 0, false);
     }
 
+    @Test
+    public void when_transformProcessHaveMultipleChannels_expect_channelsAreCreatedInTheDefinedOrder() {
+        // Arrange
+        TransformProcess sut = TransformProcess.builder()
+                .build("channel0", "channel1");
+        Map<String, Object> channelsData = new HashMap<String, Object>() {{
+            put("channel0", Nd4j.create(new double[] { 123.0 }));
+            put("channel1", Nd4j.create(new double[] { 234.0 }));
+        }};
+
+        // Act
+        Observation result = sut.transform(channelsData, 0, false);
+
+        // Assert
+        assertEquals(2, result.numChannels());
+        assertEquals(123.0, result.getChannelData(0).getDouble(0), 0.000001);
+        assertEquals(234.0, result.getChannelData(1).getDouble(0), 0.000001);
+    }
+
     private static class FilterOperationMock implements FilterOperation {
 
         private final boolean skipped;

@@ -81,7 +81,11 @@ public class NStepRnn {
                 .stoppingCondition(t -> t.getEpisodeCount() >= NUM_EPISODES)
                 .build();
 
+        long before = System.nanoTime();
         trainer.train();
+        long after = System.nanoTime();
+
+        System.out.println(String.format("Total time for %d episodes: %fms", NUM_EPISODES, (after - before) / 1e6));
     }
 
     private static Builder<IAgentLearner<Integer>> setupAdvantageActorCritic(Builder<Environment<Integer>> environmentBuilder,
@@ -130,10 +134,12 @@ public class NStepRnn {
                 .setOutputs("value", "softmax")
                 .build();
 
-        ComputationGraph valueModel = new ComputationGraph(valueConfiguration);
-        valueModel.init();
+        ComputationGraph model = new ComputationGraph(valueConfiguration);
+        model.init();
 
-        return new ActorCriticNetwork(valueModel);
+        return ActorCriticNetwork.builder()
+                .withCombinedNetwork(model)
+                .build();
     }
 
     private static ITrainableNeuralNet buildSeparateActorCriticNetwork() {
@@ -153,7 +159,9 @@ public class NStepRnn {
         ComputationGraph policyModel = new ComputationGraph(policyConfiguration);
         policyModel.init();
 
-        return new ActorCriticNetwork(valueModel, policyModel);
+        return ActorCriticNetwork.builder()
+                .withSeparateNetworks(valueModel, policyModel)
+                .build();
     }
 
     private static class EpisodeScorePrinter implements AgentListener<Integer> {

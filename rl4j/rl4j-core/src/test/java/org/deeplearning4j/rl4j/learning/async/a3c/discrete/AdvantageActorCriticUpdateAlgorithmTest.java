@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
@@ -64,9 +64,9 @@ public class AdvantageActorCriticUpdateAlgorithmTest {
         int[] actions = new int[]{0, 1, 2, 1};
         double[] rewards = new double[]{0.1, 1.0, 10.0, 100.0};
 
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>();
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>();
         for (int i = 0; i < originalObservations.length; ++i) {
-            experience.add(new StateActionPair<>(new Observation(originalObservations[i]), actions[i], rewards[i], false));
+            experience.add(new StateActionReward<>(new Observation(originalObservations[i]), actions[i], rewards[i], false));
         }
 
         when(mockActorCritic.outputAll(any(INDArray.class))).thenAnswer(invocation -> {

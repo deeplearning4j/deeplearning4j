@@ -16,6 +16,7 @@
 package org.deeplearning4j.rl4j.network;
 
 import lombok.Getter;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -102,10 +103,20 @@ public class CompoundNetworkHandler implements INetworkHandler {
     }
 
     @Override
-    public INDArray[] batchOutput(INDArray batch) {
+    public INDArray[] stepOutput(Observation observation) {
         List<INDArray> outputs = new ArrayList<INDArray>();
         for(INetworkHandler handler : networkHandlers) {
-            Collections.addAll(outputs, handler.batchOutput(batch));
+            Collections.addAll(outputs, handler.stepOutput(observation));
+        }
+
+        return outputs.toArray(new INDArray[0]);
+    }
+
+    @Override
+    public INDArray[] batchOutput(Features features) {
+        List<INDArray> outputs = new ArrayList<INDArray>();
+        for(INetworkHandler handler : networkHandlers) {
+            Collections.addAll(outputs, handler.batchOutput(features));
         }
 
         return outputs.toArray(new INDArray[0]);

@@ -3687,9 +3687,6 @@ public class Shape {
     }
 
     public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull Number number) {
-        if (!Nd4j.isExperimentalMode())
-            return typeX;
-
         if (number instanceof Double) {
             return pickPairwiseDataType(typeX, DataType.DOUBLE);
         } else if (number instanceof Float) {
@@ -3707,10 +3704,16 @@ public class Shape {
         }
     }
 
+    /**
+     * Return a data type to use for output
+     * within a pair wise operation such as add or subtract.
+     * Basically: favor float like data types
+     * over ints since they're typically used for indexing.
+     * @param typeX the first input data type
+     * @param typeY the second input data type
+     * @return the resolved data type
+     */
     public static DataType pickPairwiseDataType(@NonNull DataType typeX, @NonNull DataType typeY) {
-        if (!Nd4j.isExperimentalMode())
-            return typeX;
-
         if (typeX == typeY)
             return typeX;
 
@@ -3754,7 +3757,7 @@ public class Shape {
         return ArrayOptionsHelper.arrayType(shapeInfo) == ArrayType.EMPTY;
     }
 
-    public static void assertValidOrder(char order){
+    public static void assertValidOrder(char order) {
         if(order != 'c' && order != 'f' && order != 'a'){
             throw new IllegalArgumentException("Invalid order arg: must be 'c' or 'f' (or 'a' for vectors), got '" + order + "'");
         }
@@ -3764,7 +3767,7 @@ public class Shape {
      * Create an INDArray to represent the (possibly null) int[] dimensions.
      * If null or length 0, returns an empty INT array. Otherwise, returns a 1d INT NDArray
      * @param dimensions Dimensions to convert
-     * @return Dimenions as an INDArray
+     * @return Dimensions as an INDArray
      */
     public static INDArray ndArrayDimFromInt(int... dimensions){
         if (dimensions == null || dimensions.length == 0)
@@ -3797,10 +3800,10 @@ public class Shape {
                 retShape = new long[]{1, 1};
             }
         } else {
-            if(keepDims){
+            if(keepDims) {
                 retShape = x.shape().clone();
                 if(wholeArray){
-                    for( int i=0; i<retShape.length; i++ ){
+                    for( int i = 0; i < retShape.length; i++) {
                         retShape[i] = 1;
                     }
                 } else {

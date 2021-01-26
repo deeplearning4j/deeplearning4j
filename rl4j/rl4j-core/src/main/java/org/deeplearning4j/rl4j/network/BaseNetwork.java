@@ -18,6 +18,8 @@ package org.deeplearning4j.rl4j.network;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Value;
+import org.apache.commons.lang3.NotImplementedException;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -100,7 +102,7 @@ public abstract class BaseNetwork<NET_TYPE extends BaseNetwork>
             if(isRecurrent()) {
                 result = packageResult(networkHandler.recurrentStepOutput(observation));
             } else {
-                result = output(observation.getData());
+                result = packageResult(networkHandler.stepOutput(observation));
             }
 
             neuralNetOutputCache.put(observation, result);
@@ -113,13 +115,25 @@ public abstract class BaseNetwork<NET_TYPE extends BaseNetwork>
 
     /**
      * Compute the output for a batch.
-     * Note: The current state is ignored if used witha recurrent network
+     * Note: The current state is ignored if used with a recurrent network
      * @param batch
      * @return a {@link NeuralNetOutput} instance
      */
     public NeuralNetOutput output(INDArray batch) {
-        return packageResult(networkHandler.batchOutput(batch));
+        // TODO: Remove when legacy code is gone
+        throw new NotImplementedException("output(INDArray): should use output(Observation) or output(Features)");
     }
+
+    /**
+     * Compute the output for a batch.
+     * Note: The current state is ignored if used with a recurrent network
+     * @param features
+     * @return a {@link NeuralNetOutput} instance
+     */
+    public NeuralNetOutput output(Features features) {
+        return packageResult(networkHandler.batchOutput(features));
+    }
+
 
     /**
      * Resets the cache and the state of the network

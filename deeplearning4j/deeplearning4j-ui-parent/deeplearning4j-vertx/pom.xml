@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright (c) 2019 Konduit K.K.
+  ~ Copyright (c) 2019-2020 Konduit K.K.
   ~
   ~ This program and the accompanying materials are made available under the
   ~ terms of the Apache License, Version 2.0 which is available at
@@ -15,16 +15,23 @@
   ~ SPDX-License-Identifier: Apache-2.0
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>deeplearning4j-ui-parent</artifactId>
-        <groupId>org.deeplearning4j</groupId>
-        <version>1.0.0-SNAPSHOT</version>
-    </parent>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.deeplearning4j</groupId>
+        <artifactId>deeplearning4j-ui-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
     <artifactId>deeplearning4j-vertx</artifactId>
+
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -32,64 +39,53 @@
             <artifactId>vertx-core</artifactId>
             <version>${vertx.version}</version>
         </dependency>
-
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-web</artifactId>
             <version>${vertx.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-ui-model</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.freemarker</groupId>
             <artifactId>freemarker</artifactId>
             <version>${freemarker.version}</version>
         </dependency>
-
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
             <version>${jcommander.version}</version>
         </dependency>
-
-
         <dependency>
             <groupId>jakarta.xml.bind</groupId>
             <artifactId>jakarta.xml.bind-api</artifactId>
             <version>2.3.2</version>
         </dependency>
-
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-common-tests</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
-
         <!-- WebJars Dependencies -->
         <dependency>
             <groupId>org.webjars.npm</groupId>
             <artifactId>babel__polyfill</artifactId>
             <version>7.4.4</version>
         </dependency>
-
         <dependency>
             <groupId>org.webjars.npm</groupId>
             <artifactId>coreui__coreui</artifactId>
@@ -116,11 +112,9 @@
             <artifactId>popper.js</artifactId>
             <version>1.12.9</version>
         </dependency>
-
         <dependency>
             <groupId>org.webjars.npm</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>4.3.1</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
@@ -208,7 +202,6 @@
             <artifactId>weaverjs</artifactId>
             <version>1.2.0</version>
         </dependency>
-
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>retinajs</artifactId>
@@ -269,7 +262,6 @@
             <artifactId>jquery-ui-touch-punch</artifactId>
             <version>0.2.2</version>
         </dependency>
-
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>d3js</artifactId>
@@ -285,7 +277,6 @@
             <artifactId>github-com-jboesch-Gritter</artifactId>
             <version>1.7.4</version>
         </dependency>
-
         <!-- Fonts -->
         <dependency>
             <groupId>org.webjars.bowergithub.stenin-nikita</groupId>
@@ -302,7 +293,6 @@
             <artifactId>bootstrap-glyphicons</artifactId>
             <version>bdd2cbfba0</version>
         </dependency>
-
         <!-- For SameDiff UI -->
         <dependency>
             <groupId>org.webjars.npm</groupId>
@@ -334,14 +324,12 @@
                 <artifactId>regenerator-runtime</artifactId>
                 <version>0.13.2</version>
             </dependency>
-
             <!-- coreui__coreui dependencies -->
             <dependency>
                 <groupId>org.webjars.npm</groupId>
                 <artifactId>bootstrap</artifactId>
                 <version>4.3.1</version>
             </dependency>
-
             <!-- org.webjars.npm:cytoscape -->
             <dependency>
                 <groupId>org.webjars.npm</groupId>
@@ -353,17 +341,12 @@
                 <artifactId>lodash.debounce</artifactId>
                 <version>4.0.8</version>
             </dependency>
-
-
             <!-- org.webjars.npm:dagre -->
             <dependency>
                 <groupId>org.webjars.npm</groupId>
                 <artifactId>graphlib</artifactId>
                 <version>2.1.7</version>
             </dependency>
-
-
-
             <dependency>
                 <groupId>org.webjars.bower</groupId>
                 <artifactId>cytoscape</artifactId>
@@ -436,21 +419,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
 
     <profiles>
         <profile>

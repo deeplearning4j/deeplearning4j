@@ -30,6 +30,7 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -131,7 +132,9 @@ public class LSTMBlockCell extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        return configuration.toProperties(false);
+        if(configuration != null)
+            return configuration.toProperties(false);
+        return Collections.emptyMap();
     }
 
     @Override

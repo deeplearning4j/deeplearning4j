@@ -15,7 +15,8 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning;
 
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -27,24 +28,6 @@ import java.util.List;
  * and {@link RecurrentNStepQLearningHelper} handle the differences.
  */
 public abstract class NStepQLearningHelper {
-
-    /**
-     * Create a feature INDArray, filled with the observations from the trainingBatch
-     * @param trainingBatch An experience training batch
-     * @return A INDArray filled with the observations from the trainingBatch
-     */
-    public INDArray createFeatures(List<StateActionPair<Integer>> trainingBatch) {
-        int size = trainingBatch.size();
-        long[] observationShape = trainingBatch.get(0).getObservation().getData().shape();
-        INDArray features = createFeatureArray(size, observationShape);
-        for(int i = 0; i < size; ++i) {
-            setFeature(features, i, trainingBatch.get(i).getObservation().getData());
-        }
-
-        return features;
-    }
-    protected abstract INDArray createFeatureArray(int size, long[] observationShape);
-    protected abstract void setFeature(INDArray features, long idx, INDArray data);
 
     /**
      * Get the expected Q value given a training batch index from the pre-computed Q values
@@ -76,5 +59,5 @@ public abstract class NStepQLearningHelper {
      * @return A INDArray filled with the observations from the trainingBatch
      * @return The expected Q values for the last element of the training batch
      */
-    public abstract INDArray getTargetExpectedQValuesOfLast(IOutputNeuralNet target, List<StateActionPair<Integer>> trainingBatch, INDArray features);
+    public abstract INDArray getTargetExpectedQValuesOfLast(IOutputNeuralNet target, List<StateActionReward<Integer>> trainingBatch, Features features);
 }

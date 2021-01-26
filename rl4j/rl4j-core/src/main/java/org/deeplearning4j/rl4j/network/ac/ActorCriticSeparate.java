@@ -17,6 +17,7 @@
 package org.deeplearning4j.rl4j.network.ac;
 
 import lombok.Getter;
+import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -24,6 +25,7 @@ import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.CommonGradientNames;
@@ -93,13 +95,13 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
 
     @Override
     public void fit(FeaturesLabels featuresLabels) {
-        valueNet.fit(featuresLabels.getFeatures(), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value));
-        policyNet.fit(featuresLabels.getFeatures(), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
+        valueNet.fit(featuresLabels.getFeatures().get(0), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value));
+        policyNet.fit(featuresLabels.getFeatures().get(0), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
     }
 
     @Override
     public Gradients computeGradients(FeaturesLabels featuresLabels) {
-        valueNet.setInput(featuresLabels.getFeatures());
+        valueNet.setInput(featuresLabels.getFeatures().get(0));
         valueNet.setLabels(featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value));
         valueNet.computeGradientAndScore();
         Collection<TrainingListener> valueIterationListeners = valueNet.getListeners();
@@ -109,7 +111,7 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
             }
         }
 
-        policyNet.setInput(featuresLabels.getFeatures());
+        policyNet.setInput(featuresLabels.getFeatures().get(0));
         policyNet.setLabels(featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
         policyNet.computeGradientAndScore();
         Collection<TrainingListener> policyIterationListeners = policyNet.getListeners();
@@ -240,16 +242,21 @@ public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IAct
     @Override
     public NeuralNetOutput output(Observation observation) {
         if(!isRecurrent()) {
-            return output(observation.getData());
+            return output(observation.getChannelData(0));
         }
 
-        INDArray observationData = observation.getData();
+        INDArray observationData = observation.getChannelData(0);
         return packageResult(valueNet.rnnTimeStep(observationData), policyNet.rnnTimeStep(observationData));
     }
 
     @Override
     public NeuralNetOutput output(INDArray batch) {
         return packageResult(valueNet.output(batch), policyNet.output(batch));
+    }
+
+    @Override
+    public NeuralNetOutput output(Features features) {
+        throw new NotImplementedException("Not implemented in legacy classes");
     }
 
     private NeuralNetOutput packageResult(INDArray value, INDArray policy) {

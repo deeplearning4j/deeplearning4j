@@ -35,7 +35,7 @@ namespace ops  {
 
         std::vector<int> axis = *block.getIArguments();
 
-        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
+        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // 0-NCHW,  1-NHWC
         const int dimC = isNCHW ? 1 : input->rankOf() - 1;
 
         REQUIRE_TRUE(gain->rankOf() == 1 && gain->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM OP: wrong shape of gain array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());
@@ -82,7 +82,7 @@ namespace ops  {
         auto dLdg = OUTPUT_VARIABLE(1);
         auto dLdb = block.width() == 4 ? OUTPUT_VARIABLE(2) : nullptr;
 
-        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
+        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       //  0-NCHW,  1-NHWC
         const int dimC = isNCHW ? 1 : input->rankOf() - 1;
 
         REQUIRE_TRUE(gain->rankOf() == 1 && gain->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM_BP OP: wrong shape of gain array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());

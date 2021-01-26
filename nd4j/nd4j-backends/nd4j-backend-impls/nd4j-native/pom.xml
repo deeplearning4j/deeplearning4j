@@ -1,5 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~ Copyright (c) 2020 Konduit K.K.
   ~
   ~ This program and the accompanying materials are made available under the
   ~ terms of the Apache License, Version 2.0 which is available at
@@ -14,15 +16,20 @@
   ~ SPDX-License-Identifier: Apache-2.0
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>nd4j-backend-impls</artifactId>
-        <groupId>org.nd4j</groupId>
-        <version>1.0.0-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-backend-impls</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
     <artifactId>nd4j-native</artifactId>
+
     <name>nd4j-native</name>
 
     <dependencies>
@@ -33,16 +40,13 @@
             <type>${dependency.packaging}</type>
             <classifier>${dependency.classifier}</classifier>
         </dependency>
-
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
-            <version>${javacpp.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
-            <version>${javacpp.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
         <dependency>
@@ -55,23 +59,21 @@
             <artifactId>openblas</artifactId>
             <version>${openblas.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform}</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native-api</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
-            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
@@ -88,6 +90,10 @@
                         </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <source>7</source>
+                    <target>7</target>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.bytedeco</groupId>
@@ -136,7 +142,8 @@
                     </classPaths>
                     <includePaths>
                         <includePath>${libnd4jhome}/blasbuild/cpu/include</includePath>
-                        <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/</includePath>
+                        <includePath>${libnd4jhome}/blasbuild/cpu/flatbuffers-src/include/
+                        </includePath>
                         <includePath>${libnd4jhome}/blas</includePath>
                         <includePath>${libnd4jhome}/include</includePath>
                         <includePath>${libnd4jhome}/include/helpers</includePath>
@@ -155,13 +162,15 @@
                         <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
                     </buildResources>
                     <includeResources>
-                        <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                        <includeResource>/org/bytedeco/openblas/${javacpp.platform}/include/</includeResource>
+                        <includeResource>/${javacpp.platform.library.path}/include/
+                        </includeResource>
+                        <includeResource>/org/bytedeco/openblas/${javacpp.platform}/include/
+                        </includeResource>
                     </includeResources>
                     <linkResources>
                         <linkResource>/${javacpp.platform.library.path}/</linkResource>
                         <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                       <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
+                        <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
                         <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                     </linkResources>
                 </configuration>
@@ -182,7 +191,8 @@
                         <configuration>
                             <skip>${javacpp.parser.skip}</skip>
                             <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCpuPresets</classOrPackageName>
+                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCpuPresets
+                            </classOrPackageName>
                         </configuration>
                     </execution>
                     <execution>
@@ -216,30 +226,26 @@
                             <rules>
                                 <requireProperty>
                                     <property>libnd4jhome</property>
-                                    <message>You must set the LIBND4J_HOME environment variable!</message>
+                                    <message>You must set the LIBND4J_HOME environment variable!
+                                    </message>
                                     <regex>.*/.*</regex>
-                                    <regexMessage>!!! LIBND4J_HOME must be a valid unix path!</regexMessage>
+                                    <regexMessage>!!! LIBND4J_HOME must be a valid unix path!
+                                    </regexMessage>
                                 </requireProperty>
                                 <requireFilesExist>
                                     <files>
                                         <file>${libnd4jhome}/include/legacy/NativeOps.h</file>
                                         <file>${libnd4jhome}/blasbuild/cpu/blas</file>
                                     </files>
-                                    <message>!!! You have to compile libnd4j with cpu support first!</message>
+                                    <message>!!! You have to compile libnd4j with cpu support
+                                        first!
+                                    </message>
                                 </requireFilesExist>
                             </rules>
                             <fail>true</fail>
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>7</source>
-                    <target>7</target>
-                </configuration>
             </plugin>
         </plugins>
     </build>
@@ -297,9 +303,9 @@
         <profile>
             <id>mingw</id>
             <activation>
-              <os>
-                  <family>windows</family>
-              </os>
+                <os>
+                    <family>windows</family>
+                </os>
                 <property>
                     <name>!javacpp.platform</name>
                 </property>
@@ -393,9 +399,12 @@
                                             <artifactId>libnd4j</artifactId>
                                             <version>${project.version}</version>
                                             <type>zip</type>
-                                            <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                                            <classifier>
+                                                ${javacpp.platform}${javacpp.platform.extension}
+                                            </classifier>
                                             <overWrite>true</overWrite>
-                                            <outputDirectory>${project.build.directory}</outputDirectory>
+                                            <outputDirectory>${project.build.directory}
+                                            </outputDirectory>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>

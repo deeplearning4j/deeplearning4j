@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~ Copyright (c) 2020 Konduit K.K.
   ~
   ~ This program and the accompanying materials are made available under the
   ~ terms of the Apache License, Version 2.0 which is available at
@@ -50,6 +51,11 @@
         <dependencies>
             <dependency>
                 <groupId>org.nd4j</groupId>
+                <artifactId>nd4j-aeron</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.nd4j</groupId>
                 <artifactId>nd4j-common-tests</artifactId>
                 <version>${project.version}</version>
                 <scope>test</scope>
@@ -58,6 +64,16 @@
                 <groupId>org.nd4j</groupId>
                 <artifactId>nd4j-parameter-server</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.nd4j</groupId>
+                <artifactId>nd4j-parameter-server-model</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.mashape.unirest</groupId>
+                <artifactId>unirest-java</artifactId>
+                <version>${unirest.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

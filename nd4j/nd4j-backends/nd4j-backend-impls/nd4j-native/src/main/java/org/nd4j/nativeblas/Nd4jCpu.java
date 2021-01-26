@@ -3151,9 +3151,31 @@ public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPoin
                                 @Cast("Nd4jLong") long length,
                                 @Cast("const Nd4jLong*") long[] xShapeInfo);
 
+/**
+ *
+ * @param extraPointers     not used
+ * @param indices           DataBuffer containing COO indices for a sparse matrix that is to be raveled/flattened
+ * @param flatIndices       DataBuffer where the raveled/flattened indices are to be written to
+ * @param length            number of non-zero entries (length of flatIndices)
+ * @param fullShapeBuffer   DataBuffer with ShapeInfo for the full matrix to be flattened
+ * @param mode              clipMode determines the strategy to use if some of the the passed COO indices does
+ *                          not fit into the shape determined by fullShapeBuffer
+ *                              0   throw an exception (default)
+ *                              1   wrap around shape
+ *                              2   clip to shape
+ */
 public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, @Cast("Nd4jLong*") LongPointer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongPointer shapeInfo, int mode);
 public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, @Cast("Nd4jLong*") LongBuffer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongBuffer shapeInfo, int mode);
 public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, @Cast("Nd4jLong*") long[] flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") long[] shapeInfo, int mode);
+
+/**
+ *
+ * @param extraPointers     not used
+ * @param indices           DataBuffer where the unraveled COO indices are to be written
+ * @param flatIndices       DataBuffer containing the raveled/flattened indices to be unravel
+ * @param length            number of non-zero entries (length of flatIndices)
+ * @param fullShapeBuffer   DataBuffer with ShapeInfo for the full matrix to be unraveled
+ */
 public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, @Cast("Nd4jLong*") LongPointer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongPointer shapeInfo);
 public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, @Cast("Nd4jLong*") LongBuffer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongBuffer shapeInfo);
 public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, @Cast("Nd4jLong*") long[] flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") long[] shapeInfo);
@@ -3372,6 +3394,47 @@ public native @Cast("bool") boolean isMinimalRequirementsMet();
 public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H
+
+
+// Parsed from build_info.h
+
+/*******************************************************************************
+ * Copyright (c) 2019 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+// #ifndef LIBND4J_BUILD_INFO_H
+// #define LIBND4J_BUILD_INFO_H
+
+// #ifdef  _WIN32
+// #define ND4J_EXPORT   __declspec( dllexport )
+// #else
+// #define ND4J_EXPORT
+// #endif
+
+// #define STRINGIFY(x) #x
+// #define TOSTRING(x) STRINGIFY(x)
+
+// #ifdef __cplusplus
+// #endif
+
+public native @Cast("char*") String buildInfo();
+
+// #ifdef __cplusplus
+// #endif
+
+// #endif
 
 
 // Parsed from memory/ExternalWorkspace.h
@@ -23118,6 +23181,27 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+//         #if NOT_EXCLUDED(OP_flatten_2d)
+            @Namespace("sd::ops") public static class flatten_2d extends DeclarableCustomOp {
+                static { Loader.load(); }
+                /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                public flatten_2d(Pointer p) { super(p); }
+                /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                public flatten_2d(long size) { super((Pointer)null); allocateArray(size); }
+                private native void allocateArray(long size);
+                @Override public flatten_2d position(long position) {
+                    return (flatten_2d)super.position(position);
+                }
+                @Override public flatten_2d getPointer(long i) {
+                    return new flatten_2d(this).position(position + i);
+                }
+            
+                                                                                    public flatten_2d() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
 //         #if NOT_EXCLUDED(OP_reshape)
         @Namespace("sd::ops") public static class reshape extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -23259,7 +23343,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public broadcast_to() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }        
+                                                                                }
 //         #endif
 
 

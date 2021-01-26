@@ -23,7 +23,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.nd4j.autodiff.opvalidation.*;
 import org.nd4j.autodiff.validation.OpValidation;
-import org.nd4j.imports.TFGraphs.TFGraphTestAllSameDiff;
+import org.nd4j.imports.tfgraphs.TFGraphTestAllSameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.function.Function;
@@ -78,7 +78,13 @@ public class OpValidationSuite {
      */
     public static final boolean IGNORE_FAILING = true;
 
-    public static void ignoreFailing(){
+    /**
+     * NOTE: Do not change this.
+     * If all tests won't run,
+     * it's likely because of a mis specified test name.
+     * Keep this trigger as is for ignoring tests.
+     */
+    public static void ignoreFailing() {
         //If IGNORE_FAILING
         assumeFalse(IGNORE_FAILING);
     }

@@ -71,6 +71,6 @@ public class UnsortedSegmentSum extends DynamicCustomOp {
         Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 2 || inputDataTypes.size() == 3),
                 "Expected exactly 2 input data types for %s, got %s", getClass(), inputDataTypes);
         //TODO Allow customizing output type
-        return Collections.singletonList(Nd4j.defaultFloatingPointType());
+        return Collections.singletonList(inputDataTypes.get(0));
     }
 }

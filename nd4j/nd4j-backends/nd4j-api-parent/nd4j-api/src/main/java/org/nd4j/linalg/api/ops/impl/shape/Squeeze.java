@@ -88,8 +88,8 @@ public class Squeeze extends DynamicCustomOp {
 
     @Override
     public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
-        Preconditions.checkState(dataTypes.size() == 1, "Expected list with exactly 1 datatype for %s, got %s", getClass(), dataTypes);
+        Preconditions.checkState(!dataTypes.isEmpty(), "Expected list with at least 1 datatype for %s, got %s", getClass(), dataTypes);
         //Output type is same as input type
-        return dataTypes;
+        return Arrays.asList(dataTypes.get(0));
     }
 }

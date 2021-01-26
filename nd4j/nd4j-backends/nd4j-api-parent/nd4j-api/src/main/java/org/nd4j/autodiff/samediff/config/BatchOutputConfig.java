@@ -58,7 +58,7 @@ public class BatchOutputConfig {
     /**
      * Add required outputs
      */
-    public BatchOutputConfig output(@NonNull String... outputs){
+    public BatchOutputConfig output(@NonNull String... outputs) {
         this.outputs.addAll(Arrays.asList(outputs));
         return this;
     }
@@ -139,7 +139,7 @@ public class BatchOutputConfig {
     /**
      * Do inference and return the results
      */
-    public Map<String,INDArray> output(){
+    public Map<String,INDArray> output() {
         return sd.output(placeholders, listeners, outputs.toArray(new String[0]));
     }
 

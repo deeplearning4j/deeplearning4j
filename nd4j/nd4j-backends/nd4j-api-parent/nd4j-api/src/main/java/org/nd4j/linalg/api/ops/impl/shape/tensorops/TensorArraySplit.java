@@ -47,7 +47,7 @@ public class TensorArraySplit extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarraysplitv3";
+        return "split_list";
     }
 
 
@@ -56,7 +56,7 @@ public class TensorArraySplit extends BaseTensorOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType) {
         //Dummy float variable
         return Collections.singletonList(DataType.FLOAT);
     }

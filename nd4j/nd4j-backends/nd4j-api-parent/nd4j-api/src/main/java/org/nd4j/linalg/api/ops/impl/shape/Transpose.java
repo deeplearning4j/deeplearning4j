@@ -166,6 +166,8 @@ public class Transpose extends DynamicCustomOp {
     public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
                 "Expected list with 1 or 2 datatype for %s, got %s", getClass(), dataTypes);
+        if(dArguments != null && !dArguments.isEmpty())
+            return Collections.singletonList(dArguments.get(0));
         //Output type is same as input type. Second input is permute dimensions as array
         return Collections.singletonList(dataTypes.get(0));
     }

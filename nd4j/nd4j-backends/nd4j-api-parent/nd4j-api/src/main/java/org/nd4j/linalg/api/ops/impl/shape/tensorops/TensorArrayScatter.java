@@ -47,7 +47,7 @@ public class TensorArrayScatter extends BaseTensorOp {
 
     @Override
     public String opName() {
-        return "tensorarrayscatterv3";
+        return "scatter_list";
     }
 
 

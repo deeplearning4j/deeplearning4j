@@ -24,7 +24,7 @@ import org.deeplearning4j.rl4j.agent.learning.algorithm.IUpdateAlgorithm;
 import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.DoubleDQN;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.environment.Environment;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
+import org.deeplearning4j.rl4j.experience.StateActionRewardState;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.nd4j.linalg.api.rng.Random;
@@ -44,7 +44,7 @@ public class DoubleDQNBuilder extends BaseDQNAgentLearnerBuilder<DoubleDQNBuilde
     }
 
     @Override
-    protected IUpdateAlgorithm<FeaturesLabels, Transition<Integer>> buildUpdateAlgorithm() {
+    protected IUpdateAlgorithm<FeaturesLabels, StateActionRewardState<Integer>> buildUpdateAlgorithm() {
         return new DoubleDQN(networks.getThreadCurrentNetwork(), networks.getTargetNetwork(), configuration.getUpdateAlgorithmConfiguration());
     }
 

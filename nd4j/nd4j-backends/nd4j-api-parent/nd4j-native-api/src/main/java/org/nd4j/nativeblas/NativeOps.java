@@ -1242,4 +1242,11 @@ public interface NativeOps {
     int  dbDeviceId(OpaqueDataBuffer dataBuffer);
     void  dbSetDeviceId(OpaqueDataBuffer dataBuffer, int deviceId);
     void dbExpand(OpaqueDataBuffer dataBuffer, long newLength);
+
+    /**
+     * Gets the build information of the backend
+     *
+     * @return
+     */
+    String buildInfo();
 }

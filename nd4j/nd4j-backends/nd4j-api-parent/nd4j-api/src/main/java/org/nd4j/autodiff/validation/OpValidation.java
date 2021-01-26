@@ -262,7 +262,7 @@ public class OpValidation {
         List<SDVariable> vars = original.variables();
         List<SDVariable> varsDe = deserialized.variables();
         Preconditions.checkState(vars.size() == varsDe.size(), "Number of variables differs: expected %s, got %s", vars.size(), varsDe.size());
-        for( int i=0; i<vars.size(); i++ ){
+        for( int i = 0; i < vars.size(); i++) {
             SDVariable vO = vars.get(i);
             SDVariable vD = varsDe.get(i);
             Preconditions.checkState(vO.name().equals(vD.name()), "Names should be equal for variable %s: expected %s vs %s",
@@ -274,7 +274,7 @@ public class OpValidation {
         Map<String,SameDiffOp> opsDeser = deserialized.getOps();
         Preconditions.checkState(opsOrig.keySet().equals(opsDeser.keySet()), "Op names differs: %s vs. %s", opsOrig.keySet(), opsDeser.keySet());
 
-        for(String s : opsOrig.keySet()){
+        for(String s : opsOrig.keySet()) {
             SameDiffOp orig = opsOrig.get(s);
             SameDiffOp des = opsDeser.get(s);
             Preconditions.checkState(orig.getName().equals(des.getName()), "Names differ: %s vs %s", orig.getName(), des.getName());
@@ -293,7 +293,7 @@ public class OpValidation {
             Preconditions.checkState((orig.getControlDepFor() == null) == (des.getControlDepFor() == null), "Op control dependencies for list differ: %s vs. %s", orig.getControlDepFor(), des.getControlDepFor());
             Preconditions.checkState(orig.getControlDepFor() == null || orig.getControlDepFor().equals(des.getControlDepFor()), "Op variable control dependencies differ: %s vs. %s", orig.getControlDepFor(), des.getControlDepFor());
 
-            Preconditions.checkState(orig.getOp().getClass() == des.getOp().getClass(), "Classes differ: %s v. %s", orig.getOp().getClass(), des.getOp().getClass());
+            Preconditions.checkState(orig.getOp().getClass().equals(des.getOp().getClass()), "Classes differ: %s v. %s", orig.getOp().getClass(), des.getOp().getClass());
         }
 
         //Check placeholders:

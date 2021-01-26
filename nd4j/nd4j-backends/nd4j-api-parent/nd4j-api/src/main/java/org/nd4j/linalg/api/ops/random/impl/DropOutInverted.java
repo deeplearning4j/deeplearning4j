@@ -44,8 +44,6 @@ public class DropOutInverted extends BaseRandomOp {
     public DropOutInverted(SameDiff sameDiff, SDVariable input, double p) {
         super(sameDiff, input);
         this.p = p;
-        //https://github.com/deeplearning4j/deeplearning4j/issues/5650
-        throw new UnsupportedOperationException("Dropout SameDiff support disabled pending backprop support");
     }
 
     public DropOutInverted(@NonNull INDArray x, double p) {
