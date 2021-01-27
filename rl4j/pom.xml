@@ -35,14 +35,6 @@
     <name>rl4j</name>
     <description>Deep Reinforcement Learning for the JVM</description>
 
-    <developers>
-        <developer>
-            <id>rubenfiszel</id>
-            <name>Ruben Fiszel</name>
-            <email>ruben.fiszel@epfl.ch</email>
-        </developer>
-    </developers>
-
     <modules>
         <module>rl4j-api</module>
         <module>rl4j-core</module>

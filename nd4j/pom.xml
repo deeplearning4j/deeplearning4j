@@ -35,13 +35,6 @@
 
     <name>nd4j</name>
 
-    <developers>
-        <developer>
-            <id>agibsonccc</id>
-            <name>Adam Gibson</name>
-            <email>adam@skymind.io</email>
-        </developer>
-    </developers>
 
     <modules>
         <module>nd4j-shade</module>

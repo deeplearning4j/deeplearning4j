@@ -36,18 +36,7 @@
     <name>DataVec</name>
     <description>Vectorization Rosetta Stone for the JVM</description>
 
-    <developers>
-        <developer>
-            <id>agibsonccc</id>
-            <name>Adam Gibson</name>
-            <email>0@blix.io</email>
-        </developer>
-        <developer>
-            <id>jpatanooga</id>
-            <name>Josh Patterson</name>
-            <email>josh@floe.tv</email>
-        </developer>
-    </developers>
+
 
     <modules>
         <module>datavec-api</module>
