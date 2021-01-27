@@ -1342,20 +1342,20 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
  * @return the strides for a matrix of n dimensions
  */
     INLINEDEF _CUDA_HD Nd4jLong * calcStridesFortran(Nd4jLong const* shape, int rank, int startNum) {
-        if (isVector(shape, rank)) {
+        // if (isVector(shape, rank)) {
 
-            traceNew(5);
+        //     traceNew(5);
 
-            Nd4jLong *ret = new Nd4jLong[2];
-            for (int i = 0; i < 2; i++)
-                ret[i] = 1;
-            return ret;
+        //     Nd4jLong *ret = new Nd4jLong[2];
+        //     for (int i = 0; i < 2; i++)
+        //         ret[i] = 1;
+        //     return ret;
 
-        }
+        // }
 
         int dimensions = rank;
 
-        traceNew(6);
+        traceNew(5);
 
         Nd4jLong *stride = new Nd4jLong[dimensions];
         Nd4jLong st = startNum;
@@ -1368,12 +1368,12 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
     }
 
     INLINEDEF _CUDA_HD Nd4jLong * calcStridesFortran(Nd4jLong const* shape, int rank, int startNum, Nd4jLong *ret) {
-        if (isVector(shape, rank)) {
-            for (int i = 0; i < rank; i++)
-                ret[i] = 1;
-            return ret;
+        // if (isVector(shape, rank)) {
+        //     for (int i = 0; i < rank; i++)
+        //         ret[i] = 1;
+        //     return ret;
 
-        }
+        // }
 
         //int dimensions = rank;
 
@@ -4213,7 +4213,7 @@ INLINEDEF _CUDA_HD bool reshapeC(const Nd4jLong* oldShapeInfo, Nd4jLong* newShap
         newShapeInfo[2 * newRank + 3] = oldOrder;                   // order
         *shape::ews(newShapeInfo) = oldEws;                         // ews
     }
-
+    newShapeInfo[2*newShapeInfo[0]+1] = 0;
     sd::ArrayOptions::copyDataType(newShapeInfo, oldShapeInfo); // type
 
     return true;
@@ -4840,6 +4840,7 @@ INLINEDEF _CUDA_HD void calcSubArrsShapeInfoAndOffsets(const Nd4jLong* wholeShap
     const int subArrRank = keepUnitiesInShape ? rank : rank - dimsSize;
 
     subArrShapeInfo[0] = subArrRank;                                    // rank
+    subArrShapeInfo[2 * subArrRank + 1] = 0;                            // clear (to avoid uninitialized)
     sd::ArrayOptions::copyDataType(subArrShapeInfo, wholeShapeInfo);    // type
     subArrShapeInfo[2 * subArrRank + 3] = shape::order(wholeShapeInfo); // order
 
@@ -4917,6 +4918,7 @@ INLINEDEF void calcSubArrShapeInfoAndOffset(const Nd4jLong* idx, const Nd4jLong*
         }
     }
 
+    minShapeInfo[2 * shape::rank(minShapeInfo) + 1] = 0;   // zero
     minShapeInfo[2 * shape::rank(minShapeInfo) + 3] = shape::order(maxShapeInfo);   // order
     sd::ArrayOptions::copyDataType(minShapeInfo, maxShapeInfo);                     // type
 
@@ -5050,7 +5052,7 @@ INLINEDEF _CUDA_HD void excludeUnitiesFromShapeInfo(const Nd4jLong* inShapeInfo,
         shape::shapeOf(outShapeInfo)[k]  = shape::shapeOf(inShapeInfo)[i];
         shape::stride(outShapeInfo)[k++] = shape::stride(inShapeInfo)[i];
     }
-
+    outShapeInfo[2 * outShapeInfo[0] + 1] = 0;
     sd::ArrayOptions::copyDataType(outShapeInfo, inShapeInfo);                      // type
     *shape::ews(outShapeInfo)             = shape::elementWiseStride(inShapeInfo);  // ews
     outShapeInfo[2 * outShapeInfo[0] + 3] = shape::order(inShapeInfo);              // order

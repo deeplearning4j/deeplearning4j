@@ -30,11 +30,54 @@
 
 
 
-
+#include <helpers/LoopsCoordsHelper.h>
 #include <helpers/StringUtils.h>
 #include <legacy/NativeOps.h>
 
 namespace sd {
+
+    ND4J_EXPORT NDArray NDArrayFactory::create(const ShapeDescriptor& shapeDescriptor, sd::LaunchContext * context){
+        auto status = shapeDescriptor.validate();
+        if(status !=  SHAPE_DESC_OK){
+            nd4j_printf("NDArrayFactory::create: ShapeDescriptor status code [%d]\n", status );
+            throw std::invalid_argument("NDArrayFactory::create: invalid ShapeDescriptor ");
+        }
+        Nd4jLong allocSize = shapeDescriptor.allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor.dataType());
+        std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(allocSize, shapeDescriptor.dataType(), context->getWorkspace());
+        NDArray result(buffer, shapeDescriptor, context);
+        result.nullify();
+        return result;
+    }
+
+    ND4J_EXPORT NDArray NDArrayFactory::create(const char order, const std::vector<Nd4jLong>& shape, sd::DataType dataType, const std::vector<Nd4jLong>& paddings, const std::vector<Nd4jLong> &paddingOffsets, sd::LaunchContext * context) {
+        int rank = shape.size();
+        if ( rank > MAX_RANK)
+            throw std::invalid_argument("NDArrayFactory::create: rank of NDArray can't exceed 32");
+
+        if(paddings.size() != rank ){
+            throw std::invalid_argument("NDArrayFactory::create: paddings size should match rank ");
+        }
+
+        auto shapeDescriptor = ShapeDescriptor::paddedBufferDescriptor(dataType, order, shape, paddings);
+
+        Nd4jLong allocSize = shapeDescriptor.allocLength() * DataTypeUtils::sizeOfElement(shapeDescriptor.dataType());
+        std::shared_ptr<DataBuffer> buffer = std::make_shared<DataBuffer>(allocSize, shapeDescriptor.dataType(), context->getWorkspace());
+        
+        //lets check offsets
+        int check_size = paddingOffsets.size() < rank ? paddingOffsets.size() : rank;
+        
+        for(int i=0; i< check_size; i++){
+            if(paddingOffsets[i]>paddings[i]){
+                throw std::invalid_argument("NDArrayFactory::create: paddingOffsets numbers should not exceed corresponding paddings");
+            }
+        }
+
+        Nd4jLong offset = offset_from_coords(shapeDescriptor.strides().data(), paddingOffsets.data(), check_size);
+
+        NDArray result(buffer, shapeDescriptor, context, offset);
+        result.nullify();
+        return result;
+    }
 
     ////////////////////////////////////////////////////////////////////////
     template <>

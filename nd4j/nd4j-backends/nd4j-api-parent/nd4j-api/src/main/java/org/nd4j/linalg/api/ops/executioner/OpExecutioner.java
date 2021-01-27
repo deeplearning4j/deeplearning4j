@@ -457,6 +457,8 @@ public interface OpExecutioner {
      */
     DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty);
 
+    DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extra);
+
     /**
      * This method returns host/device tad buffers
      */

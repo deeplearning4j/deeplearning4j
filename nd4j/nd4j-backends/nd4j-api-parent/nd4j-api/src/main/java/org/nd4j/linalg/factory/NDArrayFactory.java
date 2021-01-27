@@ -1060,6 +1060,18 @@ public interface NDArrayFactory {
 
     INDArray create(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace workspace);
 
+   /**
+     * Create an ndArray with padded Buffer
+     * @param dataType
+     * @param shape
+     * @param paddings
+     * @param paddingOffsets
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @param workspace
+     * @return
+     */
+    INDArray create(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering, MemoryWorkspace workspace);
+
     INDArray createUninitialized(int[] shape, char ordering);
 
     INDArray createUninitialized(long[] shape, char ordering);

@@ -946,6 +946,11 @@ public abstract class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
         throw new UnsupportedOperationException();
     }

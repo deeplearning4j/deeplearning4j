@@ -49,7 +49,6 @@ fi
 
 }
 
-
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
     export CMAKE_COMMAND="cmake3"
@@ -201,17 +200,22 @@ fi
 
 case "$OS" in
     linux-armhf)
-      export RPI_BIN=$RPI_HOME/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/arm-linux-gnueabihf
-      export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake -DSD_ARM_BUILD=true"
       if [ -z "$ARCH" ]; then
-        ARCH="armv7-r"
+        ARCH="armv7-a"
       fi
+      if [ ! -z ${RPI_BIN+set} ]; then
+        export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
+      fi
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_ARM_BUILD=true -DSD_SANITIZE=OFF "
     ;;
 
     linux-arm64)
       if [ -z "$ARCH" ]; then
         ARCH="armv8-a"
       fi
+      if [ ! -z ${RPI_BIN+set} ]; then
+        export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
+      fi      
       export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_ARM_BUILD=true"
     ;;
 

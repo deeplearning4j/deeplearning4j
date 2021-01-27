@@ -339,6 +339,40 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this(Nd4j.createBuffer(type, shape.length == 0 ? 1 : ArrayUtil.prodLong(shape), initialize, workspace), type, shape, stride, offset, ordering);
     }
 
+    public BaseNDArray(DataType type, long[] shape, long[] paddings, long[] paddingOffsets, char ordering, MemoryWorkspace workspace) {
+
+        //calculate strides with paddings
+        int rank = shape.length;
+        if(paddings == null || paddings.length != rank ) throw new IllegalArgumentException("The length of Padding should be equal to the length of Shape");
+        long [] paddedShape = new long[rank];
+        boolean empty = false; 
+        boolean zeroOffset = paddingOffsets == null || paddingOffsets.length == 0; 
+        boolean paddingOffsetsInvalid = paddingOffsets != null && paddingOffsets.length != rank ;
+        long ews = 1;
+        if(!paddingOffsetsInvalid){
+            for(int i=0; i<rank; i++){
+                paddedShape[i] = shape[i] + paddings[i];
+                if(paddings[i] != 0) ews = 0;
+                if(shape[i] == 0) empty = true;
+                if(paddingOffsets[i]>paddings[i]){
+                    paddingOffsetsInvalid = true;
+                    break;
+                }
+            }   
+        }
+        if(!zeroOffset && paddingOffsetsInvalid) throw new IllegalArgumentException("If PaddingOffsets is not empty or zero length then its length should match the length of Paddings and also its elements should not be greater");
+
+        long[] paddedStride = ordering == 'c' ? ArrayUtil.calcStrides(paddedShape,1): ArrayUtil.calcStridesFortran(paddedShape,1);
+        long paddedAllocSize = ordering == 'c' ? paddedShape[0] * paddedStride[0] : paddedShape[rank-1] * paddedStride[rank-1];
+
+        long offset = (empty || ews == 1 || zeroOffset) ? 0 :  ArrayUtil.calcOffset(paddedShape, paddingOffsets, paddedStride);
+        DataBuffer buffer = Nd4j.createBuffer(type, paddedAllocSize, false, workspace);
+        this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, paddedAllocSize - offset) : buffer ;
+        long extras  = ArrayOptionsHelper.setOptionBit(0, type);
+        if(empty) extras = ArrayOptionsHelper.setOptionBit(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
+        else if(ews!=1) extras = ArrayOptionsHelper.setOptionBit(extras, ArrayOptionsHelper.HAS_PADDED_BUFFER);
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, paddedStride, ews, ordering, extras));
+    }
 
     /**
      * Create the ndarray with

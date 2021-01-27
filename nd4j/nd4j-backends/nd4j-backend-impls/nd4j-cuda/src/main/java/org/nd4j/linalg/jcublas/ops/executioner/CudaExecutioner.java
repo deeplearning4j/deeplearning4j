@@ -2159,6 +2159,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     }
 
     @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
+        val dbf = nativeOps.shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
+        val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
+
+        nativeOps.deleteConstantShapeBuffer(dbf);
+
+        return result;
+    }
+
+    @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
