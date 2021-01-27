@@ -58,7 +58,6 @@
         <module>datavec-jdbc</module>
         <module>datavec-excel</module>
         <module>datavec-arrow</module>
-        <module>datavec-python</module>
     </modules>
 
     <dependencyManagement>

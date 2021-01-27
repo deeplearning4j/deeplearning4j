@@ -135,7 +135,6 @@
         <module>deeplearning4j-manifold</module>
         <module>dl4j-integration-tests</module>
         <module>deeplearning4j-common</module>
-        <module>deeplearning4j-remote</module>
         <module>deeplearning4j-common-tests</module>
     </modules>
 

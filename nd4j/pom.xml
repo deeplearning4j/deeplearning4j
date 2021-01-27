@@ -45,7 +45,6 @@
 
     <modules>
         <module>nd4j-shade</module>
-        <module>nd4j-jdbc</module>
         <module>nd4j-serde</module>
         <module>nd4j-common</module>
         <module>nd4j-backends</module>

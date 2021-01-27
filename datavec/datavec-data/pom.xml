@@ -40,7 +40,6 @@
         <module>datavec-data-image</module>
         <module>datavec-data-nlp</module>
         <module>datavec-geo</module>
-        <module>datavec-hadoop</module>
     </modules>
 
     <dependencyManagement>

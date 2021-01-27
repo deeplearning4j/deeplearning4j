@@ -97,18 +97,7 @@
       <version>1.11.1</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.bytedeco</groupId>
-      <artifactId>tensorflow-platform</artifactId>
-      <version>1.15.3-1.5.4</version>
-    </dependency>
 
-
-    <dependency>
-      <groupId>org.bytedeco</groupId>
-      <artifactId>onnxruntime-platform</artifactId>
-      <version>1.4.0-1.5.4</version>
-    </dependency>
 
 
     <dependency>
@@ -118,11 +107,7 @@
     </dependency>
 
 
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>1.18.12</version>
-    </dependency>
+
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-tensorflow</artifactId>
@@ -152,11 +137,7 @@
       <version>${project.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.nd4j</groupId>
-      <artifactId>nd4j-tensorflow</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+
   </dependencies>
 
 
