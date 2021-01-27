@@ -302,7 +302,9 @@ public class KerasLayerUtils {
             layer = new KerasUpsampling1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_2D())) {
             layer = new KerasUpsampling2D(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_3D())) {
+        }else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_2D())) {
+            layer = new KerasUpsampling3D(layerConfig, enforceTrainingConfig);
+        }  else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_3D())) {
             layer = new KerasCropping3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_2D())) {
             layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
@@ -330,7 +332,7 @@ public class KerasLayerUtils {
         } else if (conf instanceof Keras2LayerConfiguration){
             Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration)conf;
             if (layerClassName.equals(k2conf.getTENSORFLOW_OP_LAYER())){
-              layer = new KerasTFOpLayer(layerConfig, enforceTrainingConfig);
+                layer = new KerasTFOpLayer(layerConfig, enforceTrainingConfig);
             }
         }
         if (layer == null){
