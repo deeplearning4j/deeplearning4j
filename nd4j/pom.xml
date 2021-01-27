@@ -49,10 +49,8 @@
         <module>nd4j-common</module>
         <module>nd4j-backends</module>
         <module>nd4j-parameter-server-parent</module>
-        <module>nd4j-uberjar</module>
         <module>nd4j-tensorflow</module>
         <module>nd4j-onnxruntime</module>
-        <module>nd4j-remote</module>
         <module>nd4j-common-tests</module>
         <module>samediff-import</module>
     </modules>
