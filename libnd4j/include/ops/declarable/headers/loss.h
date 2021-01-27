@@ -359,6 +359,12 @@ namespace ops {
         #endif
 
 
+        #if NOT_EXCLUDED(OP_ctc_loss)
+        DECLARE_CUSTOM_OP(ctc_loss, 2, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(ctc_loss_grad, 2, 1, false, 0, 0);
+        #endif
+
+
 }
 }
 

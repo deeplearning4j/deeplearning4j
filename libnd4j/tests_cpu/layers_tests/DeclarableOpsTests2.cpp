@@ -4177,3 +4177,62 @@ TEST_F(DeclarableOpsTests2, lstmCell_test12) {
 
     
 }
+
+
+TEST_F(DeclarableOpsTests2, ctc_loss_test1) {
+    constexpr int FRAME_LEN = 6 ;
+    constexpr int CLASS_LEN = 5 ;
+    constexpr int BATCH_LEN = 4  ;
+    constexpr int MAX_TARGET_LEN = 4;
+    constexpr int MIN_TARGET_LEN = 2;
+    constexpr int BLANK_INDEX=CLASS_LEN-1;
+    //logits were generated using numpy random and applying log softmax
+    auto logits =  NDArrayFactory::create<float>('c', {BATCH_LEN, FRAME_LEN, CLASS_LEN },
+      {-1.52900087f, -1.7423916f, -1.79369985f, -1.68980741f, -1.35771429f,
+       -2.08261997f, -1.65483307f, -1.31878488f, -1.38940393f, -1.78624192f,
+       -1.83125744f, -1.28989651f, -1.86882736f, -1.51760877f, -1.65575026f,
+       -1.59030191f, -2.09045484f, -2.01113821f, -1.31159853f, -1.3120046f,
+       -1.45263472f, -1.52268525f, -1.6567962f,  -2.06986454f, -1.46546941f,
+       -1.25549694f, -1.86336982f, -1.64691575f, -1.69584239f, -1.69374889f,
+       -1.62384788f, -1.53256338f, -1.47943003f, -1.9953089f,  -1.49995189f,
+       -1.58914748f, -2.14294273f, -1.89989005f, -1.26397295f, -1.40048678f,
+       -1.52242117f, -1.79940303f, -1.86987214f, -1.41871056f, -1.51299132f,
+       -1.41772259f, -1.27648263f, -1.87029582f, -1.71325761f, -1.93542947f,
+       -1.4372372f,  -1.72814911f, -1.18767571f, -1.85569031f, -2.09127332f,
+       -1.99591619f, -1.17070749f, -1.91569048f, -1.66127429f, -1.52865783f,
+       -1.39319926f, -2.19674832f, -1.69619098f, -1.37916537f, -1.58285964f,
+       -1.85456282f, -1.91027747f, -1.35265643f, -1.76707679f, -1.32405154f,
+       -1.70063352f, -1.82894304f, -1.81275811f, -1.76677183f, -1.13084056f,
+       -2.01507311f, -1.50622804f, -1.55902412f, -1.4076143f,  -1.66137954f,
+       -1.72469437f, -1.74285619f, -1.72109242f, -1.54947478f, -1.36444454f,
+       -1.78795939f, -1.62871901f, -1.43244094f, -1.83058005f, -1.43770547f,
+       -1.3577647f,  -1.81454222f, -1.58227661f, -1.89836191f, -1.49373763f,
+       -1.52027507f, -1.41807732f, -1.54481537f, -1.86538837f, -1.76619851f,
+       -1.64547283f, -1.58328753f, -1.58442673f, -1.65941447f, -1.57762943f,
+       -1.54091641f, -1.76747862f, -1.56063854f, -1.76235545f, -1.45495771f,
+       -1.37294933f, -1.75871646f, -1.38392315f, -1.62238305f, -2.06866473f,
+       -1.98087487f, -1.49880371f, -2.14268396f, -1.22969736f, -1.47432277f
+       });
+    
+    auto logits_length = NDArrayFactory::create<int>('c', {BATCH_LEN}, {FRAME_LEN,FRAME_LEN,FRAME_LEN,FRAME_LEN});
+    auto labels = NDArrayFactory::create<int>('c',{BATCH_LEN, MAX_TARGET_LEN}, {2, 2, 2, 0, 1, 1, 0, 0, 1, 2, 2, 3, 0, 2, 1, 2});
+    auto labels_len =  NDArrayFactory::create<int>('c', {BATCH_LEN}, {MIN_TARGET_LEN, MIN_TARGET_LEN +1, MAX_TARGET_LEN, MIN_TARGET_LEN +1});
+
+    auto expected = NDArrayFactory::create<float>('c', {BATCH_LEN}, {6.0661564f, 6.4285727f, 7.7180986f, 4.936057f});
+    sd::ops::ctc_loss op;
+
+    //logits.printIndexedBuffer("logits");
+    //labels.printIndexedBuffer("labels");
+
+    auto results = op.evaluate({&labels, &logits, &labels_len, &logits_length}, {}, {BLANK_INDEX});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto *loss = results.at(0);
+
+    //loss->printIndexedBuffer("loss");
+
+    ASSERT_TRUE(expected.isSameShape(loss));
+    ASSERT_TRUE(expected.equalsTo(loss));
+
+}
