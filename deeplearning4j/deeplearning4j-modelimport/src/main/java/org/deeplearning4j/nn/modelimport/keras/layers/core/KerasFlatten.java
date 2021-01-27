@@ -24,6 +24,8 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -113,6 +115,21 @@ public class KerasFlatten extends KerasLayer {
             InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
             val inputShape = new long[]{it.getSize()};
             preprocessor = new ReshapePreprocessor(inputShape, inputShape, false, null);
+        } else if(inputType[0] instanceof InputType.InputTypeConvolutional3D) {
+            InputType.InputTypeConvolutional3D it = (InputType.InputTypeConvolutional3D) inputType[0];
+            switch (this.getDimOrder()) {
+                case NONE:
+                case THEANO:
+                    preprocessor = new Cnn3DToFeedForwardPreProcessor(it.getDepth(),it.getHeight(),it.getWidth(),
+                            it.getChannels(),it.getDataFormat() == Convolution3D.DataFormat.NCDHW);
+                    break;
+                case TENSORFLOW:
+                    preprocessor = new Cnn3DToFeedForwardPreProcessor(it.getDepth(),it.getHeight(),it.getWidth(),
+                            it.getChannels(),it.getDataFormat() != Convolution3D.DataFormat.NCDHW);
+                    break;
+                default:
+                    throw new InvalidKerasConfigurationException("Unknown Keras backend " + this.getDimOrder());
+            }
         }
         return preprocessor;
     }

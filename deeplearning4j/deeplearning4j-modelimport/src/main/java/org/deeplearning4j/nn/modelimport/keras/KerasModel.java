@@ -130,9 +130,9 @@ public class KerasModel {
             throw new InvalidKerasConfigurationException(
                     "Could not determine Keras model class (no " + config.getFieldClassName() + " field found)");
         this.className = (String) modelConfig.get(config.getFieldClassName());
-        if (!this.className.equals(config.getFieldClassNameModel()))
+        if (!this.className.equals(config.getFieldClassNameModel()) && !this.className.equals(config.getFieldNameClassFunctional()))
             throw new InvalidKerasConfigurationException(
-                    "Expected model class name " + config.getFieldClassNameModel() + " (found " + this.className + ")");
+                    "Expected model class name " + config.getFieldClassNameModel() + " or " + config.getFieldNameClassFunctional() + " (found " + this.className + ")");
 
 
         /* Retrieve lists of input and output layers, layer configurations. */
@@ -346,8 +346,9 @@ public class KerasModel {
      */
     public ComputationGraphConfiguration getComputationGraphConfiguration()
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
-        if (!this.className.equals(config.getFieldClassNameModel()) && !this.className.equals(config.getFieldClassNameSequential()))
-
+        if (!this.className.equals(config.getFieldClassNameModel())
+                && !this.className.equals(config.getFieldClassNameSequential())
+                && !this.className.equals(config.getFieldNameClassFunctional()))
             throw new InvalidKerasConfigurationException(
                     "Keras model class name " + this.className + " incompatible with ComputationGraph");
         NeuralNetConfiguration.Builder modelBuilder = new NeuralNetConfiguration.Builder();

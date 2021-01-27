@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph.vertex.impl;
 
+import lombok.Getter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -35,7 +36,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  * @author Alex Black
  */
 public class PreprocessorVertex extends BaseGraphVertex {
-
+    @Getter
     private InputPreProcessor preProcessor;
 
     public PreprocessorVertex(ComputationGraph graph, String name, int vertexIndex, InputPreProcessor preProcessor, DataType dataType) {
@@ -43,7 +44,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
     }
 
     public PreprocessorVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                    VertexIndices[] outputVertices, InputPreProcessor preProcessor, DataType dataType) {
+                              VertexIndices[] outputVertices, InputPreProcessor preProcessor, DataType dataType) {
         super(graph, name, vertexIndex, inputVertices, outputVertices, dataType);
         this.preProcessor = preProcessor;
     }
@@ -71,7 +72,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
     @Override
     public String toString() {
         return "PreprocessorVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",preProcessor="
-                        + preProcessor.toString() + ")";
+                + preProcessor.toString() + ")";
     }
 
     @Override
@@ -82,7 +83,7 @@ public class PreprocessorVertex extends BaseGraphVertex {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                    int minibatchSize) {
+                                                           int minibatchSize) {
         //No op
         if (maskArrays == null || maskArrays.length == 0) {
             return null;

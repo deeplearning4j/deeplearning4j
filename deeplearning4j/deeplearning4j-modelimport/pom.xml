@@ -107,9 +107,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-python</artifactId>
-            <version>${datavec.version}</version>
+            <groupId>org.nd4j</groupId>
+            <artifactId>python4j-numpy</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
