@@ -64,6 +64,7 @@ public class KerasLossUtils {
     public static ILossFunction mapLossFunction(String kerasLoss, KerasLayerConfiguration conf)
             throws UnsupportedKerasConfigurationException {
         LossFunctions.LossFunction dl4jLoss;
+        kerasLoss = kerasLoss.toLowerCase();
         if (kerasLoss.equals(conf.getKERAS_LOSS_MEAN_SQUARED_ERROR()) ||
                 kerasLoss.equals(conf.getKERAS_LOSS_MSE())) {
             dl4jLoss = LossFunctions.LossFunction.SQUARED_LOSS;

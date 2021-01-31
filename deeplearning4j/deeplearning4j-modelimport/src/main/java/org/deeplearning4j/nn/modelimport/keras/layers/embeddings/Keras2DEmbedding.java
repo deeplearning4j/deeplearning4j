@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -52,7 +53,7 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getN
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)
-public class KerasEmbedding extends KerasLayer {
+public class Keras2DEmbedding extends KerasLayer {
 
     private final int NUM_TRAINABLE_PARAMS = 1;
     private boolean zeroMasking;
@@ -66,7 +67,7 @@ public class KerasEmbedding extends KerasLayer {
      *
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasEmbedding() throws UnsupportedKerasConfigurationException {
+    public Keras2DEmbedding() throws UnsupportedKerasConfigurationException {
     }
 
     /**
@@ -76,7 +77,7 @@ public class KerasEmbedding extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasEmbedding(Map<String, Object> layerConfig)
+    public Keras2DEmbedding(Map<String, Object> layerConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         this(layerConfig, true);
     }
@@ -89,7 +90,7 @@ public class KerasEmbedding extends KerasLayer {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public KerasEmbedding(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+    public Keras2DEmbedding(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         super(layerConfig, enforceTrainingConfig);
 
@@ -115,18 +116,15 @@ public class KerasEmbedding extends KerasLayer {
         LayerConstraint embeddingConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_EMBEDDINGS_CONSTRAINT(), conf, kerasMajorVersion);
         int nOutFromConfig = getNOutFromConfig(layerConfig, conf);
-        EmbeddingSequenceLayer.Builder builder = new EmbeddingSequenceLayer.Builder()
+        EmbeddingLayer.Builder builder = new EmbeddingLayer.Builder()
                 .name(this.layerName)
                 .nIn(inputDim)
-                .inputLength(inputLength)
-                .inferInputLength(inferInputLength)
                 .nOut(nOutFromConfig)
                 .dropOut(this.dropout).activation(Activation.IDENTITY)
                 .weightInit(init)
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization)
-                .outputDataFormat(RNNFormat.NWC)
                 .hasBias(false);
         if (embeddingConstraint != null)
             builder.constrainWeights(embeddingConstraint);
@@ -140,8 +138,8 @@ public class KerasEmbedding extends KerasLayer {
      *
      * @return Embedding Sequence layer
      */
-    public EmbeddingSequenceLayer getEmbeddingLayer() {
-        return (EmbeddingSequenceLayer) this.layer;
+    public EmbeddingLayer getEmbeddingLayer() {
+        return (EmbeddingLayer) this.layer;
     }
 
     /**

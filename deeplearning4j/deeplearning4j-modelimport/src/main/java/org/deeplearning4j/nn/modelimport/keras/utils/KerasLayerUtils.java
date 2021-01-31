@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.KerasTFOpLayer;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.Keras2DEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.local.KerasLocallyConnected1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasAlphaDropout;
@@ -45,14 +46,12 @@ import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling3D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
+import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Utility functionality to import keras models
@@ -193,7 +192,7 @@ public class KerasLayerUtils {
             layerConfig = getTimeDistributedLayerConfig(layerConfig, conf);
             layerClassName = getClassNameFromConfig(layerConfig, conf);
         }
-
+        Counter<String> numTimesSeenLambdaName = new Counter<>();
         KerasLayer layer = null;
         if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVATION())) {
             layer = new KerasActivation(layerConfig, enforceTrainingConfig);
@@ -317,6 +316,7 @@ public class KerasLayerUtils {
                         "layer " + lambdaLayerName + ". You can register a SameDiff Lambda layer using KerasLayer." +
                         "registerLambdaLayer(lambdaLayerName, sameDiffLambdaLayer);");
             }
+
             SameDiffLambdaLayer lambdaLayer = lambdaLayers.get(lambdaLayerName);
             if (lambdaLayer != null){
                 layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
@@ -335,7 +335,7 @@ public class KerasLayerUtils {
                 layer = new KerasTFOpLayer(layerConfig, enforceTrainingConfig);
             }
         }
-        if (layer == null){
+        if (layer == null) {
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
             if (customConfig == null)
                 throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
@@ -499,15 +499,43 @@ public class KerasLayerUtils {
         List<String> inboundLayerNames = new ArrayList<>();
         if (layerConfig.containsKey(conf.getLAYER_FIELD_INBOUND_NODES())) {
             List<Object> inboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_INBOUND_NODES());
-            if (!inboundNodes.isEmpty()) {
-                inboundNodes = (List<Object>) inboundNodes.get(0);
-                for (Object o : inboundNodes) {
+            if(!inboundNodes.isEmpty()) {
+                for(Object nodeName : inboundNodes) {
+                    List<Object> list = (List<Object>) nodeName;
+                    for(Object o : list) {
+                        List<Object> list2 = (List<Object>) o;
+                        inboundLayerNames.add(list2.get(0).toString());
+
+                    }
+                }
+
+
+            }
+
+
+        }
+        return inboundLayerNames;
+    }
+
+    /**
+     * Get list of inbound layers from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return List of inbound layer names
+     */
+    public static List<String> getOutboundLayerNamesFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf) {
+        List<String> outputLayerNames = new ArrayList<>();
+        if (layerConfig.containsKey(conf.getLAYER_FIELD_OUTBOUND_NODES())) {
+            List<Object> outboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_OUTBOUND_NODES());
+            if (!outboundNodes.isEmpty()) {
+                outboundNodes = (List<Object>) outboundNodes.get(0);
+                for (Object o : outboundNodes) {
                     String nodeName = (String) ((List<Object>) o).get(0);
-                    inboundLayerNames.add(nodeName);
+                    outputLayerNames.add(nodeName);
                 }
             }
         }
-        return inboundLayerNames;
+        return outputLayerNames;
     }
 
     /**

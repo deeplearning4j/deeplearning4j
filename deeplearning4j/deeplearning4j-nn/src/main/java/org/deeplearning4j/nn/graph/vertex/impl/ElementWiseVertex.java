@@ -88,19 +88,19 @@ public class ElementWiseVertex extends BaseGraphVertex {
             return workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
 
         boolean isBc = false;
-        for(int i=1; i<inputs.length; i++ ){
-            if(!inputs[0].equalShapes(inputs[i])){
+        for(int i = 1; i < inputs.length; i++) {
+            if(!inputs[0].equalShapes(inputs[i])) {
                 isBc = true;
                 break;
             }
         }
 
         long[] outShape;
-        if(!isBc){
+        if(!isBc) {
             outShape = inputs[0].shape();
         } else {
             outShape = Shape.broadcastOutputShape(inputs[0].shape(), inputs[1].shape());
-            for( int i=2; i<inputs.length; i++ ){
+            for( int i = 2; i < inputs.length; i++) {
                 outShape = Shape.broadcastOutputShape(outShape, inputs[i].shape());
             }
         }
@@ -108,7 +108,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
         switch (op) {
             case Add:
                 INDArray sum =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, outShape);
-                if(isBc && !Arrays.equals(outShape, inputs[0].shape())){
+                if(isBc && !Arrays.equals(outShape, inputs[0].shape())) {
                     Nd4j.exec(new BroadcastTo(inputs[0], outShape, sum));
                 } else {
                     sum.assign(inputs[0]);
@@ -136,7 +136,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
             case Product:
                 INDArray product =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, outShape);
 
-                if(isBc && !Arrays.equals(outShape, inputs[0].shape())){
+                if(isBc && !Arrays.equals(outShape, inputs[0].shape())) {
                     Nd4j.exec(new BroadcastTo(inputs[0], outShape, product));
                 } else {
                     product.assign(inputs[0]);
@@ -148,7 +148,7 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 return product;
             case Max:
                 boolean isBroadcast = false;
-                for(int i=1; i<inputs.length; i++ ){
+                for(int i=1; i<inputs.length; i++) {
                     isBroadcast |= !inputs[0].equalShapes(inputs[i]);
                     if(isBroadcast)
                         break;
@@ -164,11 +164,11 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     return max;
                 } else {
                     //AB 20190729 mergemax doesn't support broadcast at this point
-                    if(inputs.length == 1){
+                    if(inputs.length == 1) {
                         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, inputs[0]);
                     } else {
                         INDArray max = Transforms.max(inputs[0], inputs[1], true);
-                        for( int i=2; i<inputs.length; i++ ){
+                        for( int i = 2; i < inputs.length; i++) {
                             max = Transforms.max(max, inputs[i], false);
                         }
                         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, max);

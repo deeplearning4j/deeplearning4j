@@ -91,6 +91,10 @@ public class KerasFlatten extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
+        /**
+         * TODO: On layer name dropout_2 as input the flatten layer seems to be outputting 20 instead of 80.
+         * Likely due to needing to multiply the final outputs totaled to 80, but only getting to 20.
+         */
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputTypeConvolutional) {
             InputTypeConvolutional it = (InputTypeConvolutional) inputType[0];

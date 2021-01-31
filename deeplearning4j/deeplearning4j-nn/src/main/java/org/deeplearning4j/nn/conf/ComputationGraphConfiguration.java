@@ -1001,7 +1001,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * InputType.convolutional(28,28,1)) then the input labelled "a" is a feed forward input, whereas the input labelled "b" in a CNN
          * input, with 28x28x1 images as input.<br>
          * <b>Note</b>: Using setInputTypes is not always necessary, but can be especially helpful for example with CNNs such that
-         * the calculations on input/ouput sizes (width, height, channels, etc) don't need to be done manually.<br>
+         * the calculations on input/output sizes (width, height, channels, etc) don't need to be done manually.<br>
          * <b>Note 2</b>: If a preprocessor is manually added for a given layer, it will not be overridden by the automatic
          * addition of preprocessors.
          * <b>Note 3</b>: If a layer has an nIn set manually, this will not be overridden
@@ -1145,7 +1145,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * first
          * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
          */
-        public Map<String,InputType> getLayerActivationTypes(){
+        public Map<String,InputType> getLayerActivationTypes() {
             Preconditions.checkArgument(networkInputs != null && networkInputs.size() > 0,
                     "Cannot calculate activation types if no inputs have been set (use addInputs(String...))");
             Preconditions.checkArgument(networkInputTypes != null && networkInputTypes.size() == networkInputs.size(),

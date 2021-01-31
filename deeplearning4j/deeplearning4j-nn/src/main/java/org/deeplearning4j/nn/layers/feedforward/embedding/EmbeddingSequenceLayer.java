@@ -113,8 +113,11 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
     @Override
     protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
+        if(input.rank() == 1) {
+            input = input.reshape(input.length(), 1,1);
+        }
 
-        if((input.rank() == 3 && input.size(1) != 1) || (input.rank() != 2 && input.rank() != 3)){
+        if((input.rank() == 3 && input.size(1) != 1) || (input.rank() != 2 && input.rank() != 3)) {
             throw new IllegalStateException("Invalid input: EmbeddingSequenceLayer expects either rank 2 input of shape " +
                     "[minibatch,seqLength] or rank 3 input of shape [minibatch,1,seqLength]. Got rank " + input.rank() +
                     " input of shape " + Arrays.toString(input.shape()));
@@ -170,7 +173,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         val shape = new long[]{minibatch, inputLength, nOut};
         INDArray ret = rows.reshape('c', shape);
-        if(layerConf().getOutputFormat() == RNNFormat.NCW){
+        if(layerConf().getOutputFormat() == RNNFormat.NCW) {
             ret = ret.permute(0, 2, 1); //[minibatch, seqLen, nOut] -> [minibatch, nOut, seqLen] i.e., NWC -> NCW
         }
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);

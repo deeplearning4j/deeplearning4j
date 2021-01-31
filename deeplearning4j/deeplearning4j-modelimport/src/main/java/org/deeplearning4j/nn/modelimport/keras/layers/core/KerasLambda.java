@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -32,6 +33,7 @@ import java.util.Map;
  *
  * @author Max Pumperla
  */
+@Slf4j
 public class KerasLambda extends KerasLayer {
 
     /**
@@ -70,9 +72,9 @@ public class KerasLambda extends KerasLayer {
      * @throws InvalidKerasConfigurationException Invalid Keras config
      */
     public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
-        if (inputType.length > 1)
-            throw new InvalidKerasConfigurationException(
-                    "Keras SameDiff layer accepts only one input (received " + inputType.length + ")");
+        if (inputType.length > 1) {
+            log.warn("Note: only first input type will be counted for lambda on layer with name " + layerName);
+        }
         return this.getSameDiffLayer().getOutputType(-1, inputType[0]);
     }
 
