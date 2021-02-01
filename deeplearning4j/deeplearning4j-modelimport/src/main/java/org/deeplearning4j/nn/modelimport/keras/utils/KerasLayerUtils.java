@@ -192,7 +192,6 @@ public class KerasLayerUtils {
             layerConfig = getTimeDistributedLayerConfig(layerConfig, conf);
             layerClassName = getClassNameFromConfig(layerConfig, conf);
         }
-        Counter<String> numTimesSeenLambdaName = new Counter<>();
         KerasLayer layer = null;
         if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVATION())) {
             layer = new KerasActivation(layerConfig, enforceTrainingConfig);
@@ -343,7 +342,8 @@ public class KerasLayerUtils {
                 Constructor constructor = customConfig.getConstructor(Map.class);
                 layer = (KerasLayer) constructor.newInstance(layerConfig);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("The keras custom class " + layerClassName + " needs to have a constructor with only Map<String,Object> as the argument. Please ensure this is defined."
+                        ,e);
             }
         }
         return layer;
