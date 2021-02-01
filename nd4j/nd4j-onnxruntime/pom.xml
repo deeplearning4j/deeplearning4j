@@ -8,6 +8,8 @@
   ~  * terms of the Apache License, Version 2.0 which is available at
   ~  * https://www.apache.org/licenses/LICENSE-2.0.
   ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
   ~  * Unless required by applicable law or agreed to in writing, software
   ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
   ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -29,7 +31,7 @@
 
     <artifactId>nd4j-onnxruntime</artifactId>
 
-    <name>nd4j-onnx</name>
+    <name>nd4j-onnxruntime</name>
 
 
     <properties>
@@ -75,5 +77,9 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    
+    <profiles>
+        <profile>
+            <id>testresources</id>
+        </profile>
+    </profiles>
 </project>

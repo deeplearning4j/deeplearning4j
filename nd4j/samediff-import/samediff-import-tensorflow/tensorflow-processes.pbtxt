@@ -600,9 +600,15 @@ mappings {
     functionName: "valuemapping"
     inputIntName: "seed"
     outputIntName: "seed"
+    inputDataTypeName: "dtype"
+    outputDataTypeName: "dtype"
     inputToOutput {
       key: "seed"
       value: "seed"
+    }
+    inputToOutput {
+      key: "dtype"
+      value: "dtype"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "RandomPoisson"
@@ -7653,9 +7659,15 @@ mappings {
     functionName: "valuemapping"
     inputIntName: "seed"
     outputIntName: "seed"
+    inputDataTypeName: "dtype"
+    outputDataTypeName: "dtype"
     inputToOutput {
       key: "seed"
       value: "seed"
+    }
+    inputToOutput {
+      key: "dtype"
+      value: "dtype"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "RandomPoissonV2"
@@ -9918,9 +9930,8 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputFloatName: "iou_threshold"
-    outputDoubleName: "iouThreshold"
     inputToOutput {
-      key: "iouThreshold"
+      key: "overlayThreshold"
       value: "iou_threshold"
     }
     ruleType: "attribute"
@@ -14677,12 +14688,6 @@ mappings {
       value: "logits"
     }
     ruleType: "tensor"
-    inputFrameworkOpName: "LogSoftmax"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    ruleType: "attribute"
     inputFrameworkOpName: "LogSoftmax"
   }
 }

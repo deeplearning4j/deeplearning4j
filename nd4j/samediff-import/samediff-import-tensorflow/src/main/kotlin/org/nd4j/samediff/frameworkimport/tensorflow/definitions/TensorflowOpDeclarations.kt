@@ -6,6 +6,8 @@
  *  * terms of the Apache License, Version 2.0 which is available at
  *  * https://www.apache.org/licenses/LICENSE-2.0.
  *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
  *  * Unless required by applicable law or agreed to in writing, software
  *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -1466,7 +1468,7 @@ val nonMaxSuppressionV1 = multipleNameMapping(inputFrameworkOpNames = listOf("No
                                 argIndex = 1
                         }
                 )),
-                valueMapping(mutableMapOf("iouThreshold" to "iou_threshold")),
+                valueMapping(mutableMapOf("overlayThreshold" to "iou_threshold")),
                 convertNDArrayInputToNumericalAttr(mutableMapOf("maxOutputSize" to "max_output_size")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
@@ -1475,7 +1477,7 @@ val nonMaxSuppressionV1 = multipleNameMapping(inputFrameworkOpNames = listOf("No
 val nonMaxSuppressionV2 = multipleNameMapping(inputFrameworkOpNames = listOf("NonMaxSuppressionV2"),
         opName = "non_max_suppression",
         tensorNames = mutableMapOf("boxes" to "boxes","scales" to "scores",
-                "iouThreshold" to "iou_threshold","maxOutputSize" to "max_output_size"),
+                "overlayThreshold" to "iou_threshold","maxOutputSize" to "max_output_size"),
         attributeMappingRules = listOf(
                 argDescriptorConstant(listOf(
                         ArgDescriptor {
@@ -1802,7 +1804,7 @@ val resizeBiCubic = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBi
         tensorNames = mutableMapOf("image" to "images","size" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeBiLinear = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBilinear"),opName = "resize_bilinear",
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenter" to "half_pixel_centers"))),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenters" to "half_pixel_centers"))),
         tensorNames = mutableMapOf("image" to "images","newImageSize" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeNearestNeighbor = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeNearestNeighbor"),opName = "resize_nearest_neighbor",
@@ -1981,11 +1983,9 @@ listOf(argDescriptorConstant(
                 }
         )
 )),tensorflowOpRegistry = tensorflowOpRegistry)
-
-val logSoftmax = mapTensorNamesWithOp(inputFrameworkOpName = "LogSoftmax",opName = "log_softmax",tensorNames = mutableMapOf("input" to "logits"),attributeMappingRules =
-listOf(argDescriptorConstant(
-        listOf()
-)),tensorflowOpRegistry = tensorflowOpRegistry)
+val logSoftmax = mapTensorNamesWithOp(inputFrameworkOpName = "LogSoftmax",
+        opName = "log_softmax",tensorNames = mutableMapOf("input" to "logits")
+,tensorflowOpRegistry = tensorflowOpRegistry)
 
 //FakeQuantWithMinMaxVars
 //FakeQuantWithMinMaxVarsPerChannel
