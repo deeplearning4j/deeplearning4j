@@ -33,9 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-/**
- * SConv2DDerivative operation
- */
 @Slf4j
 public class SConv2DDerivative extends SConv2D {
 

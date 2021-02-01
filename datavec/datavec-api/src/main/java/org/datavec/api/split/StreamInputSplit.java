@@ -31,18 +31,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.*;
 
-/**
- * StreamInputSplit is a way of specifying input as a bunch of URIs, as well as the way those URIs should be opened.
- * For example, if data was stored remotely (HDFS, S3, etc) you could use StreamInputSplit to load them, doing two things:
- * (a) providing the URIs of the remote data to the constructor<br>
- * (b) providing a {@code Function<URI,InputStream>} that opens an InputStream for the given URI.<br>
- * <br>
- * Note: supports optional randomization (shuffling of order in which streams are read) via {@link #StreamInputSplit(List, Function, Random)}
- * by providing a {@link Random} instance. If no Random instance is provided, the order will always be according to the
- * order in the provided list of URIs.
- *
- * @author Alex Black
- */
 @Data
 public class StreamInputSplit implements InputSplit {
 

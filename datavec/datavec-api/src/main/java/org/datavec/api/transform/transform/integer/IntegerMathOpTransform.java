@@ -29,13 +29,6 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Integer mathematical operation.<br>
- * This is an in-place operation of the integer column value and an integer scalar.
- *
- * @author Alex Black
- * @see IntegerColumnsMathOpTransform to do a mathematical operation involving multiple columns (instead of a scalar)
- */
 @Data
 public class IntegerMathOpTransform extends BaseColumnTransform {
 

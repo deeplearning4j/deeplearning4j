@@ -23,11 +23,6 @@ package org.deeplearning4j.spark.impl.multilayer.evaluation;
 import org.apache.spark.api.java.function.Function2;
 import org.nd4j.evaluation.IEvaluation;
 
-/**
- * A simple function to merge IEvaluation instances
- *
- * @author Alex Black
- */
 public class IEvaluateAggregateFunction<T extends IEvaluation> implements Function2<T[], T[], T[]> {
     @Override
     public T[] call(T[] v1, T[] v2) throws Exception {

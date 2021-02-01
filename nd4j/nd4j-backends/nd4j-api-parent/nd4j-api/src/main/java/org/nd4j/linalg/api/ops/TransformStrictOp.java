@@ -20,9 +20,5 @@
 
 package org.nd4j.linalg.api.ops;
 
-/**
- * Strict transforms take floating-point type in, and return same type
- * @author raver119@gmail.com
- */
 public interface TransformStrictOp extends TransformOp  {
 }

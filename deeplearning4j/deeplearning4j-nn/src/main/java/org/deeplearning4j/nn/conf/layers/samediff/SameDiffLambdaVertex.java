@@ -29,13 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.*;
 
 
-/**
- * SameDiffLambdaVertex is defined to be used as the base class for implementing lambda vertices using SameDiff<br>
- * Lambda vertices are vertices without parameters - and as a result, have a much simpler API - users need only
- * extend SameDiffLambdaVertex and implement a single method to define their vertex
- *
- * @author Alex Black
- */
 public abstract class SameDiffLambdaVertex extends SameDiffVertex {
 
     protected transient VertexInputs inputs;

@@ -46,13 +46,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/**
- * A simple utility for plotting DataVec sequence data to HTML files.
- * Each file contains only one sequence. Each column is plotted separately; only numerical and categorical columns are
- * plotted.
- *
- * @author Alex Black
- */
 public class HtmlSequencePlotting {
 
     private HtmlSequencePlotting() {

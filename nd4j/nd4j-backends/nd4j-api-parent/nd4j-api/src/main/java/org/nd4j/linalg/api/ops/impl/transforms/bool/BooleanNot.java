@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Boolean NOT transform
- *
- * @author raver119@gmail.com
- */
 public class BooleanNot extends BaseTransformBoolOp {
 
     public BooleanNot(SameDiff sameDiff, SDVariable i_v) {

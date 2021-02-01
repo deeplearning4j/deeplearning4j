@@ -43,9 +43,6 @@ import java.io.File;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 public class InMemoryLookupTableTest extends BaseDL4JTest {
 
     @Rule

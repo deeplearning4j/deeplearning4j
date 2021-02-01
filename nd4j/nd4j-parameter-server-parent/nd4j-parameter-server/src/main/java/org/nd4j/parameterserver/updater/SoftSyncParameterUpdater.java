@@ -25,9 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
-/**
- * Created by agibsonccc on 12/1/16.
- */
 public class SoftSyncParameterUpdater extends BaseParameterUpdater {
     //track time stamps of messages coming in to find out which generation a message is meant for
     //alxways log where the message time stamp began

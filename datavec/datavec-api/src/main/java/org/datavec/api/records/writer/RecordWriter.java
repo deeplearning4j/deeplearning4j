@@ -32,10 +32,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
-/**
- *  Record writer
- *  @author Adam Gibson
- */
 public interface RecordWriter extends Closeable, Configurable {
     String APPEND = "org.datavec.api.record.writer.append";
 

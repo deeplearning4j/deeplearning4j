@@ -32,10 +32,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * This op is a wrapper for RandomNormal Op
- * @author raver119@gmail.com
- */
 public class RandomStandardNormal extends DynamicCustomOp {
 
     public RandomStandardNormal() {

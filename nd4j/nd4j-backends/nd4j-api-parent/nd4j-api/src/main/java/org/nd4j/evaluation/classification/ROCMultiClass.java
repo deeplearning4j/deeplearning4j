@@ -37,15 +37,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * ROC (Receiver Operating Characteristic) for multi-class classifiers.
-  As per {@link ROC}, ROCBinary supports both exact (thersholdSteps == 0) and thresholded; see {@link ROC} for details.
- * <p>
- * The ROC curves are produced by treating the predictions as a set of one-vs-all classifiers, and then calculating
- * ROC curves for each. In practice, this means for N classes, we get N ROC curves.
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {

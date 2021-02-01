@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
-/**
- * Returns true when all of the conditions equal each other
- *
- * @author Adam Gibson
- */
 public class ConditionEquals implements Condition {
 
     private Condition[] conditions;

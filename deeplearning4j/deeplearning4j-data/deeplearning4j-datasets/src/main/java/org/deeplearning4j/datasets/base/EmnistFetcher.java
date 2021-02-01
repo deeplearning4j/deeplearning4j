@@ -24,11 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.common.resources.DL4JResources;
 import org.deeplearning4j.datasets.iterator.impl.EmnistDataSetIterator;
 
-/**
- * Downloader for EMNIST dataset
- *
- * @author Alex Black
- */
 @Slf4j
 public class EmnistFetcher extends MnistFetcher {
 

@@ -55,11 +55,6 @@ import org.nd4j.common.primitives.Pair;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
-/**
- * Utility functionality to import keras models
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class KerasLayerUtils {
 

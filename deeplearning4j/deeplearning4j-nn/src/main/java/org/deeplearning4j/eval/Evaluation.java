@@ -29,9 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.List;
 import java.util.Map;
 
-/**
- * @deprecated Use ND4J Evaluation class, which has the same interface: {@link org.nd4j.evaluation.classification.Evaluation.Metric}
- */
 @EqualsAndHashCode(callSuper = true)
 @Deprecated
 public class Evaluation extends org.nd4j.evaluation.classification.Evaluation implements org.deeplearning4j.eval.IEvaluation<org.nd4j.evaluation.classification.Evaluation> {

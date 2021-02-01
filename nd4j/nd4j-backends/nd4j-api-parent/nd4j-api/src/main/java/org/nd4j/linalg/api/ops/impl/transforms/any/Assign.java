@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformAnyOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Identity function
- *
- * @author Adam Gibson
- */
 public class Assign extends BaseTransformAnyOp {
     public Assign(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

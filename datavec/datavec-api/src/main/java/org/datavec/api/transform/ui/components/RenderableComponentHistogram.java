@@ -26,9 +26,6 @@ import lombok.EqualsAndHashCode;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Alex on 25/03/2016.
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class RenderableComponentHistogram extends RenderableComponent {

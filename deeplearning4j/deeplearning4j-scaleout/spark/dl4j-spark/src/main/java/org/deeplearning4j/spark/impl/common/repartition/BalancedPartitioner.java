@@ -25,16 +25,6 @@ import org.apache.spark.Partitioner;
 
 import java.util.Random;
 
-/**
- * This is a custom partitioner to repartition a RDD.
- * Unlike a standard .repartition() call (which assigns partitions like [2,3,4,1,2,3,4,1,2,...] for 4 partitions],
- * this function attempts to keep contiguous elements (i.e., those elements originally in the same partition) together
- * much more frequently. Furthermore, it is less prone to producing larger or smaller than expected partitions, as
- * it is entirely deterministic, whereas .repartition() has a degree of randomness (i.e., start index) which can result in
- * a large degree of variance when the number of elements in the original partitions is small (as is the case generally in DL4J)
- *
- * @author Alex Black
- */
 @Slf4j
 public class BalancedPartitioner extends Partitioner {
     private final int numPartitions; //Total number of partitions

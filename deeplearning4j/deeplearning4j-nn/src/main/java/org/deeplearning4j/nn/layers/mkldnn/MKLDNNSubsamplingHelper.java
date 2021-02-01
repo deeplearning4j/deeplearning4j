@@ -45,11 +45,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * MKL-DNN Subsampling (2d) helper
- *
- * @author Alex Black
- */
 public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
 
     protected OpContext context;

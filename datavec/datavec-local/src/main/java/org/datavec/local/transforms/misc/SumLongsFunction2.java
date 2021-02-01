@@ -24,9 +24,6 @@ package org.datavec.local.transforms.misc;
 import org.nd4j.common.function.Function;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * Created by Alex on 03/09/2016.
- */
 public class SumLongsFunction2 implements Function<Pair<Long, Long>, Long> {
     @Override
     public Long apply(Pair<Long, Long> input) {

@@ -31,11 +31,6 @@ import org.datavec.api.writable.Writable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Add function used for undertaking analysis of a data set via Spark
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class AnalysisAddFunction implements Function2<List<AnalysisCounter>, List<Writable>, List<AnalysisCounter>> {
     private Schema schema;

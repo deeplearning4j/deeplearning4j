@@ -55,10 +55,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import java.util.stream.Collectors;
 
-/**
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public abstract  class BaseTransport  implements Transport {
     // this stream is for delivering messages from this host to other hosts in the network

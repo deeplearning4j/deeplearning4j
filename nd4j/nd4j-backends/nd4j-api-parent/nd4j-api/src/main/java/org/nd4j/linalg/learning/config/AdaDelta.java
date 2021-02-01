@@ -31,17 +31,6 @@ import org.nd4j.linalg.schedule.ISchedule;
 import java.util.Arrays;
 import java.util.Map;
 
-/**
- * https://www.matthewzeiler.com/mattzeiler/adadelta.pdf
- * https://arxiv.org/pdf/1212.5701v1.pdf
- * <p>
- * Ada delta updater. More robust adagrad that keeps track of a moving window
- * average of the gradient rather than the every decaying learning rates of adagrad
- * <p>
- * Note: AdaDelta is unique in that it doesn't require manual setting of a learning rate
- *
- * @author Adam Gibson
- */
 @Data
 @AllArgsConstructor
 @Builder(builderClassName = "Builder")

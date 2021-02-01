@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
-/**
- * Set range to a particular set of values
- *
- * @author Adam Gibson
- */
 public class SetRange extends BaseTransformStrictOp {
 
     private double min, max;

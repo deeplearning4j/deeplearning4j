@@ -30,13 +30,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Map;
 
-/**
- * A base class for wrapper vertices: i.e., those vertices that have another vertex inside.
- * Use this as the basis of such wrapper vertices, which can selectively override only
- * the vertices that are required.
- *
- * @author Alex Black
- */
 public abstract class BaseWrapperVertex implements GraphVertex {
 
     protected GraphVertex underlying;

@@ -32,9 +32,6 @@ import java.io.Serializable;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
-/**
- * Created by dariuszzbyrad on 7/31/2020.
- */
 @RunWith(ArchUnitRunner.class)
 @AnalyzeClasses(packages = "org.datavec.api.transform.ops", importOptions = {ImportOption.DoNotIncludeTests.class})
 public class AggregableMultiOpArchTest extends BaseND4JTest {

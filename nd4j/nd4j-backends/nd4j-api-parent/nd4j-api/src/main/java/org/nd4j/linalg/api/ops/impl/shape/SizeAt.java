@@ -32,11 +32,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Returns the size of the input along given dimension as a rank 0 array
- *
- * @author raver119@protonmail.com
- */
 public class SizeAt extends DynamicCustomOp {
 
     public SizeAt() {}

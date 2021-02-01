@@ -41,10 +41,6 @@ import org.nd4j.linalg.heartbeat.utils.EnvironmentUtils;
 
 import java.util.*;
 
-/**
- * Common word vector operations
- * @author Adam Gibson
- */
 public class WordVectorsImpl<T extends SequenceElement> implements WordVectors {
     private static final long serialVersionUID = 78249242142L;
 

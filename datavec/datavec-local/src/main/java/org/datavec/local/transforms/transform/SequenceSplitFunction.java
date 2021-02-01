@@ -26,9 +26,6 @@ import org.datavec.local.transforms.BaseFlatMapFunctionAdaptee;
 
 import java.util.List;
 
-/**
- * Created by Alex on 17/03/2016.
- */
 public class SequenceSplitFunction extends BaseFlatMapFunctionAdaptee<List<List<Writable>>, List<List<Writable>>> {
 
     public SequenceSplitFunction(SequenceSplit split) {

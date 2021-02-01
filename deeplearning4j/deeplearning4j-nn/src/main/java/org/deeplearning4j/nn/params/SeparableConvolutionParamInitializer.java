@@ -32,11 +32,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-/**
- * Initialize separable convolution params.
- *
- * @author Max Pumperla
- */
 public class SeparableConvolutionParamInitializer implements ParamInitializer {
 
     private static final SeparableConvolutionParamInitializer INSTANCE = new SeparableConvolutionParamInitializer();

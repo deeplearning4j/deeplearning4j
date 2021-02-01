@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.SegmentMeanBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Segment mean operation
- *
- * @author Alex Black
- */
 public class SegmentMean extends DynamicCustomOp {
 
     public SegmentMean(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {

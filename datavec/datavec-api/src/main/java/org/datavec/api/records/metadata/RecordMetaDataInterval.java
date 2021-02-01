@@ -25,11 +25,6 @@ import lombok.Data;
 
 import java.net.URI;
 
-/**
- * A general-purpose RecordMetaData implementation, with two indices (long values), generally forming an interval
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class RecordMetaDataInterval implements RecordMetaData {

@@ -26,11 +26,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Generic gradient
- *
- * @author Adam Gibson
- */
 public interface Gradient extends Serializable {
 
     /**

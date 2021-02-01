@@ -28,11 +28,6 @@ import org.nd4j.linalg.activations.IActivation;
 
 import java.util.Map;
 
-/**
- * Utility functionality for Keras activation functions.
- *
- * @author Max Pumperla
- */
 public class KerasActivationUtils {
 
     /**

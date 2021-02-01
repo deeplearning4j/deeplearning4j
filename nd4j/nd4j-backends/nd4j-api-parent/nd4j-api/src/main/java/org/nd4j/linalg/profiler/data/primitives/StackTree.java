@@ -28,9 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class StackTree {
     protected Map<String, StackNode> basement = new HashMap<>();

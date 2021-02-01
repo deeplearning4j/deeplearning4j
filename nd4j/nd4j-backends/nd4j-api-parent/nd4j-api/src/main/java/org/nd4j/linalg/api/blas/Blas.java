@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.api.blas;
 
-/**
- * Extra functionality for BLAS
- *
- * @author saudet
- */
 public interface Blas {
 
     public enum Vendor {

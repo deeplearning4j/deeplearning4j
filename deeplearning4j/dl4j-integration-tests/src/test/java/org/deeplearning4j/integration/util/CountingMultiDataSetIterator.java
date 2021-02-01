@@ -27,12 +27,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * A simple iterator that counts the expected number of parameter updates.
- * Accounts for TBPTT (i.e., multiple updates per MultiDataSet) if used
- *
- * @author Alex Black
- */
 @Data
 public class CountingMultiDataSetIterator implements MultiDataSetIterator {
 

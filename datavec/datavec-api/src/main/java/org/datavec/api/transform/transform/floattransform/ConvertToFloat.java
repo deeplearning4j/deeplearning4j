@@ -28,11 +28,6 @@ import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
 
-/**
- * Convert any value to a Float
- *
- * @author Fariz Rahman (farizrahman4u)
- */
 @NoArgsConstructor
 @Data
 public class ConvertToFloat extends BaseFloatTransform {

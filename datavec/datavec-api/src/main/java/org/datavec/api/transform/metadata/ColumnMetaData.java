@@ -27,13 +27,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/**
- * ColumnMetaData: metadata for each column. Used to define:
- * (a) the type of each column, and
- * (b) any restrictions on the allowable values in each column
- *
- * @author Alex Black
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ColumnMetaData extends Serializable, Cloneable {

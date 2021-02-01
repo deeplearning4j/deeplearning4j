@@ -28,11 +28,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This is basic generic SequenceIterator implementation
- *
- * @author raver119@gmail.com
- */
 public class AbstractSequenceIterator<T extends SequenceElement> implements SequenceIterator<T> {
 
     private Iterable<Sequence<T>> underlyingIterable;

@@ -39,11 +39,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Transpose function
- *
- * @author Adam Gibson
- */
 public class Transpose extends DynamicCustomOp {
     protected int[] permuteDims;
 

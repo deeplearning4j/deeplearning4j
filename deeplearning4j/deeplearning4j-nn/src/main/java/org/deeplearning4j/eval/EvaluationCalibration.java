@@ -24,9 +24,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.classification.EvaluationCalibration}
- */
 @Deprecated
 @Getter
 @EqualsAndHashCode(callSuper = true)

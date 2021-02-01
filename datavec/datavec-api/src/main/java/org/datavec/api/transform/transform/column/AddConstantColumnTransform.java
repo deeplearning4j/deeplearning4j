@@ -31,11 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Add a new column, where the values in that column for all records are identical (according to the specified value)
- *
- * @author Alex Black
- */
 @Data
 public class AddConstantColumnTransform implements Transform {
 

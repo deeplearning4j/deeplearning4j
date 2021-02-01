@@ -30,14 +30,6 @@ import org.nd4j.common.tools.InfoValues;
 import org.nd4j.common.tools.SIS;
 
 
-/**
- * shows content of some classes
- *
- * 
- *
- * @author clavvis 
- */
-
 public class DataSetUtils {
 	//
 	private SIS sis;

@@ -30,12 +30,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * By default: Spark storage levels don't serialize/deserialize cleanly with Jackson (i.e., we can get different results out).
- * So we'll manually control the serialization/deserialization for StorageLevel objects
- *
- * @author Alex Black
- */
 public class StorageLevelSerializer extends JsonSerializer<StorageLevel> {
 
     private static final Map<StorageLevel, String> map = initMap();

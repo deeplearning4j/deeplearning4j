@@ -24,10 +24,6 @@ import org.deeplearning4j.datasets.fetchers.IrisDataFetcher;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
 
-/**
- * IrisDataSetIterator: An iterator for the well-known Iris dataset. 4 features, 3 label classes<br>
- * <a href="https://archive.ics.uci.edu/ml/datasets/Iris">https://archive.ics.uci.edu/ml/datasets/Iris</a>
- */
 public class IrisDataSetIterator extends BaseDatasetIterator {
 
     /**

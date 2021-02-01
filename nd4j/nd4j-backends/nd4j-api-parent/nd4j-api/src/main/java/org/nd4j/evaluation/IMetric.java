@@ -20,11 +20,6 @@
 
 package org.nd4j.evaluation;
 
-/**
- * A metric used to get a double value from an {@link IEvaluation}.
- *
- * Examples: {@link org.nd4j.evaluation.classification.Evaluation.Metric#ACCURACY}, {@link org.nd4j.evaluation.classification.ROC.Metric#AUPRC}.
- */
 public interface IMetric {
 
     /**

@@ -27,23 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-/**
- * Residual clipping post processor clips the values of a residual every N iterations as follows:<br>
- * For residual vector R, and C = thresholdMultipleClipValue, T is the current encoding threshold<br>
- * {@code R[i] =  C*T} if R[i] > C*T<br>
- * {@code R[i] = -C*T} if R[i] < -C*T<br>
- * {@code R[i]} is unmodified otherwise<br>
- * <br>
- * Note: Regarding the frequency, a value around 5 is suggested as a good balance between applying frequently enough,
- * and minimizing the computational overhead. Very infrequent clipping might allow stale updates to be communicated
- * (if that is a problem at all), whereas very frequent clipping (every iteration) may have a much higher overhead
- * relative to the benefit, compared to less frequent applications.<br>
- * <br>
- * The motivation here for specifying the clipping value C in terms of a multiple of the threshold is simple: if there
- * were no new updates, and the threshold didn't change, it would take C steps to communicate the current residual.
- *
- * @author Alex Black
- */
 @Slf4j
 public class ResidualClippingPostProcessor implements ResidualPostProcessor {
 

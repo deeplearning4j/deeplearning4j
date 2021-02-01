@@ -31,10 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.IOException;
 import java.io.Serializable;
 
-/** Interface for saving MultiLayerNetworks learned during early stopping, and retrieving them again later
- * @param <T> Type of model to  save. For example, {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph}
- * @author Alex Black
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = InMemoryModelSaver.class, name = "InMemoryModelSaver"),
                 @JsonSubTypes.Type(value = LocalFileGraphSaver.class, name = "LocalFileGraphSaver"),

@@ -33,16 +33,6 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- * Constrain the minimum AND maximum L2 norm of the incoming weights for each unit to be between the specified values.
- * If the L2 norm exceeds the specified max value, the weights will be scaled down to satisfy the constraint; if the
- * L2 norm is less than the specified min value, the weights will be scaled up<br>
- * Note that this constraint supports a rate parameter (default: 1.0, which is equivalent to a strict constraint).
- * If rate < 1.0, the applied norm2 constraint will be (1-rate)*norm2 + rate*clippedNorm2, where clippedNorm2 is the
- * norm2 value after applying clipping to min/max values.
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MinMaxNormConstraint extends BaseConstraint {

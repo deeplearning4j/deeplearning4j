@@ -27,16 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * LossFunctionWrapper allows training of a VAE model with a standard (possibly deterministic) neural network loss function
- * for the reconstruction, instead of using a {@link ReconstructionDistribution} as would normally be done with a VAE model.
- * <p>
- * Note: most functionality is supported, but clearly reconstruction log probability cannot be calculated when using
- * LossFunctionWrapper, as ILossFunction instances do not have either (a) a probabilistic interpretation, or (b) a
- * means of calculating the negative log probability.
- *
- * @author Alex Black
- */
 @Data
 public class LossFunctionWrapper implements ReconstructionDistribution {
 

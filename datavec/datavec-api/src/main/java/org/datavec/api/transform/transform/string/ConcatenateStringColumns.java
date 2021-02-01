@@ -35,15 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Concatenate values of one or more String columns into
- * a new String column. Retains the constituent String
- * columns so user must remove those manually, if desired.
- *
- * TODO: use new String Reduce functionality in DataVec?
- *
- * @author dave@skymind.io
- */
 @JsonIgnoreProperties({"inputSchema"})
 @Data
 public class ConcatenateStringColumns extends BaseTransform implements ColumnOp {

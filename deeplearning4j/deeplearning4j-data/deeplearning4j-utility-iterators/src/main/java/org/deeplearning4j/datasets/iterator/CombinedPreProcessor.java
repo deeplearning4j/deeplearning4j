@@ -27,11 +27,6 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * This is special preProcessor, that allows to combine multiple prerpocessors, and apply them to data sequentially.
- *
- * @author raver119@gmail.com
- */
 public class CombinedPreProcessor implements DataSetPreProcessor {
     private List<DataSetPreProcessor> preProcessors;
 

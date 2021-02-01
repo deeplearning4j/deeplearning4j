@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.env;
 
-/**
- *  This interface describes action applied to a given environment variable
- *
- * @author raver119@protonmail.com
- */
 public interface EnvironmentalAction {
     /**
      * This method returns target environemt variable for this action

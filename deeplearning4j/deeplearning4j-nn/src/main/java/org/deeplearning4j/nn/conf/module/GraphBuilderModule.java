@@ -22,11 +22,6 @@ package org.deeplearning4j.nn.conf.module;
 
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 
-/**
- * GraphBuilderModule for nn layers. Allows for creation of plugins and modules to generate configurations and layers.
- *
- * @author Justin Long (crockpotveggies)
- */
 public interface GraphBuilderModule {
 
     /**

@@ -29,9 +29,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Created by Alex on 11/01/2017.
- */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data

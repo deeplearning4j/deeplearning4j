@@ -23,9 +23,6 @@ package org.datavec.api.transform;
 import org.datavec.api.transform.metadata.*;
 import org.datavec.api.writable.WritableType;
 
-/**
- * The type of column.
- */
 public enum ColumnType {
     String, Integer, Long, Double, Float, Categorical, Time, Bytes, //Arbitrary byte[] data
     Boolean, NDArray;

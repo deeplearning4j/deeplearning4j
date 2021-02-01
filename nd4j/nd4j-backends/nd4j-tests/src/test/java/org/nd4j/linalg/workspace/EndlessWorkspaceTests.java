@@ -47,10 +47,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * THESE TESTS SHOULD NOT BE EXECUTED IN CI ENVIRONMENT - THEY ARE ENDLESS
- * @author raver119@gmail.com
- */
 @Ignore
 @Slf4j
 @RunWith(Parameterized.class)

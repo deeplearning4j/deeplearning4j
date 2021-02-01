@@ -33,11 +33,6 @@ import org.deeplearning4j.zoo.model.YOLO2;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationLReLU;
 
-/**
- * Contains functionality shared by {@link Darknet19}, {@link TinyYOLO}, and {@link YOLO2}.
- *
- * @author saudet
- */
 public class DarknetHelper {
 
     /** Returns {@code inputShape[1] / 32}, where {@code inputShape[1]} should be a multiple of 32. */

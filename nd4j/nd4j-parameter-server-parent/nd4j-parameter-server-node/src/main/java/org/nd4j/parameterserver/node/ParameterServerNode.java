@@ -38,14 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Integrated node for running
- * the parameter server.
- * This includes the status server,
- * media driver, and parameter server subscriber
- *
- * @author Adam Gibson
- */
 @Slf4j
 @NoArgsConstructor
 @Data

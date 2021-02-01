@@ -33,21 +33,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.text.DecimalFormat;
 
-/**
- * A listener that reports scores and performance metrics for each epoch.<br>
- * At every N iterations, the following is reported:
- * (a) Epoch and iteration number<br>
- * (b) Loss value (total loss)<br>
- * (c) ETL time (if > 0) - this represents how long training was blocked waiting for data. Values consistently above 0 indicate an ETL bottleneck<br>
- * <br><br>
- * At the end of every epoch, the following is reported:<br>
- * (a) Epoch and iteration numbers<br>
- * (b) Number of batches and examples in the epoch<br>
- * (c) Average number of batches per second and examples per second<br>
- * (d) Total amount of time blocked on ETL during the epoch (including percentage, if > 0)<br>
- *
- * @author Alex Black
- */
 @Slf4j
 public class ScoreListener extends BaseListener {
 

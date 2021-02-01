@@ -51,17 +51,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * RecordReaderMultiDataSetIterator: A {@link MultiDataSetIterator} for data from one or more RecordReaders and SequenceRecordReaders<br>
- * The idea: generate multiple inputs and multiple outputs from one or more Sequence/RecordReaders. Inputs and outputs
- * may be obtained from subsets of the RecordReader and SequenceRecordReaders columns (for examples, some inputs and outputs
- * as different columns in the same record/sequence); it is also possible to mix different types of data (for example, using both
- * RecordReaders and SequenceRecordReaders in the same RecordReaderMultiDataSetIterator).<br>
- * Uses a builder pattern ({@link RecordReaderMultiDataSetIterator.Builder} to specify the various
- * inputs and subsets.
- *
- * @author Alex Black
- */
 @Getter
 public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, Serializable {
 

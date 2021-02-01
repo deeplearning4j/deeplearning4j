@@ -45,12 +45,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
-/** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
- * For example, the activations may be combined by addition, subtraction or multiplication or by selecting the maximum.
- * Addition, Average, Product and Max may use an arbitrary number of input arrays. Note that in the case of subtraction, only two inputs may be used.
- * In all cases, the shape of the input arrays must be identical.
- * @author Alex Black
- */
 public class ElementWiseVertex extends BaseGraphVertex {
 
     public enum Op {

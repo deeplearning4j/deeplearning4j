@@ -27,9 +27,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class UiConnectionInfoTest extends BaseDL4JTest {
 
     @Before

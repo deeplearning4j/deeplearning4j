@@ -32,22 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * An environment descriptor
- * representing the state of
- * the system nd4j is running.
- * The fields here include:
- * cpu ram
- * number of cpu cores
- * number of gpus
- * the amount of total ram for each gpu this backend is using
- * (indexed by device ordering, you can usually see this from nvidia-smi)
- * the blas vendor (typically openblas or cublas)
- * the number of max threads for blas
- * the number of open mp threads being used
- *
- * @author Adam Gibson
- */
 @Data
 @Builder
 @NoArgsConstructor

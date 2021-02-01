@@ -41,12 +41,6 @@ import org.bytedeco.numpy.*;
 import static org.bytedeco.cpython.global.python.*;
 import static org.bytedeco.numpy.global.numpy.*;
 
-/**
- * An MDP for OpenAI Gym: https://gym.openai.com/
- *
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
- * @author saudet
- */
 @Slf4j
 public class GymEnv<OBSERVATION extends Encodable, A, AS extends ActionSpace<A>> implements MDP<OBSERVATION, A, AS> {
 

@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
 import java.util.List;
 
-/**
- * Broadcast Abs Min comparison op
- *
- * @author raver119@gmail.com
- */
 public class BroadcastAMin extends BaseBroadcastOp {
     public BroadcastAMin(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, int[] dimension) {
         super(sameDiff, i_v1, i_v2, dimension);

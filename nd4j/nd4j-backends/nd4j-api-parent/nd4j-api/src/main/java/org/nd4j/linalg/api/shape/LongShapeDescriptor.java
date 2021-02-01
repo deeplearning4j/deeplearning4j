@@ -29,9 +29,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Arrays;
 
-/**
- * @author raver119@gmail.com
- */
 public class LongShapeDescriptor {
 
     @Getter

@@ -29,11 +29,6 @@ import org.nd4j.linalg.schedule.ScheduleType;
 
 import java.util.Map;
 
-/**
- * Utility functionality for keras optimizers
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class KerasOptimizerUtils {
 

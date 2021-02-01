@@ -30,10 +30,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Simple tool that generates pre-defined datastes
- * @author raver119@gmail.com
- */
 public class MultiDataSetGenerator implements MultiDataSetIterator {
 
     protected final int[] shapeFeatures;

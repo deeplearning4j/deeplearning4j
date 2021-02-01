@@ -25,11 +25,6 @@ import org.nd4j.linalg.api.memory.Deallocator;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueDataBuffer;
 
-/**
- * This class is responsible for OpaqueDataBuffer deletion on native side, once it's not used anymore in Java
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CpuDeallocator implements Deallocator {
     private final transient OpaqueDataBuffer opaqueDataBuffer;

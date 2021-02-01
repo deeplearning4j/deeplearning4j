@@ -27,11 +27,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.List;
 
-/**
- * Track number of times the dataset iterator has been called
- * @author agibsonccc
- *
- */
 public class TestDataSetIterator implements DataSetIterator {
     /**
      * 

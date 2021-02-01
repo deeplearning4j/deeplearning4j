@@ -43,9 +43,6 @@ import static org.junit.Assert.assertEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/**
- * @author Alex Black
- */
 public class RegressionEvalTest extends BaseDL4JTest {
 
     @Test

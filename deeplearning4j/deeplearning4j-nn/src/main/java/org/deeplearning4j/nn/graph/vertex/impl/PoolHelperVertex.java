@@ -35,13 +35,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * A custom layer for removing the first column and row from an input. This is meant to allow
- * importation of Caffe's GoogLeNet from <a href="https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14">
- *     https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14</a>.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class PoolHelperVertex extends BaseGraphVertex {
 
     public PoolHelperVertex(ComputationGraph graph, String name, int vertexIndex, DataType dataType) {

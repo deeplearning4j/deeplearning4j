@@ -45,12 +45,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.*;
 
-/**
- * SameDiff version of a 2D locally connected layer.
- *
- *
- * @author Max Pumperla
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties({"paramShapes"})

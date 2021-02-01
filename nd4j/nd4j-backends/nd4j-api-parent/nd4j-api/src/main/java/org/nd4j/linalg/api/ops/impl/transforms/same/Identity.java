@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Identity function
- *
- * @author Adam Gibson
- */
 public class Identity extends BaseDynamicTransformOp {
 
     public Identity(SameDiff sd, SDVariable input){

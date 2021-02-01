@@ -25,16 +25,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 
-/**
- * A preprocessor specifically for images that applies min max scaling to one or more of the feature arrays
- * in a MultiDataSet.<br>
- * Can take a range, so pixel values can be scaled from 0->255 to minRange->maxRange
- * default minRange = 0 and maxRange = 1;
- * If pixel values are not 8 bits, you can specify the number of bits as the third argument in the constructor
- * For values that are already floating point, specify the number of bits as 1
- *
- * @author Alex Black (MultiDataSet version), Susan Eraly (original ImagePreProcessingScaler)
- */
 public class ImageMultiPreProcessingScaler implements MultiDataNormalization {
 
 

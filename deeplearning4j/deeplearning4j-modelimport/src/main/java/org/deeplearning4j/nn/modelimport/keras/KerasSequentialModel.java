@@ -41,12 +41,6 @@ import java.util.*;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.importWeights;
 
-/**
- * Build DL4J MultiLayerNetwork model from Keras Sequential
- * model configuration.
- *
- * @author dave@skymind.io
- */
 @Slf4j
 public class KerasSequentialModel extends KerasModel {
 

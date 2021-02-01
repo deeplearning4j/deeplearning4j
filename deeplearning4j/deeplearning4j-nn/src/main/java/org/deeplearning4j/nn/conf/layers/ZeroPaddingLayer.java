@@ -38,12 +38,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Zero padding layer for convolutional neural networks (2D CNNs). Allows padding to be done separately for
- * top/bottom/left/right
- *
- * @author Alex Black
- */
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

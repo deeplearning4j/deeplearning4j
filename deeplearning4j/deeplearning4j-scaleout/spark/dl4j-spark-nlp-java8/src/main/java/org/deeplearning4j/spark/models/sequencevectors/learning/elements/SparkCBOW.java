@@ -36,9 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 public class SparkCBOW extends BaseSparkLearningAlgorithm {
 
     TrainingDriver<CbowRequestMessage> driver = new CbowTrainer();

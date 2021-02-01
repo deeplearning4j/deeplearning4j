@@ -36,12 +36,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/**
- * Zero cropping layer for convolutional neural networks.
- * Allows cropping to be done separately for top/bottom/left/right
- *
- * @author Alex Black
- */
 public class Cropping2DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D> {
 
     private int[] cropping; //[padTop, padBottom, padLeft, padRight]

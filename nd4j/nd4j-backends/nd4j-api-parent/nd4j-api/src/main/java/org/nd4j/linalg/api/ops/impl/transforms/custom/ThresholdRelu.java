@@ -33,9 +33,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp;
 
-/**
- * Threshold ReLU op.  The genral case of {@link RectifiedLinear}.
- */
 public class ThresholdRelu extends DynamicCustomOp {
 
     @Getter

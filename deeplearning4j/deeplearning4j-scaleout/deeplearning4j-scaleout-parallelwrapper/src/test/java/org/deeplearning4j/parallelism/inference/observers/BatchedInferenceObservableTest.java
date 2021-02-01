@@ -37,9 +37,6 @@ import java.util.List;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class BatchedInferenceObservableTest extends BaseDL4JTest {
     @Before

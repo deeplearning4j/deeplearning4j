@@ -31,15 +31,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/** LastTimeStepVertex is used in the context of recurrent neural network activations, to go from 3d (time series)
- * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
- * This can be used for example in sequence to sequence architectures, and potentially for sequence classification.
- * <b>NOTE</b>: Because RNNs may have masking arrays (to allow for examples/time series of different lengths in the same
- * minibatch), it is necessary to provide the same of the network input that has the corresponding mask array. If this
- * input does not have a mask array, the last time step of the input will be used for all examples; otherwise, the time
- * step of the last non-zero entry in the mask array (for each example separately) will be used.
- * @author Alex Black
- */
 @Data
 public class LastTimeStepVertex extends GraphVertex {
 

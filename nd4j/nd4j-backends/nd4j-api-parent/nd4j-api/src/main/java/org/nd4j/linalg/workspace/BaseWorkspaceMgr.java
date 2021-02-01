@@ -33,12 +33,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * A standard/baseline {@link WorkspaceMgr} implementation
- *
- * @param <T> Array type
- * @author Alex Black
- */
 @Slf4j
 public abstract class BaseWorkspaceMgr<T extends Enum<T>> implements WorkspaceMgr<T> {
     private static final boolean DISABLE_LEVERAGE = false;  //Mainly for debugging/optimization purposes

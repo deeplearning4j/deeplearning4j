@@ -33,11 +33,6 @@ import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 
 import java.util.*;
 
-/**
- * Slice function
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class Slice extends DynamicCustomOp {
 

@@ -32,12 +32,6 @@ import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.List;
 
-/**
- * Base wrapper layer: the idea is to pass through all methods to the underlying layer, and selectively override
- * them as required. This is to save implementing every single passthrough method for all 'wrapper' layer subtypes
- *
- * @author Alex Black
- */
 @Data
 public abstract class BaseWrapperLayer extends Layer {
 

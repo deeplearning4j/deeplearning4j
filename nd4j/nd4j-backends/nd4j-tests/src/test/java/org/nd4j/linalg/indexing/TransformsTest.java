@@ -35,10 +35,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author raver119@gmail.com
- * @author Ede Meijer
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class TransformsTest extends BaseNd4jTest {

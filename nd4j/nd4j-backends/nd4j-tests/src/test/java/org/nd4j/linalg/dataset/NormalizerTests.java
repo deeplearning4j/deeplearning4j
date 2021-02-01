@@ -49,9 +49,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by susaneraly on 11/13/16.
- */
 @RunWith(Parameterized.class)
 public class NormalizerTests extends BaseNd4jTest {
 

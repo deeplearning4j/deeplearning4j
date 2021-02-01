@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Log on arbitrary base op
- *
- * @author raver119@gmail.com
- */
 public class LogX extends BaseScalarOp {
     private double base;
 

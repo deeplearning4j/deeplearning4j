@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * LogSumExp - this op returns https://en.wikipedia.org/wiki/LogSumExp
- *
- * @author raver119@gmail.com
- */
 public class LogSumExp extends DynamicCustomOp {
 
     protected boolean keepDims;

@@ -22,12 +22,6 @@ package org.deeplearning4j.rl4j.builder;
 import lombok.Getter;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 
-/**
- * A {@link INetworksHandler} implementation for synchronous setups.<p/>
- * The target network is cloned from the input network
- * The thread-current and the global-current uses the input network directly.
- * Note that there is no difference between the thread-current and the global-current in a sync setup.
- */
 public class AsyncNetworkHandler implements INetworksHandler {
 
     @Getter

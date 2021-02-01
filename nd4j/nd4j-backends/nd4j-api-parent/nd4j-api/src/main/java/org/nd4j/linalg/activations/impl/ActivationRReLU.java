@@ -32,15 +32,6 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
-/**
- * f(x) = max(0,x) + alpha * min(0, x)
- *
- *  alpha is drawn from uniform(l,u) during training and is set to l+u/2 during test
- *  l and u default to 1/8 and 1/3 respectively
- *
- *  <a href="https://arxiv.org/abs/1505.00853">
- *  Empirical Evaluation of Rectified Activations in Convolutional Network</a>
- */
 @EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties({"alpha"})
 @Getter

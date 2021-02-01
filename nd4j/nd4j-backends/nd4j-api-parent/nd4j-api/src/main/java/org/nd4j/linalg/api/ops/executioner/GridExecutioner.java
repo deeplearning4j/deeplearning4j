@@ -22,9 +22,6 @@ package org.nd4j.linalg.api.ops.executioner;
 
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 
-/**
- * @author raver119@gmail.com
- */
 public interface GridExecutioner extends OpExecutioner {
 
     /**

@@ -101,15 +101,6 @@ import java.util.regex.Pattern;
 import static org.nd4j.autodiff.util.SameDiffUtils.stackOutputs;
 import static org.nd4j.imports.VariableUtils.stripVarSuffix;
 
-/**
- * SameDiff is the entrypoint for ND4J's automatic differentiation functionality.
- * <p>
- * You define a graph symbolically.
- * <p>
- * That graph accumulates operations.
- * <p>
- * In order to execute the graph, you run one of the execution methods, such as {@link #output(Map, String...)}
- */
 @Slf4j
 public class SameDiff extends SDBaseOps {
     protected static final String GRAD_FN_KEY = "grad";

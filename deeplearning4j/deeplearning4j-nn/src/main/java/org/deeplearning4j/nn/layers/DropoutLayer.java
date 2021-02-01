@@ -29,9 +29,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * Created by davekale on 12/7/16.
- */
 public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.DropoutLayer> {
 
     public DropoutLayer(NeuralNetConfiguration conf, DataType dataType) {

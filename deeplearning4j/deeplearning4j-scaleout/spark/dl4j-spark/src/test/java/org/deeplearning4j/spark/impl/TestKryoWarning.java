@@ -33,9 +33,6 @@ import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- * Created by Alex on 20/07/2016.
- */
 public class TestKryoWarning {
 
     private static void doTestMLN(SparkConf sparkConf) {

@@ -34,13 +34,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import java.net.URI;
 import java.util.Iterator;
 
-/**
- * A function (used in forEachPartition) to save MultiDataSet objects to disk/HDFS. Each MultiDataSet object is given a random and
- * (probably) unique name, starting with "mds_" and ending  with ".bin".<br>
- * Use with {@code JavaRDD<MultiDataSet>.foreachPartition()}
- *
- * @author Alex Black
- */
 public class MultiDataSetExportFunction implements VoidFunction<Iterator<MultiDataSet>> {
     private final URI outputDir;
     private final Broadcast<SerializableHadoopConfig> conf;

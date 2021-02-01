@@ -24,11 +24,6 @@ import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-/**
- * Hinge loss
- *
- * @author Alex Black
- */
 public class HingeLossBp extends BaseLossBp {
 
 

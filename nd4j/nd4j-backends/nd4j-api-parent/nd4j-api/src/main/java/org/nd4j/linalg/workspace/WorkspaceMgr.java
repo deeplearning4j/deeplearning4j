@@ -26,15 +26,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * WorkspaceMgr is an interface for managing a set of workspaces, for a set of array types (where the array types
- * are specified by an enumeration).
- * Note that multiple array types may be stored in the one underlying workspace
- *
- * @param <T> Enumeration type to specify the type of array. For example, in DL4J the type values include things
- *            like inputs, activations, working memory etc.
- * @author Alex Black
- */
 public interface WorkspaceMgr<T extends Enum<T>> {
 
     /**

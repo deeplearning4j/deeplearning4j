@@ -22,9 +22,6 @@ package org.deeplearning4j.rl4j.agent.learning.update;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * A container that holds the observations of a batch
- */
 public class Features {
 
     private final INDArray[] features;

@@ -19,9 +19,6 @@
  */
 package org.deeplearning4j.rl4j.trainer;
 
-/**
- * An interface describing the behavior of all trainers
- */
 public interface ITrainer {
     /**
      * Perform the training

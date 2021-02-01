@@ -37,15 +37,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * StackVertex allows for stacking of inputs so that they may be forwarded through
- * a network. This is useful for cases such as Triplet Embedding, where shared parameters
- * are not supported by the network.
- *
- * This vertex will automatically stack all available inputs.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class StackVertex extends BaseGraphVertex {
 
     private long[][] lastInputShapes;

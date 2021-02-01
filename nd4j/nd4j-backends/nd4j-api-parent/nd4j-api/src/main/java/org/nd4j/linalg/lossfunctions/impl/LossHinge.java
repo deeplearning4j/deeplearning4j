@@ -30,9 +30,6 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * Created by susaneraly on 8/15/16.
- */
 @EqualsAndHashCode
 public class LossHinge implements ILossFunction {
 

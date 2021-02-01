@@ -30,11 +30,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * A counter function for doing analysis on Categorical columns, on Spark
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class CategoricalAnalysisCounter implements AnalysisCounter<CategoricalAnalysisCounter> {

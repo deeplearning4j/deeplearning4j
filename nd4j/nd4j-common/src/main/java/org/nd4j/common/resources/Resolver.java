@@ -23,13 +23,6 @@ package org.nd4j.common.resources;
 import java.io.File;
 import java.io.InputStream;
 
-/**
- * Resolver interface: used to resolve a path (or directory path) to an actual file.
- * This is mainly used to find test resources which need to be downloaded on-demand from a remote location, and
- * (if appropriate) cached locally.
- *
- * @author Alex Black
- */
 public interface Resolver {
 
     /**

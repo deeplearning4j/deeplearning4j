@@ -34,13 +34,6 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * Zero padding 3D layer for convolutional neural networks.
- * Allows padding to be done separately for left and right boundaries
- * in all three spatial input dimensions.
- *
- * @author Max Pumperla
- */
 public class ZeroPadding3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ZeroPadding3DLayer> {
 
     private int[] padding; // [padLeft1, padRight1, padLeft2, padRight2, padLeft3, padRight3]

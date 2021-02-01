@@ -42,12 +42,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * BaseEvaluation implement common evaluation functionality (for time series, etc) for {@link Evaluation},
- * {@link RegressionEvaluation}, {@link ROC}, {@link ROCMultiClass} etc.
- *
- * @author Alex Black
- */
 @EqualsAndHashCode
 public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvaluation<T> {
 

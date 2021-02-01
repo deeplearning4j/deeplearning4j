@@ -30,9 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 8/31/14.
- */
 public class InMemoryVocabStoreTests extends BaseDL4JTest {
 
     @Test

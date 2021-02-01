@@ -32,10 +32,6 @@ import java.io.DataInputStream;
 import java.net.URI;
 import java.util.List;
 
-/**SequenceRecordReaderBytesFunction: Converts binary data (in the form of a BytesWritable) to DataVec format data
- * ({@code List<List<<Writable>>}) using a SequenceRecordReader
- * @author Alex Black
- */
 public class SequenceRecordReaderBytesFunction implements Function<Tuple2<Text, BytesWritable>, List<List<Writable>>> {
 
     private final SequenceRecordReader recordReader;

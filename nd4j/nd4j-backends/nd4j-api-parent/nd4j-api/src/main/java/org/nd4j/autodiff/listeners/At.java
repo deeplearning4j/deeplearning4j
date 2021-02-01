@@ -23,13 +23,6 @@ package org.nd4j.autodiff.listeners;
 import lombok.*;
 import org.nd4j.autodiff.samediff.internal.FrameIter;
 
-/**
- *
- * Used in SameDiff {@link Listener} instances.
- * Contains information such as the current epoch, iteration and thread
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @EqualsAndHashCode
 @ToString

@@ -38,12 +38,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
-/**
- * This the "Algorithm S2 Asynchronous n-step Q-learning" of <i>Asynchronous Methods for Deep Reinforcement Learning</i>
- * @see <a href="https://arxiv.org/pdf/1602.01783.pdf">Asynchronous Methods for Deep Reinforcement Learning on arXiv</a>, page 14
- * <p/>
- * Note: The output of threadCurrent must contain a channel named "Q".
- */
 public class NStepQLearning implements IUpdateAlgorithm<Gradients, StateActionReward<Integer>> {
 
     private final ITrainableNeuralNet threadCurrent;

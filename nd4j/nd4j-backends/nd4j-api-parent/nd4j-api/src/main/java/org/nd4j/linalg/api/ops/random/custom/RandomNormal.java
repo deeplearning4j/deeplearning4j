@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Random normal distribution
- *
- * @author Alex Black
- */
 public class RandomNormal extends DynamicCustomOp {
 
     private double mean;

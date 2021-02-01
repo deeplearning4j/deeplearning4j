@@ -45,9 +45,6 @@ import java.util.Arrays;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author Alex Black
- */
 public class VaeGradientCheckTests extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = false;

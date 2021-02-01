@@ -25,11 +25,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
-/**
- * Bean/POJO that describes current jvm/node
- *
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 public class Environment implements Serializable {

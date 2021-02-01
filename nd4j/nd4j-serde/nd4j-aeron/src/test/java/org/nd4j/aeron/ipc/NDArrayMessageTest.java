@@ -28,9 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 11/6/16.
- */
 public class NDArrayMessageTest extends BaseND4JTest {
 
     @Test

@@ -32,10 +32,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * In-depth testing of correctness of standardization and min-max scaling is covered by other tests, since the code for
- * doing that is reused in MultiNormalizerHybrid. These tests will just cover the configurability.
- */
 @RunWith(Parameterized.class)
 public class MultiNormalizerHybridTest extends BaseNd4jTest {
     private MultiNormalizerHybrid SUT;

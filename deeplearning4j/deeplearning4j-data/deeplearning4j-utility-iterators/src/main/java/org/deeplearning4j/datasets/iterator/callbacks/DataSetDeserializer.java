@@ -25,11 +25,6 @@ import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.File;
 
-/**
- * This callback does DataSet deserialization of a given file.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class DataSetDeserializer implements FileCallback {
     @Override

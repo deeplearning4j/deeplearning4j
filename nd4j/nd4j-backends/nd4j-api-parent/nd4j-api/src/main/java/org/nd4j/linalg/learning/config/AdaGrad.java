@@ -30,14 +30,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
-/**
- * Vectorized Learning Rate used per Connection Weight
- * <p/>
- * Adapted from: http://xcorr.net/2014/01/23/adagrad-eliminating-learning-rates-in-stochastic-gradient-descent/
- * See also http://cs231n.github.io/neural-networks-3/#ada
- *
- * @author Adam Gibson
- */
 @Data
 @Builder(builderClassName = "Builder")
 public class AdaGrad implements IUpdater {

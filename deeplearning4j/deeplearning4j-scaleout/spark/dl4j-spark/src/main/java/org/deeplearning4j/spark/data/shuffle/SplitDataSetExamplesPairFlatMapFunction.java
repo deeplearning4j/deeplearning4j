@@ -31,14 +31,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
-/**
- * A PairFlatMapFunction that splits each example in a {@link DataSet} object into its own {@link DataSet}.
- * Also adds a random key (integer value) in the range 0 to maxKeyIndex-1.<br>
- *
- * Used in {@link org.deeplearning4j.spark.util.SparkUtils#shuffleExamples(JavaRDD, int, int)}
- *
- * @author Alex Black
- */
 public class SplitDataSetExamplesPairFlatMapFunction implements PairFlatMapFunction<DataSet, Integer, DataSet> {
 
     private transient Random r;

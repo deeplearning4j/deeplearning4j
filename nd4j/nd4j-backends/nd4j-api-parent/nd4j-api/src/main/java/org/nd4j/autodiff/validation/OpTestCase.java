@@ -34,13 +34,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Validate the output - and shape function - of a single operation.
- * <p>
- * Used with {@link OpValidation}
- *
- * @author Alex Black
- */
 @Data
 @Accessors(fluent = true)
 public class OpTestCase {

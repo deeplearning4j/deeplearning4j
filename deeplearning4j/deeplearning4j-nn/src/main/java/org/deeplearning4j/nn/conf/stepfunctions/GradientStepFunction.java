@@ -20,9 +20,6 @@
 
 package org.deeplearning4j.nn.conf.stepfunctions;
 
-/**
- * Normal gradient step function
- */
 public class GradientStepFunction extends StepFunction {
 
     private static final long serialVersionUID = -2078308971477295356L;

@@ -28,12 +28,6 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
-/**
- * A data buffer is an interface
- * for handling storage and retrieval of data
- *
- * @author Adam Gibson
- */
 public interface DataBuffer extends Serializable, AutoCloseable {
     enum TypeEx {
 

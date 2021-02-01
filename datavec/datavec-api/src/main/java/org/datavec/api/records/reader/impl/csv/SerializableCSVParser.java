@@ -25,15 +25,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A very simple CSV parser released under a commercial-friendly license.
- * This just implements splitting a single line into fields.
- *
- * @author Glen Smith
- * @author Rainer Pruy
- *
- * Modified from OpenCSV 2.3 code to be serializable for Java and Kryo
- */
 public class SerializableCSVParser implements Serializable {
 
     private final char separator;

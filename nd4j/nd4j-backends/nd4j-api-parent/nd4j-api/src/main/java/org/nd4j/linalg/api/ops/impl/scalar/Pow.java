@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Pow function
- *
- * @author Adam Gibson
- */
 public class Pow extends BaseScalarOp {
     private double pow;
 

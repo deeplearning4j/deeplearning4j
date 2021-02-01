@@ -26,9 +26,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.List;
 import java.util.Observer;
 
-/**
- * @author raver119@gmail.com
- */
 public interface InferenceObservable {
 
     /**

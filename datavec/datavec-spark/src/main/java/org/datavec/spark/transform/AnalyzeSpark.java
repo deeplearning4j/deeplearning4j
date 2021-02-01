@@ -62,13 +62,6 @@ import scala.Tuple2;
 
 import java.util.*;
 
-/**
- * AnalizeSpark: static methods for
- * analyzing and
- * processing {@code RDD<List<Writable>>} and {@code RDD<List<List<Writable>>}
- *
- * @author Alex Black
- */
 public class AnalyzeSpark {
 
     public static final int DEFAULT_HISTOGRAM_BUCKETS = 30;

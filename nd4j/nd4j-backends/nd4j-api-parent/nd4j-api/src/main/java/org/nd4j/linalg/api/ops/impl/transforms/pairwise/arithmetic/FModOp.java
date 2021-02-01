@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.FloorModBp
 
 import java.util.List;
 
-/**
- * Floating-point mod
- *
- * @author raver119@gmail.com
- */
 public class FModOp extends BaseTransformSameOp {
     public FModOp() {}
 

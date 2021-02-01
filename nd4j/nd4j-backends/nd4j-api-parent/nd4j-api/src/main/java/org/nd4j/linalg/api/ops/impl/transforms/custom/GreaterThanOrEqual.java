@@ -31,12 +31,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Bit mask over the ndarrays as to whether
- * the components are greater than or equal or not
- *
- * @author Adam Gibson
- */
 public class GreaterThanOrEqual extends BaseDynamicTransformOp {
     public GreaterThanOrEqual() {}
 

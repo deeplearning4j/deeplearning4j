@@ -24,12 +24,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-/**
- * Interface used to customize how masking should be performed with {@link org.deeplearning4j.iterator.BertIterator}
- * when doing unsupervised training
- *
- * @author Alex Black
- */
 public interface BertSequenceMasker {
 
     /**

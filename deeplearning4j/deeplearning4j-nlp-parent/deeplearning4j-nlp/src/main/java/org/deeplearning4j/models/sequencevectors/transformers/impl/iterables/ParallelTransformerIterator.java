@@ -36,14 +36,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * TransformerIterator implementation that's does transformation/tokenization/normalization/whatever in parallel threads.
- * Suitable for cases when tokenization takes too much time for single thread.
- *
- * TL/DR: we read data from sentence iterator, and apply tokenization in parallel threads.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class ParallelTransformerIterator extends BasicTransformerIterator {
 

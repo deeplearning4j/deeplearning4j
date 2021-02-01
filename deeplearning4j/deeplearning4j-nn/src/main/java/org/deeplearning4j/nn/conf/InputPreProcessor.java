@@ -30,13 +30,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/**
- * Input pre processor used
- * for pre processing input before passing it
- * to the neural network.
- *
- * @author Adam Gibson
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface InputPreProcessor extends Serializable, Cloneable {
 

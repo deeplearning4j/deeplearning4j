@@ -36,20 +36,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * A preprocessor to allow RNN and CNN layers to be used together<br>
- * For example, time series (video) input -> ConvolutionLayer, or conceivable GravesLSTM -> ConvolutionLayer<br>
- * Functionally equivalent to combining RnnToFeedForwardPreProcessor + FeedForwardToCnnPreProcessor<br>
- * Specifically, this does two things:<br>
- * (a) Reshape 3d activations out of RNN layer, with shape [miniBatchSize, numChannels*inputHeight*inputWidth, timeSeriesLength])
- * into 4d (CNN) activations (with shape [numExamples*timeSeriesLength, numChannels, inputWidth, inputHeight]) <br>
- * (b) Reshapes 4d epsilons (weights.*deltas) out of CNN layer (with shape
- * [numExamples*timeSeriesLength, numChannels, inputHeight, inputWidth]) into 3d epsilons with shape
- * [miniBatchSize, numChannels*inputHeight*inputWidth, timeSeriesLength] suitable to feed into CNN layers.
- * Note: numChannels is equivalent to depth or featureMaps referenced in different literature
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"product"})
 public class RnnToCnnPreProcessor implements InputPreProcessor {

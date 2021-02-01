@@ -33,24 +33,6 @@ import java.util.Collections;
 import java.util.List;
 
 
-/**
- * Computes a batch of identity matrices of shape (numRows, numCols), returns a single tensor.
- * This batch of identity matrices can be specified as list of integers.
- *
- * Example:
- *
- * batchShape: [3,3]<br>
- * numRows: 2<br>
- * numCols: 4<br>
- * <br>
- * returns a tensor of shape (3, 3, 2, 4) that consists of 3 * 3 batches of (2,4)-shaped identity matrices:<br>
- * <br>
- *      1 0 0 0<br>
- *      0 1 0 0<br>
- *
- *
- * @author Max Pumperla
- */
 public class Eye extends DynamicCustomOp {
     public static final DataType DEFAULT_DTYPE = DataType.FLOAT;
 

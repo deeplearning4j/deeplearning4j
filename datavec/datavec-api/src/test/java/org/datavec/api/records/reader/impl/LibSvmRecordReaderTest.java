@@ -37,18 +37,6 @@ import java.util.*;
 import static org.datavec.api.records.reader.impl.misc.LibSvmRecordReader.*;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Unit tests for LibSvmRecordReader. Replaces reader tests in
- * LibSvmTest.
- *
- * NOTE: this is just a clone of SVMLightRecordReaderTest.
- *
- * @see LibSvmRecordReader
- * @see LibSvmTest
- * @see SVMRecordWriterTest
- *
- * @author dave@skymind.io
- */
 public class LibSvmRecordReaderTest  extends BaseND4JTest {
 
     @Test

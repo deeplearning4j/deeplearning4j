@@ -26,12 +26,6 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * The RGBtoGrayscaleDataSetPreProcessor will turn a DataSet of a RGB image into a grayscale one.
- * NOTE: Expects data format to be NCHW. After processing, the channel dimension is eliminated. (NCHW -> NHW)
- *
- * @author Alexandre Boulanger
- */
 public class RGBtoGrayscaleDataSetPreProcessor implements DataSetPreProcessor {
 
     private static final float RED_RATIO = 0.3f;

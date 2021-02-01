@@ -32,13 +32,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * This abstract class is a base implementation of {@link ITrainableNeuralNet} for typical networks.
- * This implementation caches the outputs of the network, until the network is changed (fit(), applyGradients(), and copyFrom()) or reset()
- * This is not only a performance optimization; When using recurrent networks, the same observation should always give
- * the same output (in the policy and the update algorithm). Storing that output is the easiest and fastest.
- * @param <NET_TYPE>
- */
 public abstract class BaseNetwork<NET_TYPE extends BaseNetwork>
         implements ITrainableNeuralNet<NET_TYPE> {
 

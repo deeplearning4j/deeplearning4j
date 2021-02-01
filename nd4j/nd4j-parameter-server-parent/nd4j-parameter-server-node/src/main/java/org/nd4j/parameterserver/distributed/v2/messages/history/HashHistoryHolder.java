@@ -27,10 +27,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Basic implementation of Model
- * @author raver119@gmail.com
- */
 public class HashHistoryHolder<T> implements MessagesHistoryHolder<T> {
     protected final Set<T> set;
     /**

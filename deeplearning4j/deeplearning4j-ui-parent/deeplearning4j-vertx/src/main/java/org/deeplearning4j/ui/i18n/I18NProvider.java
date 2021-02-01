@@ -23,11 +23,6 @@ package org.deeplearning4j.ui.i18n;
 import org.deeplearning4j.ui.api.I18N;
 
 
-/**
- * Returns the currently used I18N (Internationalization) class
- *
- * @author Alex Black
- */
 public class I18NProvider {
 
     /**

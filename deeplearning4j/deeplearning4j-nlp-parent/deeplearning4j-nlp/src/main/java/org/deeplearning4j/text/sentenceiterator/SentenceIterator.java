@@ -20,14 +20,6 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
-/**
- * A sentence iterator that knows how to iterate over sentence.
- * This can be used in conjunction with more advanced NLP techniques
- * to clearly separate sentences out, or be simpler when as much
- * complexity is not needed.
- * @author Adam Gibson
- *
- */
 public interface SentenceIterator {
 
     /**

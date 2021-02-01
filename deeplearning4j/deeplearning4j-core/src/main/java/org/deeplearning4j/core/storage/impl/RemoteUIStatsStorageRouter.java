@@ -39,12 +39,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Asynchronously post all updates to a remote UI that has remote listening enabled.<br>
- * Typically used with UIServer (don't forget to enable remote listener support - UIServer.getInstance().enableRemoteListener()
- *
- * @author Alex Black
- */
 @Slf4j
 public class RemoteUIStatsStorageRouter implements StatsStorageRouter, Serializable, Closeable {
     private static final String ROUTE_IS_DOWN = "Info posted to RemoteUIStatsStorageRouter but router is shut down.";

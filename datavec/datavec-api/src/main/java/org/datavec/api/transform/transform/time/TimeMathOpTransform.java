@@ -32,14 +32,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Transform math op on a time column
- * <p>
- * Note: only the following MathOps are supported: Add, Subtract, ScalarMin, ScalarMax<br>
- * For ScalarMin/Max, the TimeUnit must be milliseconds - i.e., value must be in epoch millisecond format
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "columnNumber", "asMilliseconds"})
 @Data
 public class TimeMathOpTransform extends BaseColumnTransform {

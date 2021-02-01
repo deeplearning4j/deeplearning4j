@@ -26,12 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Gaussian distribution with mean 0, variance {@code 1.0/(fanIn)}<br>
- * If a scale is provided, use variance {@code scale/(fanIn)} instead
- *
- * @author Adam Gibson
- */
 @Data
 @NoArgsConstructor
 public class WeightInitVarScalingNormalFanIn implements IWeightInit {

@@ -40,9 +40,6 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-/**
- * Created by Alex on 29/08/2016.
- */
 public class TestExport extends BaseSparkTest {
 
     @Test

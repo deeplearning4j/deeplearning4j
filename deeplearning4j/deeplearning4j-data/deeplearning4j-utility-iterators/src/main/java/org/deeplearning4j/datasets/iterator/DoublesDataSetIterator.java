@@ -23,13 +23,6 @@ package org.deeplearning4j.datasets.iterator;
 import lombok.NonNull;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * A simple utility iterator for creating a DataSetIterator from an {@code Iterable<Pair<double[], double[]>>}.
- * First value in pair is the features vector, second value in pair is the labels.
- * Supports generating 2d features/labels only
- *
- * @author raver119@gmail.com
- */
 public class DoublesDataSetIterator extends AbstractDataSetIterator<double[]> {
 
     /**

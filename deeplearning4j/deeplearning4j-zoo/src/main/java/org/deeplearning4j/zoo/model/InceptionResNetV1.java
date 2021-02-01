@@ -44,14 +44,6 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-/**
- * A variant of the original FaceNet model that relies on embeddings and triplet loss.<br>
- * Reference: <a href="https://arxiv.org/abs/1503.03832">https://arxiv.org/abs/1503.03832</a><br>
- * Also based on the OpenFace implementation: <a href="http://reports-archive.adm.cs.cmu.edu/anon/2016/CMU-CS-16-118.pdf">
- * http://reports-archive.adm.cs.cmu.edu/anon/2016/CMU-CS-16-118.pdf</a>
- *
- * Revised and consolidated version by @crockpotveggies
- */
 @AllArgsConstructor
 @Builder
 public class InceptionResNetV1 extends ZooModel {

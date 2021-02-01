@@ -51,9 +51,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 10/11/2016.
- */
 @Ignore
 public class TestRemoteReceiver extends BaseDL4JTest {
 

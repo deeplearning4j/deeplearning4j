@@ -33,12 +33,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.concurrent.Semaphore;
 
-/**
- *
- * This is example VectorsListener implementation. It can be used to serialize models in the middle of training process
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SerializingListener<T extends SequenceElement> implements VectorsListener<T> {
     private File targetFolder = new File("./");

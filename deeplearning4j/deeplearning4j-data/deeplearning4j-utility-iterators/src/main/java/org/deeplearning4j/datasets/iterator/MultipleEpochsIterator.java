@@ -34,12 +34,6 @@ import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-/**
- * A dataset iterator for doing multiple passes over a dataset
- *
- * @deprecated Does not properly trigger the incrementing of epoch counts in MultiLayerNetwork/ComputationGraph.
- * Use MultiLayerNetwork/ComputationGraph.fit(DataSetIterator, int numEpochs) instead
- */
 @Deprecated
 public class MultipleEpochsIterator implements DataSetIterator {
     @VisibleForTesting

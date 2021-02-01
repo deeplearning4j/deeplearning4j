@@ -29,11 +29,6 @@ import org.deeplearning4j.spark.stats.StatsUtils;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * A {@link SparkTrainingStats} implementation for common stats functionality used by most workers
- *
- * @author Alex Black
- */
 @Data
 public class CommonSparkTrainingStats implements SparkTrainingStats {
 

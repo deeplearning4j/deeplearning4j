@@ -32,11 +32,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.ArrayList;
 
-/**
- * This class provides baseline implementation of BlockMultiDataSetIterator interface
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class DummyBlockMultiDataSetIterator implements BlockMultiDataSetIterator {
     protected final MultiDataSetIterator iterator;

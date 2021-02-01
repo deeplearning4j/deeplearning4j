@@ -29,12 +29,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.List;
 
-/**
- * Sum of squared values (real)
- * Sum of squared complex modulus (complex)
- *
- * @author Adam Gibson
- */
 public class Norm2 extends BaseReduceFloatOp {
     public Norm2(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);

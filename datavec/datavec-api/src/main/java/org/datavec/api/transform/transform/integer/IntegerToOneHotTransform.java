@@ -35,12 +35,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Convert an integer column to a  set of one-hot columns.
- *
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"columnIdx"}, callSuper = false)
 @JsonIgnoreProperties({"inputSchema", "columnIdx", "stateNames", "statesMap"})

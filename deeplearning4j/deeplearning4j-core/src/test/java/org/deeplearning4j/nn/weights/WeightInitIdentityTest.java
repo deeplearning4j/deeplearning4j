@@ -36,11 +36,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Test cases for {@link WeightInitIdentity}
- *
- * @author Christian Skarby
- */
 public class WeightInitIdentityTest extends BaseDL4JTest {
 
     /**

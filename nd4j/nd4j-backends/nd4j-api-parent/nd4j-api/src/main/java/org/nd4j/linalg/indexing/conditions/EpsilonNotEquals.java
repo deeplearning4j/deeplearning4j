@@ -22,9 +22,6 @@ package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Created by agibsonccc on 10/8/14.
- */
 public class EpsilonNotEquals extends BaseCondition {
     private double eps = Nd4j.EPS_THRESHOLD;
 

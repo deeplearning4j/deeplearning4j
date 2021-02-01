@@ -27,11 +27,6 @@ import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.List;
 
-/**
- * Simple interface for the training configuration (updater, L1/L2 values, etc) for trainable layers/vertices.
- *
- * @author Alex Black
- */
 public interface TrainingConfig {
 
     /**

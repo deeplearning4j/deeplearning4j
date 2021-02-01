@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp;
 
 import java.util.List;
 
-/**
- * Rectified linear units
- *
- * @author Adam Gibson
- */
 public class RectifiedLinear extends BaseScalarOp {
     public RectifiedLinear(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, cutoff, inPlace);

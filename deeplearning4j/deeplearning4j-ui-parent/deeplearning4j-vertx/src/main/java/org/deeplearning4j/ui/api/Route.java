@@ -27,11 +27,6 @@ import lombok.Data;
 import java.util.List;
 import java.util.function.*;
 
-/**
- * A Route specifies an endpoint that can be queried in the UI - along with how it should be handled
- *
- * @author Alex Black
- */
 @Data
 @AllArgsConstructor
 public class Route {

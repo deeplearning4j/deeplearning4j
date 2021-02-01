@@ -43,13 +43,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Base NDArrayFactory class.
- * <p/>
- * Allows specification or data opType and row (c) or column(fortran) major order
- *
- * @author Adam Gibson
- */
 public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
     // We don't really care about dtype field we'll use context instead

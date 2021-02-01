@@ -41,15 +41,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * A version of {@link OutputLayer} for recurrent neural networks. Expects inputs of size [minibatch,nIn,sequenceLength]
- * and labels of shape [minibatch,nOut,sequenceLength]. It also supports mask arrays.
- * <br>
- * Note that RnnOutputLayer can also be used for 1D CNN layers, which also have [minibatch,nOut,sequenceLength]
- * activations/labels shape.
- *
- * See also: {@link RnnLossLayer}
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

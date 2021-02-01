@@ -25,11 +25,6 @@ import lombok.NonNull;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Embedding layer initialization from a specified array
- *
- * @author Alex Black
- */
 @EqualsAndHashCode
 public class ArrayEmbeddingInitializer implements EmbeddingInitializer {
 

@@ -25,12 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 
-/**
- * Object dependency tracker, using object identity (not object equality) for the Ys (of type T)<br>
- * See {@link AbstractDependencyTracker} for more details
- *
- * @author Alex Black
- */
 @Slf4j
 public class IdentityDependencyTracker<T, D> extends AbstractDependencyTracker<T,D> {
 

@@ -30,13 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * A {@link INetworkHandler} implementation to be used when multiple separate network are to be used as one. For example,
- * we can have two separate networks, <i>value</i> and <i>policy</i>, and use a CompoundNetworkHandler to use them the
- * same way as if it was a single combined network.
- *
- * Note: each individual network should have only one output layer.
- */
 public class CompoundNetworkHandler implements INetworkHandler {
 
     private final INetworkHandler[] networkHandlers;

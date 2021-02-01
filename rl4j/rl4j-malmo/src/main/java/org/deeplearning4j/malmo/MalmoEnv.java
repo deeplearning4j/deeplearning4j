@@ -41,10 +41,6 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * MDP Wrapper around Malmo Java Client Library
- * @author howard-abrams (howard.abrams@ca.com) on 1/12/17.
- */
 public class MalmoEnv implements MDP<MalmoBox, Integer, DiscreteSpace> {
     // Malmo Java client library depends on native library
     static {

@@ -23,9 +23,6 @@ package org.deeplearning4j.eval;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.EvaluationUtils}
- */
 @Deprecated
 public class EvaluationUtils extends org.nd4j.evaluation.EvaluationUtils {
 

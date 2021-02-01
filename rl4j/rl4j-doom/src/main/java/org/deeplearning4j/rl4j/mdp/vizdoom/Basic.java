@@ -25,9 +25,6 @@ import vizdoom.Button;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/2/16.
- */
 public class Basic extends VizDoom {
 
     public Basic(boolean render) {

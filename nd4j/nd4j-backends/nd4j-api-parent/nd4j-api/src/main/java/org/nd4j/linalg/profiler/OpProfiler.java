@@ -36,15 +36,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.nd4j.linalg.profiler.OpProfiler.PenaltyCause.NONE;
 
-/**
- * This class is suited for execution statistics
- * gathering on Op/Array level: number of
- * sequential ops executed on the same data
- *
- * PLEASE NOTE: This isn't thread-safe implementation.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Data
 public class OpProfiler {

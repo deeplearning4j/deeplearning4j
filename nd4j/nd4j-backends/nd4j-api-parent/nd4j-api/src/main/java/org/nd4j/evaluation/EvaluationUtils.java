@@ -27,11 +27,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Arrays;
 
-/**
- * Utility methods for performing evaluation
- *
- * @author Alex Black
- */
 public class EvaluationUtils {
 
     /**

@@ -33,9 +33,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsoncccc on 1/30/16.
- */
 @RunWith(Parameterized.class)
 public class ShapeBufferTests extends BaseNd4jTest {
 

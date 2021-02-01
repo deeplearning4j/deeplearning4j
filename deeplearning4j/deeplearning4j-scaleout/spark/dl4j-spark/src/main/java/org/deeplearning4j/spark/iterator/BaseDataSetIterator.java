@@ -29,9 +29,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Created by huitseeker on 2/15/17.
- */
 public abstract class BaseDataSetIterator<T> implements DataSetIterator {
     protected Collection<T> dataSetStreams;
     protected DataSetPreProcessor preprocessor;

@@ -20,9 +20,5 @@
 
 package org.nd4j.linalg.api.ops;
 
-/**
- * Strict transforms take any type in, and return BOOL type
- * @author raver119@gmail.com
- */
 public interface TransformBoolOp extends TransformOp {
 }

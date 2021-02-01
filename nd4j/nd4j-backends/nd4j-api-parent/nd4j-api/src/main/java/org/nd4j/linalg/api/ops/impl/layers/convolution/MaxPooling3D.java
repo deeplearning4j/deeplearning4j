@@ -36,11 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Max Pooling3D operation
- *
- * @author Alex Black
- */
 @Slf4j
 @Getter
 @NoArgsConstructor

@@ -38,11 +38,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * ExpandDims function
- *
- * @author Adam Gibson
- */
 public class ExpandDims extends DynamicCustomOp {
     private int jaxis;
 

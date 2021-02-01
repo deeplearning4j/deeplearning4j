@@ -48,11 +48,6 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.*;
 
-/**
- * Imports a 1D Convolution layer from Keras.
- *
- * @author Max Pumperla
- */
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)

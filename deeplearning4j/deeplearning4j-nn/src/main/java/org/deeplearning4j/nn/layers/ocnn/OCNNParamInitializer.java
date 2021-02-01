@@ -35,11 +35,6 @@ import java.util.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-/**
- * Param initializer for {@link OCNNOutputLayer}
- *
- * @author Adam Gibson
- */
 public class OCNNParamInitializer extends DefaultParamInitializer {
 
     private final static OCNNParamInitializer INSTANCE = new OCNNParamInitializer();

@@ -28,15 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-/**
- * BooleanCondition: used for creating compound conditions,
- * such as AND(ConditionA, ConditionB, ...)<br>
- * As a BooleanCondition is a condition,
- * these can be chained together,
- * like NOT(OR(AND(...),AND(...)))
- *
- * @author Alex Black
- */
 @EqualsAndHashCode
 @Data
 public class BooleanCondition implements Condition {

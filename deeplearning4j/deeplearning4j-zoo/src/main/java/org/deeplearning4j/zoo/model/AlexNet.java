@@ -39,22 +39,6 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 
-/**
- * AlexNet
- *
- * Dl4j's AlexNet model interpretation based on the original paper ImageNet Classification with Deep Convolutional Neural Networks
- * and the imagenetExample code referenced.
- *<br>
- * References:<br>
- * <a href="http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf">http://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf</a>
- * <a href="https://github.com/BVLC/caffe/blob/master/models/bvlc_alexnet/train_val.prototxt">https://github.com/BVLC/caffe/blob/master/models/bvlc_alexnet/train_val.prototxt</a>
- *
- * Model is built in dl4j based on available functionality and notes indicate where there are gaps waiting for enhancements.
- *
- * Bias initialization in the paper is 1 in certain layers but 0.1 in the imagenetExample code
- * Weight distribution uses 0.1 std for all layers in the paper but 0.005 in the dense layers in the imagenetExample code
- *
- */
 @AllArgsConstructor
 @Builder
 public class AlexNet extends ZooModel {

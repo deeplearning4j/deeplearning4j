@@ -28,12 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * SequenceSplit interface: used to split a single sequence into multiple smaller subsequences, according
- * to some criteria
- *
- * @author Alex Black
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface SequenceSplit extends Serializable {

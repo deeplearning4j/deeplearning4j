@@ -23,13 +23,6 @@ package org.nd4j.linalg.cache;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 
-/**
- * This interface describes
- * memory reuse strategy
- * for java-originated arrays.
- *
- * @author raver119@gmail.com
- */
 public interface ConstantHandler {
 
     /**

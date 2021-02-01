@@ -28,12 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
-/**
- * Cube derivative, e.g. 3x^2
- *
- * @deprecated Use {@link CubeBp}
- *
- */
 @Deprecated
 public class CubeDerivative extends BaseTransformStrictOp {
     public CubeDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

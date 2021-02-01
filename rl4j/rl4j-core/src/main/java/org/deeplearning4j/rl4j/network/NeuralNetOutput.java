@@ -23,9 +23,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.HashMap;
 
-/**
- * A class containing the output(s) of a neural net. The outputs are stored as keys-values.
- */
 public class NeuralNetOutput {
     private final HashMap<String, INDArray> outputs = new HashMap<String, INDArray>();
 

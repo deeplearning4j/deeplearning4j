@@ -20,9 +20,6 @@
 
 package org.nd4j.linalg.api.memory.stash;
 
-/**
- * @author raver119@gmail.com
- */
 public class BasicStashManager implements StashManager {
 
     @Override

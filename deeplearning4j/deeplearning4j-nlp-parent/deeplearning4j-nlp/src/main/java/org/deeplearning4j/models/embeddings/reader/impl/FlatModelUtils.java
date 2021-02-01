@@ -29,13 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 
-/**
- * This model reader is suited for model tests, and for cases where flat scan against elements is required.
- *
- * PLEASE NOTE: This reader does NOT normalize underlying weights, it stays intact
- *
- * @author raver119@gmail.com
- */
 public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T> {
     private static final Logger log = LoggerFactory.getLogger(FlatModelUtils.class);
 

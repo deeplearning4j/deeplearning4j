@@ -30,10 +30,6 @@ import org.nd4j.common.primitives.Pair;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**A PairFunction that simply loads bytes[] from a PortableDataStream, and wraps it (and the String key)
- * in Text and BytesWritable respectively.
- * @author Alex Black
- */
 public class FilesAsBytesFunction implements Function<Pair<String, InputStream>, Pair<Text, BytesWritable>> {
     @Override
     public Pair<Text, BytesWritable> apply(Pair<String, InputStream> in) {

@@ -29,9 +29,6 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import play.mvc.Http;
 import play.server.Server;
 
-/**
- * Created by kepricon on 17. 6. 20.
- */
 public abstract class SparkTransformServer implements DataVecTransformService {
     @Parameter(names = {"-j", "--jsonPath"}, arity = 1)
     protected String jsonPath = null;

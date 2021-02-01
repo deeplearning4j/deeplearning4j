@@ -26,9 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-/**Vectors for nodes in a graph.
- * Provides lookup table and convenience methods for graph vectors
- */
 public interface GraphVectors<V, E> extends Serializable {
 
     public IGraph<V, E> getGraph();

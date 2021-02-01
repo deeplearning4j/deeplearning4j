@@ -29,11 +29,6 @@ import org.deeplearning4j.parallelism.trainer.DefaultTrainer;
 import org.deeplearning4j.parallelism.trainer.SymmetricTrainer;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 
-/**
- * Creates {@link DefaultTrainer}
- * instances for use with {@link ParallelWrapper}
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SymmetricTrainerContext implements TrainerContext {
     /**

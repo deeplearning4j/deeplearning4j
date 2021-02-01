@@ -20,15 +20,6 @@
 
 package org.deeplearning4j.spark.api;
 
-/**
- * Approach to use when training from a {@code JavaRDD<DataSet>} or {@code JavaRDD<MultiDataSet>}.
- *
- * <b>Export</b>: first export the RDD to disk (temporary directory) and train from that.
- * <b>Direct</b>: aka 'legacy mode': train directly from the RDD. This has higher memory requirements and lower performance
- *  compared to the Export approach. It does not export the data to disk first, hence uses less space.
- *
- * @author Alex Black
- */
 public enum RDDTrainingApproach {
     Export, Direct
 }

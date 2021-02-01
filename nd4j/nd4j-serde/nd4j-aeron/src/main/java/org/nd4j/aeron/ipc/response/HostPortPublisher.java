@@ -32,13 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
 
-/**
- * Sends a host port
- * to the given
- * aeron channel
- *
- * @author Adam Gibson
- */
 @AllArgsConstructor
 @Builder
 public class HostPortPublisher implements AutoCloseable {

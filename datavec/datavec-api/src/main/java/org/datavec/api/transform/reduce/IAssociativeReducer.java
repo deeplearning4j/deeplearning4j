@@ -30,11 +30,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * A reducer aggregates or combines
- * a set of examples into
- * a single List<Writable>
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = Reducer.class, name = "Reducer")})

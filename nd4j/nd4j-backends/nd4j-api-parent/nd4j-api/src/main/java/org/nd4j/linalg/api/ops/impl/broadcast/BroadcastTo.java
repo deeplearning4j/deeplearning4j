@@ -38,12 +38,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * BroadcastTo op: given 2 input arrays, content X and shape Y, broadcast X to the shape specified by the content of Y.
- * Y should be a 1d vector
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class BroadcastTo extends DynamicCustomOp {
 

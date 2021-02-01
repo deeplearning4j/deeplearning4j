@@ -18,12 +18,8 @@
  *  *****************************************************************************
  */
 
-//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
-
 package org.nd4j.enums;
 
-/**
- * Activations */
 public enum GateAct {
   TANH,
 

@@ -28,12 +28,6 @@ import org.nd4j.common.base.Preconditions;
 
 import java.util.*;
 
-/**
- * SubGraphPredicate defines a subgraph - a set of connected functions that are part of a SameDiff instance.
- *
- *
- * @author Alex Black
- */
 public class SubGraphPredicate extends OpPredicate {
 
     protected final OpPredicate root;

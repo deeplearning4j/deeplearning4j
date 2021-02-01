@@ -22,11 +22,6 @@ package org.nd4j.parameterserver.distributed.messages;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * This interface describes special case for distributed environment: aggregation of partial responses received from different shards
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public interface VoidAggregation extends VoidMessage {
 

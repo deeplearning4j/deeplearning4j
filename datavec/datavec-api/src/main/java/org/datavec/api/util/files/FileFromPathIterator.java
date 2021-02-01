@@ -28,12 +28,6 @@ import java.net.URISyntaxException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-/**
- * A simple utility method to convert a {@code Iterator<String>} to an {@code Iterator<File>}, where each
- * String in the original iterator is created via URI.toString()
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class FileFromPathIterator implements Iterator<File> {
 

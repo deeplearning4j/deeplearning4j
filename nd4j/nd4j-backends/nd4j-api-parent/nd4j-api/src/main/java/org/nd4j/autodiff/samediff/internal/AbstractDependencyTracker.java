@@ -29,27 +29,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
-/**
- * Object dependency tracker.
- * <br>
- * Dependency are denoted by: X -> Y, which means "Y depends on X"<br>
- * In this implementation:<br>
- * - Dependencies may be satisfied, or not satisfied<br>
- * - The implementation tracks when the dependency for an object Y are fully satisfied. This occurs when:<br>
- * 1. No dependencies X->Y exist<br>
- * 2. All dependencies of the form X->Y have been marked as satisfied, via markSatisfied(x)<br>
- * - When a dependency is satisfied, any dependent (Ys) are checked to see if all their dependencies are satisfied<br>
- * - If a dependent has all dependencies satisfied, it is added to the "new all satisfied" queue for processing,
- * which can be accessed via {@link #hasNewAllSatisfied()}, {@link #getNewAllSatisfied()} and {@link #getNewAllSatisfiedList()}<br>
- * <br>
- * Note: Two types of dependencies exist<br>
- * 1. Standard dependencies - i.e., "Y depends on X"<br>
- * 2. "Or" dependencies - i.e., "Y depends on (A or B)".<br>
- * For Or dependencies of the form "(A or B) -> Y", Y will be marked as "all dependencies satisfied" if either A or B is marked as satisfied.
- *
- * @param <T> For a dependency X -> Y, Y has type T
- * @param <D> For a dependency X -> Y, X has type D
- */
 @Slf4j
 public abstract class AbstractDependencyTracker<T, D> {
     @Getter

@@ -38,9 +38,6 @@ import org.nd4j.linalg.profiler.data.primitives.StackDescriptor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class StackAggregatorTests extends BaseNd4jTest {
 

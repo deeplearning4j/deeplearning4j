@@ -43,16 +43,6 @@ import org.deeplearning4j.rl4j.util.IDataManager;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * This represent a local thread that explore the environment
- * and calculate a gradient to enqueue to the global thread/model
- *
- * It has its own version of a model that it syncs at the start of every
- * sub epoch
- *
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
- * @author Alexandre Boulanger
- */
 @Slf4j
 public abstract class AsyncThread<OBSERVATION extends Encodable, ACTION, ACTION_SPACE extends ActionSpace<ACTION>, NN extends NeuralNet>
                 extends Thread implements IEpochTrainer {

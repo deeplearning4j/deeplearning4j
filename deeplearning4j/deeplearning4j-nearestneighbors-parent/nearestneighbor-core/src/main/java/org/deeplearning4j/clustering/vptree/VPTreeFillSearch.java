@@ -28,16 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Brute force search
- * for running search
- * relative to a target
- * but forced to fill the result list
- * until the desired k is matched.
- *
- * The algorithm does this by searching
- * nearby points by k in a greedy fashion
- */
 public class VPTreeFillSearch {
     private VPTree vpTree;
     private int k;

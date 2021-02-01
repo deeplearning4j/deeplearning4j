@@ -21,17 +21,6 @@ package com.atilika.kuromoji.trie;
 
 import java.util.*;
 
-/**
- * Convenient and compact structure for storing key-value pairs and quickly
- * looking them up, including doing prefix searches
- * <p>
- * Implements the {@code Map<String, V>} interface
- * <p>
- * Note that {@code values()}, {@code keySet()}, {@code entrySet()}
- * and {@code containsValue()} have naive implementations
- *
- * @param <V> value type
- */
 public class PatriciaTrie<V> implements Map<String, V> {
 
     /** Root value is left -- right is unused */

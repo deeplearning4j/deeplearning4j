@@ -37,10 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ResizeBicubic op wrapper
- * @author Alexander Stoyakin
- */
 @NoArgsConstructor
 public class ResizeBicubic extends DynamicCustomOp {
 

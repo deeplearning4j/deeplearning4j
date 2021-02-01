@@ -25,13 +25,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * An interface for multi dataset normalizers.
- * Data normalizers compute some sort of statistics
- * over a MultiDataSet and scale the data in some way.
- *
- * @author Ede Meijer
- */
 public interface MultiDataNormalization extends Normalizer<MultiDataSet>, MultiDataSetPreProcessor {
     /**
      * Iterates over a dataset

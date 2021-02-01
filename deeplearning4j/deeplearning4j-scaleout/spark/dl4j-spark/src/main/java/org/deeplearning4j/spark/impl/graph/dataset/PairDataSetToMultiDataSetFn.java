@@ -26,9 +26,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import scala.Tuple2;
 
-/**Simple conversion function to convert from a {@code JavaPairRDD<K,DataSet>} to a {@code JavaPairRDD<K,MultiDataSet>}
- * @author Alex Black
- */
 public class PairDataSetToMultiDataSetFn<K> implements PairFunction<Tuple2<K, DataSet>, K, MultiDataSet> {
 
     @Override

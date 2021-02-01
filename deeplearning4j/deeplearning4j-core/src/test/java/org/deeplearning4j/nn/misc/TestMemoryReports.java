@@ -51,9 +51,6 @@ import java.util.List;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 14/07/2017.
- */
 public class TestMemoryReports extends BaseDL4JTest {
 
     public static List<Pair<? extends Layer, InputType>> getTestLayers() {

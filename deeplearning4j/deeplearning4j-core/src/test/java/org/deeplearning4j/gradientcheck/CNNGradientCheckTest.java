@@ -54,9 +54,6 @@ import static org.deeplearning4j.nn.conf.ConvolutionMode.Same;
 import static org.deeplearning4j.nn.conf.ConvolutionMode.Truncate;
 import static org.junit.Assert.*;
 
-/**
- * Created by nyghtowl on 9/1/15.
- */
 @RunWith(Parameterized.class)
 public class CNNGradientCheckTest extends BaseDL4JTest {
     private static final boolean PRINT_RESULTS = true;

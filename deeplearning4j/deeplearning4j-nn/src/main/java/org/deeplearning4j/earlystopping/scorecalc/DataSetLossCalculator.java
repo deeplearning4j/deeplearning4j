@@ -31,11 +31,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/** Given a DataSetIterator: calculate the total loss for the model on that data set.
- * Can be used for both MultiLayerNetwork and ComputationGraph
- *
- * @author Alex Black
- */
 public class DataSetLossCalculator extends BaseScoreCalculator<Model> {
 
     @JsonProperty

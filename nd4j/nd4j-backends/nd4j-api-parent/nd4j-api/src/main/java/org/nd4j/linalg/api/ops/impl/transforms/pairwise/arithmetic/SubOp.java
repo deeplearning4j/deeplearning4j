@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SubBpOp;
 
 import java.util.List;
 
-/**
- * Subtraction operation
- *
- * @author Adam Gibson
- */
 public class SubOp extends BaseDynamicTransformOp {
     public static final String OP_NAME = "subtract";
 

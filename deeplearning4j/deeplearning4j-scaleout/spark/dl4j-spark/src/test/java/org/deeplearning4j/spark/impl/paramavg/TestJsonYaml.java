@@ -26,9 +26,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 20/09/2016.
- */
 public class TestJsonYaml {
 
     @Test

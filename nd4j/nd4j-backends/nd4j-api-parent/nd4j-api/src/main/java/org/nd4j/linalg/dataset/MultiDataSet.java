@@ -29,9 +29,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.io.*;
 import java.util.*;
 
-/**Implementation of {@link org.nd4j.linalg.dataset.api.MultiDataSet}
- * @author Alex Black
- */
 public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
     private static final ThreadLocal<INDArray> EMPTY_MASK_ARRAY_PLACEHOLDER = new ThreadLocal<>();
 

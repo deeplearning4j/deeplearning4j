@@ -26,15 +26,6 @@ import org.deeplearning4j.nn.api.Model;
 import java.io.Serializable;
 import java.util.Map;
 
-/** EarlyStoppingResult: contains the results of the early stopping training, such as:
- * - Why the training was terminated
- * - Score vs. epoch
- * - Epoch that the best model was found
- * - Score of the best model
- * - The best model (MultiLayerNetwork) itself
- * @param <T> Type of model. For example, {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph}
- * @author Alex Black
- */
 @Data
 public class EarlyStoppingResult<T extends Model> implements Serializable {
     public enum TerminationReason {

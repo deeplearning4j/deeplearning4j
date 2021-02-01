@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Element-wise roll operation, rolls bits to the left, <<
- *
- * @author raver119@gmail.com
- */
 public class CyclicRShiftBits extends BaseDynamicTransformOp {
 
     public CyclicRShiftBits(SameDiff sameDiff, SDVariable x, SDVariable shift) {

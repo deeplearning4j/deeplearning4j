@@ -36,25 +36,6 @@ import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.resource.ResourceAccessException;
 import org.apache.uima.resource.ResourceInitializationException;
 
-/**
- * OpenNLP Tokenizer annotator.
- * <p>
- * Mandatory parameters
- * <table border=1>
- *   <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
- *   <tr><td>String</td> <td>opennlp.uima.ModelName</td> <td>The name of the model file</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.SentenceType</td> <td>The full name of the sentence type</td></tr>
- *   <tr><td>String</td> <td>opennlp.uima.TokenType</td> <td>The full name of the token type</td></tr>
- * </table>
- * <p>
- * Optional parameters
- * <table border=1>
- *   <tr><th>Type</th> <th>Name</th> <th>Description</th></tr>
- *   <tr><td>String</td> <td>opennlp.uima.ProbabilityFeature</td> <td>The name of the double 
- *       probability feature (not applyTransformToDestination by default)</td>
- * </table>
- * @see {@link TokenizerME}
- */
 public class ConcurrentTokenizer extends AbstractTokenizer {
 
     /**

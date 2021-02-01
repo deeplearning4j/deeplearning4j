@@ -35,9 +35,6 @@ import java.util.HashSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by susaneraly on 11/4/16.
- */
 @RunWith(Parameterized.class)
 public class KFoldIteratorTest extends BaseNd4jTest {
 

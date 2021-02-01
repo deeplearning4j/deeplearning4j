@@ -20,9 +20,6 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
-/**
- * Created by agibsonccc on 10/8/14.
- */
 public class NotFinite extends BaseCondition {
 
 

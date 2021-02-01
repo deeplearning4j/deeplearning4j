@@ -37,9 +37,6 @@ import java.io.ByteArrayOutputStream;
 
 import static junit.framework.TestCase.assertEquals;
 
-/**
- * Created by raver119 on 21.12.16.
- */
 @RunWith(Parameterized.class)
 @Slf4j
 public class BasicSerDeTests extends BaseNd4jTest {

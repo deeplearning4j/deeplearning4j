@@ -30,9 +30,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by susaneraly on 6/17/17.
- */
 public class CombinedPreProcessorTests extends BaseDL4JTest {
 
     @Test

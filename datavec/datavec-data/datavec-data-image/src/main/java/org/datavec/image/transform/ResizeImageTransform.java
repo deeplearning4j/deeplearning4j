@@ -32,15 +32,6 @@ import org.bytedeco.opencv.opencv_core.*;
 
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
-/**
- * ResizeImageTransform is suited to force the <b>same image size</b> for whole pipeline
- * and it doesn't use any random factor for width and height.
- *
- * If you need to use random scales to scale or crop the images,
- * these links might be helpful {@link ScaleImageTransform} or {@link ScaleImageTransform}
- *
- * @author raver119@gmail.com
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class ResizeImageTransform extends BaseImageTransform<Mat> {

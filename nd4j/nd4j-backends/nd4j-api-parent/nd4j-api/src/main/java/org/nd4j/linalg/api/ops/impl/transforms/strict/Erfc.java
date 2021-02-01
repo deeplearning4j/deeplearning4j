@@ -30,15 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Complementary Gaussian error function (erfc), defined as
- * <p>
- * erfc(x) = 1 - erf(x)
- * <p>
- * where erf denotes regular Gaussian error.
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class Erfc extends BaseTransformStrictOp {
 

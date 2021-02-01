@@ -38,12 +38,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.IUpdater;
 
-/**
- * A simple convolutional network for generic image classification.
- * Reference: <a href="https://github.com/oarriaga/face_classification/">https://github.com/oarriaga/face_classification/</a>
- *
- * @author Justin Long (crockpotveggies)
- */
 @AllArgsConstructor
 @Builder
 public class SimpleCNN extends ZooModel {

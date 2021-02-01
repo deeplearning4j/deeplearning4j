@@ -27,9 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 11/20/16.
- */
 public class ChunkAccumulatorTests extends BaseND4JTest {
 
     @Test

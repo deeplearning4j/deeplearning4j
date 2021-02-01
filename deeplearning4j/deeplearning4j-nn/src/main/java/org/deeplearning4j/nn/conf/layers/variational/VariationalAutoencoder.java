@@ -43,21 +43,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Variational Autoencoder layer
- * <p>
- * See: Kingma & Welling, 2013: Auto-Encoding Variational Bayes - <a href="https://arxiv.org/abs/1312.6114">https://arxiv.org/abs/1312.6114</a>
- * <p>
- * This implementation allows multiple encoder and decoder layers, the number and sizes of which can be set
- * independently.
- * <p>
- * A note on scores during pretraining: This implementation minimizes the negative of the variational lower bound
- * objective as described in Kingma & Welling; the mathematics in that paper is based on maximization of the variational
- * lower bound instead. Thus, scores reported during pretraining in DL4J are the negative of the variational lower bound
- * equation in the paper. The backpropagation and learning procedure is otherwise as described there.
- *
- * @author Alex Black
- */
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

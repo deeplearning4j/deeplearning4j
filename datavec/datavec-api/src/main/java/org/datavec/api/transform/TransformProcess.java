@@ -78,13 +78,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-/**
- * A TransformProcess defines
- * an ordered list of transformations
- * to be executed on some data
- *
- * @author Alex Black
- */
 @Data
 @Slf4j
 public class TransformProcess implements Serializable {

@@ -34,13 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Statistics about the normal distribution of values in data (means and standard deviations).
- * Can be constructed incrementally by using the DynamicCustomOpsBuilder, which is useful for obtaining these statistics from an
- * iterator. Can also load and save from files.
- *
- * @author Ede Meijer
- */
 @Getter
 @EqualsAndHashCode
 public class DistributionStats implements NormalizerStats {

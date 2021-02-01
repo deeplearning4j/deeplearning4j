@@ -35,16 +35,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-/**
- * A subscriber that listens for host
- * port pairs in the form of host:port.
- * These are meant to be aeron channels.
- *
- * Given an @link{NDArrayHolder} it will send
- * the ndarray to the designated channel by the subscriber.
- *
- * @author Adam Gibson
- */
 @AllArgsConstructor
 @Builder
 @Slf4j

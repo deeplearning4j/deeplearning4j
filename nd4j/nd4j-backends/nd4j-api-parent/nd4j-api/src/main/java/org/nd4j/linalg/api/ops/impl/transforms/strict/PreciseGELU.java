@@ -29,13 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * GELU activation function - Gaussian Error Linear Units<br>
- * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
- * Note: This op implements both the sigmoid and tanh-based approximations; to use the sigmoid approximation (recommended)
- * use precise=false; otherwise, use precise = true for the slower but marginally more accurate tanh version.
- * @author raver119@gmail.com
- */
 public class PreciseGELU extends BaseTransformStrictOp {
     public PreciseGELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace, boolean precise) {
         super(sameDiff, i_v, inPlace);

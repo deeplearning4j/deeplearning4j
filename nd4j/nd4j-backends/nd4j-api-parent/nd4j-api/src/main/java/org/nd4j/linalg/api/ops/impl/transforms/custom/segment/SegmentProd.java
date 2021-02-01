@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.SegmentProdBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Segment product operation
- *
- * @author Alex Black
- */
 public class SegmentProd extends DynamicCustomOp {
 
     public SegmentProd(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {

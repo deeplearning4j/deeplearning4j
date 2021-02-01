@@ -24,12 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.Function2;
 import org.nd4j.evaluation.IEvaluation;
 
-/**
- *
- * Reduction function for use with {@link IEvaluateFlatMapFunction} for distributed evaluation
- *
- * @author Alex Black
- */
 @Slf4j
 public class IEvaluationReduceFunction<T extends IEvaluation> implements Function2<T[], T[], T[]> {
     public IEvaluationReduceFunction() {}

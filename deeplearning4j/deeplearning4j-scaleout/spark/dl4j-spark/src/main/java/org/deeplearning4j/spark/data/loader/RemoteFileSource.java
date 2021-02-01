@@ -29,11 +29,6 @@ import org.nd4j.common.loader.Source;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Generate a {@link Source} from a Hadoop-compatible filesystem
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class RemoteFileSource implements Source {
     public static final int DEFAULT_BUFFER_SIZE = 4*1024*2014;

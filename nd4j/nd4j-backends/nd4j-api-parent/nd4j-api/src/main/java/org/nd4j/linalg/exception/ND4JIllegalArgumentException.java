@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.exception;
 
-/**
- * ND4JIllegalStateException: thrown on invalid arguments
- *
- * @author Alex Black
- */
 public class ND4JIllegalArgumentException extends ND4JException {
     public ND4JIllegalArgumentException() {}
 

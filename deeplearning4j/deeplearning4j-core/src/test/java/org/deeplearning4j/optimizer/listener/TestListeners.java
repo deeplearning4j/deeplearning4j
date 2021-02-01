@@ -65,9 +65,6 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 01/01/2017.
- */
 @Slf4j
 public class TestListeners extends BaseDL4JTest {
 

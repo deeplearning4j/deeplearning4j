@@ -23,10 +23,6 @@ package org.nd4j.autodiff.samediff.internal;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-/**
- * FrameIter: Identifies a frame + iteration (but not a specific op or variable).<br>
- * Note that frames can be nested - which generally represents nested loop situations.
- */
 @Data
 @AllArgsConstructor
 public class FrameIter {

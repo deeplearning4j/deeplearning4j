@@ -89,9 +89,6 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.weightinit.impl.UniformInitScheme;
 
-/**
- * Created by agibsonccc on 4/11/17.
- */
 @Slf4j
 public class SameDiffTests extends BaseNd4jTest {
 

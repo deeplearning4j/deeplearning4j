@@ -34,12 +34,6 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Abstract serializer for mapping Transforms, Conditions, Filters, DataActions etc to/from JSON.<br>
- * Also: lists and arrays of these.
- *
- * @author Alex Black
- */
 public abstract class BaseSerializer {
 
     public abstract ObjectMapper getObjectMapper();

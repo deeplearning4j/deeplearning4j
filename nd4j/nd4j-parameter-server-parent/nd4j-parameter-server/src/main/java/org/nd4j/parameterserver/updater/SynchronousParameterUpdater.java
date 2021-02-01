@@ -30,13 +30,6 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Adds the 2 arrays together,
- * synchronizing when
- * all updates have been collected.
- *
- * @author Adam Gibson
- */
 public class SynchronousParameterUpdater extends BaseParameterUpdater {
 
     private int workers = Runtime.getRuntime().availableProcessors();

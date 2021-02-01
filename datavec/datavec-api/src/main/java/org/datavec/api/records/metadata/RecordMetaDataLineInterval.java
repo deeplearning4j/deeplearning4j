@@ -26,11 +26,6 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.net.URI;
 
-/**
- * A RecordMetaData instance for an interval of line numbers, generally in a file
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class RecordMetaDataLineInterval implements RecordMetaData {

@@ -41,11 +41,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * These tests should be ignored by default, since they require fairly large amounts of memory to run (>32GB some of them)
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Ignore
 @RunWith(Parameterized.class)

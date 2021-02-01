@@ -30,10 +30,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-/**
- * Batch normalization variable init
- */
-
 public class BatchNormalizationParamInitializer implements ParamInitializer {
 
     private static final BatchNormalizationParamInitializer INSTANCE = new BatchNormalizationParamInitializer();

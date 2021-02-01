@@ -28,9 +28,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
- * @author raver119@gmail.com
- */
 public class EnvironmentUtils {
 
     /**

@@ -26,11 +26,6 @@ import org.nd4j.common.function.BiFunction;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Combine function used for undertaking analysis of a data set via Spark
- *
- * @author Alex Black
- */
 public class AnalysisCombineFunction
                 implements BiFunction<List<AnalysisCounter>, List<AnalysisCounter>, List<AnalysisCounter>> {
     @Override

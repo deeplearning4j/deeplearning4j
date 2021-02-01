@@ -26,12 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * A Trainer is an individual worker used in {@link org.deeplearning4j.parallelism.ParallelWrapper}
- * for handling training in multi core situations.
- *
- * @author Adam Gibson
- */
 public interface Trainer extends Runnable {
     /**
      * Train on a {@link MultiDataSet}

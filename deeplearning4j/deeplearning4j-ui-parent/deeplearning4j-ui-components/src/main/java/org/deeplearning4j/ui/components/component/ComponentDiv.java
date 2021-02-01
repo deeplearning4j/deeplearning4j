@@ -28,11 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.Collection;
 
-/**
- * Div component (as in, HTML div)
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

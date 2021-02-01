@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
 
-/**
- * Segregates functionality specific to Android that is not available on Java SE.
- *
- * @author saudet
- */
 public class AndroidNativeImageLoader extends NativeImageLoader {
 
     AndroidFrameConverter converter2 = new AndroidFrameConverter();

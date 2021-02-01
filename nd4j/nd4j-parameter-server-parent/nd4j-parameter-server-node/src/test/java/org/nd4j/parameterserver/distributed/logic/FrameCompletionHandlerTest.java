@@ -30,9 +30,6 @@ import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHand
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Ignore
 @Deprecated
 public class FrameCompletionHandlerTest extends BaseND4JTest {

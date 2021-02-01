@@ -27,10 +27,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.List;
 
-/**
- * Function for executing filter operations
- * @author Alex Black
- */
 @AllArgsConstructor
 public class LocalFilterFunction implements Function<List<Writable>, Boolean> {
 

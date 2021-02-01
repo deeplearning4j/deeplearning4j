@@ -35,20 +35,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Add a new integer column, calculated from one or more other columns.
- * A new column (with the specified name) is added
- * as the final column of the output. No other columns are modified.<br>
- * For example, if newColumnName=="newCol", mathOp==MathOp.Add, and columns=={"col1","col2"},
- * then the output column
- * with name "newCol" has value col1+col2.<br>
- * <b>NOTE</b>: Division here is using
- * integer division (integer output). Use {@link DoubleColumnsMathOpTransform}
- * if a decimal output value is required.
- *
- * @author Alex Black
- * @see IntegerMathOpTransform To do an in-place mathematical operation of an integer column and an integer scalar value
- */
 @Data
 public class IntegerColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 

@@ -20,9 +20,6 @@
 
 package org.datavec.api.transform;
 
-/**
- * Distance enumeration
- */
 public enum Distance {
     COSINE, EUCLIDEAN, MANHATTAN
 }

@@ -40,11 +40,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Arrays;
 
-/**
- * 3D convolution layer implementation.
- *
- * @author Max Pumperla
- */
 public class Convolution3DLayer extends ConvolutionLayer {
 
     public Convolution3DLayer(NeuralNetConfiguration conf, DataType dataType) {

@@ -38,11 +38,6 @@ import java.nio.ByteBuffer;
 
 import static org.nd4j.linalg.api.buffer.DataType.INT8;
 
-/**
- * Base implementation for DataBuffer for CPU-like backend
- *
- * @author raver119@gmail.com
- */
 public abstract class BaseCpuDataBuffer extends BaseDataBuffer implements Deallocatable {
 
     protected transient OpaqueDataBuffer ptrDataBuffer;

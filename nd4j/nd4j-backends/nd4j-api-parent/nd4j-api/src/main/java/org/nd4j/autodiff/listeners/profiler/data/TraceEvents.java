@@ -25,11 +25,6 @@ import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-/**
- * A simple holder for a list of trace events
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data

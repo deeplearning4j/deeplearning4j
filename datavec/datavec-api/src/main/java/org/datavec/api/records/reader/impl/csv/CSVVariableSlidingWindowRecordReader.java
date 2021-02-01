@@ -34,14 +34,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-/**
- * A sliding window of variable size across an entire CSV.
- *
- * In practice the sliding window size starts at 1, then linearly increase to maxLinesPer sequence, then
- * linearly decrease back to 1.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implements SequenceRecordReader {
 
     public static final String LINES_PER_SEQUENCE = NAME_SPACE + ".nlinespersequence";

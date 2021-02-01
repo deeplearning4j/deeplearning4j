@@ -22,11 +22,6 @@ package org.deeplearning4j.core.storage;
 
 import java.io.Serializable;
 
-/**
- * StorageMetaData: contains metadata (such at types, and arbitrary custom serializable data) for storage
- *
- * @author Alex Black
- */
 public interface StorageMetaData extends Persistable {
 
     /**

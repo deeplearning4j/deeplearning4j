@@ -39,9 +39,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 21/03/2017.
- */
 public class ROCBinaryTest extends BaseNd4jTest {
 
     public ROCBinaryTest(Nd4jBackend backend) {

@@ -35,9 +35,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 21/05/2016.
- */
 public class TestCollectionRecordReaders extends BaseND4JTest {
 
     @Test

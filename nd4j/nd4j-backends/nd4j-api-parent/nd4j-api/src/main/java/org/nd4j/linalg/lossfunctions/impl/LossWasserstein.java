@@ -29,18 +29,6 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * Wasserstein loss function, which calculates the Wasserstein distance, also known as earthmover's distance.
- *
- * This is not necessarily a general purpose loss function, and is intended for use as a discriminator loss.
- *
- * When using in a discriminator, use a label of 1 for real and -1 for generated
- * instead of the 1 and 0 used in normal GANs.
- *
- * As described in <a href="https://papers.nips.cc/paper/5679-learning-with-a-wasserstein-loss.pdf">Learning with a Wasserstein Loss</a>
- *
- * @author Ryan Nett
- */
 @EqualsAndHashCode(callSuper = false)
 public class LossWasserstein implements ILossFunction {
 

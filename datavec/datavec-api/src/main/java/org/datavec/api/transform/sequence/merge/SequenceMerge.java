@@ -29,13 +29,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Merge multiple sequences into one single sequence.
- * Requires a SequenceComparator to determine
- * the final ordering
- *
- * @author Alex Black
- */
 @Data
 public class SequenceMerge implements Serializable {
 

@@ -30,9 +30,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- * LReLU backpropagation op - dL/dIn from in and dL/dOut
- */
 public class LeakyReLUBp extends DynamicCustomOp {
     public static final double DEFAULT_ALPHA = 0.01;
     private double alpha = DEFAULT_ALPHA;

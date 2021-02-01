@@ -31,9 +31,6 @@ import org.nd4j.shade.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 
-/**
- * @author Alex Black
- */
 public class NDArrayTextSerializer extends JsonSerializer<INDArray> {
     @Override
     public void serialize(INDArray arr, JsonGenerator jg, SerializerProvider serializerProvider)

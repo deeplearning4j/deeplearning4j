@@ -28,14 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.AtomicDouble;
 import org.nd4j.kryo.primitives.AtomicDoubleSerializer;
 
-/**
- * Spark KryoRegistrator for using Nd4j with Spark + Kryo
- * Use via:
- * sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
- * sparkConf.set("spark.kryo.registrator", "org.nd4j.kryo.Nd4jRegistrator");
- *
- * @author Alex Black
- */
 public class Nd4jRegistrator implements KryoRegistrator {
     @Override
     public void registerClasses(Kryo kryo) {

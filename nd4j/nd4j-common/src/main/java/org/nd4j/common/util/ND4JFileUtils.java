@@ -25,11 +25,6 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Utilities for working with temporary files
- *
- * @author Alex Black
- */
 public class ND4JFileUtils {
 
     private ND4JFileUtils(){ }

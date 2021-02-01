@@ -31,14 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.Collection;
 
-/**
- * Convert a set of values to a sequence. Two approaches are supported:<br>
- * (a) if "singleStepsequenceMode" is true - convert each record independently, to a "sequence" of length 1<br>
- * (b) otherwise - performa  "group and sort" operations. For example, group by one or more columns, and then
- *     sort each value within the group by some mechanism. For example, group by customer, sort by time.
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})

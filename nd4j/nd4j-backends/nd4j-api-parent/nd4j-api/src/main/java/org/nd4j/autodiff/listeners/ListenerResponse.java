@@ -20,11 +20,6 @@
 
 package org.nd4j.autodiff.listeners;
 
-/**
- * An enum representing feedback given by listeners during the training loop.<br>
- * CONTINUE: Continue training for more epochs, unless the specified (maximum) number of training epochs have already been completed.<br>
- * STOP: Terminate training at the current point, irrespective of how many total epochs were specified when calling fit.<br>
- */
 public enum ListenerResponse {
     CONTINUE, STOP;
 }

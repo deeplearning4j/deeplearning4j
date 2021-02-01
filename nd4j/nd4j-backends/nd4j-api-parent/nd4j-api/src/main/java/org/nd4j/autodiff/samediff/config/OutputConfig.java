@@ -41,11 +41,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * Configuration for a {@link SameDiff} inference operation.
- *
- * Used in {@link SameDiff#output()}.
- */
 @Getter
 @Setter
 public class OutputConfig {

@@ -27,14 +27,6 @@ import lombok.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * This class takes many {@link IAggregableReduceOp}, each acting on one field, and each returning several
- * {@link Writable} elements, in the form of a list of {@link Writable}. It produces a reduce operation that
- * distributes a list of {@link Writable} elements to these operations, one per operation.
- *
- *
- * Created by huitseeker on 5/14/17.
- */
 @AllArgsConstructor
 public class DispatchOp<T, U> implements IAggregableReduceOp<List<T>, List<U>> {
 

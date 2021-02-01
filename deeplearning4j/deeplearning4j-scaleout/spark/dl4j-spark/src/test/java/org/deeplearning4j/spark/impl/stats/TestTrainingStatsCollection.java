@@ -52,9 +52,6 @@ import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 17/06/2016.
- */
 public class TestTrainingStatsCollection extends BaseSparkTest {
 
     @Test

@@ -33,14 +33,6 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
-/**
- * An object containing training history for a SameDiff.fit call, such as {@link SameDiff#fit()}, {@link SameDiff#fit(DataSetIterator, int, Listener...)}, etc.<br>
- * Contains information including:<br>
- * - Evaluations performed (training set and test set)<br>
- * - Loss curve (score values at each iteration)<br>
- * - Training times, and validation times<br>
- * - Number of epochs performed<br>
- */
 @Getter
 public class History {
 

@@ -43,10 +43,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
-/**
- * Basic time series utils
- * @author Adam Gibson
- */
 public class TimeSeriesUtils {
 
 

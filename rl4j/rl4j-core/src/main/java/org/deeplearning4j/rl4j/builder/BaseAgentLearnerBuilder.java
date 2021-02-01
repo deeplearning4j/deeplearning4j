@@ -42,15 +42,6 @@ import org.deeplearning4j.rl4j.policy.IPolicy;
 
 import java.util.List;
 
-/**
- * A base {@link IAgentLearner} builder that should be helpful in several common scenarios. <p/>
- * <b>Note</b>: Classes implementing BaseAgentLearnerBuilder should be careful not to re-use a stateful and/or non thread-safe dependency
- * through several calls to build(). In doubt, use a new instance.
- * @param <ACTION> The type of action
- * @param <EXPERIENCE_TYPE> The type of experiences
- * @param <ALGORITHM_RESULT_TYPE> The response type of {@link org.deeplearning4j.rl4j.network.IOutputNeuralNet IOutputNeuralNet}.output()
- * @param <CONFIGURATION_TYPE> The type of the configuration
- */
 public abstract class BaseAgentLearnerBuilder<ACTION, EXPERIENCE_TYPE, ALGORITHM_RESULT_TYPE, CONFIGURATION_TYPE extends BaseAgentLearnerBuilder.Configuration<ACTION>> implements Builder<IAgentLearner<ACTION>> {
 
     protected final CONFIGURATION_TYPE configuration;

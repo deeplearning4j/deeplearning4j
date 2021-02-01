@@ -27,14 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
-/**
- * Abstract class for {@link WeightInitScheme}
- * This handles boilerplate like delegating to the parameters view.
- *
- *
- *
- * @author Adam Gibson
- */
 @EqualsAndHashCode
 public abstract class BaseWeightInitScheme implements WeightInitScheme {
     private char order;

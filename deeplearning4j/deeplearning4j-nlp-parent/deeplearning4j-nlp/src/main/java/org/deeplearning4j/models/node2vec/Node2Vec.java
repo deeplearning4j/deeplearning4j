@@ -42,13 +42,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * This is implementation for Node2Vec/DeepWalk for DeepLearning4J
- *
- * PLEASE NOTE: This class is under construction and isn't suited for any use.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class Node2Vec<V extends SequenceElement, E extends Number> extends SequenceVectors<V> {

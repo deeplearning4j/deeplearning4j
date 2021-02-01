@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * ACosh elementwise function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class ACosh extends BaseTransformStrictOp {
 

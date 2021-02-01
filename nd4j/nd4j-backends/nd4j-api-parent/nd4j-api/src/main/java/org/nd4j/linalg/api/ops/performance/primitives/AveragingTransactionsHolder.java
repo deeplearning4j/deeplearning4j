@@ -29,9 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class AveragingTransactionsHolder {
     private final List<List<Long>> storage = new ArrayList<>(MemcpyDirection.values().length);

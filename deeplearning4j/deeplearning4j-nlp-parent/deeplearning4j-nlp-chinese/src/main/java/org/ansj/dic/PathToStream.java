@@ -29,12 +29,6 @@ import org.deeplearning4j.common.config.DL4JClassLoading;
 
 import java.io.InputStream;
 
-/**
- * 将路径转换为流，如果你需要实现自己的加载器请实现这个类，使用这个类可能需要自己依赖第三方包，比如jdbc连接和nutz
- * 
- * @author ansj
- *
- */
 public abstract class PathToStream {
 
     public static InputStream stream(String path) {

@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Broadcast dynamic shape function
- *
- * @author Alex Black
- */
 public class BroadcastDynamicShape extends DynamicCustomOp {
     public BroadcastDynamicShape(SameDiff sameDiff, SDVariable in, SDVariable shape) {
         super(null,sameDiff,new SDVariable[]{in, shape});

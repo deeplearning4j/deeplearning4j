@@ -27,9 +27,6 @@ import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedAssignMessage;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class AssignRequestMessage extends BaseVoidMessage implements RequestMessage {

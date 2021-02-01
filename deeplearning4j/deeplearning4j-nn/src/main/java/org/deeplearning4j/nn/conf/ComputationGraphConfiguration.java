@@ -53,19 +53,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * ComputationGraphConfiguration is a configuration object for neural networks with arbitrary connection structure.
- * It is analogous to {@link MultiLayerConfiguration}, but allows considerably greater flexibility for the network
- * architecture.<br>
- * Specifically, the network architecture is a directed acyclic graph, where each vertex in the graph is a {@link GraphVertex},
- * which may for example be a layer or a vertex/object that defines arbitrary forward and backward pass functionality.<br>
- * Note that the ComputationGraph may have an arbitrary number of inputs (multiple independent inputs, possibly of different
- * types), and an arbitrary number of outputs (for example, multiple {@link OutputLayer} instances.
- * Typical usage:<br>
- * {@code ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()....graphBuilder()...build();}
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"trainingWorkspaceMode", "inferenceWorkspaceMode", "cacheMode", "topologicalOrder", "topologicalOrderStr"})
 @AllArgsConstructor(access = AccessLevel.PRIVATE)

@@ -24,11 +24,6 @@ import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 
-/**
- * Utility functionality for Keras pooling layers.
- *
- * @author Max Pumperla
- */
 public class KerasPoolingUtils {
 
     /**

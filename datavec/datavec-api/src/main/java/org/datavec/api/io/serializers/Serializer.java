@@ -23,19 +23,6 @@ package org.datavec.api.io.serializers;
 import java.io.IOException;
 import java.io.OutputStream;
 
-/**
- * <p>
- * Provides a facility for serializing objects of type <T> to an
- * {@link OutputStream}.
- * </p>
- *
- * <p>
- * Serializers are stateful, but must not buffer the output since
- * other producers may write to the output between calls to
- * {@link #serialize(Object)}.
- * </p>
- * @param <T>
- */
 public interface Serializer<T> {
     /**
      * <p>Prepare the serializer for writing.</p>

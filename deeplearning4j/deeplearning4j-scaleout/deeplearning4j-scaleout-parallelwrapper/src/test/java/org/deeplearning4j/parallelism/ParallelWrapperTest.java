@@ -48,9 +48,6 @@ import org.slf4j.LoggerFactory;
 import static org.junit.Assert.assertTrue;
 
 
-/**
- * Created by agibsonccc on 11/12/16.
- */
 public class ParallelWrapperTest extends BaseDL4JTest {
     private static final Logger log = LoggerFactory.getLogger(ParallelWrapperTest.class);
 

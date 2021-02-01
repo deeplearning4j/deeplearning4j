@@ -45,9 +45,6 @@ import java.util.stream.LongStream;
 
 import static org.junit.Assert.assertArrayEquals;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class SortCooTests extends BaseNd4jTest {

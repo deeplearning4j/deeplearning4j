@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Softmax backpropagation op - dL/dIn from in and dL/dOut
- *
- * @author Alex Black
- */
 public class SoftmaxBp extends DynamicCustomOp {
 
     public SoftmaxBp(){ }

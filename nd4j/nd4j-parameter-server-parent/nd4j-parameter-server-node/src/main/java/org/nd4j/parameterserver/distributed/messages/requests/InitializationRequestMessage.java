@@ -27,11 +27,6 @@ import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.InitializationAggregation;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedInitializationMessage;
 
-/**
- * This method propagates storage/weights initialization over distributed Shards
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Builder
 @Deprecated

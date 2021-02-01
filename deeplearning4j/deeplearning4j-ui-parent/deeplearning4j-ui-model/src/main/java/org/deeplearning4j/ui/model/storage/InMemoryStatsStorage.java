@@ -30,12 +30,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * A StatsStorage implementation that stores all data in memory. If persistence is required for the UI information,
- * use {@link FileStatsStorage} or {@link MapDBStatsStorage}.
- *
- * @author Alex Black
- */
 public class InMemoryStatsStorage extends BaseCollectionStatsStorage {
     private final String uid;
 

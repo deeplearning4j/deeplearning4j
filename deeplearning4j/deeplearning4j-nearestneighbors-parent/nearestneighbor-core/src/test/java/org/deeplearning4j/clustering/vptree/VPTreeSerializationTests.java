@@ -36,10 +36,6 @@ import java.util.ArrayList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * VPTree java serialization tests
- * @author raver119@gmail.com
- */
 @Slf4j
 public class VPTreeSerializationTests extends BaseDL4JTest {
 

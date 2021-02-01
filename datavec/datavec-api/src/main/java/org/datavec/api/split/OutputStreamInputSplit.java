@@ -28,15 +28,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.Iterator;
 
-/**
- *
- * Input stream input split.
- * The normal pattern outputStream reading the whole
- * input stream and turning that in to a record.
- * This outputStream meant for streaming raw data
- * rather than normal mini batch pre processing.
- * @author Adam Gibson
- */
 public class OutputStreamInputSplit implements InputSplit {
 
     @Getter

@@ -20,11 +20,6 @@
 
 package org.deeplearning4j.optimize.api;
 
-/**
- * This enum holds options for TrainingListener invocation scheme
- *
- * @author raver119@gmail.com
- */
 public enum InvocationType {
     /**
      * Iterator will be called on start of epoch.

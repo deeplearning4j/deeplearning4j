@@ -23,15 +23,6 @@ package org.nd4j.weightinit;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Defines weight initialization for neural networks.
- *
- * Use {@link BaseWeightInitScheme}
- * to create a new {@link WeightInitScheme}
- * This is needed to  handle things like the parameters view.
- *
- * @author Adam Gibson
- */
 public interface WeightInitScheme {
 
     /**

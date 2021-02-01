@@ -22,11 +22,6 @@ package org.nd4j.parameterserver.distributed.v2.transport;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * This interface describes simple abstraction that provides DL4J MLN/CG updater state view array
- *
- * @author raver119@gmail.com
- */
 public interface UpdaterParametersProvider {
 
     /**

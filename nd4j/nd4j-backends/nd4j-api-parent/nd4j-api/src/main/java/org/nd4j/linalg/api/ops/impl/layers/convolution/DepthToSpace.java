@@ -36,18 +36,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 
-/**
- * Inverse operation to SpaceToDepth. This operation takes 4D array in, in either NCHW or NHWC format,
- * and moves data from  channels (C) to spatial dimensions (HW) for given blockSize.
- * <p>
- * Example:
- * blockSize = 4
- * dataFormat = "NCHW"
- * input shape =  [128, 4, 4, 48]
- * output shape = [128, 4*4, 4*4, 48/4/4]
- *
- * @author raver119@gmail.com, Max Pumperla
- */
 public class DepthToSpace extends DynamicCustomOp {
     private DataFormat dataFormat = DataFormat.NHWC;
     private int blockSize;

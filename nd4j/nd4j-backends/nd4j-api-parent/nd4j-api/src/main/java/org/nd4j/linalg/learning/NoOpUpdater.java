@@ -28,11 +28,6 @@ import org.nd4j.linalg.learning.config.NoOp;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * NoOp updater: gradient updater that makes no changes to the gradient
- *
- * @author Alex Black
- */
 @Data
 public class NoOpUpdater implements GradientUpdater<NoOp> {
 

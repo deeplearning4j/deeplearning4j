@@ -38,12 +38,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Vantage point tree implementation
- *
- * @author Adam Gibson
- * @author raver119@gmail.com
- */
 @Slf4j
 @Builder
 @AllArgsConstructor

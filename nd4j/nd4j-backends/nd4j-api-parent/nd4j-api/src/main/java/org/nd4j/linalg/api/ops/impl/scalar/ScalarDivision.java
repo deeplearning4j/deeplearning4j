@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Scalar division
- *
- * @author Adam Gibson
- */
 public class ScalarDivision extends BaseScalarOp {
     public ScalarDivision() {
     }

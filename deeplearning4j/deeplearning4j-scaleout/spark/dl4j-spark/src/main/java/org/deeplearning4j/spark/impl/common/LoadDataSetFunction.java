@@ -29,11 +29,6 @@ import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.InputStream;
 
-/**
- * This is a function that is used to load a {@link DataSet} object using {@link DataSet#load(InputStream)}.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class LoadDataSetFunction implements Function<String, DataSet> {
 

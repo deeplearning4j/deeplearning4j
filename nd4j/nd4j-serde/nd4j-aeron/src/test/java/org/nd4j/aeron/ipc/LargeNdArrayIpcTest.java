@@ -35,9 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertFalse;
 
-/**
- * Created by agibsonccc on 9/22/16.
- */
 @Slf4j
 public class LargeNdArrayIpcTest extends BaseND4JTest {
     private MediaDriver mediaDriver;

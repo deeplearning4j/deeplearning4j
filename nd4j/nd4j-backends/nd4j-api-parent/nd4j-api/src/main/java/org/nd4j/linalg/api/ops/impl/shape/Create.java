@@ -39,11 +39,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * This operation creates a new, optionally nullified, array with a given shape, order and data type
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class Create extends DynamicCustomOp {
 

@@ -34,15 +34,6 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-/**
- * Bernoulli reconstruction distribution for variational autoencoder.<br>
- * Outputs are modelled by a Bernoulli distribution - i.e., the Bernoulli distribution should be used for binary data (all
- * values 0 or 1); the VAE models the probability of the output being 0 or 1.<br>
- * Consequently, the sigmoid activation function should be used to bound activations to the range of 0 to 1. Activation
- * functions that do not produce outputs in the range of 0 to 1 (including relu, tanh, and many others) should be avoided.
- *
- * @author Alex Black
- */
 @Slf4j
 @Data
 public class BernoulliReconstructionDistribution implements ReconstructionDistribution {

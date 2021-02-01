@@ -25,11 +25,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.List;
 
-/**
- * Used for filtering empty records
- *
- * @author Adam Gibson
- */
 public class EmptyRecordFunction implements Function<List<Writable>, Boolean> {
     @Override
     public Boolean apply(List<Writable> v1) {

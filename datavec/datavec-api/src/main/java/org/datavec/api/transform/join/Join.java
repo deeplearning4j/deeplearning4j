@@ -30,11 +30,6 @@ import org.datavec.api.writable.Writable;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Join class: used to specify a join (like an SQL join)
- *
- * @author Alex Black
- */
 @Data
 public class Join implements Serializable {
 

@@ -61,9 +61,6 @@ import static org.junit.Assert.assertTrue;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-/**
- * Created by Alex on 12/09/2016.
- */
 @Slf4j
 public class LossFunctionGradientCheck extends BaseDL4JTest {
 

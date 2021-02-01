@@ -50,9 +50,6 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 26/08/2016.
- */
 public class TestCustomLayers extends BaseDL4JTest {
 
     @Test

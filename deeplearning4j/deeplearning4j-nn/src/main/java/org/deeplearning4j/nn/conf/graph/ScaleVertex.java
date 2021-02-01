@@ -30,13 +30,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * A ScaleVertex is used to scale the size of activations of a single layer: this is simply multiplication by a
- * fixed scalar value<br>
- * For example, ResNet activations can be scaled in repeating blocks to keep variance under control.
- *
- * @author Justin Long (@crockpotveggies)
- */
 @Data
 public class ScaleVertex extends GraphVertex {
 

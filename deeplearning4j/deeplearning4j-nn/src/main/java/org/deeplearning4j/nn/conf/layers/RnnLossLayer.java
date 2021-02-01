@@ -42,17 +42,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Recurrent Neural Network Loss Layer.<br> Handles calculation of gradients etc for various objective (loss)
- * functions.<br> Note: Unlike {@link RnnOutputLayer} this RnnLossLayer does not have any parameters - i.e., there is no
- * time distributed dense component here. Consequently, the output activations size is equal to the input size.<br>
- * Input and output activations are same as other RNN layers: 3 dimensions with shape
- * [miniBatchSize,nIn,timeSeriesLength] and [miniBatchSize,nOut,timeSeriesLength] respectively.<br> Note that
- * RnnLossLayer also has the option to configure an activation function
- *
- * @author Alex Black
- * @see RnnOutputLayer
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

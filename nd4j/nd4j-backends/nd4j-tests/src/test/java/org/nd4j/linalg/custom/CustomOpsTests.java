@@ -96,11 +96,6 @@ import java.util.List;
 import static java.lang.Float.NaN;
 import static org.junit.Assert.*;
 
-/**
- * This class holds various CustomOps tests
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CustomOpsTests extends BaseNd4jTest {
 

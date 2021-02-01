@@ -32,9 +32,6 @@ import java.io.Serializable;
 import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 
-/**
- * Legacy AdaGrad implementation for use in NLP etc applications
- */
 @Data
 @NoArgsConstructor
 public class AdaGrad implements Serializable {

@@ -39,13 +39,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Function to feed-forward examples, and get the network output (for example, class probabilities).
- * A key value is used to keep track of which output corresponds to which input.
- *
- * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
- * @author Alex Black
- */
 @Slf4j
 @AllArgsConstructor
 public class GraphFeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, INDArray[]>>, K, INDArray[]> {

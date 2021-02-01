@@ -31,11 +31,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.*;
 
-/**
- * Slice backprop function
- *
- * @author Alex Black
- */
 @Slf4j
 public class SliceBp extends DynamicCustomOp {
 

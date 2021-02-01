@@ -30,9 +30,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
-/**
- * Compare/sort a sequence by the values of a specific column
- */
 @EqualsAndHashCode(exclude = {"schema", "columnIdx"})
 @JsonIgnoreProperties({"schema", "columnIdx"})
 @Data

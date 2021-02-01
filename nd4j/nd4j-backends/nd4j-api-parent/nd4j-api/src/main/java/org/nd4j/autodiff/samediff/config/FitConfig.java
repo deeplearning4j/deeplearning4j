@@ -37,11 +37,6 @@ import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * Configuration for a {@link SameDiff} training operation.
- * <p>
- * Used in {@link SameDiff#fit()}.
- */
 @Getter
 @Setter
 public class FitConfig {

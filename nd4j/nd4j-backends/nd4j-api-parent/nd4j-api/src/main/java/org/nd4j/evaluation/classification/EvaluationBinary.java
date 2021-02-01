@@ -45,21 +45,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * EvaluationBinary: used for evaluating networks with binary classification outputs. The typical classification metrics,
- * such as accuracy, precision, recall, F1 score, etc. are calculated for each output.<br>
- * Note that {@link ROCBinary} is also used internally to calculate AUC for each output, but only when using an
- * appropriate constructor, {@link #EvaluationBinary(int, Integer)}
- * <p>
- * Note that EvaluationBinary supports both per-example and per-output masking.<br>
- * EvaluationBinary by default uses a decision threshold of 0.5, however decision thresholds can be set on a per-output
- * basis using {@link #EvaluationBinary(INDArray)}.
- * <p>
- * The most common use case: multi-task networks, where each output is a binary value. This differs from {@link Evaluation}
- * in that {@link Evaluation} is for a single class (binary or non-binary) evaluation.
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data

@@ -33,10 +33,6 @@ import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Spark implementation for PV-DBOW training algorithm
- * @author raver119@gmail.com
- */
 public class SparkDBOW extends SparkSkipGram {
     @Override
     public String getCodeName() {

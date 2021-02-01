@@ -52,9 +52,6 @@ import java.io.PrintWriter;
 import java.util.*;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class ConvolutionalIterationListener extends BaseTrainingListener {
 

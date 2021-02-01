@@ -29,12 +29,6 @@ import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Append a String to the
- * values in a single column
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "columnNumber"})
 @Data
 public class AppendStringColumnTransform extends BaseColumnTransform {

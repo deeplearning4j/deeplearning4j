@@ -24,11 +24,6 @@ import com.microsoft.msr.malmo.WorldState;
 import org.deeplearning4j.rl4j.space.Box;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * A Malmo consistency policy that ensures the both there is a reward and next observation has a different position that the previous one.
- * This will only work for your mission if you require that every action moves to a new location. 
- * @author howard-abrams (howard.abrams@ca.com) on 1/12/17.
- */
 public class MalmoDescretePositionPolicy implements MalmoObservationPolicy {
     MalmoObservationSpacePosition observationSpace = new MalmoObservationSpacePosition();
 

@@ -48,9 +48,6 @@ import static org.junit.Assert.assertEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-/**
- * Created by agibsonccc on 9/6/14.
- */
 @RunWith(Parameterized.class)
 public class ConvolutionTests extends BaseNd4jTest {
 

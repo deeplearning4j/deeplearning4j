@@ -18,13 +18,6 @@
  *  *****************************************************************************
  */
 
-/// <reference path="../../api/Component.ts" />
-/// <reference path="../../typedefs/d3.d.ts" />
-/// <reference path="../../util/TSUtils.ts" />
-
-
-
-
 abstract class Chart extends Component {
 
     protected style: StyleChart;

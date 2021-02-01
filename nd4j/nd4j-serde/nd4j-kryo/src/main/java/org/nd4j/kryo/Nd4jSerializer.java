@@ -31,9 +31,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-/**
- * Created by agibsonccc on 5/22/16.
- */
 public class Nd4jSerializer extends Serializer<INDArray> {
     /**
      * Writes the bytes for the object to the output.

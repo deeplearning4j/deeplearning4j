@@ -36,24 +36,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- *
- *
- * A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
- * For example, CNN -> Denselayer <br>
- * This does two things:<br>
- * (b) Reshapes 4d activations out of CNN layer, with shape
- * [numExamples, numChannels, inputHeight, inputWidth]) (for {@link CNN2DFormat#NCHW} format activations) or shape
- * [numExamples, inputHeight, inputWidth, numChannels] (for {@link CNN2DFormat#NHWC}) format activations) into 2d activations
- * (with shape [numExamples, inputHeight*inputWidth*numChannels]) for use in feed forward layer.
- * (a) Reshapes epsilons (weights*deltas) out of FeedFoward layer (which is 2D or 3D with shape
- * [numExamples, inputHeight*inputWidth*numChannels]) into 4d epsilons (with shape
- * [numExamples, numChannels, inputHeight, inputWidth] or [numExamples, inputHeight, inputWidth, numChannels]) suitable to
- * feed into CNN layers.<br>
- * Note: numChannels is equivalent to channels or featureMaps referenced in different literature
- * @author Adam Gibson
- * @see FeedForwardToCnnPreProcessor for opposite case (i.e., DenseLayer -> CNNetc)
- */
 @Data
 public class CnnToFeedForwardPreProcessor implements InputPreProcessor {
     protected long inputHeight;

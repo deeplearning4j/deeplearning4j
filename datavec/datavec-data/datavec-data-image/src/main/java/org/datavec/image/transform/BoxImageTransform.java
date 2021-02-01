@@ -34,14 +34,6 @@ import java.util.Random;
 
 import org.bytedeco.opencv.opencv_core.*;
 
-/**
- * Boxes images to a given width and height without changing their aspect ratios,
- * or the size of the objects, by either padding or cropping them from the center.
- * When the width/height of an image is less than the given width/height, it gets
- * padded in that dimension, otherwise it gets cropped.
- *
- * @author saudet
- */
 @Accessors(fluent = true)
 @JsonIgnoreProperties({"borderValue"})
 @JsonInclude(JsonInclude.Include.NON_NULL)

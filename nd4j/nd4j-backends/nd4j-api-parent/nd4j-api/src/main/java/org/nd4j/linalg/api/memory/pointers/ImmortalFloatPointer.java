@@ -24,9 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class ImmortalFloatPointer extends FloatPointer {
     private Pointer pointer;

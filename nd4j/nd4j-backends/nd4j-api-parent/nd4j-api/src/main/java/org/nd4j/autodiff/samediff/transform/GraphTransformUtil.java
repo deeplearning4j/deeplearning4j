@@ -32,12 +32,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * GraphTransformUtil provides a number of utility methods to modify graphs - replacing nodes and subgraphs, etc.<br>
- * See the individual methods for futher details
- *
- * @author Alex Black
- */
 public class GraphTransformUtil {
 
     private GraphTransformUtil() {

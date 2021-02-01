@@ -27,9 +27,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
-/**
- * Created by agibsonccc on 10/9/16.
- */
 @Builder
 @Data
 @NoArgsConstructor

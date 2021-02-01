@@ -27,14 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A simple util class for collapsing a {@link Map}
- * in to a {@link List} of {@link Pair}
- * where each item in the list will be an entry in the map
- * represented by a {@link Pair} of the original key and value type.
- *
- * @author Adam Gibson
- */
 public class FunctionalUtils {
 
 

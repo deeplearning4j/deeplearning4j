@@ -40,11 +40,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Builds a DL4J Bidirectional layer from a Keras Bidirectional layer wrapper
- *
- * @author Max Pumperla
- */
 public class KerasBidirectional extends KerasLayer {
 
     private KerasLayer kerasRnnlayer;

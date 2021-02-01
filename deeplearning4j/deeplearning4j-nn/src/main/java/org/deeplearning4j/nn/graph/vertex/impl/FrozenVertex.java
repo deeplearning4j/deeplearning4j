@@ -31,12 +31,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 
-/**
- * FrozenVertex is used for the purposes of transfer learning
- * A frozen layers wraps another DL4J GraphVertex within it.
- * During backprop, the FrozenVertex is skipped, and any parameters are not be updated.
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true, exclude = {"config"})
 public class FrozenVertex extends BaseWrapperVertex {
     public FrozenVertex(GraphVertex underlying) {

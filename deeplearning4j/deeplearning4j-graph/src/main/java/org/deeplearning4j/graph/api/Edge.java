@@ -22,9 +22,6 @@ package org.deeplearning4j.graph.api;
 
 import lombok.Data;
 
-/** Edge in a graph. May be a directed or undirected edge.<br>
- * Parameterized, and may store a value/object associated with the edge
- */
 @Data
 public class Edge<T> {
 

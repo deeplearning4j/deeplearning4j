@@ -41,16 +41,6 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- *
- * This class can be used to build joint vocabulary from special sources, that should be treated separately.
- * I.e. words from one source should have minWordFrequency set to 1, while the rest of corpus should have minWordFrequency set to 5.
- * So, here's the way to deal with it.
- *
- * It also can be used to simply build vocabulary out of arbitrary number of Sequences derived from arbitrary number of SequenceIterators
- *
- * @author raver119@gmail.com
- */
 public class VocabConstructor<T extends SequenceElement> {
     private List<VocabSource<T>> sources = new ArrayList<>();
     private VocabCache<T> cache;

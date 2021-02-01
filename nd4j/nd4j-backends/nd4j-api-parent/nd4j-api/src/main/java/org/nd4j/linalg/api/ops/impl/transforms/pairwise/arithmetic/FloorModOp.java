@@ -33,11 +33,6 @@ import org.nd4j.linalg.api.shape.Shape;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Floor mod
- *
- * @author raver119@gmail.com
- */
 public class FloorModOp extends BaseDynamicTransformOp {
     public FloorModOp() {}
 

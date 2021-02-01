@@ -33,13 +33,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.List;
 
 
-/**
- * Composed op: g*standarize(x) + b
- *
- * Bias is optional, and can be set as null
- *
- * @author Paul Dubs
- */
 @NoArgsConstructor
 public class LayerNormBp extends DynamicCustomOp {
 

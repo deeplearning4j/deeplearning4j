@@ -31,8 +31,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
-/**@author Alex Black
- */
 public class CheckUtil {
 
     /**Check first.mmul(second) using Apache commons math mmul. Float/double matrices only.<br>

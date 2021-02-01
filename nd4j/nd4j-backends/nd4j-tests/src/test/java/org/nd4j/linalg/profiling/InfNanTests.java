@@ -33,9 +33,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
-/**
- * @author raver119@gmail.com
- */
 @RunWith(Parameterized.class)
 public class InfNanTests extends BaseNd4jTest {
 

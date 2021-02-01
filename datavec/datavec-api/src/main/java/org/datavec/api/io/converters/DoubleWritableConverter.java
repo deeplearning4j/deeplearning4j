@@ -23,11 +23,6 @@ package org.datavec.api.io.converters;
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.writable.*;
 
-/**
- * Convert a writable to a
- * double
- * @author Adam Gibson
- */
 public class DoubleWritableConverter implements WritableConverter {
     @Override
     public Writable convert(Writable writable) throws WritableConverterException {

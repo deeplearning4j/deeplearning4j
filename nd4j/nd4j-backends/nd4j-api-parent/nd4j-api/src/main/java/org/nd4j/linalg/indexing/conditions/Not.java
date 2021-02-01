@@ -20,9 +20,6 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
-/**
- * Created by agibsonccc on 10/9/14.
- */
 public class Not implements Condition {
 
     private Condition opposite;

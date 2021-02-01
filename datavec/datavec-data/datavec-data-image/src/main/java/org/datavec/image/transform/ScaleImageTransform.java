@@ -32,12 +32,6 @@ import org.bytedeco.opencv.opencv_core.*;
 
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
-/**
- * ScaleImageTransform is aim to scale by a certain <b>random factor</b>,
- * <b>not</b> the <b>final size</b> of the image.
- *
- * @author saudet
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class ScaleImageTransform extends BaseImageTransform<Mat> {

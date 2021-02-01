@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.List;
 
-/**
- *  Level 1 blas op Axpy as libnd4j native op
- *
- * @author raver119@gmail.com
- */
 public class Axpy extends BaseTransformSameOp {
 
     private double p;

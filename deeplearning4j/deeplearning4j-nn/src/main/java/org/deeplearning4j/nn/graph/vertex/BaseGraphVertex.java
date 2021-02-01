@@ -33,8 +33,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.util.Collections;
 import java.util.Map;
 
-/** BaseGraphVertex defines a set of common functionality for GraphVertex instances.
- */
 @Data
 public abstract class BaseGraphVertex implements GraphVertex {
 

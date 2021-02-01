@@ -38,10 +38,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Created by farizrahman4u on 3/23/18.
- */
-
 public class ScatterSub extends DynamicCustomOp {
 
     public ScatterSub(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {

@@ -31,14 +31,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * AbstractStorage implementation, with Integer as key.
- * Primary goal is storage of individual rows/slices in system ram, even if working in GPU environment
- *
- * This implementation IS thread-safe, so it can be easily used together with ParallelWrapper
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CompressedRamStorage<T extends Object> implements AbstractStorage<T> {
 

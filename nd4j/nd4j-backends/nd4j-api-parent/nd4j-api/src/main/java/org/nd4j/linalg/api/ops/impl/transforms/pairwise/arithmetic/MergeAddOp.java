@@ -34,11 +34,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Addition operation for n operands, called "mergeadd" in libnd4j
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class MergeAddOp extends BaseDynamicTransformOp {
 

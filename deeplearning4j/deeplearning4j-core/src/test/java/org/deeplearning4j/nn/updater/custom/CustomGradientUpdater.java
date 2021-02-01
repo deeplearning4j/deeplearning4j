@@ -26,9 +26,6 @@ import org.nd4j.linalg.learning.GradientUpdater;
 
 import java.util.Map;
 
-/**
- * Created by Alex on 09/05/2017.
- */
 @AllArgsConstructor
 public class CustomGradientUpdater implements GradientUpdater<CustomIUpdater> {
 

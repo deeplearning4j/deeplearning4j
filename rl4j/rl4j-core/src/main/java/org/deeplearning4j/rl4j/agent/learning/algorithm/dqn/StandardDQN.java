@@ -25,11 +25,6 @@ import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * The Standard DQN algorithm based on "Playing Atari with Deep Reinforcement Learning" (https://arxiv.org/abs/1312.5602)
- *
- * @author Alexandre Boulanger
- */
 public class StandardDQN extends BaseDQNAlgorithm {
 
     private static final int ACTION_DIMENSION_IDX = 1;

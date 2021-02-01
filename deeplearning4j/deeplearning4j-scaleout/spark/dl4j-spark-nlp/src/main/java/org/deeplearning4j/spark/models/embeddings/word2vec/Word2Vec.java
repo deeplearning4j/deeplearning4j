@@ -54,12 +54,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Spark version of word2vec
- *
- * @author Adam Gibson
- * @author raver119@gmail.com
- */
 public class Word2Vec extends WordVectorsImpl<VocabWord> implements Serializable {
 
     private INDArray trainedSyn1;

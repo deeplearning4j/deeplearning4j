@@ -31,17 +31,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
-/**
- *
- * This class contains utility methods for generating NDArrays for use in unit tests
- * The idea is to generate arrays with a specific shape, after various operations have been undertaken on them
- * So output is after get, reshape, transpose, permute, tensorAlongDimension etc operations have been done<br>
- * Most useful methods:<br>
- *     - getAllTestMatricesWithShape
- *     - getAll4dTestArraysWithShape
- *     - getAll4dTestArraysWithShape
- * @author Alex Black
- */
 public class NDArrayCreationUtil {
     private NDArrayCreationUtil() {}
 

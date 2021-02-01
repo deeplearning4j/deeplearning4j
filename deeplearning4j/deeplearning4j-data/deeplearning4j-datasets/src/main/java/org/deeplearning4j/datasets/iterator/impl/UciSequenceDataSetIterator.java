@@ -25,17 +25,6 @@ import org.deeplearning4j.datasets.fetchers.DataSetType;
 import org.deeplearning4j.datasets.fetchers.UciSequenceDataFetcher;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
-/**
- * UCI synthetic control chart time series dataset. This dataset is useful for classification of univariate
- * time series with six categories:<br>
- * Normal, Cyclic, Increasing trend, Decreasing trend, Upward shift, Downward shift
- *
- * Details:     <a href="https://archive.ics.uci.edu/ml/datasets/Synthetic+Control+Chart+Time+Series">https://archive.ics.uci.edu/ml/datasets/Synthetic+Control+Chart+Time+Series</a><br>
- * Data:        <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data">https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/synthetic_control.data</a><br>
- * Image:       <a href="https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/data.jpeg">https://archive.ics.uci.edu/ml/machine-learning-databases/synthetic_control-mld/data.jpeg</a>
- *
- * @author Briton Park (bpark738)
- */
 public class UciSequenceDataSetIterator extends SequenceRecordReaderDataSetIterator {
 
     protected DataSetPreProcessor preProcessor;

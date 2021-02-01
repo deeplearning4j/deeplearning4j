@@ -24,11 +24,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * Iterator that adapts a DataSetIterator to a MultiDataSetIterator
- *
- * @author Alex Black
- */
 public class MultiDataSetIteratorAdapter implements MultiDataSetIterator {
 
     private org.nd4j.linalg.dataset.api.iterator.DataSetIterator iter;

@@ -31,12 +31,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Not equal to function:
- * Bit mask over whether 2 elements are not equal or not
- *
- * @author Adam Gibson
- */
 public class NotEqualTo extends BaseDynamicTransformOp {
     public NotEqualTo() {}
 

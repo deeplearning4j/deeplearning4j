@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * RSqrt function
- *
- * @author Adam Gibson
-  */
 @NoArgsConstructor
 public class RSqrt extends BaseTransformFloatOp {
 

@@ -36,13 +36,6 @@ import java.util.Collection;
 import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngine;
 import static org.apache.uima.fit.factory.AnalysisEngineFactory.createEngineDescription;
 
-/**
- * Creates a tokenizer that filters by 
- * part of speech tags
- * @see {org.deeplearning4j.text.tokenization.tokenizer.PosUimaTokenizer}
- * @author Adam Gibson
- *
- */
 public class PosUimaTokenizerFactory implements TokenizerFactory {
 
     private AnalysisEngine tokenizer;

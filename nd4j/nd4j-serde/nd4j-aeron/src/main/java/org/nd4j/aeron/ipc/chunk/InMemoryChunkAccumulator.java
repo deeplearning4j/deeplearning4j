@@ -28,11 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Accumulate chunks and reassemble them.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class InMemoryChunkAccumulator implements ChunkAccumulator {
     private Map<String, List<NDArrayMessageChunk>> chunks = Maps.newConcurrentMap();

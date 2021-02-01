@@ -34,9 +34,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class CloseableTests extends BaseNd4jTest {

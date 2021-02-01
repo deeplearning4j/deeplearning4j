@@ -33,18 +33,6 @@ import org.nd4j.common.util.MathUtils;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * A MultiDataSetLoader that loads MultiDataSets from a path, using a {@code Loader<MultiDataSet>} such as {@link SerializedMultiDataSetLoader}.
- * Paths are converted to input streams using {@link SourceFactory} such as {@link LocalFileSourceFactory}.
- * Note that this iterator does not implement any sort of merging/batching functionality - it simply returns the DataSets
- * as-is from the path/loader.
- *
- * Note: If using {@link #MultiDataSetLoaderIterator(Collection, Random, Loader, SourceFactory)} constructor with non-null
- * Random instance, the data will be shuffled,
- *
- *
- * @author Alex Black
- */
 @Data
 public class MultiDataSetLoaderIterator implements MultiDataSetIterator {
 

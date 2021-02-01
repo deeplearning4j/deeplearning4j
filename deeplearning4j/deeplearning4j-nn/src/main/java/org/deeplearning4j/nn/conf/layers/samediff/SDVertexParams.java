@@ -26,11 +26,6 @@ import org.nd4j.common.base.Preconditions;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * SDVertexParams is used to define the inputs - and the parameters - for a SameDiff vertex
- *
- * @author Alex Black
- */
 @Data
 public class SDVertexParams extends SDLayerParams {
 

@@ -28,9 +28,6 @@ import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by fartovii on 01.12.15.
- */
 public class AggregatingSentenceIteratorTest extends BaseDL4JTest {
 
     @Test(timeout = 300000)

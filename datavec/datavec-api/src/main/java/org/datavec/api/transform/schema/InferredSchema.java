@@ -29,17 +29,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * If passed a CSV file that contains a header and a single row of sample data, it will return
- * a Schema.
- *
- * Only Double, Integer, Long, and String types are supported. If no number type can be inferred,
- * the field type will become the default type. Note that if your column is actually categorical but
- * is represented as a number, you will need to do additional transformation. Also, if your sample
- * field is blank/null, it will also become the default type.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Slf4j
 public class InferredSchema {
     protected Schema.Builder schemaBuilder;

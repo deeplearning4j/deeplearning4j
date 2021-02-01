@@ -34,15 +34,6 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-/**
- * FileBatch: stores the raw contents of multiple files in byte arrays (one per file) along with their original paths.
- * FileBatch can be stored to disk (or any output stream) in zip format.
- * Typical use cases include creating batches of data in their raw format for distributed training. This can reduce the
- * number of disk reads required (fewer files) and network transfers when reading from remote storage, due to the zip
- * format used for compression.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class FileBatch implements Serializable {

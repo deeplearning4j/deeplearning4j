@@ -32,11 +32,6 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * Class for conducting early stopping training via Spark on a {@link MultiLayerNetwork}
- *
- * @author Alex Black
- */
 public class SparkEarlyStoppingTrainer extends BaseSparkEarlyStoppingTrainer<MultiLayerNetwork> {
 
     private SparkDl4jMultiLayer sparkNet;

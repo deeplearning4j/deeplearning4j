@@ -25,16 +25,6 @@ import org.deeplearning4j.ui.model.stats.StatsListener;
 
 import java.util.Map;
 
-/**
- * An interface used with {@link StatsListener} for reporting static information.
- * The idea is that this information will be reported only once, at the first call of the StatsListener. Comparatively,
- * the {@link StatsReport} will be used multiple times - every N iterations according to the configuration ({@link StatsUpdateConfiguration}).
- * <p>
- * Note that the software, hardware and model information may or may not be obtained and reported, depending on the configuration
- * provided by the relevant {@link StatsInitializationConfiguration}
- *
- * @author Alex Black
- */
 public interface StatsInitializationReport extends Persistable {
 
     void reportIDs(String sessionID, String typeID, String workerID, long timestamp);

@@ -24,11 +24,6 @@ import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-/**
- * Mean squared error loss
- *
- * @author Alex Black
- */
 public class MeanSquaredErrorLossBp extends BaseLossBp {
 
 

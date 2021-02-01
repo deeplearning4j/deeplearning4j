@@ -26,12 +26,6 @@ import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * A simple transform to do common mathematical operations, such as sin(x), ceil(x), etc.<br>
- * Operations are specified by {@link MathFunction}
- *
- * @author Alex Black
- */
 @Data
 public class FloatMathFunctionTransform extends BaseFloatTransform {
 

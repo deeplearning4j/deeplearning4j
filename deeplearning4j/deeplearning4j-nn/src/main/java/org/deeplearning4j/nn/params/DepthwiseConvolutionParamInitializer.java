@@ -32,11 +32,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-/**
- * Initialize depth-wise convolution parameters.
- *
- * @author Max Pumperla
- */
 public class DepthwiseConvolutionParamInitializer implements ParamInitializer {
 
     private static final DepthwiseConvolutionParamInitializer INSTANCE = new DepthwiseConvolutionParamInitializer();

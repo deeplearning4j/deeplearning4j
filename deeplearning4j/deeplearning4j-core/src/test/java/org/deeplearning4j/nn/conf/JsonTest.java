@@ -30,9 +30,6 @@ import org.nd4j.linalg.lossfunctions.impl.*;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 26/06/2017.
- */
 public class JsonTest extends BaseDL4JTest {
 
     @Test

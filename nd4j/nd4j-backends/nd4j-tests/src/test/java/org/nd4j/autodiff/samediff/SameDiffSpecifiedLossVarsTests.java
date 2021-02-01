@@ -35,9 +35,6 @@ import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 04/04/2019.
- */
 public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
 
     public SameDiffSpecifiedLossVarsTests(Nd4jBackend b){

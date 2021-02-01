@@ -28,16 +28,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-/**
- * Iterates and returns int arrays
- * over a particular shape.
- *
- * This iterator starts at zero and increments
- * the shape until each item in the "position"
- * hits the current shape
- *
- * @author Adam Gibson
- */
 public class NdIndexIterator implements Iterator<long[]> {
     private int length = -1;
     private int i = 0;

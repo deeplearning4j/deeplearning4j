@@ -37,13 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Computes a diagonal matrix of shape (n, n) from a vector of length n.
- * More generally puts a an n-dimensional tensor on the diagonal part
- * of a tensor of 2*n dimensions.
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class Diag extends DynamicCustomOp {
 

@@ -43,9 +43,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Created by Alex on 7/03/2016.
- */
 public class SparkUtils {
 
     public static <T> List<JavaRDD<T>> splitData(SplitStrategy splitStrategy, JavaRDD<T> data, long seed) {

@@ -36,16 +36,6 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * An aeron subscriber which, given
- * aeron connection information and an
- * @link {NDArrayHolder} will retrieve
- * the ndarray from the holder and send
- * an ndarray over aeron to the given
- * aeron channel.
- *
- * @author Adam Gibson
- */
 @Builder
 @Data
 public class AeronNDArrayResponder implements AutoCloseable {

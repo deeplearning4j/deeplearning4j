@@ -27,9 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static junit.framework.TestCase.assertEquals;
 
-/**
- * Created by agibsonccc on 12/2/16.
- */
 public class UpdaterStorageTests extends BaseND4JTest {
 
     @Test(timeout = 30000L)

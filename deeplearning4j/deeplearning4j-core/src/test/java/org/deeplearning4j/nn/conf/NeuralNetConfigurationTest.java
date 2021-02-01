@@ -53,9 +53,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by agibsonccc on 11/27/14.
- */
 public class NeuralNetConfigurationTest extends BaseDL4JTest {
 
     final DataSet trainingSet = createData();

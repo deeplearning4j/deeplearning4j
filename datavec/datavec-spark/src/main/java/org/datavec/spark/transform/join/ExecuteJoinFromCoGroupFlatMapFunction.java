@@ -30,11 +30,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Execute a join
- *
- * @author Alex Black
- */
 public class ExecuteJoinFromCoGroupFlatMapFunction implements  FlatMapFunction<Tuple2<List<Writable>, Tuple2<Iterable<List<Writable>>, Iterable<List<Writable>>>>, List<Writable>> {
 
     private final Join join;

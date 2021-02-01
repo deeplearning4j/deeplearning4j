@@ -29,10 +29,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * CompositePreProcessor is a {@link TokenPreProcess} that applies multiple preprocessors sequentially
- * @author Alex Black
- */
 public class CompositePreProcessor implements TokenPreProcess {
 
     private List<TokenPreProcess> preProcessors;

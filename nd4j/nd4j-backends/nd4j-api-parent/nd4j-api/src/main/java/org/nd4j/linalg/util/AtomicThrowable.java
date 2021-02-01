@@ -22,11 +22,6 @@ package org.nd4j.linalg.util;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * This class provides thread-safe holder for Throwable
- *
- * @author raver119@gmail.com
- */
 public class AtomicThrowable {
     protected volatile Throwable t = null;
     protected ReentrantReadWriteLock lock;

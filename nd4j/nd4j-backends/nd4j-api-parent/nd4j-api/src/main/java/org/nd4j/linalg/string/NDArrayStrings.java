@@ -31,18 +31,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
-/**
- *  String representation of an ndarray.
- *
- * Printing will default to scientific notation on a per element basis
- *      - when absolute value is greater than or equal to 10000
- *      - when absolute value is less than or equal to 0.0001
- *
- *  If the number of elements in the array is greater than 1000 only the first and last three elements in a dimension are included
- *
- * @author Adam Gibson
- * @author Susan Eraly
- */
 @Getter
 @Setter
 public class NDArrayStrings {

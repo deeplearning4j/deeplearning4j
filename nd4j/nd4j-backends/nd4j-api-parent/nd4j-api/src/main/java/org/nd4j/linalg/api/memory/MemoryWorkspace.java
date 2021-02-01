@@ -25,11 +25,6 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 
-/**
- * This interface describes reusable memory chunks abstraction
- *
- * @author raver119@gmail.com
- */
 public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
     String DEFAULT_ID = "DefaultWorkspace";
 

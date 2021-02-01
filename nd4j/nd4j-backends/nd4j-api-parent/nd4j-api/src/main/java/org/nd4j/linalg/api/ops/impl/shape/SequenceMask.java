@@ -37,9 +37,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Created by farizrahman4u on 3/28/18.
- */
 @NoArgsConstructor
 public class SequenceMask extends DynamicCustomOp {
     public static final DataType DEFAULT_DTYPE = DataType.BOOL;

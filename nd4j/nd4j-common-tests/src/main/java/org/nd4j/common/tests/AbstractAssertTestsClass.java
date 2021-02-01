@@ -31,14 +31,6 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * This class checks that all test classes (i.e., anything with one or more methods annotated with @Test)
- * extends BaseDl4jTest - either directly or indirectly.
- * Other than a small set of exceptions, all tests must extend this
- *
- * @author Alex Black
- * @author Alexander Stoyakin 
- */
 @Slf4j
 public abstract class AbstractAssertTestsClass extends BaseND4JTest {
 

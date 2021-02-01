@@ -25,11 +25,6 @@ import org.nd4j.aeron.ipc.NDArrayMessage;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Update storage that only stores update counts
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class NoUpdateStorage extends BaseUpdateStorage {
     private AtomicInteger updateCount = new AtomicInteger(0);

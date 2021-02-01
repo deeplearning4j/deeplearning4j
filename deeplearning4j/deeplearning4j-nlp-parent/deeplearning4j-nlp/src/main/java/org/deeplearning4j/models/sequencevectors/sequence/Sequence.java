@@ -27,11 +27,6 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Sequence for SequenceVectors is defined as limited set of SequenceElements. It can also contain label, if you're going to learn Sequence features as well.
- *
- * @author raver119@gmail.com
- */
 public class Sequence<T extends SequenceElement> implements Serializable {
 
     private static final long serialVersionUID = 2223750736522624735L;

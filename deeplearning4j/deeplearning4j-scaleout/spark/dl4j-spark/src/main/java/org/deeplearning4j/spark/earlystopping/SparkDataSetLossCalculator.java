@@ -27,10 +27,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.nd4j.linalg.dataset.DataSet;
 
-/** Score calculator to calculate the total loss for the {@link MultiLayerNetwork} on that data set (data set
- * as a {@link JavaRDD<DataSet>}), using Spark.
- * Typically used to calculate the loss on a test set.
- */
 public class SparkDataSetLossCalculator implements ScoreCalculator<MultiLayerNetwork> {
 
 

@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
 
 import java.util.List;
 
-/**
- * Tanh elementwise function
- *
- * @author Adam Gibson
- */
 public class Tanh extends BaseTransformStrictOp {
     public Tanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

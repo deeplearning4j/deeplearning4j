@@ -38,11 +38,6 @@ import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
-/**
- * This accumulator function does count individual elements, using provided Accumulator
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CountFunction<T extends SequenceElement> implements Function<Sequence<T>, Pair<Sequence<T>, Long>> {
     protected Accumulator<Counter<Long>> accumulator;

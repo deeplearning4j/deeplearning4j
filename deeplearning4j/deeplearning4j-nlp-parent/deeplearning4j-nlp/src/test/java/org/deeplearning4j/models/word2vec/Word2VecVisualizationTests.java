@@ -28,12 +28,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- * This set of tests will address TSNE building checks, as well as parts of UI package involved there
- *
- *
- * @author raver119@gmail.com
- */
 @Ignore
 public class Word2VecVisualizationTests extends BaseDL4JTest {
 

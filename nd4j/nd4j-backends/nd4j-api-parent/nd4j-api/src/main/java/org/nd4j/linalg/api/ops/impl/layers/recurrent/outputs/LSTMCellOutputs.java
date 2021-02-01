@@ -27,9 +27,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
 
-/**
- * The outputs of a LSTM cell ({@link LSTMBlockCell}.
- */
 @Getter
 public class LSTMCellOutputs {
 

@@ -30,12 +30,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Initialize Center Loss params.
- *
- * @author Justin Long (@crockpotveggies)
- * @author Alex Black (@AlexDBlack)
- */
 public class CenterLossParamInitializer extends DefaultParamInitializer {
 
     private static final CenterLossParamInitializer INSTANCE = new CenterLossParamInitializer();

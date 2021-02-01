@@ -29,11 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-/**
- * A group of listeners
- * @author Adam Gibson
- * @deprecated Not required - DL4J networks can use multiple listeners simultaneously
- */
 @Deprecated
 public class ComposableIterationListener extends BaseTrainingListener implements Serializable {
     private Collection<TrainingListener> listeners = new ArrayList<>();

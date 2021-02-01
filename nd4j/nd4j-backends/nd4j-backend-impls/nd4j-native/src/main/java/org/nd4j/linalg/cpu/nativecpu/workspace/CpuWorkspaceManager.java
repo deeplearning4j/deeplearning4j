@@ -29,9 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.api.memory.provider.BasicWorkspaceManager;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CpuWorkspaceManager extends BasicWorkspaceManager {
 

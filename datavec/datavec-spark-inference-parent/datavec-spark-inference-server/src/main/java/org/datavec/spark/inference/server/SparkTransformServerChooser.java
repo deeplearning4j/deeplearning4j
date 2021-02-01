@@ -27,9 +27,6 @@ import java.io.InvalidClassException;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Created by kepricon on 17. 6. 20.
- */
 @Data
 @Slf4j
 public class SparkTransformServerChooser {

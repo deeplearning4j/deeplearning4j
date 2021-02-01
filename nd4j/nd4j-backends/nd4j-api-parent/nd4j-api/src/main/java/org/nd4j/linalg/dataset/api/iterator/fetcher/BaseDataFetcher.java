@@ -29,12 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-/**
- * A base class for assisting with creation of matrices
- * with the data transform fetcher
- *
- * @author Adam Gibson
- */
 public abstract class BaseDataFetcher implements DataSetFetcher {
 
     protected static final Logger log = LoggerFactory.getLogger(BaseDataFetcher.class);

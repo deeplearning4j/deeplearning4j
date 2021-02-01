@@ -35,12 +35,6 @@ import java.net.URL;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 
-/**
- * A zoo model is instantiable, returns information about itself, and can download
- * pretrained models if available.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Slf4j
 public abstract class ZooModel<T> implements InstantiableModel {
 

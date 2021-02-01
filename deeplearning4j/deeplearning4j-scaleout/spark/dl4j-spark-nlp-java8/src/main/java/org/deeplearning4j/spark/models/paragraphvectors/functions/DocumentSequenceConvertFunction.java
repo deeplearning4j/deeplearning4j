@@ -31,9 +31,6 @@ import org.deeplearning4j.text.documentiterator.LabelledDocument;
 
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 public class DocumentSequenceConvertFunction extends BaseTokenizerFunction
                 implements Function<LabelledDocument, Sequence<VocabWord>> {
 

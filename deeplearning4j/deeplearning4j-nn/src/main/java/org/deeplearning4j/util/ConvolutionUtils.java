@@ -47,11 +47,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
-/**
- * Convolutional shape utilities
- *
- * @author Adam Gibson
- */
 public class ConvolutionUtils {
 
     public static final String NCHW_NHWC_ERROR_MSG = "Note: Convolution layers can be configured for either NCHW (channels first)" +

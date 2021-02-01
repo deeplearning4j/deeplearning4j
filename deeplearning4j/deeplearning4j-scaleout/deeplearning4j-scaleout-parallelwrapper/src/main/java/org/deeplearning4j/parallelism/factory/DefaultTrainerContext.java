@@ -27,11 +27,6 @@ import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.parallelism.trainer.DefaultTrainer;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 
-/**
- * Creates {@link DefaultTrainer}
- * instances for use with {@link ParallelWrapper}
- * @author Adam Gibson
- */
 public class DefaultTrainerContext implements TrainerContext {
     /**
      * Initialize the context

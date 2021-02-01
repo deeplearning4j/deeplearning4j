@@ -26,9 +26,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by fartovii on 08.11.15.
- */
 public class VocabularyHolderTest extends BaseDL4JTest {
 
     @Test

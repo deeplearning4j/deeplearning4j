@@ -31,9 +31,6 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 21/03/2016.
- */
 public class TestReduce extends BaseND4JTest {
 
     @Test

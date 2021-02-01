@@ -38,29 +38,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Space to batch utility layer configuration for convolutional input types.
- * <p>
- * Does a 2-dimensional space to batch operation, i.e. ransforms data from a tensor from 2 spatial dimensions into batch
- * dimension according to the "blocks" specified (a vector of length 2). Afterwards the spatial dimensions are
- * optionally padded, as specified in "padding", a tensor of dim (2, 2), denoting the padding range.
- * <p>
- * Example:
- * <pre>
- * input:         [[[[1], [2]], [[3], [4]]]]
- * input shape:   [1, 2, 2, 1]
- * blocks:        [2, 2]
- * padding:       [[0, 0], [0, 0]]
- * </pre>
- * <p>
- * <pre>
- * output:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
- * output shape:  [4, 1, 1, 1]
- * </pre>
- * Note that after zero padding, the height and width of the input must be divisible by the block size.
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

@@ -37,12 +37,6 @@ import java.util.List;
 
 import static org.deeplearning4j.spark.util.data.validation.ValidateDataSetFn.validateArrayShape;
 
-/**
- * Function used to validate MultiDataSets on HDFS - see {@link org.deeplearning4j.spark.util.data.SparkDataValidation} for
- * further details
- *
- * @author Alex Black
- */
 public class ValidateMultiDataSetFn implements Function<String, ValidationResult> {
     public static final int BUFFER_SIZE = 4194304; //4 MB
 

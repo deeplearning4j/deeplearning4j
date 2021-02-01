@@ -46,9 +46,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 
-/**
- * Conv3D operation
- */
 @Slf4j
 @Getter
 public class Conv3D extends DynamicCustomOp {

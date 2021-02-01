@@ -26,13 +26,6 @@ import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
-/**
- * Static router implementation, the same Shard will be used for all messages
- *
- * PLEASE NOTE: Never use this router in real world! It's suitable for debugging only.
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public class StaticRouter extends BaseRouter {
     protected short targetIndex;

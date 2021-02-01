@@ -34,13 +34,6 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 
-/**
- * CSV Sequence Record Reader
- * This reader is intended to read sequences of data in CSV format, where
- * each sequence is defined in its own file (and there are multiple files)
- * Each line in the file represents one time step
- * @author Alex Black
- */
 public class CSVSequenceRecordReader extends FileRecordReader implements SequenceRecordReader {
     private int skipNumLines = 0;
     private String delimiter = ",";

@@ -29,13 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- *
- * This LabelAwareIterator scans folder for files, and returns them as LabelledDocuments.
- * Each LabelledDocument will set it's Label to file name.
- *
- * @author raver119@gmail.com
- */
 public class FilenamesLabelAwareIterator implements LabelAwareIterator {
     protected List<File> files;
     protected AtomicInteger position = new AtomicInteger(0);

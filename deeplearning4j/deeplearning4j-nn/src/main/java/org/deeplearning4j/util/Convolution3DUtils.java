@@ -32,11 +32,6 @@ import java.util.Arrays;
 
 import static org.deeplearning4j.util.ConvolutionUtils.effectiveKernelSize;
 
-/**
- * Shape utilities for 3D convolution layers
- *
- * @author Max Pumperla
- */
 public class Convolution3DUtils {
 
     private static final int[] ONES = new int[]{1, 1};

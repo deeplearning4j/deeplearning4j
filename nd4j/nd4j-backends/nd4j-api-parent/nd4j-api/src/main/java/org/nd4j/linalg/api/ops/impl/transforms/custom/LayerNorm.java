@@ -34,13 +34,6 @@ import java.util.Collections;
 import java.util.List;
 
 
-/**
- * Composed op: g*standarize(x) + b
- *
- * Bias is optional, and can be set as null
- *
- * @author Paul Dubs
- */
 @NoArgsConstructor
 public class LayerNorm extends DynamicCustomOp {
 

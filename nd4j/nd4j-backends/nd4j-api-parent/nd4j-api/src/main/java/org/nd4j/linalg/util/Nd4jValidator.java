@@ -38,11 +38,6 @@ import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * A utility for validating multiple file formats that ND4J and SameDiff can read
- *
- * @author Alex Black
- */
 public class Nd4jValidator {
 
     private Nd4jValidator() {

@@ -25,9 +25,6 @@ import org.nd4j.common.function.BiFunction;
 
 import java.io.Serializable;
 
-/**
- * Created by Alex on 5/03/2016.
- */
 public class LongQualityMergeFunction implements BiFunction<LongQuality, LongQuality, LongQuality>, Serializable {
     @Override
     public LongQuality apply(LongQuality v1, LongQuality v2) {

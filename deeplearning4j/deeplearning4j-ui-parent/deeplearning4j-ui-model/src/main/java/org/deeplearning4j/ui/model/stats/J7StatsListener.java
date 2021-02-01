@@ -34,14 +34,6 @@ import org.deeplearning4j.ui.model.stats.impl.DefaultStatsUpdateConfiguration;
 import org.deeplearning4j.ui.model.stats.impl.java.JavaStatsInitializationReport;
 import org.deeplearning4j.ui.model.stats.impl.java.JavaStatsReport;
 
-/**
- * J7StatsListener: a version of the {@link StatsListener} but with Java 7 compatibility
- * <p>
- * Stats are collected and passed on to a {@link StatsStorageRouter} - for example, for storage and/or displaying in the UI,
- * use {@link InMemoryStatsStorage} or {@link FileStatsStorage}.
- *
- * @author Alex Black
- */
 @Slf4j
 public class J7StatsListener extends BaseStatsListener {
 

@@ -44,9 +44,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by susaneraly on 2/24/17.
- */
 @Slf4j
 public class TransferLearningHelperTest extends BaseDL4JTest {
 

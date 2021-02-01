@@ -36,9 +36,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * @author raver119@gmail.com
- */
 @Data
 @AllArgsConstructor
 @Builder

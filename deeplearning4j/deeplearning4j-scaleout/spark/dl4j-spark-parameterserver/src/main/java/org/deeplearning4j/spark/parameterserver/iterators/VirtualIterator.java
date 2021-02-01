@@ -28,11 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Consumer;
 
-/**
- * This class is thin wrapper, to provide block-until-depleted functionality in multi-threaded environment
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class VirtualIterator<E> extends java.util.Observable implements Iterator<E> {
     // TODO: use AsyncIterator here?

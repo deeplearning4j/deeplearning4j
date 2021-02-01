@@ -43,13 +43,6 @@ import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * FrozenLayer is used for the purposes of transfer learning.<br> A frozen layer wraps another DL4J Layer within it.
- * During backprop, the FrozenLayer is skipped, and any parameters are not be updated. Usually users will typically not
- * create FrozenLayer instances directly - they are usually used in the process of performing transfer learning
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = false)
 public class FrozenLayer extends Layer {
 

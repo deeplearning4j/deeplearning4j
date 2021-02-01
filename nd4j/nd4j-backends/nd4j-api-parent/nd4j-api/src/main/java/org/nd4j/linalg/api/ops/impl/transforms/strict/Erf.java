@@ -30,13 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Gaussian error function (erf) function, which is defined as
- * <p>
- * erf(x) = 1 / sqrt(pi) * integral_(-x, x) exp(-t^2) dt
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class Erf extends BaseTransformStrictOp {
 

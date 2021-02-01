@@ -24,11 +24,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
-/**
- * This interface describe holder for INDArray which persists in this or that way on multiple computational devices, or on the same device but with different values
- *
- * @author raver119@gmail.com
- */
 public interface DistributedINDArray {
 
     /**

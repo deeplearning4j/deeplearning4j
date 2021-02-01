@@ -26,11 +26,6 @@ import org.apache.uima.cas.CAS;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.CasPool;
 
-/**
- * Resource holder for uima
- * @author Adam Gibson
- *
- */
 public class UimaResource {
 
     private AnalysisEngine analysisEngine;

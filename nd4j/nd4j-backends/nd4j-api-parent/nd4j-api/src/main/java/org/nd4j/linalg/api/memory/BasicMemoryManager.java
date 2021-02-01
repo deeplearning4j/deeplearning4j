@@ -35,9 +35,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BasicMemoryManager implements MemoryManager {
     protected AtomicInteger frequency = new AtomicInteger(0);
     protected AtomicLong freqCounter = new AtomicLong(0);

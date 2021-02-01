@@ -27,9 +27,6 @@ import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
-/**
- * @author raver119@gmail.com
- */
 @Deprecated
 public interface TrainingDriver<T extends TrainingMessage> {
 

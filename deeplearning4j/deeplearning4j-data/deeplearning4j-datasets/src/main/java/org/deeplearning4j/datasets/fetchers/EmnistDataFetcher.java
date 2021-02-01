@@ -35,12 +35,6 @@ import java.io.IOException;
 import java.util.Random;
 
 
-/**
- * Data fetcher for the EMNIST dataset
- *
- * @author Alex Black
- *
- */
 @Slf4j
 public class EmnistDataFetcher extends MnistDataFetcher implements DataSetFetcher {
 

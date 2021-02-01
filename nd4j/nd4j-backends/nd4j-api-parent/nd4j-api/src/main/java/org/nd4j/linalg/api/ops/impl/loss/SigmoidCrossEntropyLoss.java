@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.impl.loss.bp.SigmoidCrossEntropyLossBp;
 import java.util.*;
 
 
-/**
- * Sigmoid cross entropy loss with logits
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class SigmoidCrossEntropyLoss extends BaseLoss {
     public static final double DEFAULT_LABEL_SMOOTHING = 0.0;

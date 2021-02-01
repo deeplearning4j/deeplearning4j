@@ -27,14 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Cosine distance
- * Note that you need to initialize
- * a scaling constant equal to the norm2 of the
- * vector
- *
- * @author raver119@gmail.com
- */
 public class CosineDistance extends BaseReduce3Op {
 
     public CosineDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {

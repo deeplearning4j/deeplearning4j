@@ -29,11 +29,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * A simple iterator that wraps a {@code Collection<DataSet>}. Assumes that each DataSet contains a single example
- *
- * @author Adam Gibson
- */
 public class ListDataSetIterator<T extends DataSet> implements DataSetIterator {
 
     private static final long serialVersionUID = -7569201667767185411L;

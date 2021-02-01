@@ -29,13 +29,6 @@ import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Long mathematical operation.<br>
- * This is an in-place operation of the long column value and an long scalar.
- *
- * @author Alex Black
- * @see LongColumnsMathOpTransform to do a mathematical operation involving multiple long columns (instead of a scalar)
- */
 @Data
 public class LongMathOpTransform extends BaseColumnTransform {
 

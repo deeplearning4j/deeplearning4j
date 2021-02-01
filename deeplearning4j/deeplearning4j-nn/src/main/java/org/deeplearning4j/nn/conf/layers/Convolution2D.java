@@ -25,11 +25,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-/**
- * 2D convolution layer
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

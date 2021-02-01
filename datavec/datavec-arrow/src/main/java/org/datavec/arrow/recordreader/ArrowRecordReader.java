@@ -43,18 +43,6 @@ import java.util.*;
 
 import static org.datavec.arrow.ArrowConverter.readFromBytes;
 
-/**
- * Implements a record reader using arrow.
- * The {@link ArrowRecordReader} minimizes memory footprint by
- * using an {@link ArrowWritableRecordBatch} as the current in memory
- * batch during iteration rather than the normal of objects
- * you would find with the traditional record readers with {@link List<List<Writable>>}
- *
- *
- *
- * @author Adam Gibson
- *
- */
 @Slf4j
 public class ArrowRecordReader implements RecordReader {
 

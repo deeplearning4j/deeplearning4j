@@ -55,9 +55,6 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by susaneraly on 2/17/17.
- */
 public class TransferLearningCompGraphTest extends BaseDL4JTest {
 
     @Test

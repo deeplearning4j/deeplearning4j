@@ -36,13 +36,6 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 
-/**Map {@code Collection<Collection<Writable>>} objects (out of a datavec-spark sequence record reader function) to
- *  DataSet objects for Spark training.
- * Analogous to {@link SequenceRecordReaderDataSetIterator}, but in the context of Spark.
- * Supports loading data from a single source only (hence no masknig arrays, many-to-one etc here)
- * see {@link DataVecSequencePairDataSetFunction} for the separate collections for input and labels version
- * @author Alex Black
- */
 public class DataVecSequenceDataSetFunction implements Function<List<List<Writable>>, DataSet>, Serializable {
 
     private final boolean regression;

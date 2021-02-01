@@ -18,9 +18,6 @@
  *  *****************************************************************************
  */
 
-/* This code will be inserted into generated code for
- * google/protobuf/struct.proto. */
-
 /**
  * Typedef representing plain JavaScript values that can go into a
  *     Struct.

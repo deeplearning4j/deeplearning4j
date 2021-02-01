@@ -25,11 +25,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 
-/**
- * Analysis for String columns
- *
- * @author Alex Black
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor //For Jackson deserialization

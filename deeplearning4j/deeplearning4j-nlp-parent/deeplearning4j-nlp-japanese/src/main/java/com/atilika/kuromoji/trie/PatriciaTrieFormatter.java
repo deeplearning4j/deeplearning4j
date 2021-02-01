@@ -26,13 +26,6 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintWriter;
 
-/**
- * Utility class to format a {@link PatriciaTrie} to dot format for debugging, inspection, etc.
- *
- * @param <V> value type
- *
- * See @see <a href="http://graphviz.org/">Graphviz</a>
- */
 public class PatriciaTrieFormatter<V> {
 
     private final static String FONT_NAME = "Helvetica";

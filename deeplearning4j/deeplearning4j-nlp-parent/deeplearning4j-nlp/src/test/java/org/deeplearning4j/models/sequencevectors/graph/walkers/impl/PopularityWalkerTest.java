@@ -38,9 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author raver119@gmail.com
- */
 public class PopularityWalkerTest extends BaseDL4JTest {
 
     private static Graph<VocabWord, Double> graph;

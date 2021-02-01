@@ -26,12 +26,6 @@ import org.deeplearning4j.core.storage.StatsStorageListener;
 
 import java.util.Queue;
 
-/**
- * A very simple {@link StatsStorageListener}, that adds the {@link StatsStorageEvent} instances to a provided queue
- * for later processing.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class QueueStatsStorageListener implements StatsStorageListener {
 

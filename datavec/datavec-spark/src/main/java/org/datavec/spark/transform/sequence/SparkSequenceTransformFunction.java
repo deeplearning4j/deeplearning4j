@@ -27,10 +27,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Spark function for transforming sequences using a Transform
- * @author Alex Black
- */
 @AllArgsConstructor
 public class SparkSequenceTransformFunction implements Function<List<List<Writable>>, List<List<Writable>>> {
 

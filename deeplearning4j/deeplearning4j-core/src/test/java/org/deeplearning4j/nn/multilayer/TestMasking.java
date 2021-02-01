@@ -56,9 +56,6 @@ import java.util.Collections;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 20/01/2017.
- */
 public class TestMasking extends BaseDL4JTest {
 
     static {

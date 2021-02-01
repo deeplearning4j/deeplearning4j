@@ -25,9 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
-/**
- * Created by agibsonccc on 12/1/16.
- */
 public class TimeDelayedParameterUpdater extends BaseParameterUpdater {
     private long syncTime;
     private long lastSynced;

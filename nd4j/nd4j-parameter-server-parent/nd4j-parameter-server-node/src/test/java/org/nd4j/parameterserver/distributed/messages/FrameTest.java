@@ -37,9 +37,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Ignore
 @Deprecated
 public class FrameTest extends BaseND4JTest {

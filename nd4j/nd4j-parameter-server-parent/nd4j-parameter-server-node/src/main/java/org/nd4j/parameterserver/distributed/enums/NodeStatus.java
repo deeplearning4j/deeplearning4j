@@ -20,11 +20,6 @@
 
 package org.nd4j.parameterserver.distributed.enums;
 
-/**
- * This enum describes possible states of cluster nodes
- *
- * @author raver119@gmail.com
- */
 public enum NodeStatus {
     /**
      * Node is up and running

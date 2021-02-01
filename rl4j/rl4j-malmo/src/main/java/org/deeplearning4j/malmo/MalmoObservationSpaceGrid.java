@@ -29,11 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.HashMap;
 
-/**
- * Observation space that contains a grid of Minecraft blocks
- *
- * @author howard-abrams (howard.abrams@ca.com) on 1/12/17.
- */
 public class MalmoObservationSpaceGrid extends MalmoObservationSpace {
     static final int MAX_BLOCK = 4095;
 

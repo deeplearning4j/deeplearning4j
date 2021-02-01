@@ -28,9 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-/**
- * Created by huitseeker on 5/17/17.
- */
 @JsonIgnoreProperties({"schema"})
 @Data
 public class TrivialColumnCondition extends BaseColumnCondition {

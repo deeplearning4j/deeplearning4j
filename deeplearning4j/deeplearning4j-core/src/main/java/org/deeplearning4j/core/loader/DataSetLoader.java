@@ -24,11 +24,6 @@ import org.nd4j.common.loader.Loader;
 import org.nd4j.common.loader.Source;
 import org.nd4j.linalg.dataset.DataSet;
 
-/**
- * An interface for loading DataSets from a {@link Source}
- *
- * @author Alex Black
- */
 public interface DataSetLoader extends Loader<DataSet> {
 
 }

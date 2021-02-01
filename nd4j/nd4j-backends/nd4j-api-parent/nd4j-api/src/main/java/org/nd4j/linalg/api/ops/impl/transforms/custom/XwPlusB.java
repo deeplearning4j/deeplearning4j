@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.*;
 
 
-/**
- * Composed op: mmul (X, W) + b
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class XwPlusB extends DynamicCustomOp {
 

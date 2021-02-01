@@ -24,11 +24,6 @@ import lombok.Getter;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
-/**
- * Groups useful {@link IAggregableReduceOp} utilities on Strings
- *
- * Created by huitseeker on 5/18/17.
- */
 public class StringAggregatorImpls {
 
     private static abstract class AggregableStringReduce implements IAggregableReduceOp<String, Writable> {

@@ -49,11 +49,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Record readers need to be serializable for spark.
- * Note however that not all are used/usable with spark (such as Collection[Sequence]RecordReader
- * and the rest are generally used without being initialized on a particular dataset
- */
 public class TestSerialization extends BaseND4JTest {
 
     @Test

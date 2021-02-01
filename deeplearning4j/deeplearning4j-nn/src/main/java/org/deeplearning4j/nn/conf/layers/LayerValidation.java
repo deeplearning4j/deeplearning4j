@@ -32,11 +32,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-/**
- * Utility methods for validating layer configurations
- *
- * @author Alex Black
- */
 @Slf4j
 public class LayerValidation {
 

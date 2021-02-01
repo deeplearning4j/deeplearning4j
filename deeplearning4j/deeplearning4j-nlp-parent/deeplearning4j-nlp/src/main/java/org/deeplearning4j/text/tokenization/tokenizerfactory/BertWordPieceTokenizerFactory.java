@@ -36,10 +36,6 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
-/**
- * Bert WordPiece tokenizer
- * @author Paul Dubs
- */
 public class BertWordPieceTokenizerFactory implements TokenizerFactory {
 
     private final NavigableMap<String, Integer> vocab;

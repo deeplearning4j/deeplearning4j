@@ -30,13 +30,6 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 import java.io.IOException;
 import java.io.Serializable;
 
-/**
- * Simplified version of VocabWord.
- * Used only for w2v vocab building routines
- *
- * @author raver119@gmail.com
- */
-
 @Data
 public class VocabularyWord implements Serializable {
     @NonNull

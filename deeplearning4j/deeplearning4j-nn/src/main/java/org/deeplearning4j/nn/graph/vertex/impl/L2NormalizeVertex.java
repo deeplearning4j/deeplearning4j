@@ -37,12 +37,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * L2NormalizeVertex performs L2 normalization on a single input.
- *
- * @author Justin Long (crockpotveggies)
- * @author Alex Black (AlexDBlack)
- */
 public class L2NormalizeVertex extends BaseGraphVertex {
 
     private static final int[] DEFAULT_RANK2_DIMS = new int[] {1};

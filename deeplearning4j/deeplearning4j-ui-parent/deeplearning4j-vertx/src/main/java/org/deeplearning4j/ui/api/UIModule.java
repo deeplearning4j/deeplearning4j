@@ -27,20 +27,6 @@ import org.deeplearning4j.ui.i18n.I18NResource;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * UIModule encapsulates the user interface functionality for a page or group of pages that rely on data coming
- * from a {@link StatsStorage} instance.<br>
- * When a {@link StatsStorage} object is attached to a {@link UIServer}, the UI server will
- * start receiving {@link StatsStorageEvent} instances; some of these (only the appropriate ones based on the specified
- * TypeIDs from the {@link #getCallbackTypeIDs()} method) will be routed to the UIModule, via {@link #reportStorageEvents(Collection)}.
- * Each UIModule will generally handle one (or at most a few) different types of data (Type IDs); note however that events
- * for a single Type ID can be routed to multiple UI modules, if required.
- * <p>
- * The UIModule also encapsulates the relevant routing information: i.e., what GET/PUT (etc) methods are available for this
- * module, and how those methods should be handled.
- *
- * @author Alex Black
- */
 public interface UIModule {
 
     /**

@@ -45,11 +45,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- *  This Subscriber is responsible for gradient updates application
- *
- * @author raver119@gmail.com
- */
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

@@ -20,10 +20,6 @@
 
 package org.nd4j.linalg.api.blas;
 
-/**
- * General exception for Blas library errors
- * 
- */
 public class BlasException extends Error {
 
     public final static long serialVersionUID = 0xdeadbeef;

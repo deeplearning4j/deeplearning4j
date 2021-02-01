@@ -43,12 +43,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Singleton evaluation hrunner class for performing evaluation on Spark.
- * Allows fewer evaluation networks (and hence memory/cache thrashing) than one network per spark thread
- *
- * @author Alex Black
- */
 @Slf4j
 public class EvaluationRunner {
 

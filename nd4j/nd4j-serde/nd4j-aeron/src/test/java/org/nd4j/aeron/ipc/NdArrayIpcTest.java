@@ -38,9 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertFalse;
 
-/**
- * Created by agibsonccc on 9/22/16.
- */
 public class NdArrayIpcTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);

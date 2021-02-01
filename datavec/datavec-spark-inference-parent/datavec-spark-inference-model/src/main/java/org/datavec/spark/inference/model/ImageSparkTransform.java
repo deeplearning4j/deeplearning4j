@@ -35,9 +35,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by kepricon on 17. 5. 24.
- */
 @AllArgsConstructor
 public class ImageSparkTransform {
     @Getter

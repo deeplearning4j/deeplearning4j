@@ -47,16 +47,6 @@ import org.nd4j.serde.binary.BinarySerde;
 import java.io.File;
 import java.util.*;
 
-/**
- * A rest server for using an
- * {@link VPTree} based on loading an ndarray containing
- * the data points for the path
- * The input values are an {@link CSVRecord}
- * which (based on the input schema) will automatically
- * have their values transformed.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class NearestNeighborsServer extends AbstractVerticle {
 

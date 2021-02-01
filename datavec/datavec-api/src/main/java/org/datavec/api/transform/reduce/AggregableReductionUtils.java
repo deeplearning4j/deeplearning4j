@@ -29,11 +29,6 @@ import org.datavec.api.writable.Writable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Various utilities for performing reductions
- *
- * @author Alex Black
- */
 public class AggregableReductionUtils {
 
     private AggregableReductionUtils() {}

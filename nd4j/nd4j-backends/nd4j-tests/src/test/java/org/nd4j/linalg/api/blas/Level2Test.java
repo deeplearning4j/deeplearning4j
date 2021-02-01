@@ -30,9 +30,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 @RunWith(Parameterized.class)
 public class Level2Test extends BaseNd4jTest {
     public Level2Test(Nd4jBackend backend) {

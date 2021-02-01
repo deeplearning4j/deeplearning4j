@@ -39,10 +39,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Generic purpose solver
- * @author Adam Gibson
- */
 public class Solver {
     private NeuralNetConfiguration conf;
     private Collection<TrainingListener> listeners;

@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.memory.abstracts.DummyWorkspace;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Workspace utility methods
- *
- * @author Alex Black
- */
 public class WorkspaceUtils {
 
     private WorkspaceUtils() {

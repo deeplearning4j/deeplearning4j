@@ -28,24 +28,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 
-/**
- * <p>
- * Utility class for working with the MNIST database.
- * <p>
- * Provides methods for traversing the images and labels data files separately,
- * as well as simultaneously.
- * <p>
- * Provides also method for exporting an image by writing it as a PPM file.
- * <p> 
- * Example usage:
- * <pre>
- *  MnistManager m = new MnistManager("t10k-images.idx3-ubyte", "t10k-labels.idx1-ubyte");
- *  m.setCurrent(10); //index of the image that we are interested in
- *  int[][] image = m.readImage();
- *  System.out.println("Label:" + m.readLabel());
- *  MnistManager.writeImageToPpm(image, "10.ppm");
- * </pre>
- */
 public class MnistManager {
     MnistImageFile images;
     private MnistLabelFile labels;

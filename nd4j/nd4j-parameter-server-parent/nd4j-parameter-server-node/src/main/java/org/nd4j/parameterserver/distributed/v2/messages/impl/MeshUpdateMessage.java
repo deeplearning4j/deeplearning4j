@@ -28,10 +28,6 @@ import org.nd4j.parameterserver.distributed.v2.messages.BroadcastableMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.v2.util.MeshOrganizer;
 
-/**
- * This message is used to send Mesh state to all nodes within network
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class MeshUpdateMessage extends BaseVoidMessage implements BroadcastableMessage {
     private static final long serialVersionUID = 1L;

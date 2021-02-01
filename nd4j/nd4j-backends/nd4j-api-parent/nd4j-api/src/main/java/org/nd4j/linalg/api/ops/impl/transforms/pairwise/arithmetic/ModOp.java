@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.ModBpOp;
 
 import java.util.List;
 
-/**
- * Modulo operation
- *
- * @author raver119@gmail.com
- */
 public class ModOp extends BaseDynamicTransformOp {
     public static final String OP_NAME = "mod";
 

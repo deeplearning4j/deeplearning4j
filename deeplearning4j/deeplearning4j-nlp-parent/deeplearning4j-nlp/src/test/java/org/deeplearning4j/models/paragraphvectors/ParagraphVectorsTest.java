@@ -70,9 +70,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 12/3/14.
- */
 @Slf4j
 public class ParagraphVectorsTest extends BaseDL4JTest {
 

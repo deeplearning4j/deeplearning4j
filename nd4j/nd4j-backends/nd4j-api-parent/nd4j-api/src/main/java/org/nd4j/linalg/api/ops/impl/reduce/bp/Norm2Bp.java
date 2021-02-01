@@ -25,12 +25,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
-/**
- * Backprop op for Norm2 reduction operation
- *
- * @author Alex Black
- */
-
 public class Norm2Bp extends BaseReductionBp {
 
     public Norm2Bp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {

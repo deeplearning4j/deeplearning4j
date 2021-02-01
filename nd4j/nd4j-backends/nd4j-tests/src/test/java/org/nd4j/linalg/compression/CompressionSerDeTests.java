@@ -34,10 +34,6 @@ import java.io.ByteArrayInputStream;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Tests for SerDe on compressed arrays
- * @author raver119@gmail.com
- */
 @RunWith(Parameterized.class)
 public class CompressionSerDeTests extends BaseNd4jTest {
     public CompressionSerDeTests(Nd4jBackend backend) {

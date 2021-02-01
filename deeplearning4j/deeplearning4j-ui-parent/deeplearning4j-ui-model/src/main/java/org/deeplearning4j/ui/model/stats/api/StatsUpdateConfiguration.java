@@ -22,13 +22,6 @@ package org.deeplearning4j.ui.model.stats.api;
 
 import java.io.Serializable;
 
-/**
- * Similar to {@link StatsInitializationConfiguration}, StatsUpdateConfiguration is an interface defining the stats
- * that should be collected and reported periodically.
- * In some implementations, this configuration may vary over time (i.e., stats may in principle be reconfigured by the user)
- *
- * @author Alex Black
- */
 public interface StatsUpdateConfiguration extends Serializable {
 
     /**

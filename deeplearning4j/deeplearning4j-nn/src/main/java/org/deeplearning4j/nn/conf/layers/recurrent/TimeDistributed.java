@@ -37,15 +37,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
 
-/**
- * TimeDistributed wrapper layer.<br>
- * Note: only the "Feed forward layer time distributed in an RNN" is currently supported.
- * For example, a time distributed dense layer.<br>
- * Usage: {@code .layer(new TimeDistributed(new DenseLayer.Builder()....build(), timeAxis))}<br>
- * Note that for DL4J RNNs, time axis is always 2 - i.e., RNN activations have shape [minibatch, size, sequenceLength]
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class TimeDistributed extends BaseWrapperLayer {

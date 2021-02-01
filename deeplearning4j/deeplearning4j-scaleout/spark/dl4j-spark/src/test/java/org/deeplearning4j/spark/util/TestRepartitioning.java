@@ -41,9 +41,6 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 03/07/2016.
- */
 public class TestRepartitioning extends BaseSparkTest {
 
     @Override

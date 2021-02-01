@@ -29,9 +29,6 @@ import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMes
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Ignore
 @Deprecated
 public class VoidMessageTest extends BaseND4JTest {

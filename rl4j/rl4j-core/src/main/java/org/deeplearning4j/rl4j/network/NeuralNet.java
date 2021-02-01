@@ -27,12 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.io.IOException;
 import java.io.OutputStream;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
- *
- * Factorisation between ActorCritic and DQN neural net.
- * Useful for AsyncLearning and Thread code.
- */
 public interface NeuralNet<NN extends NeuralNet> extends ITrainableNeuralNet<NN> {
 
     /**

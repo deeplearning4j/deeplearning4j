@@ -33,9 +33,6 @@ import java.util.HashSet;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class MultithreadedTests extends BaseNd4jTest {
 
     public MultithreadedTests(Nd4jBackend backend) {

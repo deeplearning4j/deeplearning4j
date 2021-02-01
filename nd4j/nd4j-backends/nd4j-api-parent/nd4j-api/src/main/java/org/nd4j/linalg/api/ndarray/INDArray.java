@@ -35,11 +35,6 @@ import java.nio.LongBuffer;
 import java.util.List;
 import org.nd4j.linalg.string.NDArrayStrings;
 
-/**
- * Interface for an ndarray
- *
- * @author Adam Gibson
- */
 public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Returns the shape information debugging information

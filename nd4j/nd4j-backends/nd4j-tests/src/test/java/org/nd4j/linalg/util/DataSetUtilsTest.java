@@ -34,13 +34,6 @@ import org.nd4j.common.tools.SIS;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- *
- *
- * 
- *
- * @author clavvis
- */
 @Slf4j
 public class DataSetUtilsTest extends BaseNd4jTest {
 

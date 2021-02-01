@@ -36,20 +36,6 @@ import java.util.Arrays;
 
 import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
 
-/**
- * A preprocessor to allow 3D CNN and standard feed-forward network layers to be used together.<br>
- * For example, DenseLayer -> Convolution3D<br>
- * This does two things:<br>
- * (a) Reshapes activations out of FeedFoward layer (which is 2D with shape
- * [numExamples, inputDepth*inputHeight*inputWidth*numChannels]) into 5d activations (with shape
- * [numExamples, numChannels, inputDepth, inputHeight, inputWidth]) suitable to feed into CNN layers.<br>
- * (b) Reshapes 5d epsilons from 3D CNN layer, with shape
- * [numExamples, numChannels, inputDepth, inputHeight, inputWidth]) into 2d epsilons (with shape
- * [numExamples, inputDepth*inputHeight*inputWidth*numChannels]) for use in feed forward layer
- *
- * @author MaxPumperla
- * @see CnnToFeedForwardPreProcessor for opposite case (i.e., CNN3D -> DenseLayer etc)
- */
 @Data
 @EqualsAndHashCode(exclude = {"shape"})
 public class FeedForwardToCnn3DPreProcessor implements InputPreProcessor {

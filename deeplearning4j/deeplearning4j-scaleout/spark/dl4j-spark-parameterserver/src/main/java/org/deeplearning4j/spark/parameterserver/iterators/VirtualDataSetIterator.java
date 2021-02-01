@@ -29,12 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This DataSetIterator implementation does accumulation of DataSets from different Spark executors, wrt Thread/Device Affinity
- *
- *
- * @author raver119@gmail.com
- */
 public class VirtualDataSetIterator implements DataSetIterator {
 
     /**

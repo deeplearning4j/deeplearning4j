@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
-/**
- * Condition for whether an element is NaN
- *
- * @author Adam Gibson
- */
 public class IsNaN extends BaseCondition {
 
     public IsNaN() {

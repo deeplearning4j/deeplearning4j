@@ -27,12 +27,6 @@ import org.deeplearning4j.common.config.DL4JClassLoading;
 
 import java.io.InputStream;
 
-/**
- * 从系统jar包中读取文件，你们不能用，只有我能用 jar://org.ansj.dic.DicReader|/crf.model
- * 
- * @author ansj
- *
- */
 public class Jar2Stream extends PathToStream {
 
     @Override

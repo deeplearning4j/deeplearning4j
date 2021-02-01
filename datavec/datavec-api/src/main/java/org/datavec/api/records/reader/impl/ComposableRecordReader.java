@@ -37,13 +37,6 @@ import java.util.List;
 /**
  * @author sonali
  */
-/**
-RecordReader for each pipeline. Individual record is a concatenation of the two collections.
-        Create a recordreader that takes recordreaders and iterates over them and concatenates them
-        hasNext would be the & of all the recordreaders
-        concatenation would be next & addAll on the collection
-        return one record
- */
 public class ComposableRecordReader extends BaseRecordReader {
 
     private RecordReader[] readers;

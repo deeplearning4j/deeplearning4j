@@ -31,12 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.Map;
 
-/**
- * Setup and DynamicCustomOpsBuilder for Nadam updater.
- * https://arxiv.org/pdf/1609.04747.pdf
- *
- * @author Andrey Spiridonov
- */
 @Data
 @Builder(builderClassName = "Builder")
 public class Nadam implements IUpdater {

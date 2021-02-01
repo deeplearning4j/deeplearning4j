@@ -54,28 +54,6 @@ import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
-/**
- *
- * RNN tutorial: <a href="https://deeplearning4j.konduit.ai/models/recurrent">https://deeplearning4j.konduit.ai/models/recurrent</a>
- * READ THIS FIRST if you want to understand this code.
- *
- * Shared code for the standard "forwards" LSTM RNN and the bidirectional LSTM RNN
- * This was extracted from GravesLSTM and refactored into static helper functions.  The general reasoning for this was
- * so we only have math in one place, instead of two.
- *
- * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
- * See also for full/vectorized equations (and a comparison to other LSTM variants):
- * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11.
- * <p>
- * When 'hasPeepholeConnections' is true, this is the "vanilla" variant in said paper<br>
- * When 'hasPeepholeConnections' is false, this is the "no peephole" variant<br>
- * <a href="https://arxiv.org/pdf/1503.04069.pdf">https://arxiv.org/pdf/1503.04069.pdf</a>
- *
- *
- * @author Alex Black (LSTM implementations)
- * @author Benjamin Joseph (refactoring for bidirectional LSTM)
- */
 @Slf4j
 public class LSTMHelpers {
 

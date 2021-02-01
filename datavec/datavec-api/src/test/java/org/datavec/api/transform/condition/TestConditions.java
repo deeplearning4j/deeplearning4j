@@ -35,9 +35,6 @@ import java.util.*;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 24/03/2016.
- */
 public class TestConditions extends BaseND4JTest {
 
     @Test

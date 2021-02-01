@@ -28,15 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
-/**
- * A simple String -> String map function.
- *
- * Keys in the map are the original values; the Values in the map are their replacements.
- * If a String appears in the data but does not appear in the provided map (as a key), that String values will
- * not be modified.
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class StringMapTransform extends BaseStringTransform {

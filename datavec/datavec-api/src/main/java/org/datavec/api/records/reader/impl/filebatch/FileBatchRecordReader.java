@@ -38,25 +38,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * FileBatchRecordReader reads the files contained in a {@link FileBatch} using the specified RecordReader.<br>
- * Specifically, the {@link RecordReader#record(URI, DataInputStream)} method of the underlying reader is used to
- * load files.<br>
- * For example, if the FileBatch was constructed using image files (png, jpg etc), FileBatchRecordReader could be used
- * with ImageRecordReader. For example:<br>
- * <pre>
- * {@code
- * List<File> imgFiles = ...;
- * FileBatch fb = FileBatch.forFiles(imgFiles);
- * PathLabelGenerator labelMaker = new ParentPathLabelGenerator();
- * ImageRecordReader rr = new ImageRecordReader(32, 32, 1, labelMaker);
- * rr.setLabels(Arrays.asList("class0", "class1"));
- * FileBatchRecordReader fbrr = new FileBatchRecordReader(rr, fb);
- * }
- * </pre>
- *
- * @author Alex Black
- */
 public class FileBatchRecordReader implements RecordReader {
 
     private final RecordReader recordReader;

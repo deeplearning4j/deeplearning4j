@@ -27,12 +27,6 @@ import org.datavec.api.records.writer.SequenceRecordWriter;
 
 import java.io.IOException;
 
-/**
- * A utility class to aid in the conversion of data from one {@link RecordReader} to one {@link RecordWriter},
- * or from one {@link SequenceRecordReader} to one {@link SequenceRecordWriter}
- *
- * @author Alex Black
- */
 public class RecordReaderConverter {
 
     private RecordReaderConverter() { }

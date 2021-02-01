@@ -30,28 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * A base layer used for implementing Deeplearning4j Output layers using SameDiff. These layers are scoring/output layers:
- * they should only be used as the final layer a network. For general/intermediate <br>
- * To implement a Deeplearinng layer using SameDiff, extend this class.<br>
- * There are 5 required methods:<br>
- * - defineLayer: Defines the forward pass for the layer<br>
- * - defineParameters: Define the layer's parameters in a way suitable for DL4J<br>
- * - initializeParameters: if required, set the initial parameter values for the layer<br>
- * - getOutputType: determine the type of output/activations for the layer (without actually executing the layer's
- * forward pass)<br>
- * - activationsVertexName(): see {@link #activationsVertexName()} for details<br>
- * <br>
- * Furthermore, there are 3 optional methods:<br>
- * - setNIn(InputType inputType, boolean override): if implemented, set the number of inputs to the layer during network
- *   initialization<br>
- * - getPreProcessorForInputType: return the preprocessor that should be added (if any), for the given input type<br>
- * - applyGlobalConfigToLayer: apply any global configuration options (weight init, activation functions etc) to the
- *   layer's configuration.<br>
- * - labelsRequired: see {@link #labelsRequired()} for details<br>
- *
- * @author Alex Black
- */
 public abstract class SameDiffOutputLayer extends AbstractSameDiffLayer {
 
 

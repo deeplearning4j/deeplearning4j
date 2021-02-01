@@ -27,11 +27,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.Random;
 
-/**
- * Transforms an image in some way, either deterministically or randomly.
- *
- * @author saudet
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ImageTransform extends Operation<ImageWritable, ImageWritable>  {

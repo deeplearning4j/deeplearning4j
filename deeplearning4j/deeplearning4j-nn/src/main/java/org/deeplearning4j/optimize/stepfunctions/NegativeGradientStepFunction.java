@@ -24,11 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Subtract the line
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class NegativeGradientStepFunction implements StepFunction {
     @Override

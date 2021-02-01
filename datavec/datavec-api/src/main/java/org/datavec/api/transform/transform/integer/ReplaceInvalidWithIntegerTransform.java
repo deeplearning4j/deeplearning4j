@@ -25,9 +25,6 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Replace an invalid (non-integer) value in a column with a specified integer
- */
 @Data
 public class ReplaceInvalidWithIntegerTransform extends BaseIntegerTransform {
 

@@ -32,12 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Log(softmax(X))
- *
- * @author Alex Black
- */
-
 public class LogSoftMax extends DynamicCustomOp {
 
     private Integer dimension = null;

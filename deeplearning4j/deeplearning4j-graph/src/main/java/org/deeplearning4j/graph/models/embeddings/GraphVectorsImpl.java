@@ -34,9 +34,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Comparator;
 import java.util.PriorityQueue;
 
-/** Base implementation for GraphVectors. Used in DeepWalk, and also when loading
- * graph vectors from file.
- */
 @AllArgsConstructor
 @NoArgsConstructor
 public class GraphVectorsImpl<V, E> implements GraphVectors<V, E> {

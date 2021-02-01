@@ -25,13 +25,6 @@ import lombok.Data;
 import lombok.Getter;
 import org.datavec.api.writable.Writable;
 
-/**
- * This class converts an {@link IAggregableReduceOp} operating on a Integer to one operating
- * on {@link Writable} instances. It's expected this will only work if that {@link Writable}
- * supports a conversion to Integer.
- *
- * Created by huitseeker on 5/14/17.
- */
 @AllArgsConstructor
 @Data
 public class IntWritableOp<T> implements IAggregableReduceOp<Writable, T> {

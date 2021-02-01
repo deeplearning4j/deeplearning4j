@@ -36,14 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * RepeatVector layer configuration.
- *
- * RepeatVector takes a mini-batch of vectors of shape (mb, length) and a repeat factor n and outputs a 3D tensor of
- * shape (mb, n, length) in which x is repeated n times.
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

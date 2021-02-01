@@ -40,13 +40,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * LSTM recurrent neural network layer without peephole connections. Supports CuDNN acceleration - see <a
- * href="https://deeplearning4j.konduit.ai/config/backends/config-cudnn">https://deeplearning4j.konduit.ai/config/backends/config-cudnn</a> for details
- *
- * @author Alex Black
- * @see GravesLSTM GravesLSTM class for an alternative LSTM (with peephole connections)
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

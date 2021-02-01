@@ -36,9 +36,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Switch op forwards input to one of two outputs based on the value of a predicate
- */
 public class Switch extends BaseCompatOp {
 
     @Getter

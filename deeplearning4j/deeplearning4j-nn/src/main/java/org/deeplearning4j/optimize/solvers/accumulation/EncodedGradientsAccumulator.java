@@ -51,11 +51,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * This GradientsAccumulator is suited for CUDA backend.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class EncodedGradientsAccumulator implements GradientsAccumulator, Registerable {
     public static final long DEFAULT_INITIAL_MEMORY = 100 * 1024 * 1024L;

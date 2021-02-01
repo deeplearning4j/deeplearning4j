@@ -31,11 +31,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * <p>
- * A factory for {@link Serialization}s.
- * </p>
- */
 public class SerializationFactory extends Configured {
 
     private static final Logger LOG = LoggerFactory.getLogger(SerializationFactory.class.getName());

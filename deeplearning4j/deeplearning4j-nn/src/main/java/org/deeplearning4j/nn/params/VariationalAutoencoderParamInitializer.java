@@ -34,13 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Parameter initializer for the Variational Autoencoder model.
- *
- * See: Kingma & Welling, 2013: Auto-Encoding Variational Bayes - <a href="https://arxiv.org/abs/1312.6114">https://arxiv.org/abs/1312.6114</a>
- *
- * @author Alex Black
- */
 public class VariationalAutoencoderParamInitializer extends DefaultParamInitializer {
 
     private static final VariationalAutoencoderParamInitializer INSTANCE = new VariationalAutoencoderParamInitializer();

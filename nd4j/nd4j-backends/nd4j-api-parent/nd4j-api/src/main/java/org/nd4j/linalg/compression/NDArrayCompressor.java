@@ -24,15 +24,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- *
- * NDArray compressor.
- * Given a compression algorithm,
- * it can compress/decompress
- * databuffers and ndarrays.
- *
- * @author raver119@gmail.com
- */
 public interface NDArrayCompressor {
 
     /**

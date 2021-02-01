@@ -26,11 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * Helper for the local response normalization layer.
- *
- * @author saudet
- */
 public interface LocalResponseNormalizationHelper extends LayerHelper {
     boolean checkSupported(double k, double n, double alpha, double beta);
 

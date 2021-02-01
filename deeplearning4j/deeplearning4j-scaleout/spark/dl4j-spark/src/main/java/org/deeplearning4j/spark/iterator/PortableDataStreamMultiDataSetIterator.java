@@ -31,12 +31,6 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
 
-/**
- * A DataSetIterator that loads serialized MultiDataSet objects (saved with {@link MultiDataSet#save(OutputStream)}) from
- * a {@link PortableDataStream}, usually obtained from SparkContext.binaryFiles()
- *
- * @author Alex Black
- */
 public class PortableDataStreamMultiDataSetIterator implements MultiDataSetIterator {
 
     private final Collection<PortableDataStream> dataSetStreams;

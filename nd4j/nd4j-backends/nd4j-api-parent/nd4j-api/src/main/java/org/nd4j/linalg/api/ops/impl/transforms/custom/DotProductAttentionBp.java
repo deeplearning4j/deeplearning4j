@@ -31,13 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/**
- * (optionally scaled) dot product attention Backprop
- *
- * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, p. 4, eq. 1)
- *
- * @author Paul Dubs
- */
 @NoArgsConstructor
 public class DotProductAttentionBp extends DynamicCustomOp {
 

@@ -29,19 +29,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Iterate over a directory (and optionally subdirectories) containing a number of {@link MultiDataSet} objects that have
- * previously been saved to files with {@link MultiDataSet#save(File)}.<br>
- * This iterator supports the following (optional) features, depending on the constructor used:<br>
- * - Recursive listing of all files (i.e., include files in subdirectories)<br>
- * - Filtering based on a set of file extensions (if null, no filtering - assume all files are saved MultiDataSet objects)<br>
- * - Randomization of iteration order (default enabled, if a {@link Random} instance is provided<br>
- * - Combining and splitting of MultiDataSets (disabled by default, or if batchSize == -1. If enabled, MultiDataSet
- * objects will be split or combined as required to ensure the specified minibatch size is returned. In other words, the
- * saved MultiDataSet objects can have a different number of examples vs. those returned by the iterator.<br>
- *
- * @author Alex BLack
- */
 public class FileMultiDataSetIterator extends BaseFileIterator<MultiDataSet, MultiDataSetPreProcessor> implements MultiDataSetIterator {
 
 

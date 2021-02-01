@@ -43,17 +43,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A SameDiff-based GraphVertex. May have multiple inputs, but only one output. Supports trainable parameters.<br>
- * To implement a SameDiff vertex, implement the following methods:<br>
- * - defineVertex: used to specify the vertex forward pass<br>
- * - defineParametersAndInputs: used to specify the parameters and the number of inputs to the vertex<br>
- * - initializeParameters: used to initialize (assign initial values to) the parameters
- *
- * @author Alex Black
- * @see SameDiffLayer
- * @see SameDiffOutputLayer
- */
 @Data
 public abstract class SameDiffVertex extends GraphVertex implements TrainingConfig {
 

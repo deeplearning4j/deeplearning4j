@@ -48,10 +48,6 @@ import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
 
-/**
- * Created by binesh on 6/14/2017.
- */
-
 public class ElementWiseVertexTest extends BaseDL4JTest {
     @Test
     public void testElementWiseVertexNumParams() {

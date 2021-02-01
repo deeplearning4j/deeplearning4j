@@ -40,13 +40,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 
-/**
- * Sparse softmax cross entropy loss with logits.
- * Applies softmax to the input, then calculates cross entropy loss. Labels should be in integer-index format,
- * not one-hot format
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class SparseSoftmaxCrossEntropyLossWithLogits extends DynamicCustomOp {
 

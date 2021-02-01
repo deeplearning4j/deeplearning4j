@@ -31,14 +31,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.io.Serializable;
 import java.util.Map;
 
-/** A GraphVertex is a vertex in the computation graph. It may contain Layer, or define some arbitrary forward/backward pass
- * behaviour based on the inputs.<br>
- * The purposes of GraphVertex instances are as follows:
- * 1. To track the (local) network connection structure: i.e., a GraphVertex knows about the vertices on the input and output sides
- * 2. To store intermediate results (activations and epsilons)
- * 3. To allow forward pass and backward pass to be conducted, once the intermediate results are set
- * @author Alex Black
- */
 public interface GraphVertex extends Trainable, Serializable {
 
     /** Get the name/label of the GraphVertex

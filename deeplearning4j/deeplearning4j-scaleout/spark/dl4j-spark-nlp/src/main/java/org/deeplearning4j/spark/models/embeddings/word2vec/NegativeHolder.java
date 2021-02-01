@@ -31,12 +31,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- *
- * Simple singleton holder class for w2v negative sampling, to avoid syn1Neg creation for each spark node
- *
- * @author raver119@gmail.com
- */
 public class NegativeHolder implements Serializable {
     private static NegativeHolder ourInstance = new NegativeHolder();
 

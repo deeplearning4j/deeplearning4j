@@ -29,9 +29,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/**
- * A WritableComparable for booleans. 
- */
 public class BooleanWritable implements WritableComparable {
 
     private boolean value;

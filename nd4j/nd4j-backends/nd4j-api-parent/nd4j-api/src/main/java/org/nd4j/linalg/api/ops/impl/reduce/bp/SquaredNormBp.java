@@ -25,12 +25,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
-/**
- * Backprop op for squared norm (sum_i x_i^2) reduction operation
- *
- * @author Alex Black
- */
-
 public class SquaredNormBp extends BaseReductionBp {
 
     public SquaredNormBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {

@@ -25,9 +25,6 @@ import org.nd4j.common.function.BiFunction;
 
 import java.io.Serializable;
 
-/**
- * Created by Alex on 5/03/2016.
- */
 public class CategoricalQualityMergeFunction
                 implements BiFunction<CategoricalQuality, CategoricalQuality, CategoricalQuality>, Serializable {
     @Override

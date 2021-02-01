@@ -37,12 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Scatter update op
- *
- * @author Alex Black
- */
-
 public class ScatterUpdate extends DynamicCustomOp {
     public static enum UpdateOp {
         ADD,

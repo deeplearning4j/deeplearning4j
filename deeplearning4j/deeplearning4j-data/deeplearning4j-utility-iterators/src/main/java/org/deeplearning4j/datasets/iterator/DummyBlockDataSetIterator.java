@@ -29,11 +29,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.ArrayList;
 
-/**
- * This class provides baseline implementation of BlockDataSetIterator interface
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class DummyBlockDataSetIterator implements BlockDataSetIterator {
     protected final DataSetIterator iterator;

@@ -30,12 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Arrays;
 import java.util.HashMap;
 
-/**
- * Gradient updater for ComputationGraph. Most of the functionality is shared with
- * {@link org.deeplearning4j.nn.updater.MultiLayerUpdater} via {@link BaseMultiLayerUpdater}
- *
- * @author Alex Black
- */
 public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGraph> {
 
     protected Trainable[] orderedLayers;

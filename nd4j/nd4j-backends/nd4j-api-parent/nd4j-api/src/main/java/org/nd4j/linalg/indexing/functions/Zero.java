@@ -22,9 +22,6 @@ package org.nd4j.linalg.indexing.functions;
 
 import org.nd4j.common.function.Function;
 
-/**
- * Created by agibsonccc on 10/8/14.
- */
 public class Zero implements Function<Number, Number> {
     @Override
     public Number apply(Number input) {

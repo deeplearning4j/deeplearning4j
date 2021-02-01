@@ -44,9 +44,6 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by kepricon on 17. 6. 20.
- */
 public class SparkTransformServerTest {
     private static SparkTransformServerChooser serverChooser;
     private static Schema schema = new Schema.Builder().addColumnDouble("1.0").addColumnDouble("2.0").build();

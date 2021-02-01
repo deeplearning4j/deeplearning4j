@@ -25,9 +25,6 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
-/**
- * @author raver119@gmail.com
- */
 @Deprecated
 public interface RetransmissionHandler {
     public enum TransmissionStatus {

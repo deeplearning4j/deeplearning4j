@@ -43,10 +43,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-/**
- * ResourceFile - represents a Strumpf resource file - which are references to remote files with filename ending with {@link StrumpfResolver#REF}
- * @author Alex Black
- */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data

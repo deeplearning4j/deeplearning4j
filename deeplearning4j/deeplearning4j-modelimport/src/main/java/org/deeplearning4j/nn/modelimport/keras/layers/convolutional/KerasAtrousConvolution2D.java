@@ -37,12 +37,6 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUt
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
-/**
- * Keras 1D atrous / dilated convolution layer. Note that in keras 2 this layer has been
- * removed and dilations are now available through the "dilated" argument in regular Conv1D layers
- * <p>
- * author: Max Pumperla
- */
 public class KerasAtrousConvolution2D extends KerasConvolution {
 
     /**

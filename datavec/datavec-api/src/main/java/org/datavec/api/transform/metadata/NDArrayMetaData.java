@@ -31,11 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * Meta data class for NDArray columns
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties("allowVarLength")

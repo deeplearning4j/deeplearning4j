@@ -39,9 +39,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
-/**
- * Created by agibsonccc on 1/22/17.
- */
 public class CSVSparkTransformServerTest {
 
     private static CSVSparkTransformServer server;

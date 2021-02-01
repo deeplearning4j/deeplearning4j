@@ -102,12 +102,6 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * A ComputationGraph network is a neural network with arbitrary (directed acyclic graph) connection structure.
- * A ComputationGraph may also have an arbitrary number of inputs and outputs.
- *
- * @author Alex Black
- */
 @Slf4j
 public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 

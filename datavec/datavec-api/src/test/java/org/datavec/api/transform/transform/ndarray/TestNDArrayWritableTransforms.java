@@ -41,9 +41,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 02/06/2017.
- */
 public class TestNDArrayWritableTransforms extends BaseND4JTest {
 
     @Test

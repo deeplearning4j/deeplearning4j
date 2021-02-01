@@ -31,11 +31,6 @@ import org.nd4j.linalg.lossfunctions.LossUtil;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * Kullback Leibler Divergence loss function
- *
- * @author Susan Eraly
- */
 @EqualsAndHashCode
 public class LossKLD implements ILossFunction {
 

@@ -20,11 +20,6 @@
 
 package org.datavec.audio.dsp;
 
-/**
- * Construct new data points within the range of a discrete set of known data points by linear equation
- * 
- * @author Jacquet Wong
- */
 public class LinearInterpolation {
 
     public LinearInterpolation() {

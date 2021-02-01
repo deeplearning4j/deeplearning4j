@@ -27,9 +27,6 @@ import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * Created by Alex on 04/07/2017.
- */
 public class BaseSparkKryoTest extends BaseSparkTest {
 
     @Override

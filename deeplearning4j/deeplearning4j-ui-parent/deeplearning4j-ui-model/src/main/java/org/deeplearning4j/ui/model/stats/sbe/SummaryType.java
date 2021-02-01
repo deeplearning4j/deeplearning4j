@@ -18,7 +18,6 @@
  *  *****************************************************************************
  */
 
-/*- Generated SBE (Simple Binary Encoding) message codec */
 package org.deeplearning4j.ui.model.stats.sbe;
 
 @javax.annotation.Generated(value = {"org.deeplearning4j.ui.stats.sbe.SummaryType"})

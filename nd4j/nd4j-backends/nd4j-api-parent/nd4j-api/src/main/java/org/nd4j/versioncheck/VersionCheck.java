@@ -43,14 +43,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * A runtime version check utility that does 2 things:<br>
- * (a) validates the versions of ND4J, DL4J, DataVec, RL4J, Arbiter on the class path, logging a warning if
- * incompatible versions are found<br>
- * (b) allows users to get version information for the above projects at runtime.
- *
- * @author Alex Black
- */
 @Slf4j
 public class VersionCheck {
 

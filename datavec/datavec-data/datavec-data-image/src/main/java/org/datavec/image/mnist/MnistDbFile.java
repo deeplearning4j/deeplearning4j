@@ -24,13 +24,6 @@ package org.datavec.image.mnist;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-/**
- * MNIST database file containing entries that can represent image or label
- * data. Extends the standard random access file with methods for navigating
- * over the entries. The file format is basically idx with specific header
- * information. This includes a magic number for determining the type of stored
- * entries, count of entries.
- */
 public abstract class MnistDbFile extends RandomAccessFile {
     private int count;
 

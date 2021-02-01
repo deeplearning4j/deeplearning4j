@@ -29,13 +29,6 @@ import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedVectorMessage;
 
-/**
- * This message requests full weights vector for specified index
- *
- * Client -> Shard version
- *
- * @author raver119@gmail.com
- */
 @Data
 @Slf4j
 @Deprecated

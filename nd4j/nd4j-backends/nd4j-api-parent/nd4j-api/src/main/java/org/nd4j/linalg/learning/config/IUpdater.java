@@ -30,12 +30,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.util.Map;
 
-/**
- * IUpdater interface: used for configuration and instantiation of updaters - both built-in and custom.<br>
- * Note that the actual implementations for updaters are in {@link GradientUpdater}
- *
- * @author Alex Black
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
                 setterVisibility = JsonAutoDetect.Visibility.NONE)

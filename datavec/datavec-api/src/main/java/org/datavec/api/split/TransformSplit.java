@@ -28,13 +28,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Iterator;
 
-/**
- * InputSplit implementation that maps the URIs of a given BaseInputSplit to new URIs. Useful when features and labels
- * are in different files sharing a common naming scheme, and the name of the output file can be determined given the
- * name of the input file.
- *
- * @author Ede Meijer
- */
 public class TransformSplit extends BaseInputSplit {
     private final BaseInputSplit sourceSplit;
     private final URITransform transform;

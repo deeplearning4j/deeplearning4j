@@ -28,9 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * Created by Alex on 09/09/2016.
- */
 @EqualsAndHashCode
 public class MyCustomPreprocessor implements InputPreProcessor {
 

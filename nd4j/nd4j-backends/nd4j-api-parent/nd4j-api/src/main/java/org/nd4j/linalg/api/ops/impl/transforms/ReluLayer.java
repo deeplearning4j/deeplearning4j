@@ -32,11 +32,6 @@ import java.util.Collections;
 import java.util.List;
 
 
-/**
- * Composed op: relu((X, W) + b)
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class ReluLayer extends XwPlusB {
 

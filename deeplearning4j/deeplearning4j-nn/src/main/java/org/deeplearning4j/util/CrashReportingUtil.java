@@ -69,11 +69,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import oshi.SystemInfo;
 import oshi.software.os.OperatingSystem;
 
-/**
- * A utility for generating crash reports when an out of memory error occurs.
- *
- * @author Alex Black
- */
 @Slf4j
 public class CrashReportingUtil {
 

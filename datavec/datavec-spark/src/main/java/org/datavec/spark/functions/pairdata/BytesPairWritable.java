@@ -26,9 +26,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 
-/**A Hadoop writable class for a pair of byte arrays, plus the original URIs (as Strings) of the files they came from
- * @author Alex Black
- */
 public class BytesPairWritable implements Serializable, org.apache.hadoop.io.Writable {
     private byte[] first;
     private byte[] second;

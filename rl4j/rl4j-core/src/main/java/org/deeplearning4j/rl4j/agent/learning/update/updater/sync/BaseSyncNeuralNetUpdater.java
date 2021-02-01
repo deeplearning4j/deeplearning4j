@@ -25,9 +25,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterCon
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.nd4j.common.base.Preconditions;
 
-/**
- * A {@link INeuralNetUpdater} that updates a neural network and sync a target network at defined intervals
- */
 public abstract class BaseSyncNeuralNetUpdater<DATA_TYPE> implements INeuralNetUpdater<DATA_TYPE> {
     protected final ITrainableNeuralNet current;
     private final ITrainableNeuralNet target;

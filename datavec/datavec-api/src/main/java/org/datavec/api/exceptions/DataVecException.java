@@ -20,10 +20,6 @@
 
 package org.datavec.api.exceptions;
 
-/**
- * DataVec exception
- * @author Adam Gibson
- */
 public class DataVecException extends Exception {
     public DataVecException() {
         super();

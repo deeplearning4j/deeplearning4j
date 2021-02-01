@@ -41,17 +41,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * SequenceMovingWindowReduceTransform Adds a new column, where the value is derived by:<br>
- * (a) using a window of the last N values in a single column,<br>
- * (b) Apply a reduction op on the window to calculate a new value<br>
- * for example, this transformer can be used to implement a simple moving average of the last N values,
- * or determine the minimum or maximum values in the last N time steps.
- *
- * For a simple moving average, length 20: {@code new SequenceMovingWindowReduceTransform("myCol", 20, ReduceOp.Mean)}
- *
- * @author Alex Black
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"inputSchema"})
 @Data

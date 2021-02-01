@@ -32,15 +32,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
- * For example, the activations may be combined by addition, subtraction, multiplication (product), average or by
- * selecting the maximum.<br>
- * Addition, Average, Max and Product may use an arbitrary number of input arrays. Note that in the case of subtraction,
- * only two inputs may be used.
- *
- * @author Alex Black
- */
 @Data
 public class ElementWiseVertex extends GraphVertex {
 

@@ -24,13 +24,6 @@ import org.nd4j.aeron.ipc.NDArrayHolder;
 import org.nd4j.parameterserver.updater.storage.InMemoryUpdateStorage;
 import org.nd4j.parameterserver.updater.storage.UpdateStorage;
 
-/**
- * Base class for the parameter updater
- * handling things such as update storage
- * and basic operations like reset and number of updates
- *
- * @author Adam Gibson
- */
 public abstract class BaseParameterUpdater implements ParameterServerUpdater {
     protected UpdateStorage updateStorage;
     protected NDArrayHolder ndArrayHolder;

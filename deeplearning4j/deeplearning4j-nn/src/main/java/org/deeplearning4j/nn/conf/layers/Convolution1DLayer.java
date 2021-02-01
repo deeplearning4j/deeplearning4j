@@ -39,11 +39,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * 1D (temporal) convolutional layer. This layer accepts RNN InputTypes instead of CNN InputTypes
- *
- * @author dave@skymind.io
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

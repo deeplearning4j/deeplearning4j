@@ -20,9 +20,6 @@
 
 package org.nd4j.linalg.util;
 
-/**
- * @author raver119@gmail.com
- */
 public class LongUtils {
 
     public static int[] toInts(long[] array) {

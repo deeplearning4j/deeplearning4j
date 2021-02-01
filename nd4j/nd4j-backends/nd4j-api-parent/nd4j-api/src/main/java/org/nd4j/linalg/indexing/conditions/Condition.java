@@ -22,9 +22,6 @@ package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.common.function.Function;
 
-/**
- * Condition for boolean indexing
- */
 public interface Condition extends Function<Number, Boolean> {
 
     /**

@@ -40,11 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
 
-/**
- * Test importing Keras models with custom loss.
- *
- * @author Paul Dubs
- */
 public class KerasCustomLossTest extends BaseDL4JTest {
 
     @Rule

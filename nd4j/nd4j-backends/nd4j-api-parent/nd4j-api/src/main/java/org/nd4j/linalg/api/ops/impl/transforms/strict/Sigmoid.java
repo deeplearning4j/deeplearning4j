@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 
 import java.util.List;
 
-/**
- * Sigmoid function
- *
- * @author Adam Gibson
- */
 public class Sigmoid extends BaseTransformStrictOp {
     public Sigmoid(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

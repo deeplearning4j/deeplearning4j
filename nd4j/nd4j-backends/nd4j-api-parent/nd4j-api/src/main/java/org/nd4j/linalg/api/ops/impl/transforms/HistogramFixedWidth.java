@@ -34,11 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Histogram fixed with op
- *
- * @author Alex Black
- */
 public class HistogramFixedWidth extends DynamicCustomOp {
 
     public HistogramFixedWidth(SameDiff sameDiff, SDVariable values, SDVariable valuesRange, SDVariable numBins) {

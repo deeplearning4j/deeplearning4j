@@ -36,12 +36,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * PReLU weight initializer. PReLU layer has weights of input shape (excluding mini-batch
- * dimension).
- *
- * @author Max Pumperla
- */
 public class PReLUParamInitializer implements ParamInitializer {
 
     public final static String WEIGHT_KEY = "W";

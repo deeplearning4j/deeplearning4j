@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Permute function
- *
- * @author Adam Gibson
- */
 public class Permute extends Transpose {
 
     private int[] reverseDims;

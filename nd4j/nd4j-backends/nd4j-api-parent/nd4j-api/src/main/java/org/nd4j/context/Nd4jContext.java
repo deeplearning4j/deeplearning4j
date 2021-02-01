@@ -27,11 +27,6 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.util.Properties;
 
-/**
- * Holds properties for nd4j to be used across different modules
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class Nd4jContext implements Serializable {
 

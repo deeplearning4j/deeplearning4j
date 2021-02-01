@@ -24,13 +24,6 @@ import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 
-/**
- * Gemv parameters:
- * The parameters for general matrix
- * vector operations
- *
- * @author Adam Gibson
- */
 public @Data class GemvParameters {
     private int m, n, lda, incx, incy;
     private INDArray a, x, y;

@@ -41,24 +41,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/28/16.
- *
- * Mother abstract class for all VizDoom scenarios
- *
- * is mostly configured by
- *
- *    String scenario;       name of the scenario
- *    double livingReward;   additional reward at each step for living
- *    double deathPenalty;   negative reward when ded
- *    int doomSkill;         skill of the ennemy
- *    int timeout;           number of step after which simulation time out
- *    int startTime;         number of internal tics before the simulation starts (useful to draw weapon by example)
- *    List<Button> buttons;  the list of inputs one can press for a given scenario (noop is automatically added)
- *
- *
- *
- */
 @Slf4j
 abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, DiscreteSpace> {
 

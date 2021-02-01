@@ -25,10 +25,6 @@ import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
-/** Vertex in a graph
- *
- * @param <T> the type of the value/object associated with the vertex
- */
 @AllArgsConstructor
 public class Vertex<T extends SequenceElement> {
 

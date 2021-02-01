@@ -27,9 +27,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.io.Serializable;
 
-/**
- * Created by agibsonccc on 12/29/14.
- */
 public class HyperRect implements Serializable {
 
     //private List<Interval> points;

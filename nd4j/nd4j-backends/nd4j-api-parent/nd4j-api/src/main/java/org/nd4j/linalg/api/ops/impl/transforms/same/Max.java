@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.MaximumBp;
 
 import java.util.List;
 
-/**
- * Calculate the maximum value between two arrays in an elementwise fashion, broadcasting if required
- *
- * @author raver119@gmail.com
- */
 public class Max extends BaseTransformSameOp  {
 
     public Max(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {

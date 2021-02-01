@@ -64,13 +64,6 @@ import java.util.*;
 
 import static java.nio.channels.Channels.newChannel;
 
-/**
- * Interop between datavec primitives and arrow.
- * This allows for datavec schemas and primitives
- * to be converted to the arrow format.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class ArrowConverter {
 

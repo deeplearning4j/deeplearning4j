@@ -42,26 +42,6 @@ import org.slf4j.LoggerFactory;
 import static org.nd4j.linalg.ops.transforms.Transforms.abs;
 
 
-// "Line Searches and Backtracking", p385, "Numeric Recipes in C"
-
-/**
- @author Aron Culotta <a href="mailto:culotta@cs.umass.edu">culotta@cs.umass.edu</a>
-
- Adapted from mallet with original authors above.
- Modified to be a vectorized version that uses jblas matrices
- for computation rather than the mallet ops.
-
-
- Numerical Recipes in C: p.385. lnsrch. A simple backtracking line
- search. No attempt at accurately finding the true minimum is
- made. The goal is only to ensure that BackTrackLineSearch will
- return a position of higher value.
-
- @author Adam Gibson
-
-
- */
-
 public class BackTrackLineSearch implements LineOptimizer {
     private static final Logger log = LoggerFactory.getLogger(BackTrackLineSearch.class);
     private Model layer;

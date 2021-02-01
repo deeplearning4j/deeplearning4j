@@ -32,9 +32,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 10/22/16.
- */
 public class ParseDoubleTransformTest extends BaseND4JTest {
     @Test
     public void testDoubleTransform() {

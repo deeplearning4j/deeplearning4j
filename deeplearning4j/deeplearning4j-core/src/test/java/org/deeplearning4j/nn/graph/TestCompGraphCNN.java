@@ -47,9 +47,6 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 
-/**
- * Created by nyghtowl on 1/15/16.
- */
 //@Ignore
 public class TestCompGraphCNN extends BaseDL4JTest {
 

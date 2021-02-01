@@ -33,9 +33,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 
-/**
- * Backpropagation for Depthwise Conv2D operation
- */
 @Slf4j
 @Getter
 @NoArgsConstructor

@@ -35,20 +35,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A TransformProcess will build an {@link Observation Observation} from the raw data coming from the environment.
- * Three types of steps are available:
- *   1) A {@link FilterOperation FilterOperation}: Used to determine if an observation should be skipped.
- *   2) An {@link Operation Operation}: Applies a transform and/or conversion to an observation channel.
- *   3) A {@link DataSetPreProcessor DataSetPreProcessor}: Applies a DataSetPreProcessor to the observation channel. The data in the channel must be a DataSet.
- *
- * Instances of the three types above can be called in any order. The only requirement is that when build() is called,
- * all channels must be instances of INDArrays or DataSets
- *
- *   NOTE: Presently, only single-channels observations are supported.
- *
- * @author Alexandre Boulanger
- */
 public class TransformProcess {
 
     private final List<Map.Entry<String, Object>> operations;

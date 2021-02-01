@@ -24,9 +24,6 @@ package org.deeplearning4j.datasets.iterator.callbacks;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * @deprecated Use {@link org.nd4j.linalg.dataset.callbacks.DataSetCallback}
- */
 @Deprecated
 public interface DataSetCallback extends org.nd4j.linalg.dataset.callbacks.DataSetCallback {
 

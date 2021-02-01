@@ -38,12 +38,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Collections;
 import java.util.Iterator;
 
-/**
- * A FlatMapFunction for executing training on DataSets.
- * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
- *
- * @author Alex Black
- */
 public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<DataSet>, R> {
 
     private final TrainingWorker<R> worker;

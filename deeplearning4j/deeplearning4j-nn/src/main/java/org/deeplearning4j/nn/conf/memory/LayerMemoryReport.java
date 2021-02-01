@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * A {@link MemoryReport} Designed to report estimated memory use for a single layer or graph vertex.
- *
- * @author Alex Black
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

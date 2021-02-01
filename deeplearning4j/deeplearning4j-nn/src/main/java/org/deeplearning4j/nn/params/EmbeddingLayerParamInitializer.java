@@ -24,11 +24,6 @@ import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Parameter initializer for EmbeddingLayer and EmbeddingSequenceLayer
- *
- * @author Alex Black
- */
 public class EmbeddingLayerParamInitializer extends DefaultParamInitializer {
 
     private static final EmbeddingLayerParamInitializer INSTANCE = new EmbeddingLayerParamInitializer();

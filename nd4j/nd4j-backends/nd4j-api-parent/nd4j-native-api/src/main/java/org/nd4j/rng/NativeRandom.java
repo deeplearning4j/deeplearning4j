@@ -32,11 +32,6 @@ import org.nd4j.nativeblas.NativeOps;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Basic NativeRandom implementation
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public abstract class NativeRandom implements Random {
     protected NativeOps nativeOps;

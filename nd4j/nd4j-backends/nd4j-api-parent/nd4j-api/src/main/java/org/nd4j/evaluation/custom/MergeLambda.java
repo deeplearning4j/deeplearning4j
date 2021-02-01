@@ -22,10 +22,6 @@ package org.nd4j.evaluation.custom;
 
 import java.util.List;
 
-/**
- * A lambda used to merge two lists of evaluation results
- * See {@link CustomEvaluation}
- */
 public interface MergeLambda<T> {
     public List<T> merge(List<T> a, List<T> b);
 }

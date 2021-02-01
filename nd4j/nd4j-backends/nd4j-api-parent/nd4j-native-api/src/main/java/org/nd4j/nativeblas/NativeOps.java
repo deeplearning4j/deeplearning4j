@@ -24,11 +24,6 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.annotation.Cast;
 
 
-/**
- * Native interface for
- * op execution on cpu
- * @author Adam Gibson
- */
 public interface NativeOps {
     /**
      * This method allows you to specify minimal number of elements per thread/block during op call

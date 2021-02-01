@@ -26,9 +26,6 @@ import org.nd4j.common.tests.BaseND4JTest;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 04/09/2016.
- */
 public class TestSchemaMethods extends BaseND4JTest {
 
     @Test

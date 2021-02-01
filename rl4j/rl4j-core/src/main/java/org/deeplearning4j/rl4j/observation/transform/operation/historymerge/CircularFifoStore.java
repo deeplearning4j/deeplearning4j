@@ -25,12 +25,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * CircularFifoStore is used with the {@link HistoryMergeTransform HistoryMergeTransform}. This store is a first-in first-out queue
- * with a fixed size that replaces its oldest element if full.
- *
- * @author Alexandre Boulanger
- */
 public class CircularFifoStore implements HistoryMergeElementStore {
 
     private final CircularFifoQueue<INDArray> queue;

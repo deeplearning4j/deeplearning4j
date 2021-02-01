@@ -36,9 +36,6 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
- */
 public class AsyncNStepQLearningThreadDiscrete<OBSERVATION extends Encodable> extends AsyncThreadDiscrete<OBSERVATION, IDQN> {
 
     @Getter

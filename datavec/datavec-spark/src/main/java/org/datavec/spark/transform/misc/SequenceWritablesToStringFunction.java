@@ -26,12 +26,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Simple function to map sequence examples to a String format (such as CSV)
- * with given quote around the string value if it contains the delimiter.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class SequenceWritablesToStringFunction implements Function<List<List<Writable>>, String> {
 

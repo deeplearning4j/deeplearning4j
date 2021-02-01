@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 
 import java.util.List;
 
-/**
- * This is special case PredicateOp, with opB being only either ReduceOp, Variance or Reduce3 op
- *
- * @author raver119@gmail.com
- */
 public class ReduceMetaOp extends BaseMetaOp {
 
     public ReduceMetaOp() {

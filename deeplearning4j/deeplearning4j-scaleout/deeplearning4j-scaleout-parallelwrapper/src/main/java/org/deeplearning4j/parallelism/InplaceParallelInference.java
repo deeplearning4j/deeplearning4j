@@ -42,16 +42,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * This ParallelInference implementation provides inference functionality without launching additional threads, so inference happens in the calling thread.
- *
- * To instantiate this implementation one should use InferenceMode.INPLACE in ParallelInference.Builder
- *
- * PLEASE NOTE: This implementation does not create additional threads
- * PLEASE NOTE: This implementation uses shared parameters for models on per-device basis
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class InplaceParallelInference extends ParallelInference {
     protected List<ModelHolder> holders = new CopyOnWriteArrayList<>();

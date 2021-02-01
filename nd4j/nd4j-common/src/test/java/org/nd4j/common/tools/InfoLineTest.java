@@ -26,14 +26,6 @@ import org.nd4j.common.tools.InfoValues;
 
 import static org.junit.Assert.*;
 
-/**
- *
- *
- * 
- *
- * @author clavvis
- */
-
 public class InfoLineTest {
 	//
 	

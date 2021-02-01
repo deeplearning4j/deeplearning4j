@@ -29,13 +29,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Scalar value set operation.
- * Anything less than the scalar value will
- * set the current element to be that value.
- *
- * @author Adam Gibson
- */
 public class ScalarSetValue extends BaseScalarOp {
     public ScalarSetValue(SameDiff sameDiff, SDVariable i_v, Number scalar) {
         super(sameDiff, i_v, scalar);

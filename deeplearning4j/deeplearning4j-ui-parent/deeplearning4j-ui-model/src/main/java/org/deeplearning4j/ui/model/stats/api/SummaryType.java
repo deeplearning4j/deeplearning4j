@@ -22,11 +22,6 @@ package org.deeplearning4j.ui.model.stats.api;
 
 import org.deeplearning4j.ui.model.stats.StatsListener;
 
-/**
- * Summary statistic type, for use in {@link StatsListener}
- *
- * @author Alex Black
- */
 public enum SummaryType {
     Mean, Stdev, MeanMagnitudes
 }

@@ -20,7 +20,6 @@
 
 package org.deeplearning4j.models.sequencevectors.graph.huffman;
 
-/** Binary tree interface, used in DeepWalk */
 public interface BinaryTree {
 
     long getCode(int element);

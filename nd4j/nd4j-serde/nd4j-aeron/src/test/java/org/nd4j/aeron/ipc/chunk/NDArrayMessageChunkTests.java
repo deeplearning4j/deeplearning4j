@@ -32,9 +32,6 @@ import java.nio.ByteBuffer;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 11/20/16.
- */
 public class NDArrayMessageChunkTests extends BaseND4JTest {
 
     @Test

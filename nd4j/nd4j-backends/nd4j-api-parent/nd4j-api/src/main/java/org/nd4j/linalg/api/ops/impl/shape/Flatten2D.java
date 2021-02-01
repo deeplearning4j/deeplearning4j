@@ -38,11 +38,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Flatten 2D function
- *
- * @author Adam Gibson
- */
 @Slf4j
 @NoArgsConstructor
 public class Flatten2D extends DynamicCustomOp {

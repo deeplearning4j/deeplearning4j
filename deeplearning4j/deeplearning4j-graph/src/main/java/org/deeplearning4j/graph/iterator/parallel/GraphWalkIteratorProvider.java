@@ -24,9 +24,6 @@ import org.deeplearning4j.graph.iterator.GraphWalkIterator;
 
 import java.util.List;
 
-/**GraphWalkIteratorProvider: implementations of this interface provide a set of GraphWalkIterator objects.
- * Intended use: parallelization. One GraphWalkIterator per thread.
- */
 public interface GraphWalkIteratorProvider<V> {
 
     /**Get a list of GraphWalkIterators. In general: may return less than the specified number of iterators,

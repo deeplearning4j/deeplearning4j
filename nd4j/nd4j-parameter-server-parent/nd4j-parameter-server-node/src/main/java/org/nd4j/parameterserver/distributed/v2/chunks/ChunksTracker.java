@@ -22,9 +22,6 @@ package org.nd4j.parameterserver.distributed.v2.chunks;
 
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
-/**
- * This interface describes logic for tracking chunks of bigger message
- */
 public interface ChunksTracker<T extends VoidMessage> {
 
     /**

@@ -29,12 +29,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.regex.Pattern;
 
-/**
- * A simple utility method to convert a {@code Iterator<String>} to an {@code Iterator<URI>}, where each
- * String in the original iterator is a Path
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class UriFromPathIterator implements Iterator<URI> {
     final Pattern schemaPattern = Pattern.compile("^.*?:/.*");

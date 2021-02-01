@@ -34,11 +34,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
-/**
- * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = false)

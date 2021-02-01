@@ -34,11 +34,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Map;
 
-/**
- * Layer helpers {@link NASNet}.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class NASNetHelper {
 
 

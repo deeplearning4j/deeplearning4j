@@ -24,12 +24,6 @@ import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-/**
- * A simple object mapper holder for
- * using one single {@link ObjectMapper}
- * across the whole project.
- *
- */
 public class ObjectMapperHolder {
 
     private static ObjectMapper objectMapper = getMapper();

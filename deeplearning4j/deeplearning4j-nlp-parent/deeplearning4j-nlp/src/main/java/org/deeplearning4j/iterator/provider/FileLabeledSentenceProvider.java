@@ -31,11 +31,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * Iterate over a set of sentences/documents, where the sentences are to be loaded (as required) from the provided files.
- *
- * @author Alex Black
- */
 public class FileLabeledSentenceProvider implements LabeledSentenceProvider {
 
     private final int totalCount;

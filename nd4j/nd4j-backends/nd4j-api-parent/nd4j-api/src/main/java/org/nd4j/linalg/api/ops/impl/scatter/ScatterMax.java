@@ -36,11 +36,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 
-/**
- * @author raver119@protonmail.com
- * @author Alex Black
- */
-
 public class ScatterMax extends DynamicCustomOp {
 
     public ScatterMax(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {

@@ -29,11 +29,6 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 
-/**
- * Chain implementation for SkipGram
- *
- * @author raver119@gmail.com
- */
 @Data
 @Slf4j
 public class SkipGramChain implements Chain {

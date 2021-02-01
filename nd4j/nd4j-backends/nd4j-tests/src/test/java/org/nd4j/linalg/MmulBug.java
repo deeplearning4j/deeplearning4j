@@ -20,10 +20,6 @@
 
 package org.nd4j.linalg;
 
-/**
- * Created by susaneraly on 8/26/16.
- */
-
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;

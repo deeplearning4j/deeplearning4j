@@ -24,11 +24,6 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 
-/**
- * Lightweight utilities for converting files to URI.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class URIUtil {
 
     public static URI fileToURI(File f) {

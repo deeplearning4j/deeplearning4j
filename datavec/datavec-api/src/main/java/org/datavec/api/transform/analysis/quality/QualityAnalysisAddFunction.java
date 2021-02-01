@@ -38,11 +38,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Add function used for undertaking quality analysis of a data set via Spark
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class QualityAnalysisAddFunction
                 implements BiFunction<List<QualityAnalysisState>, List<Writable>, List<QualityAnalysisState>>, Serializable {

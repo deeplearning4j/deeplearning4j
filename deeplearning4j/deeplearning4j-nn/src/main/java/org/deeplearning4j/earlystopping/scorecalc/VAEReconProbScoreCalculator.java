@@ -29,13 +29,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
-/**
- * Score calculator for variational autoencoder reconstruction probability or reconstruction log probability for a
- * MultiLayerNetwork or ComputationGraph. VariationalAutoencoder layer must be first layer in the network<br>
- * See {@link VariationalAutoencoder#reconstructionProbability(INDArray, int)} for more details
- *
- * @author Alex Black
- */
 public class VAEReconProbScoreCalculator extends BaseScoreCalculator<Model> {
 
     protected final int reconstructionProbNumSamples;

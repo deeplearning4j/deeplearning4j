@@ -25,12 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * This op describes Axpy call
- * that'll happen soon(TM) in batch mode
- *
- * @author raver119
- */
 @Deprecated
 public class AggregateAxpy extends BaseAggregate {
     private int vectorLength;

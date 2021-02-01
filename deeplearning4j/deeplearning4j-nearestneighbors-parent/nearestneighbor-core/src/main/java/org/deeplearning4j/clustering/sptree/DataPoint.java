@@ -29,11 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 
-/**
- *
- * A vector with an index and function for distance
- * @author Adam Gibson
- */
 @Data
 public class DataPoint implements Serializable {
     private int index;

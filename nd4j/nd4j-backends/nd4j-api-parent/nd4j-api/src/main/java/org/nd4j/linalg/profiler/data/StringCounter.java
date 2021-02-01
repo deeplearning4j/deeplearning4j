@@ -27,11 +27,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Simple key-value counter
- *
- * @author raver119@gmail.com
- */
 public class StringCounter {
     private Map<String, ComparableAtomicLong> counter = new ConcurrentHashMap<>();
     private AtomicLong totals = new AtomicLong(0);

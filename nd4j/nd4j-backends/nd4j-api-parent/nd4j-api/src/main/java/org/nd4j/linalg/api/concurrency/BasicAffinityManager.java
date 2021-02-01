@@ -23,9 +23,6 @@ package org.nd4j.linalg.api.concurrency;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BasicAffinityManager implements AffinityManager {
     @Override
     public Integer getDeviceForCurrentThread() {

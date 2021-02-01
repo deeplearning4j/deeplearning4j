@@ -32,13 +32,6 @@ import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
-/**
- * Transport implementation based on Aeron UDP multicast
- *
- * PLEASE NOTE: This transport will NOT work on AWS or Azure out of box, due to Amazon/Microsoft restrictions within their networks.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class MulticastTransport extends BaseTransport {

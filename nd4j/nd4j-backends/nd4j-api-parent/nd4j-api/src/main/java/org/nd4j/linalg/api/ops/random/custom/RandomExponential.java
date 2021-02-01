@@ -32,11 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Random exponential distribution: p(x) = lambda * exp(-lambda * x)
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class RandomExponential extends DynamicCustomOp {
     private double lambda = 0.0;

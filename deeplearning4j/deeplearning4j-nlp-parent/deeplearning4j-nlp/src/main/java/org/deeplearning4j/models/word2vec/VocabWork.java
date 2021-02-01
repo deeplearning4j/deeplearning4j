@@ -25,12 +25,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Vocab work meant for use with the vocab actor
- *
- *
- * @author Adam Gibson
- */
 public class VocabWork implements Serializable {
 
     private AtomicInteger count = new AtomicInteger(0);

@@ -58,9 +58,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 18/07/2016.
- */
 public class TestJsonYaml extends BaseND4JTest {
 
     @Test

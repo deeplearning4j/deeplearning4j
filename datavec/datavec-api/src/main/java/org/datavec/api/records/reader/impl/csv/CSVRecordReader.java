@@ -41,11 +41,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-/**
- * Simple csv record reader.
- *
- * @author Adam Gibson
- */
 public class CSVRecordReader extends LineRecordReader {
     private boolean skippedLines = false;
     protected int skipNumLines = 0;

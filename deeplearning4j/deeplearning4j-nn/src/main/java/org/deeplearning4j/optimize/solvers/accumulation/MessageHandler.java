@@ -24,13 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-/**
- * This interface describes communication primitive for GradientsAccumulator
- *
- * PLEASE NOTE: All implementations of this interface must be thread-safe.
- *
- * @author raver119@gmail.com
- */
 public interface MessageHandler extends Serializable {
 
     /**

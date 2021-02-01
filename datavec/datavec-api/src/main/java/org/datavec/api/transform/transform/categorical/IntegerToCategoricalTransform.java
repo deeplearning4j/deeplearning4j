@@ -31,11 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
-/**
- * Convert an integer column to a categorical column, using a provided {@code Map<Integer,String>}
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "columnNumber"})
 @Data
 public class IntegerToCategoricalTransform extends BaseColumnTransform {

@@ -34,10 +34,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ResizeNearestNeighbor op wrapper
- * @author raver119@gmail.com
- */
 public class ResizeNearestNeighbor extends DynamicCustomOp {
 
     @Override

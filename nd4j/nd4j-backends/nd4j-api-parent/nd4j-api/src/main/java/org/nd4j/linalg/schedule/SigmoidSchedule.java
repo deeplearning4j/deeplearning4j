@@ -23,13 +23,6 @@ package org.nd4j.linalg.schedule;
 import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Sigmoid decay schedule, with 3 parameters: initial value, gamma and stepSize.<br>
- * value(i) = initialValue * 1.0 / (1 + exp(-gamma * (iter - stepSize)))
- * where i is the iteration or epoch (depending on the setting)
- *
- * @author Alex Black
- */
 @Data
 public class SigmoidSchedule implements ISchedule {
 

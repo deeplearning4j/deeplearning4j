@@ -26,12 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * An in memory storage mechanism backed
- * by a thread safe {@link CopyOnWriteArrayList}
- *
- * @author Adam Gibson
- */
 public class InMemoryUpdateStorage extends BaseUpdateStorage {
 
     private List<NDArrayMessage> updates = new CopyOnWriteArrayList<>();

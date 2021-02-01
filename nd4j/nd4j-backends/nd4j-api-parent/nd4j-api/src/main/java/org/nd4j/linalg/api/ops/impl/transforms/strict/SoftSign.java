@@ -28,14 +28,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignBp;
 
 import java.util.List;
 
-/**
- * Softsign element-wise activation function. f(x) = x/(1+abs(x))<br>
- * Similar in shape to tanh but may outperform it due to
- * 'gentler' nonlinearity (smoother asymptotes).<br>
- * See for example: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
- *
- * @author Alex Black
- */
 public class SoftSign extends BaseTransformStrictOp {
     public SoftSign(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

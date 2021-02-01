@@ -28,13 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * A {@link SameDiff} listener interface that is called during every iteration of training or inference
- *
- * @author Alex Black
- * @see BaseListener BaseListener, for extending only the required methods (all others are no-op)
- * @see BaseEvaluationListener BaseEvaluationListener, for extending if you want to use evaluations
- */
 public interface Listener {
 
 

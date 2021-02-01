@@ -43,14 +43,6 @@ import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.rng.Random;
 
-/**
- * A base {@link IAgentLearner} builder that will setup these:
- * <li>a epsilon-greedy policy</li>
- * <li>a replay-memory experience handler</li>
- * <li>a neural net updater that expects feature-labels update data</li>
- *
- * Used as the base of DQN builders.
- */
 public abstract class BaseDQNAgentLearnerBuilder<CONFIGURATION_TYPE extends BaseDQNAgentLearnerBuilder.Configuration> extends BaseAgentLearnerBuilder<Integer, StateActionRewardState<Integer>, FeaturesLabels, CONFIGURATION_TYPE> {
 
     private final Random rnd;

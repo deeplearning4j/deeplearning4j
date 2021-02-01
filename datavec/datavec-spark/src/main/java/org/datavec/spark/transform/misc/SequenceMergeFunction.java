@@ -28,21 +28,6 @@ import scala.Tuple2;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Spark function for merging multiple sequences, using a {@link SequenceMerge} instance.<br>
- *
- * Typical usage:<br>
- * <pre>
- * {@code
- * JavaPairRDD<SomeKey,List<List<Writable>>> myData = ...;
- * SequenceComparator comparator = ...;
- * SequenceMergeFunction<String> sequenceMergeFunction = new SequenceMergeFunction<>(new SequenceMerge(comparator));
- * JavaRDD<List<List<Writable>>> merged = myData.groupByKey().map(sequenceMergeFunction);
- * }
- * </pre>
- *
- * @author Alex Black
- */
 public class SequenceMergeFunction<T>
                 implements Function<Tuple2<T, Iterable<List<List<Writable>>>>, List<List<Writable>>> {
 

@@ -32,15 +32,6 @@ import org.deeplearning4j.common.util.DL4JFileUtils;
 
 import java.io.*;
 
-/**
- * Reads stored Keras configurations and weights from one of two archives:
- * either as
- *
- * - a single HDF5 file storing model and training JSON configurations and weights
- * - separate text file storing model JSON configuration and HDF5 file storing weights.
- *
- * @author dave@skymind.io
- */
 @Slf4j
 public class KerasModelImport {
     /**

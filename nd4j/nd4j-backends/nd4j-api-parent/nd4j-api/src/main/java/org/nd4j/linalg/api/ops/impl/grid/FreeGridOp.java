@@ -26,11 +26,6 @@ import org.nd4j.linalg.api.ops.Op;
 
 import java.util.List;
 
-/**
- * Simple GridOp that operates on arbitrary number of Ops, that have no relations between them.
- *
- * @author raver119@gmail.com
- */
 public class FreeGridOp extends BaseGridOp {
 
     public FreeGridOp() {

@@ -36,9 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * LSTM layer backpropagation
- */
 @NoArgsConstructor
 public class LSTMLayerBp extends DynamicCustomOp {
 

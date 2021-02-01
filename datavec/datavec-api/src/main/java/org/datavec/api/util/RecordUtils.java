@@ -27,11 +27,6 @@ import org.datavec.api.writable.Writable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Create records from the specified input
- *
- * @author Adam Gibson
- */
 public class RecordUtils {
 
     public static List<Writable> toRecord(double[] record) {

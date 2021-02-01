@@ -20,11 +20,6 @@
 
 package org.nd4j.common.function;
 
-/**
- * A Function accepts one argument and returns a result
- * @param <T> Type of the argument
- * @param <R> Type of the result
- */
 public interface Function<T, R> {
 
     /**

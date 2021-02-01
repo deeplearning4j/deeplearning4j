@@ -34,11 +34,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/**
- * Spark version of AsyncMultiDataSetIterator, made separate to propagate Spark TaskContext to new background thread, for Spark block locks compatibility
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SparkAMDSI extends AsyncMultiDataSetIterator {
     protected TaskContext context;

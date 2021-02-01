@@ -24,12 +24,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.nd4j.linalg.api.buffer.DataType;
 
-/**
- *
- * Basically: identical to DenseLayer
- *
- * Created by Alex on 26/08/2016.
- */
 public class CustomLayerImpl extends BaseLayer<CustomLayer> {
     public CustomLayerImpl(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);

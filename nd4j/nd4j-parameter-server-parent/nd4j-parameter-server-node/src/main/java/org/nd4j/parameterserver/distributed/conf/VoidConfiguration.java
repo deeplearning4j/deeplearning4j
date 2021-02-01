@@ -35,12 +35,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Basic configuration pojo for VoidParameterServer.
- * This is used for example in Deeplearning4j's SharedTrainingMaster gradient sharing distributed training implementation
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

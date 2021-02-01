@@ -29,13 +29,6 @@ import org.datavec.api.writable.Writable;
 import java.net.URI;
 import java.util.List;
 
-/**
- * An {@link ArrowRecord} is a {@link Record}
- * wrapper around {@link ArrowWritableRecordBatch}
- * containing an index to the individual row.
- *
- * @author Adam Gibson
- */
 @AllArgsConstructor
 public class ArrowRecord implements Record {
     private ArrowWritableRecordBatch arrowWritableRecordBatch;

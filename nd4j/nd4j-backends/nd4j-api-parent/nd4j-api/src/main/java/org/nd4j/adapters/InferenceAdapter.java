@@ -20,13 +20,5 @@
 
 package org.nd4j.adapters;
 
-/**
- * This interface describes methods needed to convert custom JVM objects to INDArrays, suitable for feeding neural networks
- *
- * @param <I> type of the Input for the model. I.e. String for raw text
- * @param <O> type of the Output for the model, I.e. Sentiment, for Text->Sentiment extraction
- *
- * @author raver119@gmail.com
- */
 public interface InferenceAdapter<I, O> extends InputAdapter<I>, OutputAdapter<O> {
 }

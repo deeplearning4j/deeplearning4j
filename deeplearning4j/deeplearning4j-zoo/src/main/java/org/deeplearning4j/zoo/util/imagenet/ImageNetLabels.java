@@ -34,11 +34,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-/**
- * Helper class with a static method that returns the label description.
- *
- * @author susaneraly
- */
 public class ImageNetLabels extends BaseLabels {
 
     private static final String jsonResource = "imagenet_class_index.json";

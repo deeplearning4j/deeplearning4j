@@ -35,9 +35,6 @@ import org.nd4j.linalg.api.blas.BlasException ;
 
 import static org.bytedeco.openblas.global.openblas.*;
 
-/**
- * CPU lapack implementation
- */
 public class CpuLapack extends BaseLapack {
     protected static int getColumnOrder(INDArray A) {
         return A.ordering() == 'f' ? LAPACK_COL_MAJOR : LAPACK_ROW_MAJOR;

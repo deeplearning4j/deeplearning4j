@@ -34,12 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- *
- * This class is used to build vocabulary and sequences out of graph, via GraphWalkers
- *
- * @author raver119@gmail.com
- */
 public class GraphTransformer<T extends SequenceElement> implements Iterable<Sequence<T>> {
     protected IGraph<T, ?> sourceGraph;
     protected GraphWalker<T> walker;

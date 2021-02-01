@@ -29,11 +29,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Asynchronous Iterator for better performance of iterators in dl4j-nn & dl4j-nlp
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class AsyncIterator<T extends Object> implements Iterator<T> {
     @Getter

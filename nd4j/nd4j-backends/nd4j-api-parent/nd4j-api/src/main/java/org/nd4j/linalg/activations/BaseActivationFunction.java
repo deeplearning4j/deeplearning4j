@@ -24,11 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
-/**
- * Base IActivation for activation functions without parameters
- *
- * @author Alex Black
- */
 public abstract class BaseActivationFunction implements IActivation {
 
     @Override

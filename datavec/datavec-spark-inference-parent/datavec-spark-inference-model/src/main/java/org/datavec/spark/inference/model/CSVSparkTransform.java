@@ -50,12 +50,6 @@ import static org.datavec.arrow.ArrowConverter.*;
 import static org.datavec.local.transforms.LocalTransformExecutor.execute;
 import static org.datavec.local.transforms.LocalTransformExecutor.executeToSequence;
 
-/**
- * CSVSpark Transform runs
- * the actual {@link TransformProcess}
- *
- * @author Adan Gibson
- */
 @AllArgsConstructor
 @Slf4j
 public class CSVSparkTransform {

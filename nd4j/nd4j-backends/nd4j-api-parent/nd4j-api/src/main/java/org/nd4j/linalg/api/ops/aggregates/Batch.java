@@ -33,11 +33,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Wrapper for "batch of aggregates"
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class Batch<T extends Aggregate> {
     /**

@@ -20,11 +20,6 @@
 
 package org.deeplearning4j.exception;
 
-/**
- * Base exception for DL4J
- *
- * @author Alex Black
- */
 public class DL4JException extends RuntimeException {
 
     public DL4JException() {}

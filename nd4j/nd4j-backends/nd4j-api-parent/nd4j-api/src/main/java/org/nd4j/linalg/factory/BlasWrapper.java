@@ -18,9 +18,6 @@
  *  *****************************************************************************
  */
 
-// --- BEGIN LICENSE BLOCK ---
-// --- END LICENSE BLOCK ---
-
 package org.nd4j.linalg.factory;
 
 import org.nd4j.linalg.api.blas.Lapack;
@@ -30,15 +27,6 @@ import org.nd4j.linalg.api.blas.Level3;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
-/**
- * This class provides a cleaner direct interface to the BLAS routines by extracting the parameters of the matrices from
- * the matrices itself.
- * <p/>
- * For example, you can just pass the vector and do not have to pass the length, corresponding DoubleBuffer, offset and
- * step size explicitly.
- * <p/>
- * Currently, all the general matrix routines are implemented.
- */
 public interface BlasWrapper {
     /***************************************************************************
      * BLAS Level 1

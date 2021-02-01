@@ -40,11 +40,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This simple class is responsible for conversion lines of text to Sequences of SequenceElements to fit them into SequenceVectors model
- *
- * @author raver119@gmail.com
- */
 public class SentenceTransformer implements SequenceTransformer<VocabWord, String>, Iterable<Sequence<VocabWord>> {
     /*
             So, we must accept any SentenceIterator implementations, and build vocab out of it, and use it for further transforms between text and Sequences

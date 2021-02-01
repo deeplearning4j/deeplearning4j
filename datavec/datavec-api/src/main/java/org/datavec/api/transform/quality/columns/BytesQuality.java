@@ -22,11 +22,6 @@ package org.datavec.api.transform.quality.columns;
 
 import lombok.Data;
 
-/**
- * Quality of a Bytes column
- *
- * @author Alex Black
- */
 @Data
 public class BytesQuality extends ColumnQuality {
 

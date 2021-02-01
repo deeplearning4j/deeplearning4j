@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.*;
 
-/**
- * Rank function
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class Rank extends DynamicCustomOp {
 

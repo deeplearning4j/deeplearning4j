@@ -31,11 +31,6 @@ import org.nd4j.common.function.BiFunction;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * An adder function used in the calculation of histograms
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class HistogramAddFunction implements BiFunction<List<HistogramCounter>, List<Writable>, List<HistogramCounter>> {
     private final int nBins;

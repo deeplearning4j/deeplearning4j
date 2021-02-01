@@ -35,13 +35,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * In memory lookup cache for smaller datasets
- *
- * PLEASE NOTE: Consider using AbstractCache instead.
- *
- * @author Adam Gibson
- */
 @Deprecated
 public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable {
 

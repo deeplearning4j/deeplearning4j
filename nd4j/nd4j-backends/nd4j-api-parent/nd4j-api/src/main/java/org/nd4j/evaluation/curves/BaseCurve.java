@@ -26,11 +26,6 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
 
-/**
- * Abstract class for ROC and Precision recall curves
- *
- * @author Alex Black
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public abstract class BaseCurve {
     public static final int DEFAULT_FORMAT_PREC = 4;

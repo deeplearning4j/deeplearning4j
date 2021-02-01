@@ -24,13 +24,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Inverse schedule, with 3 parameters: initial value, gamma and power.<br>
- * value(i) = initialValue * (1 + gamma * iter)^(-power)
- * where i is the iteration or epoch (depending on the setting)
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode
 public class InverseSchedule implements ISchedule {

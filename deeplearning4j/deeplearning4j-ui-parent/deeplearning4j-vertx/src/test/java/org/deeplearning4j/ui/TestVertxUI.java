@@ -63,9 +63,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 08/10/2016.
- */
 @Slf4j
 @Ignore
 public class TestVertxUI extends BaseDL4JTest {

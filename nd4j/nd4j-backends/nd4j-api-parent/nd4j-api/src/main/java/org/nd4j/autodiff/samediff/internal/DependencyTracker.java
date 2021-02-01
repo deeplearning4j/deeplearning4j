@@ -24,12 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
-/**
- * Dependency tracker. See {@link AbstractDependencyTracker} for details
- *
- * @param <T> For a dependency X -> Y, Y has type T
- * @param <D> For a dependency X -> Y, X has type D
- */
 @Slf4j
 public class DependencyTracker<T, D> extends AbstractDependencyTracker<T,D> {
 

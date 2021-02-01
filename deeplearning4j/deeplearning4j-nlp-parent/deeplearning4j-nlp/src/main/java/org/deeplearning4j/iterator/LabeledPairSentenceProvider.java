@@ -24,9 +24,6 @@ import org.nd4j.common.primitives.Triple;
 
 import java.util.List;
 
-/**
- * LabeledPairSentenceProvider: a simple iterator interface over a pair of sentences/documents that have a label.<br>
- */
 public interface LabeledPairSentenceProvider {
 
     /**

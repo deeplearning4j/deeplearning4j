@@ -41,14 +41,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Sequence record reader data set iterator.<br>
- * Given a record reader (and optionally another record reader for the labels) generate time series (sequence) data sets.<br>
- * Supports padding for one-to-many and many-to-one type data loading (i.e., with different number of inputs vs.
- * labels via the {@link AlignmentMode} mode.
- *
- * @author Alex Black
- */
 public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).
      * For example, might have 10 time steps total but only one label at end for sequence classification.<br>

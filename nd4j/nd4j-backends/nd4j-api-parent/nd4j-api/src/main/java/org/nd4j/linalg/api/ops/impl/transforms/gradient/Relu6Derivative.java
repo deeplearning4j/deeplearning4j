@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Derivative of Rectified linear unit 6, i.e. min(max(input, cutoff), 6), where cutoff can be chosen.
- *
- * @author Alex Black
- */
 public class Relu6Derivative extends DynamicCustomOp {
 
     private static final double DEFAULT_CUTOFF = 0.0;

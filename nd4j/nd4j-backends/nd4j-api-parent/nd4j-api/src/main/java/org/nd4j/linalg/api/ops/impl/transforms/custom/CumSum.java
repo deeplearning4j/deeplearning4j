@@ -40,11 +40,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Cumulative sum operation, optionally along dimension.
- *
- * @author Alex Black
- */
 public class CumSum extends DynamicCustomOp {
 
     protected boolean exclusive = false;

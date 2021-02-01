@@ -33,11 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * This Op generates binomial distribution
- *
- * @author raver119@gmail.com
- */
 public class BinomialDistribution extends BaseRandomOp {
     private int trials;
     private double probability;

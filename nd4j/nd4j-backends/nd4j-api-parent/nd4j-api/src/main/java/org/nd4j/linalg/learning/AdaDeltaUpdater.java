@@ -30,15 +30,6 @@ import org.nd4j.linalg.learning.config.AdaDelta;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * http://www.matthewzeiler.com/pubs/googleTR2012/googleTR2012.pdf
- * https://arxiv.org/pdf/1212.5701v1.pdf
- * <p>
- * Ada delta updater. More robust adagrad that keeps track of a moving window
- * average of the gradient rather than the every decaying learning rates of adagrad
- *
- * @author Adam Gibson
- */
 @Data
 public class AdaDeltaUpdater implements GradientUpdater<AdaDelta> {
     public static final String MSG_STATE = "msg";

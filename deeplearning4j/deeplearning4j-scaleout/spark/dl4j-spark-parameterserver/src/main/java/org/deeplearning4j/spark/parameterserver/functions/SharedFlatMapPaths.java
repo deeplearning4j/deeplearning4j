@@ -38,10 +38,6 @@ import java.nio.file.Files;
 import java.util.Collections;
 import java.util.Iterator;
 
-/**
- *
- * @author raver119@gmail.com
- */
 public class SharedFlatMapPaths<R extends TrainingResult> implements FlatMapFunction<Iterator<String>, R> {
 
     public static File toTempFile(Iterator<String> dataSetIterator) throws IOException {

@@ -45,12 +45,6 @@ import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/19/16.
- * <p>
- * Mother class for QLearning in the Discrete domain and
- * hopefully one day for the  Continuous domain.
- */
 @Slf4j
 public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
                 extends SyncLearning<O, A, AS, IDQN>

@@ -26,9 +26,6 @@ import org.nd4j.parameterserver.distributed.logic.RetransmissionHandler;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
-/**
- * @author raver119@gmail.com
- */
 @Deprecated
 public class DefaultRetransmissionHandler implements RetransmissionHandler {
     private VoidConfiguration configuration;

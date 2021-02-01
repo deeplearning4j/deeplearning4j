@@ -30,11 +30,6 @@ import org.deeplearning4j.nn.weights.*;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Utility functionality for Keras weight initializers
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class KerasInitilizationUtils {
 

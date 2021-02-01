@@ -48,10 +48,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
-/**
- * Created by Ugljesa Jovanovic (jovanovic.ugljesa@gmail.com) on 06/05/2018.
- * Reused instantiation tests from {@link FrozenLayerTest}
- */
 @Slf4j
 public class FrozenLayerWithBackpropTest extends BaseDL4JTest {
 

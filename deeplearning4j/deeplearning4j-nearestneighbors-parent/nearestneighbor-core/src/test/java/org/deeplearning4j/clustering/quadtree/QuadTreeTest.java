@@ -28,9 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by agibsonccc on 1/2/15.
- */
 public class QuadTreeTest extends BaseDL4JTest {
 
     @Test

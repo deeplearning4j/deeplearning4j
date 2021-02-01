@@ -33,21 +33,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * CSVLineSequenceRecordReader: Used for loading <b>univariance</b> (single valued) sequences from a CSV,
- * where each line in a CSV represents an independent sequence, and each sequence has exactly 1 value
- * per time step.<br>
- * For example, a CSV file with content:
- * <pre>
- * a,b,c
- * 1,2,3,4
- * </pre>
- * will produce two sequences, both with one value per time step; one of length 3 (values a, b, then c for the 3 time steps
- * respectively) and one of length 4 (values 1, 2, 3, then 4 for each of the 4 time steps respectively)
- *
- *
- * @author Alex Black
- */
 public class CSVLineSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader {
 
     /**

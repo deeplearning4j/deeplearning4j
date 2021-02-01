@@ -30,13 +30,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
-/**
- * Abstract base class for normalizers
- * that act upon {@link DataSet} instances
- * or iterators
- *
- * @author Ede Meijer
- */
 @EqualsAndHashCode(callSuper = false)
 public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer
                 implements DataNormalization {

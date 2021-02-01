@@ -37,9 +37,6 @@ import java.io.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by susaneraly on 7/2/16.
- */
 @RunWith(Parameterized.class)
 public class TestSerializationFloatToDouble extends BaseNd4jTest {
 

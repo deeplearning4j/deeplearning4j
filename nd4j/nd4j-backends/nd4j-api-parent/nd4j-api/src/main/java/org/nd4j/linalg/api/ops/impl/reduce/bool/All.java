@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseReduceBoolOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Boolean AND accumulation
- *
- * @author raver119@gmail.com
- */
 public class All extends BaseReduceBoolOp {
     public All(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);

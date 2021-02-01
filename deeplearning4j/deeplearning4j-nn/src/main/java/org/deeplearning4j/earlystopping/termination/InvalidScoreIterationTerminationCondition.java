@@ -22,7 +22,6 @@ package org.deeplearning4j.earlystopping.termination;
 
 import lombok.Data;
 
-/** Terminate training at this iteration if score is NaN or Infinite for the last minibatch */
 @Data
 public class InvalidScoreIterationTerminationCondition implements IterationTerminationCondition {
     @Override

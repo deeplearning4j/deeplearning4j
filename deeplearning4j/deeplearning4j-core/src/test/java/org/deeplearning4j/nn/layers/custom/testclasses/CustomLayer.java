@@ -37,9 +37,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Created by Alex on 26/08/2016.
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CustomLayer extends FeedForwardLayer {

@@ -22,11 +22,6 @@ package org.nd4j.linalg.api.memory.stash;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * This interface describe short-living storage, with pre-defined life time.
- *
- * @author raver119@gmail.com
- */
 public interface Stash<T extends Object> {
 
     boolean checkIfExists(T key);

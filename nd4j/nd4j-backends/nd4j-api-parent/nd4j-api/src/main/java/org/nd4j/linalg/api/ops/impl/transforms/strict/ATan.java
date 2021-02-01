@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Arc Tangent elementwise function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class ATan extends BaseTransformStrictOp {
     public ATan(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

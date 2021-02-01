@@ -24,27 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ServiceLoader;
 
-/**
- * Global context for class-loading in ND4J.
- * <p>Use {@code ND4JClassLoading} to define classloader for ND4J only! To define classloader used by
- * {@code Deeplearning4j} use class {@link org.deeplearning4j.common.config.DL4JClassLoading}.
- *
- * <p>Usage:
- * <pre>{@code
- * public class Application {
- *     static {
- *         ND4JClassLoading.setNd4jClassloaderFromClass(Application.class);
- *     }
- *
- *     public static void main(String[] args) {
- *     }
- * }
- * }</code>
- *
- * @see org.deeplearning4j.common.config.DL4JClassLoading
- *
- * @author Alexei KLENIN
- */
 @Slf4j
 public final class ND4JClassLoading {
     private static ClassLoader nd4jClassloader = Thread.currentThread().getContextClassLoader();

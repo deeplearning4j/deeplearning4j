@@ -29,13 +29,6 @@ import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.List;
 
-/**
- * Identity layer, passes data through unaltered. This is a pure utility layer needed to support
- * Keras Masking layer import. To do so we wrap this identity layer into a MaskZeroLayer and apply
- * masks accordingly.
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class IdentityLayer extends SameDiffLambdaLayer {
 

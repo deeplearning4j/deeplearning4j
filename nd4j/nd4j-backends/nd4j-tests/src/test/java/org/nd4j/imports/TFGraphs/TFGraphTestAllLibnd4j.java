@@ -39,9 +39,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * Created by susaneraly on 11/29/17.
- */
 @RunWith(Parameterized.class)
 @Slf4j
 @Ignore("AB 2019/05/21 - JVM Crashes - Issue #7657")

@@ -48,13 +48,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Basic implementation for
- * MemoryWorkspace interface,
- * further extended in corresponding backends
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Getter

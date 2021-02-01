@@ -50,42 +50,6 @@ import java.util.Iterator;
 import java.util.List;
 
 
-/**
- * Record reader dataset iterator. Takes a DataVec {@link RecordReader} as input, and handles the conversion to ND4J
- * DataSet objects as well as producing minibatches from individual records.<br>
- * <br>
- * Multiple constructors are available, and a {@link Builder} class is also available.<br>
- * <br>
- * Example 1: Image classification, batch size 32, 10 classes<br>
- * <pre>
- * {@code RecordReader rr = new ImageRecordReader(28,28,3); //28x28 RGB images
- *  rr.initialize(new FileSplit(new File("/path/to/directory")));
- *
- *  DataSetIterator iter = new RecordReaderDataSetIterator.Builder(rr, 32)
- *       //Label index (first arg): Always value 1 when using ImageRecordReader. For CSV etc: use index of the column
- *       //  that contains the label (should contain an integer value, 0 to nClasses-1 inclusive). Column indexes start
- *       // at 0. Number of classes (second arg): number of label classes (i.e., 10 for MNIST - 10 digits)
- *       .classification(1, nClasses)
- *       .preProcessor(new ImagePreProcessingScaler())      //For normalization of image values 0-255 to 0-1
- *       .build()
- * }
- * </pre>
- * <br>
- * <br>
- * Example 2: Multi-output regression from CSV, batch size 128<br>
- * <pre>
- * {@code RecordReader rr = new CsvRecordReader(0, ','); //Skip 0 header lines, comma separated
- *  rr.initialize(new FileSplit(new File("/path/to/myCsv.txt")));
- *
- *  DataSetIterator iter = new RecordReaderDataSetIterator.Builder(rr, 128)
- *       //Specify the columns that the regression labels/targets appear in. Note that all other columns will be
- *       // treated as features. Columns indexes start at 0
- *       .regression(labelColFrom, labelColTo)
- *       .build()
- * }
- * </pre>
- * @author Adam Gibson
- */
 @Slf4j
 public class RecordReaderDataSetIterator implements DataSetIterator {
     private static final String READER_KEY = "reader";

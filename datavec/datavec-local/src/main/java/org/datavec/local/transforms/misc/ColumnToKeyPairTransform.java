@@ -28,12 +28,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-/**
- * Extract out one writable, and map it to a pair with count 1.
- * Used to count the N most frequent values in a column,
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class ColumnToKeyPairTransform implements Function<List<Writable>, Pair<Writable, Long>> {
     private final int columnIndex;

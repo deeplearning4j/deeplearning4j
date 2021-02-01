@@ -28,9 +28,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
-/**
- * @author raver119@gmail.com
- */
 public class MultiPdsIterator implements Iterator<MultiDataSet> {
     protected final Iterator<PortableDataStream> iterator;
     protected final PortableDataStreamMDSCallback callback;

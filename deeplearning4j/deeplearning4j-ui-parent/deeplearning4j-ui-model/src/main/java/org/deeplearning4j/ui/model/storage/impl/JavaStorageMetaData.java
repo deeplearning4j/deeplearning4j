@@ -29,9 +29,6 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 
-/**
- * Created by Alex on 14/12/2016.
- */
 @Data
 public class JavaStorageMetaData implements StorageMetaData {
 

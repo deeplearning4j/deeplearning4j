@@ -30,12 +30,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.TimeZone;
 
-/**
- * TimeMetaData: Meta data for a date/time column.
- * <b>NOTE:</b> Time values are stored in epoch (millisecond) format.
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class TimeMetaData extends BaseColumnMetaData {

@@ -34,17 +34,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * This op allows us to (based on the passed in condition)
- * to return the element fulfilling the condition.
- * In numpy, this is equivalent to the boolean indexing like:
- * a[a > 2] which returns all elements in the array greater than 2
- * as a flat vector.
- *
- * This op interops with underlying libnd4j by leveraging the {@link Condition#condtionNum()}
- *
- * @author Adam Gibson
- */
 public class Choose extends DynamicCustomOp {
     private Condition condition;
 

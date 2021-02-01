@@ -20,12 +20,6 @@
 
 package org.datavec.api.io.serializers;
 
-/**
- * <p>
- * Encapsulates a {@link Serializer}/{@link Deserializer} pair.
- * </p>
- * @param <T>
- */
 public interface Serialization<T> {
 
     /**

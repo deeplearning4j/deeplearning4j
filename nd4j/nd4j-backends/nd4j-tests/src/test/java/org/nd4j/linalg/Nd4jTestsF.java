@@ -35,9 +35,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class Nd4jTestsF extends BaseNd4jTest {

@@ -59,11 +59,6 @@ import org.nd4j.linalg.inverse.InvertMatrix;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Functional interface for the different op classes
- *
- * @author Adam Gibson
- */
 public class Transforms {
 
 

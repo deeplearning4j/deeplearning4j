@@ -20,9 +20,6 @@
 
 package org.nd4j.autodiff.samediff;
 
-/**
- * A SameDiff lambda with only one output and no arguments.  Used in if condition creation (the condition and bodies).
- */
 public interface SameDiffNoArgSingleLambda {
     SDVariable define(SameDiff sameDiff);
 }

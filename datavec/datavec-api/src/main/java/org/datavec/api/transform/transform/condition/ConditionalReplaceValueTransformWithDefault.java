@@ -33,19 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Replace the value in a specified column with a 'yes' value, if a condition is satisfied/true.<br>
- * Replace the value of this same column with a 'no' value otherwise.
- * Note that the condition can be any generic condition, including on other column(s), different to the column
- * that will be modified if the condition is satisfied/true.<br>
- * <p>
- * <b>Note</b>: For sequences, this transform use the convention that each step in the sequence is passed to the condition,
- * and replaced (or not) separately (i.e., Condition.condition(List<Writable>) is used on each time step individually)
- *
- * @author Alex Black
- * @author kepricon
- * @see ConditionalReplaceValueTransform the version without a 'no' Value
- */
 @JsonIgnoreProperties({"filterColIdx"})
 @EqualsAndHashCode(exclude = {"filterColIdx"})
 @Data

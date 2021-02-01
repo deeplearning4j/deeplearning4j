@@ -27,10 +27,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRUCell;
 
-/**
- * The weight configuration of a GRU cell.  For {@link GRUCell}.
- *
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Builder

@@ -46,11 +46,6 @@ import java.util.List;
 import java.util.Random;
 
 
-/**
- * This test: generated a HTML file that you can open to view some example graphs.
- * The generated HTML file should appear in the deeplearning4j-ui-components directory (TestRendering.html)
- * *** NOTE: Open this in IntelliJ: Right click on file -> Open In Browser ***
- */
 public class TestRendering extends BaseDL4JTest {
 
     @Ignore

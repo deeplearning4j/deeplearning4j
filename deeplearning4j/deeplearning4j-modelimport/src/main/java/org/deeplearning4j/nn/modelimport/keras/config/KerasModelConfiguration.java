@@ -23,11 +23,6 @@ package org.deeplearning4j.nn.modelimport.keras.config;
 import lombok.Data;
 
 
-/**
- * Basic properties and field names of serialised Keras models.
- *
- * @author Max Pumperla
- */
 @Data
 public class KerasModelConfiguration {
 

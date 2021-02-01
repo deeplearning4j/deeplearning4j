@@ -27,12 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
-/**
- * Simple base class for List<List<Writable>></Writable>
- * implementations
- *
- * @author Alex Black
- */
 public abstract class AbstractWritableRecordBatch implements List<List<Writable>> {
 
 

@@ -30,12 +30,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
-/**
- * A sequence of records.
- * sequenceRecord() is used locally. sequenceRecord(URI uri, DataInputStream dataInputStream) is used for spark etc.
- *
- * @author Adam Gibson
- */
 public interface SequenceRecordReader extends RecordReader {
     /**
      * Returns a sequence record.

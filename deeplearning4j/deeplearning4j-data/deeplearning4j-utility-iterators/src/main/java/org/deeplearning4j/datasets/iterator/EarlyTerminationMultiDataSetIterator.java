@@ -24,11 +24,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * Builds an iterator that terminates once the number of minibatches returned with .next() is equal to a specified number.<br>
- * Note that a call to .next(num) is counted as a call to return a minibatch regardless of the value of num
- * This essentially restricts the data to this specified number of minibatches.
- */
 public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterator {
 
     private MultiDataSetIterator underlyingIterator;

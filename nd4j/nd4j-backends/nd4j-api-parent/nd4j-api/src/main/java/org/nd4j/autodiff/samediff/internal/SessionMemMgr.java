@@ -26,14 +26,6 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.io.Closeable;
 
-/**
- * SessionMemMgr - aka "Session Memory Manager" is responsible for allocating, managing, and deallocating memory used
- * during SameDiff execution.<br>
- * This interface allows different memory management strategies to be used, abstracted away from the actual graph
- * execution logic
- *
- * @author Alex Black
- */
 public interface SessionMemMgr extends Closeable {
 
     /**

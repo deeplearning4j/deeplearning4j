@@ -31,11 +31,6 @@ import org.deeplearning4j.spark.time.TimeSourceProvider;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A helper class for collecting stats in {@link ExecuteWorkerFlatMap} and {@link ExecuteWorkerMultiDataSetFlatMap}
- *
- * @author Alex Black
- */
 public class StatsCalculationHelper {
     private long methodStartTime;
     private long returnTime;

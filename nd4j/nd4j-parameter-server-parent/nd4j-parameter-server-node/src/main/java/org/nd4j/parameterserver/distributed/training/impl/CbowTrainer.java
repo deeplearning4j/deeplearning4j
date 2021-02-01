@@ -41,9 +41,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
     private static final float HS_MAX_EXP = 6.0f;

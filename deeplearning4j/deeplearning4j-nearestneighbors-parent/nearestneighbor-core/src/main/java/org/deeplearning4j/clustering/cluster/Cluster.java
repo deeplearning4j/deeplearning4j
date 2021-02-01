@@ -30,11 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * A cluster.
- *
- *
- */
 @Data
 public class Cluster implements Serializable {
 

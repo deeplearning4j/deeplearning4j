@@ -27,11 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Hamming distance (simple)
- *
- * @author raver119@gmail.com
- */
 public class HammingDistance extends BaseReduce3Op {
 
 

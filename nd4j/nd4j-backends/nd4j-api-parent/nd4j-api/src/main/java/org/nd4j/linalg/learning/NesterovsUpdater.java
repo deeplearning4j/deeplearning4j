@@ -30,13 +30,6 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * Nesterov's momentum.
- * Keep track of the previous layer's gradient
- * and use it as a way of updating the gradient.
- *
- * @author Adam Gibson
- */
 @Data
 public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
     public static final String V_STATE = "V";

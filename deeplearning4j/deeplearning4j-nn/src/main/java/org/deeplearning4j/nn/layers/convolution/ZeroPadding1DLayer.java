@@ -34,12 +34,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * Zero padding 1D layer for convolutional neural networks.
- * Allows padding to be done separately for left and right boundaries.
- *
- * @author Max Pumperla
- */
 public class ZeroPadding1DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer> {
 
     private int[] padding; // [padLeft, padRight]

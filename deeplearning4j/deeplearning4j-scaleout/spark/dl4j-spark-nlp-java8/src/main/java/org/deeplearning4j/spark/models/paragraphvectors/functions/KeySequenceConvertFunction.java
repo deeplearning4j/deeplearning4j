@@ -31,9 +31,6 @@ import scala.Tuple2;
 
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 public class KeySequenceConvertFunction extends BaseTokenizerFunction
                 implements Function<Tuple2<String, String>, Sequence<VocabWord>> {
 

@@ -43,26 +43,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
-/**
- * A DataSetIterator that provides data for training a CNN sentence classification models (though can of course
- * be used for general documents, not just sentences. The iterator handles conversion of sentences to training data for
- * CNNs, where each word is encoded using the word vector from the specified WordVectors (i.e., word2vec etc) model.<br>
- * Labels are encoded using a one-hot representation and are 2d - i.e., are intended to be used with a model that
- * utilizes global pooling.<br>
- * <p>
- * Specifically:<br>
- * - Features have shape [minibatchSize, 1, maxSentenceLength, wordVectorSize] OR [minibatchSize, 1, wordVectorSize, maxSentenceLength]
- *   depending on the configuration (for sentencesAlongHeight = true/false respectively)<br>
- * - Labels are a 2d array with shape [minibatchSize, numLabels].<br>
- *
- * Sentences and labels are provided by a {@link LabeledSentenceProvider} - different implementations of this provide different
- * ways of loading sentences/documents with labels - for example, from files, etc.
- * <p>
- * <b>Note</b>: With regard to labels to class index assignment, they are sorted alphabetically. To get the assigment/mapping,
- * use {@link #getLabels()} or {@link #getLabelClassMap()}
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class CnnSentenceDataSetIterator implements DataSetIterator {
     public enum UnknownWordHandling {

@@ -36,9 +36,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class CSVRecordWriterTest extends BaseND4JTest {
 
     @Before

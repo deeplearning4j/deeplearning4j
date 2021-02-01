@@ -20,11 +20,6 @@
 
 package org.nd4j.common.function;
 
-/**
- * A function that accepts a single input and returns no result
- *
- * @param <T> Type of the input
- */
 public interface Consumer<T> {
 
     /**

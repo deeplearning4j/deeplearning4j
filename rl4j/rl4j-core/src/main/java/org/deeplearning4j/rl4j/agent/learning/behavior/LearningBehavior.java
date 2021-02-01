@@ -25,13 +25,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.IUpdateRule;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.observation.Observation;
 
-/**
- * A generic {@link ILearningBehavior} that delegates the handling of experience to a {@link ExperienceHandler} and
- * the update logic to a {@link IUpdateRule}
- *
- * @param <ACTION> The type of the action
- * @param <EXPERIENCE_TYPE> The type of experience the ExperienceHandler needs
- */
 @Builder
 public class LearningBehavior<ACTION, EXPERIENCE_TYPE> implements ILearningBehavior<ACTION> {
 

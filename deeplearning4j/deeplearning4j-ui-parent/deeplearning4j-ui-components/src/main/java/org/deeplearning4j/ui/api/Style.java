@@ -33,12 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.awt.*;
 
-/**
- * Style defines things such as size of elements, an their margins.
- * Subclasses/concrete implementations have additional settings specific to the type of component
- *
- * @author Alex Black
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = StyleChart.class, name = "StyleChart"),
                 @JsonSubTypes.Type(value = StyleTable.class, name = "StyleTable"),

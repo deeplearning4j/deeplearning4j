@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.loss.bp.AbsoluteDifferenceLossBp;
 
 import java.util.List;
 
-/**
- * Absolute difference loss
- *
- * @author Alex Black
- */
 public class AbsoluteDifferenceLoss extends BaseLoss {
 
 

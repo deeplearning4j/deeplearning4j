@@ -25,13 +25,6 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * An index is a transform of objects augmented with a list and a reverse lookup table
- * for fast lookups.
- * Indices are used for vocabulary in many of the natural language processing
- * @author Adam Gibson
- *
- */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class Index implements Serializable {
 

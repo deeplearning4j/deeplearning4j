@@ -25,12 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataType;
 
-/**
- * This class is a opaque pointer to InteropDataBuffer, used for Java/C++ interop related to INDArray DataBuffer
- *
- * @author saudet
- * @author raver119@gmail.com
- */
 @Slf4j
 public class OpaqueDataBuffer extends Pointer {
     // TODO: make this configurable

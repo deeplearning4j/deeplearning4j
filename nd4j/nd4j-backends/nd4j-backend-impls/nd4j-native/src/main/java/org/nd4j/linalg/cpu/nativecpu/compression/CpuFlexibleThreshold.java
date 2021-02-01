@@ -31,16 +31,6 @@ import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-/**
- * This compression is very special case, and shouldn't be ever used outside of ParallelWrapper/ParameterServer implementation.
- * It encodes data as delta between zero and abs threshold.
- *
- * Unlike CpuThreshold codec, CpuFlexibleThreshold tries to target specified sparsity/density updates ratio via topN approach
- *
- * PLEASE NOTE: DO NOT USE THIS COMPRESSOR UNLESS YOU'RE 100% SURE WHAT YOU DO!
- *
- * @author raver119@gmail.com
- */
 public class CpuFlexibleThreshold extends CpuThreshold {
 
     public CpuFlexibleThreshold() {

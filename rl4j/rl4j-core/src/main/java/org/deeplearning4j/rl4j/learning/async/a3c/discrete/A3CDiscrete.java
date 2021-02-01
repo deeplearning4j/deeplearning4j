@@ -37,13 +37,6 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/23/16.
- * Training for A3C in the Discrete Domain
- * <p>
- * All methods are fully implemented as described in the
- * https://arxiv.org/abs/1602.01783 paper.
- */
 public abstract class A3CDiscrete<OBSERVATION extends Encodable> extends AsyncLearning<OBSERVATION, Integer, DiscreteSpace, IActorCritic> {
 
     @Getter

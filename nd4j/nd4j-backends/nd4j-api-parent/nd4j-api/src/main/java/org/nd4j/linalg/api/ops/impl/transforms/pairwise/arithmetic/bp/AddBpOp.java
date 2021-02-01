@@ -23,11 +23,6 @@ package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-/**
- * Addition backprop operation. Supports 'undoing' of auto broadcast as applied in add op forward pass
- *
- * @author Alex Black
- */
 public class AddBpOp extends BaseArithmeticBackpropOp {
 
     public AddBpOp() {}

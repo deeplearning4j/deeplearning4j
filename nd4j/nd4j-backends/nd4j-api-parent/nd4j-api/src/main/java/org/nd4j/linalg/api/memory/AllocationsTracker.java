@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.memory.enums.AllocationKind;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * This class provides methods for tracking different memory allocations
- * @author raver119@gmail.com
- */
 @Slf4j
 public class AllocationsTracker {
     private static final AllocationsTracker INSTANCE = new AllocationsTracker();

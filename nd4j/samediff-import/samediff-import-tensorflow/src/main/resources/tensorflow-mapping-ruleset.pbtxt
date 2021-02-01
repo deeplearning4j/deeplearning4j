@@ -2488,10 +2488,10 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
-    outputIntName: "fullUV"
     inputBooleanName: "compute_uv"
     inputBooleanName: "full_matrices"
     outputBooleanName: "computeUv"
+    outputBooleanName: "fullUV"
     inputToOutput {
       key: "computeUv"
       value: "compute_uv"
@@ -2507,9 +2507,9 @@ mappings {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
     outputIntName: "calcUV"
-    outputIntName: "fullUV"
     inputBooleanName: "compute_uv"
     inputBooleanName: "full_matrices"
+    outputBooleanName: "fullUV"
     inputToOutput {
       key: "calcUV"
       value: "compute_uv"
@@ -9118,7 +9118,7 @@ mappings {
     inputTensorName: "max_output_size"
     outputTensorName: "boxes"
     outputTensorName: "scales"
-    outputTensorName: "overlayThreshold"
+    outputTensorName: "iouThreshold"
     outputTensorName: "maxOutputSize"
     inputToOutput {
       key: "boxes"
@@ -9129,7 +9129,7 @@ mappings {
       value: "scores"
     }
     inputToOutput {
-      key: "overlayThreshold"
+      key: "iouThreshold"
       value: "iou_threshold"
     }
     inputToOutput {
@@ -9491,13 +9491,13 @@ mappings {
     inputBooleanName: "align_corners"
     inputBooleanName: "half_pixel_centers"
     outputBooleanName: "alignCorners"
-    outputBooleanName: "halfPixelCenters"
+    outputBooleanName: "halfPixelCenter"
     inputToOutput {
       key: "alignCorners"
       value: "align_corners"
     }
     inputToOutput {
-      key: "halfPixelCenters"
+      key: "halfPixelCenter"
       value: "half_pixel_centers"
     }
     ruleType: "attribute"
@@ -9931,7 +9931,7 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "iou_threshold"
     inputToOutput {
-      key: "overlayThreshold"
+      key: "iouThreshold"
       value: "iou_threshold"
     }
     ruleType: "attribute"
@@ -14690,12 +14690,6 @@ mappings {
     ruleType: "tensor"
     inputFrameworkOpName: "LogSoftmax"
   }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    ruleType: "attribute"
-    inputFrameworkOpName: "LogSoftmax"
-  }
 }
 mappings {
   frameworkName: "tensorflow"
@@ -14784,7 +14778,6 @@ mappings {
     functionName: "ndarrayinputtonumericalattribute"
     outputIntName: "maxOutputSize"
     outputDoubleName: "overlapThreshold"
-    outputDoubleName: "scoreThreshold"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"

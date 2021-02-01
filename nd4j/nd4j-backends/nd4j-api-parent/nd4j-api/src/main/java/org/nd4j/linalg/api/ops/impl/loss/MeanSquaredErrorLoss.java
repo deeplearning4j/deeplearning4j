@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.loss.bp.MeanSquaredErrorLossBp;
 
 import java.util.List;
 
-/**
- * Mean squared error loss
- *
- * @author Alex Black
- */
 public class MeanSquaredErrorLoss extends BaseLoss {
 
 

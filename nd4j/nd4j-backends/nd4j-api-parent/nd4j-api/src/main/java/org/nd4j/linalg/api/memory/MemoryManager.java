@@ -27,10 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
-/**
- *
- * @author raver119@gmail.com
- */
 public interface MemoryManager {
 
     MemoryWorkspace getCurrentWorkspace();

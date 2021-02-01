@@ -35,9 +35,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static junit.framework.TestCase.assertTrue;
 
-/**
- * This test suit contains tests related to Half precision and RNG
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class HalfTests extends BaseNd4jTest {

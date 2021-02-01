@@ -37,9 +37,6 @@ import java.io.FileReader;
 import java.util.Collections;
 import java.util.Iterator;
 
-/**
- * @author raver119@gmail.com
- */
 public class SharedFlatMapPathsMDS<R extends TrainingResult> implements FlatMapFunction<Iterator<String>, R> {
 
     protected final SharedTrainingWorker worker;

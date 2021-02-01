@@ -24,9 +24,6 @@ import com.atilika.kuromoji.dict.Dictionary;
 import com.atilika.kuromoji.ipadic.compile.DictionaryEntry;
 import com.atilika.kuromoji.viterbi.ViterbiNode;
 
-/**
- * IPADIC token produced by the IPADIC tokenizer with various morphological features
- */
 public class Token extends TokenBase {
 
     public Token(int wordId, String surface, ViterbiNode.Type type, int position, Dictionary dictionary) {

@@ -32,11 +32,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Abs elementwise function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class Abs extends BaseTransformSameOp {
 

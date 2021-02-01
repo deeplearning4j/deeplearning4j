@@ -33,10 +33,6 @@ import org.nd4j.common.primitives.Pair;
 import java.io.Serializable;
 import java.util.Collection;
 
-/**
- * Convex optimizer.
- * @author Adam Gibson
- */
 public interface ConvexOptimizer extends Serializable {
     /**
      * The score for the optimizer so far

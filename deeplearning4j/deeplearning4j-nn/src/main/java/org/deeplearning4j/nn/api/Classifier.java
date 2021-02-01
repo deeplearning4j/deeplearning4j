@@ -27,11 +27,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.List;
 
 
-/**
- * A classifier (this is for supervised learning)
- *
- * @author Adam Gibson
- */
 public interface Classifier extends Model {
 
 

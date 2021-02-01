@@ -47,15 +47,6 @@ import java.util.concurrent.TimeUnit;
 import org.bytedeco.tensorflow.*;
 import static org.bytedeco.tensorflow.global.tensorflow.*;
 
-/**
- * Runs a tensorflow session based on zero copy
- * {@link INDArray} memory replicated to tensorflow.
- *
- * {@link INDArray} is used to hold the memory
- * while tensorflow's c bindings are  used for running the graph.
- *
- * @author Adam Gibson
- */
 @Slf4j
 @NoArgsConstructor
 public class GraphRunner implements Closeable {

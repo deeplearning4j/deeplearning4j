@@ -45,9 +45,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
-/**
- * Created by Alex on 18/01/2017.
- */
 public class GlobalPoolingMaskingTests extends BaseDL4JTest {
 
     @Test

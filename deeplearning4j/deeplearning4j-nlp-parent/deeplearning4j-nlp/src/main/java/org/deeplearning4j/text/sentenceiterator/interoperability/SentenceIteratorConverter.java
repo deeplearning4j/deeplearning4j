@@ -31,11 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-/**
- * Simple class providing compatibility between SentenceIterator/LabelAwareSentenceIterator and LabelAwareIterator
- *
- * @author raver119@gmail.com
- */
 public class SentenceIteratorConverter implements LabelAwareIterator {
     private SentenceIterator backendIterator;
     private LabelsSource generator;

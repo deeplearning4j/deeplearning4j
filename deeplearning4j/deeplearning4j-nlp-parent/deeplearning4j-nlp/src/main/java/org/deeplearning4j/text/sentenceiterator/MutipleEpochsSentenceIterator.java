@@ -24,13 +24,6 @@ import lombok.NonNull;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This SentenceIterator implemenation wraps existing sentence iterator, and resets it numEpochs times
- *
- * This class is usable for tests purposes mostly.
- *
- * @author raver119@gmail.com
- */
 public class MutipleEpochsSentenceIterator implements SentenceIterator {
     private SentenceIterator iterator;
     private int numEpochs;

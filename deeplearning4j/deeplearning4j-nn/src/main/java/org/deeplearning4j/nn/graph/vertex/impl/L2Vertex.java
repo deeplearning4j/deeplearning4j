@@ -37,14 +37,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * L2Vertex calculates the L2 least squares error of two inputs.
- *
- * For example, in Triplet Embedding you can input an anchor and a pos/neg class and use two parallel
- * L2 vertices to calculate two real numbers which can be fed into a LossLayer to calculate TripletLoss.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class L2Vertex extends BaseGraphVertex {
     private double eps;
 

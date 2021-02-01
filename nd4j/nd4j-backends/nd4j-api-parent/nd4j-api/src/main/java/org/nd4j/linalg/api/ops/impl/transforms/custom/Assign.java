@@ -37,9 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Assign op: x = y, with broadcast as required
- */
 public class Assign extends DynamicCustomOp {
 
     public Assign(){

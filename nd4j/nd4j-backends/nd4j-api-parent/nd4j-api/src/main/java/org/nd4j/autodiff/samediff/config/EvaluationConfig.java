@@ -39,11 +39,6 @@ import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * Configuration for a {@link SameDiff} evaluation operation.
- *
- * Used in {@link SameDiff#evaluate()}.
- */
 @Getter
 @Setter
 public class EvaluationConfig {

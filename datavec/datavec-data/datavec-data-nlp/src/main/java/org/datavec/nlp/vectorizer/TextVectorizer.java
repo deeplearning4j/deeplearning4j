@@ -35,12 +35,6 @@ import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.util.Collection;
 
-/**
- * Baseline text vectorizer that includes some common elements
- * to text analysis such as the tokenizer factory
- *
- * @author Adam Gibson
- */
 public abstract class TextVectorizer<VECTOR_TYPE> implements Vectorizer<VECTOR_TYPE> {
 
     protected TokenizerFactory tokenizerFactory;

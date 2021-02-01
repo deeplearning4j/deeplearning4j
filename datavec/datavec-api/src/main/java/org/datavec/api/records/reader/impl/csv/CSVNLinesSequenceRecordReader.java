@@ -36,16 +36,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-/**
- * A CSV Sequence record reader where:<br>
- * (a) all time series are in a single file<br>
- * (b) each time series is of the same length (specified in constructor)<br>
- * (c) no delimiter is used between time series<br>
- *
- * For example, with nLinesPerSequence=10, lines 0 to 9 are the first time series, 10 to 19 are the second, and so on.
- *
- * @author Alex Black
- */
 public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader {
 
     public static final String LINES_PER_SEQUENCE = NAME_SPACE + ".nlinespersequence";

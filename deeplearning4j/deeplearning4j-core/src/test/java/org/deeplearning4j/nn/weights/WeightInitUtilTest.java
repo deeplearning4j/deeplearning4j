@@ -32,9 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by nyghtowl on 11/14/15.
- */
 public class WeightInitUtilTest extends BaseDL4JTest {
     protected int fanIn = 3;
     protected int fanOut = 2;

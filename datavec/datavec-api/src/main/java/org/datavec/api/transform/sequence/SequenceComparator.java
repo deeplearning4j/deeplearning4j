@@ -29,9 +29,6 @@ import java.io.Serializable;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Compare the time steps of a sequence
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface SequenceComparator extends Comparator<List<Writable>>, Serializable {

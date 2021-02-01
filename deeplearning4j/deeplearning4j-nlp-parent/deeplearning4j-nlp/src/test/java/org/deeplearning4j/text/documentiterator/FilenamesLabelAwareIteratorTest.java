@@ -34,9 +34,6 @@ import java.util.List;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author raver119@gmail.com
- */
 public class FilenamesLabelAwareIteratorTest extends BaseDL4JTest {
 
     @Rule

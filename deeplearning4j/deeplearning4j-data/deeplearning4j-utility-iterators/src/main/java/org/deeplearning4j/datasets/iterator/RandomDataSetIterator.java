@@ -22,13 +22,6 @@ package org.deeplearning4j.datasets.iterator;
 
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * RandomDataSetIterator: Generates random values (or zeros, ones, integers, etc) according to some distribution.<br>
- * The type of values produced can be specified by the {@link Values} enumeration.<br>
- * Note: This is typically used for testing, debugging and benchmarking purposes.
- *
- * @author Alex Black
- */
 public class RandomDataSetIterator extends MultiDataSetWrapperIterator {
 
     public enum Values {RANDOM_UNIFORM, RANDOM_NORMAL, ONE_HOT, ZEROS, ONES, BINARY, INTEGER_0_10, INTEGER_0_100, INTEGER_0_1000,

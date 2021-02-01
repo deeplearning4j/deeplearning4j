@@ -29,12 +29,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Since VoidParameterServer assumes nearly endless asynchronous data flow, we'll use Clipboard approach to aggregate
- * different batches of aggregates coming in un-ordered.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class Clipboard {

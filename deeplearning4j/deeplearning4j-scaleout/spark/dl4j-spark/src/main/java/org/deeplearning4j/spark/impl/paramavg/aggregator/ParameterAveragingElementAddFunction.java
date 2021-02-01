@@ -30,11 +30,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
 
-/**
- * Add function for parameter averaging
- *
- * @author Alex Black
- */
 public class ParameterAveragingElementAddFunction implements
                 Function2<ParameterAveragingAggregationTuple, ParameterAveragingTrainingResult, ParameterAveragingAggregationTuple> {
 

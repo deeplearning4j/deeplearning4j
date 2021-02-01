@@ -28,9 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.List;
 
-/**If x is input: output is x*(1-x)
- * @author Alex Black
- */
 public class TimesOneMinus extends BaseTransformSameOp {
     public TimesOneMinus(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

@@ -20,11 +20,6 @@
 
 package org.datavec.api.writable;
 
-/**
- * A Writable to basically wrap an array of sorts.
- *
- * @author saudet
- */
 public abstract class ArrayWritable implements Writable {
 
     public abstract long length();

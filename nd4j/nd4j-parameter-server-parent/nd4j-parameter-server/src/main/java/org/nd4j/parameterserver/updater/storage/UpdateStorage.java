@@ -22,13 +22,6 @@ package org.nd4j.parameterserver.updater.storage;
 
 import org.nd4j.aeron.ipc.NDArrayMessage;
 
-/**
- * An interface for storing parameter server updates.
- * This is used by an {@link org.nd4j.parameterserver.updater.ParameterServerUpdater}
- * to handle storage of ndarrays
- *
- * @author Adam Gibson
- */
 public interface UpdateStorage {
 
     /**

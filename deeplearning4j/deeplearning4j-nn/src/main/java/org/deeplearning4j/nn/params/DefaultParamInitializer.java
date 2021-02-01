@@ -31,10 +31,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-/**
- * Static weight initializer with just a weight matrix and a bias
- * @author Adam Gibson
- */
 public class DefaultParamInitializer implements ParamInitializer {
 
     private static final DefaultParamInitializer INSTANCE = new DefaultParamInitializer();

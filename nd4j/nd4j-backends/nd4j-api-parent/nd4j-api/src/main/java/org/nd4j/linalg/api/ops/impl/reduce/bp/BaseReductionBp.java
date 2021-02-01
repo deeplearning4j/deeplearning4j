@@ -32,9 +32,6 @@ import java.util.Collections;
 import java.util.List;
 
 
-/**
- * @author Alex Black
- */
 @NoArgsConstructor
 public abstract class BaseReductionBp extends DynamicCustomOp {
 

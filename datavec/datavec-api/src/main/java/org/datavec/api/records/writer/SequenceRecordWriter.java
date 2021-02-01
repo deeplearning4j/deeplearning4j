@@ -30,11 +30,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 
-/**
- *  Sequence record writer
- *
- *  @author Alex Black
- */
 public interface SequenceRecordWriter extends Closeable, Configurable {
     String APPEND = "org.datavec.api.record.writer.append";
 

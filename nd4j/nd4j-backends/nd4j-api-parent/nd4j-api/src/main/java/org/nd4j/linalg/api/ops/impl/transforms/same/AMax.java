@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MinBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Calculate the absolute minimum over a vector
- *
- * @author raver119@gmail.com
- */
 public class AMax extends BaseTransformSameOp  {
 
     public AMax(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {

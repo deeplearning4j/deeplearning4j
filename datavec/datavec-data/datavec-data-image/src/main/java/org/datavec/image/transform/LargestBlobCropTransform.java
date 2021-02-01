@@ -31,16 +31,6 @@ import org.bytedeco.opencv.opencv_core.*;
 
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
-/**
- * crop images based on it's largest blob. Calls internally
- * {@link org.bytedeco.opencv.global.opencv_imgproc#blur(Mat, Mat, Size)}
- * {@link org.bytedeco.opencv.global.opencv_imgproc#Canny(Mat ,Mat, double, double)}
- * {@link org.bytedeco.opencv.global.opencv_imgproc#threshold(Mat, Mat, double, double, int)}
- * {@link org.bytedeco.opencv.global.opencv_imgproc#findContours(Mat, MatVector, Mat, int, int)}
- * {@link org.bytedeco.opencv.global.opencv_imgproc#contourArea(Mat, boolean)}
- *
- * @author antdood
- */
 @Data
 public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
 

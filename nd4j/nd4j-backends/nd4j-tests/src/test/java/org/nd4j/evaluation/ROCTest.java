@@ -39,9 +39,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 04/11/2016.
- */
 public class ROCTest extends BaseNd4jTest {
 
     public ROCTest(Nd4jBackend backend) {

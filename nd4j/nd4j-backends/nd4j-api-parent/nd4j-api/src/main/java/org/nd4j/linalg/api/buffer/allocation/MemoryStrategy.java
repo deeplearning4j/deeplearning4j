@@ -23,14 +23,6 @@ package org.nd4j.linalg.api.buffer.allocation;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
-/**
- *
- * An allocation strategy handles allocating
- * and freeing memory for the gpu
- * (usually relative to the compute capabilities of the gpu)
- *
- * @author Adam Gibson
- */
 public interface MemoryStrategy {
 
 

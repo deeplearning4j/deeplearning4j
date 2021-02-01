@@ -32,12 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * This class serves as Counter for SparkSequenceVectors vocab creation + for distributed parameters server organization
- * Ip addresses extracted here will be used for ParamServer shards selection, and won't be used for anything else
- *
- * @author raver119@gmail.com
- */
 @Data
 @Slf4j
 public class ExtraCounter<E> extends Counter<E> {

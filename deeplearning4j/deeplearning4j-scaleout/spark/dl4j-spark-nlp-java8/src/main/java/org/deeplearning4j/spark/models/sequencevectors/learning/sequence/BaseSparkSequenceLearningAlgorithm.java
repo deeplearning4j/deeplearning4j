@@ -30,9 +30,6 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.models.sequencevectors.learning.SparkSequenceLearningAlgorithm;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BaseSparkSequenceLearningAlgorithm implements SparkSequenceLearningAlgorithm {
     protected transient VocabCache<ShallowSequenceElement> vocabCache;
     protected transient VectorsConfiguration vectorsConfiguration;

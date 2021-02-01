@@ -73,12 +73,6 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Main class for training ComputationGraph networks using Spark.
- * Also used for performing distributed evaluation and inference on these networks
- *
- * @author Alex Black
- */
 @Slf4j
 public class SparkComputationGraph extends SparkListenable {
     public static final int DEFAULT_ROC_THRESHOLD_STEPS = 32;

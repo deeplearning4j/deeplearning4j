@@ -33,9 +33,6 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A single test case for integration tests
- */
 @Data
 public abstract class TestCase {
 

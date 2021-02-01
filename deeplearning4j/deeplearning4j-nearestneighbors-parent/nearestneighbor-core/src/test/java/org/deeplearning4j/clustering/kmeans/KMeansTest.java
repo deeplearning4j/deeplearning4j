@@ -35,9 +35,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 7/2/17.
- */
 public class KMeansTest extends BaseDL4JTest {
 
     private boolean[] useKMeansPlusPlus = {true, false};

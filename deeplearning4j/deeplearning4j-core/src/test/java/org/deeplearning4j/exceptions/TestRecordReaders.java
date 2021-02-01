@@ -40,9 +40,6 @@ import java.util.Collection;
 import static junit.framework.TestCase.fail;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 14/11/2016.
- */
 public class TestRecordReaders extends BaseDL4JTest {
 
     @Test

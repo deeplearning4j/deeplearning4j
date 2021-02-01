@@ -29,14 +29,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 
-/**
- *  Autoencoder.
- * Add Gaussian noise to input and learn
- * a reconstruction function.
- *
- * @author Adam Gibson
- *
- */
 public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.AutoEncoder> {
 
     public AutoEncoder(NeuralNetConfiguration conf, DataType dataType) {

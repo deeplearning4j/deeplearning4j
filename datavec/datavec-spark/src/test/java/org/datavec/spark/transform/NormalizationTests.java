@@ -43,9 +43,6 @@ import java.util.List;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 10/22/16.
- */
 public class NormalizationTests extends BaseSparkTest {
 
 

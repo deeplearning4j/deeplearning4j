@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Created by huitseeker on 3/6/17. */
 @AllArgsConstructor
 public class ExtractKeysFunction implements Function<List<Writable>, Pair<List<Writable>, List<Writable>>> {
     private int[] columnIndexes;

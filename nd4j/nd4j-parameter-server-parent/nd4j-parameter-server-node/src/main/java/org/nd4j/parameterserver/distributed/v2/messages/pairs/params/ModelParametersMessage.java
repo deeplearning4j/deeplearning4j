@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.v2.messages.ResponseMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
 
-/**
- * This message holds INDArray with model parameters
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public final class ModelParametersMessage extends BaseINDArrayMessage implements ResponseMessage {
     private static final long serialVersionUID = 1L;

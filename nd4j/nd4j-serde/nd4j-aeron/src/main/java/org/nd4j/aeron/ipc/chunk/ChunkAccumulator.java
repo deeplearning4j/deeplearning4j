@@ -22,12 +22,6 @@ package org.nd4j.aeron.ipc.chunk;
 
 import org.nd4j.aeron.ipc.NDArrayMessage;
 
-/**
- * Accumulate {@link NDArrayMessageChunk} and reassemble them in to
- * {@link NDArrayMessage}.
- *
- * @author Aadm Gibson
- */
 public interface ChunkAccumulator {
 
     /**

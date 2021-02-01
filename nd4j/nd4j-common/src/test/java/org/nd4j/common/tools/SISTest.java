@@ -28,14 +28,6 @@ import org.nd4j.common.tools.SIS;
 
 import static org.junit.Assert.*;
 
-/**
- *
- *
- * 
- *
- * @author clavvis
- */
-
 public class SISTest {
 	//
 	@Rule

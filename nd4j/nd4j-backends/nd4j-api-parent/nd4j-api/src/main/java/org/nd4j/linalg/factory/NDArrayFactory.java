@@ -33,11 +33,6 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import java.io.File;
 import java.util.*;
 
-/**
- * Creation of ndarrays via classpath discovery.
- *
- * @author Adam Gibson
- */
 public interface NDArrayFactory {
 
 

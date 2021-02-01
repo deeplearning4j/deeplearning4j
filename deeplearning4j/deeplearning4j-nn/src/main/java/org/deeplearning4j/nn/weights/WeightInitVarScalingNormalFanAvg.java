@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Truncated aussian distribution with mean 0, variance 1.0/((fanIn + fanOut)/2)
- *
- * @author Adam Gibson
- */
 @Data
 @NoArgsConstructor
 public class WeightInitVarScalingNormalFanAvg implements IWeightInit {

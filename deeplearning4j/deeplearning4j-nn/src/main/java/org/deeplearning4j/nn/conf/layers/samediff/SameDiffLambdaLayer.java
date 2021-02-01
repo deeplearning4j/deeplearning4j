@@ -27,13 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
-/**
- * SameDiffLambdaLayer is defined to be used as the base class for implementing lambda layers using SameDiff<br>
- * Lambda layers are layers without parameters - and as a result, have a much simpler API - users need only
- * extend SameDiffLambdaLayer and implement a single method
- *
- * @author Alex Black
- */
 public abstract class SameDiffLambdaLayer extends SameDiffLayer {
 
     /**

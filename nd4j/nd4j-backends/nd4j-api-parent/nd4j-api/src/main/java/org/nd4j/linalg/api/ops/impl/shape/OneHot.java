@@ -36,9 +36,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Created by susaneraly on 3/14/18.
- */
 public class OneHot extends DynamicCustomOp {
     public static final DataType DEFAULT_DTYPE = DataType.FLOAT;
 

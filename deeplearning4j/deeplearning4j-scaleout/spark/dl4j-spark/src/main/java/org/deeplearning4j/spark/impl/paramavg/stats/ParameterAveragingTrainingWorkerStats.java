@@ -34,11 +34,6 @@ import org.deeplearning4j.spark.time.TimeSourceProvider;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * Statistics collected by {@link org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingWorker} instances
- *
- * @author Alex Black
- */
 @Data
 public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats {
 

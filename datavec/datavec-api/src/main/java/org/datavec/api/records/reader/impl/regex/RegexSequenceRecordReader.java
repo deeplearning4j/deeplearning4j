@@ -45,21 +45,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * RegexSequenceRecordReader: Read an entire file (as a sequence), one line at a time and
- * split each line into fields using a regex.
- * Specifically, we are using {@link Pattern} and {@link Matcher} to do the splitting into groups
- *
- * Example: Data in format "2016-01-01 23:59:59.001 1 DEBUG First entry message!"<br>
- * using regex String "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)"<br>
- * would be split into 4 Text writables: ["2016-01-01 23:59:59.001", "1", "DEBUG", "First entry message!"]<br>
- *
- * Note: RegexSequenceRecordReader supports multiple error handling modes, via {@link LineErrorHandling}. Invalid
- * lines that don't match the provided regex can result in an exception (FailOnInvalid), can be skipped silently (SkipInvalid),
- * or skip invalid but log a warning (SkipInvalidWithWarning)
- *
- * @author Alex Black
- */
 public class RegexSequenceRecordReader extends FileRecordReader implements SequenceRecordReader {
     public static final String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
     public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;

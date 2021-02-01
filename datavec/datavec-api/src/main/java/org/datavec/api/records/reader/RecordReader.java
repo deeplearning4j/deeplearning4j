@@ -36,11 +36,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Record reader
- *
- * @author Adam Gibson
- */
 public interface RecordReader extends Closeable, Serializable, Configurable {
 
     String NAME_SPACE = RecordReader.class.getName();

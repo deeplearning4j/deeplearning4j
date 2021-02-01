@@ -22,13 +22,6 @@ package org.datavec.nlp.tokenization.tokenizer;
 
 import java.util.List;
 
-/**
- * A representation of a tokenizer.
- * Different applications may require 
- * different kind of tokenization (say rules based vs more formal NLP approaches)
- * @author Adam Gibson
- *
- */
 public interface Tokenizer {
 
     /**

@@ -33,11 +33,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Initialize deconv3d parameters.
- *
- * @author Alex Black
- */
 public class Deconvolution3DParamInitializer extends ConvolutionParamInitializer {
 
     private static final Deconvolution3DParamInitializer INSTANCE = new Deconvolution3DParamInitializer();

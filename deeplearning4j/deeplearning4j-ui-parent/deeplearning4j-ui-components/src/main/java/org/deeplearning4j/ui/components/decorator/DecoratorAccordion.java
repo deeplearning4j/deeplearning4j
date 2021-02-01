@@ -30,12 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Accordion decorator component: i.e., create an accordion (i.e., collapseable componenet) with multiple sub-components internally
- * Current implementation supports only one accordion section
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)

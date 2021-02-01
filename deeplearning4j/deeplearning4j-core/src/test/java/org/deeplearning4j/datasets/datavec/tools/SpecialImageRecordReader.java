@@ -37,10 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SpecialImageRecordReader extends ImageRecordReader {
     private AtomicInteger counter = new AtomicInteger(0);

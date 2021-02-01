@@ -25,9 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BasicStash<T extends Object> implements Stash<T> {
     protected Map<T, INDArray> stash = new ConcurrentHashMap<>();
 

@@ -29,11 +29,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Utility for serializing and unserializing {@link Normalizer} instances.
- *
- * @author Ede Meijer
- */
 public class NormalizerSerializer {
 
     private static final String HEADER = "NORMALIZER";

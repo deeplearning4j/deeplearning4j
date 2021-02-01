@@ -24,17 +24,6 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * This interface describes TAD caching.
- *
- * While working with tensors, all operations are happening on some demensions,
- * and since training tasks are repetitive, we can pre-calculate TAD shapes and offsets once,
- * and reuse them later during whole training process.
- *
- *
- *
- * @author raver119@gmail.com
- */
 public interface TADManager {
 
     /**

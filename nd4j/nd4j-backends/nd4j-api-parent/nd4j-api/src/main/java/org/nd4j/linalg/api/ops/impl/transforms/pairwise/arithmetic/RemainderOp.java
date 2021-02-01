@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformAnyOp;
 
 import java.util.List;
 
-/**
- * Floating-point remainder operation
- *
- * @author raver119@gmail.com
- */
 public class RemainderOp extends BaseTransformAnyOp {
     public RemainderOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

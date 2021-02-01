@@ -36,14 +36,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
 
-/**
- *
- * This is a TEMPORARY class for implementing global pooling with masking. Note that it may be removed in a future release,
- * if and when these approaches are formally implemented as native operations in ND4J. Consequently, this should not
- * be considered part of the public API.
- *
- * @author Alex Black
- */
 public class MaskedReductionUtil {
 
     private static final int[] CNN_DIM_MASK_H = new int[] {0, 2};

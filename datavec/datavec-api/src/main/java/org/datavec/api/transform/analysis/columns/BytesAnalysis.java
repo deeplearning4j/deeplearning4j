@@ -25,11 +25,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 
-/**
- * Analysis for bytes (byte[]) columns
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 @NoArgsConstructor //For Jackson deserialization

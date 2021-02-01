@@ -45,9 +45,6 @@ import java.util.List;
 import java.util.Random;
 
 
-/**
- * Created by agibsonccc on 1/23/15.
- */
 public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable {
     protected transient JavaSparkContext sc;
     protected transient INDArray labels;

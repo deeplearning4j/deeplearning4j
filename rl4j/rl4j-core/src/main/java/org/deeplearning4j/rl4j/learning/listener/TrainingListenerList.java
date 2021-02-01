@@ -27,11 +27,6 @@ import org.deeplearning4j.rl4j.util.IDataManager;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * The base logic to notify training listeners with the different training events.
- *
- * @author Alexandre Boulanger
- */
 public class TrainingListenerList {
     protected final List<TrainingListener> listeners = new ArrayList<>();
 

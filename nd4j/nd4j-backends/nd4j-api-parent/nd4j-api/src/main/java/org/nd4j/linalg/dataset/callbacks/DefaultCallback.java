@@ -25,13 +25,6 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * This callback ensures that memory on device is up-to-date with host memory.
- *
- * PLEASE NOTE: This callback is used by default, no need to set it explicitly in AsyncDataSet iterators
- *
- * @author raver119@gmail.com
- */
 public class DefaultCallback implements DataSetCallback {
     @Override
     public void call(DataSet dataSet) {

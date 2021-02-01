@@ -44,11 +44,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
- *
- * Standard implementation of ActorCriticCompGraph
- */
 @Deprecated
 public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> {
 

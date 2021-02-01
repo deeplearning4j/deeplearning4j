@@ -24,9 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Iterator;
 
-/**
- * @author Christian Weilbach
- */
 public class FirstAxisIterator implements Iterator<Object> {
     private INDArray iterateOver;
     private int i = 0;

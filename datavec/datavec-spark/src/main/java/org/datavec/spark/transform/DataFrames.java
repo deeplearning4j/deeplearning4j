@@ -49,12 +49,6 @@ import static org.apache.spark.sql.functions.avg;
 import static org.apache.spark.sql.functions.col;
 
 
-/**
- * Namespace for datavec
- * dataframe interop
- *
- * @author Adam Gibson
- */
 public class DataFrames {
 
     public static final String SEQUENCE_UUID_COLUMN = "__SEQ_UUID";

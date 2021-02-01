@@ -31,9 +31,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
-/**
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

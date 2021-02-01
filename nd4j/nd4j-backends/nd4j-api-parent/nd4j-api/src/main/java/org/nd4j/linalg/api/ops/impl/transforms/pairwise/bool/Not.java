@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Boolean AND pairwise transform
- *
- * @author raver119@gmail.com
- */
 public class Not extends BaseTransformBoolOp {
 
     protected double comparable = 0.0;

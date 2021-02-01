@@ -30,11 +30,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.List;
 
-/**
- * Interface for user interface server
- *
- * @author Alex Black
- */
 public interface UIServer {
 
     /**

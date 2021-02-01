@@ -29,7 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Alexandre Boulanger
  */
-// TODO: Remove Encodable
 public class Observation implements Encodable {
 
     /**

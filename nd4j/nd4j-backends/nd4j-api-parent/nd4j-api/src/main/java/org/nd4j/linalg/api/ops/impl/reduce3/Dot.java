@@ -27,11 +27,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.DotBp;
 
 import java.util.List;
 
-/**
- * Dot product.
- *
- * @author Adam Gibson
- */
 public class Dot extends BaseReduce3Op {
 
     public Dot(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {

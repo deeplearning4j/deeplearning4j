@@ -34,11 +34,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * An implementation of the CodecRecordReader that uses JavaCV and FFmpeg.
- *
- * @author saudet
- */
 public class NativeCodecRecordReader extends BaseCodecRecordReader {
 
     private OpenCVFrameConverter.ToMat converter;

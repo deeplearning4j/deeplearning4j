@@ -18,7 +18,6 @@
  *  *****************************************************************************
  */
 
-/* ---------- Variances chart selection ---------- */
 var selectedChart = "stdevActivations";
 function selectStdevChart(fieldName) {
     selectedChart = fieldName;

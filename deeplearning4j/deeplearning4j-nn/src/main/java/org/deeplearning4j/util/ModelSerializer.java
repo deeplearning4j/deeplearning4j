@@ -55,11 +55,6 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
-/**
- * Utility class suited to save/restore neural net models
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class ModelSerializer {
 

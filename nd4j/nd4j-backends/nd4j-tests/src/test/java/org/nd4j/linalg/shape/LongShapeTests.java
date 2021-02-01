@@ -32,11 +32,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-/**
- * This class contains tests for new Long shapes
- * @author raver119@gmail.com
- */
-
 @RunWith(Parameterized.class)
 public class LongShapeTests extends BaseNd4jTest {
 

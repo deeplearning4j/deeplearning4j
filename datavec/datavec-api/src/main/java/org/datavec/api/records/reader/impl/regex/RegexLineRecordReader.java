@@ -38,17 +38,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * RegexLineRecordReader: Read a file, one line at a time, and split it into fields using a regex.
- * Specifically, we are using {@link java.util.regex.Pattern} and {@link java.util.regex.Matcher}.<br>
- * To load an entire file using a
- *
- * Example: Data in format "2016-01-01 23:59:59.001 1 DEBUG First entry message!"<br>
- * using regex String "(\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3}) (\\d+) ([A-Z]+) (.*)"<br>
- * would be split into 4 Text writables: ["2016-01-01 23:59:59.001", "1", "DEBUG", "First entry message!"]
- *
- * @author Alex Black
- */
 public class RegexLineRecordReader extends LineRecordReader {
     public final static String SKIP_NUM_LINES = NAME_SPACE + ".skipnumlines";
 

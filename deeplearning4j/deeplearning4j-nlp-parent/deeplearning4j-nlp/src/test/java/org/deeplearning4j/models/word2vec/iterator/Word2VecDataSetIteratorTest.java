@@ -45,9 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertArrayEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
 
     @Override

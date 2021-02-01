@@ -46,9 +46,6 @@ import java.util.UUID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeNotNull;
 
-/**
- * Created by agibsonccc on 6/12/17.
- */
 public class DataVecTransformClientTest {
     private static CSVSparkTransformServer server;
     private static int port = getAvailablePort();

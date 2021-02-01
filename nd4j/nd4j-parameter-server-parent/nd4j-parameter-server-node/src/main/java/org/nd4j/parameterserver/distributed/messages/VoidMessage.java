@@ -34,9 +34,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-/**
- * @author raver119@gmail.com
- */
 @Deprecated
 public interface VoidMessage extends Serializable {
 

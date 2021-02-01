@@ -26,15 +26,6 @@ import org.datavec.api.split.InputSplit;
 import java.io.OutputStream;
 import java.net.URI;
 
-/**
- * Partition relative to number of records written per file.
- * This partitioner will ensure that no more than
- * {@link #recordsPerFile} number of records is written per
- * file when outputting to the various locations of the
- * {@link InputSplit} locations.
- *
- * @author Adam Gibson
- */
 public class NumberOfRecordsPartitioner implements Partitioner {
 
     private URI[] locations;

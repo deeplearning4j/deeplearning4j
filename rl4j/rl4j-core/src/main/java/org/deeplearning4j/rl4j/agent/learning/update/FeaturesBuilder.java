@@ -30,9 +30,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
 
-/**
- * A helper class to help build {@link Features} instances
- */
 public class FeaturesBuilder {
     private final boolean isRecurrent;
     private int numChannels;

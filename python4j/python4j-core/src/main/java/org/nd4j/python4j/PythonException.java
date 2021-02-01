@@ -21,9 +21,6 @@
 package org.nd4j.python4j;
 
 
-/**
- * Thrown when an exception occurs in python land
- */
 public class PythonException extends RuntimeException {
     public PythonException(String message) {
         super(message);

@@ -30,9 +30,6 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 
-/**
- * Abstract String column transform
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor

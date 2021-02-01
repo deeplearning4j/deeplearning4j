@@ -24,15 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-/**
- * ResidualPostProcessor: is (as the name suggests) is used to post process the residual vector for DL4J's gradient
- * sharing implementation. The motivation for post processing the residual vector is to avoid it getting too large:
- * a large residual can take many steps to communicate, which may lead to stale gradient issues.
- * Thus most ResidualPostProcessor implementations will simply decay or clip the residual vector to keep values from
- * getting too large relative to the current threshold.
- *
- * @author Alex Black
- */
 public interface ResidualPostProcessor extends Serializable, Cloneable {
 
     /**

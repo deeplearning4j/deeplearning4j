@@ -24,10 +24,6 @@ import lombok.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.v2.messages.INDArrayMessage;
 
-/**
- * This message holds some INDArray
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 @AllArgsConstructor
 public abstract class BaseINDArrayMessage implements INDArrayMessage {

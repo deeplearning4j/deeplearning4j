@@ -32,9 +32,6 @@ import java.io.InputStream;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 9/29/14.
- */
 public class DefaultDocumentIteratorTest extends BaseDL4JTest {
 
     @Test

@@ -32,12 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.common.util.ArrayUtil;
 
-/**
- *
- * Limited Orthogonal distribution implementation
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class OrthogonalDistribution extends BaseDistribution {
     /**

@@ -39,28 +39,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Map;
 
-/**
- * Implements Dot Product Self Attention with learned queries
- *
- * Takes in RNN style input in the shape of [batchSize, features, timesteps]
- * and applies dot product attention using learned queries.
- *
- * The output will be in the shape of [batchSize, nOut, nQueries]. If input
- * masks are used, they are applied to the input here and not propagated any
- * further as now the time steps are given by the configured query count.
- *
- * While not an exact implementation of the paper, this is inspired by
- * A Structured Self-attentive Sentence Embedding by Lin et al. [arXiv:1703.03130]
- *
- * Attention itself implemented as in
- * Attention is all you need by Vaswani et al. [arXiv:1706.03762], pp. 4,5
- *
- * @see SelfAttentionLayer
- * @see RecurrentAttentionLayer
- * @see org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention
- *
- * @author Paul Dubs
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class LearnedSelfAttentionLayer extends SameDiffLayer {

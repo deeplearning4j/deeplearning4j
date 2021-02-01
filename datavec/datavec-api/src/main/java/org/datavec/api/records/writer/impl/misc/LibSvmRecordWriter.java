@@ -23,21 +23,5 @@ package org.datavec.api.records.writer.impl.misc;
 import lombok.extern.slf4j.Slf4j;
 
 
-/**
- * Record writer for libsvm format, which is closely
- * related to SVMLight format. Similar to scikit-learn
- * we use a single writer for both formats, so this class
- * is a subclass of SVMLightRecordWriter.
- *
- * @see SVMLightRecordWriter
- *
- * Further details on the format can be found at<br>
- * - <a href="http://svmlight.joachims.org/">http://svmlight.joachims.org/</a><br>
- * - <a href="http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html">http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html</a><br>
- * - <a href="http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html">http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html</a>
- *
- * @author Adam Gibson     (original)
- * @author dave@skymind.io
- */
 @Slf4j
 public class LibSvmRecordWriter extends SVMLightRecordWriter {}

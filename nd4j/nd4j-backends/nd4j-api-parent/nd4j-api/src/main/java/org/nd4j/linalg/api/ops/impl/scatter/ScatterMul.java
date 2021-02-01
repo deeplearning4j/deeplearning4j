@@ -39,10 +39,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Created by farizrahman4u on 3/23/18.
- */
-
 public class ScatterMul extends DynamicCustomOp {
 
     public ScatterMul(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {

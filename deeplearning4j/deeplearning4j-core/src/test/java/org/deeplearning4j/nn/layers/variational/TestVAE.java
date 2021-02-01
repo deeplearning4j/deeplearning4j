@@ -51,9 +51,6 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 26/11/2016.
- */
 public class TestVAE extends BaseDL4JTest {
 
     @Test

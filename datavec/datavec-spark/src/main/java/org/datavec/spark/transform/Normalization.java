@@ -31,14 +31,6 @@ import org.datavec.api.writable.Writable;
 import java.util.*;
 
 
-/**
- * Simple dataframe based normalization.
- * Column based transforms such as min/max scaling
- * based on column min max and zero mean unit variance
- * using column wise statistics.
- *
- * @author Adam Gibson
- */
 public class Normalization {
 
 

@@ -23,15 +23,6 @@ package org.datavec.api.transform.condition.column;
 import lombok.Data;
 import org.datavec.api.writable.*;
 
-/**
- * A Condition that applies to a single column.
- * Whenever the specified value is invalid according to the schema, the condition applies.
- * <p>
- * For example, if a Writable contains String values in an Integer column (and these cannot be parsed to an integer), then
- * the condition would return true, as these values are invalid according to the schema.
- *
- * @author Alex Black
- */
 @Data
 public class InvalidValueColumnCondition extends BaseColumnCondition {
 

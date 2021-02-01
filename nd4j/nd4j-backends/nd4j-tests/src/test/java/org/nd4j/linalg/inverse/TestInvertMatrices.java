@@ -40,9 +40,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsoncccc on 12/7/15.
- */
 @RunWith(Parameterized.class)
 public class TestInvertMatrices extends BaseNd4jTest {
 

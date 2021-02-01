@@ -22,25 +22,6 @@ package org.nd4j.linalg.api.blas;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- *
- * Level 2 blas implementations.
- * Incx and other parameters are inferred
- * from the given ndarrays.
- *
- * To avoid boxing, doubles are used in place of normal numbers.
- * The underlying implementation will call the proper data opType.
- *
- * This is a fortran 95 style api that gives us the efficiency
- * and flexibility of the fortran 77 api
- *
- * Credit to:
- * https://www.ualberta.ca/AICT/RESEARCH/LinuxClusters/doc/mkl81/mklqref/blaslev2.htm
- *
- * for the descriptions
- *
- * @author Adam Gibson
- */
 public interface Level2 {
     /**
      * gemv computes a matrix-vector product using a general matrix and performs one of the following matrix-vector operations: 

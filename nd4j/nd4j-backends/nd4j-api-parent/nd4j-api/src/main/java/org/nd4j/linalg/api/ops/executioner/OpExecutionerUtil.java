@@ -35,9 +35,6 @@ import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.List;
 
-/**Utility functions for the DefaultOpExecutioner
- * @author Alex Black
- */
 @Slf4j
 public class OpExecutionerUtil {
 

@@ -27,10 +27,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.List;
 
-/**
- * Function for transforming sequences using a Transform
- * @author Alex Black
- */
 @AllArgsConstructor
 public class LocalSequenceTransformFunction implements Function<List<List<Writable>>, List<List<Writable>>> {
 

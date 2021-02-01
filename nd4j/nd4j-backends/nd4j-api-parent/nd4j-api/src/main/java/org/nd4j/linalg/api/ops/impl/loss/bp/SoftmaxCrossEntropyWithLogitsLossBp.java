@@ -30,11 +30,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/**
- * Softmax cross entropy loss with Logits
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class SoftmaxCrossEntropyWithLogitsLossBp extends DynamicCustomOp {
 

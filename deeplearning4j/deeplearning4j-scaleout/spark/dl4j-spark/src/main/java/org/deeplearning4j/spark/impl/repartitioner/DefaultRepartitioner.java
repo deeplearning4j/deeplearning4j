@@ -28,12 +28,6 @@ import scala.Tuple2;
 
 import java.util.List;
 
-/**
- * DefaultRepartitioner: Repartition data so that we exactly the minimum number of objects per partition, up to a
- * specified maximum number of partitions
- *
- * @author Alex Black
- */
 @Slf4j
 public class DefaultRepartitioner implements Repartitioner {
     public static final int DEFAULT_MAX_PARTITIONS = 5000;

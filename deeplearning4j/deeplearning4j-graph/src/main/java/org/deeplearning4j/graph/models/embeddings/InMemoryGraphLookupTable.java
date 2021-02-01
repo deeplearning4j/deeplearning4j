@@ -26,9 +26,6 @@ import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/** A standard in-memory implementation of a lookup table for vector representations of the vertices in a graph
- * @author Alex Black
- */
 public class InMemoryGraphLookupTable implements GraphVectorLookupTable {
 
     protected int nVertices;

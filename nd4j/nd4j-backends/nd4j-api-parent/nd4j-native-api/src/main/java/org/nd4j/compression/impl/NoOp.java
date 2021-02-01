@@ -33,11 +33,6 @@ import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.MemcpyDirection;
 
-/**
- * Dummy NoOp compressor, that actually does no compression.
- *
- * @author raver119@gmail.com
- */
 public class NoOp extends AbstractCompressor {
     /**
      * This method returns compression descriptor. It should be unique for any compressor implementation

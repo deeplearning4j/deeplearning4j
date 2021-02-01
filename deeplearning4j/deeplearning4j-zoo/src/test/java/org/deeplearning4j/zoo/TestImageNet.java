@@ -53,11 +53,6 @@ import static org.bytedeco.opencv.global.opencv_imgproc.COLOR_BGR2RGB;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Tests ImageNet utilities.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Slf4j
 public class TestImageNet extends BaseDL4JTest {
 

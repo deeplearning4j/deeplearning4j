@@ -36,10 +36,6 @@ import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
 
-/**
- * HistoryListener is mainly used internally to collect information such as the loss curve and evaluations,
- * which will be reported later in a {@link History} instance
- */
 public class HistoryListener extends BaseEvaluationListener {
 
     @Getter

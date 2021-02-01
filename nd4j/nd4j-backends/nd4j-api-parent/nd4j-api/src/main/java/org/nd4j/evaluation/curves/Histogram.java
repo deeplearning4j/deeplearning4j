@@ -23,11 +23,6 @@ package org.nd4j.evaluation.curves;
 import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * A simple histogram used in evaluation classes, such as {@link org.deeplearning4j.eval.EvaluationCalibration}
- *
- * @author Alex Black
- */
 @Data
 public class Histogram extends BaseHistogram {
     private final String title;

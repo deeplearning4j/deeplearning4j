@@ -20,10 +20,6 @@
 
 package org.nd4j.parameterserver.distributed.v2.enums;
 
-/**
- * This enum describes possible message propagation
- * @author raver119@gmail.com
- */
 public enum PropagationMode {
     /**
      * Propagate in both directions

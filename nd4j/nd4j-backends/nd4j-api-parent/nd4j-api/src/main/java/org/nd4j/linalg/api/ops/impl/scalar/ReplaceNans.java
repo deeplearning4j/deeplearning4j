@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.List;
 
-/**
- * Element-wise "Replace NaN" implementation as Op
- *
- * @author raver119@gmail.com
- */
 public class ReplaceNans extends BaseScalarOp {
 
     private double set;

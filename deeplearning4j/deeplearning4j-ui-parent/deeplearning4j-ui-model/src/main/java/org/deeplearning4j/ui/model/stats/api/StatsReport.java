@@ -28,12 +28,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 
-/**
- * StatsReport: An interface for storing and serializing update information (such as scores, parameter histograms etc) for
- * use in the {@link StatsListener}
- *
- * @author Alex Black
- */
 public interface StatsReport extends Persistable {
 
     void reportIDs(String sessionID, String typeID, String workerID, long timestamp);

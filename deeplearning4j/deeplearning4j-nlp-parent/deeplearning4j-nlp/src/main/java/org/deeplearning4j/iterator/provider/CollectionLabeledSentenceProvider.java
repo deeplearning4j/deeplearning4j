@@ -28,12 +28,6 @@ import org.nd4j.common.util.MathUtils;
 
 import java.util.*;
 
-/**
- * Iterate over a set of sentences/documents,
- * where the sentences and labels are provided in lists.
- *
- * @author Alex Black
- */
 public class CollectionLabeledSentenceProvider implements LabeledSentenceProvider {
 
     private final List<String> sentences;

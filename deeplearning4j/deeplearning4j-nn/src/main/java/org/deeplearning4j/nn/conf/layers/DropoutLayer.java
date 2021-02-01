@@ -39,13 +39,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Dropout layer. This layer simply applies dropout at training time, and passes activations through unmodified at test
- * time. Internally, this uses an {@link IDropout} instance. See the IDropout instances for details:<br> {@link
- * Dropout}<br> {@link org.nd4j.linalg.api.ops.random.impl.AlphaDropOut}<br> {@link
- * org.deeplearning4j.nn.conf.dropout.GaussianDropout}<br> {@link org.deeplearning4j.nn.conf.dropout.GaussianNoise}<br>
- * {@link org.deeplearning4j.nn.conf.dropout.SpatialDropout}
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

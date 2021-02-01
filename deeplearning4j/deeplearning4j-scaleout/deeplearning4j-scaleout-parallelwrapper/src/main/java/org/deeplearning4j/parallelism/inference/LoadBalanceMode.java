@@ -20,11 +20,6 @@
 
 package org.deeplearning4j.parallelism.inference;
 
-/**
- * This enum describes various load balance modes for ParallelInference
- *
- * @author raver119@gmail.com
- */
 public enum LoadBalanceMode {
     /**
      * In this mode, `n+1 % nodes` node will be used for next request

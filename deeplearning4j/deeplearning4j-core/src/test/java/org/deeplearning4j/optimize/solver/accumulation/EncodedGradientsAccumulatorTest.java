@@ -36,11 +36,6 @@ import org.nd4j.nativeblas.OpaqueDataBuffer;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Tests for memory-related stuff in gradients accumulator
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class EncodedGradientsAccumulatorTest extends BaseDL4JTest {
 

@@ -30,32 +30,6 @@ import org.deeplearning4j.rl4j.space.ObservationSpace;
 
 import java.util.Random;
 
-/*
-    With the setup below, it should hit max score (200) after 4000-5000 iterations
-
-    public static QLearning.QLConfiguration CARTPOLE_QL =
-            new QLearning.QLConfiguration(
-                    123,    //Random seed
-                    200,    //Max step By epoch
-                    10000, //Max step
-                    10000, //Max size of experience replay
-                    64,     //size of batches
-                    50,    //target update (hard)
-                    0,     //num step noop warmup
-                    1.0,   //reward scaling
-                    0.99,   //gamma
-                    Double.MAX_VALUE,    //td-error clipping
-                    0.1f,   //min epsilon
-                    3000,   //num step for eps greedy anneal
-                    true    //double DQN
-            );
-
-    public static DQNFactoryStdDense.Configuration CARTPOLE_NET =
-            DQNFactoryStdDense.Configuration.builder()
-                    .l2(0.001).updater(new Adam(0.0005)).numHiddenNodes(16).numLayer(3).build();
-
- */
-
 public class CartpoleNative implements MDP<Box, Integer, DiscreteSpace> {
     public enum KinematicsIntegrators { Euler, SemiImplicitEuler }
 

@@ -25,11 +25,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializerStrategy;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 
-/**
- * Base interface for all normalizers
- *
- * @param <T> either {@link DataSet} or {@link MultiDataSet}
- */
 public interface Normalizer<T> {
     /**
      * Fit a dataset (only compute based on the statistics from this dataset)

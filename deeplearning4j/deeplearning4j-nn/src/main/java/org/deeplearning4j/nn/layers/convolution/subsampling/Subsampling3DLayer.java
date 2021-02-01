@@ -42,11 +42,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Arrays;
 
 
-/**
- * Subsampling 3D layer, used for downsampling a 3D convolution
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.Subsampling3DLayer> {
 

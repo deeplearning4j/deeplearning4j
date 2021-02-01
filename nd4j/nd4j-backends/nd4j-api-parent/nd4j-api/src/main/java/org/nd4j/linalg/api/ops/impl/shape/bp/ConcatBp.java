@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.Op;
 
 import java.util.*;
 
-/**
- * Backprop op for concat
- *
- * @author Alex Black
- */
 @Slf4j
 public class ConcatBp extends DynamicCustomOp {
     private int concatDimension;

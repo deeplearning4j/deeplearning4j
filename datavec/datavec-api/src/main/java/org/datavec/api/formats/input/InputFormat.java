@@ -28,11 +28,6 @@ import org.datavec.api.writable.Writable;
 
 import java.io.IOException;
 
-/**
- * Create an input format
- *
- * @author Adam Gibson
- */
 public interface InputFormat extends Writable {
 
     /**

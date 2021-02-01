@@ -30,14 +30,6 @@ import org.nd4j.linalg.learning.config.RmsProp;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * RMS Prop updates:
- * <p>
- * http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
- * http://cs231n.github.io/neural-networks-3/#ada
- *
- * @author Adam Gibson
- */
 @Data
 public class RmsPropUpdater implements GradientUpdater<RmsProp> {
     public static final String G_STATE = "G";

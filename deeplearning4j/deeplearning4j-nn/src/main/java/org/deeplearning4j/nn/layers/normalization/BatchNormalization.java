@@ -51,16 +51,6 @@ import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.*;
 
-/**
- * Batch normalization layer.<br>
- * Rerences:<br>
- *  <a href="https://arxiv.org/pdf/1502.03167v3.pdf">https://arxiv.org/pdf/1502.03167v3.pdf</a><br>
- *  <a href="https://arxiv.org/pdf/1410.7455v8.pdf">https://arxiv.org/pdf/1410.7455v8.pdf</a><br>
- *  <a href="https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html">
- *      https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html</a>
- *
- * Batch normalization should be applied between the output of a layer (with identity activation) and the activation function.
- **/
 @Slf4j
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
     protected static final double ONE_ON_2LOGE_10 = 1.0 / (2 * Math.log(10.0));

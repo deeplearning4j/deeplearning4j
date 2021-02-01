@@ -41,9 +41,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by nyghtowl on 8/31/15.
- */
 public class DenseTest extends BaseDL4JTest {
 
     private int numSamples = 150;

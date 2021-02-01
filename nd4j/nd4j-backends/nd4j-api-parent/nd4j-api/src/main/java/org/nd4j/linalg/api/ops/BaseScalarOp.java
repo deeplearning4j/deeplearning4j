@@ -38,11 +38,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Base scalar operation
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 

@@ -33,12 +33,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.io.IOException;
 import java.net.URI;
 
-/**
- * Simple function used to load DataSets (serialized with DataSet.save()) from a given Path (as a String)
- * to a DataSet object - i.e., {@code RDD<String>} to {@code RDD<DataSet>}
- *
- * @author Alex Black
- */
 public class PathToDataSetFunction implements Function<String, DataSet> {
     public static final int BUFFER_SIZE = 4194304; //4 MB
 

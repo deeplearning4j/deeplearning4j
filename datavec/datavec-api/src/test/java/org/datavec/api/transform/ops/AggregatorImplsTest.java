@@ -32,9 +32,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by huitseeker on 5/14/17.
- */
 public class AggregatorImplsTest extends BaseND4JTest {
 
     private List<Integer> intList = new ArrayList<>(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));

@@ -20,11 +20,6 @@
 
 package org.datavec.api.io.converters;
 
-/**
- * Writable converter exception represents an error
- * for being unable to convert a writable
- * @author Adam Gibson
- */
 public class WritableConverterException extends Exception {
     public WritableConverterException() {}
 

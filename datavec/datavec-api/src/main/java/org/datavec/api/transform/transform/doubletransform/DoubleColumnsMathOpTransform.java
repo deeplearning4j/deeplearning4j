@@ -34,15 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Add a new double column, calculated from one or more other columns. A new column (with the specified name) is added
- * as the final column of the output. No other columns are modified.<br>
- * For example, if newColumnName=="newCol", mathOp==Add, and columns=={"col1","col2"}, then the output column
- * with name "newCol" has value col1+col2.<br>
- *
- * @author Alex Black
- * @see DoubleMathOpTransform To do an in-place mathematical operation of a double column and a double scalar value
- */
 @Data
 public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 

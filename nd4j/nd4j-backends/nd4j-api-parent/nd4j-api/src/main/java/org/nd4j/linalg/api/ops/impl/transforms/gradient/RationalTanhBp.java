@@ -30,9 +30,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- * Rational Tanh backpropagation op - dL/dIn from in and dL/dOut
- */
 public class RationalTanhBp extends DynamicCustomOp {
 
     public RationalTanhBp(){ }

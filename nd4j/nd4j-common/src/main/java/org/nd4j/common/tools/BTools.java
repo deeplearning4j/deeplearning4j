@@ -26,14 +26,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
-/**
- * includes several base tools
- *
- * 
- *
- * @author clavvis 
- */
-
 //B = Base
 public class BTools {
 	//

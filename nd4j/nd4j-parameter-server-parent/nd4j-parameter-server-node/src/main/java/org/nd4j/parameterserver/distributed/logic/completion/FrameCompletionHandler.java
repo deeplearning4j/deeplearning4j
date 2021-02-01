@@ -28,9 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class FrameCompletionHandler {

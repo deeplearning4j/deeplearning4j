@@ -29,9 +29,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by raver on 26.11.2015.
- */
 public class LabelsSourceTest extends BaseDL4JTest {
 
     @Before

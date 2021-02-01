@@ -37,15 +37,6 @@ import java.text.StringCharacterIterator;
 
 
 
-/** This class stores text using standard UTF8 encoding.  It provides methods
- * to serialize, deserialize, and compare texts at byte level.  The type of
- * length is integer and is serialized using zero-compressed format.  <p>In
- * addition, it provides methods for string traversal without converting the
- * byte array to a string.  <p>Also includes utilities for
- * serializing/deserialing a string, coding/decoding a string, checking if a
- * byte array contains valid UTF8 code, calculating the length of an encoded
- * string.
- */
 public class Text extends BinaryComparable implements WritableComparable<BinaryComparable> {
 
     private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY = new ThreadLocal<CharsetEncoder>() {

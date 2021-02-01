@@ -26,11 +26,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * This OutputAdapter implementation is suited for silent conversion of 2D SoftMax output
- *
- * @author raver119@gmail.com
- */
 public class ArgmaxAdapter implements OutputAdapter<int[]> {
 
     /**

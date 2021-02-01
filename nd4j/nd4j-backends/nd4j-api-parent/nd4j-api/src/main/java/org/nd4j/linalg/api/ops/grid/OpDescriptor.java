@@ -25,9 +25,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ops.Op;
 
-/**
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

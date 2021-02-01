@@ -36,10 +36,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Cholesky op wrapper
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class Cholesky extends DynamicCustomOp {
 

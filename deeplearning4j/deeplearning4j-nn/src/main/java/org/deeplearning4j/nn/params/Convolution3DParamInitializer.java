@@ -33,11 +33,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Initialize 3D convolution parameters.
- *
- * @author Adam Gibson
- */
 public class Convolution3DParamInitializer extends ConvolutionParamInitializer {
 
     private static final Convolution3DParamInitializer INSTANCE = new Convolution3DParamInitializer();

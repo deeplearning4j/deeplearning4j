@@ -28,11 +28,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Tests for Counter
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CounterTest {
 

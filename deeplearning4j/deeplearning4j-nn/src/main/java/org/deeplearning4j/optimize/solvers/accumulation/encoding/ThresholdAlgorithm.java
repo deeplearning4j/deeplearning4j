@@ -24,12 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-/**
- * ThresholdAlgorithm is responsible for determining the threshold to use when encoding updates for distributed training.
- * It is used to implement adaptive threshold encoding approaches such as {@link org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold.AdaptiveThresholdAlgorithm}
- *
- * @author Alex Black
- */
 public interface ThresholdAlgorithm extends Serializable {
 
     /**

@@ -33,9 +33,6 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class MeshOrganizerTest extends BaseND4JTest {
 

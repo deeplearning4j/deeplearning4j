@@ -31,15 +31,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.Buffer;
 
-/**
- * Wraps a {@link Frame} to allow serialization within this framework.
- * Frame objects can be converted back and forth easily to and from classes
- * used by Android, Java 2D, OpenCV, FFmpeg, and others.
- *
- * @author saudet
- * @see Frame
- * @see FrameConverter
- */
 public class ImageWritable implements Writable {
     static {
         WritableFactory.getInstance().registerWritableType(WritableType.Image.typeIdx(), ImageWritable.class);

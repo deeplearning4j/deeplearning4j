@@ -43,16 +43,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Arrays;
 
-/**
- * 2D depth-wise convolution layer configuration.
- * <p>
- * Performs a channels-wise convolution, which
- * operates on each of the input maps separately. A channel multiplier is used to
- * specify the number of outputs per input map. This convolution
- * is carried out with the specified kernel sizes, stride and padding values.
- *
- * @author Max Pumperla
- */
 public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
     public DepthwiseConvolution2DLayer(NeuralNetConfiguration conf, DataType dataType) {

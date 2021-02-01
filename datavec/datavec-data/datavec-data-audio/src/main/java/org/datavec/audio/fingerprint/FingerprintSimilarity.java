@@ -23,12 +23,6 @@ package org.datavec.audio.fingerprint;
 
 import org.datavec.audio.properties.FingerprintProperties;
 
-/**
- * A class for fingerprint's similarity
- * 
- * @author jacquet
- *
- */
 public class FingerprintSimilarity {
 
     private FingerprintProperties fingerprintProperties = FingerprintProperties.getInstance();

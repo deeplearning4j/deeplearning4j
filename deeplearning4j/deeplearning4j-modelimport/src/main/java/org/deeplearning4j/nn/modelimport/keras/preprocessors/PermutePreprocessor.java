@@ -34,11 +34,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 
-/**
- * Preprocessor to permute input data according to specified permutation indices.
- *
- * @author Max Pumperla
- */
 @Data
 @Slf4j
 @EqualsAndHashCode(callSuper = false)

@@ -30,20 +30,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * With this environment, the agent is supposed to act exactly as told by the environment -- or the opposite, depending
- * on a randomly switching "do as told / do the opposite" marker in the observation.<br/>
- * Just like {@link TMazeEnvironment}, this environment is designed to be solvable by recurrent networks but unsolvable by non-recurrent ones.
- * But unlike TMaze, which has very sparse rewards, this environment has a reward at every step.<br/>
- * <br/>
- * Format of observations:
- * <ul>
- * <li>Element 1: 1.0 if being told to do action-0 next.
- * <li>Element 2: 1.0 if being told to do action-1 next.
- * <li>Element 3: 1.0 if the agent should do as told, 0.0 if not, and -1.0 if the directive has not changed</li>
- * <li>Element 3: 1.0 if the agent should do the opposite, 0.0 if not, and -1.0 if the directive has not changed</li>
- * </ul>
- */
 public class DoAsISayOrDont implements Environment<Integer> {
     private static final int NUM_ACTIONS = 2;
 

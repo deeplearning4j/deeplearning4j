@@ -25,9 +25,6 @@ import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 
-/**
- * @author raver119@gmail.com
- */
 @Deprecated
 public class DistributedSkipGramMessage extends BaseVoidMessage implements DistributedMessage {
 

@@ -33,11 +33,6 @@ import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- * A utility for validating multiple file formats that ND4J and other tools can read
- *
- * @author Alex Black
- */
 public class Nd4jCommonValidator {
 
     private Nd4jCommonValidator() {

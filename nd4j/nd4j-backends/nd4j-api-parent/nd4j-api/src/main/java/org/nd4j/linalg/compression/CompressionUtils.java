@@ -23,11 +23,6 @@ package org.nd4j.linalg.compression;
 import lombok.NonNull;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
 
-/**
- * This class provides utility methods for Compression in ND4J
- *
- * @author raver119@gmail.com
- */
 public class CompressionUtils {
 
     public static boolean goingToDecompress(@NonNull DataTypeEx from, @NonNull DataTypeEx to) {

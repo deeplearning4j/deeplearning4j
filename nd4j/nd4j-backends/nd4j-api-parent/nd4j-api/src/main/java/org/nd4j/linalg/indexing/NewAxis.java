@@ -22,13 +22,6 @@ package org.nd4j.linalg.indexing;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * New axis index.
- * Specified for wanting a new dimension
- * in an ndarray
- *
- * @author Adam Gibson
- */
 public class NewAxis implements INDArrayIndex {
     @Override
     public long end() {

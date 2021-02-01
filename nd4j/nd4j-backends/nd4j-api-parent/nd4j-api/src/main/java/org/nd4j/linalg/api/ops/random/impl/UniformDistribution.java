@@ -33,9 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 public class UniformDistribution extends BaseRandomOp {
     private double from;
     private double to;

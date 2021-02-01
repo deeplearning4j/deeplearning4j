@@ -34,15 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-/**
- * This dataset iterator combines multiple DataSetIterators into 1 MultiDataSetIterator.
- * Values from each iterator are joined on a per-example basis - i.e., the values from each DataSet are combined
- * as different feature arrays for a multi-input neural network.
- * Labels can come from either one of the underlying DataSetIteartors only (if 'outcome' is >= 0) or from all
- * iterators (if outcome is < 0)
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @NoArgsConstructor
 @AllArgsConstructor

@@ -25,11 +25,6 @@ import lombok.NoArgsConstructor;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
-/**
- * Convert any value to a string.
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 @Data
 public class ConvertToString extends BaseStringTransform {

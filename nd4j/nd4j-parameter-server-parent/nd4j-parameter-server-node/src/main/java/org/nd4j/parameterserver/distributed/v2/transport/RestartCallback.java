@@ -22,11 +22,6 @@ package org.nd4j.parameterserver.distributed.v2.transport;
 
 import org.nd4j.parameterserver.distributed.v2.messages.pairs.handshake.HandshakeResponse;
 
-/**
- * This interface describes callable which will be called upon restart signal coming from cluster
- *
- * @author raver119@gmail.com
- */
 public interface RestartCallback {
     void call(HandshakeResponse response);
 }

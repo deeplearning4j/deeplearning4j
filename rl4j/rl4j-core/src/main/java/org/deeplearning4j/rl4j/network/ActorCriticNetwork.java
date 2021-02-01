@@ -25,16 +25,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * An Actor-Critic network implementation <br/>
- * Label names: "value" and "policy" <br/>
- * <br/>
- * Gradient names:
- * <ul>
- *     <li>A <b>single</b> network for the value and policy: "combined"</li>
- *     <li>A <b>separate</b> network for the value and policy: "value" and "policy"</li>
- * </ul>
- */
 public class ActorCriticNetwork extends BaseNetwork<ActorCriticNetwork> {
 
     private static final String[] LABEL_NAMES = new String[] {

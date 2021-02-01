@@ -34,12 +34,6 @@ import org.deeplearning4j.nn.params.VariationalAutoencoderParamInitializer;
 
 import java.util.*;
 
-/**
- *
- * Utility methods for {@link TrainModule}
- *
- * @author Alex Black
- */
 public class TrainModuleUtils {
 
 

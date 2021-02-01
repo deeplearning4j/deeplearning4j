@@ -28,16 +28,6 @@ import org.nd4j.serde.binary.BinarySerde;
 
 import java.nio.ByteBuffer;
 
-/**
- * NDArray Serialization and
- * de serialization class for
- * aeron.
- *
- * This is a low level class
- * specifically meant for speed.
- *
- * @author Adam Gibson
- */
 public class AeronNDArraySerde extends BinarySerde {
 
 

@@ -36,11 +36,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Col2Im operation.
- *
- * Created by agibsonccc on 3/9/16.
- */
 @Getter
 public class Col2Im extends DynamicCustomOp {
 

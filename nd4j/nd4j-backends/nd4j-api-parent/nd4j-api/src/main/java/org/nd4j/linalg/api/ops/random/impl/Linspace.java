@@ -33,11 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Linspace/arange Op implementation, generates from..to distribution within Z
- *
- * @author raver119@gmail.com
- */
 public class Linspace extends BaseRandomOp {
     private double from;
     private double to;

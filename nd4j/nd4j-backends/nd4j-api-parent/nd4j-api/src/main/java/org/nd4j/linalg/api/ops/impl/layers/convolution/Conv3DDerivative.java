@@ -33,9 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-/**
- * Conv3DDerivative operation
- */
 @Slf4j
 public class Conv3DDerivative extends Conv3D {
 

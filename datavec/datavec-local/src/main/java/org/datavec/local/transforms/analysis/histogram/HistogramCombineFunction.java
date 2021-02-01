@@ -26,11 +26,6 @@ import org.nd4j.common.function.BiFunction;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A combiner function used in the calculation of histograms
- *
- * @author Alex Black
- */
 public class HistogramCombineFunction
                 implements BiFunction<List<HistogramCounter>, List<HistogramCounter>, List<HistogramCounter>> {
     @Override

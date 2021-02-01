@@ -39,12 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * This class provides queue-like functionality for multiple readers/multiple writers, with transparent duplication
- * and collapsing ability
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class IndexedTail {
     // here we store positions of individual consumers

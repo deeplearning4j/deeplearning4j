@@ -19,20 +19,6 @@
  */
 package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
 
-    /**
-     * integer numbers corresponding to activations:
-     * 0=tanh,
-     * 1=relu,
-     * 2=sigmoid,
-     * 3=affine,
-     * 4=leaky relu,
-     * 5= thresholded relu,
-     * 6=scaled tanh,
-     * 7=hard sigmoid,
-     * 8=ELU,
-     * 9=softsign,
-     * 10=softplus
-     */
     public enum LSTMActivations {
         //Note: ordinal (order) here matters for C++ level. Any new formats hsould be added at end
 

@@ -29,10 +29,6 @@ import org.datavec.api.writable.Writable;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Line record writer
- * @author Adam Gibson
- */
 public class LineRecordWriter extends FileRecordWriter {
     public LineRecordWriter() {}
 

@@ -31,11 +31,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
-/**
- * Downloader utility methods
- *
- * @author Alex Black
- */
 @Slf4j
 public class Downloader {
     /**

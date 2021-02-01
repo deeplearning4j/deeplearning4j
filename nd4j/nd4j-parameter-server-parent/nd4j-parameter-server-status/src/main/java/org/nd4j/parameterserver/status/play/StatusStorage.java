@@ -24,12 +24,6 @@ import org.nd4j.parameterserver.model.SubscriberState;
 
 import java.util.List;
 
-/**
- * An interface for storing information
- * about the status of a {@link org.nd4j.parameterserver.ParameterServerSubscriber}
- *
- * @author Adam Gibson
- */
 public interface StatusStorage {
 
     /**

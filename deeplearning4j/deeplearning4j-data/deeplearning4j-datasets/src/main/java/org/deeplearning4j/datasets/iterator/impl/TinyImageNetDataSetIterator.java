@@ -39,18 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Tiny ImageNet is a subset of the ImageNet database. TinyImageNet is the default course challenge for CS321n
- * at Stanford University.
- *
- * Tiny ImageNet has 200 classes, each consisting of 500 training images.<br>
- * Images are 64x64 pixels, RGB.
- *
- * See: <a href="http://cs231n.stanford.edu/">http://cs231n.stanford.edu/</a> and
- * <a href="https://tiny-imagenet.herokuapp.com/">https://tiny-imagenet.herokuapp.com/</a>
- *
- * @author Justin Long (crockpotveggies)
- */
 public class TinyImageNetDataSetIterator extends RecordReaderDataSetIterator {
 
     @Getter

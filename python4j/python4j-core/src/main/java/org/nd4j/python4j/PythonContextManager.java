@@ -27,17 +27,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Emulates multiples interpreters in a single interpreter.
- * This works by simply obfuscating/de-obfuscating variable names
- * such that only the required subset of the global namespace is "visible"
- * at any given time.
- * By default, there exists a "main" context emulating the default interpreter
- *
- * @author Fariz Rahman
- */
-
-
 public class PythonContextManager {
 
     private static Set<String> contexts = new HashSet<>();

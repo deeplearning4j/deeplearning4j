@@ -72,14 +72,6 @@ import java.util.*;
 
 import static org.nd4j.shade.guava.base.Preconditions.checkArgument;
 
-/**
- * ParameterAveragingTrainingMaster: A {@link TrainingMaster}
- * implementation for training networks on Spark.
- * This is standard parameter averaging with a
- * configurable averaging period.
- *
- * @author Alex Black
- */
 @Data
 @JsonIgnoreProperties({"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath",
                 "trainingMasterUID"})

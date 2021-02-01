@@ -24,9 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
-/**
- * A function definition for samediff
- */
 public interface SameDiffFunctionDefinition {
 
     /**

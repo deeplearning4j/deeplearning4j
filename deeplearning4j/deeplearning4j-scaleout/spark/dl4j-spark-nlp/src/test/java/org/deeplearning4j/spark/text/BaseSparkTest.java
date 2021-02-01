@@ -32,9 +32,6 @@ import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * Created by agibsonccc on 1/23/15.
- */
 public abstract class BaseSparkTest extends BaseDL4JTest implements Serializable {
     protected transient JavaSparkContext sc;
 

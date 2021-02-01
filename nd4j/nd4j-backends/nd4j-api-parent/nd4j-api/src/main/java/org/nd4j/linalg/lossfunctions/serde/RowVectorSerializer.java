@@ -27,13 +27,6 @@ import org.nd4j.shade.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 
-/**
- * Simple JSON serializer for use in {@link org.nd4j.linalg.lossfunctions.ILossFunction} weight serialization.
- * Serializes an INDArray as a double[]
- *
- * @author Alex Black
- * @deprecated Use {@link org.nd4j.serde.jackson.shaded.NDArrayTextSerializer}
- */
 @Deprecated
 public class RowVectorSerializer extends JsonSerializer<INDArray> {
     @Override

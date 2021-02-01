@@ -32,14 +32,6 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A timeline/swimlane chart with zoom/scroll functionality.
- *
- * Time is represented here with long values - i.e., millisecond precision, epoch format
- *
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

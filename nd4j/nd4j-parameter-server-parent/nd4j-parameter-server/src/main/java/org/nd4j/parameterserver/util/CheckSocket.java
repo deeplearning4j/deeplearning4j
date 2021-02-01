@@ -23,11 +23,6 @@ package org.nd4j.parameterserver.util;
 import java.io.IOException;
 import java.net.*;
 
-/**
- * Credit: https://stackoverflow.com/questions/5226905/test-if-remote-port-is-in-use
- *
- *
- */
 public class CheckSocket {
 
     /**

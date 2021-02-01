@@ -28,11 +28,6 @@ import org.nd4j.linalg.factory.Broadcast;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- * Constrain the L2 norm of the incoming weights for each unit to be 1.0
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class UnitNormConstraint extends BaseConstraint {

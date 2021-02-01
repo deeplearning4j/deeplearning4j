@@ -35,9 +35,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Dense layer: a standard fully connected feed forward layer
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

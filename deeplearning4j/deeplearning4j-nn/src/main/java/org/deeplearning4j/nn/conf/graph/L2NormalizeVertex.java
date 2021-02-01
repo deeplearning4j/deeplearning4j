@@ -32,16 +32,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * L2NormalizeVertex performs L2 normalization on a single input, along the specified dimensions.
- * L2 normalization is defined as: out = in / l2Norm(in)<br>
- *
- * Can be configured to normalize a single dimension, or normalize across
- * all dimensions except dimensions zero (i.e., the minibatch dimension) by leaving dimension blank or setting it to -1.
- *
- * @author Justin Long (crockpotveggies)
- * @author Alex Black (AlexDBlack)
- */
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class L2NormalizeVertex extends GraphVertex {

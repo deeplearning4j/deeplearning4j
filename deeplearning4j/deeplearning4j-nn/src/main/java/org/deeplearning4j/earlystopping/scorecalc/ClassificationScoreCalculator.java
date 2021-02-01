@@ -26,13 +26,6 @@ import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * Score function for evaluating a MultiLayerNetwork according to an evaluation metric ({@link Evaluation.Metric} such
- * as accuracy, F1 score, etc.
- * Used for both MultiLayerNetwork and ComputationGraph
- *
- * @author Alex Black
- */
 public class ClassificationScoreCalculator extends BaseIEvaluationScoreCalculator<Model, Evaluation> {
 
     protected final Evaluation.Metric metric;

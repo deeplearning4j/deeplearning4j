@@ -38,15 +38,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
-/**Recurrent Neural Network Output Layer.<br>
- * Handles calculation of gradients etc for various objective functions.<br>
- * Functionally the same as OutputLayer, but handles output and label reshaping
- * automatically.<br>
- * Input and output activations are same as other RNN layers: 3 dimensions with shape
- * [miniBatchSize,nIn,timeSeriesLength] and [miniBatchSize,nOut,timeSeriesLength] respectively.
- * @author Alex Black
- * @see BaseOutputLayer, OutputLayer
- */
 public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.RnnOutputLayer> {
 
     public RnnOutputLayer(NeuralNetConfiguration conf, DataType dataType) {

@@ -25,11 +25,6 @@ import org.deeplearning4j.common.config.DL4JSystemProperties;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Utilities for working with temporary files
- *
- * @author Alex Black
- */
 public class DL4JFileUtils {
 
     private DL4JFileUtils(){ }

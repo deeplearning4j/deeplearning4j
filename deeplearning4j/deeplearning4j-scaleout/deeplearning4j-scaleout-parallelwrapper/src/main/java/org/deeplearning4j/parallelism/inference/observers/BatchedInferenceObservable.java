@@ -37,11 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * This class holds reference input, and implements second use case: BATCHED inference
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class BatchedInferenceObservable extends BasicInferenceObservable implements InferenceObservable {
     private List<INDArray[]> inputs = new ArrayList<>();

@@ -25,9 +25,6 @@ import lombok.Getter;
 
 import java.io.*;
 
-/**
- * A simple {@link Source} that returns a (buffered) FileInputStream for the specified file path
- */
 @AllArgsConstructor
 public class LocalFileSource implements Source {
     @Getter

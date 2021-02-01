@@ -31,10 +31,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This helper class generates
- * @author raver119@gmail.com
- */
 @Slf4j
 public class VariableMultiTimeseriesGenerator implements MultiDataSetIterator {
     protected Random rng;

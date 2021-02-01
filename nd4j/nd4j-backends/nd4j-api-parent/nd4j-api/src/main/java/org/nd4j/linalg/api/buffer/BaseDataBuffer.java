@@ -39,13 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-/**
- * Base class for a data buffer
- * handling basic byte operations
- * among other things.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseDataBuffer implements DataBuffer {
 

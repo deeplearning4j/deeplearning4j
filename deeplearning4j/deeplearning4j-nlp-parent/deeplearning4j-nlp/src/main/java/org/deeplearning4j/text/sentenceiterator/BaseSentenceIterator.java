@@ -20,14 +20,6 @@
 
 package org.deeplearning4j.text.sentenceiterator;
 
-/**
- * Creates a baseline default.
- * This includes the sentence pre processor
- * and a no op finish for iterators
- * with no i/o streams or other finishing steps.
- * @author Adam Gibson
- *
- */
 public abstract class BaseSentenceIterator implements SentenceIterator {
 
     protected SentencePreProcessor preProcessor;

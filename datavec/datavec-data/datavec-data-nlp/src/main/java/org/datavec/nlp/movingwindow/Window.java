@@ -28,12 +28,6 @@ import java.util.Collection;
 import java.util.List;
 
 
-/**
- * A representation of a sliding window.
- * This is used for creating training examples.
- * @author Adam Gibson
- *
- */
 public class Window implements Serializable {
     /**
      * 

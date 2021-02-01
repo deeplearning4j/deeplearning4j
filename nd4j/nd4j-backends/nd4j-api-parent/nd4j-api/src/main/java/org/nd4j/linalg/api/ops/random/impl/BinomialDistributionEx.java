@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
 import java.util.List;
 
-/**
- * This Op generates binomial distribution
- *
- * @author raver119@gmail.com
- */
 public class BinomialDistributionEx extends BaseRandomOp {
     private long trials;
     private double probability;

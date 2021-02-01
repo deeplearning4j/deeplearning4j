@@ -23,13 +23,6 @@ package org.nd4j.linalg.schedule;
 import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * An exponential schedule, with 2 parameters: initial value, and gamma.<br>
- * value(i) = initialValue * gamma^i
- * where i is the iteration or epoch (depending on the setting)
- *
- * @author Alex Black
- */
 @Data
 public class ExponentialSchedule implements ISchedule {
 

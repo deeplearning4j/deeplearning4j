@@ -63,11 +63,6 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-/**
- * Various utilities for Spark
- *
- * @author Alex Black
- */
 @Slf4j
 public class SparkUtils {
 

@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeBp;
 import java.util.List;
 
-/**
- * Cube (x^3) elementwise function
- *
- * @author Paul Dubs
- */
 @NoArgsConstructor
 public class Cube extends BaseTransformSameOp {
 

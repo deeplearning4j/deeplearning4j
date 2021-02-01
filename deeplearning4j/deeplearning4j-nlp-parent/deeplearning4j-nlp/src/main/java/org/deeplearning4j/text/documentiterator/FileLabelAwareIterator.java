@@ -29,16 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This is simple filesystem-based LabelAware iterator.
- * It assumes that you have one or more folders organized in the following way:
- * 1st level subfolder: label name
- * 2nd level: bunch of documents for that label
- *
- * You can have as many label folders as you want, as well.
- *
- * @author raver119@gmail.com
- */
 public class FileLabelAwareIterator implements LabelAwareIterator {
     protected List<File> files;
     protected AtomicInteger position = new AtomicInteger(0);

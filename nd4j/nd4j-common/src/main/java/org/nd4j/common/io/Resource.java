@@ -26,9 +26,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 
-/**
- * Resource
- */
 public interface Resource extends InputStreamSource {
     /**
      * Whether the resource exists on the classpath

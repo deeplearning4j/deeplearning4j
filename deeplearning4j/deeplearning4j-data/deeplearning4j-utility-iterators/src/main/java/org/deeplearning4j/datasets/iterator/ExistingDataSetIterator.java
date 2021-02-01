@@ -30,12 +30,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * This wrapper provides DataSetIterator interface to existing java {@code Iterable<DataSet>} and {@code Iterator<DataSet>}.
- * Note that when using {@code Iterator<DataSet>}, resetting of the DataSetIterator is not supported
- *
- * @author raver119@gmail.com
- */
 public class ExistingDataSetIterator implements DataSetIterator {
     @Getter
     private DataSetPreProcessor preProcessor;

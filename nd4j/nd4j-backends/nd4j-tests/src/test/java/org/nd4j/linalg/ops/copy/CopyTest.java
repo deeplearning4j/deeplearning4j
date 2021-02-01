@@ -30,9 +30,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 2/12/16.
- */
 @RunWith(Parameterized.class)
 public class CopyTest extends BaseNd4jTest {
     public CopyTest(Nd4jBackend backend) {

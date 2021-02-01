@@ -25,12 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * WAV File Specification
- * <a href="https://ccrma.stanford.edu/courses/422/projects/WaveFormat/">https://ccrma.stanford.edu/courses/422/projects/WaveFormat/</a>
- * 
- * @author Jacquet Wong
- */
 @Slf4j
 public class WaveHeader {
 

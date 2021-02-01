@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.*;
 
-/**
- * Tile backprop function
- *
- * @author Alex Black
- */
 public class TileBp extends DynamicCustomOp {
 
     private int[] repeat;

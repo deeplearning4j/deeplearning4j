@@ -27,11 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.loss.bp.CosineDistanceLossBp;
 import java.util.List;
 
-/**
- * Cosine distance loss
- *
- * @author Alex Black
- */
 public class CosineDistanceLoss extends BaseLoss {
 
     private int dimension;

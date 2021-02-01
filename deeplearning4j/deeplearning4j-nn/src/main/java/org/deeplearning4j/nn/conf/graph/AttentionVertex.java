@@ -37,15 +37,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Map;
 
-/**
- * Implements Dot Product Attention using the given inputs.
- * For Timestep-wise Self-Attention use the same value for all three inputs.
- *
- * @see org.nd4j.autodiff.samediff.ops.SDNN#multiHeadDotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
- * @see org.nd4j.autodiff.samediff.ops.SDNN#dotProductAttention(String, SDVariable, SDVariable, SDVariable, SDVariable, boolean, boolean)
- *
- * @author Paul Dubs
- */
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)

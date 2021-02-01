@@ -28,13 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 
-/**
- * Output layer with different objective
- * incooccurrences for different objectives.
- * This includes classification as well as prediction
- * @author Adam Gibson
- *
- */
 public class OutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.OutputLayer> {
 
     public OutputLayer(NeuralNetConfiguration conf, DataType dataType) {

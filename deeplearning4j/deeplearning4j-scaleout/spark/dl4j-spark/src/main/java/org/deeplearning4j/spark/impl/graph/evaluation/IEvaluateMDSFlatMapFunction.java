@@ -31,13 +31,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.Future;
 
-/**
- * Function to evaluate data (using one or more IEvaluation instances), in a distributed manner
- * Flat map function used to batch examples for computational efficiency + reduce number of IEvaluation objects returned
- * for network efficiency.
- *
- * @author Alex Black
- */
 public class IEvaluateMDSFlatMapFunction<T extends IEvaluation> implements FlatMapFunction<Iterator<MultiDataSet>, T[]> {
 
     protected Broadcast<String> json;

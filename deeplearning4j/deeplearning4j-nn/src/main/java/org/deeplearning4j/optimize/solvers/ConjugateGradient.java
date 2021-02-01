@@ -32,12 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 
 
-/**Originally based on cc.mallet.optimize.ConjugateGradient
- * 
- * Rewritten based on Conjugate Gradient algorithm in Bengio et al.,
- * Deep Learning (in preparation) Ch8.
- * See also Nocedal & Wright, Numerical optimization, Ch5
- */
 public class ConjugateGradient extends BaseOptimizer {
     private static final long serialVersionUID = -1269296013474864091L;
     private static final Logger logger = LoggerFactory.getLogger(ConjugateGradient.class);

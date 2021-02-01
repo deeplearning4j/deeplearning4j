@@ -32,15 +32,6 @@ import scala.Tuple2;
 import java.util.Iterator;
 
 
-/**
- * Function to calculate the reconstruction error for a variational autoencoder, that is the first layer in a
- * MultiLayerNetwork.<br>
- * Note that the VAE must be using a loss function, not a {@link org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution}<br>
- * Also note that scoring is batched for computational efficiency.<br>
- *
- * @author Alex Black
- * @see VaeReconstructionProbWithKeyFunction
- */
 public class VaeReconstructionErrorWithKeyFunction<K> extends BaseVaeScoreWithKeyFunction<K> {
 
     /**

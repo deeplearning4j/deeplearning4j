@@ -28,11 +28,6 @@ import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgori
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Targets a specific sparisty throughout training
- *
- * @author Alex Black
- */
 @Slf4j
 @EqualsAndHashCode(exclude = {"lastThreshold", "lastSparsity"})
 public class TargetSparsityThresholdAlgorithm implements ThresholdAlgorithm {

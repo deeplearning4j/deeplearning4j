@@ -40,13 +40,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Arrays;
 
 
-/**
- * 3D Upsampling layer.
- * <p>
- * Used for upsampling a 3D convolution
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layers.Upsampling3D> {
 

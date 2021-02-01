@@ -35,11 +35,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Configuration for a single batch {@link SameDiff} inference operation.
- *
- * Used in {@link SameDiff#batchOutput()}.
- */
 @Getter
 @Setter
 public class BatchOutputConfig {

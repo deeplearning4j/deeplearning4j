@@ -31,9 +31,6 @@ import org.nd4j.common.tests.BaseND4JTest;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 11/01/2017.
- */
 public class TestCustomTransformJsonYaml extends BaseND4JTest {
 
     @Test

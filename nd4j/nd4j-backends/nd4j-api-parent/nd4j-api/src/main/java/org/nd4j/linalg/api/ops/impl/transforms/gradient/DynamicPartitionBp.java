@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.*;
 
 
-/**
- * Backprop operation for dynamic partition
- * @author Alex Black
- */
 public class DynamicPartitionBp extends DynamicCustomOp {
 
     private int numPartitions;

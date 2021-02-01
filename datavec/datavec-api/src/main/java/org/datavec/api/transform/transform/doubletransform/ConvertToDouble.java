@@ -28,11 +28,6 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
 
-/**
- * Convert any value to an Double
- *
- * @author Justin Long (crockpotveggies)
- */
 @NoArgsConstructor
 @Data
 public class ConvertToDouble extends BaseDoubleTransform {

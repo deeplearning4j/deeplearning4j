@@ -51,14 +51,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
-/**
- * This set of tests doesn't has any assertions within.
- * All we care about here - performance and availability
- *
- * Tests for all environments are paired: one test for blocking messages, other one for non-blocking messages.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Ignore
 @Deprecated

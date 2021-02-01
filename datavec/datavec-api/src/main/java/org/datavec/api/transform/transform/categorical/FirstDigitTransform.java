@@ -35,20 +35,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * FirstDigitTransform converts a column to a categorical column, with values being the first digit of the number.<br>
- * For example, "3.1415" becomes "3" and "2.0" becomes "2".<br>
- * Negative numbers ignore the sign: "-7.123" becomes "7".<br>
- * Note that two {@link Mode}s are supported, which determines how non-numerical entries should be handled:<br>
- * EXCEPTION_ON_INVALID: output has 10 category values ("0", ..., "9"), and any non-numerical values result in an exception<br>
- * INCLUDE_OTHER_CATEGORY: output has 11 category values ("0", ..., "9", "Other"), all non-numerical values are mapped to "Other"<br>
- * <br>
- * FirstDigitTransform is useful (combined with {@link CategoricalToOneHotTransform} and Reductions) to implement
- * <a href="https://en.wikipedia.org/wiki/Benford%27s_law">Benford's law</a>.
-
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "columnIdx"})
 public class FirstDigitTransform extends BaseTransform {
     public static final String OTHER_CATEGORY = "Other";

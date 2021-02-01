@@ -23,9 +23,6 @@ package org.deeplearning4j.nn.layers.recurrent;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Created by benny on 12/31/15.
- */
 @Slf4j
 public class FwdPassReturn {
     //First: needed by standard forward pass only

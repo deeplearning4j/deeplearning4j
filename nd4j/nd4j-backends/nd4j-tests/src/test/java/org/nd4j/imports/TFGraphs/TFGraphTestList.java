@@ -37,15 +37,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-/**
- * TFGraphTestAll* will run all the checked in TF graphs and
- * compare outputs in nd4j to those generated and checked in from TF.
- * <p>
- * This file is to run a single graph or a list of graphs to aid in debug.
- * Simply change the modelNames String[] to correspond to the directory name the graph lives in
- * - eg. to run the graph for 'bias_add' i.e checked in under tf_graphs/examples/bias_add
- * <p>
- */
 @RunWith(Parameterized.class)
 @Ignore
 public class TFGraphTestList {

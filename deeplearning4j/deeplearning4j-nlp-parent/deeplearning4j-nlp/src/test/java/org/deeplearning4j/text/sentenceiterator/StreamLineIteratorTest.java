@@ -32,9 +32,6 @@ import java.io.FileInputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * Created by fartovii on 09.11.15.
- */
 public class StreamLineIteratorTest extends BaseDL4JTest {
 
     protected Logger logger = LoggerFactory.getLogger(StreamLineIteratorTest.class);

@@ -29,14 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Base distribution derived from apache commons math
- * http://commons.apache.org/proper/commons-math/
- * <p/>
- * (specifically the {@link org.apache.commons.math3.distribution.UniformIntegerDistribution}
- *
- * @author Adam Gibson
- */
 public class UniformDistribution extends BaseDistribution {
     private double upper, lower;
 

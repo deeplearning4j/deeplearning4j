@@ -30,11 +30,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * This method maps all String values, except those is the specified list, to a single String  value
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode
 public class MapAllStringsExceptListTransform extends BaseStringTransform {

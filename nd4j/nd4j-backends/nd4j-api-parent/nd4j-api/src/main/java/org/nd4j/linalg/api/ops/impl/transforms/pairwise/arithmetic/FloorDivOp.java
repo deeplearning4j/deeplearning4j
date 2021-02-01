@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.FloorDivBp
 
 import java.util.List;
 
-/**
- * Truncated division operation
- *
- * @author Adam Gibson
- */
 public class FloorDivOp extends BaseDynamicTransformOp {
     public FloorDivOp() {}
 

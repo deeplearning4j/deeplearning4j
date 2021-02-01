@@ -23,11 +23,6 @@ package org.nd4j.parameterserver.distributed.v2.messages.pairs.ping;
 import lombok.NoArgsConstructor;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseRequestMessage;
 
-/**
- * This message is just a Ping message, which will cause recepient to send Pong message back
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class PingMessage extends BaseRequestMessage {
 }

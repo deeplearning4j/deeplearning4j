@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.exception;
 
-/**
- *  ND4JIllegalAccessException is thrown on illegal access cases, i.e. bad concurrent access on object that doesn't support that
- *
- * @author raver119@protonmail.com
- */
 public class ND4JIllegalAccessException extends ND4JException {
 
     public ND4JIllegalAccessException() {}

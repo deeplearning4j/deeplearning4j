@@ -19,11 +19,6 @@
  */
 package org.nd4j.autodiff.listeners.profiler.data;
 
-/**
- * Chrome Profiler phase, for details see:
- * <a href="https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit">
- *     https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit</a>
- */
 public enum Phase {
     B,
     E,

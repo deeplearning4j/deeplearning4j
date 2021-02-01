@@ -25,9 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-/**
- * @author raver119@gmail.com
- */
 @Data
 public class HeapObject implements Serializable, Comparable<HeapObject> {
     private int index;

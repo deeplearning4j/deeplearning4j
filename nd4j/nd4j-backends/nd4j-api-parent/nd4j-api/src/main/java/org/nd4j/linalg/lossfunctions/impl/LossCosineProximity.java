@@ -31,9 +31,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Arrays;
 
-/**
- * Created by susaneraly on 9/9/16.
- */
 @EqualsAndHashCode
 public class LossCosineProximity implements ILossFunction {
 

@@ -18,17 +18,8 @@
  *  *****************************************************************************
  */
 
-//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
-
 package org.nd4j.enums;
 
-/**
- * direction <br>
- *  FWD: 0 = fwd
- *  BWD: 1 = bwd
- *  BIDIR_SUM: 2 = bidirectional sum
- *  BIDIR_CONCAT: 3 = bidirectional concat
- *  BIDIR_EXTRA_DIM: 4 = bidirectional extra output dim (in conjunction with format dataFormat = 3) */
 public enum LSTMDirectionMode {
   FWD,
 

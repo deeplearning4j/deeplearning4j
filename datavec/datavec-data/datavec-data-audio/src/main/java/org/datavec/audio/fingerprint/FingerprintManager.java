@@ -37,12 +37,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Audio fingerprint manager, handle fingerprint operations
- * 
- * @author jacquet
- *
- */
 @Slf4j
 public class FingerprintManager {
 

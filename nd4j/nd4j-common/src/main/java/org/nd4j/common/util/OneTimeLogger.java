@@ -28,10 +28,6 @@ import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class OneTimeLogger {
     protected static HashSet<String> hashSet = new HashSet<>();

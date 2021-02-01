@@ -27,9 +27,6 @@ import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.VectorAggregation;
 
-/**
- * @author raver119@gmail.com
- */
 @Data
 @Slf4j
 @Deprecated

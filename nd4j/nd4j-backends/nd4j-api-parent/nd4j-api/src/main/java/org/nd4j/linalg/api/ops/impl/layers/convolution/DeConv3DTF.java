@@ -42,9 +42,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * DeConv3D operation, TF-wrapper
- */
 @Slf4j
 @Getter
 @NoArgsConstructor

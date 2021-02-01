@@ -31,10 +31,6 @@ import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Tf idf vectorizer
- * @author Adam Gibson
- */
 public abstract class AbstractTfidfVectorizer<VECTOR_TYPE> extends TextVectorizer<VECTOR_TYPE> {
 
     @Override

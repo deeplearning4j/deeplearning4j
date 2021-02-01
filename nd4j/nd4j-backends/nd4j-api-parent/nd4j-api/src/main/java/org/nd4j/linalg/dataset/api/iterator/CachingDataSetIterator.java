@@ -28,9 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-/**
- * Created by anton on 7/16/16.
- */
 public class CachingDataSetIterator implements DataSetIterator {
     private static final Logger log = LoggerFactory.getLogger(DataSetCache.class);
 

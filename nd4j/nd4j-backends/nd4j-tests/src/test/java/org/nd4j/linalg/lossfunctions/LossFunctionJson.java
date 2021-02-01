@@ -47,9 +47,6 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 09/09/2016.
- */
 public class LossFunctionJson extends BaseNd4jTest {
 
     public LossFunctionJson(Nd4jBackend backend) {

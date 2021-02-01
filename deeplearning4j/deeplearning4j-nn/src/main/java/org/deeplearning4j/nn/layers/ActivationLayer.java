@@ -31,14 +31,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 
 
-/**
- * Activation Layer
- *
- * Used to apply activation on input and corresponding derivative on epsilon.
- * Decouples activation from the layer type and ideal for cases when applying
- * BatchNormLayer. For example, use "identity" activation on the layer prior to BatchNorm and
- * apply this layer after the BatchNorm.
- */
 public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ActivationLayer> {
 
     public ActivationLayer(NeuralNetConfiguration conf, DataType dataType) {

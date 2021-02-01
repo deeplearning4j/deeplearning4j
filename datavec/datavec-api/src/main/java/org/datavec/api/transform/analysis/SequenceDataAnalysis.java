@@ -33,9 +33,6 @@ import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Created by Alex on 12/03/2016.
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SequenceDataAnalysis extends DataAnalysis {

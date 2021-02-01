@@ -20,11 +20,6 @@
 
 package org.nd4j.common.function;
 
-/**
- * A boolean valued function of a single input argument
- *
- * @param <T> Type of the input
- */
 public interface Predicate<T> {
 
     /**

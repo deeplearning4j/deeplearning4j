@@ -20,10 +20,6 @@
 
 package org.nd4j.linalg.api.memory.enums;
 
-/**
- * This enum describes different allocation kinds
- * @author raver119@gmail.com
- */
 public enum AllocationKind {
     /**
      * General allocations

@@ -33,15 +33,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Apply noise of the specified distribution to the weights at training time.
- * Note that both additive and multiplicative modes are supported - when additive, noise should be mean 0,
- * when multiplicative, noise should be mean 1.
- * That is, additive noise: x = x + noise<br>
- * multiplicative noise: x = x * noise
- *
- * @author Alex Black
- */
 @Data
 public class WeightNoise implements IWeightNoise {
 

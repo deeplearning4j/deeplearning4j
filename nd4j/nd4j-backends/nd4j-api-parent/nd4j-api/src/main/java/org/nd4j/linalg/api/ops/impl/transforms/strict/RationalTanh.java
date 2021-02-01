@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhBp;
 
 import java.util.List;
 
-/**
- * Rational Tanh Approximation elementwise function, as described at https://github.com/deeplearning4j/libnd4j/issues/351
- *
- * @author raver119@gmail.com
- */
 public class RationalTanh extends BaseTransformStrictOp {
     public RationalTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

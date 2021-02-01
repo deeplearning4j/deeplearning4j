@@ -20,12 +20,6 @@
 
 package org.deeplearning4j.core.storage;
 
-/**
- * A listener interface, so that classes can be notified of changes to a {@link StatsStorage}
- * implementation
- *
- * @author Alex Black
- */
 public interface StatsStorageListener {
 
     enum EventType {

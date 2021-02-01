@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Log elementwise function
- *
- * @author Adam Gibson
- */
 public class Log extends BaseTransformStrictOp {
     public Log(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

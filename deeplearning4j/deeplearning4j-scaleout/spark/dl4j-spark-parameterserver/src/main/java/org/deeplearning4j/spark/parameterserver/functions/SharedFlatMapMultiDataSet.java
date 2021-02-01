@@ -31,9 +31,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import java.util.Collections;
 import java.util.Iterator;
 
-/**
- * Created by raver119 on 13.06.17.
- */
 public class SharedFlatMapMultiDataSet<R extends TrainingResult> implements FlatMapFunction<Iterator<MultiDataSet>, R> {
 
     private final SharedTrainingWorker worker;

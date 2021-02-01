@@ -22,11 +22,6 @@ package org.datavec.api.transform.serde;
 
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-/**
- * Serializer used for converting objects (Transforms, Conditions, etc) to YAML format
- *
- * @author Alex Black
- */
 public class YamlSerializer extends BaseSerializer {
 
     private ObjectMapper om;

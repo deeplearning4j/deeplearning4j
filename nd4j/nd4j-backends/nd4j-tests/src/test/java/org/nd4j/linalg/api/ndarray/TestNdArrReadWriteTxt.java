@@ -42,9 +42,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by susaneraly on 6/18/16.
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class TestNdArrReadWriteTxt extends BaseNd4jTest {

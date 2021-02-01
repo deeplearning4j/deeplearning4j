@@ -22,9 +22,6 @@ package org.nd4j.linalg.dataset.api;
 
 import java.io.Serializable;
 
-/**
- * Pre process a dataset
- */
 public interface DataSetPreProcessor extends Serializable {
 
     /**

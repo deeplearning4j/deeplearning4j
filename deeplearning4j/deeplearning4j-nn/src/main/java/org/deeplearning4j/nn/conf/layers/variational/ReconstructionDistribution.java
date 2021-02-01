@@ -26,15 +26,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/**
- * The ReconstructionDistribution is used with variational autoencoders {@link VariationalAutoencoder}
- * to specify the form of the distribution p(data|x). For example, real-valued data could be modelled
- * by a {@link GaussianReconstructionDistribution}, whereas binary data could be modelled by a {@link BernoulliReconstructionDistribution}.<br>
- * <p>
- * To model multiple types of data in the one data vector, use {@link CompositeReconstructionDistribution}.
- *
- * @author Alex Black
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ReconstructionDistribution extends Serializable {
 

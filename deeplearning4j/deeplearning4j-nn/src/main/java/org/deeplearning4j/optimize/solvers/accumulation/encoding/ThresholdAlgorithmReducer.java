@@ -22,14 +22,6 @@ package org.deeplearning4j.optimize.solvers.accumulation.encoding;
 
 import java.io.Serializable;
 
-/**
- * Used to combine ThresholdAlgorithm implementations in a way that is useful in a distributed training setting.
- * ThresholdAlgorithm instances can be combined to save their historical state (if any) that is used to make decisions
- * regarding the encoding threshold to use.
- * Without combining and storing the state, any threshold adaption would be lost between epochs.
- *
- * @author Alex Black
- */
 public interface ThresholdAlgorithmReducer extends Serializable {
 
     /**

@@ -28,30 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 
 
-/**
- * A DataSetIterator handles
- * traversing through a dataset and preparing
- * <p/>
- * data for a neural network.
- * <p/>
- * Typical usage of an iterator is akin to:
- * <p/>
- * DataSetIterator iter = ..;
- * <p/>
- * while(iter.hasNext()) {
- * DataSet d = iter.next();
- * //iterate network...
- * }
- * <p/>
- * <p/>
- * For custom numbers of examples/batch sizes you can call:
- * <p/>
- * iter.next(num)
- * <p/>
- * where num is the number of examples to fetch
- *
- * @author Adam Gibson
- */
 public interface DataSetIterator extends Iterator<DataSet>, Serializable {
 
     /**

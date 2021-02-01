@@ -33,38 +33,6 @@ import java.net.URLClassLoader;
 import java.security.PrivilegedActionException;
 import java.util.*;
 
-/**
- * An ND4j backend.
- *
- * A "backend" is also described here: https://deeplearning4j.konduit.ai/nd4j/backend
- *
- * A backend also has 2  variables to be aware of.
- * 1 is the environment variable, ND4J_DYNAMIC_LOAD_CLASSPATH
- * This will define a uri path separated by ; where jars will be
- * loaded from the path and dynamically loaded.
- *
- * The other is the system property:
- * org.nd4j.backend.dynamicbackend
- *
- * This has the same use case but is for system properties.
- * Of note here is that the system property takes loading precedence over
- * the environment variable. If you want to just use the environment variable,
- * don't define the system property.
- *
- * Both of these variables are for dynamically loading a backend relative to a path.
- * The main idea here is for distributed environments like spark where
- * you have multiple worker nodes with some having gpus and others not.
- *
- * When you define an environment variable on the server, you can
- * have a hardware jar file load with respect to the node nd4j is installed on.
- * The system property is mainly for flexibility and probably shouldn't be
- * used in practice.
- *
- * @author eronwright
- * @author Adam Gibson
- * @author saudet
- *
- */
 @Slf4j
 public abstract class Nd4jBackend {
 

@@ -26,11 +26,6 @@ import org.bytedeco.javacpp.Pointer;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
-/**
- * Weak reference for NativeRandom garbage collector
- *
- * @author raver119@gmail.com
- */
 public class GarbageStateReference extends WeakReference<NativePack> {
     @Getter
     private Pointer statePointer;

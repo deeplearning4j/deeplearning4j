@@ -29,12 +29,6 @@ import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
 import java.util.List;
 
-/**
- * This Op implements numpy.choice method
- * It fills Z from source, following probabilities for each source element
- *
- * @author raver119@gmail.com
- */
 public class Choice extends BaseRandomOp {
 
     public Choice() {

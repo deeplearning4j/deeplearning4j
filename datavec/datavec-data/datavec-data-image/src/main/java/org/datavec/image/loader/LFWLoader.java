@@ -41,18 +41,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Loads LFW faces data transform.
- * Customize the size of images by passing in preferred dimensions.
- *
- * DataSet
- *      5749 different individuals
- *      1680 people have two or more images in the database
- *      4069 people have just a single image in the database
- *      available as 250 by 250 pixel JPEG images
- *      most images are in color, although a few are grayscale
- *
- */
 @Slf4j
 public class LFWLoader extends BaseImageLoader implements Serializable {
 

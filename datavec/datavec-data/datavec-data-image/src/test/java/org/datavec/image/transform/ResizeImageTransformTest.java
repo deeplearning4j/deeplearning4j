@@ -27,11 +27,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Tests for ResizeImage
- *
- * @author raver119@gmail.com
- */
 public class ResizeImageTransformTest {
     @Before
     public void setUp() throws Exception {

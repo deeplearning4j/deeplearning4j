@@ -34,12 +34,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import static org.deeplearning4j.nn.conf.RNNFormat.NWC;
 
-/**
- * Masks timesteps with activation equal to the specified masking value, defaulting to 0.0.
- * Assumes that the input shape is [batch_size, input_size, timesteps].
- *
- * @author Martin Boyanov mboyanov@gmail.com
- */
 public class MaskZeroLayer extends BaseWrapperLayer {
 
     private static final long serialVersionUID = -7369482676002469854L;

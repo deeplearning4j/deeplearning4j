@@ -35,11 +35,6 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
-/**
- * JSON mappers for serializing/deserializing objects
- *
- * @author Alex Black
- */
 @Slf4j
 public class JsonMappers {
 

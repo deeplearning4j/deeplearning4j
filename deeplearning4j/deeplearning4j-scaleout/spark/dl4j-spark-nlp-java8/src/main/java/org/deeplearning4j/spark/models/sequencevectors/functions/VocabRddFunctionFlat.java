@@ -38,9 +38,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 public class VocabRddFunctionFlat<T extends SequenceElement> implements FlatMapFunction<Sequence<T>, T> {
     protected Broadcast<VectorsConfiguration> vectorsConfigurationBroadcast;
     protected Broadcast<VoidConfiguration> paramServerConfigurationBroadcast;

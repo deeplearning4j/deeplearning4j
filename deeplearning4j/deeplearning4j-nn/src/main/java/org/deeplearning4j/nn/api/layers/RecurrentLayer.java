@@ -28,9 +28,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 
-/**
- * Created by Alex on 28/08/2016.
- */
 public interface RecurrentLayer extends Layer {
 
     /**

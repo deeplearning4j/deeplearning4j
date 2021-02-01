@@ -37,14 +37,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-/**
- * This wraps a {@link RecordReader}
- * with a {@link TransformProcess} and allows every {@link Record}
- * that is returned by the {@link RecordReader}
- * to have a transform process applied before being returned.
- *
- * @author Adam Gibson
- */
 public class TransformProcessRecordReader implements RecordReader {
     protected RecordReader recordReader;
     protected TransformProcess transformProcess;

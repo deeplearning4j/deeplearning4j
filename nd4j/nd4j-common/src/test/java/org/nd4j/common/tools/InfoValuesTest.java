@@ -25,14 +25,6 @@ import org.nd4j.common.tools.InfoValues;
 
 import static org.junit.Assert.*;
 
-/**
- *
- *
- * 
- *
- * @author clavvis 
- */
-
 public class InfoValuesTest {
 	//
 	private String[] t1_titleA = { "T0", "T1", "T2", "T3", "T4", "T5" };

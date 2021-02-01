@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Matrix Inverse Function
- *
- * @author Alex Black
- */
 public class MatrixInverse extends DynamicCustomOp {
 
     public MatrixInverse() {

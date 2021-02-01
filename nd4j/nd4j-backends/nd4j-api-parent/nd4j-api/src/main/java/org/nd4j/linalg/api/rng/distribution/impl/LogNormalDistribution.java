@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- *  Log-Normal Distribution
- *  
- * @author raver119@gmail.com
- */
 public class LogNormalDistribution extends BaseDistribution {
     /**
      * Default inverse cumulative probability accuracy.

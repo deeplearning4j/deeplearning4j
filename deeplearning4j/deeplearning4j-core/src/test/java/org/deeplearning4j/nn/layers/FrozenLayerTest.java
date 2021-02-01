@@ -43,9 +43,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by susaneraly on 2/5/17.
- */
 @Slf4j
 public class FrozenLayerTest extends BaseDL4JTest {
 

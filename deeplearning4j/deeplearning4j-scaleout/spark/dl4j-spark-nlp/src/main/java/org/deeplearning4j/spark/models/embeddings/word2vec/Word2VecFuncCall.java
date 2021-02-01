@@ -26,11 +26,6 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * Map operation for word2vec
- *
- * @author dAdam Gibson
- */
 @Deprecated
 public class Word2VecFuncCall implements Serializable {
     private Broadcast<Word2VecParam> param;

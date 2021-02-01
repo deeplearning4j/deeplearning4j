@@ -32,9 +32,6 @@ import java.io.*;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 28/04/2016.
- */
 @RunWith(Parameterized.class)
 public class TestSerialization extends BaseNd4jTest {
 

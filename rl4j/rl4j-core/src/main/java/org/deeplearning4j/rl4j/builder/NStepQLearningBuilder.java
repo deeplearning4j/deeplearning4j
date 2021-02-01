@@ -40,13 +40,6 @@ import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.rng.Random;
 
-/**
- * A {@link IAgentLearner} builder that will setup a {@link NStepQLearning n-step Q-Learning} algorithm with these:
- * <li>a epsilon-greedy policy</li>
- * <li>a n-step state-action-reward experience handler</li>
- * <li>a neural net updater that expects gradient update data</li>
- * <li>a n-step Q-Learning gradient conputation algorithm</li>
- */
 public class NStepQLearningBuilder extends BaseAsyncAgentLearnerBuilder<NStepQLearningBuilder.Configuration> {
 
     private final Random rnd;

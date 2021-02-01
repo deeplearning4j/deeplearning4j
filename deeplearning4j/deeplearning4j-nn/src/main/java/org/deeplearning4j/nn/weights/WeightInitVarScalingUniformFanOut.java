@@ -26,12 +26,6 @@ import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Uniform U[-a,a] with a=3.0/(fanOut)<br>
- * If a scale is provided, a = 3.0 * scale / fanOut
- *
- * @author Adam Gibson
- */
 @Data
 @NoArgsConstructor
 public class WeightInitVarScalingUniformFanOut implements IWeightInit {

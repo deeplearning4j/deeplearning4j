@@ -27,9 +27,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/** Interface for termination conditions to be evaluated once per epoch (i.e., once per pass of the full data set),
- *  based on a score and epoch number
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public interface EpochTerminationCondition extends Serializable {

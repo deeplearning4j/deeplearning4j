@@ -26,9 +26,6 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * String transform that removes all whitespace charaters
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class RemoveWhiteSpaceTransform extends BaseStringTransform {

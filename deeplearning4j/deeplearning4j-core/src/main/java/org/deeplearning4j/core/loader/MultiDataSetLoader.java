@@ -24,11 +24,6 @@ import org.nd4j.common.loader.Loader;
 import org.nd4j.common.loader.Source;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * An interface for loading MultiDataSets from a {@link Source}
- *
- * @author Alex Black
- */
 public interface MultiDataSetLoader extends Loader<MultiDataSet> {
 
 }

@@ -34,9 +34,6 @@ import java.util.Collection;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by fartovii on 10.12.15.
- */
 @Slf4j
 public class AbstractCacheTest extends BaseDL4JTest {
 

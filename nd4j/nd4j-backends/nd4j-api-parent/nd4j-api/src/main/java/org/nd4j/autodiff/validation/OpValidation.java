@@ -105,31 +105,6 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-/**
- * Main test case runner for validating ops used in SameDiff.<br>
- * This OpValidation class also collects test coverage information, to determine the op test coverage, for both
- * op outputs and gradients/backprop.
- * <br><br>
- * Two types of test cases are supported:<br>
- * 1. {@link TestCase} - Can be used to check op outputs, as well as gradients<br>
- * 2. {@link OpTestCase} - Used to check the output(s) of a single op only<br>
- * <br>
- * NOTE: For the op coverage information to work properly for ND4J tests, we need the op validation to be run as part of
- * the OpValidationSuite test suite.  * Otherwise, we could report coverage information before all test have run -
- * underestimating coverage.<br>
- * <br>
- * SINGLE OP TEST: OpValidation.validate(new OpTestCase(op).expectedOutputs(0, <INDArray here>))
- * - OpTestCase checks the output values of a single op, no backprop/gradients<br>
- * - Returns an error message if op failed, or NULL if op passed<br>
- * SAMEDIFF TEST:  OpValidation.validate(new TestCase(sameDiff).gradientCheck(true).expectedOutput("someVar", <INDArray>))<br>
- * - These tests can be used to check both gradients AND expected output, collecting coverage as required<br>
- * - Returns an error message if op failed, or NULL if op passed<br>
- * - Note gradientCheck(true) is the default<br>
- * - Expected outputs are optional<br>
- * - You can specify a function for validating the correctness of each output using {@link org.nd4j.autodiff.validation.TestCase#expected(String, Function)}<br>
- *
- * @author Alex Black
- */
 @Slf4j
 public class OpValidation {
 

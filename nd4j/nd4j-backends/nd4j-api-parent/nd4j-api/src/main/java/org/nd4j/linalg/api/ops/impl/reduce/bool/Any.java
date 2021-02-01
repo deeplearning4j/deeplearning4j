@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseReduceBoolOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Boolean AND pairwise transform
- *
- * @author raver119@gmail.com
- */
 public class Any extends BaseReduceBoolOp {
     public Any(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);

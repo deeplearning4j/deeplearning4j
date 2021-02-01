@@ -24,11 +24,6 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Map;
 
-/**
- * Utilities for use in {@link SbeStatsInitializationReport} and {@link SbeStatsReport}
- *
- * @author Alex Black
- */
 public class SbeUtil {
 
     public static final Charset UTF8 = Charset.forName("UTF-8");

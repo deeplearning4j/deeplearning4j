@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentMaxBp;
 
 import java.util.*;
 
-/**
- * Unsorted segment max operation
- *
- * @author Alex Black
- */
 public class UnsortedSegmentMax extends DynamicCustomOp {
 
     protected int numSegments;

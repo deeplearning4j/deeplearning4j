@@ -22,10 +22,6 @@ package org.deeplearning4j.malmo;
 
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 
-/**
- * Abstract base class for all Malmo-specific action spaces
- * @author howard-abrams (howard.abrams@ca.com) on 1/12/17.
- */
 public abstract class MalmoActionSpace extends DiscreteSpace {
     /**
      * Array of action strings that will be sent to Malmo

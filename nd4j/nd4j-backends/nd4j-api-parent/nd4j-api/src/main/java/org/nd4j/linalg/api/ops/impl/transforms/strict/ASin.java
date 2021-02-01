@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Arcsin elementwise function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class ASin extends BaseTransformStrictOp {
     public ASin(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

@@ -35,9 +35,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
 
-/**
- * Created by susaneraly on 9/20/16.
- */
 @Slf4j
 public class DataSetUtil {
     public static INDArray tailor2d(@NonNull DataSet dataSet, boolean areFeatures) {

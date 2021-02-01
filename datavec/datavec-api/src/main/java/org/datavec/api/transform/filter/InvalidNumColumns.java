@@ -27,10 +27,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Remove invalid records of a certain size.
- * @author Adam Gibson
- */
 @Data
 @AllArgsConstructor
 public class InvalidNumColumns implements Filter {

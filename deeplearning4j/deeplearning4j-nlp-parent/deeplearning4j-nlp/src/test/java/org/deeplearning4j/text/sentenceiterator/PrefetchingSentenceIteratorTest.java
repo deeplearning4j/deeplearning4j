@@ -33,9 +33,6 @@ import java.io.File;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author raver119@gmail.com
- */
 public class PrefetchingSentenceIteratorTest extends BaseDL4JTest {
 
     @Rule

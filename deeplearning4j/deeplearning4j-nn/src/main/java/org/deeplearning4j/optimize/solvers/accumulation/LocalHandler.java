@@ -24,13 +24,6 @@ import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * MessageHandler implementation suited for ParallelWrapper running on single box
- *
- * PLEASE NOTE: This handler does NOT provide any network connectivity.
- *
- * @author raver119@gmail.com
- */
 public class LocalHandler implements MessageHandler {
     protected transient GradientsAccumulator accumulator;
 

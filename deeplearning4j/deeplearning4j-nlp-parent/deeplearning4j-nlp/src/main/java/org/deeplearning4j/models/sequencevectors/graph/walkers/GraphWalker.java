@@ -24,11 +24,6 @@ import org.deeplearning4j.models.sequencevectors.graph.primitives.IGraph;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
-/**
- * This interface describes methods needed for various DeepWalk-related implementations
- *
- * @author raver119@gmail.com
- */
 public interface GraphWalker<T extends SequenceElement> {
 
     IGraph<T, ?> getSourceGraph();

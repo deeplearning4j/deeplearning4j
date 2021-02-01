@@ -26,9 +26,6 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Replace an empty/missing integer with a certain value.
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ReplaceEmptyIntegerWithValueTransform extends BaseIntegerTransform {

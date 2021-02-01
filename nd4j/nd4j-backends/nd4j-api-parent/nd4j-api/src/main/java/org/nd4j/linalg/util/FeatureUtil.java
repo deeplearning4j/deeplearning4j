@@ -24,9 +24,6 @@ import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Feature matrix related jcuda.utils
- */
 public class FeatureUtil {
     /**
      * Creates an out come vector from the specified inputs

@@ -37,11 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Returns the size of the input as a rank 0 array
- *
- * @author Alex Black
- */
 public class Size extends DynamicCustomOp {
 
     protected DataType dataType;

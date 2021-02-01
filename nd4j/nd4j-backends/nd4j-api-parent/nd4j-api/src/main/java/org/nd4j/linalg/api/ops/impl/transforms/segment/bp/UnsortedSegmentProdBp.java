@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Unsorted segment product backprop operation
- *
- * @author Alex Black
- */
 public class UnsortedSegmentProdBp extends DynamicCustomOp {
 
     private int numSegments;

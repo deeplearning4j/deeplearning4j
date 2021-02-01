@@ -25,11 +25,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 
-/**
- * Analysis for Double columns
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor //For Jackson deserialization

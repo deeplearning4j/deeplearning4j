@@ -35,11 +35,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Strategy for saving and restoring {@link MultiNormalizerHybrid} instances in single binary files
- *
- * @author Ede Meijer
- */
 public class MultiHybridSerializerStrategy implements NormalizerSerializerStrategy<MultiNormalizerHybrid> {
     /**
      * Serialize a MultiNormalizerHybrid to a output stream

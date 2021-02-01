@@ -29,12 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-/**
- * This is universal serialization/deserialization factor for SequenceVectors serialization.
- * It will work for any &lt;T extends SequenceElement&gt; that doesn't breaks simple POJO rules.
- *
- * @author raver119@gmail.com
- */
 public class AbstractElementFactory<T extends SequenceElement> implements SequenceElementFactory<T> {
     private final Class targetClass;
 

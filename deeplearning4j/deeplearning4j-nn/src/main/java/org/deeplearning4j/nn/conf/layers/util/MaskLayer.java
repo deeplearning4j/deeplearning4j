@@ -37,12 +37,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-/**
- * MaskLayer applies the mask array to the forward pass activations, and backward pass gradients, passing through
- * this layer. It can be used with 2d (feed-forward), 3d (time series) or 4d (CNN) activations.
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class MaskLayer extends NoParamLayer {
     @Override

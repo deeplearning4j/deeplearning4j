@@ -40,14 +40,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
-/**
- * TrainingSession extends InferenceSession, to add training-specific functionality:<br>
- * - Application of regularization (L1, L2, weight decay etc)<br>
- * - Inline updating of variables, using updater/optimizer (Adam, Nesterov, SGD, etc)<br>
- * - Calculation of regularization scores (Score for L1, L2, etc)
- *
- * @author Alex Black
- */
 @Slf4j
 public class TrainingSession extends InferenceSession {
 

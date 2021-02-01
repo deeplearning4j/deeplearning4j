@@ -28,13 +28,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.List;
 
-/**
- * Pow derivative
- *
- * z = n * x ^ (n-1)
- *
- * @author raver119@gmail.com
- */
 public class PowDerivative extends BaseScalarOp {
     private double pow;
 

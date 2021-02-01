@@ -44,11 +44,6 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUt
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.*;
 
 
-/**
- * Imports a 2D locally connected layer from Keras.
- *
- * @author Max Pumperla
- */
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)

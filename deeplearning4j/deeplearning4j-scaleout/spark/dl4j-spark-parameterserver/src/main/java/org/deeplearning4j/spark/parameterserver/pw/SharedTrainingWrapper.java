@@ -70,12 +70,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This class maintains ParallelWrapper instance in Spark environment, and provides primitives for inter-executor
- * communication during training over partitions.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SharedTrainingWrapper {
     private static SharedTrainingWrapper INSTANCE = new SharedTrainingWrapper();

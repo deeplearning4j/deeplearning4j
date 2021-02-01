@@ -43,9 +43,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 
-/**
- * Created by agibsonccc on 12/29/16.
- */
 @Slf4j
 public class ParallelWrapperMainTest extends BaseDL4JTest {
 

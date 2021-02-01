@@ -29,12 +29,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * A simple {@link ArrayHolder} that uses a simple {@code Map<String, INDArray>} internally.
- * No thread safety guarantees
- *
- * @author Alex Black
- */
 public class SingleThreadArrayHolder implements ArrayHolder {
 
     private final Map<String, INDArray> map = new HashMap<>();

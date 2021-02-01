@@ -24,10 +24,6 @@ import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- *
- * @author raver119@gmail.com
- */
 public class AmsGradUpdater extends DynamicCustomOp {
 
     public AmsGradUpdater() {

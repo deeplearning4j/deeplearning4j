@@ -27,11 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-/**
- * This class provides simple holder functionaliy
- *
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

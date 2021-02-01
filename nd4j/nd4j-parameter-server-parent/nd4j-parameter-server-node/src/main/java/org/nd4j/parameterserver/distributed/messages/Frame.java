@@ -40,11 +40,6 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Simple wrapper for multiple request messages OF THE SAME TYPE being stacked into single message
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class Frame<T extends TrainingMessage> implements Serializable, Iterable<T>, VoidMessage {

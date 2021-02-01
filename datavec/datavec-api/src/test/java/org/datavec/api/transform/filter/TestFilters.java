@@ -39,9 +39,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 21/03/2016.
- */
 public class TestFilters  extends BaseND4JTest {
 
 

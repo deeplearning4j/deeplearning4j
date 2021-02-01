@@ -41,30 +41,6 @@ import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * An <a href="https://lucene.apache.org/solr/7_7_1/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html">
- * org.apache.solr.ltr.model.LTRScoringModel</a> that computes scores using a {@link MultiLayerNetwork} or
- * {@link ComputationGraph} model.
- * <p>
- * Example configuration (snippet):
- * <pre>{
-  "class" : "org.deeplearning4j.nn.modelexport.solr.ltr.model.ScoringModel",
-  "name" : "myModel",
-  "features" : [
-    { "name" : "documentRecency", ... },
-    { "name" : "isBook", ... },
-    { "name" : "originalScore", ... }
-  ],
-  "params" : {
-    "serializedModelFileName" : "mySerializedModel"
-  }
-}</pre>
- * <p>
- * Apache Solr Reference Guide:
- * <ul>
- * <li> <a href="https://lucene.apache.org/solr/guide/7_7/learning-to-rank.html">Learning To Rank</a>
- * </ul>
- */
 public class ScoringModel extends AdapterModel {
 
   private String serializedModelFileName;

@@ -42,17 +42,6 @@ import java.util.Random;
 
 import static play.mvc.Results.*;
 
-/**
- * A rest server for using an
- * {@link TransformProcess} based on simple
- * csv values and a schema via REST.
- * <p>
- * The input values are an {@link SingleCSVRecord}
- * which (based on the input schema) will automatically
- * have their values transformed.
- *
- * @author Adam Gibson
- */
 @Slf4j
 @Data
 public class CSVSparkTransformServer extends SparkTransformServer {

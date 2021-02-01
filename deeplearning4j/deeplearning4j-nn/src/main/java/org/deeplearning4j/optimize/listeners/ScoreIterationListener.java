@@ -28,12 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 
-/**
- * Score iteration listener. Reports the score (value of the loss function )of the network during training every
- * N iterations
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class ScoreIterationListener extends BaseTrainingListener implements Serializable {
     private int printIterations = 10;

@@ -29,12 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
 
-/**
- * The results (parameters, optional updaters) returned by a {@link ParameterAveragingTrainingWorker} to the
- * {@link ParameterAveragingTrainingMaster}
- *
- * @author Alex Black
- */
 @Data
 public class ParameterAveragingTrainingResult implements TrainingResult {
 

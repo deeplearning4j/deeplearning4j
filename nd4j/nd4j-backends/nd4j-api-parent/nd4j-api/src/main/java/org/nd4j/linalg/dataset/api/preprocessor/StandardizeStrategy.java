@@ -33,12 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-/**
- * {@link NormalizerStrategy} implementation that will standardize and de-standardize data arrays, based on statistics
- * of the means and standard deviations of the population
- *
- * @author Ede Meijer
- */
 @EqualsAndHashCode
 public class StandardizeStrategy implements NormalizerStrategy<DistributionStats> {
     /**

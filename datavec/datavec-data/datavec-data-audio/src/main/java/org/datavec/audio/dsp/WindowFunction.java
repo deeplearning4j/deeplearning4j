@@ -20,12 +20,6 @@
 
 package org.datavec.audio.dsp;
 
-/**
- * Window functions generator
- * 
- * @author Jacquet Wong
- *
- */
 public class WindowFunction {
 
     public static final int RECTANGULAR = 0;

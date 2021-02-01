@@ -36,9 +36,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 19/09/2016.
- */
 public class CSVNLinesSequenceRecordReaderTest extends BaseND4JTest {
 
     @Test

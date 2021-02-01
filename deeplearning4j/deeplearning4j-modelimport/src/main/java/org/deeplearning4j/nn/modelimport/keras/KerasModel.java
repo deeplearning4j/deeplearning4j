@@ -58,12 +58,6 @@ import java.util.*;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.customLayers;
 import static org.deeplearning4j.nn.modelimport.keras.KerasLayer.lambdaLayers;
 
-/**
- * Build ComputationGraph from Keras (Functional API) Model or
- * Sequential model configuration.
- *
- * @author dave@skymind.io, Max Pumperla
- */
 @Slf4j
 @Data
 public class KerasModel {

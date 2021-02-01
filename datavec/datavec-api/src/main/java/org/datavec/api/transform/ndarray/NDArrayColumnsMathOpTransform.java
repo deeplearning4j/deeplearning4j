@@ -35,11 +35,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * Perform an element wise mathematical operation on 2 or more NDArray columns
- *
- * @author Alex Black
- */
 @Data
 public class NDArrayColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 

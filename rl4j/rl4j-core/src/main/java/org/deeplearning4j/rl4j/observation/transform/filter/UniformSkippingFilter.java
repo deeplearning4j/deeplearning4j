@@ -23,12 +23,6 @@ import org.deeplearning4j.rl4j.observation.transform.FilterOperation;
 import org.nd4j.common.base.Preconditions;
 import java.util.Map;
 
-/**
- * Used with {@link org.deeplearning4j.rl4j.observation.transform.TransformProcess TransformProcess}. Will cause the
- * transform process to skip a fixed number of frames between non skipped ones.
- *
- * @author Alexandre Boulanger
- */
 public class UniformSkippingFilter implements FilterOperation {
 
     private final int skipFrame;

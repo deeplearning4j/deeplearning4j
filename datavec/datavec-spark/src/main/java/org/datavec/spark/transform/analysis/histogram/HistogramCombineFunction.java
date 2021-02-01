@@ -26,11 +26,6 @@ import org.datavec.api.transform.analysis.histogram.HistogramCounter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A combiner function used in the calculation of histograms
- *
- * @author Alex Black
- */
 public class HistogramCombineFunction
                 implements Function2<List<HistogramCounter>, List<HistogramCounter>, List<HistogramCounter>> {
     @Override

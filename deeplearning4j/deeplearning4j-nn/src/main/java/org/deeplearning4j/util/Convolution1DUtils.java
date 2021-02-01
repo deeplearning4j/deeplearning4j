@@ -35,11 +35,6 @@ import org.nd4j.linalg.exception.ND4JArraySizeException;
 
 import java.util.Arrays;
 
-/**
- * Shape utilities for 1D convolution layers
- *
- * @author Max Pumperla
- */
 public class Convolution1DUtils {
 
     private static final int ONE = 1;

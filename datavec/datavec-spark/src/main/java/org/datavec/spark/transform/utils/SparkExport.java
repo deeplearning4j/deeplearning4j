@@ -34,9 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Created by Alex on 7/03/2016.
- */
 public class SparkExport {
 
     //Quick and dirty CSV export (using Spark). Eventually, rework this to use DataVec record writers on Spark

@@ -32,9 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/**
- * Created by huitseeker on 7/28/17.
- */
 public class RandomProjection {
 
     private int components;

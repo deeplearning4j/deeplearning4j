@@ -29,12 +29,6 @@ import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Log Entropy Op - returns the log entropy (information gain, or uncertainty of a random variable).
- * log(-sum( x * log(x)))
- *
- * @author raver119@gmail.com
- */
 public class  LogEntropy extends BaseReduceFloatOp {
 
     public LogEntropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {

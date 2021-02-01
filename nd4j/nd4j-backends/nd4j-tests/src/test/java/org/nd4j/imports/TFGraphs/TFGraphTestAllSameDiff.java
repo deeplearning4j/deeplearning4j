@@ -38,9 +38,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * Created by susaneraly on 11/29/17.
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests

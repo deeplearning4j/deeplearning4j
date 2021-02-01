@@ -50,13 +50,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * Trains datasets using a standard in memory
- * parameter averaging technique.
- * Think of this worker as the simplest form of doing parameter averaging
- *
- * @author Adam Gibson
- */
 @Builder
 @Slf4j
 @NoArgsConstructor

@@ -31,14 +31,6 @@ import java.util.Collections;
 import java.util.Map;
 
 
-/**
- * Vectorized Learning Rate used per Connection Weight
- * <p/>
- * Adapted from: http://xcorr.net/2014/01/23/adagrad-eliminating-learning-rates-in-stochastic-gradient-descent/
- * See also http://cs231n.github.io/neural-networks-3/#ada
- *
- * @author Adam Gibson
- */
 @Data
 public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
     public static final String GRAD_STATE = "grad";

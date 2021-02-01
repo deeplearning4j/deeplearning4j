@@ -31,10 +31,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/**
- * Input format for the @link {ListStringRecordReader}
- * @author Adam Gibson
- */
 public class ListStringInputFormat implements InputFormat {
     /**
      * Creates a reader from an input split

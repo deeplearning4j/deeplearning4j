@@ -28,11 +28,6 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-/**
- * Analysis for Time columns
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor //For Jackson deserialization

@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Matrix trace operation
- *
- * @author Alex Black
- */
 public class Trace extends DynamicCustomOp {
 
     public Trace(SameDiff sd, SDVariable in){

@@ -30,26 +30,6 @@ import java.util.Set;
 
 import static org.bytedeco.cpython.global.python.*;
 
-/**
- * Wrap your code in a try-with-PythonGC block for automatic GC:
- * ```
- * try(PythonGC gc = PythonGC.lock()){
- *     // your code here
- * }
- *
- * If a PythonObject created inside such a block has to be used outside
- * the block, use PythonGC.keep() to exclude that object from GC.
- *
- * ```
- * PythonObject pyObj;
- *
- * try(PythonGC gc = PythonG.lock()){
- *     // do stuff
- *     pyObj = someFunction();
- *     PythonGC.keep(pyObj);
- * }
- *
- */
 public class PythonGC implements Closeable {
 
     private PythonGC previousFrame = null;

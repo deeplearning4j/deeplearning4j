@@ -40,9 +40,6 @@ import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by agibsonccc on 10/3/16.
- */
 @Slf4j
 public class ParameterServerClientPartialTest extends BaseND4JTest {
     private static MediaDriver mediaDriver;

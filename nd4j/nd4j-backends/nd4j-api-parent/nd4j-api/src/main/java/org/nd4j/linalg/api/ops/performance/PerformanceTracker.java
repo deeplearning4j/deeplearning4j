@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.memory.MemcpyDirection;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * This class provides routines for performance tracking and holder for corresponding results
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class PerformanceTracker {
     private static final PerformanceTracker INSTANCE = new PerformanceTracker();

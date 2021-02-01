@@ -31,11 +31,6 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 
-/**
- * JSON mappers for deserializing neural net configurations, etc.
- *
- * @author Alex Black
- */
 @Slf4j
 public class JsonMappers {
 

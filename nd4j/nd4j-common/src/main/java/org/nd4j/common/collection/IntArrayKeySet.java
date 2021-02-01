@@ -22,14 +22,6 @@ package org.nd4j.common.collection;
 
 import java.util.*;
 
-/**
- * Provides a wrapper for a {@link TreeSet}
- * that uses {@link IntArrayKeyMap.IntArray}
- * for proper comparison of int arrays
- * as keys.
- *
- * @author Adam Gibson
- */
 public class IntArrayKeySet implements Set<int[]> {
     private Set<IntArrayKeyMap.IntArray> set = new LinkedHashSet<>();
     @Override

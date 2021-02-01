@@ -25,11 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 
-/**
- * Assign target row to specified value
- *
- * @author raver119@gmail.com
- */
 @Data
 @Deprecated
 public class DistributedAssignMessage extends BaseVoidMessage implements DistributedMessage {

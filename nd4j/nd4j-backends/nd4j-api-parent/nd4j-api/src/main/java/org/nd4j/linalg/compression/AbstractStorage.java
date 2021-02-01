@@ -22,12 +22,6 @@ package org.nd4j.linalg.compression;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * This interface describes basic Key-Value storage, where Key is any object, and Value is INDArray located "somewhere else"
- *
- *
- * @author raver119@gmail.com
- */
 public interface AbstractStorage<T extends Object> {
 
     /**

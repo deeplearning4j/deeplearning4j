@@ -26,11 +26,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.io.Serializable;
 
-/**
- * Line optimizer interface adapted from mallet
- * @author Adam Gibson
- *
- */
 public interface LineOptimizer extends Serializable {
     /**
      * Line optimizer

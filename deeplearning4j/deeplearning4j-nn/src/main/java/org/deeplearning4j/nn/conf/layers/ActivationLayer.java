@@ -38,9 +38,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Activation layer is a simple layer that applies the specified activation function to the input activations
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

@@ -47,9 +47,6 @@ import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 09/09/2016.
- */
 public class LossFunctionTest extends BaseNd4jTest {
 
     public LossFunctionTest(Nd4jBackend backend) {

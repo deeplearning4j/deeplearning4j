@@ -19,9 +19,11 @@
 #  ******************************************************************************/
 #
 
-# push_to_bintray.sh - francois@skymind.io
 
-# This script push a package to Bintray repo
+
+
+
+
 
 function usage() {
   echo "$0 username api_key organisation package_file site_url"

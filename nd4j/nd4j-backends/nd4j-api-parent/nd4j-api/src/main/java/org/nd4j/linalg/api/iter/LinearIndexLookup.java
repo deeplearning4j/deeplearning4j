@@ -25,10 +25,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.io.Serializable;
 
-/**
- * Represents a cache linear index lookup
- * @author Adam Gibson
- */
 public class LinearIndexLookup implements Serializable {
     private char ordering;
     private long[][] indexes;

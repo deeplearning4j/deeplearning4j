@@ -34,12 +34,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 
-/**
- * {@link NormalizerStrategy} implementation that will normalize and denormalize data arrays to a given range, based on
- * statistics of the upper and lower bounds of the population
- *
- * @author Ede Meijer
- */
 @Getter
 @EqualsAndHashCode
 public class MinMaxStrategy implements NormalizerStrategy<MinMaxStats>, Serializable {

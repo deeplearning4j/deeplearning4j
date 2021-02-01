@@ -37,9 +37,6 @@ import java.util.concurrent.Executors;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 12/3/16.
- */
 @Slf4j
 @Ignore
 @Deprecated

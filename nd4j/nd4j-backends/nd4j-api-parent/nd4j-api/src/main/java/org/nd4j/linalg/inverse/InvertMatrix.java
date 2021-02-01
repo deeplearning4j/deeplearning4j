@@ -28,9 +28,6 @@ import org.apache.commons.math3.linear.SingularMatrixException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.CheckUtil;
 
-/**
- * Created by agibsoncccc on 11/30/15.
- */
 public class InvertMatrix {
 
 

@@ -29,9 +29,6 @@ import java.sql.ResultSet;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author Brad Heap nzv8fan@gmail.com
- */
 public class BasicResultSetIteratorTest extends BaseDL4JTest {
 
     @Before

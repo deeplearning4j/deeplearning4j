@@ -29,14 +29,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * BaseTransform: an
- * abstract transform class, that handles transforming
- * sequences by transforming
- * each example individually
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema"})
 @Data
 public abstract class BaseTransform implements Transform {

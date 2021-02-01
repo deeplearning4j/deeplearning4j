@@ -20,11 +20,6 @@
 
 package org.datavec.api.transform.geo;
 
-/**
- * The type of geolocation.
- *
- * @author saudet
- */
 public enum LocationType {
     CITY, CITY_ID, CONTINENT, CONTINENT_ID, COUNTRY, COUNTRY_ID, COORDINATES, POSTAL_CODE, SUBDIVISIONS, SUBDIVISIONS_ID
 }

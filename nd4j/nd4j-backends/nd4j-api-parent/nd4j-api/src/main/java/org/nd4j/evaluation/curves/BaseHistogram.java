@@ -26,9 +26,6 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
 
-/**
- * Created by Alex on 06/07/2017.
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public abstract class BaseHistogram {
 

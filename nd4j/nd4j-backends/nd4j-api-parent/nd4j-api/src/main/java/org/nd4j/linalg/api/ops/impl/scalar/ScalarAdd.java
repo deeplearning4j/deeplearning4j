@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Scalar addition
- *
- * @author Adam Gibson
- */
 public class ScalarAdd extends BaseScalarOp {
 
     public ScalarAdd() {}

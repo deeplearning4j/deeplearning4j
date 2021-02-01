@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.indexing.conditions;
 
-/**
- * An or between 2 conditions.
- *
- * @author Adam Gibson
- */
 public class Or implements Condition {
 
     private Condition[] conditions;

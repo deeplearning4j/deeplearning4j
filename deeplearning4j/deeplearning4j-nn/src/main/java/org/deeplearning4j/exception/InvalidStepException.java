@@ -20,9 +20,6 @@
 
 package org.deeplearning4j.exception;
 
-/**
- * Created by agibsonccc on 8/20/14.
- */
 public class InvalidStepException extends Exception {
 
     /**

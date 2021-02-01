@@ -29,14 +29,6 @@ import org.nd4j.linalg.api.rng.Random;
 
 import java.util.ArrayList;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
- *
- * "Standard" Exp Replay implementation that uses a CircularFifoQueue
- *
- * The memory is optimised by using array of INDArray in the transitions
- * such that two same INDArrays are not allocated twice
- */
 @Slf4j
 public class ExpReplay<A> implements IExpReplay<A> {
 

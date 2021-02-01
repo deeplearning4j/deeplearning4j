@@ -20,7 +20,9 @@
 #  ******************************************************************************/
 #
 
-# Note: this needs manual upgrading of version in setup.py to work (can't override old versions)
+
+
+
 
 # remove old wheels
 sudo rm - rf dist/*

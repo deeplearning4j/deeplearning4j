@@ -28,12 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Truncated normal distribution with mean 0, variance 1.0/(fanOut)<br>
- * If a scale is provided, variance is scale / fanOut
- *
- * @author Adam Gibson
- */
 @Data
 @NoArgsConstructor
 public class WeightInitVarScalingNormalFanOut implements IWeightInit {

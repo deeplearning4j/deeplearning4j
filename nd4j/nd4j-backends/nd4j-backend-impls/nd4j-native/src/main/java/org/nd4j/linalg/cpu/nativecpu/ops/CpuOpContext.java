@@ -38,11 +38,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueContext;
 import org.nd4j.nativeblas.OpaqueRandomGenerator;
 
-/**
- * CPU backend Context wrapper
- *
- * @author raver119@gmail.com
- */
 public class CpuOpContext extends BaseOpContext implements OpContext, Deallocatable {
     // we might want to have configurable
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();

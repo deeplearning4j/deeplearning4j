@@ -29,10 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Bitmap encoding op wrapper. Used in gradients sharing.
- * @author raver119@gmail.com
- */
 public class EncodeBitmap extends DynamicCustomOp {
     protected float threshold = 1e-3f;
 

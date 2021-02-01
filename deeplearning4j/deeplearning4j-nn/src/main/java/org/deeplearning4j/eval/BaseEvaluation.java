@@ -37,9 +37,6 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.BaseEvaluation}
- */
 @Deprecated
 @EqualsAndHashCode
 public abstract class BaseEvaluation<T extends BaseEvaluation> extends org.nd4j.evaluation.BaseEvaluation<T> {

@@ -38,13 +38,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Abstract wrapper layer. The idea: this class passes through all methods to the underlying layer.
- * Then, subclasses of BaseWrapperLayer can selectively override specific methods, rather than having
- * to implement every single one of the passthrough methods in each subclass.
- *
- * @author Alex Black
- */
 @Data
 public abstract class BaseWrapperLayer implements Layer {
 

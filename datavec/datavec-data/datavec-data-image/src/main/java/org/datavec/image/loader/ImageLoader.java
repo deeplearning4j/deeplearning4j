@@ -37,12 +37,6 @@ import java.awt.image.WritableRaster;
 import java.io.*;
 import java.util.Arrays;
 
-/**
- * Image loader for taking images
- * and converting them to matrices
- *
- * @author Adam Gibson
- */
 public class ImageLoader extends BaseImageLoader {
 
     static {

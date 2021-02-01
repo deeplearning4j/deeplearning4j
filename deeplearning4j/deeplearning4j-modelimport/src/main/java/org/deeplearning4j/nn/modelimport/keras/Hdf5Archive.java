@@ -39,15 +39,6 @@ import java.util.List;
 
 import static org.bytedeco.hdf5.global.hdf5.*;
 
-/**
- * Class for reading ND4J arrays and JSON strings from HDF5 archive files.
- *
- * HDF5 is <i>really</i> sensitive about the order its resources are deallocated in.
- * Make sure to <b>ALWAYS</b> call {@link #close()} explicitly or with try-with-resources,
- * or it might decide to crash the JVM.
- *
- * @author dave@skymind.io
- */
 @Slf4j
 public class Hdf5Archive implements Closeable {
 

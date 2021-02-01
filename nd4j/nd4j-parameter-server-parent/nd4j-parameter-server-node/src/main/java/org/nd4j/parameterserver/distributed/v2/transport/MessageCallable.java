@@ -22,12 +22,6 @@ package org.nd4j.parameterserver.distributed.v2.transport;
 
 import org.nd4j.parameterserver.distributed.v2.messages.VoidMessage;
 
-/**
- * This interface describes callable that will be applied to incoming message in Transport
- *
- * @param <T>
- * @author raver119@gmail.com
- */
 public interface MessageCallable<T extends VoidMessage> {
     void apply(T message);
 }

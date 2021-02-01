@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.scalar.PowDerivative;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Square function (x ^ 2)
- *
- * @author Adam Gibson
- */
 public class Square extends BaseTransformSameOp {
     public Square(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

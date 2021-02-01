@@ -36,20 +36,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 
-/**
- * A preprocessor to allow RNN and feed-forward network layers to be used together.<br>
- * For example, DenseLayer -> GravesLSTM<br>
- * This does two things:<br>
- * (a) Reshapes activations out of FeedFoward layer (which is 2D with shape
- * [miniBatchSize*timeSeriesLength,layerSize]) into 3d activations (with shape
- * [miniBatchSize,layerSize,timeSeriesLength]) suitable to feed into RNN layers.<br>
- * (b) Reshapes 3d epsilons (weights*deltas from RNN layer, with shape
- * [miniBatchSize,layerSize,timeSeriesLength]) into 2d epsilons (with shape
- * [miniBatchSize*timeSeriesLength,layerSize]) for use in feed forward layer
- *
- * @author Alex Black
- * @see RnnToFeedForwardPreProcessor for opposite case (i.e., GravesLSTM -> DenseLayer etc)
- */
 @Data
 @NoArgsConstructor
 public class FeedForwardToRnnPreProcessor implements InputPreProcessor {

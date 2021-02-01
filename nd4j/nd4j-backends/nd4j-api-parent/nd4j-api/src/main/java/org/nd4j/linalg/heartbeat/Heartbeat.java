@@ -27,12 +27,6 @@ import org.nd4j.linalg.heartbeat.reports.Task;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- *
- * Heartbeat implementation for ND4j
- *
- * @author raver119@gmail.com
- */
 public class Heartbeat {
     private static final Heartbeat INSTANCE = new Heartbeat();
     private volatile long serialVersionID;

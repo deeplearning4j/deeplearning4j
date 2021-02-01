@@ -30,13 +30,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.*;
 
-/**
- * Sufficient statistics: returns 3 or 4 output arrays:
- * If shift is not provided: count, sum of elements, sum of squares
- * If shift is provided: count, sum of elements, sum of squares, shift
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class SufficientStatistics extends DynamicCustomOp {
 

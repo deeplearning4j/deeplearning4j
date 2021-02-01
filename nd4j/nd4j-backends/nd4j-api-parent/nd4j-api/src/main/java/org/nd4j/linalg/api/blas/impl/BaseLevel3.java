@@ -34,12 +34,6 @@ import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 
-/**
- * Base class for level 3 functions, abstract headers pulled from:
- * http://www.netlib.org/blas/blast-forum/cblas.h
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseLevel3 extends BaseLevel implements Level3 {
     /**

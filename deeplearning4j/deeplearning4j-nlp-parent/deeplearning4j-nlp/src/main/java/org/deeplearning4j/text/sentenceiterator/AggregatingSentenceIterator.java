@@ -27,11 +27,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This is simple wrapper suited for aggregation of few SentenceIterators into single flow.
- *
- * @author raver119@gmail.com
- */
 public class AggregatingSentenceIterator implements SentenceIterator {
     private List<SentenceIterator> backendIterators;
     private SentencePreProcessor preProcessor;

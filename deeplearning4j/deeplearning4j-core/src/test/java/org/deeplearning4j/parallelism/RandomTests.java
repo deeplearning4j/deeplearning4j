@@ -43,9 +43,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class RandomTests extends BaseDL4JTest {
 
     /**

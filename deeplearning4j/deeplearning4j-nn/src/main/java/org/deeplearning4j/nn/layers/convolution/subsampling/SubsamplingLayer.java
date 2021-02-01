@@ -44,13 +44,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
-/**
- * Subsampling layer.
- *
- * Used for downsampling a convolution
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
 

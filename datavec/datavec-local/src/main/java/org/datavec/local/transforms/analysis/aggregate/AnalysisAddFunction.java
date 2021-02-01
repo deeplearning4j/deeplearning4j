@@ -31,11 +31,6 @@ import org.nd4j.common.function.BiFunction;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Add function used for undertaking analysis of a data set via Spark
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class AnalysisAddFunction implements BiFunction<List<AnalysisCounter>, List<Writable>, List<AnalysisCounter>> {
     private Schema schema;

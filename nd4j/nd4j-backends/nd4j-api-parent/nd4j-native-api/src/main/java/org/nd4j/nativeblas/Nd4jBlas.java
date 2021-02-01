@@ -28,12 +28,6 @@ import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.blas.Blas;
 
 
-/**
- * CBlas bindings
- *
- * Original credit:
- * https://github.com/uncomplicate/neanderthal-atlas
- */
 @Slf4j
 public abstract class Nd4jBlas implements Blas {
 

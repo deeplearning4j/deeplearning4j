@@ -31,12 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * CollectScoresIterationListener simply stores the model scores internally (along with the iteration) every 1 or N
- * iterations (this is configurable). These scores can then be obtained or exported.
- *
- * @author Alex Black
- */
 public class CollectScoresIterationListener extends BaseTrainingListener {
 
     private int frequency;

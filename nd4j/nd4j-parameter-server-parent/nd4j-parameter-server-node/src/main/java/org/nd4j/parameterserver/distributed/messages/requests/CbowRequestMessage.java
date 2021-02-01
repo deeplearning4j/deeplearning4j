@@ -30,9 +30,6 @@ import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
-/**
- * @author raver119@gmail.com
- */
 @Data
 @Slf4j
 @Deprecated

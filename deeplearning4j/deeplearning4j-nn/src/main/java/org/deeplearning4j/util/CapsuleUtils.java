@@ -23,14 +23,6 @@ package org.deeplearning4j.util;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-/**
- * Utilities for CapsNet Layers
- * @see org.deeplearning4j.nn.conf.layers.CapsuleLayer
- * @see org.deeplearning4j.nn.conf.layers.PrimaryCapsules
- * @see org.deeplearning4j.nn.conf.layers.CapsuleStrengthLayer
- *
- * @author Ryan Nett
- */
 public class CapsuleUtils {
 
     /**

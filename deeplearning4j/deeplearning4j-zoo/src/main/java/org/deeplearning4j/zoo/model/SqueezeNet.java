@@ -44,18 +44,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
 
-/**
- * U-Net
- *
- * An implementation of SqueezeNet. Touts similar accuracy to AlexNet with a fraction of the parameters.
- *
- * <p>Paper: <a href="https://arxiv.org/abs/1602.07360">https://arxiv.org/abs/1602.07360</a></p>
- * <p>ImageNet weights for this model are available and have been converted from <a href="https://github.com/rcmalli/keras-squeezenet/">https://github.com/rcmalli/keras-squeezenet/</a>.</p>
- *
- * @note Pretrained ImageNet weights are "special". Output shape is (1,1000,1,1).
- * @author Justin Long (crockpotveggies)
- *
- */
 @AllArgsConstructor
 @Builder
 public class SqueezeNet extends ZooModel {

@@ -35,30 +35,6 @@ import java.io.Serializable;
 import java.net.InetAddress;
 import java.util.*;
 
-/**
- * WARNING: THIS LISTENER SHOULD ONLY BE USED FOR MANUAL TESTING PURPOSES<br>
- * It intentionally causes various types of failures according to some criteria, in order to test the response
- * to it.<br>
- * This is useful for example in:
- * (a) Testing Spark fault tolerance<br>
- * (b) Testing OOM exception crash dump information<br>
- * Generally it should not be used in unit tests either, depending on how it is configured.<br>
- * <br>
- * Two aspects need to be configured to use this listener:
- * 1. If/when the "failure" should be triggered - via FailureTrigger classes<br>
- * 2. The type of failure when triggered - via FailureMode enum<br>
- * <br>
- * To specify if/when a failure should be triggered, use a {@link FailureTrigger} instance. Some built-in ones
- * are provided, random probability, time since initialized, username, and iteration/epoch count.
- * <br>
- * Types of failures available:<br>
- * - OOM (allocate large arrays in loop until OOM).<br>
- * - System.exit(1)<br>
- * - IllegalStateException<br>
- * - Infinite sleep<br>
- *
- * @author Alex Black
- */
 @Slf4j
 public class FailureTestingListener implements TrainingListener, Serializable {
 

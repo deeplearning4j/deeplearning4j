@@ -38,11 +38,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Uniform distribution wrapper
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class DistributionUniform extends DynamicCustomOp {
     private double min = 0.0;

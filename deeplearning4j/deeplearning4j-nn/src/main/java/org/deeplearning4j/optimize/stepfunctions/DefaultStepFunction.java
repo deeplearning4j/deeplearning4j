@@ -24,10 +24,6 @@ import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Default step function
- * @author Adam Gibson
- */
 public class DefaultStepFunction implements StepFunction {
     private static final long serialVersionUID = -4707790524365648985L;
 

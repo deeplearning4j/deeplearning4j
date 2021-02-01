@@ -32,11 +32,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Max function
- *
- * @author Adam Gibson
- */
 public class Max extends BaseDynamicTransformOp {
     public Max() {}
 

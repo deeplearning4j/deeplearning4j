@@ -91,23 +91,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.nd4j.linalg.factory.Nd4j.*;
 
 
-/**
- * NDArray: (think numpy)
- * <p/>
- * A few things of note.
- * <p/>
- * An NDArray can have any number of dimensions.
- * <p/>
- * An NDArray is accessed via strides.
- * <p/>
- * Strides are how to index over
- * a contiguous block of data.
- * <p/>
- * This block of data has 2 orders(as of right now):
- * fortran and c
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseNDArray implements INDArray, Iterable {
 

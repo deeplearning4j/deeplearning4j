@@ -27,12 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-/**
- * PCA class for dimensionality reduction and general analysis
- *
- * @author Adam Gibson
- * @author Luke Czapla - added methods used in non-static usage of PCA
- */
 public class PCA {
 
     private INDArray covarianceMatrix, mean, eigenvectors, eigenvalues;

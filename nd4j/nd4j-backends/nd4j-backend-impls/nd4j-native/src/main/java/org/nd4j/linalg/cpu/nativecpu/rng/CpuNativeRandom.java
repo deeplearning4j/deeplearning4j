@@ -26,11 +26,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.OpaqueRandomGenerator;
 import org.nd4j.rng.NativeRandom;
 
-/**
- * CPU implementation for NativeRandom
- *
- * @author raver119@gmail.com
- */
 public class CpuNativeRandom extends NativeRandom {
     private NativeOps nativeOps;
 

@@ -28,15 +28,6 @@ import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.spark.impl.common.score.BaseVaeScoreWithKeyFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Function to calculate the reconstruction error for a variational autoencoder, that is the first layer in a
- * ComputationGraph.<br>
- * Note that the VAE must be using a loss function, not a {@link org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution}<br>
- * Also note that scoring is batched for computational efficiency.<br>
- *
- * @author Alex Black
- * @see CGVaeReconstructionProbWithKeyFunction
- */
 public class CGVaeReconstructionErrorWithKeyFunction<K> extends BaseVaeScoreWithKeyFunction<K> {
 
 

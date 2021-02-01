@@ -39,11 +39,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
-/**
- * SbeStorageMetaData: stores information about a given session: for example, the types of the static and update information.
- *
- * @author Alex Black
- */
 @Data
 public class SbeStorageMetaData implements StorageMetaData, AgronaPersistable {
 

@@ -31,11 +31,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * A counter for performing analysis on NDArray columns
- *
- * @author Alex Black
- */
 public class NDArrayAnalysisCounter implements AnalysisCounter<NDArrayAnalysisCounter> {
 
     private long countTotal;

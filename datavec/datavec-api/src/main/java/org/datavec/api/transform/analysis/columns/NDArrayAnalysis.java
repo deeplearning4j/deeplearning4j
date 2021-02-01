@@ -28,11 +28,6 @@ import org.datavec.api.transform.ColumnType;
 
 import java.util.*;
 
-/**
- * Column analysis class for NDArray columns
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @NoArgsConstructor //For Jackson/json
 @Builder(builderClassName = "Builder", builderMethodName = "Builder")

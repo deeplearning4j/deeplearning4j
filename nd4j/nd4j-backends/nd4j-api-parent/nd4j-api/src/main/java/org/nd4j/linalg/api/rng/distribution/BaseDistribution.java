@@ -34,14 +34,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Iterator;
 
-/**
- * Base distribution derived from apache commons math
- * http://commons.apache.org/proper/commons-math/
- * <p/>
- * (specifically the {@link org.apache.commons.math3.distribution.AbstractRealDistribution}
- *
- * @author Adam Gibson
- */
 public abstract class BaseDistribution implements Distribution {
     protected Random random;
     protected double solverAbsoluteAccuracy;

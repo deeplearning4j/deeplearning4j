@@ -32,11 +32,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * SDLayerParams is used to define the parameters for a Deeplearning4j SameDiff layer
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"paramsList", "weightParamsList", "biasParamsList"})
 @NoArgsConstructor
 @Data

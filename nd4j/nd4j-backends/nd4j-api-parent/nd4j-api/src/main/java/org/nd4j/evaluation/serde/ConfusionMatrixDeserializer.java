@@ -35,11 +35,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A JSON deserializer for {@code ConfusionMatrix<Integer>} instances, used in {@link org.deeplearning4j.eval.Evaluation}
- *
- * @author Alex Black
- */
 public class ConfusionMatrixDeserializer extends JsonDeserializer<ConfusionMatrix<Integer>> {
     @Override
     public ConfusionMatrix<Integer> deserialize(JsonParser jp, DeserializationContext ctxt)

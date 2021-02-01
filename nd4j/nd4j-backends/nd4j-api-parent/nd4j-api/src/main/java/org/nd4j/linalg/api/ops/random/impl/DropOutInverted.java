@@ -33,11 +33,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Inverted DropOut implementation as Op
- *
- * @author raver119@gmail.com
- */
 public class DropOutInverted extends BaseRandomOp {
 
     private double p;

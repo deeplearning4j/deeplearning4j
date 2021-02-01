@@ -51,8 +51,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
-/**Gradient checking tests with masking (i.e., variable length time series inputs, one-to-many and many-to-one etc)
- */
 public class GradientCheckTestsMasking extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;

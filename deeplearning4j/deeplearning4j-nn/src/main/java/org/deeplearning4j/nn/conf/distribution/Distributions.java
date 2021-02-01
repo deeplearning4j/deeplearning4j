@@ -22,10 +22,6 @@ package org.deeplearning4j.nn.conf.distribution;
 
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Static methods for instantiating an nd4j distribution from a DL4J distribution configuration object.
- *
- */
 public class Distributions {
     private Distributions() {}
 

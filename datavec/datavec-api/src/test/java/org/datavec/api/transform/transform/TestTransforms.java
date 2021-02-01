@@ -74,9 +74,6 @@ import java.util.concurrent.TimeUnit;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 21/03/2016.
- */
 public class TestTransforms extends BaseND4JTest {
 
     public static Schema getSchema(ColumnType type, String... colNames) {

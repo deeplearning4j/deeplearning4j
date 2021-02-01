@@ -33,22 +33,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * N-dimensional batch to space operation. Transforms data from a tensor from batch dimension into M spatial dimensions
- * according to the "blocks" specified (a vector of length M). Afterwards the spatial dimensions are optionally cropped,
- * as specified in "crops", a tensor of dim (M, 2), denoting the crop range.
- * <p>
- * Example:
- * input:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
- * input shape:  [4, 1, 1, 1]
- * blocks:       [2, 2]
- * crops:        [[0, 0], [0, 0]]
- * <p>
- * output:       [[[[1], [2]], [[3], [4]]]]
- * output shape: [1, 2, 2, 1]
- *
- * @author Max Pumperla
- */
 public class BatchToSpace extends DynamicCustomOp {
 
     private int[] blocks;

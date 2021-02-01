@@ -49,9 +49,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 23/06/2016.
- */
 public class TestAnalysis extends BaseSparkTest {
 
     @Test

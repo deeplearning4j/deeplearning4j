@@ -32,11 +32,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
-/**
- * A port of: <a href="https://github.com/lyst/rpforest">https://github.com/lyst/rpforest</a> to nd4j
- *
- * @author
- */
 public class RPUtils {
 
 

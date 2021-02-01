@@ -39,12 +39,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * A custom output layer for testing. Functionally equivalent to {@link OutputLayer}, but defined here to test JSON
- * etc.
- *
- * @author Alex Black
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

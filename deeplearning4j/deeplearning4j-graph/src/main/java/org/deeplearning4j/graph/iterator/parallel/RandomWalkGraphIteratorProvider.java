@@ -29,13 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**Random walk graph iterator provider: given a graph, split up the generation of random walks
- * for parallel learning. Specifically: with N threads and V vertices:
- * - First iterator generates random walks starting at vertices 0 to V/N
- * - Second iterator generates random walks starting at vertices V/N+1 to 2*V/N
- * - and so on
- * @param <V> Vertex type
- */
 public class RandomWalkGraphIteratorProvider<V> implements GraphWalkIteratorProvider<V> {
 
     private IGraph<V, ?> graph;

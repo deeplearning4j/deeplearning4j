@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
 import java.util.List;
 
-/**
- * Broadcast reverse divide
- * @author Adam Gibson
- */
 public class BroadcastRDivOp extends BaseBroadcastOp {
 
     public BroadcastRDivOp() {}

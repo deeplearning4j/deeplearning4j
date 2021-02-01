@@ -22,10 +22,6 @@ package org.nd4j.evaluation.custom;
 
 import java.util.List;
 
-/**
- * A lambda used to get a score from a list of evaluation results
- * See {@link CustomEvaluation}
- */
 public interface ResultLambda<T> {
     public double toResult(List<T> data);
 }

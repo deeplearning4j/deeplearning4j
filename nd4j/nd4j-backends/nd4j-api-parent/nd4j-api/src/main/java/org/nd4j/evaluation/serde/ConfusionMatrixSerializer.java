@@ -32,11 +32,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A JSON serializer for {@code ConfusionMatrix<Integer>} instances, used in {@link org.deeplearning4j.eval.Evaluation}
- *
- * @author Alex Black
- */
 public class ConfusionMatrixSerializer extends JsonSerializer<ConfusionMatrix<Integer>> {
     @Override
     public void serialize(ConfusionMatrix<Integer> cm, JsonGenerator gen, SerializerProvider provider)

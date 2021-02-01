@@ -201,6 +201,7 @@ class TestPretrainedModels {
 
 
     @Test
+    @Ignore
     fun test() {
         modelPaths.forEach {
             pullModel(it)

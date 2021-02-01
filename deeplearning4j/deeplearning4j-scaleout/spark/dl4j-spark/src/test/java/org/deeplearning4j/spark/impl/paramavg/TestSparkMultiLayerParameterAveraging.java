@@ -83,9 +83,6 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 
-/**
- * Created by agibsonccc on 1/18/15.
- */
 public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     public static class TestFn implements Function<LabeledPoint, LabeledPoint>{

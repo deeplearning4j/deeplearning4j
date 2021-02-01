@@ -42,9 +42,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 @Getter
 public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResult>
                 implements TrainingWorker<SharedTrainingResult> {

@@ -53,12 +53,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Configuration for fine tuning. Note that values set here will override values for all non-frozen layers
- *
- * @author Alex Black
- * @author Susan Eraly
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @NoArgsConstructor

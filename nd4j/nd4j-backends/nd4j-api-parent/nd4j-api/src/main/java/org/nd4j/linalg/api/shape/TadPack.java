@@ -26,9 +26,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
-/**
- * This class is a pojo for
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

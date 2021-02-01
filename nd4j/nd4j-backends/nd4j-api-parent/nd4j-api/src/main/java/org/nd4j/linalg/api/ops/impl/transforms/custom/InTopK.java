@@ -35,11 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * In Top K op
- *
- * @author Alex Black
- */
 public class InTopK extends DynamicCustomOp {
 
     private boolean sorted;

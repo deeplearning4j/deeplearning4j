@@ -36,11 +36,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 
-/**
- * @author raver119@protonmail.com
- * @author Alex Black
- */
-
 public class ScatterMin extends DynamicCustomOp {
 
     public ScatterMin(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {

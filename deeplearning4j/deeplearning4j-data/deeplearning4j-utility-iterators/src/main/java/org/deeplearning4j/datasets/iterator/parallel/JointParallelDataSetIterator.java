@@ -33,9 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
     protected List<DataSetIterator> asyncIterators = new ArrayList<>();

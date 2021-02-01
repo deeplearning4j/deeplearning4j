@@ -30,11 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 
-/**
- * Utility functionality for keras loss functions
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class KerasLossUtils {
     static final Map<String, ILossFunction> customLoss = new HashMap<>();

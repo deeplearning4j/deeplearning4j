@@ -29,11 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
 
-/**
- * Stochastic Gradient Descent with Line Search
- * @author Adam Gibson
- *
- */
 public class LineGradientDescent extends BaseOptimizer {
     private static final long serialVersionUID = 6336124657542062284L;
 

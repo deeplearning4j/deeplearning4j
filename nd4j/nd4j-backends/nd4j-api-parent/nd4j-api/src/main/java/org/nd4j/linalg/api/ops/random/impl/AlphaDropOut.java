@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 
 import java.util.List;
 
-/**
- * AlphaDropOut implementation as Op
- *
- * @author raver119@gmail.com
- */
 public class AlphaDropOut extends BaseRandomOp {
 
     private double p;

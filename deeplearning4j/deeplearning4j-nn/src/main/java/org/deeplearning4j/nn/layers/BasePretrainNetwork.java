@@ -39,12 +39,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Baseline class for any Neural Network used
- * as a layer in a deep network *
- * @author Adam Gibson
- *
- */
 public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.nn.conf.layers.BasePretrainNetwork>
                 extends BaseLayer<LayerConfT> {
 

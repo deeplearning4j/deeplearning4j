@@ -23,19 +23,6 @@ package org.datavec.api.io.serializers;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * <p>
- * Provides a facility for deserializing objects of type <T> from an
- * {@link InputStream}.
- * </p>
- *
- * <p>
- * Deserializers are stateful, but must not buffer the input since
- * other producers may read from the input between calls to
- * {@link #deserialize(Object)}.
- * </p>
- * @param <T>
- */
 public interface Deserializer<T> {
     /**
      * <p>Prepare the deserializer for reading.</p>

@@ -27,11 +27,6 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-/**
- * Helper class that returns label descriptions for YOLO models trained with Pascal VOC.
- *
- * @author saudet
- */
 public class VOCLabels extends BaseLabels {
 
     public VOCLabels() throws IOException {

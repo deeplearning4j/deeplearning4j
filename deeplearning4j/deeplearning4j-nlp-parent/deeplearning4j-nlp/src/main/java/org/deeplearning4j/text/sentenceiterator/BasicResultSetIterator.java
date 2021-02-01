@@ -23,16 +23,6 @@ package org.deeplearning4j.text.sentenceiterator;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-/**
- * Primitive iterator over a SQL ResultSet
- *
- * Please note: for reset functionality, the underlying JDBC ResultSet must not be of TYPE_FORWARD_ONLY
- * To achieve this using postgres you can make your query using: connection.prepareStatement(sql,ResultSet.TYPE_SCROLL_INSENSITIVE,ResultSet.CONCUR_READ_ONLY);
- *
- * This class is designed in a similar fashion to org.deeplearning4j.text.sentenceiterator.BasicLineIterator
- *
- * @author Brad Heap nzv8fan@gmail.com
- */
 public class BasicResultSetIterator implements SentenceIterator {
 
     private ResultSet rs;

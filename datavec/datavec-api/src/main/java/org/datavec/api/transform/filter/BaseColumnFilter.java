@@ -25,10 +25,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**Abstract class for filtering examples
- * based on the values in a
- * single column
- */
 public abstract class BaseColumnFilter implements Filter {
 
     protected Schema schema;

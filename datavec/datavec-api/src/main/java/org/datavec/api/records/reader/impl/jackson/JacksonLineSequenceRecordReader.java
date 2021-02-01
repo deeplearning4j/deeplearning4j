@@ -37,16 +37,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-/**
- * The sequence record reader version of {@link JacksonLineRecordReader}.<br>
- * Assumptions here:<br>
- * 1. Each file is a separate record<br>
- * 2. Each line of a file is one step within a sequence<br>
- * See {@link JacksonLineRecordReader} for more details
- *
- *
- * @author Alex Black
- */
 public class JacksonLineSequenceRecordReader extends FileRecordReader implements SequenceRecordReader {
 
     private FieldSelection selection;

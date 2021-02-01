@@ -40,11 +40,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Layer configuration class for the custom layer example
- *
- * @author Alex Black
- */
 public class CustomLayer extends FeedForwardLayer {
 
     private IActivation secondActivationFunction;

@@ -39,9 +39,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 28/01/2017.
- */
 public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
 
     @Before

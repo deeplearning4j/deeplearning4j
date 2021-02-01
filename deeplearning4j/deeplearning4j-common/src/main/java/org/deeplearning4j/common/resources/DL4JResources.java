@@ -28,14 +28,6 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-/**
- * DL4JResources controls the local storage locations for models and datasets that are downloaded and stored locally.<br>
- * The storage location is customizable in 2 ways:<br>
- * (a) via the {@link #DL4J_RESOURCES_DIR_PROPERTY} system property, org.deeplearning4j.resources.directory<br>
- * (b) By calling {@link #setBaseDirectory(File)} at runtime<br>
- *
- * @author Alex Black
- */
 public class DL4JResources {
 
     /**

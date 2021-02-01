@@ -79,12 +79,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
-/**
- * Integration test runner.
- * Used to run the integration tests defined in the IntegrationTests class
- *
- * @author Alex Black
- */
 @Slf4j
 public class IntegrationTestRunner {
 

@@ -30,9 +30,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 public class StringAggregator {
 
     private Map<String, TimeSet> times = new ConcurrentHashMap<>();

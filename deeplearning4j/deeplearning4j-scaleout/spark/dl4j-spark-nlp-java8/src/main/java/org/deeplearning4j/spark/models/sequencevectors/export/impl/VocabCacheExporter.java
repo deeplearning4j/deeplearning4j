@@ -37,13 +37,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-/**
- * This model exporter is suitable for debug/testing only.
- *
- * PLEASE NOTE: Never use this exporter in real environment if your model won't fit into memory of driver.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class VocabCacheExporter implements SparkModelExporter<VocabWord> {
 

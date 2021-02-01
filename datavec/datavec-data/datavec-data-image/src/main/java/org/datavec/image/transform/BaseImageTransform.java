@@ -28,13 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.Random;
 
-/**
- *
- * Implements the ImageTransform interface by providing its subclasses
- * with a random object to use in the case of random transformations.
- *
- * @author saudet
- */
 @NoArgsConstructor
 @JsonIgnoreProperties({"converter", "currentImage"})
 @Data

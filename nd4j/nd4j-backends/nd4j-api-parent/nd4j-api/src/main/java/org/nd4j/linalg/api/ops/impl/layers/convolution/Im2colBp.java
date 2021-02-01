@@ -33,9 +33,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Im2col operation
- */
 public class Im2colBp extends DynamicCustomOp {
 
     protected Conv2DConfig conv2DConfig;

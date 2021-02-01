@@ -25,11 +25,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.common.base.Preconditions;
 
-/**
- * Hinge loss
- *
- * @author Alex Black
- */
 public class HuberLossBp extends BaseLossBp {
     private double delta;
 

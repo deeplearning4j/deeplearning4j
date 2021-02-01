@@ -40,11 +40,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Simple IterationListener that tracks time spend on training per iteration.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class PerformanceListener extends BaseTrainingListener implements Serializable {
     private final int frequency;

@@ -25,11 +25,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 
-/**
- * Base class for the quality of a column
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public abstract class ColumnQuality implements Serializable {

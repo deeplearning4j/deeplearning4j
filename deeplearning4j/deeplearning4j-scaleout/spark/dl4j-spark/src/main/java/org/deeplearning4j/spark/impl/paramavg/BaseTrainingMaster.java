@@ -60,10 +60,6 @@ import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Random;
 
-/**
- * @author raver119@gmail.com
- * @author Alex Black
- */
 @Slf4j
 public abstract class BaseTrainingMaster<R extends TrainingResult, W extends TrainingWorker<R>>
                 implements TrainingMaster<R, W> {

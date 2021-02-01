@@ -33,14 +33,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.OneTimeLogger;
 
-/**
- * For purposes of transfer learning
- * A frozen layers wraps another dl4j layer within it.
- * The params of the layer within it are "frozen" or in other words held constant
- * During the forward pass the frozen layer behaves as the layer within it would during test regardless of the training/test mode the network is in.
- * Backprop is skipped since parameters are not be updated.
- * @author susaneraly
- */
 @Slf4j
 public class FrozenLayer extends BaseWrapperLayer {
 

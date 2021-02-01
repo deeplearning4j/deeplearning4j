@@ -34,14 +34,6 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * The entry point for async training. This class will start a number ({@link AsyncQLearningConfiguration#getNumThreads()
- * configuration.getNumThread()}) of worker threads. Then, it will monitor their progress at regular intervals
- * (see setProgressEventInterval(int))
- *
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
- * @author Alexandre Boulanger
- */
 @Slf4j
 public abstract class AsyncLearning<OBSERVATION extends Encodable, ACTION, ACTION_SPACE extends ActionSpace<ACTION>, NN extends NeuralNet>
                 extends Learning<OBSERVATION, ACTION, ACTION_SPACE, NN>

@@ -23,15 +23,6 @@ package org.nd4j.common.tools;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Save value and it's titles for one column.<br>
- * Titles strings in array create one title column.<br>
- * One main column can have several sub columns.<br>
- * Columns are separated with char '|'.<br>
- * Collaborate with class InfoLine.<br>
- * @author clavvis 
- */
-
 public class InfoValues {
 	//
 	public InfoValues( String... titleA ) {

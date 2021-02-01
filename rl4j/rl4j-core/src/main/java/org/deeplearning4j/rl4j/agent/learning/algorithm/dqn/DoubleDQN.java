@@ -25,11 +25,6 @@ import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * The Double-DQN algorithm based on "Deep Reinforcement Learning with Double Q-learning" (https://arxiv.org/abs/1509.06461)
- *
- * @author Alexandre Boulanger
- */
 public class DoubleDQN extends BaseDQNAlgorithm {
 
     private static final int ACTION_DIMENSION_IDX = 1;

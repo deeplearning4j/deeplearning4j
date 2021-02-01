@@ -30,9 +30,6 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNorma
 import java.util.List;
 
 
-/**
- * LocalResponseNormalizationDerivative operation
- */
 @Slf4j
 public class LocalResponseNormalizationDerivative extends LocalResponseNormalization {
     @Builder(builderMethodName = "derivativeBuilder")

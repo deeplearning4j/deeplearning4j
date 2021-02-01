@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Unsorted segment max backprop operation
- *
- * @author Alex Black
- */
 public class UnsortedSegmentMaxBp extends DynamicCustomOp {
 
     private int numSegments;

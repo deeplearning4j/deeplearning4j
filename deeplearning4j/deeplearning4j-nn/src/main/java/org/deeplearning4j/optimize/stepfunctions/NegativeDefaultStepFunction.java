@@ -24,10 +24,6 @@ import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Inverse step function
- * @author Adam Gibson
- */
 public class NegativeDefaultStepFunction implements StepFunction {
 
     @Override

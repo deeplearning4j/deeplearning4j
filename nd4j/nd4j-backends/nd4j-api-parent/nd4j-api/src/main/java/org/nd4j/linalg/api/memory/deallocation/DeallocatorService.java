@@ -35,11 +35,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This class provides unified management for Deallocatable resources
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class DeallocatorService {
     private Thread[] deallocatorThreads;

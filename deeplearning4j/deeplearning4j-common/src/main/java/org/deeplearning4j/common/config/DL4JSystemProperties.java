@@ -20,12 +20,6 @@
 
 package org.deeplearning4j.common.config;
 
-/**
- * DL4JSystemProperties class contains the system properties that can be used to configure various aspects of DL4J.
- * See the javadoc of each property for details
- *
- * @author Alex Black
- */
 public class DL4JSystemProperties {
 
     private DL4JSystemProperties(){ }

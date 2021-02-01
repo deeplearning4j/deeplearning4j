@@ -34,9 +34,6 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
 
-/**
- * Created by agibsonccc on 6/12/17.
- */
 @AllArgsConstructor
 @Slf4j
 public class DataVecTransformClient implements DataVecTransformService {

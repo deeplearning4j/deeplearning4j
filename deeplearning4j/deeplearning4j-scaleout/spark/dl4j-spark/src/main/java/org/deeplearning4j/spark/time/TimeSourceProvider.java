@@ -25,13 +25,6 @@ import org.deeplearning4j.common.config.DL4JSystemProperties;
 
 import java.lang.reflect.Method;
 
-/**
- * TimeSourceProvider: used to get a TimeSource via a static method.<br>
- * Defaults to the Network Time Protocol implementation {@link NTPTimeSource}, but can be switched to other implementations
- * via the {@link TimeSourceProvider#TIMESOURCE_CLASSNAME_PROPERTY} system property.
- *
- * @author Alex Black
- */
 public class TimeSourceProvider {
 
     /**

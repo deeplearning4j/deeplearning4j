@@ -43,11 +43,6 @@ import org.tensorflow.framework.NodeDef;
 import java.lang.reflect.Array;
 import java.util.*;
 
-/**
- * Basic implementation for CustomOp
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 

@@ -20,15 +20,6 @@
 
 package org.nd4j.autodiff.samediff;
 
-/**
- * Internal interface used to apply a transform to any arguments used within a certain block
- *
- * Intended for internal use only.
- *
- * Managed with {@link SameDiff#addArgumentInterceptor(ArgumentInterceptor)}, {@link SameDiff#removeArgumentInterceptor()},
- * {@link SameDiff#pauseArgumentInterceptor()}, and {@link SameDiff#unpauseArgumentInterceptor()}
- *
- */
 public interface ArgumentInterceptor {
     SDVariable intercept(SDVariable argument);
 }

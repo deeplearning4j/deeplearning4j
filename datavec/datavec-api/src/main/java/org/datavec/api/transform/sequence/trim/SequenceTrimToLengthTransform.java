@@ -32,15 +32,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Trim or pad the sequence to the specified length (number of sequence steps). It supports 2 modes:<br>
- * TRIM: Sequences longer than the specified maximum will be trimmed to exactly the maximum. Shorter sequences will not be modified.<br>
- * TRIM_OR_PAD: Sequences longer than the specified maximum will be trimmed to exactly the maximum. Shorter sequences will be
- * padded with as many copies of the "pad" array to make the sequence length equal the specified maximum.<br>
- * Note that the 'pad' list (i.e., values to pad when using TRIM_OR_PAD mode) must be equal in length to the number of columns (values per time step)
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"schema"})
 @EqualsAndHashCode(exclude = {"schema"})
 @Data

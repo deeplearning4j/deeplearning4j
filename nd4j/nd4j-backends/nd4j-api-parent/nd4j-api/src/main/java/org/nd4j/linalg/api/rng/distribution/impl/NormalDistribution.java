@@ -35,14 +35,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Iterator;
 
-/**
- * Base distribution derived from apache commons math
- * http://commons.apache.org/proper/commons-math/
- * <p/>
- * (specifically the {@link org.apache.commons.math3.distribution.NormalDistribution}
- *
- * @author Adam Gibson
- */
 public class NormalDistribution extends BaseDistribution {
     /**
      * Default inverse cumulative probability accuracy.

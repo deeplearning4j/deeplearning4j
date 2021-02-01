@@ -34,14 +34,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/**
- *  This is simple DataSetIterator implementation, that builds DataSetIterator out of INDArray/float[]/double[] pairs.
- *  Suitable for model feeding with externally originated data.
- *
- *  PLEASE NOTE: If total number of input elements % batchSize != 0, reminder will be ignored
- *
- * @author raver119@gmail.com
- */
 public abstract class AbstractDataSetIterator<T> implements DataSetIterator {
     private DataSetPreProcessor preProcessor;
     private transient Iterable<Pair<T, T>> iterable;

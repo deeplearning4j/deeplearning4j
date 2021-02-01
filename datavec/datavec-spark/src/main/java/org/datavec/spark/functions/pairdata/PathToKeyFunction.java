@@ -25,10 +25,6 @@ import org.apache.spark.input.PortableDataStream;
 import scala.Tuple2;
 import scala.Tuple3;
 
-/** Given a Tuple2<String,PortableDataStream>, where the first value is the full path, map this
- * to a Tuple3<String,Integer,PortableDataStream> where the first value is a key (using a {@link PathToKeyConverter}),
- * second is an index, and third is the original data stream
- */
 public class PathToKeyFunction implements
                 PairFunction<Tuple2<String, PortableDataStream>, String, Tuple3<String, Integer, PortableDataStream>> {
 

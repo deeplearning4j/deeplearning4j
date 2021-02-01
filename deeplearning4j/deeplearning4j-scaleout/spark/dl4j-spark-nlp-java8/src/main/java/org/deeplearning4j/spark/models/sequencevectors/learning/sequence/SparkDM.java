@@ -36,10 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Spark implementation for PV-DM training algorithm
- * @author raver119@gmail.com
- */
 public class SparkDM extends SparkCBOW {
     @Override
     public String getCodeName() {

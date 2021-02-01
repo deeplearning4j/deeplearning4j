@@ -34,10 +34,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- *
- * @author raver119@gmail.com
- */
 public class VocabHolder implements Serializable {
     private static VocabHolder ourInstance = new VocabHolder();
 

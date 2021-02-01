@@ -38,23 +38,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * FileBatchSequenceRecordReader reads the files contained in a {@link FileBatch} using the specified SequenceRecordReader.<br>
- * Specifically, the {@link SequenceRecordReader#sequenceRecord(URI, DataInputStream)} } method of the underlying sequence
- * reader is used to load files.<br>
- * For example, if the FileBatch was constructed using csv sequence files (each file represents one example),
- * FileBatchSequencRecordReader could be used with CSVSequenceRecordReader. For example:<br>
- * <pre>
- * {@code
- * List<File> fileList = ...;
- * FileBatch fb = FileBatch.forFiles(imgFiles);
- * SequenceRecordReader rr = new CSVSequenceRecordReader();
- * FileBatchSequenceRecordReader fbrr = new FileBatchSequenceRecordReader(rr, fb);
- * }
- * </pre>
- *
- * @author Alex Black
- */
 public class FileBatchSequenceRecordReader implements SequenceRecordReader {
 
     private final SequenceRecordReader recordReader;

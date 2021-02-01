@@ -27,11 +27,6 @@ import org.nd4j.linalg.api.memory.enums.DebugMode;
 import java.util.List;
 
 
-/**
- * This interface describes backend-specific implementations of MemoryWorkspaceManager, basically Factory + Thread-based provider
- *
- * @author raver119@gmail.com
- */
 public interface MemoryWorkspaceManager {
 
     /**

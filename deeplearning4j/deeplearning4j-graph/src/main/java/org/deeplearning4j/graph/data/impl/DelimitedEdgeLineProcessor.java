@@ -23,10 +23,6 @@ package org.deeplearning4j.graph.data.impl;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.data.EdgeLineProcessor;
 
-/**A simple line processor, for data in the format
- * 0<delim>1\n 3<delim>0\n etc. Order per line is nodeFrom -> nodeTo, in the case of directed edges
- * i.e., one edge per line without any additional edge information
- */
 public class DelimitedEdgeLineProcessor implements EdgeLineProcessor<String> {
     private final String delimiter;
     private final String[] skipLinesStartingWith;

@@ -23,11 +23,6 @@ package org.nd4j.parameterserver.distributed.v2.messages.pairs.ping;
 import lombok.NoArgsConstructor;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseResponseMessage;
 
-/**
- * This message is just a Pong message, which is sent in response to Ping message back to Ping sender
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class PongMessage extends BaseResponseMessage {
     // TODO: add some telemetry here

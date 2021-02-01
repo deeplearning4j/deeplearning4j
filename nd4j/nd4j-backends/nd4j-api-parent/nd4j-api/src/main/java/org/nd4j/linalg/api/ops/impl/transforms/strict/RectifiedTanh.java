@@ -34,13 +34,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.List;
 import java.util.Map;
 
-/**
- * RectifiedTanh
- *
- * Essentially max(0, tanh(x))
- *
- * @author raver119@gmail.com
- */
 public class RectifiedTanh extends BaseTransformStrictOp {
     public RectifiedTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

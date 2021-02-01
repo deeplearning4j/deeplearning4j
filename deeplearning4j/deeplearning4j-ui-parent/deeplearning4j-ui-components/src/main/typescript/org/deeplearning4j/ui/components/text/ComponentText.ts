@@ -18,10 +18,6 @@
  *  *****************************************************************************
  */
 
-/// <reference path="../../api/Component.ts" />
-/// <reference path="../../api/Margin.ts" />
-/// <reference path="../../util/TSUtils.ts" />
-
 class ComponentText extends Component implements Renderable {
 
     private text: string;

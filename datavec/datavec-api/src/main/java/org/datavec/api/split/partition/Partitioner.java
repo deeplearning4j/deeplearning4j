@@ -25,11 +25,6 @@ import org.datavec.api.split.InputSplit;
 
 import java.io.OutputStream;
 
-/**
- * A partitioner for iterating thorugh files for {@link org.datavec.api.records.writer.RecordWriter}.
- * This allows for a configurable log rotation like algorithm for partitioning files by number of recodrds,
- * sizes among other things.
- */
 public interface Partitioner {
 
     /**

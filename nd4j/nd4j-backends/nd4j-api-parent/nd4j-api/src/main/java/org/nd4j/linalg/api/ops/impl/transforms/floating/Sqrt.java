@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Sqrt function
- *
- * @author Adam Gibson
- */
 public class Sqrt extends BaseTransformFloatOp {
     public Sqrt(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

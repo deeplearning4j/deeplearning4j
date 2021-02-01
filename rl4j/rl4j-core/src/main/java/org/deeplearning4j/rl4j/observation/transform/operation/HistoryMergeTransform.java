@@ -28,23 +28,6 @@ import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.Hist
 import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.HistoryStackAssembler;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * The HistoryMergeTransform will accumulate features from incoming INDArrays and will assemble its content
- * into a new INDArray containing a single example.
- *
- * This is used in scenarios where motion in an important element.
- *
- * There is a special case:
- *    * When the store is not full (not ready), the data from the incoming INDArray is stored but null is returned (will be interpreted as a skipped observation)
- * <br>
- * The HistoryMergeTransform requires two sub components: <br>
- *    1) The {@link HistoryMergeElementStore HistoryMergeElementStore} that supervises what and how input INDArrays are kept. (ex.: Circular FIFO, trailing min/max/avg, etc...)
- *       The default is a Circular FIFO.
- *    2) The {@link HistoryMergeAssembler HistoryMergeAssembler} that will assemble the store content into a resulting single INDArray. (ex.: stacked along a dimension, squashed into a single observation, etc...)
- *       The default is stacking along the dimension 0.
- *
- * @author Alexandre Boulanger
- */
 public class HistoryMergeTransform implements Operation<INDArray, INDArray>, ResettableOperation {
 
     private final HistoryMergeElementStore historyMergeElementStore;

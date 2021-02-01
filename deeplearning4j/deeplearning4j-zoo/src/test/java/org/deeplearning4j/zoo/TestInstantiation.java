@@ -51,11 +51,6 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assume.assumeTrue;
 
-/**
- * Tests workflow for zoo model instantiation.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Slf4j
 public class TestInstantiation extends BaseDL4JTest {
 

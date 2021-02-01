@@ -27,16 +27,6 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A TraceEvent, such as an operation execution.<br>
- * Intended mainly for JSON serialization/deserialization in Chrome profiler format<br>
- * Profiler format is described here: <a href="https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit">
- * https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit</a>
- * See {@link org.nd4j.autodiff.listeners.profiler.ProfilingListener}<br>
- * See {@link org.nd4j.autodiff.listeners.profiler.comparison.ProfileAnalyzer}
- *
- * @author Alex Black
- */
 @Builder
 @Data
 @AllArgsConstructor

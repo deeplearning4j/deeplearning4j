@@ -46,10 +46,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Map;
 import java.util.TreeMap;
 
-/**
- * Created by binesh on 6/13/2017. 
- */
-
 public class ShiftVertexTest extends BaseDL4JTest {
     @Test
     public void testShiftVertexNumParamsTrue() {

@@ -28,26 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import static org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_ID_H264;
 
-/**
- * VideoRecorder is used to create a video from a sequence of INDArray frames. INDArrays are assumed to be in CHW format where C=3 and pixels are RGB encoded<br>
- * Example:<br>
- * <pre>
- * {@code
- *        VideoRecorder recorder = VideoRecorder.builder(160, 100)
- *             .numChannels(3)
- *             .isRGBOrder(true)
- *             .build();
- *         recorder.startRecording("myVideo.mp4");
- *         while(...) {
- *             INDArray chwData = Nd4j.create()
- *             recorder.record(chwData);
- *         }
- *         recorder.stopRecording();
- * }
- * </pre>
- *
- * @author Alexandre Boulanger
- */
 @Slf4j
 public class VideoRecorder implements AutoCloseable {
 

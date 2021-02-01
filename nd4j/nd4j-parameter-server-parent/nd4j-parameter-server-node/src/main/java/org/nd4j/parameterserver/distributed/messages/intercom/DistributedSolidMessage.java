@@ -27,11 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 
-/**
- * Array passed here will be shared & available on all shards.
- *
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 @Deprecated

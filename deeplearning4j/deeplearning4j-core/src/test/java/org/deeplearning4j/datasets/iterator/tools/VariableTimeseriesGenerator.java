@@ -32,10 +32,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This helper class generates
- * @author raver119@gmail.com
- */
 @Slf4j
 public class VariableTimeseriesGenerator implements DataSetIterator {
     protected Random rng;

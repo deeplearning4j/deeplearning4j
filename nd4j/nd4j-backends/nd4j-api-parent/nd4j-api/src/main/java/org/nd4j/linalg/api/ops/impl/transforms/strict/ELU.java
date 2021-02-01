@@ -31,15 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp;
 
 import java.util.List;
 
-/**
- * ELU: Exponential Linear Unit (alpha=1.0)<br>
- * Introduced in paper:<br>
- * Fast and Accurate Deep Network Learning by Exponential Linear Units (ELUs)<br>
- * Djork-Arné Clevert, Thomas Unterthiner, Sepp Hochreiter (2015)<br>
- * <a href="https://arxiv.org/abs/1511.07289">https://arxiv.org/abs/1511.07289</a>
- *
- * @author Alex Black
- */
 public class ELU extends DynamicCustomOp {
     public static final double DEFAULT_ALPHA = 1.0;
 

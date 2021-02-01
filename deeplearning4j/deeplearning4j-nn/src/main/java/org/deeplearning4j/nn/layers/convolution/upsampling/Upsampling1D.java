@@ -39,16 +39,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.util.Arrays;
 
 
-/**
- * 1D Upsampling layer.
- * <p>
- * Used for upsampling a 1D convolution. Currently derived from 2D version.
- * For forward and backward pass we add a dummy dimension, apply the 2D version
- * and strip the extra dimension again. Eventually, we will want to migrate to a
- * proper 1D version without this overhead.
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class Upsampling1D extends Upsampling2D {
 

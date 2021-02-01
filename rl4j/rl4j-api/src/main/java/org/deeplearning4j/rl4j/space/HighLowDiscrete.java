@@ -23,9 +23,6 @@ package org.deeplearning4j.rl4j.space;
 import lombok.Value;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/26/16.
- */
 @Value
 public class HighLowDiscrete extends DiscreteSpace {
 

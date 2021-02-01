@@ -32,11 +32,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.List;
 
-/**
- * Matrix multiplication/dot product Backprop
- *
- * @author Paul Dubs
- */
 @EqualsAndHashCode
 public class MmulBp extends DynamicCustomOp {
 

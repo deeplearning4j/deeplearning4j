@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentProdBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Unsorted segment product operation
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class UnsortedSegmentProd extends DynamicCustomOp {
 

@@ -25,10 +25,6 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Constant distribution: a "distribution" where all values are set to the specified constant
- *
- */
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class ConstantDistribution extends Distribution {

@@ -35,17 +35,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 
 
-/**
- * Center loss is similar to triplet loss except that it enforces
- * intraclass consistency and doesn't require feed forward of multiple
- * examples. Center loss typically converges faster for training
- * ImageNet-based convolutional networks.
- *
- * "If example x is in class Y, ensure that embedding(x) is close to
- * average(embedding(y)) for all examples y in Y"
- *
- * @author Justin Long (@crockpotveggies)
- */
 public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.CenterLossOutputLayer> {
 
     private double fullNetRegTerm;

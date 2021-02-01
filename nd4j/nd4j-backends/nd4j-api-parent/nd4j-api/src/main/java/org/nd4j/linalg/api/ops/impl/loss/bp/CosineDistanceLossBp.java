@@ -24,11 +24,6 @@ import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-/**
- * Cosine distance loss
- *
- * @author Alex Black
- */
 public class CosineDistanceLossBp extends BaseLossBp {
 
     private int dimension;

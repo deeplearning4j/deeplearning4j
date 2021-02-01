@@ -26,9 +26,6 @@ import org.nd4j.common.resources.Resources;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class MutipleEpochsSentenceIteratorTest extends BaseDL4JTest {
     @Test(timeout = 300000)
     public void hasNext() throws Exception {

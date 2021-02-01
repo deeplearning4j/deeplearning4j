@@ -38,12 +38,6 @@ import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * An implementation of the {@link StatsStorage} interface, backed by MapDB (in-memory or file).<br>
- * See also {@link InMemoryStatsStorage} and {@link FileStatsStorage}
- *
- * @author Alex Black
- */
 public class MapDBStatsStorage extends BaseCollectionStatsStorage {
 
     private static final String COMPOSITE_KEY_HEADER = "&&&";

@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Log1p function
- *
- * @author raver119@gmail.com
-  */
 @NoArgsConstructor
 public class Log1p extends BaseTransformStrictOp {
     public Log1p(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

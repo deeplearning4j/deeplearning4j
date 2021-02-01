@@ -31,11 +31,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Jaccard distance (dissimilarity)
- *
- * @author raver119@gmail.com
- */
 public class JaccardDistance extends BaseReduce3Op {
 
     public JaccardDistance(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2, int... dimensions) {

@@ -31,10 +31,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Tokenizer function
- * @author Adam Gibson
- */
 @SuppressWarnings("unchecked")
 @Slf4j
 public class TokenizerFunction implements Function<String, List<String>> {

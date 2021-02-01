@@ -41,9 +41,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Arrays;
 import java.util.Random;
 
-/**
- * Created by Alex on 07/01/2017.
- */
 public class EvaluationToolsTests extends BaseDL4JTest {
 
     @Test

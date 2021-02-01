@@ -20,11 +20,13 @@
 package org.nd4j.samediff.frameworkimport.onnx.importer
 
 import junit.framework.Assert.assertNotNull
+import org.junit.Ignore
 import org.junit.Test
 import org.nd4j.common.io.ClassPathResource
 
 class TestOnnxFrameworkImporter {
     @Test
+    @Ignore
     fun testOnnxImporter() {
         val onnxImport = OnnxFrameworkImporter()
         val onnxFile = ClassPathResource("lenet.onnx").file

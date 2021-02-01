@@ -28,13 +28,6 @@ import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * This MemoryWorkspace implementation is basically No-Op impl.
- *
- * Do not use it anywhere, unless you 100% sure you need it.
- *
- * @author raver119@gmail.com
- */
 public class DummyWorkspace implements MemoryWorkspace {
 
     protected MemoryWorkspace parentWorkspace;

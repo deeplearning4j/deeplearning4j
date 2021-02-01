@@ -26,11 +26,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
-/**
- * Backprop op for variance reduction operation
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class VarianceBp extends BaseReductionBp {
 

@@ -43,11 +43,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.util.Arrays;
 import java.util.Map;
 
-/**
- * LayerVertex is a GraphVertex with a neural network Layer (and, optionally an {@link InputPreProcessor}) in it
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class LayerVertex extends BaseGraphVertex {

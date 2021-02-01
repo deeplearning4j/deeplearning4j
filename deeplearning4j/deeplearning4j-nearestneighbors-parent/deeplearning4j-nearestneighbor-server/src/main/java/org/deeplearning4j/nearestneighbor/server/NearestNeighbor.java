@@ -31,9 +31,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by agibsonccc on 4/27/17.
- */
 @AllArgsConstructor
 @Builder
 public class NearestNeighbor {

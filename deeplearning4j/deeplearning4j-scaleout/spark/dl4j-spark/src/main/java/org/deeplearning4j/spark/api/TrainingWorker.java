@@ -29,15 +29,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.io.Serializable;
 
-/**
- * TrainingWorker is a small serializable class that can be passed (in serialized form) to each Spark executor
- * for actually conducting training. The results are then passed back to the {@link TrainingMaster} for processing.<br>
- * <p>
- * TrainingWorker implementations provide a layer of abstraction for network learning tha should allow for more flexibility/
- * control over how learning is conducted (including for example asynchronous communication)
- *
- * @author Alex Black
- */
 public interface TrainingWorker<R extends TrainingResult> extends Serializable {
 
     /**

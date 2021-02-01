@@ -28,12 +28,6 @@ import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIte
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This is simple class, for building Sentence-Label pairs for ParagraphVectors/Doc2Vec.
- * Idea is simple - you provide SentenceIterator or DocumentIterator, and it builds nice structure for future model reuse
- *
- * @author raver119@gmail.com
- */
 public class BasicLabelAwareIterator implements LabelAwareIterator {
     // this counter is used for dumb labels generation
     protected AtomicLong documentPosition = new AtomicLong(0);

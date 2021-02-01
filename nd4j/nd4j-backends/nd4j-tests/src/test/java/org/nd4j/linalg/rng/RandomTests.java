@@ -69,11 +69,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
-/**
- * Tests for NativeRandom with respect to backend
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class RandomTests extends BaseNd4jTest {

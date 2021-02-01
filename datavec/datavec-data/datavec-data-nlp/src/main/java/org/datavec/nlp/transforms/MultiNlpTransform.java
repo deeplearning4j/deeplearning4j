@@ -34,14 +34,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * A multi NLP transform takes in 1 or more bag of words transforms as a pipeline
- * and runs them in sequence.
- * This transform takes in a column name and 1 or more bag of words transforms to run.
- * Lastly, a new column name is specified.
- *
- * @author Adam Gibson
- */
 public class MultiNlpTransform extends BaseColumnTransform implements BagOfWordsTransform {
 
     private BagOfWordsTransform[] transforms;

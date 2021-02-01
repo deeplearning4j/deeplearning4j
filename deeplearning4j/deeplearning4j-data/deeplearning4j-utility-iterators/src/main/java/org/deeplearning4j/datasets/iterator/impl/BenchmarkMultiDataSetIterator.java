@@ -29,12 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * MultiDataset iterator for simulated inputs, or input derived from a MultiDataSet example. Primarily
- * used for benchmarking.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Slf4j
 public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
     private INDArray[] baseFeatures;

@@ -28,15 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 
-/**
- *
- * Input stream input split.
- * The normal pattern is reading the whole
- * input stream and turning that in to a record.
- * This is meant for streaming raw data
- * rather than normal mini batch pre processing.
- * @author Adam Gibson
- */
 public class InputStreamInputSplit implements InputSplit {
     private InputStream is;
     private URI[] location;

@@ -24,11 +24,6 @@ import org.nd4j.common.config.ND4JClassLoading;
 
 import java.util.*;
 
-/**
- * Utility method for method checking arguments.
- *
- * @author Alex Black
- */
 public final class Preconditions {
     private static final Map<String,PreconditionsFormat> FORMATTERS = new HashMap<>();
     static {

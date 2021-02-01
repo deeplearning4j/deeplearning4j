@@ -35,19 +35,6 @@ import org.nd4j.common.primitives.Pair;
 import java.net.URI;
 import java.util.*;
 
-/**
- * Function used with {@code RDD<MultiDataSet>.mapPartitionsWithIndex}.
- * It does two things:
- * 1. Batch MultiDataSets together, to the specified minibatch size. This may result in splitting or combining existing
- * MultiDataSet objects as required
- * 2. Export the MultiDataSet objects to the specified directory.
- * <p>
- * Naming convention for exported files:
- * "mds_" + partitionIdx + JVM_UID + "_" + idx + ".bin"
- * where 'idx' is the index of the MultiDataSet objects in this partition
- *
- * @author Alex Black
- */
 public class BatchAndExportMultiDataSetsFunction
                 implements Function2<Integer, Iterator<MultiDataSet>, Iterator<String>> {
 

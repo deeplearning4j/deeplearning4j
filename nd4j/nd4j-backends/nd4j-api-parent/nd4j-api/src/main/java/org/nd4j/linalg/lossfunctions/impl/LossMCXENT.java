@@ -41,17 +41,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-/**
- *
- * Multi-Class Cross Entropy loss function:<br>
- * L = sum_i actual_i * log( predicted_i )<br>
- * Note that labels are represented by a one-hot distribution<br>
- * See {@link LossSparseMCXENT} for the equivalent but with labels as integers instead
- *
- * @author Alex Black, Susan Eraly
- * @see LossNegativeLogLikelihood
- * @see LossSparseMCXENT
- */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter @Setter

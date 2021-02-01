@@ -63,9 +63,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 12/22/14.
- */
 public class EvalTest extends BaseDL4JTest {
 
     @Test

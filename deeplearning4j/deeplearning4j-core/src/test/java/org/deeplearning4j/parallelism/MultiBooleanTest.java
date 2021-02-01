@@ -27,9 +27,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author raver119@gmail.com
- */
 public class MultiBooleanTest extends BaseDL4JTest {
 
     @Test

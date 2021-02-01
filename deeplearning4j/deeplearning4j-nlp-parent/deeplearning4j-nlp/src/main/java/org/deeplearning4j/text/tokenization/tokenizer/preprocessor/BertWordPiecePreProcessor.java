@@ -28,14 +28,6 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A preprocessor for cleaning/normaling text. Does the following:
- * 1. Optionally converts all characters to lower case
- * 2. Optionally strips accents off characters
- * 3. Strips all control characters
- * 4. Replaces whitespace characters with space ' ' (this includes newline and tab)
- * 5. Appends spaces before/after Chinese characters
- */
 public class BertWordPiecePreProcessor implements TokenPreProcess {
 
     public static final char REPLACEMENT_CHAR = 0xfffd;

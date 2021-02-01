@@ -28,9 +28,6 @@ import org.agrona.concurrent.SigIntBarrier;
 import static java.lang.System.setProperty;
 import static org.agrona.concurrent.UnsafeBuffer.DISABLE_BOUNDS_CHECKS_PROP_NAME;
 
-/**
- * Created by agibsonccc on 9/22/16.
- */
 public class LowLatencyMediaDriver {
 
     private LowLatencyMediaDriver() {}

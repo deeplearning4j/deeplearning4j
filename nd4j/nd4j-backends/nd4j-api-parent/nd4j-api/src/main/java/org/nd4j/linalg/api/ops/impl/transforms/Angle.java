@@ -28,12 +28,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Angle op for tensorflow import<br>
- * Given ND4J currently only supports real arrays; hence by definition this always outputs 0
- *
- * @author Alex Black
- */
 public class Angle extends DynamicCustomOp {
 
     public Angle(SameDiff sameDiff, SDVariable input) {

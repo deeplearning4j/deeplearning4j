@@ -44,11 +44,6 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getH
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
 
-/**
- * Keras separable convolution 2D layer support
- *
- * @author Max Pumperla
- */
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)

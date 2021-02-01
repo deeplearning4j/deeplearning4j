@@ -26,11 +26,6 @@ import org.apache.commons.io.FilenameUtils;
 
 import java.net.URI;
 
-/**
- * A RecordMetaData instance for a line number, generall in a file
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class RecordMetaDataLine implements RecordMetaData {

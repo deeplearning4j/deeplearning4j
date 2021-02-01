@@ -30,13 +30,6 @@ import org.nd4j.linalg.api.rng.Random;
 
 import java.util.List;
 
-/**
- * A experience handler that stores the experience in a replay memory. See https://arxiv.org/abs/1312.5602
- * The experience container is a {@link StateActionRewardState Transition} that stores the tuple observation-action-reward-nextObservation,
- * as well as whether or the not the episode ended after the Transition
- *
- * @param <A> Action type
- */
 @EqualsAndHashCode
 public class ReplayMemoryExperienceHandler<A> implements ExperienceHandler<A, StateActionRewardState<A>> {
     private static final int DEFAULT_MAX_REPLAY_MEMORY_SIZE = 150000;

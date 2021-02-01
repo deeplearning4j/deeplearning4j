@@ -20,9 +20,6 @@
 
 package org.datavec.api.util;
 
-/**
- * @deprecated Use {@link org.nd4j.common.io.ClassPathResource}
- */
 @Deprecated
 public class ClassPathResource extends org.nd4j.common.io.ClassPathResource {
 

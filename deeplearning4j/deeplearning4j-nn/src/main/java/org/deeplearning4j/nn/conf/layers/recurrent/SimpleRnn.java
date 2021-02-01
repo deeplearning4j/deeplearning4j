@@ -39,16 +39,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Simple RNN - aka "vanilla" RNN is the simplest type of recurrent neural network layer. It implements {@code out_t =
- * activationFn( in_t * inWeight + out_(t-1) * recurrentWeights + bias)}.
- *
- * Note that other architectures (LSTM, etc) are usually much more effective, especially for longer time series; however
- * SimpleRnn is very fast to compute, and hence may be considered where the length of the temporal dependencies in the
- * dataset are only a few steps long.
- *
- * @author Alex Black
- */
 @Data
 public class SimpleRnn extends BaseRecurrentLayer {
 

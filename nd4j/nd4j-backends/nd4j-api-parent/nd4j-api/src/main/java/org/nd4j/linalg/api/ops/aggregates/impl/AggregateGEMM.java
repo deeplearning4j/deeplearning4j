@@ -24,12 +24,6 @@ import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.aggregates.BaseAggregate;
 
-/**
- *
- * PLEASE NOTE: This op is available for CPU only, and should NOT be ever called manually, unless you know why you're using it
- *
- * @author raver119@gmail.com
- */
 public class AggregateGEMM extends BaseAggregate {
 
     public AggregateGEMM() {

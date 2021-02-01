@@ -32,11 +32,6 @@ import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
-/**
- * Transform jdbc column data into Writable objects
- *
- * @author Adrien Plagnol
- */
 public class JdbcWritableConverter {
 
     public static Writable convert(final Object columnValue, final int columnType) {

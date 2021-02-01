@@ -42,15 +42,6 @@ import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Unit tests for SVMLightRecordWriter. Replaces writer tests in
- * SVMRecordWriterTest.
- *
- * @see SVMLightRecordReader
- * @see org.datavec.api.records.reader.impl.SVMRecordWriterTest
- *
- * @author dave@skymind.io
- */
 public class SVMLightRecordWriterTest extends BaseND4JTest {
 
     @Test

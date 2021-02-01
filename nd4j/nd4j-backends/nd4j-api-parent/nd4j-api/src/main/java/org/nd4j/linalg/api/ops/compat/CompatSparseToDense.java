@@ -24,11 +24,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- * This is a wrapper for SparseToDense op that impelements corresponding TF operation
- *
- * @author raver119@gmail.com
- */
 public class CompatSparseToDense extends DynamicCustomOp {
 
     public CompatSparseToDense() {

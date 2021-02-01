@@ -73,13 +73,6 @@ import org.nd4j.nativeblas.*;
 
 import java.util.*;
 
-/**
- *
- * Native operation
- * executioner in c++
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class NativeOpExecutioner extends DefaultOpExecutioner {
     private NativeOps loop = NativeOpsHolder.getInstance().getDeviceNativeOps();

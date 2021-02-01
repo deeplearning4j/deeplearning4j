@@ -43,21 +43,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
-/**
- * 2D deconvolution layer implementation.
- *
- * Deconvolutions are also known as transpose convolutions or fractionally strided convolutions.
- * In essence, deconvolutions swap forward and backward pass with regular 2D convolutions.
- *
- * See the paper by Matt Zeiler for details:
- * <a href="http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf">http://www.matthewzeiler.com/wp-content/uploads/2017/07/cvpr2010.pdf</a>
- *
- * For an intuitive guide to convolution arithmetic and shapes, see:
- * <a href="https://arxiv.org/abs/1603.07285v1">https://arxiv.org/abs/1603.07285v1</a>
- *
- *
- * @author Max Pumperla
- */
 public class Deconvolution2DLayer extends ConvolutionLayer {
 
     public Deconvolution2DLayer(NeuralNetConfiguration conf, DataType dataType) {

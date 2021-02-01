@@ -29,18 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
-/**
- * This is intended to ensure that if the incorrect size of data is given
- * to the loss functions, that the report this fact through an appropriate
- * exception.  This functionality used to be performed at the 'deeplearning4j'
- * level, but it was discovered that many loss functions perform mappings
- * involving 'label' sizes different than 'output' sizes.  Such an example
- * would be the Bishop Mixture Density Network.  Hence the testing for
- * loss function size was moved to being the responsibility of the loss function
- * to enforce.
- * 
- * @author Jonathan S. Arney.
- */
 public class TestLossFunctionsSizeChecks extends BaseNd4jTest {
 
     public TestLossFunctionsSizeChecks(Nd4jBackend b){

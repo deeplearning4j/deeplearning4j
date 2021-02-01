@@ -36,12 +36,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-/**
- * Collection record reader for sequences.
- * Mainly used for testing.
- *
- * @author Alex Black
- */
 public class CollectionSequenceRecordReader extends BaseRecordReader implements SequenceRecordReader {
     private Iterator<? extends Collection<? extends Collection<Writable>>> records;
     private final Collection<? extends Collection<? extends Collection<Writable>>> original;

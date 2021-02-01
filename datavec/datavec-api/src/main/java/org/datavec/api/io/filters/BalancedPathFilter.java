@@ -27,13 +27,6 @@ import org.datavec.api.writable.Writable;
 import java.net.URI;
 import java.util.*;
 
-/**
- * Randomizes the order of paths in an array and removes paths randomly
- * to have the same number of paths for each label. Further interlaces the paths
- * on output based on their labels, to obtain easily optimal batches for training.
- *
- * @author saudet
- */
 public class BalancedPathFilter extends RandomPathFilter {
 
     protected PathLabelGenerator labelGenerator;

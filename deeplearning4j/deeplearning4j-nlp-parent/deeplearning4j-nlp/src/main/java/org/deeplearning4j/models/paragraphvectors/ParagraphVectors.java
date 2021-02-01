@@ -70,11 +70,6 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Basic ParagraphVectors (aka Doc2Vec) implementation for DL4j, as wrapper over SequenceVectors
- *
- * @author raver119@gmail.com
- */
 public class ParagraphVectors extends Word2Vec {
     private static final long serialVersionUID = 78249242142L;
 

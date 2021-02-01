@@ -51,9 +51,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 public class VocabConstructorTest extends BaseDL4JTest {
 
     @Rule

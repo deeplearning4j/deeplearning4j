@@ -35,13 +35,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-/**
- * This is a {@link SequenceRecordReader}
- * primarily meant for unit tests.
- * It carries records in memory and uses a list iterator internally.
- *
- * @author Adam Gibson
- */
 @Data
 public class InMemorySequenceRecordReader implements SequenceRecordReader {
     private List<List<List<Writable>>> records;

@@ -27,9 +27,6 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @Data
 public class BlockingObserver implements Observer {

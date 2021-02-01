@@ -35,11 +35,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Manages record listeners.
- *
- * @author saudet
- */
 public abstract class BaseRecordReader implements RecordReader {
 
     protected InputSplit inputSplit;

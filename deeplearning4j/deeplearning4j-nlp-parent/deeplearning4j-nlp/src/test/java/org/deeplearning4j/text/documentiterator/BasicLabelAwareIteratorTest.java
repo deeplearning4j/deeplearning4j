@@ -33,9 +33,6 @@ import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class BasicLabelAwareIteratorTest extends BaseDL4JTest {
 
     @Rule

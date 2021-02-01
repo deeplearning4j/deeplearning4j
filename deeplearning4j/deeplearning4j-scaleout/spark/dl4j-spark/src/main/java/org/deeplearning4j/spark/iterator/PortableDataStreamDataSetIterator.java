@@ -30,12 +30,6 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Iterator;
 
-/**
- * A DataSetIterator that loads serialized DataSet objects (saved with {@link DataSet#save(OutputStream)}) from
- * a {@link PortableDataStream}, usually obtained from SparkContext.binaryFiles()
- *
- * @author Alex Black
- */
 public class PortableDataStreamDataSetIterator extends BaseDataSetIterator<PortableDataStream> {
 
     public PortableDataStreamDataSetIterator(Iterator<PortableDataStream> iter) {

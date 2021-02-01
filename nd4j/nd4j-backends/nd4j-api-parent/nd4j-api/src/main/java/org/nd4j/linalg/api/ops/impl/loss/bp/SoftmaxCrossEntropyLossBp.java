@@ -31,11 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/**
- * Softmax cross entropy loss
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class SoftmaxCrossEntropyLossBp extends BaseLossBp {
     private double labelSmoothing = 0.0;

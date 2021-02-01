@@ -38,15 +38,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Map;
 
-/**
- * An implementation of the DigiCaps layer from Dynamic Routing Between Capsules
- *
- * Input should come from a PrimaryCapsules layer and be of shape [mb, inputCaps, inputCapDims].
- *
- * From <a href="http://papers.nips.cc/paper/6975-dynamic-routing-between-capsules.pdf">Dynamic Routing Between Capsules</a>
- *
- * @author Ryan Nett
- */
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

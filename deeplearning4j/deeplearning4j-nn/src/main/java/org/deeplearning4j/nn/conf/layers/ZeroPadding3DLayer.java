@@ -37,12 +37,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Zero padding 3D layer for convolutional neural networks. Allows padding to be done separately for "left" and "right"
- * in all three spatial dimensions.
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

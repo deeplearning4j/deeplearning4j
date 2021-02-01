@@ -28,11 +28,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * The multidataset version of the UnderSamplingByMaskingPreProcessor
- * Constructor takes a map - keys are indices of the multidataset to apply preprocessor to, values are the target distributions
- * @author susaneraly
- */
 public class UnderSamplingByMaskingMultiDataSetPreProcessor extends BaseUnderSamplingPreProcessor
                 implements MultiDataSetPreProcessor {
 

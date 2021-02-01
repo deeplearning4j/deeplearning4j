@@ -40,11 +40,6 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-/**
- * An implementation of {@link StatsReport} using Simple Binary Encoding (SBE)
- *
- * @author Alex Black
- */
 @EqualsAndHashCode
 @ToString
 @Data

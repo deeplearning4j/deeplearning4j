@@ -38,11 +38,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.same.AMin;
 
 import java.util.Arrays;
 
-/**
- * Convenience methods for broadcasts
- *
- * @author Alex Black
- */
 public class Broadcast {
 
     private Broadcast(){ }

@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.SegmentMaxBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Segment max operation
- *
- * @author Alex Black
- */
 public class SegmentMax extends DynamicCustomOp {
 
     public SegmentMax(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {

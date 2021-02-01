@@ -33,10 +33,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/** PreprocessorVertex is a simple adaptor class that allows a {@link InputPreProcessor} to be used in a ComputationGraph
- * GraphVertex, without it being associated with a layer.
- * @author Alex Black
- */
 public class PreprocessorVertex extends BaseGraphVertex {
     @Getter
     private InputPreProcessor preProcessor;

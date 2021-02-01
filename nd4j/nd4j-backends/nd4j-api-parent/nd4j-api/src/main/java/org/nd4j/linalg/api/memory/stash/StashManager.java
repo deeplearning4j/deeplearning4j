@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.api.memory.stash;
 
-/**
- * This interface describes factory/holder for manipulating Stash objects
- *
- * @author raver119@gmail.com
- */
 public interface StashManager {
 
     <T extends Object> boolean checkIfStashExists(T stashId);

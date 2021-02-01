@@ -69,9 +69,6 @@ import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-/**
- * Created by agibsonccc on 3/6/15.
- */
 @Slf4j
 public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 

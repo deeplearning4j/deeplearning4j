@@ -50,12 +50,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * This class is simple wrapper for
- * ParallelInference using batched input
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class ParallelInference {
     protected Model model;

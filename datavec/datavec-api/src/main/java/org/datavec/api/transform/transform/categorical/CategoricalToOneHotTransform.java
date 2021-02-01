@@ -33,9 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
-/**
- * Created by Alex on 4/03/2016.
- */
 @Data
 @JsonIgnoreProperties({"inputSchema", "columnIdx", "stateNames", "statesMap"})
 public class CategoricalToOneHotTransform extends BaseTransform {

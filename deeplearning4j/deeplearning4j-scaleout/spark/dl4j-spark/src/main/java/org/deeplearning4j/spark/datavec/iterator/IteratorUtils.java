@@ -34,11 +34,6 @@ import scala.Tuple2;
 
 import java.util.*;
 
-/**
- * Utilities for working with RDDs and {@link RecordReaderMultiDataSetIterator}
- *
- * @author Alex Black
- */
 public class IteratorUtils {
 
     /**

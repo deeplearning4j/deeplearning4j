@@ -27,11 +27,6 @@ import org.datavec.api.transform.ColumnType;
 
 import java.util.*;
 
-/**
- * Analysis for categorical columns
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 @NoArgsConstructor //For Jackson deserialization

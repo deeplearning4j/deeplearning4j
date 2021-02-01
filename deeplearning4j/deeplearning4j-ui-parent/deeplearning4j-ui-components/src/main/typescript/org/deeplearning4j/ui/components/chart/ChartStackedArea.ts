@@ -18,14 +18,6 @@
  *  *****************************************************************************
  */
 
-/// <reference path="../../api/Component.ts" />
-/// <reference path="../../api/Renderable.ts" />
-/// <reference path="../../typedefs/d3.d.ts" />
-/// <reference path="../../util/TSUtils.ts" />
-/// <reference path="Chart.ts" />
-/// <reference path="Legend.ts" />
-
-
 class ChartStackedArea extends Chart implements Renderable {
     private xData: number[];
     private yData: number[][];

@@ -50,22 +50,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * 1D (temporal) convolutional layer. Currently, we just subclass off the
- * ConvolutionLayer and override the preOutput and backpropGradient methods.
- * Specifically, since this layer accepts RNN (not CNN) InputTypes, we
- * need to add a singleton fourth dimension before calling the respective
- * superclass method, then remove it from the result.
- *
- * This approach treats a multivariate time series with L timesteps and
- * P variables as an L x 1 x P image (L rows high, 1 column wide, P
- * channels deep). The kernel should be H<L pixels high and W=1 pixels
- * wide.
- *
- * TODO: We will eventually want to add a 1D-specific im2col method.
- *
- * @author dave@skymind.io
- */
 public class Convolution1DLayer extends ConvolutionLayer {
     public Convolution1DLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);

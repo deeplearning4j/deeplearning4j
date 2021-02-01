@@ -27,9 +27,6 @@ import org.datavec.api.writable.Writable;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * Simple helper class for executing joins
- */
 @AllArgsConstructor
 @Data
 public class JoinedValue implements Serializable {

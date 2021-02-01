@@ -36,19 +36,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.*;
 
-/**
- * This class is intended for use with the transfer learning API.
- * Often times transfer learning models have "frozen" layers where parameters are held constant during training
- * For ease of training and quick turn around times, the dataset to be trained on can be featurized and saved to disk.
- * Featurizing in this case refers to conducting a forward pass on the network and saving the activations from the output
- * of the frozen layers.
- * During training the forward pass and the backward pass through the frozen layers can be skipped entirely and the "featurized"
- * dataset can be fit with the smaller unfrozen part of the computation graph which allows for quicker iterations.
- * The class internally traverses the computation graph/MLN and builds an instance of the computation graph/MLN that is
- * equivalent to the unfrozen subset.
- *
- * @author susaneraly
- */
 public class TransferLearningHelper {
 
     private boolean isGraph = true;

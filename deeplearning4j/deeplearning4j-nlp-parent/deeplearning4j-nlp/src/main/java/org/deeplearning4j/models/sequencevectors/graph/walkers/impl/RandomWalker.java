@@ -38,16 +38,6 @@ import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This is Random-based walker for SequenceVectors-based DeepWalk implementation
- *
- * Original DeepWalk paper: <a href="https://arxiv.org/pdf/1403.6652v2">https://arxiv.org/pdf/1403.6652v2</a>
- *
- * @author AlexDBlack
- * @author raver119@gmail.com
- *
- * Based on Alex Black RandomWalkIterator implementation
- */
 public class RandomWalker<T extends SequenceElement> implements GraphWalker<T> {
     protected int walkLength = 5;
     protected NoEdgeHandling noEdgeHandling = NoEdgeHandling.EXCEPTION_ON_DISCONNECTED;

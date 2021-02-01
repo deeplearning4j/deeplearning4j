@@ -29,12 +29,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 
-/**
- * Conversion to and from arrow {@link Tensor}
- * and {@link INDArray}
- *
- * @author Adam Gibson
- */
 public class ArrowSerde {
 
 

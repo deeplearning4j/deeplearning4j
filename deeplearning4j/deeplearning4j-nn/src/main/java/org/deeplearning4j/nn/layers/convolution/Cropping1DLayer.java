@@ -37,12 +37,6 @@ import org.nd4j.common.primitives.Pair;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/**
- * Zero cropping layer for 1D convolutional neural networks.
- * Allows cropping to be done separately for top/bottom
- *
- * @author Max Pumperla
- */
 public class Cropping1DLayer extends AbstractLayer<Cropping1D> {
 
     private int[] cropping; //[padTop, padBottom]

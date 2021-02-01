@@ -35,10 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * CheckNumerics op wrapper
- * @author raver119@gmail.com
- */
 public class CheckNumerics extends DynamicCustomOp {
 
     public CheckNumerics(SameDiff sd, SDVariable input, SDVariable message){

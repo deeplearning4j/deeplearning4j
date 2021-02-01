@@ -28,11 +28,6 @@ import scala.Tuple2;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Spark function to map an example to a pair, by using some of the column values as the key.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class SparkMapToPairByMultipleColumnsFunction
                 implements PairFunction<List<Writable>, List<Writable>, List<Writable>> {

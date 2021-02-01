@@ -25,13 +25,6 @@ import lombok.Data;
 
 import java.net.URI;
 
-/**
- * A general-purpose RecordMetaData implementation, with an index (long value)<br>
- * Used for example in {@link org.datavec.api.records.reader.impl.collection.CollectionRecordReader} and
- * {@link org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordReader}
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class RecordMetaDataIndex implements RecordMetaData {

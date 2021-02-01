@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformAnyOp;
 
 import java.util.List;
 
-/**
- * Pairwise version of PoW
- * @author raver119@gmail.com
- */
 public class PowPairwise extends BaseTransformAnyOp  {
     public PowPairwise(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

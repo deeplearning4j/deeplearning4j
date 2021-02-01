@@ -26,12 +26,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 
-/**
- * This implementation of SequenceIterator passes each sequence through specified vocabulary, filtering out SequenceElements that are not available in Vocabulary.
- * Please note: nextSequence() method can return empty sequence, if none of elements were found in attached vocabulary.
- *
- * @author raver119@gmail.com
- */
 public class FilteredSequenceIterator<T extends SequenceElement> implements SequenceIterator<T> {
 
     private final SequenceIterator<T> underlyingIterator;

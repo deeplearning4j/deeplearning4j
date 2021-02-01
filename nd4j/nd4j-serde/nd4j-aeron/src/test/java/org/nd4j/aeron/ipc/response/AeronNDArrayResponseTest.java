@@ -38,9 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 10/3/16.
- */
 @Slf4j
 public class AeronNDArrayResponseTest extends BaseND4JTest {
     private MediaDriver mediaDriver;

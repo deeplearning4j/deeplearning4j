@@ -36,12 +36,6 @@ import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.removeDefaultWeights;
 
-/**
- * Keras Convolution base layer
- *
- * @author Max Pumperla
- */
-
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)

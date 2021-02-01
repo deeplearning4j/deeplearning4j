@@ -36,16 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/24/16.
- *
- * An epsilon greedy policy choose the next action
- * - randomly with epsilon probability
- * - deleguate it to constructor argument 'policy' with (1-epsilon) probability.
- *
- * epislon is annealed to minEpsilon over epsilonNbStep steps
- *
- */
 @Slf4j
 public class EpsGreedy<A> extends Policy<A> {
 

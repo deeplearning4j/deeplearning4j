@@ -27,12 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- *
- * This is not real distribution. It'll generate valueOf array with requested shape.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class ConstantDistribution extends BaseDistribution {
     /**

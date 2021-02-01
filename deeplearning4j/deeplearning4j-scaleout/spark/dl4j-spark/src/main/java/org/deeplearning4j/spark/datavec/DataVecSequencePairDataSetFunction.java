@@ -37,13 +37,6 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 
-/**Map {@code Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>} objects (out of a TWO datavec-spark
- *  sequence record reader functions) to  DataSet objects for Spark training.
- * Analogous to {@link SequenceRecordReaderDataSetIterator}, but in the context of Spark.
- * Supports loading data from a TWO sources only; hence supports many-to-one and one-to-many situations.
- * see {@link DataVecSequenceDataSetFunction} for the single file version
- * @author Alex Black
- */
 public class DataVecSequencePairDataSetFunction
                 implements Function<Tuple2<List<List<Writable>>, List<List<Writable>>>, DataSet>, Serializable {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).

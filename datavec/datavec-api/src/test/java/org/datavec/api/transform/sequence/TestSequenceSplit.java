@@ -37,9 +37,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 19/04/2016.
- */
 public class TestSequenceSplit extends BaseND4JTest {
 
     @Test

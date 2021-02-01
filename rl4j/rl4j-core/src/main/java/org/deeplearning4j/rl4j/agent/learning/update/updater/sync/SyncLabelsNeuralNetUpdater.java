@@ -24,9 +24,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.updater.INeuralNetUpdater;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterConfiguration;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 
-/**
- * A {@link INeuralNetUpdater} that updates a neural network and sync a target network at defined intervals
- */
 public class SyncLabelsNeuralNetUpdater extends BaseSyncNeuralNetUpdater<FeaturesLabels> {
 
     public SyncLabelsNeuralNetUpdater(ITrainableNeuralNet current,

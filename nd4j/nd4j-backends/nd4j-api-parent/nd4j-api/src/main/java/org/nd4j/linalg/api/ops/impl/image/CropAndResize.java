@@ -34,10 +34,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * CropAndResize Op
- * @author Alex Black
- */
 @NoArgsConstructor
 public class CropAndResize extends DynamicCustomOp {
     public enum Method {BILINEAR, NEAREST};

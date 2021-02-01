@@ -34,13 +34,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * A FlatMapFunction for executing training on serialized DataSet objects, that can be loaded from a path (local or HDFS)
- * that is specified as a String
- * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
- *
- * @author Alex Black
- */
 public class ExecuteWorkerPathFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<String>, R> {
 
     private final FlatMapFunction<Iterator<DataSet>, R> workerFlatMap;

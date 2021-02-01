@@ -31,10 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Convert a String column
- * to a categorical column
- */
 @JsonIgnoreProperties({"inputSchema", "columnNumber"})
 @Data
 public class StringToCategoricalTransform extends BaseColumnTransform {

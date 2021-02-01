@@ -31,15 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
-/**
- * Transform that removes all columns except
- * for those that are explicitly
- * specified as ones to keep
- * To specify only the columns
- * to remove, use {@link RemoveColumnsTransform}
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "columnsToKeepIdx", "indicesToKeep"})
 @Data
 public class RemoveAllColumnsExceptForTransform extends BaseTransform implements ColumnOp {

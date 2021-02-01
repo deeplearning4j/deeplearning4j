@@ -20,10 +20,6 @@
 
 package org.nd4j.parameterserver.distributed.v2.messages;
 
-/**
- * This interface describes class responsible for keeping track of VoidMessages passed through any given node via Broadcast mechanics, to avoid duplication of messages
- * @author raver119@gmail.com
- */
 public interface MessagesHistoryHolder<T> {
     /**
      * This method adds id of the message to the storage, if message is unknown

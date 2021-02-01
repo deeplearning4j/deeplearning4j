@@ -20,12 +20,6 @@
 
 package org.datavec.audio.dsp;
 
-/**
- * Resample signal data (base on bytes)
- * 
- * @author jacquet
- *
- */
 public class Resampler {
 
     public Resampler() {}

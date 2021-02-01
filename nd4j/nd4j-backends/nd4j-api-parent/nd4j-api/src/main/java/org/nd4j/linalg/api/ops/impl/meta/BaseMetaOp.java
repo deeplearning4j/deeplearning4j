@@ -27,9 +27,6 @@ import org.nd4j.linalg.api.ops.grid.GridPointers;
 import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import org.nd4j.linalg.api.ops.impl.grid.BaseGridOp;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BaseMetaOp extends BaseGridOp implements MetaOp {
 
     public BaseMetaOp() {

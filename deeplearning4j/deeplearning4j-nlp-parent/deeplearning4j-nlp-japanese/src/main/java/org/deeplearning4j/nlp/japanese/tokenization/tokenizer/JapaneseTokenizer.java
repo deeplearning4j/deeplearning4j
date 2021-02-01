@@ -28,15 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-/**
- * A thin wrapper for Japanese Morphological Analyzer Kuromoji (ver.0.9.0),
- * it tokenizes texts which is written in languages
- * that words are not separated by whitespaces.
- *
- * In thenory, Kuromoji is a language-independent Morphological Analyzer library,
- * so if you want to tokenize non-Japanese texts (Chinese, Korean etc.),
- * you can do it with MeCab style dictionary for each languages.
- */
 public class JapaneseTokenizer implements org.deeplearning4j.text.tokenization.tokenizer.Tokenizer {
 
     private final List<Token> tokens;

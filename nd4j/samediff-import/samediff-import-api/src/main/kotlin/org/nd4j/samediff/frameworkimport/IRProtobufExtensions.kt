@@ -42,6 +42,7 @@ import java.nio.charset.Charset
 import java.util.*
 import kotlin.collections.ArrayList
 import java.lang.reflect.Field
+import java.nio.Buffer
 
 
 fun isOutputFrameworkAttributeName(name: String, opDescriptor: OpNamespace.OpDescriptor): Boolean {
@@ -442,7 +443,9 @@ fun loadDataBufferFromRawData(inputTensor: TensorNamespace.TensorProto): INDArra
 
     val byteBuffer = ByteBuffer.allocateDirect(totalLen * dtype.width())
     byteBuffer.put(byteArray)
-    byteBuffer.rewind()
+    //See: https://github.com/apache/felix/pull/114
+    val castBuffer = byteBuffer as Buffer
+    castBuffer.rewind()
     val rawDataBuffer = Nd4j.createBuffer(byteBuffer, dtype, totalLen, 0)
     if(shape.isNotEmpty() && totalLen > 0) {
         if(rawDataBuffer.length() > 1)

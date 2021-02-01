@@ -80,13 +80,6 @@ import java.util.UUID;
 
 import static org.junit.Assert.fail;
 
-/**
- * Test environment for building/debugging UI.
- *
- * Please, do NOT remove @Ignore annotation
- *
- * @author raver119@gmail.com
- */
 @Ignore
 @Slf4j
 public class ManualTests {

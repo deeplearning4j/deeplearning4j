@@ -22,11 +22,6 @@ package org.nd4j.linalg.convolution;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Default convolution instance (FFT based)
- *
- * @author Adam Gibson
- */
 public class DefaultConvolutionInstance extends BaseConvolution {
 
     /**

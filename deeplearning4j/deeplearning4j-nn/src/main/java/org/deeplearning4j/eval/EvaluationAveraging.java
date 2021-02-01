@@ -20,9 +20,6 @@
 
 package org.deeplearning4j.eval;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.EvaluationAveraging}
- */
 @Deprecated
 public enum EvaluationAveraging {
     Macro, Micro;

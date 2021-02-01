@@ -35,11 +35,6 @@ import java.util.Collections;
 import java.util.List;
 
 
-/**
- * Weighted cross entropy loss with logits
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class WeightedCrossEntropyLoss extends DynamicCustomOp {
 

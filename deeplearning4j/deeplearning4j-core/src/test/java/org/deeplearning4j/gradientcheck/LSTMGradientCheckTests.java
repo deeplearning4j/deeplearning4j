@@ -43,9 +43,6 @@ import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author Alex Black 14 Aug 2015
- */
 public class LSTMGradientCheckTests extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;

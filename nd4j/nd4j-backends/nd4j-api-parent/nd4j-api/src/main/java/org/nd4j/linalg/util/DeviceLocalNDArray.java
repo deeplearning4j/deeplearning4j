@@ -31,10 +31,6 @@ import org.nd4j.linalg.profiler.OpProfiler;
 
 import java.util.Arrays;
 
-/**
- * DeviceLocal implementation for INDArray, with special broadcast method
- * @author raver119@gmail.com
- */
 @Slf4j
 public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
 

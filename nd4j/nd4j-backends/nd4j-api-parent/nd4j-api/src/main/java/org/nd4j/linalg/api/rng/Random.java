@@ -23,12 +23,6 @@ package org.nd4j.linalg.api.rng;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Random generation based on commons math.
- * This is mean to be an independent.
- *
- * @author Adam Gibson
- */
 public interface Random extends AutoCloseable {
 
     /**

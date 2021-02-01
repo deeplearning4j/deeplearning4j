@@ -29,11 +29,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Helper class that returns label descriptions for Darknet models trained with ImageNet.
- *
- * @author saudet
- */
 public class DarknetLabels extends BaseLabels {
 
     private boolean shortNames;

@@ -31,11 +31,6 @@ import org.nd4j.shade.jackson.databind.JsonNode;
 
 import java.io.IOException;
 
-/**
- * Custom deserializer to handle change in format between beta6 (and earlier) and later versions
- *
- * @author Alex Black
- */
 public class BoundingBoxesDeserializer extends JsonDeserializer<INDArray> {
     @Override
     public INDArray deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {

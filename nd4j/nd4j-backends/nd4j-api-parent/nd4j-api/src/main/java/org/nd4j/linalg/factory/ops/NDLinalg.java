@@ -18,8 +18,6 @@
  *  *****************************************************************************
  */
 
-//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
-
 package org.nd4j.linalg.factory.ops;
 
 import org.nd4j.linalg.api.buffer.DataType;

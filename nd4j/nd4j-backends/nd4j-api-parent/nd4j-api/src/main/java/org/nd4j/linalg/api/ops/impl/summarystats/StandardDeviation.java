@@ -34,11 +34,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Standard deviation (sqrt of variance)
- *
- * @author Adam Gibson
- */
 public class StandardDeviation extends Variance {
     public StandardDeviation(SameDiff sameDiff, SDVariable i_v, boolean biasCorrected, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, biasCorrected, keepDims, dimensions );

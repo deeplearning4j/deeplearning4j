@@ -39,9 +39,6 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 30/04/2016.
- */
 @Slf4j
 public class TestNDArrayCreation extends BaseNd4jTest {
 

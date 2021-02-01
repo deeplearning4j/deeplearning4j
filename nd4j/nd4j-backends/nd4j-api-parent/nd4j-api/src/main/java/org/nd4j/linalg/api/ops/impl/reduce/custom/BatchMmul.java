@@ -32,16 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.*;
 
-/**
- * Batched matrix multiplication.
- *
- * Matrix multiply a batch of matrices. First and second batch of matrices have to be arrays of same
- * length and each pair taken from these sets has to have dimensions (M, N) and (N, K),
- * respectively. The result of this operation will be a batch of multiplied matrices. The
- * result has the same length as both input batches and each output matrix is of shape (M, K).
- *
- * @author Max Pumperla
- */
 @EqualsAndHashCode
 public class BatchMmul extends DynamicCustomOp {
 

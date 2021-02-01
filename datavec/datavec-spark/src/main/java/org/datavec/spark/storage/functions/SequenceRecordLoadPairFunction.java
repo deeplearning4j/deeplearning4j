@@ -28,11 +28,6 @@ import scala.Tuple2;
 
 import java.util.List;
 
-/**
- * A simple function to prepare data during loading via {@link org.datavec.spark.storage.SparkStorageUtils}
- *
- * @author Alex Black
- */
 public class SequenceRecordLoadPairFunction
                 implements PairFunction<Tuple2<LongWritable, SequenceRecordWritable>, Long, List<List<Writable>>> {
     @Override

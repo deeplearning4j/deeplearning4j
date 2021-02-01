@@ -38,17 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
-/**
- *
- * A variable representing a component within a
- * {@@link SameDiff} graph.
- *
- * SDVariable is used for symbolic declaration
- * of equations.
- *
- * @author Adam Gibson
- *
- */
 @Data
 @NoArgsConstructor
 @Slf4j

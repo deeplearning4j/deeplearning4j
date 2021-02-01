@@ -44,9 +44,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 04/07/2016.
- */
 public class TestNd4jKryoSerialization extends BaseND4JTest {
 
     private JavaSparkContext sc;

@@ -36,11 +36,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ArgMin function
- *
- * @author Alex Black
- */
 @Data
 public class ArgMin extends DynamicCustomOp {
     protected boolean keepDims = false;

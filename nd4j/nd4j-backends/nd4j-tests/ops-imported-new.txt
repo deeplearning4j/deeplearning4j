@@ -1,4 +1,3 @@
-Identity,in_0/read
-Identity,in_1/read
-Add,Add
-Zeta,Zeta
+Identity,Variable/read
+Pack,Cumsum/x
+Cumsum,Cumsum

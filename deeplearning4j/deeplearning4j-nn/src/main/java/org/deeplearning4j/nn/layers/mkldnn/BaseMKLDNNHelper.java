@@ -26,10 +26,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Base class for MKL-DNN Helpers
- * @author Alex Black
- */
 public class BaseMKLDNNHelper {
 
     private static AtomicBoolean BACKEND_OK = null;

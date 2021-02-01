@@ -30,9 +30,6 @@ import org.datavec.spark.transform.SparkTransformExecutor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Alex on 5/03/2016.
- */
 @AllArgsConstructor
 @Slf4j
 public class SparkTransformFunction implements Function<List<Writable>, List<Writable>> {

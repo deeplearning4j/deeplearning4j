@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELUDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * GELU activation function - Gaussian Error Linear Units
- *
- * @see GELU
- */
 @EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationGELU extends BaseActivationFunction {

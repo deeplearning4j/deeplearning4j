@@ -33,11 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-/**
- * Base functionality for helper classes that return label descriptions.
- *
- * @author saudet
- */
 public abstract class BaseLabels implements Labels {
 
     protected ArrayList<String> labels;

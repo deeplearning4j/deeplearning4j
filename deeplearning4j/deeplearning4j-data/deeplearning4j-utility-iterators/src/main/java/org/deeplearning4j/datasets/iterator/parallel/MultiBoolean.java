@@ -23,14 +23,6 @@ package org.deeplearning4j.datasets.iterator.parallel;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
-/**
- * This is utility class, that allows easy handling of multiple joint boolean states.
- *
- * PLEASE NOTE: It's suited for tracking up to 32 states in total.
- * PLEASE NOTE: This class is NOT thread safe
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class MultiBoolean {
     private final int numEntries;

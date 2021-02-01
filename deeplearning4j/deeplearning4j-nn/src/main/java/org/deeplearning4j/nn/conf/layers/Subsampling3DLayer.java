@@ -43,13 +43,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 3D subsampling / pooling layer for convolutional neural networks
- * <p>
- * Supports max and average pooling modes
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

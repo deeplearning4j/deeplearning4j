@@ -31,9 +31,6 @@ import org.datavec.api.io.serializers.Serializer;
 import java.io.IOException;
 import java.lang.reflect.Method;
 
-/**
- * @deprecated Use {@link org.nd4j.common.io.ReflectionUtils}
- */
 @Deprecated
 public class ReflectionUtils {
 

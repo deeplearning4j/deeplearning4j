@@ -52,11 +52,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/**
- * Import a TensorFlow frozen graph in ProtoBuf (.pb) format, to SameDiff
- *
- * @author Alex Black
- */
 @Slf4j
 public class TFGraphMapper {
 

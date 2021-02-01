@@ -31,10 +31,6 @@ import org.bytedeco.opencv.opencv_core.*;
 
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
-/**
- * Color conversion transform using CVT (cvtcolor):
- * <a href="https://docs.opencv.org/4.0.1/de/d25/imgproc_color_conversions.html">CVT Color</a>.
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class ColorConversionTransform extends BaseImageTransform {

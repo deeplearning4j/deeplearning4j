@@ -24,9 +24,6 @@ import org.junit.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import play.server.Server;
 
-/**
- * Created by agibsonccc on 12/1/16.
- */
 public class StatusServerTests extends BaseND4JTest {
 
     @Test(timeout = 20000L)

@@ -32,14 +32,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.IOException;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
- *
- * DQN policy returns the action with the maximum Q-value as evaluated
- * by the dqn model
- */
-
-// FIXME: Should we rename this "GreedyPolicy"?
 @AllArgsConstructor
 public class DQNPolicy<OBSERVATION> extends Policy<Integer> {
 

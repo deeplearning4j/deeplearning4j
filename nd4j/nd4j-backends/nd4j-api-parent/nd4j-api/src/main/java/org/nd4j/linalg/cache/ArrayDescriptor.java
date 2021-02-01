@@ -24,11 +24,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 
 import java.util.Arrays;
 
-/**
- * This is utility class, made to compare java arrays for caching purposes.
- *
- * @author raver119@gmail.com
- */
 public class ArrayDescriptor {
     boolean[] boolArray = null;
     int[] intArray = null;

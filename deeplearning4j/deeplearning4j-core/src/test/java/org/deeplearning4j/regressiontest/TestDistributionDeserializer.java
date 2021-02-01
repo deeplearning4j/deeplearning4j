@@ -29,9 +29,6 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 08/05/2017.
- */
 public class TestDistributionDeserializer extends BaseDL4JTest {
 
     @Override

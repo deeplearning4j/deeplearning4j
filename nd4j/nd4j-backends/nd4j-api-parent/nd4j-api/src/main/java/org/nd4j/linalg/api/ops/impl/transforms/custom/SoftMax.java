@@ -32,18 +32,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Soft max function
- * row_maxes is a row vector (max for each row)
- * row_maxes = rowmaxes(input)
- * diff = exp(input - max) / diff.rowSums()
- * Outputs a probability distribution.
- * Note that this is a parameterized model and requires
- * the sum and max for the vector being calculated
- *
- * @author Adam Gibson
- */
-
 public class SoftMax extends BaseDynamicTransformOp {
     public SoftMax() {
         super();

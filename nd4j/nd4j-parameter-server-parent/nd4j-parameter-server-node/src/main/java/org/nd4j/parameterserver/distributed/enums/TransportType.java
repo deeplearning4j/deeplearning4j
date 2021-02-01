@@ -20,11 +20,6 @@
 
 package org.nd4j.parameterserver.distributed.enums;
 
-/**
- * TransportType enum describes different Transport usable for ParameterServers implementation
- *
- * @author raver119@gmail.com
- */
 public enum TransportType {
     /**
      * This is default Transport implementation, suitable for network environments without UDP Broadcast support

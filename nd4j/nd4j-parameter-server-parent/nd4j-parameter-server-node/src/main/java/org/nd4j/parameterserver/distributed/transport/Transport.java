@@ -26,11 +26,6 @@ import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
-/**
- * Transport interface describes Client -> Shard, Shard -> Shard, Shard -> Client communication
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public interface Transport {
     enum ThreadingModel {

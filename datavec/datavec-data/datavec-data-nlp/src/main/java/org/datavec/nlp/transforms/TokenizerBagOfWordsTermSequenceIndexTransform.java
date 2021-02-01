@@ -45,29 +45,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * This transform takes in a list of words
- * and outputs a single vector where that vector is of size
- * number of words in the vocab.
- *
- * For more information on vocab, see {@link BagOfWordsTransform}
- *
- * For definition of a vocab, it is generated using a {@link TokenizerFactory}
- * This transform will use {@link DefaultTokenizerFactory}
- * for the tokenizer factory if one is not specified.
- * Otherwise, one can specify a custom {@link TokenizerFactory}
- * with a default constructor.
- *
- * The other components that need to be specified are:
- * a word index map representing what words go in what columns
- * an inverse document frequency map representing the weighting of inverse document frequencies
- * for each word (this is for tfidf calculation)
- *
- * This is typically used for non english languages.
- *
- *
- * @author Adam Gibson
- */
 @Data
 @EqualsAndHashCode(callSuper = true, exclude = {"tokenizerFactory"})
 @JsonInclude(JsonInclude.Include.NON_NULL)

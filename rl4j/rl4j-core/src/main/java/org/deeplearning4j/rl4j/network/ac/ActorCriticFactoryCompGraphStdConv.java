@@ -45,12 +45,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
- *
- * Standard factory for Conv net Actor Critic
- */
-// TODO: Provide default networks before deprecating
 @Value
 public class ActorCriticFactoryCompGraphStdConv implements ActorCriticFactoryCompGraph {
 

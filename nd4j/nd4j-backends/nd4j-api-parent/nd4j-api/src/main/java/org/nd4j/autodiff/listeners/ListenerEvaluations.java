@@ -34,22 +34,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 
-/**
- * A class to allow Listeners to define what evaluations they need to run during training<br>
- * <p>
- * Usage example - does classification ({@link org.nd4j.evaluation.classification.Evaluation}) evaluation on
- * the training set (as training proceeds) and also Evaluation/ROCMultiClass evaluation on the test/validation set.
- * Assumes that the output predictions are called "softmax" and the first DataSet/MultiDataSet labels are those corresponding
- * to the "softmax" node
- * <pre>{@code
- * ListenerEvaluations.builder()
- *     //trainEvaluations: on the training data (in-line, as training proceeds through the epoch)
- *     .trainEvaluation("softmax", 0, new Evaluation(), new ROCMultiClass())
- *     //validationEvaluation: on the test/validation data, at the end of each epoch
- *     .validationEvaluation("softmax", 0, new Evaluation(), new ROCMultiClass())
- *     .build();
- * }</pre>
- */
 @Getter
 public class ListenerEvaluations {
     private Map<String, List<IEvaluation>> trainEvaluations;

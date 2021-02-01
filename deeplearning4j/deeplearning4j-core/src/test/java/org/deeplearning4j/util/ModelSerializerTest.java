@@ -56,9 +56,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 public class ModelSerializerTest extends BaseDL4JTest {
 
     @Rule

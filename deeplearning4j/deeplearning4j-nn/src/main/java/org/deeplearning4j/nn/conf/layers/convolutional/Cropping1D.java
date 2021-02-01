@@ -38,11 +38,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Cropping layer for convolutional (1d) neural networks. Allows cropping to be done separately for top/bottom
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

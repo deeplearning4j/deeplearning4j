@@ -26,11 +26,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-/**
- * Mean Pairwise Squared Error Loss Backprop
- *
- * @author Paul Dubs
- */
 public class MeanPairwiseSquaredErrorLossBp extends BaseLossBp {
 
 

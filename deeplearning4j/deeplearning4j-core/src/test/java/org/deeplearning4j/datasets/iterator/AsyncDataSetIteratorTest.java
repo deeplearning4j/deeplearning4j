@@ -38,9 +38,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class AsyncDataSetIteratorTest extends BaseDL4JTest {
     private ExistingDataSetIterator backIterator;

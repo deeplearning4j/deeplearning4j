@@ -34,10 +34,6 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-/**
- *
- * @author raver119@gmail.com
- */
 public class MultiDataSetSplitterTests extends BaseDL4JTest {
 
     @Test

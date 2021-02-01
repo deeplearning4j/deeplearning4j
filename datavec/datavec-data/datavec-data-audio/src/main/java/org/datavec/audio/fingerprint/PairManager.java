@@ -28,12 +28,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
-/**
- * Make pairs for the audio fingerprints, which a pair is used to group the same features together
- * 
- * @author jacquet
- *
- */
 public class PairManager {
 
     FingerprintProperties fingerprintProperties = FingerprintProperties.getInstance();

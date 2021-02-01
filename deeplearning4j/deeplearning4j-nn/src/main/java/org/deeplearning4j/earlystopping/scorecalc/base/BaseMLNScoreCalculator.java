@@ -24,11 +24,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
-/**
- * Abstract score calculator for MultiLayerNetwonk
- *
- * @author Alex Black
- */
 public abstract class BaseMLNScoreCalculator extends BaseScoreCalculator<MultiLayerNetwork> {
 
 

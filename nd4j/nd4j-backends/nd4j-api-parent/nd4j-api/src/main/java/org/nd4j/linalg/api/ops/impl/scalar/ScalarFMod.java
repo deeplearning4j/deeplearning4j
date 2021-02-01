@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.List;
 
-/**
- * Scalar floating-point remainder (fmod aka 'floormod')
- *
- * @author Adam Gibson
- */
 public class ScalarFMod extends BaseScalarOp {
     public ScalarFMod() {}
 

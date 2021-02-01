@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import java.util.List;
 
-/**
- * DropOut implementation as Op
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class DropOut extends BaseRandomOp {
 

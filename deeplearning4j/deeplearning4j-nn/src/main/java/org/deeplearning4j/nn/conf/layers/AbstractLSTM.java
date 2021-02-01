@@ -25,10 +25,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 
-/**
- * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

@@ -37,25 +37,6 @@ import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Upsampling 2D layer<br> Repeats each value (or rather, set of depth values) in the height and width dimensions by
- * size[0] and size[1] times respectively.<br> If input has shape {@code [minibatch, channels, height, width]} then
- * output has shape {@code [minibatch, channels, height*size[0], width*size[1]]}<br> Example:
- * <pre>
- * Input (slice for one example and channel)
- * [ A, B ]
- * [ C, D ]
- * Size = [2, 2]
- * Output (slice for one example and channel)
- * [ A, A, B, B ]
- * [ A, A, B, B ]
- * [ C, C, D, D ]
- * [ C, C, D, D ]
- * </pre>
- *
- * @author Max Pumperla
- */
-
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

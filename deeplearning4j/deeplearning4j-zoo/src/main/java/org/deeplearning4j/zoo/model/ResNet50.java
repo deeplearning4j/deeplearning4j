@@ -45,14 +45,6 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-/**
- * Residual networks for deep learning.
- *
- * <p>Paper: <a href="https://arxiv.org/abs/1512.03385">https://arxiv.org/abs/1512.03385</a></p>
- * <p>ImageNet weights for this model are available and have been converted from <a href="https://keras.io/applications/"></a>https://keras.io/applications/</a>.</p>
- *
- * @author Justin Long (crockpotveggies)
- */
 @AllArgsConstructor
 @Builder
 public class ResNet50 extends ZooModel {

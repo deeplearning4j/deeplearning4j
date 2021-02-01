@@ -34,9 +34,6 @@ import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class BasicNDArrayCompressor {
     private static final BasicNDArrayCompressor INSTANCE = new BasicNDArrayCompressor();

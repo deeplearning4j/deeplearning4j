@@ -18,8 +18,6 @@
  *  *****************************************************************************
  */
 
-//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
-
 package org.nd4j.autodiff.samediff.ops;
 
 import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;

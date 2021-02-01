@@ -40,23 +40,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Codec record reader for parsing:
- * H.264 ( AVC ) Main profile decoder	MP3 decoder/encoder
- Apple ProRes decoder and encoder	AAC encoder
- H264 Baseline profile encoder
- Matroska ( MKV ) demuxer and muxer
- MP4 ( ISO BMF, QuickTime ) demuxer/muxer and tools
- MPEG 1/2 decoder ( supports interlace )
- MPEG PS/TS demuxer
- Java player applet
- VP8 encoder
- MXF demuxer
-
- Credit to jcodec for the underlying parser
- *
- * @author Adam Gibson
- */
 public class CodecRecordReader extends BaseCodecRecordReader {
 
     private ImageLoader imageLoader;

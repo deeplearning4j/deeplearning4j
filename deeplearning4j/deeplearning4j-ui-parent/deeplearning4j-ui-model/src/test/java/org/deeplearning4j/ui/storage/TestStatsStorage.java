@@ -47,9 +47,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 03/10/2016.
- */
 public class TestStatsStorage extends BaseDL4JTest {
 
     @Rule

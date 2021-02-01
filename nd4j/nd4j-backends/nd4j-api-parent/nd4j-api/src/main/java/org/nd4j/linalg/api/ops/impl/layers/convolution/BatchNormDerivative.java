@@ -30,9 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.List;
 
 
-/**
- * BatchNormDerivative operation
- */
 @Slf4j
 public class BatchNormDerivative extends BatchNorm {
 

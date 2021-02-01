@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 
-/**
- * Implementation of common methods for OpContext
- *
- * @author raver119@gmail.com
- */
 public abstract class BaseOpContext implements OpContext {
     protected Map<Integer,INDArray> fastpath_in = new HashMap<>();
     protected Map<Integer,INDArray> fastpath_out = new HashMap<>();

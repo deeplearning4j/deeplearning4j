@@ -39,9 +39,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Ignore
 @Deprecated
 public class RoutedTransportTest extends BaseND4JTest {

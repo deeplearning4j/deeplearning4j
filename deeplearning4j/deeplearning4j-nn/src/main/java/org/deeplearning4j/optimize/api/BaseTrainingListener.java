@@ -26,11 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A no-op implementation of a {@link TrainingListener} to be used as a starting point for custom training callbacks.
- *
- * Extend this and selectively override the methods you will actually use.
- */
 public abstract class BaseTrainingListener implements TrainingListener {
 
     @Override

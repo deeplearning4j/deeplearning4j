@@ -37,11 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * This class provides accumulation for gradients for both input (i.e. updates coming from network) and output (comint from one ore more models training at the same time)
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class BasicGradientsAccumulator implements GradientsAccumulator {
 

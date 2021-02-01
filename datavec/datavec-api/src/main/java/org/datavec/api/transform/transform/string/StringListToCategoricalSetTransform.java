@@ -34,13 +34,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
-/**
- * Convert a delimited String to a list of binary categorical columns.
- * Suppose the possible String values were {"a","b","c","d"} and the String column value to be converted contained
- * the String "a,c", then the 4 output columns would have values ["true","false","true","false"]
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "map", "columnIdx"})
 @EqualsAndHashCode(callSuper = false, exclude = {"columnIdx"})
 @Data

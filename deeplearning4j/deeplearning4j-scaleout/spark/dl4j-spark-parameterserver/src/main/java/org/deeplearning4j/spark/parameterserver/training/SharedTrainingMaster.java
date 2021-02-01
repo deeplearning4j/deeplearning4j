@@ -89,15 +89,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * SharedTrainingMaster implements distributed training of neural networks using a compressed quantized gradient (update)
- * sharing implementation based on the Strom 2015 paper "Scalable Distributed DNN Training Using Commodity GPU Cloud Computing":
- * <a href="https://s3-us-west-2.amazonaws.com/amazon.jobs-public-documents/strom_interspeech2015.pdf">https://s3-us-west-2.amazonaws.com/amazon.jobs-public-documents/strom_interspeech2015.pdf</a>.
- * The Deeplearning4j implementation makes a number of modifications, such as having the option to use a parameter-server
- * based implementation for fault tolerance and execution where multicast networking support is not available.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Data
 public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResult, SharedTrainingWorker>

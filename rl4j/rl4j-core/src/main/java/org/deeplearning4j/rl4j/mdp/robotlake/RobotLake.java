@@ -33,29 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * RobotLake is a spin off of FrozenLake. Most of it is the same except that it is a robot that tries to reach the
- * goal on the lake. And instead of observing the whole grid, the robot has a 'radar' that only sees what is
- * directly up, right, down and left relative to his position, and a 'tracker' that informs the robot of the horizontal and
- * vertical distance to the goal.
- * <br/>
- * This environment is designed to easily merge the observations into a single channel for comparison
- * <br/>
- * Format of observations:<br/>
- * Channel <i>tracker</i>:
- * <ul>
- * <li>Element 1: Signed vertical distance from the robot to the goal. negative means the goal is up; positive, the goal is down
- * <li>Element 2: Signed horizontal distance from the robot to the goal. negative means the goal is left; positive, the goal is right
- * </ul>
- * <br/>
- * Channel <i>radar</i>:
- * <ul>
- * <li>Element 1: 1.0 means the cell in the up direction is safe; 0.0 otherwise
- * <li>Element 2: 1.0 means the cell in the right direction is safe; 0.0 otherwise
- * <li>Element 3: 1.0 means the cell in the down direction is safe; 0.0 otherwise
- * <li>Element 4: 1.0 means the cell in the left direction is safe; 0.0 otherwise
- * </ul>
- */
 public class RobotLake implements Environment<Integer>  {
     private static final double GOAL_REWARD = 10.0;
     private static final double STEPPED_ON_HOLE_REWARD = -2.0;

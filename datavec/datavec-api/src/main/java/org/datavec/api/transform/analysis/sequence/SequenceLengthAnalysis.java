@@ -26,9 +26,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 
-/**
- * Created by Alex on 12/03/2016.
- */
 @AllArgsConstructor
 @Data
 @Builder

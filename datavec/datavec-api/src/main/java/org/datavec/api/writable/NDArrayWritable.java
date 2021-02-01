@@ -33,11 +33,6 @@ import org.nd4j.common.util.MathUtils;
 import java.io.*;
 import java.util.Arrays;
 
-/**
- * A Writable that basically wraps an INDArray.
- *
- * @author saudet
- */
 public class NDArrayWritable extends ArrayWritable implements WritableComparable {
     public static final byte NDARRAY_SER_VERSION_HEADER_NULL = 0;
     public static final byte NDARRAY_SER_VERSION_HEADER = 1;

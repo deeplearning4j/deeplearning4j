@@ -29,9 +29,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/**
- * Interface for loss functions
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
         defaultImpl = LegacyILossFunctionDeserializerHelper.class)
 public interface ILossFunction extends Serializable {

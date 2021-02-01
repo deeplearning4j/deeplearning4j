@@ -23,11 +23,6 @@ package org.nd4j.linalg.util;
 
 import lombok.NonNull;
 
-/**
- * Stronger 64-bit hash function helper, as described here: http://www.javamex.com/tutorials/collections/strong_hash_code_implementation.shtml
- *
- * @author raver119@gmail.com
- */
 public class HashUtil {
     private static final long[] byteTable = createLookupTable();
     private static final long HSTART = 0xBB40E64DA205B064L;

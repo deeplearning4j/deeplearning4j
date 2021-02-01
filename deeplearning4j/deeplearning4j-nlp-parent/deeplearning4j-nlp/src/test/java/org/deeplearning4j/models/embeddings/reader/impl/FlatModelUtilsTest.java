@@ -37,13 +37,6 @@ import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * These are temporary tests and will be removed after issue is solved.
- *
- *
- *
- * @author raver119@gmail.com
- */
 @Ignore
 public class FlatModelUtilsTest extends BaseDL4JTest {
     private Word2Vec vec;

@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.ProdBp;
 
 import java.util.List;
 
-/**
- * Prod the components
- *
- * @author Adam Gibson
- */
 public class Prod extends BaseReduceSameOp {
     public Prod(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);

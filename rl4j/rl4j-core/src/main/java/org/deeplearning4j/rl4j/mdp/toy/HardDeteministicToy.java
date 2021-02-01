@@ -34,12 +34,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Random;
 import java.util.logging.Logger;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
- *
- * A toy MDP where the agent should find the maximum to get the reward.
- * Useful to debug as it's very fast to run
- */
 public class HardDeteministicToy implements MDP<HardToyState, Integer, DiscreteSpace> {
 
     final private static int MAX_STEP = 20;

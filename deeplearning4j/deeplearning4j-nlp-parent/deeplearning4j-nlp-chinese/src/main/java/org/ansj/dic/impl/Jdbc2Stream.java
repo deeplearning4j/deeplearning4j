@@ -32,11 +32,6 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
-/**
- * jdbc:mysql://192.168.10.103:3306/infcn_mss?useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull|username|password|select name as name,nature,freq from dic where type=1
- *
- * @author ansj
- */
 public class Jdbc2Stream extends PathToStream {
 
     private static final byte[] TAB = "\t".getBytes();

@@ -35,11 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This callback migrates incoming datasets in round-robin manner, to ensure TDA for ParallelWrapper
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class InterleavedDataSetCallback implements DataSetCallback {
     private List<MemoryWorkspace> workspaces = new ArrayList<>();

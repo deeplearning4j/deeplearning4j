@@ -30,7 +30,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/** A WritableComparable for longs. */
 public class LongWritable implements WritableComparable {
     private long value;
 

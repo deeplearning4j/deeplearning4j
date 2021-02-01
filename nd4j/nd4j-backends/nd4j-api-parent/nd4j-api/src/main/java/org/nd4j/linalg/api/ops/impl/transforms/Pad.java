@@ -38,10 +38,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Pad op
- * @author Alex Black
- */
 public class Pad extends DynamicCustomOp {
 
     public enum Mode {CONSTANT, REFLECT, SYMMETRIC}

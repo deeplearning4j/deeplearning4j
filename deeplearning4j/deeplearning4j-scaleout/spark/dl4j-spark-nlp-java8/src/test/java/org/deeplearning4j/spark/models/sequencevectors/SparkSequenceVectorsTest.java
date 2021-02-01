@@ -43,9 +43,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class SparkSequenceVectorsTest extends BaseDL4JTest {
 
     @Override

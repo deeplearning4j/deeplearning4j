@@ -26,9 +26,6 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Replace empty String values with the specified String
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ReplaceEmptyStringTransform extends BaseStringTransform {

@@ -46,9 +46,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 
-/**
- * BatchNorm operation
- */
 @Slf4j
 @Getter
 @NoArgsConstructor

@@ -28,11 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Histogram chart, with pre-binned values. Supports variable width bins
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)

@@ -39,7 +39,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/** Function used to score a DataSet using a ComputationGraph */
 public class ScoreFlatMapFunctionCGDataSet implements FlatMapFunction<Iterator<DataSet>, Tuple2<Long, Double>> {
     private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunctionCGDataSet.class);
     private String json;

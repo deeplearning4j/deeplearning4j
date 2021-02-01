@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * IsFinite function
- *
- * @author raver119@gmail.com
-  */
 @NoArgsConstructor
 public class IsFinite extends BaseTransformBoolOp {
     public IsFinite(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

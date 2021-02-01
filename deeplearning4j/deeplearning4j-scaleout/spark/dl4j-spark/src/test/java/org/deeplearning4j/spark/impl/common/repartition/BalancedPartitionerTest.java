@@ -25,9 +25,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 
-/**
- * Created by huitseeker on 4/4/17.
- */
 public class BalancedPartitionerTest {
 
 

@@ -27,9 +27,6 @@ import org.nd4j.linalg.learning.config.AdaGrad;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 27/03/2017.
- */
 public class TestTransferLearningJson extends BaseDL4JTest {
 
     @Test

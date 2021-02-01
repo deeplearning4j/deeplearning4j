@@ -37,11 +37,6 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This class provides methods for ephemeral mesh network management
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class MeshOrganizer implements Serializable {
     private static final long serialVersionUID = 1L;

@@ -31,12 +31,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * A simple transform to do common mathematical operations, such as sin(x), ceil(x), etc.<br>
- * Operations are performed element-wise on each value in the INDArray; operations are specified by {@link MathFunction}
- *
- * @author Alex Black
- */
 @Data
 public class NDArrayMathFunctionTransform extends BaseColumnTransform {
 

@@ -26,11 +26,6 @@ import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.text.style.StyleText;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-/**
- * Simple text component with styling
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)

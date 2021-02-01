@@ -22,11 +22,6 @@ package org.deeplearning4j.spark.stats;
 
 import lombok.Getter;
 
-/**
- * Event stats implementation with number of examples
- *
- * @author Alex Black
- */
 public class ExampleCountEventStats extends BaseEventStats {
 
     @Getter

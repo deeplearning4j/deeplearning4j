@@ -27,11 +27,6 @@ import java.util.Random;
 
 import org.bytedeco.opencv.opencv_core.*;
 
-/**
- * Transforms images deterministically or randomly with the help of an array of ImageTransform
- *
- * @author saudet
- */
 @Data
 public class MultiImageTransform extends BaseImageTransform<Mat> {
     private PipelineImageTransform transform;

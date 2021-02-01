@@ -29,11 +29,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Strategy for saving and restoring {@link MultiNormalizerMinMaxScaler} instances in single binary files
- *
- * @author Ede Meijer
- */
 public class MultiMinMaxSerializerStrategy implements NormalizerSerializerStrategy<MultiNormalizerMinMaxScaler> {
     /**
      * Serialize a MultiNormalizerMinMaxScaler to a output stream

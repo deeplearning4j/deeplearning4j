@@ -29,14 +29,6 @@ import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
 import java.io.IOException;
 
-/**
- * Deserialize either an int[] to an int[], or a single int x to int[]{x,x}
- *
- * Used when supporting a configuration format change from single int value to int[], as for Upsampling2D
- * between 1.0.0-alpha and 1.0.0-beta
- *
- * @author Alex Black
- */
 public class LegacyIntArrayDeserializer extends JsonDeserializer<int[]> {
     @Override
     public int[] deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {

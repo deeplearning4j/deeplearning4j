@@ -42,11 +42,6 @@ import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 
 
-/**
- * Data fetcher for the MNIST dataset
- * @author Adam Gibson
- *
- */
 public class MnistDataFetcher extends BaseDataFetcher {
     public static final int NUM_EXAMPLES = 60000;
     public static final int NUM_EXAMPLES_TEST = 10000;

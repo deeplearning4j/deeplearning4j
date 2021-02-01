@@ -32,10 +32,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Composable input pre processor
- * @author Adam Gibson
- */
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class ComposableInputPreProcessor extends BaseInputPreProcessor {

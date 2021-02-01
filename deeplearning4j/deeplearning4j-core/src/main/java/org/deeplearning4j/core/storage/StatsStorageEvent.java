@@ -23,14 +23,6 @@ package org.deeplearning4j.core.storage;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-/**
- * StatsStorageEvent: use with {@link StatsStorageListener} to specify when the state of the {@link StatsStorage}
- * implementation changes.<br>
- * Note that depending on the {@link StatsStorageListener.EventType}, some of the
- * field may be null.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class StatsStorageEvent {

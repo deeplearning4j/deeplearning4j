@@ -29,12 +29,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.util.Iterator;
 
-/**
- * A FlatMapFunction for executing training on serialized MultiDataSet objects, that can be loaded using a PortableDataStream
- * Used for SparkComputationGraph implementations only
- *
- * @author Alex Black
- */
 @Deprecated
 public class ExecuteWorkerPDSMDSFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<PortableDataStream>, R> {
     private final FlatMapFunction<Iterator<MultiDataSet>, R> workerFlatMap;

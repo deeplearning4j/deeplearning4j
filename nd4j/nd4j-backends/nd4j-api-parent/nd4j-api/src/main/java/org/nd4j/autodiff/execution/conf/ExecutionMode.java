@@ -20,9 +20,6 @@
 
 package org.nd4j.autodiff.execution.conf;
 
-/**
- * @author raver119@gmail.com
- */
 public enum ExecutionMode {
     /**
      * all operations will be executed sequentially

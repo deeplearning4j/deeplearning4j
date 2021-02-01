@@ -52,9 +52,6 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 9/1/14.
- */
 @Slf4j
 public class OutputLayerTest extends BaseDL4JTest {
 

@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.workspace;
 
-/**
- * An exception to specify than a workspace-related error has occurred
- *
- * @author Alex Black
- */
 public class ND4JWorkspaceException extends RuntimeException {
 
     public ND4JWorkspaceException(){

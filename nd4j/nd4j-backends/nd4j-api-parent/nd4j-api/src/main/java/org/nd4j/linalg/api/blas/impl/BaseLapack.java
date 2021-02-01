@@ -27,12 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Base lapack define float and double versions.
- *
- * @author Adam Gibson
- * @author rcorbish
- */
 @Slf4j
 public abstract class BaseLapack implements Lapack {
 

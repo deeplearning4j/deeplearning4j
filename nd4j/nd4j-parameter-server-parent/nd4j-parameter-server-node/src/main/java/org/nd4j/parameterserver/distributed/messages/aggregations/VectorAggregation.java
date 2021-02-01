@@ -25,9 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 import org.nd4j.parameterserver.distributed.messages.complete.VectorCompleteMessage;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class VectorAggregation extends BaseAggregation {

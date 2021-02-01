@@ -52,39 +52,6 @@ import java.nio.channels.FileLock;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Log file writer - for writing append-only log file for UI etc.
- *
- * File format description: There are 2 blocks in the file
- * 1. The "static information" block - containing 0 or more static info frames, followed by a UIStaticInfoRecord
- *    with UIInfoType.START_EVENTS to signify the end of the "static information" section (start of events).
- * 2. The "events" block - containing 0 or more event frames
- *
- * Note that once the UIInfoType.START_EVENTS UIStaticInfoRecord marker has been written, no more static information
- * may be written; before this point, no event records may be written. This allows us to scan only the start of the
- * file to get 'static' information such as the graph structure and hardware information.
- *
- *
- * Data (for both sections) is recorded in "frames".<br>
- * Each frame is formatted as follows:<br>
- * [header_length_integer, content_length_integer, header_bytes, content_bytes]<br>
- * These are as follows:
- * <b>header_length_integer</b>: a signed 32-bit integer representing the number of bytes of the header data (stored in the "header_bytes" section of the frame)<br>
- * <b>content_length_integer</b>: a signed 32-bit integer representing the number of bytes of the content data (stored in the "content_bytes" section of the frame).
- *   May be 0 in some cases (such as when recording UIInfoType.START_EVENTS marker<br>
- * <b>header_bytes</b>: flat-buffer encoded bytes representing either a UIStaticInfoRecord (in static information block) or a UIEvent (in the event block)
- *   In both cases, this header object encodes the typo of data that follows.
- * <b>content_bytes</b>: flat-buffer encoded bytes representing the content, of the type specified in the header<br>
- * <br>
- * <br>
- *
- * To-do list:<br>
- * * Implement recording of remaining event types<br>
- * * Handle loading already existing files<br>
- * *
- *
- * @author Alex Black
- */
 @Slf4j
 public class LogFileWriter {
     public enum EventSubtype {NONE, EVALUATION, LOSS, LEARNING_RATE, TUNING_METRIC, PERFORMANCE, PROFILING, FEATURE_LABEL, PREDICTION, USER_CUSTOM;

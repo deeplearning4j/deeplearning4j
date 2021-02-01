@@ -38,20 +38,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * A preprocessor to allow RNN and feed-forward network layers to be used together.<br>
- * For example, GravesLSTM -> OutputLayer or GravesLSTM -> DenseLayer<br>
- * This does two things:<br>
- * (a) Reshapes activations out of RNN layer (which is 3D with shape
- * [miniBatchSize,layerSize,timeSeriesLength]) into 2d activations (with shape
- * [miniBatchSize*timeSeriesLength,layerSize]) suitable for use in feed-forward layers.<br>
- * (b) Reshapes 2d epsilons (weights*deltas from feed forward layer, with shape
- * [miniBatchSize*timeSeriesLength,layerSize]) into 3d epsilons (with shape
- * [miniBatchSize,layerSize,timeSeriesLength]) for use in RNN layer
- *
- * @author Alex Black
- * @see FeedForwardToRnnPreProcessor for opposite case (i.e., DenseLayer -> GravesLSTM etc)
- */
 @Data
 @Slf4j
 @NoArgsConstructor

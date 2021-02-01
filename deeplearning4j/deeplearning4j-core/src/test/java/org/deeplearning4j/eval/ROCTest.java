@@ -45,9 +45,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 04/11/2016.
- */
 public class ROCTest extends BaseDL4JTest {
 
     private static Map<Double, Double> expTPR;

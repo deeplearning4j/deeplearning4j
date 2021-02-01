@@ -42,9 +42,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 
-/**
- * LocalResponseNormalization operation
- */
 @Slf4j
 @Getter
 @NoArgsConstructor

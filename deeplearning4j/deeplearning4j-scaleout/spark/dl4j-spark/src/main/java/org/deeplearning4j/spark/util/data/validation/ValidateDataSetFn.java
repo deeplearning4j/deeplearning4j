@@ -35,12 +35,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.io.EOFException;
 import java.net.URI;
 
-/**
- * Function used to validate DataSets on HDFS - see {@link org.deeplearning4j.spark.util.data.SparkDataValidation} for
- * further details
- *
- * @author Alex Black
- */
 public class ValidateDataSetFn implements Function<String, ValidationResult> {
     public static final int BUFFER_SIZE = 4194304; //4 MB
 

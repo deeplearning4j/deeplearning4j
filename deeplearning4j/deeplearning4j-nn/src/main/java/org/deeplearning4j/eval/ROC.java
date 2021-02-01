@@ -24,9 +24,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.classification.ROC}
- */
 @Deprecated
 @EqualsAndHashCode(callSuper = true)
 @Data

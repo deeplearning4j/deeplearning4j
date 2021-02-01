@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhBp;
 
 import java.util.List;
 
-/**
- * Hard tanh elementwise function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class HardTanh extends BaseTransformStrictOp {
     public HardTanh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

@@ -18,11 +18,6 @@
  *  *****************************************************************************
  */
 
-/// <reference path="../../api/Component.ts" />
-/// <reference path="../../typedefs/d3.d.ts" />
-/// <reference path="../../util/TSUtils.ts" />
-/// <reference path="Chart.ts" />
-
 class ChartTimeline extends Chart implements Renderable {
 
     private laneNames:string[];

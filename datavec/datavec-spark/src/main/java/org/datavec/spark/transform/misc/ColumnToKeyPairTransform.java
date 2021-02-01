@@ -29,12 +29,6 @@ import scala.Tuple2;
 
 import java.util.List;
 
-/**
- * Extract out one writable, and map it to a pair with count 1.
- * Used to count the N most frequent values in a column, as in {@link org.datavec.spark.transform.AnalyzeSpark#sampleMostFrequentFromColumn(int, String, Schema, JavaRDD)}
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class ColumnToKeyPairTransform implements PairFunction<List<Writable>, Writable, Long> {
     private final int columnIndex;

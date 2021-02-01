@@ -85,9 +85,6 @@ import java.util.stream.Collectors;
 import static org.junit.Assert.*;
 import static org.nd4j.imports.tfgraphs.TFGraphsSkipNodes.skipNode;
 
-/**
- * Created by susaneraly on 11/6/17.
- */
 @Slf4j
 public class TFGraphTestAllHelper {
     public static final String resourceFolderVar = "DL4J_TEST_RESOURCES";

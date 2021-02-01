@@ -37,16 +37,6 @@ import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 
-/**
- * A base {@link IAgentLearner} builder that should be helpful in several common asynchronous scenarios. <p/>
- * <b>Note</b>: Classes implementing BaseAsyncAgentLearnerBuilder should be careful not to re-use a stateful and/or non thread-safe dependency
- * through several calls to build(). In doubt, use a new instance.
- * <p/>
- * This will configure these dependencies:
- * <li>a {@link StateActionExperienceHandler}</li>
- * <li>a {@link AsyncGradientsNeuralNetUpdater gradient neural net updater}</li>
- * @param <CONFIGURATION_TYPE> The type of the configuration
- */
 public abstract class BaseAsyncAgentLearnerBuilder<CONFIGURATION_TYPE extends BaseAsyncAgentLearnerBuilder.Configuration> extends BaseAgentLearnerBuilder<Integer, StateActionReward<Integer>, Gradients, CONFIGURATION_TYPE> {
 
     private final AsyncSharedNetworksUpdateHandler asyncSharedNetworksUpdateHandler;

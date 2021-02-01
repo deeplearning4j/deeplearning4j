@@ -33,9 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-/**
- * DeConv2DDerivative operation
- */
 @Slf4j
 public class DeConv2DDerivative extends DeConv2D {
 

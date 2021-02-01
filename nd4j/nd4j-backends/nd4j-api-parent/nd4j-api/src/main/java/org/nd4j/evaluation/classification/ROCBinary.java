@@ -38,17 +38,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * ROC (Receiver Operating Characteristic) for multi-task binary classifiers.
- * As per {@link ROC}, ROCBinary supports both exact (thersholdSteps == 0) and thresholded; see {@link ROC} for details.
- * <p>
- * Unlike {@link ROC} (which supports a single binary label (as a single column probability, or 2 column 'softmax' probability
- * distribution), ROCBinary assumes that all outputs are independent binary variables. This also differs from
- * {@link ROCMultiClass}, which should be used for multi-class (single non-binary) cases.
- * <p>
- * ROCBinary supports per-example and per-output masking: for per-output masking, any particular output may be absent
- * (mask value 0) and hence won't be included in the calculated ROC.
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ROCBinary extends BaseEvaluation<ROCBinary> {

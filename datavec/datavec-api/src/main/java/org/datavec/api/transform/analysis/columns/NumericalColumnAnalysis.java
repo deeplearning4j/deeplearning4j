@@ -28,11 +28,6 @@ import org.datavec.api.transform.analysis.json.TDigestSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-/**
- * Abstract class for numerical column analysis
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"digest"})
 public abstract class NumericalColumnAnalysis implements ColumnAnalysis {

@@ -29,9 +29,6 @@ import org.nd4j.linalg.schedule.ISchedule;
 
 import java.util.Map;
 
-/**
- * Created by Alex on 09/05/2017.
- */
 @AllArgsConstructor
 @Data
 public class CustomIUpdater implements IUpdater {

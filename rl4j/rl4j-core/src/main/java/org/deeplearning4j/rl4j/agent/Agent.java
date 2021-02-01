@@ -35,12 +35,6 @@ import org.nd4j.common.base.Preconditions;
 
 import java.util.Map;
 
-/**
- * An agent implementation. The Agent will use a {@link IPolicy} to interact with an {@link Environment} and receive
- * a reward.
- *
- * @param <ACTION> The type of action
- */
 public class Agent<ACTION> implements IAgent<ACTION> {
     @Getter
     private final String id;

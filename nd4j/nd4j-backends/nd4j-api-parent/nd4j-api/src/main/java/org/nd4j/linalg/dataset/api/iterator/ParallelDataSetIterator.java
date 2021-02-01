@@ -22,9 +22,6 @@ package org.nd4j.linalg.dataset.api.iterator;
 
 import org.nd4j.linalg.dataset.DataSet;
 
-/**
- * @author raver119@gmail.com
- */
 public interface ParallelDataSetIterator extends DataSetIterator {
 
     /**

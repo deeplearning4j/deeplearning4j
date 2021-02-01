@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * A simple class for storing configurations, parameters and updaters in one class (so they can be broadcast together)
- *
- * @author Alex Black
- */
 @Data
 public class NetBroadcastTuple implements Serializable {
 

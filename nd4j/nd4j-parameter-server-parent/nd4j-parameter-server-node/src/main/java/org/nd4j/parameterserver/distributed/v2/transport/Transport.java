@@ -32,11 +32,6 @@ import org.reactivestreams.Publisher;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-/**
- * This interface describes Transport abstraction, used to communicate between cluster nodes
- *
- * @author raver119@gmail.com
- */
 public interface Transport {
 
     /**

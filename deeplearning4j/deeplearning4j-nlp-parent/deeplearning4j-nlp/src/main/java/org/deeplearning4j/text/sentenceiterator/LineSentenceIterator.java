@@ -25,11 +25,6 @@ import org.apache.commons.io.LineIterator;
 
 import java.io.*;
 
-/**
- * Each line is a sentence
- *
- * @author Adam Gibson
- */
 public class LineSentenceIterator extends BaseSentenceIterator {
 
     private InputStream file;

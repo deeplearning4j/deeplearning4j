@@ -29,14 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 
-/**
- * Apache commons based random number generation
- *
- * Please note: this implementation can't be used for NativeOps execution
- *
- * @author Adam Gibson
- */
-// TODO: make this op compatible with NativeOpExecutioner
 public class DefaultRandom implements Random, RandomGenerator {
     protected RandomGenerator randomGenerator;
     protected long seed;

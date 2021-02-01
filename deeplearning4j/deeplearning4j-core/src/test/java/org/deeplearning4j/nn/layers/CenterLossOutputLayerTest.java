@@ -49,11 +49,6 @@ import java.util.Random;
 
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * Test CenterLossOutputLayer.
- *
- * @author Justin Long (@crockpotveggies)
- */
 public class CenterLossOutputLayerTest extends BaseDL4JTest {
 
     private ComputationGraph getGraph(int numLabels, double lambda) {

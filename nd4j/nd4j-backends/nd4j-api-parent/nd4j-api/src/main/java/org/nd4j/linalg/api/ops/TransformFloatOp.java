@@ -20,9 +20,5 @@
 
 package org.nd4j.linalg.api.ops;
 
-/**
- * Strict transforms take any type in, and return FLOATING-POINT type
- * @author raver119@gmail.com
- */
 public interface TransformFloatOp extends TransformOp  {
 }

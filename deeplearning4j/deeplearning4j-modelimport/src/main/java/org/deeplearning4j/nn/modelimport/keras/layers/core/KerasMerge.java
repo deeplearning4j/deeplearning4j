@@ -33,13 +33,6 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
 
-/**
- * Imports a Keras Merge layer as a DL4J Merge (graph) vertex.
- * <p>
- * TODO: handle axes arguments that alter merge behavior (requires changes to DL4J?)
- *
- * @author dave@skymind.io
- */
 @Slf4j
 @Data
 public class KerasMerge extends KerasLayer {

@@ -31,10 +31,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/**
- * Line input format creates an @link{LineRecordReader}
- * @author Adam Gibson
- */
 public class CSVInputFormat extends BaseInputFormat {
     @Override
     public RecordReader createReader(InputSplit split, Configuration conf) throws IOException, InterruptedException {

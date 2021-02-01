@@ -25,11 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
 
-/**
- * Compute eigen values
- *
- * @author Adam Gibson
- */
 public class Eigen {
 
     public static INDArray dummy = Nd4j.scalar(1);

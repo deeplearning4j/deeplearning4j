@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Unit step function.
- * f(x) = 1 if x > cutoff; 0 otherwise
- * cutoff = 0.0 usually.
- */
 public class Step extends BaseScalarOp {
     private final double cutoff;
 

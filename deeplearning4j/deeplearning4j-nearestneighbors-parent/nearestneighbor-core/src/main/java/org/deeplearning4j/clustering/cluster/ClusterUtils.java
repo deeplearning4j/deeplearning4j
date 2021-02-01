@@ -40,10 +40,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 
-/**
- *
- * Basic cluster utilities
- */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Slf4j
 public class ClusterUtils {

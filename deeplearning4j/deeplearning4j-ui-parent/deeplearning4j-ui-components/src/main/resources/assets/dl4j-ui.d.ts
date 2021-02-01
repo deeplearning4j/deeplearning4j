@@ -18,9 +18,6 @@
  *  *****************************************************************************
  */
 
-/// <reference path="../../typescript/org/deeplearning4j/ui/typedefs/jquery.d.ts" />
-/// <reference path="../../typescript/org/deeplearning4j/ui/typedefs/d3.d.ts" />
-/// <reference path="../../typescript/org/deeplearning4j/ui/typedefs/jqueryui.d.ts" />
 declare abstract class Style {
     private width;
     private height;

@@ -28,13 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
-/**
- * Sigmoid derivative
- *
- * @deprecated Use {@link org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative}
- *
- * @author Adam Gibson
- */
 @Deprecated
 public class SigmoidDerivative extends BaseTransformStrictOp {
     public SigmoidDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {

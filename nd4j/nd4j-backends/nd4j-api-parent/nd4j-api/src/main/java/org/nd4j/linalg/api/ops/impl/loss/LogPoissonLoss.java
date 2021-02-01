@@ -28,13 +28,6 @@ import org.nd4j.linalg.api.ops.impl.loss.bp.LogPoissonLossBp;
 
 import java.util.List;
 
-/**
- * Log Poisson loss
- *
- * Note: This expects that the input/predictions are log(x) not x!
- *
- * @author Paul Dubs
- */
 public class LogPoissonLoss extends BaseLoss {
     private boolean full;
 

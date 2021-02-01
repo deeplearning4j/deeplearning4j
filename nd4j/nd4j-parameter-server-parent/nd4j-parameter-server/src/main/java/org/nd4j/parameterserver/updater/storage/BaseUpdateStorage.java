@@ -24,11 +24,6 @@ package org.nd4j.parameterserver.updater.storage;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Base class for common logic in update storage
- *
- * @author Adam Gibson
- */
 public abstract class BaseUpdateStorage implements UpdateStorage {
     /**
      * Get the update at the specified index

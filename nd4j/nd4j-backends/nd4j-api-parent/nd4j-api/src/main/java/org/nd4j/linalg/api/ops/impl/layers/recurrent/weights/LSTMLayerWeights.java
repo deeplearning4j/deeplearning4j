@@ -29,10 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
 import org.nd4j.common.util.ArrayUtil;
 
-/**
- * The weight configuration of a LSTMLayer.  For {@link LSTMLayer}
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Builder

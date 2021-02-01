@@ -22,8 +22,6 @@ package org.deeplearning4j.graph.models.embeddings;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**Lookup table for vector representations of the vertices in a graph
- */
 public interface GraphVectorLookupTable {
 
     /**The size of the vector representations

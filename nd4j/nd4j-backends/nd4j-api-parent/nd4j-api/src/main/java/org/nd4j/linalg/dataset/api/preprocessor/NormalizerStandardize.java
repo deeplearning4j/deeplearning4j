@@ -31,12 +31,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Created by susaneraly, Ede Meijer
- * variance and mean
- * Pre processor for DataSet that normalizes feature values (and optionally label values) to have 0 mean and a standard
- * deviation of 1
- */
 @EqualsAndHashCode(callSuper = true)
 public class NormalizerStandardize extends AbstractDataSetNormalizer<DistributionStats> {
     public NormalizerStandardize(@NonNull INDArray featureMean, @NonNull INDArray featureStd) {

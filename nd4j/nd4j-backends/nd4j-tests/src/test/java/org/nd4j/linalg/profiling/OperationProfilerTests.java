@@ -47,9 +47,6 @@ import org.nd4j.linalg.profiler.ProfilerConfig;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class OperationProfilerTests extends BaseNd4jTest {
 

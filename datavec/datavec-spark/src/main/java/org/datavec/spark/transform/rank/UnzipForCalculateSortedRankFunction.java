@@ -28,11 +28,6 @@ import scala.Tuple2;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A simple helper function for use in executing CalculateSortedRank
- *
- * @author Alex Black
- */
 public class UnzipForCalculateSortedRankFunction
                 implements Function<Tuple2<Tuple2<Writable, List<Writable>>, Long>, List<Writable>> {
     @Override

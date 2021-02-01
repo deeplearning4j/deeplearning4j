@@ -37,9 +37,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 09/05/2017.
- */
 public class TestCustomUpdater extends BaseDL4JTest {
 
     @Test

@@ -113,11 +113,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
-/**
- * Creation of ndarrays via classpath discovery.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class Nd4j {
 

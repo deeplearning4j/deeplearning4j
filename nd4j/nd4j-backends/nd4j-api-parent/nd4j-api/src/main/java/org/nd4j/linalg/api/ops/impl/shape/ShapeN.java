@@ -34,11 +34,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Returns the shape of N input array as N output arrays
- *
- * @author Alex Black
- */
 public class ShapeN extends DynamicCustomOp {
 
     protected DataType dataType;

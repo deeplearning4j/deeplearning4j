@@ -24,12 +24,6 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.reader.RecordReader;
 
-/**
- * Vectorizer of a particular type.
- * Meant for converting individual records to vectors
- *
- * @author Adam Gibson
- */
 public interface Vectorizer<VECTOR_TYPE> {
 
 

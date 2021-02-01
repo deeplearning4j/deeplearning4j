@@ -29,13 +29,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-/**
- * A filter based on a {@link Condition}.<br>
- * If condition is satisfied (returns true): remove the example or sequence<br>
- * If condition is not satisfied (returns false): keep the example or sequence
- *
- * @author Alex Black
- */
 @EqualsAndHashCode
 @Data
 public class ConditionFilter implements Filter {

@@ -32,12 +32,6 @@ import org.nd4j.linalg.indexing.conditions.EqualsCondition;
 
 import java.util.*;
 
-/**
- * An {@link ArrayList} like implementation of {@link List}
- * using {@link INDArray} as the backing data structure
- *
- * @author Adam Gibson
- */
 @SuppressWarnings("unchecked") //too many of them.
 public abstract  class BaseNDArrayList<X extends Number> extends  AbstractList<X>  {
     protected INDArray container;

@@ -35,9 +35,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Autoencoder layer. Adds noise to input and learn a reconstruction function.
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

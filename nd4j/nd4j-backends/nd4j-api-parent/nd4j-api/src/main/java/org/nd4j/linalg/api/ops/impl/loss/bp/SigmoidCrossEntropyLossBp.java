@@ -26,11 +26,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
 
-/**
- * Sigmoid cross entropy loss with logits
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class SigmoidCrossEntropyLossBp extends BaseLossBp {
     private double labelSmoothing = 0.0;

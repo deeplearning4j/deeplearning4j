@@ -24,12 +24,6 @@ import java.text.Normalizer;
 import java.text.Normalizer.Form;
 import java.util.List;
 
-/**
- * Performs some very basic textual transformations 
- * such as word shape, lower casing, and stripping of punctuation
- * @author Adam Gibson
- *
- */
 public class InputHomogenization {
     private String input;
     private List<String> ignoreCharactersContaining;

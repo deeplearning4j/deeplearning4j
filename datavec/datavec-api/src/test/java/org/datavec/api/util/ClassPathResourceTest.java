@@ -35,9 +35,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.hamcrest.core.IsEqual.equalTo;
 
-/**
- * @author raver119@gmail.com
- */
 public class ClassPathResourceTest extends BaseND4JTest {
 
     private boolean isWindows = false; //File sizes are reported slightly different on Linux vs. Windows

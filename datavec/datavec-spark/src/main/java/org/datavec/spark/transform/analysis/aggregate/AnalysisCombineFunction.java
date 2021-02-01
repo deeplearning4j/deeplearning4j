@@ -27,11 +27,6 @@ import org.datavec.api.transform.analysis.AnalysisCounter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Combine function used for undertaking analysis of a data set via Spark
- *
- * @author Alex Black
- */
 public class AnalysisCombineFunction
                 implements Function2<List<AnalysisCounter>, List<AnalysisCounter>, List<AnalysisCounter>> {
     @Override

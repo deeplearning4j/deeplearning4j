@@ -35,13 +35,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/**
- * Convolution is the
- * code for applying
- * the convolution operator.
- *
- * @author Adam Gibson
- */
 public class Convolution {
 
 

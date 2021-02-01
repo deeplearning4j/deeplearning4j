@@ -24,13 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-/**
- * Interface for certain statistics about a population of data.
- * Can be constructed incrementally by using the DynamicCustomOpsBuilder, which is useful for obtaining these statistics from an
- * iterator.
- *
- * @author Ede Meijer
- */
 public interface NormalizerStats extends Serializable {
     interface Builder<S extends NormalizerStats> {
         Builder<S> addFeatures(org.nd4j.linalg.dataset.api.DataSet dataSet);

@@ -34,11 +34,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.List;
 
-/**
- * This ModelAdapter implementation is suited for use of Yolo2 model with ParallelInference
- *
- * @author raver119@gmail.com
- */
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor

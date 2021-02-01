@@ -29,13 +29,6 @@ import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 
 import java.util.List;
 
-/**
- * This MetaOp covers case, when Op A and Op B are both using linear memory access
- *
- * You're NOT supposed to directly call this op. Do it on your own risk, only if you're absolutely have to.
- *
- * @author raver119@gmail.com
- */
 public class PredicateMetaOp extends BaseMetaOp {
 
     public PredicateMetaOp() {

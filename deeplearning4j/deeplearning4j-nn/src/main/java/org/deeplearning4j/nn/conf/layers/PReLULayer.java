@@ -37,15 +37,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Parametrized Rectified Linear Unit (PReLU)
- * <p>
- * {@code f(x) = alpha * x for x < 0, f(x) = x for x >= 0}
- * <p>
- * alpha has the same shape as x and is a learned parameter.
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

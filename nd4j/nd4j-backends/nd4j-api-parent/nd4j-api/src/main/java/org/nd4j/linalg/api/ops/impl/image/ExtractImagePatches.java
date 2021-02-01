@@ -35,12 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Extract image patches op - a sliding window operation over 4d activations that puts the
- * output images patches into the depth dimension
- *
- * @author Alex Black
- */
 public class ExtractImagePatches extends DynamicCustomOp {
 
     private int[] kSizes;

@@ -36,11 +36,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Rectified linear unit 6, i.e. min(max(input, cutoff), 6), where cutoff can be chosen.
- *
- * @author Max Pumperla
- */
 public class Relu6 extends BaseScalarOp {
     public Relu6(SameDiff sameDiff, SDVariable i_v, boolean inPlace, double cutoff) {
         super(sameDiff, i_v, cutoff, inPlace);

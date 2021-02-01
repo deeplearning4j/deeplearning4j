@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Bit-wise AND operation, broadcastable
- *
- * @author raver119@gmail.com
- */
 public class BitwiseAnd extends BaseDynamicTransformOp {
 
     public BitwiseAnd(SameDiff sameDiff, SDVariable x, SDVariable y) {

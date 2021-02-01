@@ -22,12 +22,6 @@ package org.datavec.api.records;
 
 import java.io.UnsupportedEncodingException;
 
-/**
- * A byte sequence that is used as a Java native type for buffer.
- * It is resizable and distinguishes between the count of the sequence and
- * the current capacity.
- *
- */
 public class Buffer implements Comparable, Cloneable {
     /** Number of valid bytes in this.bytes. */
     private int count;

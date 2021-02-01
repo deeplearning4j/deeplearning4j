@@ -31,9 +31,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Created by anton on 7/16/16.
- */
 public class InMemoryDataSetCache implements DataSetCache {
 
     private static final Logger log = LoggerFactory.getLogger(DataSetCache.class);

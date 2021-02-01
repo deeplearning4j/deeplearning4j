@@ -39,9 +39,6 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 05/07/2017.
- */
 public class EvaluationCalibrationTest extends BaseNd4jTest {
 
     public EvaluationCalibrationTest(Nd4jBackend backend) {

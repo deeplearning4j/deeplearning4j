@@ -33,13 +33,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * A ScaleVertex is used to scale the size of activations of a single layer<br>
- * For example, ResNet activations can be scaled in repeating blocks to keep variance
- * under control.
- *
- * @author Justin Long (@crockpotveggies)
- */
 public class ScaleVertex extends BaseGraphVertex {
 
     private double scaleFactor;

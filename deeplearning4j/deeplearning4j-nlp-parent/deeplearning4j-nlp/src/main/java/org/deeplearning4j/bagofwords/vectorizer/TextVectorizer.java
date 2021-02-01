@@ -31,10 +31,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.List;
 
-/**
- * Vectorizes text
- * @author Adam Gibson
- */
 public interface TextVectorizer extends Vectorizer {
 
 

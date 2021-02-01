@@ -35,18 +35,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW)
- * to channels (C) for given blockSize
- * <p>
- * Example:
- * blockSize = 4
- * dataFormat = "NCHW"
- * input shape =  [128, 16, 16, 3]
- * output shape = [128, 16/4, 16/4, 3*4*4]
- *
- * @author raver119@gmail.com, Max Pumperla
- */
 public class SpaceToDepth extends DynamicCustomOp {
     private DataFormat dataFormat;
     private int blockSize;

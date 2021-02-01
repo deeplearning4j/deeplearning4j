@@ -24,11 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.util.ArrayUtil;
 
 
-/**
- * Base convolution implementation
- *
- * @author Adam Gibson
- */
 public abstract class BaseConvolution implements ConvolutionInstance {
     /**
      * 2d convolution (aka the last 2 dimensions

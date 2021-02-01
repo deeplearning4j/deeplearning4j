@@ -26,11 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Created by agibsonccc on 2/26/16.
- *
- * This class is deprecated. Please use Nd4j.createFromArray(...) methods instead
- */
 @Deprecated
 public class NDArrayUtil {
 

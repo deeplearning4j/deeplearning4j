@@ -31,11 +31,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 
-/**
- * Helper for the recurrent LSTM layer (no peephole connections).
- *
- * @author saudet
- */
 public interface LSTMHelper extends LayerHelper {
     boolean checkSupported(IActivation gateActivationFn, IActivation activationFn, boolean hasPeepholeConnections);
 

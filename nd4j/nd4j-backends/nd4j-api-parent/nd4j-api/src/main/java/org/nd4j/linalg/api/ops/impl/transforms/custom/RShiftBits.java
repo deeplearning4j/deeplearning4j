@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Element-wise shift operation, shift bits to the right, >>
- *
- * @author raver119@gmail.com
- */
 public class RShiftBits extends BaseDynamicTransformOp {
 
     public RShiftBits(SameDiff sameDiff, SDVariable x, SDVariable y) {

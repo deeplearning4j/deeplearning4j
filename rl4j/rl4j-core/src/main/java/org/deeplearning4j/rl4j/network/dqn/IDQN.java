@@ -24,12 +24,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
- *
- * This neural net quantify the value of each action given a state
- *
- */
 @Deprecated
 public interface IDQN<NN extends IDQN> extends NeuralNet<NN> {
 

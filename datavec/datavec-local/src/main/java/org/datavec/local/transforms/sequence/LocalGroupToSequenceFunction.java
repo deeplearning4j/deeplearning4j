@@ -29,12 +29,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Function for grouping independent values/examples into a sequence, and then sorting them
- * using a provided {@link SequenceComparator}
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class LocalGroupToSequenceFunction implements Function<List<List<Writable>>, List<List<Writable>>> {
 

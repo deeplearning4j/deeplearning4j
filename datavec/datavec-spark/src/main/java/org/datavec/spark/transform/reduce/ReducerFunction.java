@@ -27,12 +27,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Spark function for executing
- * a reduction of a set of examples by key
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class ReducerFunction implements Function<Iterable<List<Writable>>, List<Writable>> {
 

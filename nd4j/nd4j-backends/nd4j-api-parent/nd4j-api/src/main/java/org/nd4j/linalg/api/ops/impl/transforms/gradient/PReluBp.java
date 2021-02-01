@@ -32,9 +32,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- * PRelu backpropagation op - dL/dIn from in and dL/dOut
- */
 @NoArgsConstructor
 public class PReluBp extends DynamicCustomOp {
 

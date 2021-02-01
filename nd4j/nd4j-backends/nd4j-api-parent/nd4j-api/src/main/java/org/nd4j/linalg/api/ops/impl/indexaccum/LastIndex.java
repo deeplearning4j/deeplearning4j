@@ -36,12 +36,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Calculate the index
- * of max value over a vector
- *
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 public class LastIndex extends BaseIndexAccumulation {

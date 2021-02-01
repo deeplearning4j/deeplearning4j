@@ -40,10 +40,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * ResizeBilinear op wrapper
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class ResizeBilinear extends DynamicCustomOp {
     protected boolean alignCorners = false;

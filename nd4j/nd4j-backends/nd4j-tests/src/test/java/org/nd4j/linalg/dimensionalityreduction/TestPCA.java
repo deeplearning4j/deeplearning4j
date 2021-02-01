@@ -32,9 +32,6 @@ import org.nd4j.linalg.string.NDArrayStrings;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by rcorbish
- */
 @RunWith(Parameterized.class)
 public class TestPCA extends BaseNd4jTest {
 

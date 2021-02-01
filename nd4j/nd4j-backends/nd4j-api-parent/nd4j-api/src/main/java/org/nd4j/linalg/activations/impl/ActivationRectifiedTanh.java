@@ -29,13 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * Rectified tanh
- *
- * Essentially max(0, tanh(x))
- *
- * Underlying implementation is in native code
- */
 @EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationRectifiedTanh extends BaseActivationFunction {

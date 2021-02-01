@@ -36,9 +36,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BaseTextVectorizer implements TextVectorizer {
     @Setter
     protected transient TokenizerFactory tokenizerFactory;

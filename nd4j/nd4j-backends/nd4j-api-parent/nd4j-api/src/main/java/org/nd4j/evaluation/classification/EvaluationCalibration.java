@@ -48,23 +48,6 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * EvaluationCalibration is an evaluation class designed to analyze the calibration of a classifier.<br>
- * It provides a number of tools for this purpose:
- * - Counts of the number of labels and predictions for each class<br>
- * - Reliability diagram (or reliability curve)<br>
- * - Residual plot (histogram)<br>
- * - Histograms of probabilities, including probabilities for each class separately<br>
- *<br>
- * References:<br>
- * - Reliability diagram: see for example Niculescu-Mizil and Caruana 2005, Predicting Good Probabilities With
- * Supervised Learning<br>
- * - Residual plot: see Wallace and Dahabreh 2012, Class Probability Estimates are Unreliable for Imbalanced Data
- * (and How to Fix Them)<br>
- *
- *
- * @author Alex Black
- */
 @Getter
 @EqualsAndHashCode
 public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration> {

@@ -30,9 +30,6 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteBuffer;
 
-/**
- * Created by Alex on 24/10/2016.
- */
 @AllArgsConstructor
 @Data
 public class ConvolutionListenerPersistable implements Persistable {

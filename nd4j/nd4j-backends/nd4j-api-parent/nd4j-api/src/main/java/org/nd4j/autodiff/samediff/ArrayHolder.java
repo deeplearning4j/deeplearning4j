@@ -24,14 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
 
-/**
- * Holds a set of arrays keyed by a String name, functioning essentially like a {@code Map<String,INDArray>}.<br>
- * Implementations may have different internal ways of storing arrays, however.<br>
- * For example for single threaded applications: {@link org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder}<br>
- * And for multi-threaded: {@link org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder}
- *
- * @author Alex Black
- */
 public interface ArrayHolder {
 
     /**

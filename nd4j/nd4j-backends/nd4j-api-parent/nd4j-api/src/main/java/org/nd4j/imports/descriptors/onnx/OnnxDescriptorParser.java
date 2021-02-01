@@ -27,11 +27,6 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Load all of the onnx op descriptors from the classpath.
- *
- * @author Adam Gibson
- */
 public class OnnxDescriptorParser {
 
 

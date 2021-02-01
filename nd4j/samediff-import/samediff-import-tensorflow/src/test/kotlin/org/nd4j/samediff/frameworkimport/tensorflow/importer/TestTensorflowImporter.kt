@@ -20,12 +20,14 @@
 package org.nd4j.samediff.frameworkimport.tensorflow.importer
 
 import junit.framework.Assert
+import org.junit.Ignore
 import org.junit.Test
 import org.nd4j.common.io.ClassPathResource
 
 class TestTensorflowImporter {
 
     @Test
+    @Ignore
     fun testImporter() {
         val tfFrameworkImport = TensorflowFrameworkImporter()
         val tfFile = ClassPathResource("lenet_frozen.pb").file

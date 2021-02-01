@@ -32,9 +32,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Observable;
 
-/**
- * This class holds reference input, and implements basic use case: SEQUENTIAL inference
- */
 @Slf4j
 public class BasicInferenceObservable extends Observable implements InferenceObservable {
     private INDArray[] input;

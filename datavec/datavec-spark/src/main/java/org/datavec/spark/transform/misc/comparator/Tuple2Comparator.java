@@ -26,9 +26,6 @@ import scala.Tuple2;
 import java.io.Serializable;
 import java.util.Comparator;
 
-/**
- * Simple comparator: Compare {@code Tuple2<T,Long>} by Long value
- */
 @AllArgsConstructor
 public class Tuple2Comparator<T> implements Comparator<Tuple2<T, Long>>, Serializable {
 

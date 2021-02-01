@@ -22,10 +22,6 @@ package org.deeplearning4j.text.tokenization.tokenizer.preprocessor;
 
 import java.util.regex.Pattern;
 
-/**
- * Various string cleaning utils
- * @author Adam GIbson
- */
 public class StringCleaning {
 
     private static final Pattern punctPattern = Pattern.compile("[\\d\\.:,\"\'\\(\\)\\[\\]|/?!;]+");

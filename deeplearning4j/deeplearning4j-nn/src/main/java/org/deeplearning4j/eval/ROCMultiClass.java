@@ -23,9 +23,6 @@ package org.deeplearning4j.eval;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.classification.ROCMultiClass}
- */
 @Deprecated
 @Data
 @EqualsAndHashCode(callSuper = true)

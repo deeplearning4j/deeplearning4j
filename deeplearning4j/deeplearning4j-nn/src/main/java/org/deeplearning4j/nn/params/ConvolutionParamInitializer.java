@@ -32,11 +32,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-/**
- * Initialize convolution params.
- *
- * @author Adam Gibson
- */
 public class ConvolutionParamInitializer implements ParamInitializer {
 
     private static final ConvolutionParamInitializer INSTANCE = new ConvolutionParamInitializer();

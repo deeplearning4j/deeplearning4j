@@ -37,12 +37,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Applies a ReduceOp to a column of coordinates, for each component independently.
- * Basically a dispatchop with n = 2 an integrated coordinate parsing & serialization
- *
- * @author saudet
- */
 public class CoordinatesReduction implements AggregableColumnReduction {
     public static final String DEFAULT_COLUMN_NAME = "CoordinatesReduction";
 

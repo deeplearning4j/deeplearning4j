@@ -26,10 +26,6 @@ import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.input.PortableDataStream;
 import scala.Tuple2;
 
-/**A PairFunction that simply loads bytes[] from a PortableDataStream, and wraps it (and the String key)
- * in Text and BytesWritable respectively.
- * @author Alex Black
- */
 public class FilesAsBytesFunction implements PairFunction<Tuple2<String, PortableDataStream>, Text, BytesWritable> {
     @Override
     public Tuple2<Text, BytesWritable> call(Tuple2<String, PortableDataStream> in) throws Exception {

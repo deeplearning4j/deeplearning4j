@@ -33,10 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Mini batch file datasetiterator
- * auto partitions a dataset in to mini batches
- */
 @Slf4j
 public class MiniBatchFileDataSetIterator implements DataSetIterator {
     private int batchSize;

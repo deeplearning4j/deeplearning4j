@@ -20,10 +20,6 @@
 
 package org.nd4j.common.util;
 
-/**
- * @author bogachenko
- */
-
 public interface AbstractNumber {
     AbstractNumber add(AbstractNumber b);
 

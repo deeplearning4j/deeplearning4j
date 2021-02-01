@@ -42,18 +42,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Distributed SkipGram trainer
- *
- * TrainingDriver idea is simple:
- *      1) We get request from Client
- *      2) We initiate training by issuing DotRequest
- *      3) Each Shard does Dot accumulation
- *      4) As soon as Dot aggregated, we calculate gradients independently
- *      5) As soon as they are ready - we just apply them to appropriate
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
     private static final float HS_MAX_EXP = 6.0f;

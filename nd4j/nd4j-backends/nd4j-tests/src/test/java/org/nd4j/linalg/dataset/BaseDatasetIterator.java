@@ -26,13 +26,6 @@ import org.nd4j.linalg.dataset.api.iterator.fetcher.DataSetFetcher;
 
 import java.util.List;
 
-/**
- * Baseline implementation includes
- * control over the data fetcher and some basic
- * getters for metadata
- * @author Adam Gibson
- *
- */
 public class BaseDatasetIterator implements DataSetIterator {
 
 

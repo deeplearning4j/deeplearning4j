@@ -25,11 +25,6 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * A truncated normal distribution, with 2 parameters: mean and standard deviation<br>
- * This distribution is a standard normal/Gaussian distribtion, however values are "truncated" in the sense that any
- * values that fall outside the range [mean - 2 * stdev, mean + 2 * stdev] are re-sampled.
- */
 @EqualsAndHashCode(callSuper = false)
 @Data
 public class TruncatedNormalDistribution extends Distribution {

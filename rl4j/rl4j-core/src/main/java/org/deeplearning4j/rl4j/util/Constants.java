@@ -20,11 +20,6 @@
 
 package org.deeplearning4j.rl4j.util;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/2/16.
- *
- * Utility class containing constants
- */
 public class Constants {
 
 

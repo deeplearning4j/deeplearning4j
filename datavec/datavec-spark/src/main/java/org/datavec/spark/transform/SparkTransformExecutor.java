@@ -57,13 +57,6 @@ import scala.Tuple2;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Execute a datavec
- * transform process
- * on spark rdds.
- *
- * @author Alex Black
- */
 public class SparkTransformExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(SparkTransformExecutor.class);

@@ -36,9 +36,6 @@ import java.util.Iterator;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class GraphTransformerTest extends BaseDL4JTest {
 
     private static IGraph<VocabWord, Double> graph;

@@ -29,11 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
 
-/**
- * Function used in ParameterAveraging TrainingMaster, for doing parameter averaging, and handling updaters
- *
- * @author Alex Black
- */
 public class ParameterAveragingElementCombineFunction implements
                 Function2<ParameterAveragingAggregationTuple, ParameterAveragingAggregationTuple, ParameterAveragingAggregationTuple> {
     @Override

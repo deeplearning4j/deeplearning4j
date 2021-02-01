@@ -36,11 +36,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.Map;
 
-/**
- * Simple recurrent unit
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class SRU extends DynamicCustomOp {
 

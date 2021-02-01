@@ -41,14 +41,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Subsampling layer also referred to as pooling in convolution neural nets
- *
- * Supports the following pooling types: MAX, AVG, SUM, PNORM
- *
- * @author Adam Gibson
- */
-
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

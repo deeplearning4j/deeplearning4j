@@ -26,11 +26,6 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Synchronized table
- *
- * @author Adam Gibson
- */
 public class SynchronizedTable<R, C, V> implements Table<R, C, V> {
     private Table<R, C, V> wrapped;
 

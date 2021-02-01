@@ -50,9 +50,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class WorkspaceProviderTests extends BaseNd4jTest {

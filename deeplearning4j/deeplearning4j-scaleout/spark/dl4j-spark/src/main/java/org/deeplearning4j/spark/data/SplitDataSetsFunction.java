@@ -27,19 +27,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Take an existing DataSet object, and split it into multiple DataSet objects with one example in each
- *
- * Usage:
- * <pre>
- * {@code
- *      RDD<DataSet> myBatchedExampleDataSets = ...;
- *      RDD<DataSet> singleExamlpeDataSets = myBatchedExampleDataSets.mapPartitions(new SplitDataSets(batchSize));
- * }
- * </pre>
- *
- * @author Alex Black
- */
 public class SplitDataSetsFunction implements FlatMapFunction<Iterator<DataSet>, DataSet> {
     @Override
     public Iterator<DataSet> call(Iterator<DataSet> dataSetIterator) throws Exception {

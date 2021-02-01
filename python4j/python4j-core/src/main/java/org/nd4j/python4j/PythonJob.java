@@ -31,11 +31,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
-/**
- * PythonJob is the right abstraction for executing multiple python scripts
- * in a multi thread stateful environment. The setup-and-run mode allows your
- * "setup" code (imports, model loading etc) to be executed only once.
- */
 @Data
 @Slf4j
 public class PythonJob {

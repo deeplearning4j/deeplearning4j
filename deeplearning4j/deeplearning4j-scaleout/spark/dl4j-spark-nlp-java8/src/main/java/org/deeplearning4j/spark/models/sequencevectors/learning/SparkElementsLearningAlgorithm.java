@@ -29,11 +29,6 @@ import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Identification layer for Spark-ready implementations of LearningAlgorithms
- *
- * @author raver119@gmail.com
- */
 public interface SparkElementsLearningAlgorithm extends ElementsLearningAlgorithm<ShallowSequenceElement> {
     TrainingDriver<? extends TrainingMessage> getTrainingDriver();
 

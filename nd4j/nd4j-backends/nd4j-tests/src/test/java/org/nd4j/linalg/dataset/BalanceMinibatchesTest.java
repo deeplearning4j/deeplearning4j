@@ -34,9 +34,6 @@ import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by agibsonccc on 6/24/16.
- */
 public class BalanceMinibatchesTest extends BaseNd4jTest {
     public BalanceMinibatchesTest(Nd4jBackend backend) {
         super(backend);

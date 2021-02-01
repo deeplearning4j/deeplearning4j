@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Sparse threshold decoding op wrapper. Used in gradients sharing.
- * @author raver119@gmail.com
- */
 public class DecodeThreshold extends DynamicCustomOp {
 
     public DecodeThreshold() {

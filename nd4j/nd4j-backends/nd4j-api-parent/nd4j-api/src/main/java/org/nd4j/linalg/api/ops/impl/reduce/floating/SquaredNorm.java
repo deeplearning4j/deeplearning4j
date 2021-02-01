@@ -30,12 +30,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.SquaredNormBp;
 import java.util.List;
 
 
-/**
- * Squared norm (sum_i x_i^2) reduction operation
- *
- * @author Alex Black
- */
-
 public class SquaredNorm extends BaseReduceFloatOp {
     public SquaredNorm(SameDiff sameDiff, SDVariable input, boolean keepDims, int... dimensions) {
         super(sameDiff, input, keepDims, dimensions);

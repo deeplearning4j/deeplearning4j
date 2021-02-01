@@ -27,9 +27,6 @@ import org.deeplearning4j.core.parallelism.AsyncIterator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-/**
- * @author raver119@gmail.com
- */
 public class AsyncLabelAwareIterator implements LabelAwareIterator, Iterator<LabelledDocument> {
 
     protected LabelAwareIterator backedIterator;

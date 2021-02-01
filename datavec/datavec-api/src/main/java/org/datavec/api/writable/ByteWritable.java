@@ -30,7 +30,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/** A WritableComparable for a single byte. */
 public class ByteWritable implements WritableComparable {
 
     private byte value;

@@ -22,11 +22,6 @@ package org.nd4j.linalg.convolution;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Convolution instance. Implementations of convolution algorithms
- *
- * @author Adam Gibson
- */
 public interface ConvolutionInstance {
     /**
      * 2d convolution (aka the last 2 dimensions

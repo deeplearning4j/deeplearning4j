@@ -26,11 +26,6 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * A simple class to wrap a {@link DataInput} instance in an {@link InputStream}
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class DataInputWrapperStream extends InputStream {
 

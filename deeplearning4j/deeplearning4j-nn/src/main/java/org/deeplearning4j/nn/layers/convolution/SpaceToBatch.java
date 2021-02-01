@@ -39,24 +39,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import java.util.Arrays;
 
 
-/**
- * Space to batch utility layer for convolutional input types.
- * <p>
- * Does a 2-dimensional space to batch operation, i.e. ransforms data from a tensor from 2 spatial dimensions into batch dimension
- * according to the "blocks" specified (a vector of length 2). Afterwards the spatial dimensions are optionally padded,
- * as specified in "padding", a tensor of dim (2, 2), denoting the padding range.
- * <p>
- * Example:
- * input:         [[[[1], [2]], [[3], [4]]]]
- * input shape:   [1, 2, 2, 1]
- * blocks:        [2, 2]
- * padding:       [[0, 0], [0, 0]]
- * <p>
- * output:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
- * output shape:  [4, 1, 1, 1]
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SpaceToBatchLayer> {
 

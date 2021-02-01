@@ -25,13 +25,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 
 import java.util.List;
 
-/**
- * SubGraphProcessor is used in {@link GraphTransformUtil} to define how a subgraph should be modified or replaced.
- * Note that when replacing a subgraph, the replacement subgraph must have the same number of outputs as the original subgraph.
- * Note that the order of the outputs matter.
- *
- * @author Alex Black
- */
 public interface SubGraphProcessor {
 
     /**

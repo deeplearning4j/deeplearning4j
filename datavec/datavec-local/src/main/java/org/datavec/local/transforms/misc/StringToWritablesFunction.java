@@ -31,10 +31,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Convert a String to a List<Writable> using a DataVec record reader
- *
- */
 @AllArgsConstructor
 public class StringToWritablesFunction implements Function<String, List<Writable>> {
 

@@ -33,10 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-/**
- * Static utility class for textual based windowing cooccurrences
- * @author Adam Gibson
- */
 @Slf4j
 public class Windows {
 

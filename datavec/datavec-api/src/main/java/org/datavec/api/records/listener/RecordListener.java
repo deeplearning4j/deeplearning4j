@@ -25,11 +25,6 @@ import org.datavec.api.records.writer.RecordWriter;
 
 import java.io.Serializable;
 
-/**
- * Each time a record is read or written, mainly used for debugging or visualization.
- *
- * @author saudet
- */
 public interface RecordListener extends Serializable {
     /**
      * Get if listener invoked.

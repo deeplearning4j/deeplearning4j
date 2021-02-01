@@ -30,9 +30,6 @@ import org.deeplearning4j.text.documentiterator.LabelledDocument;
 
 import java.util.Iterator;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class BasicTransformerIterator implements Iterator<Sequence<VocabWord>> {
     protected final LabelAwareIterator iterator;

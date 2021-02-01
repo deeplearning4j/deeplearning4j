@@ -32,13 +32,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Element-wise Compare-and-set implementation as Op
- *
- * Please check javadoc to specific constructors, for detail information.
- *
- * @author raver119@gmail.com
- */
 public class CompareAndSet extends BaseTransformSameOp {
 
     private Condition condition;

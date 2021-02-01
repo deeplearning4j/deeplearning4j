@@ -24,11 +24,6 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * A version of {@link WeightInitXavierUniform} for sigmoid activation functions. U(-r,r) with r=4sqrt(6/(fanIn + fanOut))
- *
- * @author Adam Gibson
- */
 @EqualsAndHashCode
 public class WeightInitSigmoidUniform implements IWeightInit {
 

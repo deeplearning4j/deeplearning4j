@@ -48,28 +48,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * User interface listener for SameDiff<br>
- * <br>
- * <b>Basic usage:</b>
- * <pre>
- * {@code
- * UIListener l = UIListener.builder(f)
- *                  //Plot loss curve, at every iteration (enabled and set to 1 by default)
- *                 .plotLosses(1)
- *                 //Plot the training set evaluation metrics: accuracy and f1 score
- *                 .trainEvaluationMetrics("softmax", 0, Evaluation.Metric.ACCURACY, Evaluation.Metric.F1)
- *                 //Plot the parameter to update:ratios for each parameter, every 10 iterations
- *                 .updateRatios(10)
- *                 .build();
- * }
- * </pre>
- * <br>
- * Note that the UIListener supports continuing with the same network on the same file - but only if the network configuration
- * matches. See {@link FileMode} for configuration/details
- *
- * @author Alex Black
- */
 public class UIListener extends BaseListener {
 
     /**

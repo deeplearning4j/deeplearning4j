@@ -27,16 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * A simple "no-op" memory manager that relies on JVM garbage collector for memory management.
- * Assuming other references have been cleared (they should have been) the arrays will be cleaned up by the
- * garbage collector at some point.
- *
- * This memory management strategy is not recommended for performance or memory reasons, and should only be used
- * for testing and debugging purposes
- *
- * @author Alex Black
- */
 public class NoOpMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
 
     @Override

@@ -25,10 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.v2.messages.BroadcastableMessage;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseINDArrayMessage;
 
-/**
- * This message holds INDArray with gradients update
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public final class GradientsUpdateMessage extends BaseINDArrayMessage implements BroadcastableMessage {
     private static final long serialVersionUID = 1L;

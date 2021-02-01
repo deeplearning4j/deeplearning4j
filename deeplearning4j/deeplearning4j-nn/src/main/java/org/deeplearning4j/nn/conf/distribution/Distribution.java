@@ -25,10 +25,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/**
- * An abstract distribution.
- *
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type",
                 defaultImpl = LegacyDistributionHelper.class)
 public abstract class Distribution implements Serializable, Cloneable {

@@ -43,13 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This TrainingListener implementation provides simple way for model evaluation during training.
- * It can be launched every Xth Iteration/Epoch, depending on frequency and InvocationType constructor arguments
- *
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class EvaluativeListener extends BaseTrainingListener {
     protected transient ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();

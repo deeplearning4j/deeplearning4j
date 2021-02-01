@@ -27,11 +27,6 @@ import java.io.Serializable;
 import java.util.Collection;
 
 
-/**
- * A VocabCache handles the storage of information needed for the word2vec look up table.
- *
- * @author Adam Gibson
- */
 public interface VocabCache<T extends SequenceElement> extends Serializable {
 
 

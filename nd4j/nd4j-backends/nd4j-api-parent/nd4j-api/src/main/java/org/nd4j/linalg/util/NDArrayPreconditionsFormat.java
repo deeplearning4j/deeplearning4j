@@ -28,17 +28,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Preconditions format: Defines a set of tags for use with {@link Preconditions} class.<br>
- * %ndRank: rank of INDArray<br>
- * %ndShape: shape of INDArray<br>
- * %ndStride: stride of INDArray<br>
- * %ndLength: length of INDArray<br>
- * %ndSInfo: shape info of INDArray<br>
- * %nd10: First 10 values of INDArray (or all values if length <= 10<br>
- *
- * @author Alex Black
- */
 public class NDArrayPreconditionsFormat implements PreconditionsFormat {
 
     private static final List<String> TAGS = Arrays.asList(

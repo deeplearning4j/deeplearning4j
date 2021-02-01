@@ -24,11 +24,6 @@ import org.datavec.api.records.writer.RecordWriter;
 
 import java.net.URI;
 
-/**
- * Factory for creating RecordWriter instance
- *
- * @author sonali
- */
 public interface RecordWriterFactory {
 
     /**

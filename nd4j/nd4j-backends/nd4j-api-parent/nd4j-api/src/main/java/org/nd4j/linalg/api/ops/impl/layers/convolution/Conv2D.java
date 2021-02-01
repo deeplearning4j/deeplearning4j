@@ -49,9 +49,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 
-/**
- * Conv2D operation
- */
 @Slf4j
 @Getter
 @NoArgsConstructor

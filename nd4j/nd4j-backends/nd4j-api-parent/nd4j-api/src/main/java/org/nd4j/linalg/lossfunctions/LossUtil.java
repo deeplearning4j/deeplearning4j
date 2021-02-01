@@ -24,9 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
-/**
- * Created by Alex on 14/09/2016.
- */
 public class LossUtil {
 
     /**

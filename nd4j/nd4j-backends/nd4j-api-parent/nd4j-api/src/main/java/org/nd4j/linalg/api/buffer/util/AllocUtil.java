@@ -23,12 +23,6 @@ package org.nd4j.linalg.api.buffer.util;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
-/**
- * Used for manipulating the  allocation
- * variable in nd4j's context
- *
- * @author Adam Gibson
- */
 public class AllocUtil {
 
 

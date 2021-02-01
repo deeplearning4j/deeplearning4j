@@ -30,12 +30,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
-/**
- * FilterInvalidValues: a filter operation that removes any examples (or sequences)
- * if the examples/sequences contains
- * invalid values in any of a specified set of columns.
- * Invalid values are determined with respect to the schema
- */
 @EqualsAndHashCode(exclude = {"schema", "columnIdxs"})
 @JsonIgnoreProperties({"schema", "columnIdxs"})
 @Data

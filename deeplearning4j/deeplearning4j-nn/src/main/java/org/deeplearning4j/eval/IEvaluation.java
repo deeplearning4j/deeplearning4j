@@ -22,9 +22,6 @@ package org.deeplearning4j.eval;
 
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.IEvaluation}
- */
 @Deprecated
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public interface IEvaluation<T extends org.nd4j.evaluation.IEvaluation> extends org.nd4j.evaluation.IEvaluation<T> {

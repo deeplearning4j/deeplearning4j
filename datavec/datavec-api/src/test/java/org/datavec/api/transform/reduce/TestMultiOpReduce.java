@@ -40,9 +40,6 @@ import java.util.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-/**
- * Created by Alex on 21/03/2016.
- */
 public class TestMultiOpReduce extends BaseND4JTest {
 
     @Test

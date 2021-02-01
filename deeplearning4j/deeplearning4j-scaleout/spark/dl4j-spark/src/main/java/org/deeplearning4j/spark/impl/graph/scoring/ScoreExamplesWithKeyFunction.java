@@ -36,15 +36,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/**Function to score examples individually, where each example is associated with a particular key<br>
- * Note that scoring is batched for computational efficiency.<br>
- * This is the Spark implementation of the {@link ComputationGraph#scoreExamples(MultiDataSet, boolean)} method<br>
- * <b>Note:</b> The MultiDataSet objects passed in must have exactly one example in them (otherwise: can't have a 1:1 association
- * between keys and data sets to score)
- * @author Alex Black
- * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
- * @see ScoreExamplesFunction
- */
 @Slf4j
 public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, MultiDataSet>>, K, Double> {
 

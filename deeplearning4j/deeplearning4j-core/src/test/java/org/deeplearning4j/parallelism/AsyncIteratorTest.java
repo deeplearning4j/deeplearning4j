@@ -28,9 +28,6 @@ import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class AsyncIteratorTest extends BaseDL4JTest {
 
     @Test

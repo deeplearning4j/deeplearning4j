@@ -25,12 +25,6 @@ import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 
-/**
- * Creates {@link Trainer}
- * instances for use with {@link ParallelWrapper}
- *
- * @author Adam Gibson
- */
 public interface TrainerContext {
 
 

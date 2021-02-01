@@ -36,16 +36,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
-/**
- * UnstackVertex allows for unstacking of inputs so that they may be forwarded through
- * a network. This is useful for cases such as Triplet Embedding, where embeddings can
- * be separated and run through subsequent layers.
- *
- * Works similarly to SubsetVertex, except on dimension 0 of the input. stackSize is
- * explicitly defined by the user to properly calculate an step.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class UnstackVertex extends BaseGraphVertex {
     private long from;
     private int stackSize;

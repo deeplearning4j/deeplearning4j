@@ -24,15 +24,6 @@ import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.Serializable;
 
-/**
- * A low level interface for loading datasets in to memory.
- * <p/>
- * This is used by an {@link org.nd4j.linalg.dataset.api.iterator.DataSetIterator} to
- * <p/>
- * handle the specifics of loading data in to memory.
- *
- * @author Adam Gibson
- */
 public interface DataSetFetcher extends Serializable {
 
     /**

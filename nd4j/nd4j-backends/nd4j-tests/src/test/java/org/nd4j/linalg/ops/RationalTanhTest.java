@@ -31,11 +31,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Rational tanh approximation from
- * https://arxiv.org/pdf/1508.01292v3
- * https://github.com/deeplearning4j/libnd4j/issues/351
- */
 @RunWith(Parameterized.class)
 public class RationalTanhTest extends BaseNd4jTest {
 

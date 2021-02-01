@@ -24,11 +24,6 @@ import org.deeplearning4j.models.sequencevectors.SequenceVectors;
 import org.deeplearning4j.models.sequencevectors.enums.ListenerEvent;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
-/**
- * This interface describes Listeners to SequenceVectors and its derivatives.
- *
- * @author raver119@gmail.com
- */
 public interface VectorsListener<T extends SequenceElement> {
 
     /**

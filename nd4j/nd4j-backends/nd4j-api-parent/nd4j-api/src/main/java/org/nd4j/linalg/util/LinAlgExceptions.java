@@ -27,11 +27,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.util.Arrays;
 
-/**
- * Linear algebra exceptions
- *
- * @author Adam Gibson
- */
 public class LinAlgExceptions {
     /**
      * Asserts both arrays be the same length

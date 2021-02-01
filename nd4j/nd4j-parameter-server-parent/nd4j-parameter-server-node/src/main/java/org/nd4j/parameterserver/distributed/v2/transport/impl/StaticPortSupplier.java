@@ -24,10 +24,6 @@ import lombok.*;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.parameterserver.distributed.v2.transport.PortSupplier;
 
-/**
- * This class provides static pre-defined port - a fixed value for all machines in the cluster.
- * @author raver119@gmail.com
- */
 @Data
 public class StaticPortSupplier implements PortSupplier {
     @Getter(AccessLevel.NONE)

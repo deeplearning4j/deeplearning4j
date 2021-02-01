@@ -32,11 +32,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Strided Slice backprop function
- *
- * @author Alex Black
- */
 @Slf4j
 public class StridedSliceBp extends DynamicCustomOp {
     private long[] begin;

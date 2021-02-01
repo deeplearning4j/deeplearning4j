@@ -77,9 +77,6 @@ import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-/**
- * Created by agibsonccc on 2/22/15.
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class OpExecutionerTestsC extends BaseNd4jTest {

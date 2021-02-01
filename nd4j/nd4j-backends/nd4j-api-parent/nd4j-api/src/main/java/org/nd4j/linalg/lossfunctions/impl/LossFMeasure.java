@@ -29,32 +29,6 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * F–measure loss function is a loss function design for training on imbalanced datasets.
- * Essentially, this loss function is a continuous approximation of the F_Beta evaluation measure, of which F_1 is
- * a special case.<br>
- * <br>
- * <b>Note</b>: this implementation differs from that described in the original paper by Pastor-Pellicer et al. in
- * one important way: instead of maximizing the F-measure loss function as presented there (equations 2/3), we minimize
- * 1.0 - FMeasure. Consequently, a score of 0 is the minimum possible value (optimal predictions) and a score of 1.0 is
- * the maximum possible value.<br>
- * <br>
- * This implementation supports 2 types of operation:<br>
- * - Binary: single output/label (Typically sigmoid activation function)<br>
- * - Binary: 2-output/label (softmax activation function + 1-hot labels)<br>
- * Note that the beta value can be configured via the constructor.<br>
- * <br>
- * The following situations are NOT currently supported, may be added in the future:<br>
- * - Multi-label (multiple independent binary outputs)<br>
- * - Multiclass (via micro or macro averaging)<br>
- *
- * <br>
- * Reference: Pastor-Pellicer et al. (2013), F-Measure as the Error Function to Train Neural Networks,
- * <a href="https://link.springer.com/chapter/10.1007/978-3-642-38679-4_37">
- *     https://link.springer.com/chapter/10.1007/978-3-642-38679-4_37</a>
- *
- * @author Alex Black
- */
 @Getter
 @EqualsAndHashCode
 public class LossFMeasure implements ILossFunction {

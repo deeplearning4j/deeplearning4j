@@ -41,11 +41,6 @@ import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This is wrapper for SequenceVectors training over given Sequence<T>
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class TrainingFunction<T extends SequenceElement> implements VoidFunction<Sequence<T>> {
     protected Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast;

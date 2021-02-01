@@ -26,14 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.*;
 import java.util.Iterator;
 
-/**
- * Primitive single-line iterator, without any options involved.
- * Can be used over InputStream or File.
- *
- * Please note: for reset functionality, mark/reset should be supported by underlying InputStream.
- *
- * @author raver119@gmail.com
-  */
 @Slf4j
 public class BasicLineIterator implements SentenceIterator, Iterable<String> {
 

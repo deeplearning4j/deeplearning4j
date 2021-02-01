@@ -27,19 +27,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import java.lang.reflect.Array;
 import java.util.*;
 
-/** Graph, where all edges and vertices are stored in-memory.<br>
- * Internally, this is a directed graph with adjacency list representation; however, if undirected edges
- * are added, these edges are duplicated internally to allow for fast lookup.<br>
- * Depending on the value of {@code allowMultipleEdges}, this graph implementation may or may not allow
- * multiple edges between any two adjacent nodes. If multiple edges are required (such that two or more distinct edges
- * between vertices X and Y exist simultaneously) then {@code allowMultipleEdges} should be set to {@code true}.<br>
- * As per {@link IGraph}, this graph representation can have arbitrary objects attached<br>
- * Vertices are initialized either directly via list, or via a {@link VertexFactory}. Edges are added using one of the
- * addEdge methods.
- * @param <V> Type parameter for vertices (type of objects attached to each vertex)
- * @param <E> Type parameter for edges (type of objects attached to each edge)
- * @author Alex Black
- */
 public class Graph<V extends SequenceElement, E extends Number> implements IGraph<V, E> {
     private boolean allowMultipleEdges;
     private List<Edge<E>>[] edges; //edge[i].get(j).to = k, then edge from i -> k

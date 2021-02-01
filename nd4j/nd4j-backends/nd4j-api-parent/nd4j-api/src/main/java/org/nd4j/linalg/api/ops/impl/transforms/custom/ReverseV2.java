@@ -34,9 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * This is compatibility op for ReverseV2
- */
 public class ReverseV2 extends DynamicCustomOp {
     protected final boolean isLegacy = true;
 

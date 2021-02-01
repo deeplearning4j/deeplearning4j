@@ -32,11 +32,6 @@ import java.net.URL;
 import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 
-/**
- * Abstract class for enabling dataset downloading and local caching.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Slf4j
 public abstract class CacheableExtractableDataSetFetcher implements CacheableDataSet {
 

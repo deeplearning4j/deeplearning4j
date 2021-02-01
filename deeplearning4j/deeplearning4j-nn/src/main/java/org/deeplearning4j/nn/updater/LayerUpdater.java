@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.HashMap;
 
-/**
- * Updater for a single layer, excluding MultiLayerNetwork (which also implements the Layer interface)
- *
- * @author Alex Black
- */
 @Slf4j
 public class LayerUpdater extends BaseMultiLayerUpdater<Layer> {
 

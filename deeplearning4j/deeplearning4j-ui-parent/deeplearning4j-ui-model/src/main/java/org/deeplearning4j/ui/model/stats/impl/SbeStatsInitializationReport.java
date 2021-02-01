@@ -36,11 +36,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * An implementation of {@link StatsInitializationReport} using Simple Binary Encoding (SBE)
- *
- * @author Alex Black
- */
 @Data
 public class SbeStatsInitializationReport implements StatsInitializationReport, AgronaPersistable {
 

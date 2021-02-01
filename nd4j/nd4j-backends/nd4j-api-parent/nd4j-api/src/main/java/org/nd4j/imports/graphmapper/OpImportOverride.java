@@ -26,10 +26,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import java.util.List;
 import java.util.Map;
 
-/**
- * An interface for overriding the import of an operation
- * @author Alex Black
- */
 public interface OpImportOverride<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE> {
 
     /**

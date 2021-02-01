@@ -31,11 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.awt.*;
 
-/**
- * Style for charts
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 @NoArgsConstructor

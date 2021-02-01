@@ -36,11 +36,6 @@ import org.nd4j.common.loader.FileBatch;
 import java.io.*;
 import java.util.*;
 
-/**
- * Utilities for handling data for Spark training
- *
- * @author Alex Black
- */
 public class SparkDataUtils {
 
     private SparkDataUtils() {

@@ -26,11 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-/**
- * A simple InputSplit based on a collection of URIs
- *
- * @author Alex Black
- */
 public class CollectionInputSplit extends BaseInputSplit {
 
     public CollectionInputSplit(URI[] array){

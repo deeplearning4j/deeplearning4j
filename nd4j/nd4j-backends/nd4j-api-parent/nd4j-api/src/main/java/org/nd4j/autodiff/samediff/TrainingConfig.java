@@ -34,21 +34,6 @@ import org.nd4j.serde.json.JsonMappers;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * TrainingConfig is a simple configuration class for defining settings for training a {@link SameDiff} instance.<br>
- * It defines the following settings:<br>
- * <ul>
- *     <li>The {@link IUpdater} to use (i.e., {@link org.nd4j.linalg.learning.config.Adam}, {@link org.nd4j.linalg.learning.config.Nesterovs} etc.
- *     The IUpdater instance is also how the learning rate (or learning rate schedule) is set.</li>
- *     <li>The L1 and L2 regularization coefficients (set to 0.0 by default)</li>
- *     <li>The DataSet feature and label mapping - which defines how the feature/label arrays from the DataSet/MultiDataSet
- *     should be associated with SameDiff variables (usually placeholders)</li>
- * </ul>
- * The TrainingConfig instance also stores the iteration count and the epoch count - these values are updated during training
- * and are used for example in learning rate schedules.
- *
- * @author Alex Black
- */
 @Data
 @Builder
 @NoArgsConstructor

@@ -35,18 +35,6 @@ import org.nd4j.common.util.MathUtils;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * A DataSetLoader that loads DataSets from a path, using a {@code Loader<DataSet>} such as SerializedDataSetLoader.
- * Paths are converted to input streams using {@link SourceFactory} such as {@link LocalFileSourceFactory}.
- * Note that this iterator does not implement any sort of merging/batching functionality - it simply returns the DataSets
- * as-is from the path/loader.
- *
- * Note: If using {@link #DataSetLoaderIterator(Collection, Random, Loader, SourceFactory)} constructor with non-null
- * Random instance, the data will be shuffled,
- *
- *
- * @author Alex Black
- */
 @Data
 public class DataSetLoaderIterator implements DataSetIterator {
 

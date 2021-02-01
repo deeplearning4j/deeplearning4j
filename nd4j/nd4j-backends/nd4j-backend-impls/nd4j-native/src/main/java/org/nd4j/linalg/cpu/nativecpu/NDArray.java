@@ -49,23 +49,6 @@ import java.io.IOException;
 import java.util.List;
 
 
-/**
- * NDArray: (think numpy)
- * <p/>
- * A few things of note.
- * <p/>
- * An NDArray can have any number of dimensions.
- * <p/>
- * An NDArray is accessed via strides.
- * <p/>
- * Strides are how to index over
- * a contiguous block of data.
- * <p/>
- * This block of data has 2 orders(as of right now):
- * fortran and c
- *
- * @author Adam Gibson
- */
 public class NDArray extends BaseNDArray {
     static {
         //invoke the override

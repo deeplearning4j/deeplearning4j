@@ -41,11 +41,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This class provides methods for splitting VoidMessages into chunks, and merging them back again
- *
- * @author raver119@gmail.com
- */
 public class MessageSplitter {
     private static final MessageSplitter INSTANCE = new MessageSplitter();
 

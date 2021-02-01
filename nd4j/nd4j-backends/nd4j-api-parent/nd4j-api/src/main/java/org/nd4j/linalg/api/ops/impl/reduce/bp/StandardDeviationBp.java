@@ -25,12 +25,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
-/**
- * Backprop op for standard deviation reduction operation
- *
- * @author Alex Black
- */
-
 public class StandardDeviationBp extends BaseReductionBp {
 
     private boolean biasCorrected;

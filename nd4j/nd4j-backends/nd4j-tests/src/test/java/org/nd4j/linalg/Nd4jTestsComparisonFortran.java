@@ -43,9 +43,6 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-/**
- * Tests comparing Nd4j ops to other libraries
- */
 @RunWith(Parameterized.class)
 public class Nd4jTestsComparisonFortran extends BaseNd4jTest {
     private static Logger log = LoggerFactory.getLogger(Nd4jTestsComparisonFortran.class);

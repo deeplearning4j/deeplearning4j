@@ -41,11 +41,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.lang.reflect.Field;
 import java.util.*;
 
-/**
- * Gradient check utility
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class GradCheckUtil {
 

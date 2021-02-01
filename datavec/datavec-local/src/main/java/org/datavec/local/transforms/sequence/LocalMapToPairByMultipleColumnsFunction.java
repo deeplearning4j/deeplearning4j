@@ -28,11 +28,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Function to map an example to a pair, by using some of the column values as the key.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class LocalMapToPairByMultipleColumnsFunction
                 implements Function<List<Writable>, Pair<List<Writable>, List<Writable>>> {

@@ -31,13 +31,6 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
-/**
- * Mother class and useful factorisations for all training methods that
- * are not asynchronous.
- *
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/3/16.
- * @author Alexandre Boulanger
- */
 @Slf4j
 public abstract class SyncLearning<OBSERVATION extends Encodable, ACTION, ACTION_SPACE extends ActionSpace<ACTION>, NN extends NeuralNet>
         extends Learning<OBSERVATION, ACTION, ACTION_SPACE, NN> implements IEpochTrainer {

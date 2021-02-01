@@ -25,12 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
 
-/**
- * Aggregates are ops that work with custom operands,
- * that are not limited to traditional X, Y and Z constraints.
- *
- * @author raver119@gmail.com
- */
 public interface Aggregate {
 
     /**

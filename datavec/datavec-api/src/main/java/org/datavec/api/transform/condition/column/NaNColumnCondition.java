@@ -24,11 +24,6 @@ import lombok.Data;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.writable.Writable;
 
-/**
- * A column condition that simply checks whether a floating point value is NaN
- *
- * @author Alex Black
- */
 @Data
 public class NaNColumnCondition extends BaseColumnCondition {
 

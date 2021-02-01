@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseReduceBoolOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * IsInf function
- *
- * @author raver119@gmail.com
-  */
 public class IsInf extends BaseReduceBoolOp {
     public IsInf(SameDiff sameDiff, SDVariable i_v, int[] dims) {
         super(sameDiff, i_v, dims);

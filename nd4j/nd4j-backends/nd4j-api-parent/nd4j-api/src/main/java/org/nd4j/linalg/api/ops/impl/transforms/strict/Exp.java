@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Element-wise exponential function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class Exp extends BaseTransformStrictOp {
 

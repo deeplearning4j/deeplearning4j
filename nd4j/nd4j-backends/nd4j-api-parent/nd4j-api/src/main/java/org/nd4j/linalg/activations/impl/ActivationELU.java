@@ -29,12 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.ELU;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
-/**
- *  f(x) = alpha * (exp(x) - 1.0); x < 0
- *       = x ; x>= 0
- *
- *  alpha defaults to 1, if not specified
- */
 @EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationELU extends BaseActivationFunction {

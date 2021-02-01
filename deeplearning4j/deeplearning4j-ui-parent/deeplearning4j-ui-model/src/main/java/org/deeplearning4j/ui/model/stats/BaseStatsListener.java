@@ -55,13 +55,6 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
-/**
- * BaseStatsListener: a general purpose listener for collecting and reporting system and model information.
- * <p>
- * Serves as a base for different ways of storing the collected data
- *
- * @author Alex Black
- */
 @Slf4j
 public abstract class BaseStatsListener implements RoutingIterationListener {
     public static final String TYPE_ID = "StatsListener";

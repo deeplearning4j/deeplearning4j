@@ -31,14 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * Weights are set to an identity matrix. Note: can only be used when nIn==nOut.
- * For Dense layers, this means square weight matrix
- * For convolution layers, an additional constraint is that kernel size must be odd length in all dimensions.
- * the we
- *
- * @author Adam Gibson
- */
 @Data
 @NoArgsConstructor
 public class WeightInitIdentity implements IWeightInit {

@@ -41,12 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * An operation executioner handles storage specific details of
- * executing an operation
- *
- * @author Adam Gibson
- */
 public interface OpExecutioner {
 
     // in case of adding new executioner - list it here

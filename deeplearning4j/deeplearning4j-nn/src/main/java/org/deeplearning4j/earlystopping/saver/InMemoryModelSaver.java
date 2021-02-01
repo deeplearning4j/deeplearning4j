@@ -25,10 +25,6 @@ import org.deeplearning4j.nn.api.Model;
 
 import java.io.IOException;
 
-/** Save the best (and latest) models for early stopping training to memory for later retrieval
- * <b>Note</b>: Assumes that network is cloneable via .clone() method
- * @param <T> Type of model. For example, {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph}
- */
 public class InMemoryModelSaver<T extends Model> implements EarlyStoppingModelSaver<T> {
 
     private transient T bestModel;

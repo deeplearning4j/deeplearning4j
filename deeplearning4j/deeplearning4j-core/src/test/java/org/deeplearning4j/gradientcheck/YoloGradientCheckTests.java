@@ -57,9 +57,6 @@ import java.io.InputStream;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author Alex Black
- */
 @RunWith(Parameterized.class)
 public class YoloGradientCheckTests extends BaseDL4JTest {
 

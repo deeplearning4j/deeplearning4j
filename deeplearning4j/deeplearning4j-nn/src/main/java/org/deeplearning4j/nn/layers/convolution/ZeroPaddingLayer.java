@@ -35,12 +35,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 
-/**
- * Zero padding layer for convolutional neural networks.
- * Allows padding to be done separately for top/bottom/left/right
- *
- * @author Alex Black
- */
 public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer> {
 
     public ZeroPaddingLayer(NeuralNetConfiguration conf, DataType dataType) {

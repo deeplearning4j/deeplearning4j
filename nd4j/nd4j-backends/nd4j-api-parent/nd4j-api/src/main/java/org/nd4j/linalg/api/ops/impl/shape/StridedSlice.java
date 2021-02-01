@@ -43,11 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Strided Slice function
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class StridedSlice extends DynamicCustomOp {
     private long[] begin;

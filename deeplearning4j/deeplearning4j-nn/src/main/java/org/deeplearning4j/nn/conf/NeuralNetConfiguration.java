@@ -64,12 +64,6 @@ import java.io.Serializable;
 import java.util.*;
 
 
-/**
- * A Serializable configuration
- * for neural nets that covers per layer parameters
- *
- * @author Adam Gibson
- */
 @Data
 @NoArgsConstructor
 @Slf4j

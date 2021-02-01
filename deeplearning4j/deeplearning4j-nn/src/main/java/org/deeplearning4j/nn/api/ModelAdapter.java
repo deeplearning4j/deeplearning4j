@@ -23,11 +23,6 @@ package org.deeplearning4j.nn.api;
 import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * This interface describes abstraction that uses provided model to convert INDArrays to some specific output
- *
- * @param <T>
- */
 public interface ModelAdapter<T> extends OutputAdapter<T> {
     /**
      * This method invokes model internally, and does convertion to T

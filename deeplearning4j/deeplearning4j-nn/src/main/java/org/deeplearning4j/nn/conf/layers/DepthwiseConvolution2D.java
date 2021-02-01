@@ -37,15 +37,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 
-/**
- * 2D depth-wise convolution layer configuration.
- * <p>
- * Performs a channels-wise convolution, which operates on each of the input maps separately. A channel multiplier is
- * used to specify the number of outputs per input map. This convolution is carried out with the specified kernel sizes,
- * stride and padding values.
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

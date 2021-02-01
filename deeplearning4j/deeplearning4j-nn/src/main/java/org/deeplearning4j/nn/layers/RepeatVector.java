@@ -36,14 +36,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Arrays;
 
-/**
- * RepeatVector layer.
- *
- * RepeatVector takes a mini-batch of vectors of shape (mb, length) and a repeat factor n and outputs
- * a 3D tensor of shape (mb, n, length) in which x is repeated n times.
- *
- * @author Max Pumperla
- */
 public class RepeatVector extends AbstractLayer<org.deeplearning4j.nn.conf.layers.misc.RepeatVector> {
 
     public RepeatVector(NeuralNetConfiguration conf, DataType dataType) {

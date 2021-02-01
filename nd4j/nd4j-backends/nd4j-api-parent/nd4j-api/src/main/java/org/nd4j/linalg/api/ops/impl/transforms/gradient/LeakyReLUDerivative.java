@@ -30,8 +30,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.List;
 
-/**Leaky ReLU derivative. Default alpha = 0.01. Cutoff = 0
- */
 @NoArgsConstructor
 public class LeakyReLUDerivative extends BaseScalarOp {
     private double alpha = 0.01;

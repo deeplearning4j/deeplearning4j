@@ -43,18 +43,6 @@ import org.nd4j.linalg.learning.config.IUpdater;
 
 import java.util.*;
 
-/**
- * BaseMultiLayerUpdater - core functionality for applying updaters to MultiLayerNetwork and ComputationGraph.
- * <p>
- * This implements updater combining: that is, for any layers (and variables) that:<br>
- * (a) have contiguous parameters/gradients in the view arrays, and<br>
- * (b) have identical updater configuration (including updater, LR, LR/momentum schedules, etc - different L1/L2 are OK,
- *     however)<br>
- * are combined into a single {@link org.nd4j.linalg.learning.GradientUpdater} operation, instead of having a set of
- * smaller operations. A smaller number of larger operations improves performance, especially for GPUs.
- *
- * @author Alex Black
- */
 @Getter
 public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater {
 

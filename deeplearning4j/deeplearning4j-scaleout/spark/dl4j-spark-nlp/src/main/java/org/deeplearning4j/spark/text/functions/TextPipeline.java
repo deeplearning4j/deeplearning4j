@@ -40,12 +40,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * A spark based text pipeline
- * with minimum word frequency and stop words
- *
- * @author Adam Gibson
- */
 @SuppressWarnings("unchecked")
 public class TextPipeline {
     //params

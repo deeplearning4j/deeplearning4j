@@ -26,9 +26,6 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import org.nd4j.common.primitives.AtomicDouble;
 
-/**
- * Serializer for AtomicDouble (needs a serializer due to long field being transient...)
- */
 public class AtomicDoubleSerializer extends Serializer<AtomicDouble> {
     @Override
     public void write(Kryo kryo, Output output, AtomicDouble a) {

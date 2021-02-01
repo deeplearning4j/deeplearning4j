@@ -33,11 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Set;
 
-/**
- * A condition on sequence lengths
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema"})
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonInclude(JsonInclude.Include.NON_NULL)

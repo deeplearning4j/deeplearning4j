@@ -20,9 +20,6 @@
 
 package org.datavec.api.writable;
 
-/**
- * Created by Alex on 30/05/2017.
- */
 public enum WritableType {
     Boolean, Byte, Double, Float, Int, Long, Null, Text, NDArray, Image,Arrow,Bytes;
 

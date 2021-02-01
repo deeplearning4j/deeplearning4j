@@ -42,15 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This MessageHandler implementation is suited for debugging mostly, but still can be used in production environment if you really want that.
- * Basic idea: updates are encoded before sharing.
- *
- * This handler is used as basement for distributed handler though.
- *
- * PLEASE NOTE: This handler does NOT provide any network connectivity. *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class EncodingHandler implements MessageHandler {
     public static final long THRESHOLD_LOG_FREQ_MS = 10000; //Every 10 sec max by default

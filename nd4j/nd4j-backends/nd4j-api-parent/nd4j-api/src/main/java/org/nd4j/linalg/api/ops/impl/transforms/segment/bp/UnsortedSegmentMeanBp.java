@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Unsorted segment mean backprop operation
- *
- * @author Alex Black
- */
 public class UnsortedSegmentMeanBp extends DynamicCustomOp {
 
     private int numSegments;

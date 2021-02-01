@@ -25,9 +25,6 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * @deprecated use {@link org.nd4j.linalg.dataset.callbacks.DefaultCallback}
- */
 @Deprecated
 public class DefaultCallback extends org.nd4j.linalg.dataset.callbacks.DefaultCallback {
 

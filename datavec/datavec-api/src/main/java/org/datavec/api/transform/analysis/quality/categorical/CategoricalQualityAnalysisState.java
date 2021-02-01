@@ -27,9 +27,6 @@ import org.datavec.api.transform.quality.columns.CategoricalQuality;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.writable.Writable;
 
-/**
- * Created by huitseeker on 3/6/17.
- */
 public class CategoricalQualityAnalysisState implements QualityAnalysisState<CategoricalQualityAnalysisState> {
 
     @Getter

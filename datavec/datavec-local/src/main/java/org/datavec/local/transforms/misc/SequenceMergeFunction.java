@@ -28,21 +28,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Function for merging multiple sequences, using a {@link SequenceMerge} instance.<br>
- *
- * Typical usage:<br>
- * <pre>
- * {@code
- * JavaPairRDD<SomeKey,List<List<Writable>>> myData = ...;
- * SequenceComparator comparator = ...;
- * SequenceMergeFunction<String> sequenceMergeFunction = new SequenceMergeFunction<>(new SequenceMerge(comparator));
- * JavaRDD<List<List<Writable>>> merged = myData.groupByKey().map(sequenceMergeFunction);
- * }
- * </pre>
- *
- * @author Alex Black
- */
 public class SequenceMergeFunction<T>
                 implements Function<Pair<T, Iterable<List<List<Writable>>>>, List<List<Writable>>> {
 

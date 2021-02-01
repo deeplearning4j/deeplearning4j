@@ -54,11 +54,6 @@ import java.util.concurrent.locks.LockSupport;
 
 import static java.lang.System.setProperty;
 
-/**
- * Transport implementation based on UDP unicast, for restricted environments, where multicast isn't available. I.e. AWS or Azure
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class RoutedTransport extends BaseTransport {

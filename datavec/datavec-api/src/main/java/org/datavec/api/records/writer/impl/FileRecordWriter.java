@@ -31,16 +31,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-/**
- * Write to files.
- * <p>
- * To set the path and configuration via configuration:
- * writeTo: org.datavec.api.records.writer.path
- * <p>
- * This is the path used to write to
- *
- * @author Adam Gibson
- */
 public abstract class FileRecordWriter implements RecordWriter {
 
     public static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;

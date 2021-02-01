@@ -23,9 +23,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * An interface defining the output aspect of a {@link NeuralNet}.
- */
 public interface IOutputNeuralNet {
     /**
      * Compute the output for the supplied observation. Multiple calls to output() with the same observation will

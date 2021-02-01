@@ -22,11 +22,6 @@ package org.deeplearning4j.text.documentiterator;
 
 import java.util.List;
 
-/**
- * LabelAwareIterator wrapper which populates a LabelsSource while iterating.
- *
- * @author Benjamin Possolo
- */
 public class LabelAwareIteratorWrapper implements LabelAwareIterator {
 
   private final LabelAwareIterator delegate;

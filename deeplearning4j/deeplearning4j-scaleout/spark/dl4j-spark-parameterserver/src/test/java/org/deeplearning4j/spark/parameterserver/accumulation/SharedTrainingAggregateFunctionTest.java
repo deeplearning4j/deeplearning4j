@@ -28,9 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class SharedTrainingAggregateFunctionTest {
     @Before
     public void setUp() throws Exception {

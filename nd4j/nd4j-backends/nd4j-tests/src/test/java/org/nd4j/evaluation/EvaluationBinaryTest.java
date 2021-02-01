@@ -38,9 +38,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.nd4j.evaluation.classification.EvaluationBinary.Metric.*;
-/**
- * Created by Alex on 20/03/2017.
- */
 public class EvaluationBinaryTest extends BaseNd4jTest {
 
     public EvaluationBinaryTest(Nd4jBackend backend) {

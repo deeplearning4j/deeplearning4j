@@ -24,14 +24,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-/**
- *
- * LabeledSentenceProvider: a simple iterator interface over sentences/documents that have a label.<br>
- *
- * This is intended for use with {@link CnnSentenceDataSetIterator}
- *
- * @author Alex Black
- */
 public interface LabeledSentenceProvider {
 
     /**

@@ -33,11 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Base scalar boolean operation
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
     public BaseScalarBoolOp() {}

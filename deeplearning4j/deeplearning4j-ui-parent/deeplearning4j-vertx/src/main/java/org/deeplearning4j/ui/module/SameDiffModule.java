@@ -31,9 +31,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Created by Alex on 25/10/2016.
- */
 public class SameDiffModule implements UIModule {
 
     public SameDiffModule() {

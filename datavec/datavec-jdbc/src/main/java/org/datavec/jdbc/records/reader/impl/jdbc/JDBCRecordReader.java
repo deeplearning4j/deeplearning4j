@@ -49,11 +49,6 @@ import org.datavec.jdbc.util.JdbcWritableConverter;
 import org.datavec.jdbc.util.ResettableResultSetIterator;
 import org.datavec.api.writable.Writable;
 
-/**
- * Iterate on rows from a JDBC datasource and return corresponding records
- *
- * @author Adrien Plagnol
- */
 public class JDBCRecordReader extends BaseRecordReader {
 
     private final String query;

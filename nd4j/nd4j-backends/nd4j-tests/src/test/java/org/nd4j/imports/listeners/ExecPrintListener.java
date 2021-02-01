@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * A very quick and dirty debugging listener
- * This listener just prints the outputs of any ops during execution
- * @author Alex Black
- */
 public class ExecPrintListener extends BaseListener {
     @Override
     public boolean isActive(Operation operation) {

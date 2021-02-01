@@ -25,11 +25,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.List;
 
-/**
- * Used for filtering empty records
- *
- * @author Adam Gibson
- */
 public class SequenceEmptyRecordFunction implements Function<List<List<Writable>>, Boolean> {
     @Override
     public Boolean apply(List<List<Writable>> v1) {

@@ -33,11 +33,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Compute the fraction of zero elements
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class ZeroFraction extends DynamicCustomOp {
 

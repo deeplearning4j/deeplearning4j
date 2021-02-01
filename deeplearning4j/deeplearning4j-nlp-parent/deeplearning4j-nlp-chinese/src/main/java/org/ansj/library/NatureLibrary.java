@@ -31,12 +31,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.HashMap;
 
-/**
- * 这里封装了词性和词性之间的关系.以及词性的索引.这是个好东西. 里面数组是从ict里面找来的. 不是很新.没有语料无法训练
- * 
- * @author ansj
- * 
- */
 public class NatureLibrary {
 
     private static final Log logger = LogFactory.getLog(NatureLibrary.class);

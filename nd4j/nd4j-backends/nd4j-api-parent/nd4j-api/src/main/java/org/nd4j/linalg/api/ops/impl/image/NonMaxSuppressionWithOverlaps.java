@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.Op;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Non max suppression with overlaps
- *
- * @author raver119@gmail.com
- */
 public class NonMaxSuppressionWithOverlaps extends DynamicCustomOp {
 
     public NonMaxSuppressionWithOverlaps() {}

@@ -23,11 +23,6 @@ package org.datavec.api.io;
 import org.datavec.api.io.converters.WritableConverterException;
 import org.datavec.api.writable.Writable;
 
-/**
- * Convert a writable to another writable (used for say: transitioning dates or categorical to numbers)
- *
- * @author Adam Gibson
- */
 public interface WritableConverter {
 
 

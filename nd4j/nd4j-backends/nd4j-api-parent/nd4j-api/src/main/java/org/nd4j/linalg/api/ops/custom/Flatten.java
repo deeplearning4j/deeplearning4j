@@ -33,11 +33,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * This op takes arbitrary number of arrays as input, and returns single "flattened" vector
- *
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 public class Flatten extends DynamicCustomOp {

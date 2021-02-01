@@ -25,11 +25,6 @@ import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-/**
- * Log Poisson loss backprop
- *
- * @author Paul Dubs
- */
 @NoArgsConstructor
 public class LogPoissonLossBp extends BaseLossBp {
 

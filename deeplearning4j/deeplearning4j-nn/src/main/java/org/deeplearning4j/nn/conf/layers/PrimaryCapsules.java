@@ -39,15 +39,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Map;
 
-/**
- * An implementation of the PrimaryCaps layer from Dynamic Routing Between Capsules
- *
- * Is a reshaped 2D convolution, and the input should be 2D convolutional ([mb, c, h, w]).
- *
- * From <a href="http://papers.nips.cc/paper/6975-dynamic-routing-between-capsules.pdf">Dynamic Routing Between Capsules</a>
- *
- * @author Ryan Nett
- */
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

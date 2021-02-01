@@ -25,9 +25,6 @@ import lombok.EqualsAndHashCode;
 
 import java.util.List;
 
-/**
- * @deprecated Use ND4J RegressionEvaluation class, which has the same interface: {@link org.nd4j.evaluation.regression.RegressionEvaluation}
- */
 @Deprecated
 @Data
 @EqualsAndHashCode(callSuper = true)

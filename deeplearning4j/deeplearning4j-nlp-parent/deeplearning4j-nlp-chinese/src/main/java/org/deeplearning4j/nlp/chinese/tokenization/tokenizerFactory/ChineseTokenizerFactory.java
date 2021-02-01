@@ -27,12 +27,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.io.InputStream;
 
-/**
- * @date: June 2,2017
- * @author: wangfeng
- * @Description:
- */
-
 public class ChineseTokenizerFactory implements TokenizerFactory {
 
     private TokenPreProcess tokenPreProcess;

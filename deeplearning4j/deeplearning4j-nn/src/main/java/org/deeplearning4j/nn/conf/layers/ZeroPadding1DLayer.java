@@ -38,11 +38,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Zero padding 1D layer for convolutional neural networks. Allows padding to be done separately for top and bottom.
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

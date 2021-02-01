@@ -29,12 +29,6 @@ import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * Calculate ROC AUC (area under ROC curve) or AUCPR (area under precision recall curve) for a MultiLayerNetwork or
- * ComputationGraph
- *
- * @author Alex Black
- */
 public class ROCScoreCalculator extends BaseIEvaluationScoreCalculator<Model, IEvaluation> {
 
     public enum ROCType {ROC, BINARY, MULTICLASS}

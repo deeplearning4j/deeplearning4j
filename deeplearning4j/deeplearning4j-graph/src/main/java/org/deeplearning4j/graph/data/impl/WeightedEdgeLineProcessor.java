@@ -23,10 +23,6 @@ package org.deeplearning4j.graph.data.impl;
 import org.deeplearning4j.graph.api.Edge;
 import org.deeplearning4j.graph.data.EdgeLineProcessor;
 
-/**A simple line processor, for data in the format {@code 0<delim>1<delim>weight}. Order per line is nodeFrom -> nodeTo, in
- * the case of directed edges, and the weights are assumed to be doubles
- * i.e., one edge per line without any additional edge information
- */
 public class WeightedEdgeLineProcessor implements EdgeLineProcessor<Double> {
     private final String delimiter;
     private final String[] skipLinesStartingWith;

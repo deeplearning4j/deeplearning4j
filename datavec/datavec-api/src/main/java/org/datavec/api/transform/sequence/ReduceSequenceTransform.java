@@ -35,13 +35,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Reduce The values in each column in the sequence to a single value using a reducer.
- * Note: after applying ReduceSequenceTransform, you have sequences of length 1. Consequently, this transform
- * is often used in conjunction with {@link ConvertFromSequence}
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema"})
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @Data

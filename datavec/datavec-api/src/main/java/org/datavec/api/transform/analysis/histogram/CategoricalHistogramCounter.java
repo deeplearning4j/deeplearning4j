@@ -26,11 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A counter for building histograms of Categorical columns
- *
- * @author Alex Black
- */
 public class CategoricalHistogramCounter implements HistogramCounter {
     private HashMap<String, Integer> counts = new HashMap<>();
 

@@ -36,11 +36,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
 
-/**
- * Normal data buffer creation
- *
- * @author Adam Gibson
- */
 public class DefaultDataBufferFactory implements DataBufferFactory {
     protected DataBuffer.AllocationMode allocationMode;
 

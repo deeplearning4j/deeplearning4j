@@ -20,10 +20,6 @@
 
 package org.nd4j.linalg.exception;
 
-/**
- *
- * @author Alex Black
- */
 public class ND4JUnknownDataTypeException extends ND4JException {
     public ND4JUnknownDataTypeException() {}
 

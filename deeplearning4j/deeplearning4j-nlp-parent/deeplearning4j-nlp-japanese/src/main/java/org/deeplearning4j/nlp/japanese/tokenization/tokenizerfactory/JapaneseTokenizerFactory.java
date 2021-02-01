@@ -27,9 +27,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.io.InputStream;
 
-/**
- * Tokenizer Factory for Japanese based on Kuromoji.
- */
 public class JapaneseTokenizerFactory implements TokenizerFactory {
     private final com.atilika.kuromoji.ipadic.Tokenizer kuromoji;
     private final boolean useBaseForm;

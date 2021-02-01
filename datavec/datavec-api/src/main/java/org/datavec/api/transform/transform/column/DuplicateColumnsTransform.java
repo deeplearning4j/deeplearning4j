@@ -34,13 +34,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Duplicate one or more columns.
- * The duplicated columns
- * are placed immediately after the original columns
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"columnsToDuplicateSet", "columnIndexesToDuplicateSet", "inputSchema"})
 @Data
 public class DuplicateColumnsTransform implements Transform, ColumnOp {

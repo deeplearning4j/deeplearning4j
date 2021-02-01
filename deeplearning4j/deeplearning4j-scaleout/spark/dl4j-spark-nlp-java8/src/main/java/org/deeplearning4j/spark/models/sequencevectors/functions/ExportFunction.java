@@ -27,11 +27,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.sequencevectors.sequence.ShallowSequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 
-/**
- * This function is used to
- *
- * @author raver119@gmail.com
- */
 public class ExportFunction<T extends SequenceElement> implements VoidFunction<T> {
 
     public ExportFunction(Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast,

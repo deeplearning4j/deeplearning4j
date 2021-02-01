@@ -31,9 +31,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class FancyBlockingQueueTests extends BaseDL4JTest {
 

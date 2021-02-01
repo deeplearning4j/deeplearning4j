@@ -43,11 +43,6 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getH
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
 
-/**
- * Imports a 2D Convolution layer from Keras.
- *
- * @author dave@skymind.io
- */
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)

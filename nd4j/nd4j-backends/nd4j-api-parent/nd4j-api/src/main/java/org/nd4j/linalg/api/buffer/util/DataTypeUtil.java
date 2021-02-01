@@ -26,11 +26,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * Manipulates the data opType
- * for the nd4j context
- * @author Adam Gibson
- */
 public class DataTypeUtil {
 
     private volatile transient static DataType dtype;

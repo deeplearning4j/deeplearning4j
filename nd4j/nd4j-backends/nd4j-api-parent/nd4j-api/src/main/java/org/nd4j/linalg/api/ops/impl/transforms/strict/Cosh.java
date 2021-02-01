@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Cosine Hyperbolic elementwise function
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class Cosh extends BaseTransformStrictOp {
 

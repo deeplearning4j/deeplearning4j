@@ -35,14 +35,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This walker represents connections of a given node + their neighborhoods up to certain depth.
- * Basically it's the same idea as context for a given node.
- *
- * So this walker produces Sequences, with label defined. And label - is element itself.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class NearestVertexWalker<V extends SequenceElement> implements GraphWalker<V> {
     @Getter

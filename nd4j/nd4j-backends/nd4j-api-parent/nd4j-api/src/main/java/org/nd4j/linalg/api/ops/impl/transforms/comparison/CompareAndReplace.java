@@ -31,12 +31,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.util.*;
 
-/**
- * Element-wise Compare-and-Replace implementation as Op
- * Basically this op does the same as Compare-and-Set, but op.X is checked against Condition instead
- *
- * @author raver119@gmail.com
- */
 public class CompareAndReplace extends BaseTransformSameOp {
 
     private Condition condition;

@@ -37,9 +37,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class AveragingTests extends BaseNd4jTest {

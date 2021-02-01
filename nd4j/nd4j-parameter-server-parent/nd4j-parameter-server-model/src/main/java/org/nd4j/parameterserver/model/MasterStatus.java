@@ -27,12 +27,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
-/**
- * Status of a master node, covered
- * both by the master node itself and its responder.
- *
- * @author Adam Gibson
- */
 @Data
 @Builder
 @NoArgsConstructor

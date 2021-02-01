@@ -28,11 +28,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Class that consumes DataSets with specified delays, suitable for testing
- *
- * @author raver119@gmail.com
- */
 public class TestDataSetConsumer {
     private DataSetIterator iterator;
     private long delay;

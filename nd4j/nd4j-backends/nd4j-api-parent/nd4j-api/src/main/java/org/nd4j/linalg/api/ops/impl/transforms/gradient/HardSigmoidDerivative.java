@@ -29,13 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
-/**
- * HardSigmoid derivative
- *
- * @deprecated Use {@link HardSigmoidBp}
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public class HardSigmoidDerivative extends BaseTransformStrictOp {
     public HardSigmoidDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

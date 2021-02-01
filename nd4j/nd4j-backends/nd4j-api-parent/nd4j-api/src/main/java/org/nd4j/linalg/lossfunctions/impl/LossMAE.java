@@ -24,12 +24,6 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Mean absolute error loss function: L = 1/N sum_i abs(predicted_i - actual_i)
- * See also {@link LossL1} for a mathematically similar loss function (LossL1 does not have division by N, where N is output size)
- *
- * @author Susan Eraly
- */
 @EqualsAndHashCode(callSuper = true)
 public class LossMAE extends LossL1 {
 

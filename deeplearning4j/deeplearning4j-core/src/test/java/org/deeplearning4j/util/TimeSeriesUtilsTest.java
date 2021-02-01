@@ -28,9 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 12/29/14.
- */
 public class TimeSeriesUtilsTest extends BaseDL4JTest {
 
     @Test

@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * Helper for the batch normalization layer.
- *
- * @author saudet
- */
 public interface BatchNormalizationHelper extends LayerHelper {
     boolean checkSupported(double eps, boolean fixedGammaBeta);
 

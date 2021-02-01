@@ -26,13 +26,6 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Splits a dataset (represented as a single DataSet object) into k folds.
- * DataSet is duplicated in memory once.
- * Call .next() to get the k-1 folds to train on and then call .testfold() to get the corresponding kth fold for testing
- * @author Susan Eraly
- * @author Tamas Fenyvesi - modified KFoldIterator following the scikit-learn implementation (December 2018)
- */
 public class KFoldIterator implements DataSetIterator {
 	
 	private static final long serialVersionUID = 6130298603412865817L;

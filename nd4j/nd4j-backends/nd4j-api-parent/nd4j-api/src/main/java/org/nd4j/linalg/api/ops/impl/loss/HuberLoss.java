@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.loss.bp.HuberLossBp;
 
 import java.util.List;
 
-/**
- * Huber loss
- *
- * @author Alex Black
- */
 public class HuberLoss extends BaseLoss {
 
     private double delta;

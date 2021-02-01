@@ -22,9 +22,6 @@ package org.nd4j.linalg.dataset.api.preprocessor.serializer;
 
 import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 
-/**
- * Base class for custom normalizer serializers
- */
 public abstract class CustomSerializerStrategy<T extends Normalizer> implements NormalizerSerializerStrategy<T> {
     @Override
     public NormalizerType getSupportedType() {

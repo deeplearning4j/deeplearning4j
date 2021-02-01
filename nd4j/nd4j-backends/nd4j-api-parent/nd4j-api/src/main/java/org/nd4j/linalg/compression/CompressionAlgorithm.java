@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.compression;
 
-/**
- * Compression algorithm enum
- *
- * @author Adam Gibson
- */
 public enum CompressionAlgorithm {
     FLOAT8, FLOAT16, GZIP, INT8, INT16, NOOP, UNIT8, CUSTOM;
 

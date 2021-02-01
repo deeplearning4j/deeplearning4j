@@ -30,18 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-/**
- * The Street View House Numbers (SVHN) Dataset is a real-world image dataset for developing machine learning
- * and object recognition algorithms with minimal requirement on data preprocessing and formatting.
- *
- * The SVHN datasets contain 10 classes (digits) with 73257 digits for training, 26032 digits for testing, and 531131 extra.
- *
- * Datasets in "Format 1: Full Numbers" are fetched.
- *
- * See: <a href="http://ufldl.stanford.edu/housenumbers/">http://ufldl.stanford.edu/housenumbers/</a>
- *
- * @author saudet
- */
 public class SvhnDataFetcher extends CacheableExtractableDataSetFetcher {
 
     private static String BASE_URL = "http://ufldl.stanford.edu/";

@@ -30,15 +30,6 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 
-/**
- * Created by susaneraly on 6/23/16.
- * A preprocessor specifically for images that applies min max scaling
- * Can take a range, so pixel values can be scaled from 0->255 to minRange->maxRange
- * default minRange = 0 and maxRange = 1;
- * If pixel values are not 8 bits, you can specify the number of bits as the third argument in the constructor
- * For values that are already floating point, specify the number of bits as 1
- *
- */
 @Slf4j
 @Getter
 @Setter

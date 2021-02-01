@@ -35,9 +35,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by susaneraly on 5/25/16.
- */
 @RunWith(Parameterized.class)
 public class NormalizerStandardizeTest extends BaseNd4jTest {
     public NormalizerStandardizeTest(Nd4jBackend backend) {

@@ -30,11 +30,6 @@ import java.io.DataInputStream;
 import java.net.URI;
 import java.util.List;
 
-/**RecordReaderFunction: Given a RecordReader and a file (via Spark PortableDataStream), load and parse the
- * data into a Collection<Writable>.
- * NOTE: This is only useful for "one record per file" type situations (ImageRecordReader, etc)
- * @author Alex Black
- */
 public class RecordReaderFunction implements Function<Tuple2<String, PortableDataStream>, List<Writable>> {
     protected RecordReader recordReader;
 

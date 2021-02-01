@@ -32,12 +32,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Split a sequence into a number of smaller sequences of length 'maxSequenceLength'.
- * If the sequence length is smaller than maxSequenceLength, the sequence is unchanged
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})
 @Data

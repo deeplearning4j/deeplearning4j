@@ -45,12 +45,6 @@ import java.nio.Buffer;
 import java.util.Arrays;
 import java.util.Map;
 
-/**
- * Base op. An op involves iterating over 2 buffers (x,y)  up to n elements
- * and applying a transform or accumulating a result.
- *
- * @author Adam Gibson
- */
 @Data
 public abstract class BaseOp extends DifferentialFunction implements Op {
 

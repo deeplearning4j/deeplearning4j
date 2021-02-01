@@ -34,12 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- *
- * Nd4j tfidf vectorizer
- *
- * @author Adam Gibson
- */
 public class TfidfVectorizer extends AbstractTfidfVectorizer<INDArray> {
     /**
      * Default: True.<br>

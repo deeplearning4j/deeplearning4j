@@ -41,16 +41,6 @@ import java.util.Arrays;
 
 import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
 
-/**
- * Embedding layer for sequences: feed-forward layer that expects fixed-length number (inputLength) of integers/indices
- * per example as input, ranged from 0 to numClasses - 1. This input thus has shape [numExamples, inputLength].
- * The output of this layer is 3D, namely of shape [numExamples, nOut, inputLength].
- * <b>Note</b>: can only be used as the first layer for a network<br>
- * <b>Note 2</b>: For a given example index i, the output is activationFunction(weights.getRow(i) + bias), hence the
- * weight rows can be considered a vector/embedding of each index.
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer> {
     private static final int[] WEIGHT_DIM = new int[]{1};

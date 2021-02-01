@@ -32,12 +32,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * Score function for variational autoencoder reconstruction error for a MultiLayerNetwork or ComputationGraph.<br>
- * VariationalAutoencoder layer must be first layer in the network
- *
- * @see VAEReconProbScoreCalculator for reconstruction probability
- */
 public class VAEReconErrorScoreCalculator extends BaseScoreCalculator<Model> {
 
     protected final Metric metric;

@@ -43,12 +43,6 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Tests downloads and checksum verification.
- *
- * @note This test uses a temporary directory, so local model copies won't be impacted
- * @author Justin Long (crockpotveggies)
- */
 @Slf4j
 public class TestDownload extends BaseDL4JTest {
 

@@ -23,12 +23,6 @@ package org.nd4j.linalg.profiler.data;
 import org.nd4j.linalg.profiler.data.primitives.StackDescriptor;
 import org.nd4j.linalg.profiler.data.primitives.StackTree;
 
-/**
- * This is utility class, provides stack traces collection, used in OpProfiler, to count events occurrences based on their position in code
- *
- *
- * @author raver119@gmail.com
- */
 public class StackAggregator {
     private StackTree tree = new StackTree();
 

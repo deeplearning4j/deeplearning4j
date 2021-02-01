@@ -71,10 +71,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- *
- * @author raver119@gmail.com
- */
 @Ignore
 public class SequenceVectorsTest extends BaseDL4JTest {
 

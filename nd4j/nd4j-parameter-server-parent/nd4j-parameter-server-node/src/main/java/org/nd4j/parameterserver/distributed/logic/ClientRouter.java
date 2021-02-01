@@ -25,12 +25,6 @@ import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
-/**
- * This interface describes routing for messaging
- * flowing in Client->Shard direction
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public interface ClientRouter {
 

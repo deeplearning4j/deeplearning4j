@@ -22,9 +22,6 @@ package org.nd4j.linalg.api.concurrency;
 
 import lombok.NonNull;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BasicDistributedINDArray implements DistributedINDArray {
     private final ArrayType arrayType;
 

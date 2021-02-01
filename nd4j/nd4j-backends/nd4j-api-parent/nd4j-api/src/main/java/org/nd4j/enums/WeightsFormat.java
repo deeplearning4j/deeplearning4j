@@ -18,12 +18,8 @@
  *  *****************************************************************************
  */
 
-//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
-
 package org.nd4j.enums;
 
-/**
- * Weights format: [kH, kW, iC, oC] or [oC, iC, kH, kW], or [oC, kH, kW, iC] */
 public enum WeightsFormat {
   YXIO,
 

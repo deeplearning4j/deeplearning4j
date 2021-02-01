@@ -30,9 +30,6 @@ import org.deeplearning4j.models.word2vec.VocabWord;
 
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class TokenizerFunction extends BaseTokenizerFunction implements Function<String, Sequence<VocabWord>> {
 

@@ -27,14 +27,6 @@ import org.deeplearning4j.rl4j.observation.Observation;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A simple {@link ExperienceHandler experience handler} that stores the experiences.
- * Note: Calling {@link StateActionExperienceHandler#generateTrainingBatch() generateTrainingBatch()} will clear the stored experiences
- *
- * @param <A> Action type
- *
- * @author Alexandre Boulanger
- */
 public class StateActionExperienceHandler<A> implements ExperienceHandler<A, StateActionReward<A>> {
     private static final int DEFAULT_BATCH_SIZE = 8;
 

@@ -25,11 +25,6 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Change case (to, e.g, all lower case) of String column.
- *
- * @author dave@skymind.io
- */
 @Data
 public class ChangeCaseStringTransform extends BaseStringTransform {
     public enum CaseType {

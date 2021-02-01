@@ -32,11 +32,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
-/**
- * Utilities for validating DataSets and MultiDataSets saved (usually) in a HDFS directory.
- *
- * @author Alex Black
- */
 public class SparkDataValidation {
 
     private SparkDataValidation() {

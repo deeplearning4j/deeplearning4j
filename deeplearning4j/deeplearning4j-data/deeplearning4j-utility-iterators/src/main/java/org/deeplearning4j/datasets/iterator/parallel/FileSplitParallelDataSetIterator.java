@@ -39,9 +39,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterator {
 

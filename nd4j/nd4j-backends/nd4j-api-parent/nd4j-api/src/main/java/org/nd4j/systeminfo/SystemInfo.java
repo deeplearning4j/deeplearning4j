@@ -48,9 +48,6 @@ import org.nd4j.versioncheck.VersionCheck;
 import org.nd4j.versioncheck.VersionInfo;
 import oshi.software.os.OperatingSystem;
 
-/**
- * Utility class to get system info for debugging and error reporting
- */
 public class SystemInfo {
 
     private static void appendField(StringBuilder sb, String name, Object value){

@@ -32,14 +32,6 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * A base listener class that will preform the provided evaluations, and provide the results in epochEnd and validationDone
- *
- * Instead of overriding requiredVariables, epochStart, epochEnd, validationDone, and/or opExecution,
- * override otherRequiredVariables, epochStartEvaluations, epochEndEvaluations, validationDoneEvaluations, and/or opExecutionEvaluations
- *
- * <strong>If you want to use Evaluations in your listener, extend this class</strong>
- */
 public abstract class BaseEvaluationListener extends BaseListener {
 
     private Map<String, List<IEvaluation>> trainingEvaluations = new HashMap<>();

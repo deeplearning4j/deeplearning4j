@@ -35,14 +35,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Iterator;
 
-/**
- * Base distribution derived from apache commons math
- * http://commons.apache.org/proper/commons-math/
- * <p/>
- * (specifically the {@link org.apache.commons.math3.distribution.BinomialDistribution}
- *
- * @author Adam Gibson
- */
 public class BinomialDistribution extends BaseDistribution {
     /**
      * The number of trials.

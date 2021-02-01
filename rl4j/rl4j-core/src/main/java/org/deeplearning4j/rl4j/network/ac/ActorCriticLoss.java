@@ -30,17 +30,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-/**
- *
- * Custom loss function required for Actor-Critic methods:
- * <pre>
- * L = sum_i advantage_i * log( probability_i ) + entropy( probability )
- * </pre>
- * It is very similar to the Multi-Class Cross Entropy loss function.
- *
- * @author saudet
- * @see LossMCXENT
- */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ActorCriticLoss implements ILossFunction {

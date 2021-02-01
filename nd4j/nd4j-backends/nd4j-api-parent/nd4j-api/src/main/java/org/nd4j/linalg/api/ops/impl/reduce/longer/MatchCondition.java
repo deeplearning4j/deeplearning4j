@@ -31,11 +31,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * This operation returns number of elements matching specified condition
- *
- * @author raver119@gmail.com
- */
 public class MatchCondition extends BaseReduceLongOp {
 
     private double compare;

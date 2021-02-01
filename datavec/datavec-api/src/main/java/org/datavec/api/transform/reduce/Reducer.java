@@ -38,20 +38,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * A Reducer is used to take a set of examples and reduce them.
- * The idea: suppose you have a large number of columns, and you want to combine/reduce the values in each column.<br>
- * Reducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
- * See {@link Builder} and {@link ReduceOp} for the full list.<br>
- * Note this supports executing multipe reducitons per column: simply call the Builder with Xcolumn() repeatedly
- * on the same column, or use {@link Reducer.Builder#multipleOpColmumns(List, String...)}}
- * <p>
- * Uses are:
- * (1) Reducing examples by a key
- * (2) Reduction operations in time series (windowing ops, etc)
- *
- * @author Alex Black
- */
 @Data
 @JsonIgnoreProperties({"schema", "keyColumnsSet"})
 @EqualsAndHashCode(exclude = {"schema", "keyColumnsSet"})

@@ -27,14 +27,6 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 import java.util.*;
 
-/**
- * A hash map implementation with weak identity keys.
- * For details, see {@link WeakHashMap} and {@link IdentityHashMap}
- *
- * @param <K> Key type
- * @param <V> Value type
- * @author Alex Black
- */
 public class WeakIdentityHashMap<K, V> implements Map<K, V> {
 
     protected final Map<KeyRef<K>, V> map;

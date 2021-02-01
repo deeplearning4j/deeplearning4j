@@ -32,11 +32,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Serializable;
 
-/**
- * Read WAVE headers and data from wave input stream
- * 
- * @author Jacquet Wong
- */
 public class Wave implements Serializable {
 
     private static final long serialVersionUID = 1L;

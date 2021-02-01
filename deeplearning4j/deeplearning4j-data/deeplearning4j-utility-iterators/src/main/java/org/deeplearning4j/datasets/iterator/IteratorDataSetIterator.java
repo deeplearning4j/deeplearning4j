@@ -28,15 +28,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.*;
 
-/**
- * A DataSetIterator that works on an {@code Iterator<DataSet>}, combining and splitting the input DataSet objects as
- * required to get the specified batch size.<br>
- *
- * Typically used in Spark training, but may be used elsewhere.<br>
- * NOTE: reset method is not supported here.
- *
- * @author Alex Black
- */
 public class IteratorDataSetIterator implements DataSetIterator {
 
     private final Iterator<DataSet> iterator;

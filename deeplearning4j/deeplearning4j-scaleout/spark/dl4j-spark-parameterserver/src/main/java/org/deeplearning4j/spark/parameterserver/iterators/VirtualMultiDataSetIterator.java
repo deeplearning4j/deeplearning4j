@@ -29,11 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * This MultiDataSetIterator implementation does accumulation of MultiDataSets from different Spark executors, wrt Thread/Device Affinity
- *
- * @author raver119@gmail.com
- */
 public class VirtualMultiDataSetIterator implements ParallelMultiDataSetIterator {
 
     protected final List<Iterator<MultiDataSet>> iterators;

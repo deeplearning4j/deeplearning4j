@@ -26,12 +26,6 @@ import java.util.List;
 import lombok.Getter;
 import org.datavec.api.records.metadata.RecordMetaData;
 
-/**
- * Record metadata to use with JDBCRecordReader. To uniquely identify and recover a record, we use a parameterized
- * request which will be prepared with the values stored in the params attribute.
- *
- * @author Adrien Plagnol
- */
 public class RecordMetaDataJdbc implements RecordMetaData {
 
     private final URI uri;

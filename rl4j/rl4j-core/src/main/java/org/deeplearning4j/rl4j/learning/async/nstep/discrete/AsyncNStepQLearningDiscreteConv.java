@@ -33,11 +33,6 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/7/16.
- * Specialized constructors for the Conv (pixels input) case
- * Specialized conf + provide additional type safety
- */
 public class AsyncNStepQLearningDiscreteConv<OBSERVATION extends Encodable> extends AsyncNStepQLearningDiscrete<OBSERVATION> {
 
     final private HistoryProcessor.Configuration hpconf;

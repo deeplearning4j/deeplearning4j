@@ -20,9 +20,6 @@
 
 package org.deeplearning4j.nn.conf.stepfunctions;
 
-/**
- * Default step function
- */
 public class DefaultStepFunction extends StepFunction {
 
     private static final long serialVersionUID = 890156465738412597L;

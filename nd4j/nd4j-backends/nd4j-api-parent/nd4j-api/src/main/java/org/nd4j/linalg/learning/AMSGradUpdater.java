@@ -33,12 +33,6 @@ import org.nd4j.linalg.learning.config.AMSGrad;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * The AMSGrad updater<br>
- * Reference: On the Convergence of Adam and Beyond - https://openreview.net/forum?id=ryQu7f-RZ
- *
- * @author Alex Black
- */
 @Data
 public class AMSGradUpdater implements GradientUpdater<AMSGrad> {
     public static final String M_STATE = "M";

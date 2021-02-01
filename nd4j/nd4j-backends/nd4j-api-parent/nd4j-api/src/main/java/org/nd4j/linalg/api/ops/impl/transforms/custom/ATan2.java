@@ -34,11 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-/**
- * Arc Tangent elementwise function
- *
- * @author Adam Gibson
- */
 public class ATan2 extends BaseDynamicTransformOp {
 
     public ATan2(SameDiff sameDiff, SDVariable y, SDVariable x) {

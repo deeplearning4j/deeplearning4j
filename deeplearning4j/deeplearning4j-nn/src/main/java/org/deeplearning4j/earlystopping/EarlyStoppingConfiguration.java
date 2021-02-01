@@ -35,17 +35,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/** Early stopping configuration: Specifies the various configuration options for running training with early stopping.<br>
- * Users need to specify the following:<br>
- * (a) EarlyStoppingModelSaver: How models will be saved (to disk, to memory, etc) (Default: in memory)<br>
- * (b) Termination conditions: at least one termination condition must be specified<br>
- *     (i) Iteration termination conditions: calculated once for each minibatch. For example, maxTime or invalid (NaN/infinite) scores<br>
- *     (ii) Epoch termination conditions: calculated once per epoch. For example, maxEpochs or no improvement for N epochs<br>
- * (c) Score calculator: what score should be calculated at every epoch? (For example: test set loss or test set accuracy)<br>
- * (d) How frequently (ever N epochs) should scores be calculated? (Default: every epoch)<br>
- * @param <T> Type of model. For example, {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph}
- * @author Alex Black
- */
 @Data
 @NoArgsConstructor
 public class EarlyStoppingConfiguration<T extends Model> implements Serializable {

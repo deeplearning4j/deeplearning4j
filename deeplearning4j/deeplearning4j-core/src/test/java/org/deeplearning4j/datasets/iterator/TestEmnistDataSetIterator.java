@@ -33,9 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 28/07/2017.
- */
 @Slf4j
 public class TestEmnistDataSetIterator extends BaseDL4JTest {
 

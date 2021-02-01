@@ -28,12 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 
 import java.util.List;
 
-/**
- * Bit mask over the ndarrays as to whether
- * the components are equal or not
- *
- * @author Adam Gibson
- */
 public class Eps extends BaseTransformBoolOp {
     public Eps(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

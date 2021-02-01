@@ -18,13 +18,6 @@
  *  *****************************************************************************
  */
 
-/// <reference path="../../api/Component.ts" />
-/// <reference path="../../api/Renderable.ts" />
-/// <reference path="../../api/Margin.ts" />
-/// <reference path="../../util/TSUtils.ts" />
-/// <reference path="../../typedefs/jquery.d.ts" />
-/// <reference path="../../typedefs/jqueryui.d.ts" />
-
 class DecoratorAccordion extends Component implements Renderable {
 
     private style: StyleAccordion;

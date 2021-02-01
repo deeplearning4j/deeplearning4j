@@ -30,38 +30,6 @@ import org.nd4j.linalg.api.rng.Random;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * This environment is a non-Markovian grid-based T-maze like this: <pre>
- *                                       +---+
- *                                       | X |
- * +---+---+---+---+     +---+---+---+---+---+
- * | S |   |   |   | ... |   |   |   |   | B |
- * +---+---+---+---+     +---+---+---+---+---+
- *                                       | Y |
- *                                       +---+
- * </pre>
- * The agent start at cell 'S' and must navigate to the <i>goal</i>. The location of this goal is selected randomly between
- * cell X and cell Y at the start of each episode.<br />
- * This environment is designed to be straightforward except for one aspect: Only the initial observation contains
- * information on the location of the goal. This means that the agent must remember the location of the goal while
- * navigating the t-maze.<br />
- * This makes the environment unsolvable with networks having only dense layers, but solvable with RNNs.
- * <p />
- * A reward of 4.0 is returned when reaching the goal, and -4.0 when reaching the trap. Reaching the goal or the trap
- * ends the episode.<p />
- * Also, to make the agent learn to navigate to the branch faster, a reward of -0.1 is returned each time the agent bumps
- * into a wall or navigates left (away from the branch). And a one-time (per episode) reward of 1.0 is returned when the
- * agent reaches the branch.<br />
- * <br />
- * Format of observations:
- * <ul>
- * <li>Element 1: 1.0 if it's the first observation; otherwise 0.0</li>
- * <li>Element 2: 1.0 if it's not the first observation and the agent is not at the branch; otherwise 0.0</li>
- * <li>Element 3: 1.0 if the agent is at the branch; otherwise 0.0</li>
- * <li>Element 4: 1.0 if the goal is at cell 'X', 0.0 if not, and -1.0 if the location of the goal is not observable</li>
- * <li>Element 5: 1.0 if the goal is at cell 'Y', 0.0 if not, and -1.0 if the location of the goal is not observable</li>
- * </ul>
- */
 public class TMazeEnvironment implements Environment<Integer> {
     private static final double BAD_MOVE_REWARD = -0.1;
     private static final double GOAL_REWARD = 4.0;

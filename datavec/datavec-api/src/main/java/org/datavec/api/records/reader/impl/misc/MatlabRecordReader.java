@@ -33,11 +33,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Matlab record reader
- *
- * @author Adam Gibson
- */
 public class MatlabRecordReader extends FileRecordReader {
 
     private List<List<Writable>> records = new ArrayList<>();

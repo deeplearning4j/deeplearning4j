@@ -31,12 +31,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * A Model is meant for predicting something from data.
- * Note that this is not like supervised learning where
- * there are labels attached to the examples.
- *
- */
 public interface Model {
 
     /**

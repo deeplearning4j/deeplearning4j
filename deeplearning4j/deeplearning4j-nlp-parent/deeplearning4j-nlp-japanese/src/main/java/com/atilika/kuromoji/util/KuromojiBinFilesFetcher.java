@@ -32,9 +32,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by kepricon on 16. 11. 24.
- */
 @Slf4j
 public class KuromojiBinFilesFetcher {
 

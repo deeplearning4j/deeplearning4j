@@ -41,11 +41,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 
-/**
- * Build Layer from Keras layer configuration.
- *
- * @author dave@skymind.io, Max Pumperla
- */
 @Slf4j
 public class KerasLayer {
 

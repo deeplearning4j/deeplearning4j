@@ -29,11 +29,6 @@ import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 
 import java.util.Map;
 
-/**
- * Imports Softmax layer from Keras
- *
- * @author Alex Black
- */
 public class KerasSoftmax extends KerasLayer {
 
     /**

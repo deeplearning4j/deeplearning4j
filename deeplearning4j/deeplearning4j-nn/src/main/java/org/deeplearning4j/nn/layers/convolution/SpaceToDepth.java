@@ -40,22 +40,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import java.util.Arrays;
 
 
-/**
- * Space to channels utility layer for convolutional input types.
- * <p>
- * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW)
- * to channels (C) for given blockSize
- * <p></p>
- * Example:
- * blockSize = 4
- * dataFormat = "NCHW"
- * input shape =  [128, 16, 16, 3]
- * output shape = [128, 16/4, 16/4, 3*4*4]
- *
- *
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SpaceToDepthLayer> {
 

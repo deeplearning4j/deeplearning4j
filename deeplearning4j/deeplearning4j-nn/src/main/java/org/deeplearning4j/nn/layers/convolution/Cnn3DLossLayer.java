@@ -44,23 +44,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * 3D Convolutional Neural Network Loss Layer.<br>
- * Handles calculation of gradients etc for various objective functions.<br>
- * NOTE: Cnn3DLossLayer does not have any parameters. Consequently, the output activations size is equal to the input size.<br>
- * Input and output activations are same as other 3D CNN layers: 5 dimensions with shape [miniBatchSize,channels,depth,height,width]<br>
- * Cnn3DLossLayer has support for a built-in activation function (tanh, softmax etc) - if this is not required, set
- * activation function to Activation.IDENTITY. For activations such as softmax, note that this is applied channels-wise:
- * that is, softmax is applied along dimension 1 (channels) for each minibatch, and x/y/z location separately.<br>
- * <br>
- * Note that 3 types of masking are supported: (n=minibatchSize, c=channels, d=depth, h=height, w=width)<br>
- * - Per example masking: Where an example is present or not (and all outputs are masked by it). Mask shape [n,1]<br>
- * - Per x/y/z location masking: where each spatial X/Y/Z location is present or not (all channels at a given x/y/z are masked by it).
- * Mask shape: [n,d,h,w].<br>
- * - Per output masking: Where each output activation value is present or not - mask shape [n,c,d,h,w] (same as output)<br>
- *
- * @author Alex Black
- */
 public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cnn3DLossLayer> implements IOutputLayer {
     @Setter
     @Getter

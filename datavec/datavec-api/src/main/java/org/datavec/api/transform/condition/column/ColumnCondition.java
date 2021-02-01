@@ -28,9 +28,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Created by agibsonccc on 11/26/16.
- */
 public interface ColumnCondition extends Condition, ColumnOp {
     SequenceConditionMode DEFAULT_SEQUENCE_CONDITION_MODE = SequenceConditionMode.Or;
 

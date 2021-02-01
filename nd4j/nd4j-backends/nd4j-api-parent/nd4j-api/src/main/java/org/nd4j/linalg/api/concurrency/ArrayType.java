@@ -20,10 +20,6 @@
 
 package org.nd4j.linalg.api.concurrency;
 
-/**
- * This enum describes possible types of DistributedINDArray
- * @author raver119@gmail.com
- */
 public enum ArrayType {
     /**
      * This means DistributedINDArray will be equal on all ends, and will never be modified after replication/instantiation

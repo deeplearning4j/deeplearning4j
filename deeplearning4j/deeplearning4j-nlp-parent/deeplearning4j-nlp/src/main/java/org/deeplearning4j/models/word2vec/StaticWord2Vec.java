@@ -36,13 +36,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * This is special limited Word2Vec implementation, suited for serving as lookup table in concurrent multi-gpu environment
- * This implementation DOES NOT load all vectors onto any of gpus, instead of that it holds vectors in, optionally, compressed state in host memory.
- * This implementation DOES NOT provide some of original Word2Vec methods, such as wordsNearest or wordsNearestSum.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class StaticWord2Vec implements WordVectors {
     private List<Map<Integer, INDArray>> cacheWrtDevice = new ArrayList<>();

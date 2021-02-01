@@ -39,14 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * CifarDataSetIterator is an iterator for CIFAR-10 dataset - 10 classes, with 32x32 images with 3 channels (RGB)
- *
- * This fetcher uses a cached version of the CIFAR dataset which is converted to PNG images,
- * see: <a href="https://pjreddie.com/projects/cifar-10-dataset-mirror/">https://pjreddie.com/projects/cifar-10-dataset-mirror/</a>.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class Cifar10DataSetIterator extends RecordReaderDataSetIterator {
 
     @Getter

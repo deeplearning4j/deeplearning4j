@@ -25,11 +25,6 @@ import lombok.Data;
 import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.writable.Writable;
 
-/**
- * A counter function for doing analysis on String columns, on Spark
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class StringAnalysisCounter implements AnalysisCounter<StringAnalysisCounter> {

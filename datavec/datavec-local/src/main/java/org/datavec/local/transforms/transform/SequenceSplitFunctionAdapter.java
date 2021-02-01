@@ -26,9 +26,6 @@ import org.datavec.local.transforms.functions.FlatMapFunctionAdapter;
 
 import java.util.List;
 
-/**
- * Created by Alex on 17/03/2016.
- */
 public class SequenceSplitFunctionAdapter
                 implements FlatMapFunctionAdapter<List<List<Writable>>, List<List<Writable>>> {
 

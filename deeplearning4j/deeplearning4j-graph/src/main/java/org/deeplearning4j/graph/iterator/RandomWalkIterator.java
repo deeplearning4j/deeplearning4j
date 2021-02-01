@@ -30,11 +30,6 @@ import org.deeplearning4j.graph.graph.VertexSequence;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-/**Given a graph, iterate through random walks on that graph of a specified length.
- * Random walks are generated starting at every node in the graph exactly once, though the order
- * of the starting nodes is randomized.
- * @author Alex Black
- */
 public class RandomWalkIterator<V> implements GraphWalkIterator<V> {
 
     private final IGraph<V, ?> graph;

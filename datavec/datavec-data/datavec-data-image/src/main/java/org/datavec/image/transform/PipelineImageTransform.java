@@ -31,21 +31,6 @@ import java.util.*;
 
 import org.bytedeco.opencv.opencv_core.*;
 
-/**
- * Allows creation of image transform pipelines, either sequentially or randomly.
- *
- * You have the option of passing in multiple transforms as parameters. If you
- * want to create a more complex pipeline, you can pass in a pipeline that looks
- * like {@literal List<Pair<ImageTransform, Double>>}. The Double value is the probability that
- * particular element in the pipeline will be executed. This is helpful for creating
- * complex pipelines.
- *
- * The pipeline can also be randomly shuffled with each transform, further increasing
- * the available dataset.
- *
- * @author saudet
- * @author crockpotveggies
- */
 @Data
 public class PipelineImageTransform extends BaseImageTransform<Mat> {
 

@@ -21,10 +21,6 @@ package org.deeplearning4j.rl4j.environment;
 
 import java.util.Map;
 
-/**
- * An interface for environments used by the {@link org.deeplearning4j.rl4j.agent.Agent Agents}.
- * @param <ACTION> The type of actions
- */
 public interface Environment<ACTION> {
 
     /**

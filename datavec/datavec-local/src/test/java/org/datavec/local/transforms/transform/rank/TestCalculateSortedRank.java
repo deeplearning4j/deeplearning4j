@@ -39,9 +39,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 1/06/2016.
- */
 public class TestCalculateSortedRank  {
 
     @Test

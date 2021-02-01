@@ -75,11 +75,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Main DL4J Training UI
- *
- * @author Alex Black
- */
 @Slf4j
 public class TrainModule implements UIModule {
     public static final double NAN_REPLACEMENT_VALUE = 0.0; //UI front-end chokes on NaN in JSON

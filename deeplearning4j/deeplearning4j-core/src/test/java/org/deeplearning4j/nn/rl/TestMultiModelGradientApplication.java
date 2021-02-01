@@ -44,12 +44,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * Testing calculating a Gradient object in one model, and updating/applying it on another.
- * This is used for example in RL4J
- *
- * @author Alex Black
- */
 public class TestMultiModelGradientApplication extends BaseDL4JTest {
 
     @Test

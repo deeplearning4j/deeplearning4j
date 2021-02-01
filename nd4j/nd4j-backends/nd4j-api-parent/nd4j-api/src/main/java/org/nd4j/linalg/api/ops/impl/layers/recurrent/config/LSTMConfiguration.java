@@ -29,11 +29,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * LSTM Configuration - for {@link LSTMLayer} and {@link LSTMBlockCell}
- *
- * @author Alex Black
- */
 @Builder
 @Data
 public class LSTMConfiguration {

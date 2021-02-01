@@ -33,11 +33,6 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-/**
- * A simple recurrent unit cell.
- *
- * @author Adam Gibson
- */
 public class SRUCell extends DynamicCustomOp {
 
     @Getter

@@ -55,13 +55,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
-/**
- * Basic op executioner. Knows how to iterate over
- * the buffers of each
- * respective ndarray and apply transformations
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class DefaultOpExecutioner implements OpExecutioner {
 

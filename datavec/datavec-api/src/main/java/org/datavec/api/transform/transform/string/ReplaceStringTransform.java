@@ -28,9 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
-/**
- * Replaces String values that match regular expressions.
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class ReplaceStringTransform extends BaseStringTransform {

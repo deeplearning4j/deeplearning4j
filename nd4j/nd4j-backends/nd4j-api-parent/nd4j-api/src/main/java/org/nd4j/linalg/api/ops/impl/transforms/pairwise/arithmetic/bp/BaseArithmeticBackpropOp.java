@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Base arithmetic backprop operation
- *
- * @author Alex Black
- */
 public abstract class BaseArithmeticBackpropOp extends BaseDynamicTransformOp {
 
     public BaseArithmeticBackpropOp() {}

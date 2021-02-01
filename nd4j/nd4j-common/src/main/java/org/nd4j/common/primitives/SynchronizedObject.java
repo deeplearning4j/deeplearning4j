@@ -23,11 +23,6 @@ package org.nd4j.common.primitives;
 import java.io.Serializable;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * This class is simple holder for provided variable which can be accessed & updated in thread-safe way
- *
- * @author raver119@protonmail.com
- */
 public class SynchronizedObject<T> implements Serializable {
     protected T value;
     protected transient ReentrantReadWriteLock lock;

@@ -31,11 +31,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Abstract base class for normalizers that act upon {@link MultiDataSet} instances or iterators
- *
- * @author Ede Meijer
- */
 @EqualsAndHashCode(callSuper = false)
 public abstract class AbstractMultiDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer
                 implements MultiDataNormalization {

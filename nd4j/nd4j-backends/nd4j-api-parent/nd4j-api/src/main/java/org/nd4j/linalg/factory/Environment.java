@@ -19,11 +19,6 @@
  */
 package org.nd4j.linalg.factory;
 
-/**
- * ND4J backend Environment instance
- *
- * @author Alex Black
- */
 public interface Environment {
 
     /** BLAS major version number (if applicable) */

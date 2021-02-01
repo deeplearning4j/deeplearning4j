@@ -43,9 +43,6 @@ import java.util.Random;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 25/11/2016.
- */
 @Slf4j
 public class TestReconstructionDistributions extends BaseDL4JTest {
 

@@ -24,11 +24,6 @@ import lombok.*;
 
 import java.io.Serializable;
 
-/**
- * Simple pair implementation
- *
- * @author raver119@gmail.com
- */
 @AllArgsConstructor
 @Data
 @Builder

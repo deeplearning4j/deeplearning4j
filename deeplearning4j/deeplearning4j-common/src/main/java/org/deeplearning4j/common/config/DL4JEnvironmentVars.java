@@ -20,12 +20,6 @@
 
 package org.deeplearning4j.common.config;
 
-/**
- * DL4JSystemProperties class contains the environment variables that can be used to configure various aspects of DL4J.
- * See the javadoc of each variable for details
- *
- * @author Alex Black
- */
 public class DL4JEnvironmentVars {
 
     private DL4JEnvironmentVars(){ }

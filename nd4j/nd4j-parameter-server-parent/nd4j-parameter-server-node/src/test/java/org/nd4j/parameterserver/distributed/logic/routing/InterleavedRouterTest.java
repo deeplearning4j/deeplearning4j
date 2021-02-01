@@ -38,9 +38,6 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Ignore
 @Deprecated
 public class InterleavedRouterTest extends BaseND4JTest {

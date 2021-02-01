@@ -32,9 +32,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.Assert.assertEquals;
 
 
-/**
- * Created by agibsonccc on 9/10/15.
- */
 @RunWith(Parameterized.class)
 public class MiniBatchFileDataSetIteratorTest extends BaseNd4jTest {
 

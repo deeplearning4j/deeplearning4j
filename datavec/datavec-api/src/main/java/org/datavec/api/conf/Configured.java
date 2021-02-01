@@ -20,7 +20,6 @@
 
 package org.datavec.api.conf;
 
-/** Base class for things that may be configured with a {@link Configuration}. */
 public class Configured implements Configurable {
 
     private Configuration conf;

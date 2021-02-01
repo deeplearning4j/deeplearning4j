@@ -27,9 +27,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Created by Alex on 5/03/2016.
- */
 @AllArgsConstructor
 public class SparkSequenceFilterFunction implements Function<List<List<Writable>>, Boolean> {
 

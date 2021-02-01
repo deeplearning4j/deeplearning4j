@@ -23,13 +23,6 @@ package org.deeplearning4j.rl4j.observation.transform.operation.historymerge;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * HistoryStackAssembler is used with the HistoryMergeTransform. This assembler will
- * stack along the dimension 0. For example if the store elements are of shape [ Height, Width ]
- * the output will be of shape [ Stacked, Height, Width ]
- *
- * @author Alexandre Boulanger
- */
 public class HistoryStackAssembler implements HistoryMergeAssembler {
 
     /**

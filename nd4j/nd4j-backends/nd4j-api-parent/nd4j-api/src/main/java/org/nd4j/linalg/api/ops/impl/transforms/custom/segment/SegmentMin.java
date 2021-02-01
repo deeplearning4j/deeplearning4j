@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.SegmentMinBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Segment min operation
- *
- * @author Alex Black
- */
 public class SegmentMin extends DynamicCustomOp {
 
     public SegmentMin(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {

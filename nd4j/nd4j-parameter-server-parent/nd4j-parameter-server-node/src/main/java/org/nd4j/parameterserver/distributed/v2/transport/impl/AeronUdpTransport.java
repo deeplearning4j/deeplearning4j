@@ -60,11 +60,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static java.lang.System.setProperty;
 
-/**
- * This class is a UDP implementation of Transport interface, based on Aeron
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // this is for tests only

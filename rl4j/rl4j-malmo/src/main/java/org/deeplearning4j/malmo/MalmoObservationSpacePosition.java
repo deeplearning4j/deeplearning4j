@@ -28,10 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import com.microsoft.msr.malmo.TimestampedStringVector;
 import com.microsoft.msr.malmo.WorldState;
 
-/**
- * Basic observation space that contains just the X,Y,Z location triplet, plus Yaw and Pitch 
- * @author howard-abrams (howard.abrams@ca.com) on 1/12/17.
- */
 public class MalmoObservationSpacePosition extends MalmoObservationSpace {
     @Override
     public String getName() {

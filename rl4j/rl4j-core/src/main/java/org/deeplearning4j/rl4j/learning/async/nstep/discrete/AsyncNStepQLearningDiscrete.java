@@ -36,9 +36,6 @@ import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
- */
 public abstract class AsyncNStepQLearningDiscrete<OBSERVATION extends Encodable>
         extends AsyncLearning<OBSERVATION, Integer, DiscreteSpace, IDQN> {
 

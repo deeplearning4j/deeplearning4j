@@ -20,13 +20,6 @@
 
 package org.nd4j.linalg.schedule;
 
-/**
- * A "Wrapper" schedule that ramps up from {@code 1/numIter * baseLR} to {@code baseLR} over numIter iterations.
- * The base learning rate is determined by the underlying ISchedule, as a function of time.
- * This can be used to provide a slow start, for use cases such as transfer learning.
- *
- * @author Alex Black
- */
 public class RampSchedule implements ISchedule {
 
     protected final ISchedule baseSchedule;

@@ -42,29 +42,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
-  * A {@link DataSetIterator} which uses a <a href="https://lucene.apache.org/solr/guide/7_7/streaming-expressions.html">streaming expression</a>
- * to fetch data from Apache Solr and/or one of the sources (e.g. <code>jdbc</code>) supported as a <a href="https://lucene.apache.org/solr/guide/7_7/stream-source-reference.html">stream source</a>.
- * <p>
- * Example code snippet:
-<pre>{
-  try (final TupleStreamDataSetIterator tsdsi =
-         new TupleStreamDataSetIterator(
-         batch,
-         "id",
-         new String[] { "fieldA", "fieldB", "fieldC" },
-         new String[] { "fieldX", "fieldY" },
-         "search(mySolrCollection," +
-         "q=\"id:*\"," +
-         "fl=\"id,fieldA,fieldB,fieldC,fieldX,fieldY\"," +
-         "sort=\"id asc\"," +
-         "qt=\"/export\")",
-         zkServerAddress)) {
-
-    model.fit(tsdsi);
-  }
-</pre>
-  */
 public class TupleStreamDataSetIterator implements Closeable, DataSetIterator {
 
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

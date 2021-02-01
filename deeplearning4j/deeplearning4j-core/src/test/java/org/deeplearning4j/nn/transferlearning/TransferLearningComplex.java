@@ -44,9 +44,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by susaneraly on 2/20/17.
- */
 @Slf4j
 public class TransferLearningComplex extends BaseDL4JTest {
 

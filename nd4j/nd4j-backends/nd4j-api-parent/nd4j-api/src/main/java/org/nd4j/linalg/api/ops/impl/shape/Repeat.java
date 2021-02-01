@@ -36,11 +36,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Repeat function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class Repeat extends DynamicCustomOp {
     private int jaxis;

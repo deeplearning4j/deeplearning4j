@@ -32,11 +32,6 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
 
-/**
- * Imports a Keras RepeatVector layer
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class KerasRepeatVector extends KerasLayer {
 

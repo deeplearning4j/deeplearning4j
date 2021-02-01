@@ -29,11 +29,6 @@ import org.datavec.api.writable.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Converts a row to a record
- *
- * @author Adam Gibson
- */
 @AllArgsConstructor
 public class ToRecord implements Function<Row, List<Writable>> {
     private Schema schema;

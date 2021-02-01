@@ -24,9 +24,6 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.deeplearning4j.core.storage.Persistable;
 
-/**
- * Created by Alex on 07/10/2016.
- */
 public interface AgronaPersistable extends Persistable {
 
     void encode(MutableDirectBuffer buffer);

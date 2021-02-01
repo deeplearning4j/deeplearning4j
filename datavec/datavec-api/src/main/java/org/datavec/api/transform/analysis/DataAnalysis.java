@@ -40,11 +40,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * The DataAnalysis class represents analysis (summary statistics) for a data set.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")

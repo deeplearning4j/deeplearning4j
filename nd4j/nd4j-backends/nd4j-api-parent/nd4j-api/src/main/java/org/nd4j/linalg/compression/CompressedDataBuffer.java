@@ -40,9 +40,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-/**
- * @author raver119@gmail.com
- */
 public class CompressedDataBuffer extends BaseDataBuffer {
     @Getter
     @Setter

@@ -27,9 +27,6 @@ import org.datavec.local.transforms.functions.FlatMapFunctionAdapter;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Function for executing a transform process
- */
 public class LocalTransformProcessFunctionAdapter implements FlatMapFunctionAdapter<List<Writable>, List<Writable>> {
 
     private final TransformProcess transformProcess;

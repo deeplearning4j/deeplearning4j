@@ -27,11 +27,6 @@ import org.nd4j.common.primitives.Atomic;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 
-/**
- * This consumer is responsible for storing updater parameters received from network
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class UpdaterParamsConsumer implements Subscriber<INDArray>, Supplier<INDArray> {
     protected transient final Atomic<INDArray> params = new Atomic<>();

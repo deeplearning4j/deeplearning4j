@@ -29,13 +29,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Log Matrix Determinant op
- *
- * Given input with shape [..., N, N] output the log determinant for each sub-matrix.
- *
- * @author Alex Black
- */
 public class LogMatrixDeterminant extends DynamicCustomOp {
 
     public LogMatrixDeterminant() {

@@ -28,11 +28,6 @@ import org.nd4j.linalg.schedule.ISchedule;
 
 import java.util.Map;
 
-/**
- * NoOp updater: gradient updater that makes no changes to the gradient
- *
- * @author Alex Black
- */
 @Data
 public class NoOp implements IUpdater {
     @Override

@@ -29,13 +29,6 @@ import org.nd4j.shade.jackson.databind.JsonNode;
 
 import java.io.IOException;
 
-/**
- * Simple JSON deserializer for use in {@link org.nd4j.linalg.lossfunctions.ILossFunction} loss function weight serialization.
- * Used in conjunction with {@link RowVectorSerializer}
- *
- * @author Alex Black
- * @deprecated Use {@link org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer}
- */
 @Deprecated
 public class RowVectorDeserializer extends JsonDeserializer<INDArray> {
     @Override

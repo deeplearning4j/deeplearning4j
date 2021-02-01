@@ -33,12 +33,6 @@ import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 
-/**
- * Base class for level 2 functions, abstract headers pulled from:
- * http://www.netlib.org/blas/blast-forum/cblas.h
- *
- * @author Adam Gibson
- */
 public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     /**
      * gemv computes a matrix-vector product using a general matrix and performs one of the following matrix-vector operations:

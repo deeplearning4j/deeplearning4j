@@ -42,9 +42,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-/**
- * Created by Alex on 07/10/2016.
- */
 public class TestStatsListener extends BaseDL4JTest {
 
     @Test

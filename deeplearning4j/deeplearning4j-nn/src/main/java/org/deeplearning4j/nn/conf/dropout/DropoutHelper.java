@@ -22,11 +22,6 @@ package org.deeplearning4j.nn.conf.dropout;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * A helper interface for native dropout implementations
- *
- * @author Alex Black
- */
 public interface DropoutHelper {
 
     /**

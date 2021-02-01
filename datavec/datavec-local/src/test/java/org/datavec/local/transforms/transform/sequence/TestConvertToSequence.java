@@ -40,9 +40,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 19/05/2017.
- */
 public class TestConvertToSequence  {
 
     @Test

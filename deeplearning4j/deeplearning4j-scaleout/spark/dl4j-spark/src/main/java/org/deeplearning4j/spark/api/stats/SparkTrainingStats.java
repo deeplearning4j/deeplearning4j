@@ -30,21 +30,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 
-/**
- * SparkTrainingStats is an interface that is used for accessing training statistics, for multiple {@link org.deeplearning4j.spark.api.TrainingMaster}
- * implementations.
- * <p>
- * The idea is that for debugging purposes, we want to collect a number of statistics related to the training. However, these
- * statistics will vary, depending on which the type of training we are doing. Specifically, both the keys (number/names of stats)
- * and their actual values (types/classes) can vary.
- * <p>
- * The interface here operates essentially as a {@code Map<String,Object>}. Note however that SparkTrainingStats instances
- * may be nested: for example a {@link ParameterAveragingTrainingMasterStats} may have a
- * {@link CommonSparkTrainingStats} instance which may in turn have a {@link ParameterAveragingTrainingWorkerStats}
- * instance.
- *
- * @author Alex Black
- */
 public interface SparkTrainingStats extends Serializable {
 
     /**

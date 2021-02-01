@@ -32,13 +32,6 @@ import org.nd4j.common.util.MathUtils;
 import java.io.File;
 import java.util.*;
 
-/**
- * Base class for loading DataSet objects from file
- *
- * @param <T> Type of dataset
- * @param <P> Type of preprocessor
- * @author Alex Black
- */
 public abstract class BaseFileIterator<T, P> implements Iterator<T> {
 
     protected final List<String> list;

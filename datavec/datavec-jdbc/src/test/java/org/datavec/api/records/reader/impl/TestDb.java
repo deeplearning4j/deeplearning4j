@@ -24,9 +24,6 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-/**
- * Parts of this are from datavec-dataframe
- */
 public class TestDb {
 
     public static void dropTables(Connection conn) {

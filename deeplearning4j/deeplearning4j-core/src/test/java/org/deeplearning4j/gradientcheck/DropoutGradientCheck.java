@@ -46,9 +46,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author Alex Black
- */
 @Slf4j
 public class DropoutGradientCheck extends BaseDL4JTest {
 

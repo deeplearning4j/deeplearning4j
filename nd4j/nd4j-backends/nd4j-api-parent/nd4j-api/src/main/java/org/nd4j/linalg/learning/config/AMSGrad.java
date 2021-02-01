@@ -31,12 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.Map;
 
-/**
- * The AMSGrad updater<br>
- * Reference: On the Convergence of Adam and Beyond - https://openreview.net/forum?id=ryQu7f-RZ
- *
- * @author Alex Black
- */
 @Data
 @Builder(builderClassName = "Builder")
 public class AMSGrad implements IUpdater {

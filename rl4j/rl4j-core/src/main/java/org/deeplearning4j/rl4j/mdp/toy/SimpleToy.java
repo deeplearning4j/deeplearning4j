@@ -35,12 +35,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
- *
- * A toy MDP where reward are given in every case.
- * Useful to debug
- */
 @Slf4j
 public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
 

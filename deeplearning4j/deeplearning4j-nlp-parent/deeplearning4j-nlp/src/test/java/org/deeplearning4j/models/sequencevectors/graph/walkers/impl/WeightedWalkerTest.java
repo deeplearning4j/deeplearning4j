@@ -34,9 +34,6 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class WeightedWalkerTest extends BaseDL4JTest {
     private static Graph<VocabWord, Integer> basicGraph;
 

@@ -74,12 +74,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 
-/**
- * Main class for training MultiLayerNetwork networks using Spark.
- * Also used for performing distributed evaluation and inference on these networks
- *
- * @author Adam Gibson, Alex Black
- */
 @Slf4j
 public class SparkDl4jMultiLayer extends SparkListenable {
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;

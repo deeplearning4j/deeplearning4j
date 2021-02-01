@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRU;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.SRUCell;
 
-/**
- * The weight configuration of a SRU layer.  For {@link SRU} and {@link SRUCell}.
- *
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Builder

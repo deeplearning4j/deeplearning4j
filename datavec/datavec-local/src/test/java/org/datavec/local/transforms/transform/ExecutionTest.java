@@ -44,9 +44,6 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 25/11/2016.
- */
 public class ExecutionTest  {
 
     @Test

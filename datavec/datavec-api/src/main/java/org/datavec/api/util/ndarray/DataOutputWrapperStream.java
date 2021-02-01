@@ -26,11 +26,6 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.io.OutputStream;
 
-/**
- * A simple class to wrap a {@link DataOutput} instance in an {@link OutputStream}
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class DataOutputWrapperStream extends OutputStream {
 

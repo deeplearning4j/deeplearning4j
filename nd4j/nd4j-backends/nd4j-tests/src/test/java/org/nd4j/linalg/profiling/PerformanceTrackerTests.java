@@ -39,9 +39,6 @@ import org.nd4j.linalg.api.memory.MemcpyDirection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class PerformanceTrackerTests extends BaseNd4jTest {

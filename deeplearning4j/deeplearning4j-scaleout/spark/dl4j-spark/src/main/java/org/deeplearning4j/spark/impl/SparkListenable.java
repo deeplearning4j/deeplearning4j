@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-/** Created by huitseeker on 2/15/17. */
 @Slf4j
 public class SparkListenable {
 

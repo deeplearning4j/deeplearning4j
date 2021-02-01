@@ -29,14 +29,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * The Condition interface defines a binary state that either holds/is satisfied for an example/sequence,
- * or does not hold.<br>
- * Example: number greater than x, String is one of {X,Y,Z}, etc.<br>
- * Typical uses for conditions: filtering, conditional replacement, conditional reduction, etc
- *
- * @author Alex Black
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface Condition extends Serializable, ColumnOp {

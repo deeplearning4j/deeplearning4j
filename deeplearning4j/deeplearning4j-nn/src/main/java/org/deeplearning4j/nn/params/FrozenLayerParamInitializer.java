@@ -30,11 +30,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Parameter initializer for {@link FrozenLayer} instances. Relies on underlying layer's param initializer.
- *
- * @author Alex Black
- */
 public class FrozenLayerParamInitializer implements ParamInitializer {
 
     private static final FrozenLayerParamInitializer INSTANCE = new FrozenLayerParamInitializer();

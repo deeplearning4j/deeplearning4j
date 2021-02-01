@@ -34,9 +34,6 @@ import java.util.*;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @RunWith(Parameterized.class)
 public class ShufflesTests extends BaseNd4jTest {
 

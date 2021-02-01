@@ -46,34 +46,6 @@ import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * A <a href="https://lucene.apache.org/solr/7_7_1/solr-solrj/org/apache/solr/client/solrj/io/stream/TupleStream.html">
- * org.apache.solr.client.solrj.io.stream.TupleStream</a> that uses a {@link Model} to compute output scores.
- * <a href="https://lucene.apache.org/solr/7_7_1/solr-solrj/org/apache/solr/client/solrj/io/Tuple.html">Tuple</a>
- * fields are the model inputs and the model output(s) are added to the returned tuple.
- * <p>
- * Illustrative configuration snippet:
- * <pre>
-  &lt;expressible name="emailModel" class="org.deeplearning4j.nn.modelexport.solr.handler.ModelTupleStream"/&gt;
-</pre>
- * <p>
- * Illustrative expression snippet:
- * <pre>
-  emailModel(search(myCollection,
-                    q="*:*",
-                    fl="id,fieldX,fieldY,fieldZ",
-                    sort="id asc",
-                    qt="/export"),
-             serializedModelFileName="mySerializedModel",
-             inputKeys="fieldX,fieldY,fieldZ",
-             outputKeys="modelScoreField1,modelScoreField2")
-</pre>
- * <p>
- * Apache Solr Reference Guide:
- * <ul>
- * <li> <a href="https://lucene.apache.org/solr/guide/7_7/streaming-expressions.html">Streaming Expressions</a>
- * </ul>
- */
 public class ModelTupleStream extends TupleStream implements Expressible {
 
   final private static String SERIALIZED_MODEL_FILE_NAME_PARAM = "serializedModelFileName";

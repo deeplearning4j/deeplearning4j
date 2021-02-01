@@ -26,12 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-/**
- * Strategy for serializing and unserializing a specific opType of normalizer
- *
- * @param <T> the opType of normalizer this strategy supports
- * @author Ede Meijer
- */
 public interface NormalizerSerializerStrategy<T extends Normalizer> {
     /**
      * Serialize a normalizer to a output stream

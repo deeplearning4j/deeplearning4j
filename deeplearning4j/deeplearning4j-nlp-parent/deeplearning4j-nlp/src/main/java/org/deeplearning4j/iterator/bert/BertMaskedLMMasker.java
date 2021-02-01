@@ -27,17 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * A standard/default {@link BertSequenceMasker}. Implements masking as per the BERT paper:
- * <a href="https://arxiv.org/abs/1810.04805">https://arxiv.org/abs/1810.04805</a>
- * That is, each token is chosen to be masked independently with some probability "maskProb".
- * For tokens that are masked, 3 possibilities:<br>
- * 1. They are replaced with the mask token (such as "[MASK]") in the input, with probability "maskTokenProb"<br>
- * 2. They are replaced with a random word from the vocabulary, with probability "randomTokenProb"<br>
- * 3. They are are left unmodified with probability 1.0 - maskTokenProb - randomTokenProb<br>
- *
- * @author Alex Black
- */
 public class BertMaskedLMMasker implements BertSequenceMasker {
     public static final double DEFAULT_MASK_PROB = 0.15;
     public static final double DEFAULT_MASK_TOKEN_PROB = 0.8;

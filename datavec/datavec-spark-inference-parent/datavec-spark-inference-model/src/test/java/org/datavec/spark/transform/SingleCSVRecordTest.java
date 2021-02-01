@@ -28,9 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-/**
- * Created by agibsonccc on 2/12/17.
- */
 public class SingleCSVRecordTest {
 
     @Test(expected = IllegalArgumentException.class)

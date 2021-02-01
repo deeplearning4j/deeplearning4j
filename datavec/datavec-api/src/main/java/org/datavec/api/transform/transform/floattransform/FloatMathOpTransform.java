@@ -33,13 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Float mathematical operation.<br>
- * This is an in-place operation of the float column value and a float scalar.
- *
- * @author Alex Black
- * @see FloatColumnsMathOpTransform to do a mathematical operation involving multiple columns (instead of a scalar)
- */
 @Data
 public class FloatMathOpTransform extends BaseColumnTransform {
 

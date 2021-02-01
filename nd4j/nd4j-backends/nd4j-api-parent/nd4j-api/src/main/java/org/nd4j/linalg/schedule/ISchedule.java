@@ -24,16 +24,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/**
- * ISchedule: a general purpose interface for getting values according to some schedule.
- * Used for implementing learning rate, dropout and momentum schedules - and in principle, any univariate (double)
- * value that deponds on the current iteration and epochs numbers.<br>
- * <br>
- * Note: ISchedule objects should not have mutable state - i.e., they should be safe to share between multiple
- * locations/layers.
- *
- * @author Alex Black
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ISchedule extends Serializable, Cloneable {
 

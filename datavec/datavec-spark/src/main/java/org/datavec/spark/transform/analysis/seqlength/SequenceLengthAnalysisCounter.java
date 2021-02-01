@@ -25,9 +25,6 @@ import lombok.Data;
 import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.writable.Writable;
 
-/**
- * Created by Alex on 7/03/2016.
- */
 @AllArgsConstructor
 @Data
 public class SequenceLengthAnalysisCounter implements AnalysisCounter<SequenceLengthAnalysisCounter> {

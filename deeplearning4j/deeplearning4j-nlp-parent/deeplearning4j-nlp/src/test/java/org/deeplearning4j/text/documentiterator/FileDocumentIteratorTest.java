@@ -42,9 +42,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by fartovii on 09.11.15.
- */
 @Slf4j
 @Ignore
 public class FileDocumentIteratorTest extends BaseDL4JTest {

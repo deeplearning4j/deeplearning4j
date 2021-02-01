@@ -42,11 +42,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Used for plotting results from the ConvolutionalIterationListener
- *
- * @author Alex Black
- */
 @Slf4j
 public class ConvolutionalListenerModule implements UIModule {
 

@@ -23,9 +23,6 @@ import org.datavec.api.transform.Operation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * A simple transform that converts a double[] into a INDArray
- */
 public class ArrayToINDArrayTransform implements Operation<double[], INDArray> {
     private final long[] shape;
 

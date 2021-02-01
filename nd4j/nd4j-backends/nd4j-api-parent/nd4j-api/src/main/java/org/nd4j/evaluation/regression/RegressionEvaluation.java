@@ -41,21 +41,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Evaluation method for the evaluation of regression algorithms.<br>
- * Provides the following metrics, for each column:<br>
- * - MSE: mean squared error<br>
- * - MAE: mean absolute error<br>
- * - RMSE: root mean squared error<br>
- * - RSE: relative squared error<br>
- * - PC: pearson correlation coefficient<br>
- * - R^2: coefficient of determination<br>
- * <br>
- * See for example: <a href="http://www.saedsayad.com/model_evaluation_r.htm">http://www.saedsayad.com/model_evaluation_r.htm</a>
- * For classification, see {@link Evaluation}
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {

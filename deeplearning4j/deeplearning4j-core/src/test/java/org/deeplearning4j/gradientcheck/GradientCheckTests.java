@@ -57,9 +57,6 @@ import java.util.Random;
 import static org.deeplearning4j.gradientcheck.GradientCheckUtil.checkGradients;
 import static org.junit.Assert.*;
 
-/**
- * @author Alex Black 14 Aug 2015
- */
 @Slf4j
 public class GradientCheckTests extends BaseDL4JTest {
 

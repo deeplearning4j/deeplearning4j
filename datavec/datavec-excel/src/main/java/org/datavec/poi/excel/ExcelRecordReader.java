@@ -38,21 +38,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-/**
- * Excel record reader for loading rows of an excel spreadsheet
- * from multiple spreadsheets very similar to the
- * {@link org.datavec.api.records.reader.impl.csv.CSVRecordReader}
- *
- * Of note when you have multiple sheets, you must have the same number of
- * lines skipped at the top. For example, if you have a header as follows:
- * Header1 Header2 Header3
- *   1      2       3
- *   4     5        6
- *
- * Any other sheet you are trying to parse must also contain the
- * same number of header lines.
- *
- */
 public class ExcelRecordReader extends FileRecordReader {
     //originally from CSVRecordReader
     private boolean skippedLines = false;

@@ -33,14 +33,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-/**
- * 加载wapiti生成的crf模型,测试使用的wapiti版本为:Wapiti v1.5.0
- * 
- * wapiti 下载地址:https://wapiti.limsi.fr/#download 在这里感谢作者所做的工作.
- * 
- * @author Ansj
- *
- */
 public class WapitiCRFModel extends Model {
 
     @Override

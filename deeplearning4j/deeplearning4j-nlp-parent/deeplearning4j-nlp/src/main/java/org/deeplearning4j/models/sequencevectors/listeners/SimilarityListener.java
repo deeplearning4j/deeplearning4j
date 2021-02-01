@@ -29,11 +29,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Simple listener, to monitor similarity between selected elements during training
- *
- * @author raver119@gmail.com
- */
 public class SimilarityListener<T extends SequenceElement> implements VectorsListener<T> {
     protected static final Logger logger = LoggerFactory.getLogger(SimilarityListener.class);
     private final ListenerEvent targetEvent;

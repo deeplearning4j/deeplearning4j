@@ -29,13 +29,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Scalar max operation.
- * Returns the max of an element
- * in the ndarray of the specified number.
- *
- * @author Adam Gibson
- */
 public class ScalarSet extends BaseScalarOp {
     public ScalarSet() {}
 

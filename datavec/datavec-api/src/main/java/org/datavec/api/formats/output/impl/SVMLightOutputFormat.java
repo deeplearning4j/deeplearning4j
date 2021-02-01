@@ -28,9 +28,6 @@ import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.impl.misc.SVMLightRecordWriter;
 
-/**
- * Created by agibsonccc on 1/11/15.
- */
 public class SVMLightOutputFormat implements OutputFormat {
     @Override
     public RecordWriter createWriter(Configuration conf) throws DataVecException {

@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MinBp;
 
 import java.util.List;
 
-/**
- * Calculate the min over an array
- *
- * @author Adam Gibson
- */
 public class Min extends BaseReduceSameOp {
     public Min(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);

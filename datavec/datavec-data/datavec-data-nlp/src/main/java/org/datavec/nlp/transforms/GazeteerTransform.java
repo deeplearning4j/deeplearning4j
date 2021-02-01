@@ -40,17 +40,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * A gazeteer is a work lookup table
- * based on a word list.
- * A 0 or 1 is returned if the word is in the list.
- * A word list is also needed to represent the vocab words
- * that go along side the vector creation.
- * For more on this process, please see the {@link BagOfWordsTransform}
- * interface docs.
- *
- * @author Adam Gibson
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

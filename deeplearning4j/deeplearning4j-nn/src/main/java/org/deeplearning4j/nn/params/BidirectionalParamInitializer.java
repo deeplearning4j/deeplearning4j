@@ -38,11 +38,6 @@ import java.util.Map;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-/**
- * Parameter initializer for bidirectional wrapper layer
- *
- * @author Alex Black
- */
 public class BidirectionalParamInitializer implements ParamInitializer {
     public static final String FORWARD_PREFIX = "f";
     public static final String BACKWARD_PREFIX = "b";

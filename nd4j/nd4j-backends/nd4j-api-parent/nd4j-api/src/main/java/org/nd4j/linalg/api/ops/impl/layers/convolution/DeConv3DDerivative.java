@@ -36,9 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * DeConv3DDerivative operation
- */
 @Slf4j
 public class DeConv3DDerivative extends DynamicCustomOp {
 

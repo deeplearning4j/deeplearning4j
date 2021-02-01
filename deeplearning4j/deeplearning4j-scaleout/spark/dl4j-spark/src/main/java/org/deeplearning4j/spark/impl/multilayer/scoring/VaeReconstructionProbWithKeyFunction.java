@@ -29,13 +29,6 @@ import org.deeplearning4j.spark.impl.common.score.BaseVaeReconstructionProbWithK
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
-/**
- * Function to calculate the reconstruction probability for a variational autoencoder, that is the first layer in a
- * MultiLayerNetwork.<br>
- * Note that scoring is batched for computational efficiency.<br>
- *
- * @author Alex Black
- */
 public class VaeReconstructionProbWithKeyFunction<K> extends BaseVaeReconstructionProbWithKeyFunction<K> {
 
 

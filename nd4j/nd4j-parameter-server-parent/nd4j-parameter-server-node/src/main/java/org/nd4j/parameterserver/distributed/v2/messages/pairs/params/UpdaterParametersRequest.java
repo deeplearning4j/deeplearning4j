@@ -23,11 +23,6 @@ package org.nd4j.parameterserver.distributed.v2.messages.pairs.params;
 import lombok.NoArgsConstructor;
 import org.nd4j.parameterserver.distributed.v2.messages.impl.base.BaseRequestMessage;
 
-/**
- * This message represents request for Updater Parameters (if applicable)
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class UpdaterParametersRequest extends BaseRequestMessage {
     //

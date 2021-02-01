@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.api.memory;
 
-/**
- * This interface describes resource trackable via unified deallocation system
- *
- * @author raver119@gmail.com
- */
 public interface Deallocatable {
     /**
      * This method returns unique ID for this instance

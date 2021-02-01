@@ -24,12 +24,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
-/**
- * A simple Composite DataSetPreProcessor - allows you to apply multiple DataSetPreProcessors sequentially
- * on the one DataSet, in the order they are passed to the constructor
- *
- * @author Alex Black
- */
 public class CompositeDataSetPreProcessor implements DataSetPreProcessor {
 
     private final boolean stopOnEmptyDataSet;

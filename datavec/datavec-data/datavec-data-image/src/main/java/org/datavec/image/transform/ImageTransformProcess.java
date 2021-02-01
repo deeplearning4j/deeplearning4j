@@ -38,9 +38,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Created by kepricon on 17. 5. 23.
- */
 @Data
 @Slf4j
 @NoArgsConstructor

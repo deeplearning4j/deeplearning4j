@@ -36,12 +36,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Max out activation:
- * https://arxiv.org/pdf/1302.4389.pdf
- *
- * @author Adam Gibson
- */
 public class MaxOut extends BaseTransformOp {
 
     private Number max = Double.NaN;

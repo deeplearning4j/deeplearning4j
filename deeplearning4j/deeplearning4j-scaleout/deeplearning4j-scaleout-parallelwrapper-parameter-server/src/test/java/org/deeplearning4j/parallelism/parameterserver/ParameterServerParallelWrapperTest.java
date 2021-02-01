@@ -39,9 +39,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-/**
- * Created by agibsonccc on 12/17/16.
- */
 @Slf4j
 public class ParameterServerParallelWrapperTest extends BaseDL4JTest {
 

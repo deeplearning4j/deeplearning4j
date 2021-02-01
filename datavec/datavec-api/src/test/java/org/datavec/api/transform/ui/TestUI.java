@@ -48,9 +48,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 25/03/2016.
- */
 public class TestUI extends BaseND4JTest {
 
     @Rule

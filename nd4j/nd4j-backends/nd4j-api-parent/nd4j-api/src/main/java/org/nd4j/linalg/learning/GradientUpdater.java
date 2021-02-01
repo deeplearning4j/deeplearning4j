@@ -25,12 +25,6 @@ import org.nd4j.linalg.learning.config.IUpdater;
 
 import java.util.Map;
 
-/**
- * Gradient modifications: Calculates an update and tracks related information for gradient changes over time
- * for handling updates.
- *
- * @author Alex Black
- */
 public interface GradientUpdater<T extends IUpdater> {
 
     T getConfig();

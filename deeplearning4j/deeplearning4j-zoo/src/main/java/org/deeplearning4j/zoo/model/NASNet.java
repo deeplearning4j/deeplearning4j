@@ -43,21 +43,6 @@ import org.nd4j.common.primitives.Pair;
 import static org.deeplearning4j.zoo.model.helper.NASNetHelper.normalA;
 import static org.deeplearning4j.zoo.model.helper.NASNetHelper.reductionA;
 
-/**
- * U-Net
- *
- * Implementation of NASNet-A in Deeplearning4j. NASNet refers to Neural Architecture Search Network, a family of models
- * that were designed automatically by learning the model architectures directly on the dataset of interest.
- *
- * <p>This implementation uses 1056 penultimate filters and an input shape of (3, 224, 224). You can change this.</p>
- *
- * <p>Paper: <a href="https://arxiv.org/abs/1707.07012">https://arxiv.org/abs/1707.07012</a></p>
- * <p>ImageNet weights for this model are available and have been converted from <a href="https://keras.io/applications/">https://keras.io/applications/</a>.</p>
- *
- * @note If using the IMAGENETLARGE weights, the input shape is (3, 331, 331).
- * @author Justin Long (crockpotveggies)
- *
- */
 @AllArgsConstructor
 @Builder
 public class NASNet extends ZooModel {

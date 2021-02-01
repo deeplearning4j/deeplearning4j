@@ -44,11 +44,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This TrainingDriver implementation is suited ONLY for Spark Master, and handles application & redistribution of incoming encoded messages across distributed network
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage> {

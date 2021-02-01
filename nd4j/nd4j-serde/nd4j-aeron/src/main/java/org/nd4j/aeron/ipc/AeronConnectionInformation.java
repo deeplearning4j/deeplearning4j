@@ -23,14 +23,6 @@ package org.nd4j.aeron.ipc;
 import lombok.Builder;
 import lombok.Data;
 
-/**
- * Aeron connection information
- * pojo.
- * connectionHost represents the host for the media driver
- * connection host represents the port
- * stream represents the stream id to connect to
- * @author Adam Gibson
- */
 @Data
 @Builder
 public class AeronConnectionInformation {

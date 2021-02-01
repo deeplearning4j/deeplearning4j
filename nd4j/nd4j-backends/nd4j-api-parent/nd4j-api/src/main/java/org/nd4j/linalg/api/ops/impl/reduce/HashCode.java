@@ -26,11 +26,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- * This is hashCode op wrapper. Basically - simple parallel hash implementation.
- *
- * @author raver119@gmail.com
- */
 public class HashCode extends DynamicCustomOp {
     public HashCode() {
         //

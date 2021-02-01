@@ -25,9 +25,6 @@ import org.deeplearning4j.text.documentiterator.DocumentIterator;
 
 import java.io.InputStream;
 
-/**
- * Created by agibsonccc on 10/20/14.
- */
 public class DefaultInputStreamCreator implements InputStreamCreator {
     private DocumentIterator iter;
 

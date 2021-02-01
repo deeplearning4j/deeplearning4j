@@ -25,12 +25,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
-/**
- * Backprop op for Max reduction operation
- *
- * @author Alex Black
- */
-
 public class MaxBp extends BaseReductionBp {
 
     public MaxBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {

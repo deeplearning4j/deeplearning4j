@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseBroadcastOp;
 
 import java.util.List;
 
-/**
- * Broadcast Max comparison op
- *
- * @author raver119@gmail.com
- */
 public class BroadcastMax extends BaseBroadcastOp {
 
     public BroadcastMax() {}

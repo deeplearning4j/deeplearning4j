@@ -31,13 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/**
- * (optionally scaled) multi head dot product attention Backprop
- *
- * See also "Attention is all you need" (https://arxiv.org/abs/1706.03762, pp. 4,5, "3.2.2 Multi-Head Attention")
- *
- * @author Paul Dubs
- */
 @NoArgsConstructor
 public class MultiHeadDotProductAttentionBp extends DynamicCustomOp {
 

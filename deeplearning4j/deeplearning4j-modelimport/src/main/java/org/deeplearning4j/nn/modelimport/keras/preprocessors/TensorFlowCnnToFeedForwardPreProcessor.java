@@ -30,10 +30,6 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * @deprecated Exists only for backward compatibility of older pretrained models. Should not be used.
- * Use {@link CnnToFeedForwardPreProcessor} for all new models instead.
- */
 @Slf4j @Deprecated
 public class TensorFlowCnnToFeedForwardPreProcessor extends CnnToFeedForwardPreProcessor {
 

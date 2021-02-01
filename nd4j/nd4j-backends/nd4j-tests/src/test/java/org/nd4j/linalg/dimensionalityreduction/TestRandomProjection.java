@@ -42,9 +42,6 @@ import static org.junit.Assert.*;
 import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.johnsonLindenStraussMinDim;
 import static org.nd4j.linalg.dimensionalityreduction.RandomProjection.targetShape;
 
-/**
- * Created by huitseeker on 7/28/17.
- */
 @Ignore
 @RunWith(Parameterized.class)
 public class TestRandomProjection extends BaseNd4jTest {

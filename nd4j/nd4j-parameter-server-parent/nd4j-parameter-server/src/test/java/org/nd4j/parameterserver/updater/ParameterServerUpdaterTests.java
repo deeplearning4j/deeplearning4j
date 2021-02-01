@@ -31,9 +31,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
 
-/**
- * Created by agibsonccc on 12/2/16.
- */
 public class ParameterServerUpdaterTests extends BaseND4JTest {
 
     @Test(timeout = 30000L)

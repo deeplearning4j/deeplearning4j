@@ -24,11 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-/**
- * Custom step function for line search
- *
- * @author Adam Gibson
- */
 public interface StepFunction extends Serializable {
 
     /**

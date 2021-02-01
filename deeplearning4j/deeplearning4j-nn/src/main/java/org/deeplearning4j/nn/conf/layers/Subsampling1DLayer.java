@@ -39,14 +39,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * 1D (temporal) subsampling layer - also known as pooling layer.<br> Expects input of shape {@code [minibatch, nIn,
- * sequenceLength]}. This layer accepts RNN InputTypes instead of CNN InputTypes.<br>
- *
- * Supports the following pooling types: MAX, AVG, SUM, PNORM
- *
- * @author dave@skymind.io
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

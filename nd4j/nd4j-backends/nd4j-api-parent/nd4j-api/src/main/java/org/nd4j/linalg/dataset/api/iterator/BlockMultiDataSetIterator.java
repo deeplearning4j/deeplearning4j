@@ -22,10 +22,6 @@ package org.nd4j.linalg.dataset.api.iterator;
 
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * This abstraction provides block access to underlying MultiDataSetIterator
- * @author raver119@gmail.com
- */
 public interface BlockMultiDataSetIterator {
 
     /**

@@ -34,10 +34,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
-/**SequenceRecordReaderBytesFunction: Converts binary data (in the form of a BytesWritable) to DataVec format data
- * ({@code List<List<<Writable>>}) using a SequenceRecordReader
- * @author Alex Black
- */
 public class SequenceRecordReaderBytesFunction implements Function<Pair<Text, BytesWritable>, List<List<Writable>>> {
 
     private final SequenceRecordReader recordReader;

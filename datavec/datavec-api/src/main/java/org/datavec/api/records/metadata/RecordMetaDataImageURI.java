@@ -23,12 +23,6 @@ package org.datavec.api.records.metadata;
 import java.net.URI;
 import lombok.Data;
 
-/**
- * A RecordMetaDataURI that also keeps track of the number of channels,
- * the width, and the height of the original image.
- *
- * @author saudet
- */
 @Data
 public class RecordMetaDataImageURI extends RecordMetaDataURI {
 

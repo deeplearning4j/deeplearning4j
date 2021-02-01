@@ -26,12 +26,6 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
-/**
- * A DataSetPreProcessor used to flatten a 4d CNN features array to a flattened 2d format (for use in networks such
- * as a DenseLayer/multi-layer perceptron)
- *
- * @author Alex Black
- */
 public class ImageFlatteningDataSetPreProcessor implements DataSetPreProcessor {
     @Override
     public void preProcess(DataSet toPreProcess) {

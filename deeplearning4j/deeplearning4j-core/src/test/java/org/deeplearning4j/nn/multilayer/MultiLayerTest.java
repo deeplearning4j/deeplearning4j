@@ -83,9 +83,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 12/27/14.
- */
 @Slf4j
 public class MultiLayerTest extends BaseDL4JTest {
 

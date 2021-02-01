@@ -32,12 +32,6 @@ import org.nd4j.linalg.workspace.WorkspaceMgr;
 
 import java.util.*;
 
-/**
- * {@link WorkspaceMgr} for DL4J layers.
- * Used to flexibly specify which workspaces a given array type (defined by {@link ArrayType}) should be placed in
- *
- * @author Alex Black
- */
 public class LayerWorkspaceMgr extends BaseWorkspaceMgr<ArrayType> {
     public static String CUDNN_WORKSPACE_KEY = "CUDNN_WORKSPACE";
 

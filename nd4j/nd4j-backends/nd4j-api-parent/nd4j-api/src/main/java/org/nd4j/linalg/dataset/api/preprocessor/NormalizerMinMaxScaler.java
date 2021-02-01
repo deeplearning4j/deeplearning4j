@@ -31,13 +31,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Pre processor for DataSets that normalizes feature values (and optionally label values) to lie between a minimum
- * and maximum value (by default between 0 and 1)
- *
- * @author susaneraly
- * @author Ede Meijer
- */
 public class NormalizerMinMaxScaler extends AbstractDataSetNormalizer<MinMaxStats> {
     public NormalizerMinMaxScaler() {
         this(0.0, 1.0);

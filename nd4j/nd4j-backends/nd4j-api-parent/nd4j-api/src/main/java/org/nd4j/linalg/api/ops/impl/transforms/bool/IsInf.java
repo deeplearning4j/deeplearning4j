@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * IsInf function
- *
- * @author raver119@gmail.com
-  */
 @NoArgsConstructor
 public class IsInf extends BaseTransformBoolOp {
     public IsInf(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

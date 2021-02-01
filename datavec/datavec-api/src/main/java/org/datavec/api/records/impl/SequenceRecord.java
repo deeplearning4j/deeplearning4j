@@ -27,11 +27,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * A standard implementation of the {@link org.datavec.api.records.SequenceRecord} interface.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class SequenceRecord implements org.datavec.api.records.SequenceRecord {

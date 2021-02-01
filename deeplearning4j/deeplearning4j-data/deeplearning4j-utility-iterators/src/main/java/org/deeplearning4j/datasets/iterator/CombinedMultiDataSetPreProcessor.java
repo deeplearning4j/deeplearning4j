@@ -27,10 +27,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Combines various multidataset preprocessors
- * Applied in the order they are specified to in the builder
- */
 public class CombinedMultiDataSetPreProcessor implements MultiDataSetPreProcessor {
 
     private List<MultiDataSetPreProcessor> preProcessors;

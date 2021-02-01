@@ -32,11 +32,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 
-/**RecordReaderFunction: Given a RecordReader and a file (via InputStream), load and parse the
- * data into a Collection<Writable>.
- * NOTE: This is only useful for "one record per file" type situations (ImageRecordReader, etc)
- * @author Alex Black
- */
 public class RecordReaderFunction implements Function<Pair<String, InputStream>, List<Writable>> {
     protected RecordReader recordReader;
 

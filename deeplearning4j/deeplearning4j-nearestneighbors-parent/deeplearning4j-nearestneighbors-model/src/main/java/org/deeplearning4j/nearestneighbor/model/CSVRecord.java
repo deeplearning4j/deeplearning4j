@@ -27,9 +27,6 @@ import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.Serializable;
 
-/**
- * Created by agibsonccc on 12/24/16.
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

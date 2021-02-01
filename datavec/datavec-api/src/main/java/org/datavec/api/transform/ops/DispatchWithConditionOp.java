@@ -30,15 +30,6 @@ import java.util.List;
 import static org.nd4j.shade.guava.base.Preconditions.checkArgument;
 import static org.nd4j.shade.guava.base.Preconditions.checkNotNull;
 
-/**
- * A variant of {@link DispatchOp} that for each operation, tests the input list of {@Writable} elements for a {@link Condition},
- * before dispatching the appropriate column of this element to its operation.
- *
- * Operations are, as with {@link DispatchOp} bound one-to-one to a column.
- * However, the operation's {@link Condition} are per-record (a {@link Writable} list).
- *
- * Created by huitseeker on 5/14/17.
- */
 public class DispatchWithConditionOp<U> extends DispatchOp<Writable, U>
                 implements IAggregableReduceOp<List<Writable>, List<U>> {
 

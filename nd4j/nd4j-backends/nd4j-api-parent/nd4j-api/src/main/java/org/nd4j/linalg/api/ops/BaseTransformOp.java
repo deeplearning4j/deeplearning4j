@@ -30,11 +30,6 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 
 import java.util.List;
 
-/**
- * A base op for basic getters and setters
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 

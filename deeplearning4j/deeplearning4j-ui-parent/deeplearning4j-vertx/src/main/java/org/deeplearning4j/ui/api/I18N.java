@@ -22,19 +22,6 @@ package org.deeplearning4j.ui.api;
 
 import java.util.Map;
 
-/**
- * Interface to handle user interface internationalization.
- * Internationalization support is bulit into Play framework, but this doesn't seem to function with a Java + Maven
- * embedded server like we are using here.<br>
- * <p>
- * Basic idea: UI messages are available by specifying 2 values:<br>
- * (a) The ISO 639-1 language code, as a String ("en", "fr", "ja" etc)<br>
- * (b) A key for the message. For example, "index.home.title" or "histogram.nav.home"<br>
- * <p>
- * See <a href="https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes">https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes</a>
- *
- * @author Alex Black
- */
 public interface I18N {
 
     /**

@@ -26,9 +26,6 @@ import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
-/**
- * Created by Alex on 6/03/2016.
- */
 public class FilterWritablesBySchemaFunction implements Function<Writable, Boolean> {
 
     private final ColumnMetaData meta;

@@ -37,9 +37,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 22/12/2016.
- */
 public class TestSparkUtil extends BaseSparkTest {
 
     @Test

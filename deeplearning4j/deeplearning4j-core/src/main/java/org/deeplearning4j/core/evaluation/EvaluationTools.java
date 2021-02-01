@@ -48,11 +48,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Tools for evaluation and rendering {@link ROC} and {@link ROCMultiClass} results
- *
- * @author Alex Black
- */
 public class EvaluationTools {
 
     private static final String ROC_TITLE = "ROC: TPR/Recall (y) vs. FPR (x)";

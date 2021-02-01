@@ -20,7 +20,9 @@
 #  ******************************************************************************/
 #
 
-# This shell script is adapted from Apache Flink (in turn, adapted from Apache Spark) some modifications.
+
+
+
 
 set -e
 

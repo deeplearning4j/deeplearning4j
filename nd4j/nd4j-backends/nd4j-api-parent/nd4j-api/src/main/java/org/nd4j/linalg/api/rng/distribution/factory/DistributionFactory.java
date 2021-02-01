@@ -23,11 +23,6 @@ package org.nd4j.linalg.api.rng.distribution.factory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 
-/**
- * Create a distribution
- *
- * @author Adam Gibson
- */
 public interface DistributionFactory {
 
     /**

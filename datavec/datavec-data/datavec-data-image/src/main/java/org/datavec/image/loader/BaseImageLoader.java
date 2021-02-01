@@ -35,9 +35,6 @@ import java.net.URL;
 import java.util.Map;
 import java.util.Random;
 
-/**
- * Created by nyghtowl on 12/17/15.
- */
 @Slf4j
 public abstract class BaseImageLoader implements Serializable {
 

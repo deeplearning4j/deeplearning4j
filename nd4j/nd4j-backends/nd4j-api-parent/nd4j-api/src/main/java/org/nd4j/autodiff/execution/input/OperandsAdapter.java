@@ -20,12 +20,6 @@
 
 package org.nd4j.autodiff.execution.input;
 
-/**
- * This interface describes adapter that wraps Operands for custom datatypes.
- * I.e. Image in and class as integer value as output
- *
- * @author raver119@gmail.com
- */
 public interface OperandsAdapter<T> {
 
     /**

@@ -25,9 +25,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.*;
 import java.util.concurrent.ConcurrentSkipListSet;
 
-/**
- * Created by agibsonccc on 4/29/14.
- */
 public class MultiDimensionalSet<K, V> implements Set<Pair<K, V>> {
 
 

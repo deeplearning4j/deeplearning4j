@@ -27,27 +27,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.ServiceLoader;
 
-/**
- * Global context for class-loading in DL4J.
- * <p>Use {@code DL4JClassLoading} to define classloader for Deeplearning4j only! To define classloader used by
- * {@code ND4J} use class {@link org.nd4j.common.config.ND4JClassLoading}.
- *
- * <p>Usage:
- * <pre>{@code
- * public class Application {
- *     static {
- *         DL4JClassLoading.setDl4jClassloaderFromClass(Application.class);
- *     }
- *
- *     public static void main(String[] args) {
- *     }
- * }
- * }</code>
- *
- * @see org.nd4j.common.config.ND4JClassLoading
- *
- * @author Alexei KLENIN
- */
 @Slf4j
 public class DL4JClassLoading {
     private static ClassLoader dl4jClassloader = ND4JClassLoading.getNd4jClassloader();

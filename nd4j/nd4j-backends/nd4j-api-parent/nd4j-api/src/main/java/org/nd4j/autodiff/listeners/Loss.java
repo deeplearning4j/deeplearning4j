@@ -29,11 +29,6 @@ import org.nd4j.common.base.Preconditions;
 
 import java.util.List;
 
-/**
- * Loss class - represents the loss (score) for the network, for one iteration. Provides a breakdown of all the loss components
- *
- * @author Alex Black
- */
 @Data
 public class Loss {
 

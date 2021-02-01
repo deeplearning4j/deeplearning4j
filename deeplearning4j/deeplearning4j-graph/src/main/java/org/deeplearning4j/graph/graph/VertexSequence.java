@@ -26,9 +26,6 @@ import org.deeplearning4j.graph.api.Vertex;
 
 import java.util.NoSuchElementException;
 
-/**A vertex sequence represents a sequences of vertices in a graph
- * @author Alex Black
- */
 public class VertexSequence<V> implements IVertexSequence<V> {
     private final IGraph<V, ?> graph;
     private int[] indices;

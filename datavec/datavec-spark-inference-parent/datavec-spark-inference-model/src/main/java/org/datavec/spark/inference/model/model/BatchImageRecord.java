@@ -28,9 +28,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by kepricon on 17. 5. 24.
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

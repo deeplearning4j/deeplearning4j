@@ -31,11 +31,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * An {@link ArrayHolder} that uses the thread safe {@link DeviceLocalNDArray} internally
- *
- * @author Alex Black
- */
 public class ThreadSafeArrayHolder implements ArrayHolder {
 
     private final Map<String, DeviceLocalNDArray> map = new ConcurrentHashMap<>();

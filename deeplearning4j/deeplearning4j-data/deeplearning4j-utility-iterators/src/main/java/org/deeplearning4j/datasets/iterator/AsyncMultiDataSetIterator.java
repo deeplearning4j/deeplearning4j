@@ -27,9 +27,6 @@ import org.nd4j.linalg.dataset.callbacks.DataSetCallback;
 
 import java.util.concurrent.BlockingQueue;
 
-/**
- * @deprecated Use {@link org.nd4j.linalg.dataset.AsyncMultiDataSetIterator}
- */
 @Slf4j
 @Deprecated
 public class AsyncMultiDataSetIterator extends org.nd4j.linalg.dataset.AsyncMultiDataSetIterator {

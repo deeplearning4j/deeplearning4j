@@ -33,13 +33,6 @@ import java.io.InputStreamReader;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Simple class suitable for iterating over InputStreams as over lines of strings
- *
- * Please note, this class is NOT thread safe
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class StreamLineIterator implements SentenceIterator {
     private DocumentIterator iterator;

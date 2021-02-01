@@ -43,10 +43,6 @@ import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Comparative tests for native executioner vs sequential execution
- * @author raver119@gmail.com
- */
 @Slf4j
 public class GraphExecutionerTest extends BaseNd4jTest {
 

@@ -33,14 +33,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 
-/** Parametrized Rectified Linear Unit (PReLU)
- *
- * f(x) = alpha * x for x < 0, f(x) = x for x >= 0
- *
- * alpha has the same shape as x and is a learned parameter.
- *
- * @author Max Pumperla
- */
 public class PReLU extends BaseLayer<org.deeplearning4j.nn.conf.layers.PReLULayer> {
 
     long[] axes = layerConf().getSharedAxes();

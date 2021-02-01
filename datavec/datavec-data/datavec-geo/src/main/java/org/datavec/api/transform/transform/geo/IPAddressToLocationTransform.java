@@ -40,14 +40,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetAddress;
 
-/**
- * Uses GeoIP2 from <a href="http://www.maxmind.com">http://www.maxmind.com</a>
- * to convert IP addresses to (approximate) locations.
- *
- * @see LocationType
- *
- * @author saudet
- */
 @Slf4j
 public class IPAddressToLocationTransform extends BaseColumnTransform {
     /**

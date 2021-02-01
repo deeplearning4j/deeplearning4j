@@ -34,13 +34,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-/**
- * This is a {@link RecordReader}
- * primarily meant for unit tests.
- * It carries records in memory and uses a list iterator internally.
- *
- * @author Adam Gibson
- */
 @Data
 public class InMemoryRecordReader implements RecordReader {
     private List<List<Writable>> records;

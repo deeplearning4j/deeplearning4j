@@ -23,6 +23,7 @@ package org.nd4j.samediff.frameworkimport.onnx
 import junit.framework.Assert
 import junit.framework.Assert.*
 import onnx.Onnx
+import org.junit.Ignore
 import org.junit.jupiter.api.Test
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
@@ -101,6 +102,7 @@ class TestOnnxIR {
 
 
     @Test
+    @Ignore
     fun testOpsMapped() {
         val onnxOpRegistry = registry()
 

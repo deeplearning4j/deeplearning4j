@@ -40,17 +40,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * A Schema defines the layout of tabular data. Specifically, it contains names f
- * or each column, as well as details of types
- * (Integer, String, Long, Double, etc).<br>
- * Type information for each column may optionally include
- * restrictions on the allowable values for each column.<br>
- * <p>
- * See also: {@link SequenceSchema}
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"columnNames", "columnNamesIndex"})
 @EqualsAndHashCode
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")

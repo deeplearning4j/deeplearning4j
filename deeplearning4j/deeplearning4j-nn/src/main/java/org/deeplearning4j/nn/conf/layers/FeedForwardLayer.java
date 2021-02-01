@@ -29,9 +29,6 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 
-/**
- * Created by jeffreytang on 7/21/15.
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

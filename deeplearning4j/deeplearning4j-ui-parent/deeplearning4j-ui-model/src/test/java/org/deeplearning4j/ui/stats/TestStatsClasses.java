@@ -37,9 +37,6 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 01/10/2016.
- */
 public class TestStatsClasses extends BaseDL4JTest {
 
     @Test

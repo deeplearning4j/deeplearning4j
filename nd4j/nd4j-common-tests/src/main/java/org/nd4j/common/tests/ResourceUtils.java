@@ -29,11 +29,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Utilities for dealing with class path resources such as test files in JARs
- *
- * @author Alex Black
- */
 public class ResourceUtils {
 
     private ResourceUtils() {

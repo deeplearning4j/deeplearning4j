@@ -31,21 +31,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Pivot transform operates on two columns:
- * - a categorical column that operates as a key, and
- * - Another column that contains a value
- * Essentially, Pivot transform takes keyvalue pairs and breaks them out into separate columns.
- *
- * For example, with schema [col0, key, value, col3]
- * and values with key in {a,b,c}
- * Output schema is [col0, key[a], key[b], key[c], col3]
- * and input (col0Val, b, x, col3Val) gets mapped to (col0Val, 0, x, 0, col3Val).
- *
- * When expanding columns, a default value is used - for example 0 for numerical columns.
- *
- * @author Alex Black
- */
 @Data
 public class PivotTransform extends BaseTransform {
 

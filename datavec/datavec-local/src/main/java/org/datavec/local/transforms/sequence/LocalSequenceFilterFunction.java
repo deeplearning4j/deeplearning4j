@@ -27,9 +27,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.List;
 
-/**
- * Created by Alex on 5/03/2016.
- */
 @AllArgsConstructor
 public class LocalSequenceFilterFunction implements Function<List<List<Writable>>, Boolean> {
 

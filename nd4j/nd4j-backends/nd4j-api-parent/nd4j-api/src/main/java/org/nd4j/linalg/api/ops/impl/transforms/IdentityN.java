@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.Op;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * IdentityN op wrapper
- *
- * @author raver119@gmail.com
- */
 public class IdentityN extends DynamicCustomOp {
 
     public IdentityN() {}

@@ -39,19 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Label provider for object detection, for use with {@link org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader}.
- * This label provider reads the datasets from The Street View House Numbers (SVHN) Dataset.<br>
- * The SVHN datasets contain 10 classes (digits) with 73257 digits for training, 26032 digits for testing, and 531131 additional.<br>
- * <a href="http://ufldl.stanford.edu/housenumbers/">http://ufldl.stanford.edu/housenumbers/</a><br>
- * <br>
- * <br>
- * How to use:<br>
- * 1. Download and extract SVHN dataset with {@link org.deeplearning4j.datasets.fetchers.SvhnDataFetcher}<br>
- * 2. Set baseDirectory to (for example) "training" directory (should contain PNG images and a digitStruct.mat file)<br>
- *
- * @author saudet
- */
 public class SvhnLabelProvider implements ImageObjectLabelProvider {
 
     private static DataType refType = new DataType(PredType.STD_REF_OBJ());

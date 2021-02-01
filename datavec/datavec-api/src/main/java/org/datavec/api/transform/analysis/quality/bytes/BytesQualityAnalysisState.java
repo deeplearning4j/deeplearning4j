@@ -26,12 +26,6 @@ import org.datavec.api.transform.quality.columns.BytesQuality;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.writable.Writable;
 
-/**
- * Created by huitseeker on 3/6/17.
- * NOTE: this class is not ready for production
- * See the {@link BytesQuality} class.
-
- */
 public class BytesQualityAnalysisState implements QualityAnalysisState<BytesQualityAnalysisState> {
 
     @Getter

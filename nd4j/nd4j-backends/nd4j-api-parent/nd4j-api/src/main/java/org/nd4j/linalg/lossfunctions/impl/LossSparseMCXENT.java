@@ -35,18 +35,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-/**
- *
- * Sparse Multi-Class Cross Entropy loss function:<br>
- * L = sum_i actual_i * log( predicted_i )<br>
- * Note: this is the same loss function as {@link LossMCXENT}, the only difference being the format for the labels -
- * this loss function uses integer indices (zero indexed) for the loss array, whereas LossMCXENT uses the equivalent
- * one-hot representation
- *
- * @author Alex Black
- * @see LossNegativeLogLikelihood
- * @see LossMCXENT
- */
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter @Setter

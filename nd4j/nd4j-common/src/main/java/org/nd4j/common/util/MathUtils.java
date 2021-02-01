@@ -31,11 +31,6 @@ import java.util.Random;
 import java.util.Set;
 
 
-/**
- * This is a math jcuda.utils class.
- *
- * @author Adam Gibson
- */
 public class MathUtils {
 
 

@@ -47,12 +47,6 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 
 
-/**
- * Unit tests for Keras2 model configuration import.
- *
- * @author Max Pumperla
- */
-
 @Slf4j
 public class Keras2ModelConfigurationTest extends BaseDL4JTest {
 

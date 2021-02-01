@@ -22,9 +22,6 @@ package org.deeplearning4j.core.util;
 
 import java.util.concurrent.locks.LockSupport;
 
-/**
- * Utils for the basic use and flow of threads.
- */
 public class ThreadUtils {
     public static void uncheckedSleep(long millis) {
         LockSupport.parkNanos(millis * 1000000);

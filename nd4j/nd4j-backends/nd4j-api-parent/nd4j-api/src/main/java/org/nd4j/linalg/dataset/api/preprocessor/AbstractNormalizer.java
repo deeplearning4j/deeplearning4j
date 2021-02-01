@@ -22,11 +22,6 @@ package org.nd4j.linalg.dataset.api.preprocessor;
 
 import java.io.Serializable;
 
-/**
- * Abstract base class for normalizers for both DataSet and MultiDataSet processing
- *
- * @author Ede Meijer
- */
 public abstract class AbstractNormalizer implements Serializable {
     protected abstract boolean isFit();
 

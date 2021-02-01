@@ -34,11 +34,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Tests for variable sliding window csv reader.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class CSVVariableSlidingWindowRecordReaderTest  extends BaseND4JTest {
 
     @Test

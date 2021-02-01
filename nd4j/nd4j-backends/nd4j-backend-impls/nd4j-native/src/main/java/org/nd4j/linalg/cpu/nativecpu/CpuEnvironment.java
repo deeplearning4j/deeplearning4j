@@ -22,11 +22,6 @@ package org.nd4j.linalg.cpu.nativecpu;
 import org.nd4j.linalg.factory.Environment;
 import org.nd4j.nativeblas.Nd4jCpu;
 
-/**
- * CPU backend implementation of {@link Environment}
- *
- * @author Alex Black
- */
 public class CpuEnvironment implements Environment {
 
 

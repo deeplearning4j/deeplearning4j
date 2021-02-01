@@ -28,16 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Weight initialization for initializing the parameters of an EmbeddingLayer from a {@link EmbeddingInitializer}
- *
- * Note: WeightInitEmbedding supports both JSON serializable and non JSON serializable initializations.
- * In the case of non-JSON serializable embeddings, they are a one-time only use: once they have been used
- * to initialize the parameters, they will be removed from the WeightInitEmbedding instance.
- * This is to prevent unnecessary references to potentially large objects in memory (i.e., to avoid memory leaks)
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties("nonSerializableInit")
 @EqualsAndHashCode
 public class WeightInitEmbedding implements IWeightInit {

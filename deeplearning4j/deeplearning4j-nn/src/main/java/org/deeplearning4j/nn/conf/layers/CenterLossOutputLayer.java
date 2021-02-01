@@ -40,17 +40,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Center loss is similar to triplet loss except that it enforces intraclass consistency and doesn't require feed
- * forward of multiple examples. Center loss typically converges faster for training ImageNet-based convolutional
- * networks.
- *
- * "If example x is in class Y, ensure that embedding(x) is close to {@code average(embedding(y))} for all examples y in
- * Y"
- *
- * @author Justin Long (@crockpotveggies)
- * @author Alex Black (@AlexDBlack)
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

@@ -22,11 +22,6 @@ package org.nd4j.parameterserver.distributed.v2.enums;
 
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
-/**
- * This enum describes possible result codes for Aeron-powered transmission
- *
- * @author raver119@gmail.com
- */
 public enum TransmissionStatus {
     UNKNOWN,
     OK,

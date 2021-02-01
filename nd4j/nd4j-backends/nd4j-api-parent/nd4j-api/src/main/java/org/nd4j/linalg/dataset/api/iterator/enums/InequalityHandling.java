@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.dataset.api.iterator.enums;
 
-/**
- * This enum describes different handling options for situations once one of producer runs out of data
- *
- * @author raver119@gmail.com
- */
 public enum InequalityHandling {
     /**
      * Parallel iterator will stop everything once one of producers runs out of data

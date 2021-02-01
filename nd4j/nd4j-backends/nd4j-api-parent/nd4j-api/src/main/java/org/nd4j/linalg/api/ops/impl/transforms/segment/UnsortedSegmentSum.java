@@ -33,11 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Unsorted segment sum operation
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class UnsortedSegmentSum extends DynamicCustomOp {
 

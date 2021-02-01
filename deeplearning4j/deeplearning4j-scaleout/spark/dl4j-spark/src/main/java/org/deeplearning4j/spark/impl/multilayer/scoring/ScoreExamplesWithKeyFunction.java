@@ -35,17 +35,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Function to score examples individually, where each example is associated with a particular key<br>
- * Note that scoring is batched for computational efficiency.<br>
- * This is the Spark implementation of t he {@link MultiLayerNetwork#scoreExamples(DataSet, boolean)} method<br>
- * <b>Note:</b> The DataSet objects passed in must have exactly one example in them (otherwise: can't have a 1:1 association
- * between keys and data sets to score)
- *
- * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
- * @author Alex Black
- * @see ScoreExamplesFunction
- */
 @Slf4j
 public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, DataSet>>, K, Double> {
 

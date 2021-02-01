@@ -27,9 +27,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by kepricon on 16. 10. 24.
- */
 public class KoreanTokenizerTest extends BaseDL4JTest {
     @Test
     public void testKoreanTokenizer() throws Exception {

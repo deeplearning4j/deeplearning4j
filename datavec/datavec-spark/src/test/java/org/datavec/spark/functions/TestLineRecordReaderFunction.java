@@ -38,9 +38,6 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 21/05/2016.
- */
 public class TestLineRecordReaderFunction extends BaseSparkTest {
 
     @Test

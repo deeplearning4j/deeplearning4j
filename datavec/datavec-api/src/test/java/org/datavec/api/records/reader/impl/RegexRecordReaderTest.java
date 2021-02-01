@@ -47,9 +47,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-/**
- * Created by Alex on 12/04/2016.
- */
 public class RegexRecordReaderTest  extends BaseND4JTest {
 
     @Rule

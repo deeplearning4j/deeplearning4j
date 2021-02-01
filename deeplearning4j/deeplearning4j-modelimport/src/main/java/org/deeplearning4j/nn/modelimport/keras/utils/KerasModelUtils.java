@@ -43,11 +43,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Utility functionality to import keras models
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class KerasModelUtils {
 

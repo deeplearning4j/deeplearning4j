@@ -29,9 +29,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Created by agibsonccc on 12/24/16.
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

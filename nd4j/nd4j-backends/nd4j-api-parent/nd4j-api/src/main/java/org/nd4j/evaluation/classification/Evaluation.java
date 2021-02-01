@@ -49,39 +49,6 @@ import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.*;
 
-/**
- * Evaluation metrics:<br>
- * - precision, recall, f1, fBeta, accuracy, Matthews correlation coefficient, gMeasure<br>
- * - Top N accuracy (if using constructor {@link #Evaluation(List, int)})<br>
- * - Custom binary evaluation decision threshold (use constructor {@link #Evaluation(double)} (default if not set is
- *   argmax / 0.5)<br>
- * - Custom cost array, using {@link #Evaluation(INDArray)} or {@link #Evaluation(List, INDArray)} for multi-class <br>
- * <br>
- * Note: Care should be taken when using the Evaluation class for binary classification metrics such as F1, precision,
- * recall, etc. There are a number of cases to consider:<br>
- * 1. For binary classification (1 or 2 network outputs)<br>
- *    a) Default behaviour: class 1 is assumed as the positive class. Consequently, no-arg methods such as {@link #f1()},
- *       {@link #precision()}, {@link #recall()} etc will report the binary metric for class 1 only<br>
- *    b) To set class 0 as the positive class instead of class 1 (the default), use {@link #Evaluation(int, Integer)} or
- *       {@link #Evaluation(double, Integer)} or {@link #setBinaryPositiveClass(Integer)}. Then, {@link #f1()},
- *       {@link #precision()}, {@link #recall()} etc will report the binary metric for class 0 only.<br>
- *    c) To use macro-averaged metrics over both classes for binary classification (uncommon and usually not advisable)
- *       specify 'null' as the argument (instead of 0 or 1) as per (b) above<br>
- * 2. For multi-class classification, binary metric methods such as {@link #f1()}, {@link #precision()}, {@link #recall()}
- *    will report macro-average (of the one-vs-all) binary metrics. Note that you can specify micro vs. macro averaging
- *    using {@link #f1(EvaluationAveraging)} and similar methods<br>
- * <br>
- * Note that setting a custom binary decision threshold is only possible for the binary case (1 or 2 outputs) and cannot
- * be used if the number of classes exceeds 2. Predictions with probability > threshold are considered to be class 1,
- * and are considered class 0 otherwise.<br>
- * <br>
- * Cost arrays (a row vector, of size equal to the number of outputs) modify the evaluation process: instead of simply
- * doing predictedClass = argMax(probabilities), we do predictedClass = argMax(cost * probabilities). Consequently, an
- * array of all 1s (or, indeed any array of equal values) will result in the same performance as no cost array; non-
- * equal values will bias the predictions for or against certain classes.
- *
- * @author Adam Gibson
- */
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
 @Getter

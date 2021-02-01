@@ -27,11 +27,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
-/**
- * Tan Derivative elementwise function
- *
- * @author raver119@gmail.com
- */
 public class TanDerivative extends BaseTransformStrictOp {
 
     public TanDerivative() {}

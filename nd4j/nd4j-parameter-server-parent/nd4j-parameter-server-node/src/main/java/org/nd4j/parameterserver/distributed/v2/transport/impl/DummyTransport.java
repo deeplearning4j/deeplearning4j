@@ -38,11 +38,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.*;
 
-/**
- * This class is an in-memory implementation of Transport interface, written for tests
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class DummyTransport extends BaseTransport {
     // this is for tests only

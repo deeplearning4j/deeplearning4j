@@ -27,21 +27,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 
-/**
- * This is utility class, made to compare TADs for caching purposes.
- *
- * Idea: for any given INDArray with any specific shape,
- * TAD for specific dimension will always be the same.
- * So it can be reused as much as we want.
- *
- * Of note here is that when used as a key,
- * we preserve immutability of the shape buffer
- * in the ndarray by copying the values with
- * {@link TadDescriptor#dataBufferToArray(DataBuffer)}
- *
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Data
 public class TadDescriptor {

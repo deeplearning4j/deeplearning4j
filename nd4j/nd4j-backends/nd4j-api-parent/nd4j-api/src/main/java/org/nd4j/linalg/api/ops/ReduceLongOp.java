@@ -20,9 +20,5 @@
 
 package org.nd4j.linalg.api.ops;
 
-/**
- * ReduceLong take any type in, and return LONG type
- * @author raver119@gmail.com
- */
 public interface ReduceLongOp extends ReduceOp {
 }

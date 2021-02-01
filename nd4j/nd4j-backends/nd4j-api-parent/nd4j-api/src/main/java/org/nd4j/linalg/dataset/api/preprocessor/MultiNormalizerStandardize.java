@@ -33,12 +33,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Pre processor for MultiDataSet that normalizes feature values (and optionally label values) to have 0 mean and
- * a standard deviation of 1
- *
- * @author Ede Meijer
- */
 @EqualsAndHashCode(callSuper = true)
 public class MultiNormalizerStandardize extends AbstractMultiDataSetNormalizer<DistributionStats> {
     public MultiNormalizerStandardize() {

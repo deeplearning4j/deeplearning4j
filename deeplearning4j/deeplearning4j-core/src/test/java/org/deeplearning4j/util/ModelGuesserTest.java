@@ -51,9 +51,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
 
-/**
- * Created by agibsonccc on 12/29/16.
- */
 public class ModelGuesserTest extends BaseDL4JTest {
 
     @Rule

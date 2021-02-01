@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentSqrtNBp
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Unsorted Sqrt(count) op
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class UnsortedSegmentSqrtN extends DynamicCustomOp {
 

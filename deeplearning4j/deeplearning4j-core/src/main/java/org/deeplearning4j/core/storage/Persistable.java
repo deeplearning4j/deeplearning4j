@@ -26,9 +26,6 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 
-/**
- * Created by Alex on 07/10/2016.
- */
 public interface Persistable extends Serializable {
 
     /**

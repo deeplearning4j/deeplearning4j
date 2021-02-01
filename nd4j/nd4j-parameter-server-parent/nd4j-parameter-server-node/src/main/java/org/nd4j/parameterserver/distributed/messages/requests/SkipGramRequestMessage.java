@@ -31,14 +31,6 @@ import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 
 import java.util.Arrays;
 
-/**
- * This is batch message, describing simple SkipGram round
- *
- * We assume this message is created on Client, and passed to selected Shard
- * Shard which received this message becomes a driver, which handles processing
- *
- * @author raver119@gmail.com
- */
 @Data
 @Slf4j
 @Deprecated

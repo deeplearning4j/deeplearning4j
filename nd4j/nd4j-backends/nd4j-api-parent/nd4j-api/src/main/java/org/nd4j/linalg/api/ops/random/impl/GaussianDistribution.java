@@ -33,11 +33,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * This Op generates normal distribution over provided mean and stddev
- *
- * @author raver119@gmail.com
- */
 public class GaussianDistribution extends BaseRandomOp {
     private double mean;
     private double stddev;    

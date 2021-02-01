@@ -41,11 +41,6 @@ import org.tensorflow.framework.NodeDef;
 import java.lang.reflect.Field;
 import java.util.*;
 
-/**
- * Cast op wrapper. This op changes data type of input array.
- *
- * @author raver119@gmail.com
- */
 public class Cast extends BaseDynamicTransformOp {
 
     private DataType typeDst;

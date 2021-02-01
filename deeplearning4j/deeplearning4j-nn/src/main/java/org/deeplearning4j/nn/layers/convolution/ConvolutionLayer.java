@@ -54,11 +54,6 @@ import org.nd4j.common.util.OneTimeLogger;
 import java.util.Arrays;
 
 
-/**
- * Convolution layer
- *
- * @author Adam Gibson (original impl), Alex Black (current version)
- */
 @Slf4j
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
 

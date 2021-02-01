@@ -31,9 +31,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public abstract class BaseParallelDataSetIterator implements ParallelDataSetIterator {
     protected AtomicLong counter = new AtomicLong(0);

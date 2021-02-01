@@ -29,12 +29,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.List;
 
-/**
- * This class is simple wrapper that takes single-input MultiDataSets and converts them to DataSets on the fly
- *
- * PLEASE NOTE: This only works if number of features/labels/masks is 1
- * @author raver119@gmail.com
- */
 public class MultiDataSetWrapperIterator implements DataSetIterator {
     protected MultiDataSetIterator iterator;
     protected DataSetPreProcessor preProcessor;

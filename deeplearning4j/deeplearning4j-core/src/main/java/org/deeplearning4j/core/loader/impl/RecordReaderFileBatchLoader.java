@@ -33,11 +33,6 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
 import java.io.IOException;
 
-/**
- * A dataset loader for use with FileBatch objects.
- * The API (constructor arguments) mirrors {@link RecordReaderDataSetIterator} which it uses internally.
- * Can be used in the context of Spark - see SparkDataUtils methods for this purpose
- */
 public class RecordReaderFileBatchLoader implements DataSetLoader {
     private final RecordReader recordReader;
     private final int batchSize;

@@ -33,14 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * Adds the ability to reshape and flatten the tensor in the computation graph.<br>
- * NOTE: This class should only be used if you know exactly what you are doing with reshaping activations.
- * Use preprocessors such as {@link org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor} and
- * {@link org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor} for most cases.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Data
 public class ReshapeVertex extends GraphVertex {
     public static final char DEFAULT_RESHAPE_ORDER = 'c';

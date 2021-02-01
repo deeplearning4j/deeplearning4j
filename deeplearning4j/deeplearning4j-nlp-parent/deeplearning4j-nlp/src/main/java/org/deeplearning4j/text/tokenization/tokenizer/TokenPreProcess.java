@@ -21,11 +21,6 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
 
-/**
- * Token preprocessing
- * @author Adam Gibson
- *
- */
 public interface TokenPreProcess {
 
     /**

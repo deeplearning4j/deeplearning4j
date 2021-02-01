@@ -22,25 +22,6 @@ package org.datavec.api.io;
 
 import java.io.*;
 
-/** A reusable {@link DataOutput} implementation that writes to an in-memory
- * buffer.
- *
- * <p>This saves memory over creating a new DataOutputStream and
- * ByteArrayOutputStream each time data is written.
- *
- * <p>Typical usage is something like the following:<pre>
- *
- * DataOutputBuffer buffer = new DataOutputBuffer();
- * while (... loop condition ...) {
- *   buffer.reset();
- *   ... write buffer using DataOutput methods ...
- *   byte[] data = buffer.getData();
- *   int dataLength = buffer.getLength();
- *   ... write data to its ultimate destination ...
- * }
- * </pre>
- *
- */
 public class DataOutputBuffer extends DataOutputStream {
 
     private static class Buffer extends ByteArrayOutputStream {

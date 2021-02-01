@@ -38,12 +38,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Cropping layer for convolutional (3d) neural networks. Allows cropping to be done separately for upper and lower
- * bounds of depth, height and width dimensions.
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

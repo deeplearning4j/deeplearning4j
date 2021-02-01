@@ -23,13 +23,6 @@ package org.deeplearning4j.rl4j.space;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
- *
- * A Box observation
- *
- * @see <a href="https://gym.openai.com/envs#box2d">https://gym.openai.com/envs#box2d</a>
- */
 public class Box implements Encodable {
 
     private final INDArray data;

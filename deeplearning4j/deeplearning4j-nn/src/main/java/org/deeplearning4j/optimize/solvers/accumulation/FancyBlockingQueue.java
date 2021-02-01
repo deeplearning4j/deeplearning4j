@@ -33,14 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * This BlockingQueue implementation is suited only for symmetric gradients updates, and should NOT be used anywhere else.
- *
- * Basic idea: all worker threads requesting via poll()/take() method will be advancing only once all consumers get the same element from Queue.
- * So, multiple consumers are guaranteed to be consuming the same elements in the same order served by this queue.
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
     protected BlockingQueue<E> backingQueue;

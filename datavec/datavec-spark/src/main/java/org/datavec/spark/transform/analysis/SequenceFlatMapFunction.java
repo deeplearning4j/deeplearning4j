@@ -26,12 +26,6 @@ import org.datavec.api.writable.Writable;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * SequenceFlatMapFunction: very simple function used to flatten a sequence
- * Typically used only internally for certain analysis operations
- *
- * @author Alex Black
- */
 public class SequenceFlatMapFunction implements FlatMapFunction<List<List<Writable>>, List<Writable>> {
 
     @Override

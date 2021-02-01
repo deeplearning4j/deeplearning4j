@@ -29,11 +29,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Execute a join
- *
- * @author Alex Black
- */
 public class ExecuteJoinFromCoGroupFlatMapFunctionAdapter implements
         FlatMapFunctionAdapter<Pair<List<Writable>, Pair<List<List<Writable>>, List<List<Writable>>>>, List<Writable>> {
 

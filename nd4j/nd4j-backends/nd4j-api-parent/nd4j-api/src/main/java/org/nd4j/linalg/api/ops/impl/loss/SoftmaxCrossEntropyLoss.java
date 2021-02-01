@@ -36,11 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Softmax cross entropy loss
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class SoftmaxCrossEntropyLoss extends BaseLoss {
     public static final double DEFAULT_LABEL_SMOOTHING = 0.0;

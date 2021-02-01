@@ -25,9 +25,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.io.File;
 import java.nio.file.Path;
 
-/**
- * Created by anton on 7/20/16.
- */
 public class InFileAndMemoryDataSetCache implements DataSetCache {
 
     private InFileDataSetCache fileCache;

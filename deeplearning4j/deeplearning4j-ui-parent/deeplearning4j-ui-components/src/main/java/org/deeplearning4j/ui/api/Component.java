@@ -29,12 +29,6 @@ import org.deeplearning4j.ui.components.text.ComponentText;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
-/**
- * A component is anything that can be rendered, such at charts, text or tables.
- * The intended use of these components is for Java -> JavaScript interop for UIs
- *
- * @author Alex Black
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = ChartHistogram.class, name = "ChartHistogram"),
                 @JsonSubTypes.Type(value = ChartHorizontalBar.class, name = "ChartHorizontalBar"),

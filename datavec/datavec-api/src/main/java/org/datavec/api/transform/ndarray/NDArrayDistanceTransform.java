@@ -37,11 +37,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Calculate the distance (cosine similarity, EUCLIDEAN, MANHATTAN) between two INDArrays
- *
- * @author Alex Black
- */
 @Data
 public class NDArrayDistanceTransform implements Transform {
 

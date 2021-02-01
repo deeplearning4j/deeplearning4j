@@ -27,10 +27,6 @@ import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.async.AsyncThread;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
 
-/**
- * DataManagerSyncTrainingListener can be added to the listeners of SyncLearning so that the
- * training process can be fed to the DataManager
- */
 @Slf4j
 public class DataManagerTrainingListener implements TrainingListener {
     private final IDataManager dataManager;

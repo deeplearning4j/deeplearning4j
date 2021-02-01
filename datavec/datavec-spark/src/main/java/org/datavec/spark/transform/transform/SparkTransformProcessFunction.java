@@ -28,9 +28,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Spark function for executing a transform process
- */
 public class SparkTransformProcessFunction implements FlatMapFunction<List<Writable>, List<Writable>> {
 
     private final TransformProcess transformProcess;

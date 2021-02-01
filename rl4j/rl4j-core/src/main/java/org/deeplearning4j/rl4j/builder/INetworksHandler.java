@@ -21,9 +21,6 @@ package org.deeplearning4j.rl4j.builder;
 
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 
-/**
- * An interface that abstract what the different networks are depending on the setup (sync vs async)
- */
 public interface INetworksHandler {
     /**
      * @return The global shared target parameters &theta;<sup>&ndash;</sup>

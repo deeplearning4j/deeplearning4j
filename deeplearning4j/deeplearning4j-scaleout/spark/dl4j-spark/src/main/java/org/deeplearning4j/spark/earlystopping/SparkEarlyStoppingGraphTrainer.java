@@ -33,11 +33,6 @@ import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * Class for conducting early stopping training via Spark on a ComputationGraph
- *
- * @author Alex Black
- */
 public class SparkEarlyStoppingGraphTrainer extends BaseSparkEarlyStoppingTrainer<ComputationGraph> {
 
     private SparkComputationGraph sparkNet;

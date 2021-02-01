@@ -32,19 +32,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * LSTM layer implementation.
- * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
- * See also for full/vectorized equations (and a comparison to other LSTM variants):
- * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
- * <a href="https://arxiv.org/pdf/1503.04069.pdf">https://arxiv.org/pdf/1503.04069.pdf</a>
- *
- * @author Alex Black
- * @see LSTM LSTM class, for the version without peephole connections
- * @deprecated Will be eventually removed. Use {@link LSTM} instead, which has similar prediction accuracy, but supports
- * CuDNN for faster network training on CUDA (Nvidia) GPUs
- */
 @Deprecated
 @Slf4j
 public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {

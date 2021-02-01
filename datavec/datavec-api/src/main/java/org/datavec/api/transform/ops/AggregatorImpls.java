@@ -29,9 +29,6 @@ import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.UnsafeWritableInjector;
 import org.datavec.api.writable.Writable;
 
-/**
- * Created by huitseeker on 4/28/17.
- */
 public class AggregatorImpls {
 
     public static class AggregableFirst<T> implements IAggregableReduceOp<T, Writable> {

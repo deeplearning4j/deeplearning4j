@@ -31,10 +31,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.util.Collections;
 import java.util.Iterator;
 
-/**
- * @author raver119@gmail.com
- */
-
 public class SharedFlatMapDataSet<R extends TrainingResult> implements FlatMapFunction<Iterator<DataSet>, R> {
 
     private final SharedTrainingWorker worker;

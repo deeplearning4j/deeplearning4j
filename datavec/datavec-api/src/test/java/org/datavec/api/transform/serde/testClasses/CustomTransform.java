@@ -26,9 +26,6 @@ import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Created by Alex on 11/01/2017.
- */
 public class CustomTransform extends BaseColumnTransform {
 
     private final double someArg;

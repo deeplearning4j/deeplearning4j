@@ -31,15 +31,6 @@ import org.nd4j.evaluation.IEvaluation;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * This callback will save model after each EvaluativeListener invocation.
- *
- * Filename template respects %d pattern, which will be replaced with integer value representing invocation number (not iteration!).
- * I.e. if EvaluativeListener has frequency set to 50, it will be invoked once every 50 iterations, each invocation will increment number by 1. So, after 500 epochs there will be 10 invocations in total, and 10 models will be saved.
- *
- * PLEASE NOTE:
- * @author raver119@gmail.com
- */
 public class ModelSavingCallback implements EvaluationCallback {
     protected File rootFolder;
     protected String template;

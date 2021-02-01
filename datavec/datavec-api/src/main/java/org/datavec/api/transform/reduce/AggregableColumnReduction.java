@@ -28,12 +28,6 @@ import org.datavec.api.writable.Writable;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * A column reduction defines how a single column should be reduced.
- * Used in conjunction with {@link Reducer} to provide custom reduction functionality.
- *
- * @author Alex Black
- */
 public interface AggregableColumnReduction extends Serializable, ColumnOp {
 
     /**

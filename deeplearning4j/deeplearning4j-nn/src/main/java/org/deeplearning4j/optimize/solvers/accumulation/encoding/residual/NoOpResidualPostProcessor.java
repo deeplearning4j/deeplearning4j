@@ -23,10 +23,6 @@ package org.deeplearning4j.optimize.solvers.accumulation.encoding.residual;
 import org.deeplearning4j.optimize.solvers.accumulation.encoding.ResidualPostProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * This residual post process is a "no op" post processor.
- * i.e., it does not modify the residual array at all
- */
 public class NoOpResidualPostProcessor implements ResidualPostProcessor {
     @Override
     public void processResidual(int iteration, int epoch, double lastThreshold, INDArray residualVector) {

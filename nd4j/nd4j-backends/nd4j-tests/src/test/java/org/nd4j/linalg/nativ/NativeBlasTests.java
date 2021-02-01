@@ -33,10 +33,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * This class contains tests related to javacpp presets and their libnd4j integration
- * @author raver119@gmail.com
- */
 @Slf4j
 public class NativeBlasTests extends BaseNd4jTest {
 

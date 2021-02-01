@@ -22,9 +22,6 @@ package org.nd4j.imports.tfgraphs;
 
 import java.util.*;
 
-/**
- * Created by susaneraly on 2/20/18.
- */
 public class TFGraphsSkipNodes {
 
     private static final Map<String, List<String>> SKIP_NODE_MAP = Collections.unmodifiableMap(

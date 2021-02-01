@@ -33,11 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/**
- * GRU cell for RNNs
- *
- *
- */
 public class GRUCell extends DynamicCustomOp {
 
     @Getter

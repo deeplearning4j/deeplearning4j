@@ -26,10 +26,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
-/**
- *  This class
- * @author raver119@gmail.com
- */
 public class Operands {
     private Map<NodeDescriptor, INDArray> map = new LinkedHashMap<>();
 

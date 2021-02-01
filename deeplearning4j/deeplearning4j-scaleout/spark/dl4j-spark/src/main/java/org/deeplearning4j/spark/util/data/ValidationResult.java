@@ -27,11 +27,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
-/**
- * Result for validation of DataSet and MultiDataSets. See {@link SparkDataValidation} for more details
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data

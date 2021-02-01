@@ -33,9 +33,6 @@ import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SilentUpdatesMessage extends BaseVoidMessage implements TrainingMessage, RequestMessage {
 

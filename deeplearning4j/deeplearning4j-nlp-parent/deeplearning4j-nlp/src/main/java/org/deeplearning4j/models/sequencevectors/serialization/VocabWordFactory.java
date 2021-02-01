@@ -27,9 +27,6 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
-/**
- * @author raver119@gmail.com
- */
 public class VocabWordFactory implements SequenceElementFactory<VocabWord> {
 
     /**

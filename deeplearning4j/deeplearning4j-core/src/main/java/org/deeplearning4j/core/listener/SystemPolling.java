@@ -32,15 +32,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Poll a system for its local statistics with a specified time.
- * The polling process will output a yaml file
- * in the specified output directory
- *
- * with all the related system diagnostics.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class SystemPolling {
 

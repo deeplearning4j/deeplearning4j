@@ -28,11 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Operation for fast INDArrays equality checks
- *
- * @author raver119@gmail.com
- */
 public class EqualsWithEps extends BaseReduce3Op {
     private double eps;
 

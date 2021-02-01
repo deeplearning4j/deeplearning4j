@@ -27,9 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 2/12/17.
- */
 public class BatchCSVRecordTest {
 
     @Test

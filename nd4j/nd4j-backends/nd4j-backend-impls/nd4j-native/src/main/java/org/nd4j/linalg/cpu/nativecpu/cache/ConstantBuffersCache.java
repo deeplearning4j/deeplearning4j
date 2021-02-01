@@ -33,9 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 public class ConstantBuffersCache extends BasicConstantHandler {
     protected Map<ArrayDescriptor, DataBuffer> buffersCache = new ConcurrentHashMap<>();
     private AtomicInteger counter = new AtomicInteger(0);

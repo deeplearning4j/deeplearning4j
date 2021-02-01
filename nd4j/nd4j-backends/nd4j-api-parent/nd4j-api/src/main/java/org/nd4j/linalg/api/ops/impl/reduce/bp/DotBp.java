@@ -31,11 +31,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/**
- * Backprop op for Dot pairwise reduction operation
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class DotBp extends BaseReductionBp {
 

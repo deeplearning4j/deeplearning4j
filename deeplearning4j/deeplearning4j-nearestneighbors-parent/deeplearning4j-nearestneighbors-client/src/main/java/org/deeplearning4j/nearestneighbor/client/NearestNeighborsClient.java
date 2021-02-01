@@ -34,13 +34,6 @@ import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
 
-/**
- * Client for the nearest neighbors server.
- *  To create a client, pass in a host port combination with the following format:
- *  http://host:port
- *
- * @author Adam Gibson
- */
 @AllArgsConstructor
 public class NearestNeighborsClient {
 

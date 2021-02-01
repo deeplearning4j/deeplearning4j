@@ -39,9 +39,6 @@ import java.util.List;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author Alex Black
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class TestTensorAlongDimension extends BaseNd4jTest {

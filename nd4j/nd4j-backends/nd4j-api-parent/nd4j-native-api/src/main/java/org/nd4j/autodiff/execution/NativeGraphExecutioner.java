@@ -48,9 +48,6 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class NativeGraphExecutioner implements GraphExecutioner {
     /**

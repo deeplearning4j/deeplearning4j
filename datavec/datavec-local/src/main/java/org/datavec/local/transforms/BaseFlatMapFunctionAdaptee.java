@@ -25,11 +25,6 @@ import org.datavec.local.transforms.functions.FlatMapFunctionAdapter;
 
 import java.util.List;
 
-/**
- *
- * This class should be used instead of direct referral to FlatMapFunction
- *
- */
 public class BaseFlatMapFunctionAdaptee<K, V>  {
 
     protected final FlatMapFunctionAdapter<K, V> adapter;

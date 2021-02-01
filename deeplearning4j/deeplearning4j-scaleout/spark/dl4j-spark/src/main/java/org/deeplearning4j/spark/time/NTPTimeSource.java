@@ -30,22 +30,6 @@ import java.net.InetAddress;
 import java.util.Timer;
 import java.util.TimerTask;
 
-/**
- * A {@link TimeSource} that utilize Network Time Protocol to determine the system clock offset<br>
- * Instances should be obtained via {@link #getInstance()} or {@link TimeSourceProvider}; one instance may be
- * used per machine<br>
- *
- * Specifically, the implementation uses Apache Commons Net (already a dependency in Spark) to query a NTP server.
- * This querying is done periodically (default: once upon initialization and then every 30 minutes thereafter).<br>
- *
- * The following configuration options can be set via system properties:<br>
- * To set the time update frequency (for querying the NTP server, in <b>milliseconds</b>): org.deeplearning4j.spark.time.NTPTimeSource.frequencyms<br>
- * To set the NTP server address: org.deeplearning4j.spark.time.NTPTimeSource.server<br>
- * Default NTP server: {@link #DEFAULT_NTP_SERVER}
- *
- *
- * @author Alex Black
- */
 public class NTPTimeSource implements TimeSource {
 
     /**

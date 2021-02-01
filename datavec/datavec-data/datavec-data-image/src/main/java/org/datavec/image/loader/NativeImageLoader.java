@@ -48,11 +48,6 @@ import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgcodecs.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
-/**
- * Uses JavaCV to load images. Allowed formats: bmp, gif, jpg, jpeg, jp2, pbm, pgm, ppm, pnm, png, tif, tiff, exr, webp
- *
- * @author saudet
- */
 public class NativeImageLoader extends BaseImageLoader {
     private static final int MIN_BUFFER_STEP_SIZE = 64 * 1024;
     private byte[] buffer = null;

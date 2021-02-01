@@ -25,10 +25,6 @@ import java.util.List;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * A lambda used to get an evaluation result for a batch
- * See {@link CustomEvaluation}
- */
 public interface EvaluationLambda<T> {
     public T eval(INDArray labels, INDArray networkPredictions, INDArray maskArray,
                   List<? extends Serializable> recordMetaData);

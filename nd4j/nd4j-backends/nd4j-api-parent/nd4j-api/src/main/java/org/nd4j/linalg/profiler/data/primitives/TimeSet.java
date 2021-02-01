@@ -24,11 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-/**
- * Utility holder class, used to store timing sets retrieved with profiler.
- *
- * @author raver119@gmail.com
- */
 public class TimeSet implements Comparable<TimeSet> {
     private List<ComparableAtomicLong> times = new ArrayList<>();
     private long sum = 0;

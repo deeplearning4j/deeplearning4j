@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.SegmentSumBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Segment sum operation
- *
- * @author Alex Black
- */
 public class SegmentSum extends DynamicCustomOp {
 
     public SegmentSum(SameDiff sameDiff, SDVariable data, SDVariable segmentIds) {

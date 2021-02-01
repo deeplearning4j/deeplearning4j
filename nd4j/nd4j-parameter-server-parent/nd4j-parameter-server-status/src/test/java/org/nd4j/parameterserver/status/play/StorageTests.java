@@ -27,9 +27,6 @@ import org.nd4j.parameterserver.model.SubscriberState;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by agibsonccc on 12/1/16.
- */
 public class StorageTests extends BaseND4JTest {
 
     @Test(timeout = 20000L)

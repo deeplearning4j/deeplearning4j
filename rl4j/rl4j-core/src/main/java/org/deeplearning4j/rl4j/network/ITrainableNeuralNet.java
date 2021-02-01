@@ -22,9 +22,6 @@ package org.deeplearning4j.rl4j.network;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 
-/**
- * An interface defining the <i>trainable</i> aspect of a {@link NeuralNet}.
- */
 public interface ITrainableNeuralNet<NET_TYPE extends ITrainableNeuralNet> extends IOutputNeuralNet {
     /**
      * Train the neural net using the supplied <i>feature-labels</i>

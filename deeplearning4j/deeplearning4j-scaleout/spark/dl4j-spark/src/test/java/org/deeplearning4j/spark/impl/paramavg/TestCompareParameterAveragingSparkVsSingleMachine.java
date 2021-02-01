@@ -55,14 +55,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-// import org.nd4j.jita.conf.Configuration;
-// import org.nd4j.jita.conf.CudaEnvironment;
-// import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
-// import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
-
-/**
- * Created by Alex on 18/06/2016.
- */
 public class TestCompareParameterAveragingSparkVsSingleMachine {
     @Before
     public void setUp() {

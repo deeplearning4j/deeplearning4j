@@ -40,9 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Created by Alex on 28/08/2016.
- */
 public class TestCustomLayer extends BaseSparkTest {
 
     @Test

@@ -38,9 +38,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-/**
- * Created by nyghtowl on 11/14/15.
- */
 public class FileRecordReaderTest  extends BaseND4JTest {
 
     @Test

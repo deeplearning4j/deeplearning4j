@@ -25,9 +25,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.curves.RocCurve}
- */
 @Deprecated
 @Data
 @EqualsAndHashCode(exclude = {"auc"}, callSuper = false)

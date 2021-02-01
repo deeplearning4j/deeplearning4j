@@ -28,11 +28,6 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
 
-/**
- * Convert any value to an Integer.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Data
 @NoArgsConstructor
 public class ConvertToInteger extends BaseIntegerTransform {

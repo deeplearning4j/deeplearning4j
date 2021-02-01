@@ -25,13 +25,6 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * A counter for building histograms on a NDArray columns.
- * This is a bit of a hack, using DoubleHistogramCounter internally. This should (one day) be optimized to use
- * native ND4J operations
- *
- * @author Alex Black
- */
 public class NDArrayHistogramCounter implements HistogramCounter {
 
     private DoubleHistogramCounter underlying;

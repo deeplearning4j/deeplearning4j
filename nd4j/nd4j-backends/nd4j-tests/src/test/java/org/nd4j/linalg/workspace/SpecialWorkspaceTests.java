@@ -50,9 +50,6 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class SpecialWorkspaceTests extends BaseNd4jTest {

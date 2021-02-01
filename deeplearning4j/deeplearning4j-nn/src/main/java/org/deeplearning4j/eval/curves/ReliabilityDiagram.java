@@ -23,9 +23,6 @@ package org.deeplearning4j.eval.curves;
 import lombok.NonNull;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.curves.ReliabilityDiagram}
- */
 @Deprecated
 public class ReliabilityDiagram extends org.nd4j.evaluation.curves.ReliabilityDiagram {
 

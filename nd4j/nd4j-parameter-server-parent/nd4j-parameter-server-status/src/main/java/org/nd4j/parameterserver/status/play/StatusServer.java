@@ -37,19 +37,6 @@ import static play.libs.Json.toJson;
 import static play.mvc.Results.ok;
 
 
-/**
- * Play server for communicating
- * the status of
- * the subscriber daemon.
- *
- * This is a rest server for communicating
- * information such as whether the server is started or ont
- * as well as additional connection information.
- *
- * This is mainly meant for internal use.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class StatusServer {
 

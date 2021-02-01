@@ -30,11 +30,6 @@ import java.net.NetworkInterface;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Utility class that provides
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class NetworkOrganizer {
     protected List<NetworkInformation> informationCollection;

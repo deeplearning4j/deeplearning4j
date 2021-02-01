@@ -27,10 +27,6 @@ import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 
-/**
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public class LocalTransport implements Transport {
     /**

@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Count the number of zero elements
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class CountZero extends BaseReduceLongOp {
 

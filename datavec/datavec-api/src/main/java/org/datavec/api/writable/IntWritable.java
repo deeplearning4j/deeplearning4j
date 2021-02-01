@@ -30,7 +30,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/** A WritableComparable for ints. */
 public class IntWritable implements WritableComparable {
 
     private int value;

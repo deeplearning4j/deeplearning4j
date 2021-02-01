@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Truncated division operation
- *
- * @author Adam Gibson
- */
 public class TruncateDivOp extends BaseDynamicTransformOp {
     public static final String OP_NAME = "truncatediv";
 

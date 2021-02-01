@@ -37,14 +37,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.text.DecimalFormat;
 import java.util.*;
 
-/**
- * A simple listener for benchmarking single operations in SameDiff<br>
- * Supports 2 modes:<br>
- * - SINGLE_ITER_PRINT: Print the runtime of the first iteration<br>
- * - AGGREGATE: Collect statistics for multiple runs, that can be accessed (by op name) via {@link #getAggregateModeMap()}
- *
- * @author Alex Black
- */
 @Getter
 public class OpBenchmarkListener extends BaseListener {
 

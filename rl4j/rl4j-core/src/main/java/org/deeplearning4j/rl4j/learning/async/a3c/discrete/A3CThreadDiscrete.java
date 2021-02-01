@@ -34,11 +34,6 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.rng.Random;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/23/16.
- * <p>
- * Local thread as described in the https://arxiv.org/abs/1602.01783 paper.
- */
 public class A3CThreadDiscrete<OBSERVATION extends Encodable> extends AsyncThreadDiscrete<OBSERVATION, IActorCritic> {
 
     @Getter

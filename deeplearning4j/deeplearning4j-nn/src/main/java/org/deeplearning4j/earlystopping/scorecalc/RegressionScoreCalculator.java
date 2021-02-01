@@ -26,12 +26,6 @@ import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
-/**
- * Calculate the regression score of the network (MultiLayerNetwork or ComputationGraph) on a test set, using the
- * specified regression metric - {@link Metric}
- *
- * @author Alex Black
- */
 public class RegressionScoreCalculator extends BaseIEvaluationScoreCalculator<Model, RegressionEvaluation> {
 
     protected final Metric metric;

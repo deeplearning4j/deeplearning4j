@@ -25,11 +25,6 @@ import lombok.Data;
 import java.net.URI;
 import java.util.Map;
 
-/**
- * A RecordMetaData instance that combines multiple individual RecordMetaData instances, via a {@code Map<String,RecordMetaData>}
- *
- * @author Alex Black
- */
 @Data
 public class RecordMetaDataComposableMap implements RecordMetaData {
 

@@ -38,9 +38,6 @@ import java.io.DataOutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-/**
- * @author raver119@gmail.com
- */
 public class Gzip extends AbstractCompressor {
     /**
      * This method returns compression descriptor. It should be unique for any compressor implementation

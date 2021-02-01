@@ -34,12 +34,6 @@ import java.util.Random;
 import java.util.Set;
 
 
-/**
- * This is a math utils class.
- *
- * @author Adam Gibson
- *
- */
 public class MathUtils {
 
     /** The natural logarithm of 2. */

@@ -41,9 +41,6 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * Created by nyghtowl on 11/15/15.
- */
 public class BaseLayerTest extends BaseDL4JTest {
 
     protected INDArray weight = Nd4j.create(new double[] {0.10, -0.20, -0.15, 0.05}, new int[] {2, 2});

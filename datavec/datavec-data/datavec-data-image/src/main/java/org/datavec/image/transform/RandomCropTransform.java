@@ -32,12 +32,6 @@ import java.util.Random;
 
 import org.bytedeco.opencv.opencv_core.*;
 
-/**
- * Randomly crops an image to a desired output size. Will determine if
- * output size is valid, otherwise will throw an error.
- *
- * @author Justin Long (@crockpotveggies)
- */
 @JsonIgnoreProperties({"rng", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data

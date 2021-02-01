@@ -27,11 +27,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-/**
- * This interface describes OpContext, abstraction used to setup op for execution.
- *
- * @author raver119@gmail.com
- */
 public interface OpContext extends AutoCloseable {
 
     /**

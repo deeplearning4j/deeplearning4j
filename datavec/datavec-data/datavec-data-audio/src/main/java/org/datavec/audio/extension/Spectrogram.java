@@ -25,11 +25,6 @@ import org.datavec.audio.Wave;
 import org.datavec.audio.dsp.FastFourierTransform;
 import org.datavec.audio.dsp.WindowFunction;
 
-/**
- * Handles the wave data in frequency-time domain.
- *
- * @author Jacquet Wong
- */
 public class Spectrogram {
 
     public static final int SPECTROGRAM_DEFAULT_FFT_SAMPLE_SIZE = 1024;

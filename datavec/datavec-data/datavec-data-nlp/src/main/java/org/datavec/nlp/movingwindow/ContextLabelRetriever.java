@@ -31,11 +31,6 @@ import org.datavec.nlp.tokenization.tokenizerfactory.TokenizerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Context Label Retriever
- *
- * @author Adam Gibson
- */
 public class ContextLabelRetriever {
 
 

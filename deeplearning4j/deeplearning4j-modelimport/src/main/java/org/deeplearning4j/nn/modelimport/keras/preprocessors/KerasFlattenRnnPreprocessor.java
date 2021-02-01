@@ -30,11 +30,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Preprocessor to flatten input of RNN type
- *
- * @author Max Pumperla
- */
 @Slf4j
 @Data
 public class KerasFlattenRnnPreprocessor extends BaseInputPreProcessor {

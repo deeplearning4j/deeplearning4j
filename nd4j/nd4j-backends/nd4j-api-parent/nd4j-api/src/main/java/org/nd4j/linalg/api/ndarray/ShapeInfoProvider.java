@@ -24,9 +24,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
-/**
- * @author raver119@gmail.com
- */
 public interface ShapeInfoProvider {
     /**
      * This method creates long shapeInformation buffer, based on shape being passed in

@@ -38,28 +38,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.Arrays;
 
 
-/**
- * This class implements Entropy LSH for the cosine distance, in order to preserve memory for large datasets.
- *
- * Entropy SLH is the LSH scheme of
- *
- * _Entropy based nearest neighbor search in high dimensions_
- * R Panigrahy - SIAM 2006
- * <a href="https://arxiv.org/pdf/cs/0510019.pdf">https://arxiv.org/pdf/cs/0510019.pdf</a>
- *
- * To read more about LSH, in particular for the Cosine distance, see
- * chapter 3 of :
- * _Mining Massive Datasets_, Anand Rajaraman and Jeffrey Ullman
- * <a href="http://www.mmds.org/">http://www.mmds.org/</a>
- *
- * The original development of LSH for the cosine distance is from
- * Similarity estimation techniques from rounding algorithms
- * MS Charikar - STOCS, 2002
- *
- * Note for high-precision or distributed settings, you should not
- * use this and rather extend this to layered LSH ( <a href="https://arxiv.org/abs/1210.7057">https://arxiv.org/abs/1210.7057</a> )
- *
- */
 public class RandomProjectionLSH implements LSH {
 
     @Override

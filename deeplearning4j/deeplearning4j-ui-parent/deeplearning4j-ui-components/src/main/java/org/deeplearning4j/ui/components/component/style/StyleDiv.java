@@ -26,10 +26,6 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.ui.api.Style;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-/** Style for Div components.
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)

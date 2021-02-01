@@ -28,12 +28,6 @@ import org.datavec.image.data.ImageWritable;
 import javax.swing.*;
 import java.util.Random;
 
-/**
- * Shows images on the screen, does not actually transform them.
- * To continue to the next image, press any key in the window of the CanvasFrame.
- *
- * @author saudet
- */
 @Data
 public class ShowImageTransform extends BaseImageTransform {
 

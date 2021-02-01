@@ -39,11 +39,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * DeConv3D operation
- *
- * @author Alex Black
- */
 @Slf4j
 @Getter
 @NoArgsConstructor

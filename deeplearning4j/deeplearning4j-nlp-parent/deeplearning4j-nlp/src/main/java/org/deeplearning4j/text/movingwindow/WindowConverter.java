@@ -31,12 +31,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.List;
 
 
-/**
- * Util methods for converting windows to 
- * training examples
- * @author Adam Gibson    
- *
- */
 @Slf4j
 public class WindowConverter {
 

@@ -34,11 +34,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * BernoulliDistribution implementation
- *
- * @author raver119@gmail.com
- */
 public class BernoulliDistribution extends BaseRandomOp {
     private double prob;
 

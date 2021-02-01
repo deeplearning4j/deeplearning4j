@@ -25,12 +25,6 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Normalize using (x-mean)/stdev.
- * Also known as a standard score, standardization etc.
- *
- * @author Alex Black
- */
 @Data
 public class StandardizeNormalizer extends BaseDoubleTransform {
 

@@ -24,24 +24,6 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 
-/** A reusable {@link DataInput} implementation that reads from an in-memory
- * buffer.
- *
- * <p>This saves memory over creating a new DataInputStream and
- * ByteArrayInputStream each time data is read.
- *
- * <p>Typical usage is something like the following:<pre>
- *
- * DataInputBuffer buffer = new DataInputBuffer();
- * while (... loop condition ...) {
- *   byte[] data = ... get data ...;
- *   int dataLength = ... get data length ...;
- *   buffer.reset(data, dataLength);
- *   ... read buffer using DataInput methods ...
- * }
- * </pre>
- *
- */
 public class DataInputBuffer extends DataInputStream {
     private static class Buffer extends ByteArrayInputStream {
         public Buffer() {

@@ -41,11 +41,6 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * This set of tests suited for validation of various graph execuction methods: flatbuffers, stored graphs reuse, one-by-one execution, etc
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class ExecutionTests extends BaseNd4jTest {

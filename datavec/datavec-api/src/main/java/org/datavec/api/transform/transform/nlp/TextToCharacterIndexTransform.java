@@ -31,13 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
-/**
- *
- * Convert each text value in a sequence to a longer sequence of integer indices.
- * For example, "abc" would be converted to [1, 2, 3]. Values in other columns will be duplicated.
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true, exclude = {""})
 public class TextToCharacterIndexTransform extends BaseSequenceExpansionTransform {

@@ -30,13 +30,6 @@ import org.nd4j.shade.jackson.databind.JsonNode;
 
 import java.io.IOException;
 
-/**
- * Jackson Json deserializer to handle legacy format for distributions.<br>
- * Now, we use 'type' field which contains class information.<br>
- * Previously, we used wrapper objects for type information instead (see TestDistributionDeserializer for examples)
- *
- * @author Alex Black
- */
 public class LegacyDistributionDeserializer extends JsonDeserializer<Distribution> {
     @Override
     public Distribution deserialize(JsonParser jp, DeserializationContext deserializationContext)

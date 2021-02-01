@@ -29,9 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     protected AtomicLong bytes = new AtomicLong(0);

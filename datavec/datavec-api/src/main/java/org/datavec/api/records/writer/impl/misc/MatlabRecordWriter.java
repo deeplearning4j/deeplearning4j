@@ -29,11 +29,6 @@ import org.datavec.api.writable.Writable;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Write matlab records
- *
- * @author Adam Gibson
- */
 public class MatlabRecordWriter extends FileRecordWriter {
     public MatlabRecordWriter() {}
 

@@ -24,11 +24,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
-/**
- * This class is simple POJO that contains basic information about CustomOp
- *
- * @author raver119@gmail.com
- */
 @AllArgsConstructor
 @Builder
 public class CustomOpDescriptor {

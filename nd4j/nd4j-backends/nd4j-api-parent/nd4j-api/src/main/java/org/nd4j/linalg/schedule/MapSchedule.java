@@ -30,14 +30,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * MapSchedule is a schedule based on specific values in a {@code Map<Integer,Double>}.<br>
- * For example, if the map contains the following: (0,1.0), (10,0.5), (20, 0.2) then iteration/epoch 0 to 9 inclusive
- * will have value 1.0, 10 to 19 will have 0.5, and 20+ will have value 0.2.<br>
- * Note that the map MUST have a key for position 0 - this is the initial value.
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode
 @JsonIgnoreProperties({"allKeysSorted"})

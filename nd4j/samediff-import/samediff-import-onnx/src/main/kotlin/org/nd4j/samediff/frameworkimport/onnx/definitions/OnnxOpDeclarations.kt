@@ -313,7 +313,6 @@ val softmax = OnnxMappingProcess(
 //TODO: Expand
 //TODO: EyeLike
 //TODO: FeatureVectorizer
-//TODO: Flatten
 val gru = OnnxMappingProcess(
         opMappingRegistry = onnxOpRegistry,
         inputFrameworkOpName = "GRU",

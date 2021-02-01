@@ -36,11 +36,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Top K op
- *
- * @author Alex Black
- */
 public class TopK extends DynamicCustomOp {
 
     private boolean sorted;

@@ -24,9 +24,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Created by Alex on 05/07/2017.
- */
 @Getter
 public class ReliabilityDiagram extends BaseCurve {
 

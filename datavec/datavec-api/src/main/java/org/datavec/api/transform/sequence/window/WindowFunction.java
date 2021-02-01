@@ -28,16 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * A WindowFunction splits a sequence into a set of
- * (possibly overlapping) sub-sequences.
- * It is a general-purpose interface that can support
- * many different types of
- *
- * Typically used for example with a transform such as {@link ReduceSequenceByWindowTransform}
- *
- * @author Alex Black
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface WindowFunction extends Serializable {

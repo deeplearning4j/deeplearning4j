@@ -33,9 +33,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class PerformanceTests extends BaseDL4JTest {
 

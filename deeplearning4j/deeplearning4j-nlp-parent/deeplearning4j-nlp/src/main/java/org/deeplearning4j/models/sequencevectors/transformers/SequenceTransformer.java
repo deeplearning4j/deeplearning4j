@@ -23,10 +23,6 @@ package org.deeplearning4j.models.sequencevectors.transformers;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
-/**
- *
- * @author raver119@gmail.com
- */
 public interface SequenceTransformer<T extends SequenceElement, V extends Object> {
 
     /**

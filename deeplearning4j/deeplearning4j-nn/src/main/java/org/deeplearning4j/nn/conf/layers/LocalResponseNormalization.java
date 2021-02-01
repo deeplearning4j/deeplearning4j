@@ -40,9 +40,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Local response normalization layer<br> See section 3.3 of <a href="http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf">http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf</a>
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

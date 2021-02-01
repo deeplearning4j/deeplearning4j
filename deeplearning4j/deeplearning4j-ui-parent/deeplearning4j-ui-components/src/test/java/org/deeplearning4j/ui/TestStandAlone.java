@@ -33,9 +33,6 @@ import org.junit.Test;
 
 import java.awt.*;
 
-/**
- * Created by Alex on 2/06/2016.
- */
 public class TestStandAlone extends BaseDL4JTest {
 
     @Test

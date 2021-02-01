@@ -30,12 +30,6 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Time Iteration Listener.
- * This listener displays into INFO logs the remaining time in minutes and the date of the end of the process.
- * Remaining time is estimated from the amount of time for training so far, and the total number of iterations
- * specified by the user
- */
 @Slf4j
 public class TimeIterationListener extends BaseTrainingListener implements Serializable {
     private long start;

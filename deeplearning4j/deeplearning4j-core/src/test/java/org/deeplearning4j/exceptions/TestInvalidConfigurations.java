@@ -36,9 +36,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.fail;
 
-/**
- * A set of tests to ensure that useful exceptions are thrown on invalid network configurations
- */
 @Slf4j
 public class TestInvalidConfigurations extends BaseDL4JTest {
 

@@ -38,24 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Base class for multiple column math operations. For example myNewColumn = column1 + column2 + column3.<br>
- * Note: this transform adds a (derived) column (with the specified name) to the end<br>
- * <p/>
- * Note: Certain operations have restrictions on the number of columns used as input<br>
- * Add: 2 or more (a+b+c+...)<br>
- * Subtract: exactly 2 (a-b)<br>
- * Multiply: 2 or more (a*b*c*...)<br>
- * Divide: exactly 2 (a/b)<br>
- * Modulus: exactly 2 (a%b)<br>
- * Other math ops (ReverseSubtract, ReverseDivide, ScalarMin, ScalarMax) are not allowed here.
- * <p/>
- * <p/>
- * <p/>
- * <br><br>
- * <b>See</b>: {@link IntegerMathOpTransform}, {@link DoubleMathOpTransform}, {@link LongMathOpTransform} for operations
- * with a scalar + single column, instea
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"columnIdxs", "inputSchema"})
 @EqualsAndHashCode(exclude = {"columnIdxs", "inputSchema"})

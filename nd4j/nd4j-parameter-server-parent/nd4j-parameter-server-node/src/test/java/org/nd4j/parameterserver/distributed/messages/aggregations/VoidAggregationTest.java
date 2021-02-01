@@ -32,9 +32,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @Ignore
 @Deprecated

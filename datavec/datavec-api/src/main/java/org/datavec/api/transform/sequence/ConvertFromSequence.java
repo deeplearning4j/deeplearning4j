@@ -31,12 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Split up the values in sequences to a set of individual values.<br>
- * i.e., sequences are split up, such that each time step in the sequence is treated as a separate example
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})

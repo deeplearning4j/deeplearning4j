@@ -37,11 +37,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Unstack op conversion
- *
- * @author raver119@gmail.com
- */
 public class Unstack extends DynamicCustomOp {
 
     // TODO: libnd4j currently doesn't support "num", number of outputs is inferred.

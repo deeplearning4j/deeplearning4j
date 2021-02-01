@@ -34,10 +34,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.List;
 import java.util.Queue;
 
-/**
- * Deallocator implementation for CpuWorkspace
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CpuWorkspaceDeallocator implements Deallocator {
     private PointersPair pointersPair;

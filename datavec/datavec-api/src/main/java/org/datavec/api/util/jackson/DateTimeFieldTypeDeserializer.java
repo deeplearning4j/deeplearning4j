@@ -31,11 +31,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * JsonDeserializer for deserializing Jodatime {@link DateTimeFieldType} instances
- *
- * @author Alex Black
- */
 public class DateTimeFieldTypeDeserializer extends JsonDeserializer<DateTimeFieldType> {
 
     //Yes this is ugly - couldn't find a better way :/

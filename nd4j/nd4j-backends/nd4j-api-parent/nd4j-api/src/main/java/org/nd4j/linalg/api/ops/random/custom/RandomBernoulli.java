@@ -31,12 +31,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Random bernoulli distribution: p(x=1) = p, p(x=0) = 1-p
- * i.e., output is 0 or 1 with probability p.
- *
- * @author Alex Black
- */
 @Slf4j
 public class RandomBernoulli extends DynamicCustomOp {
     private double p = 0.0;

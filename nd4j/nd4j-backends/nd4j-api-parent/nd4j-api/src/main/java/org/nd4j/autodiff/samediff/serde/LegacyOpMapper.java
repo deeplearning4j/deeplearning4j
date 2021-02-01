@@ -70,9 +70,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 import org.nd4j.linalg.api.ops.random.impl.*;
 
-/**
- * This class maps legacy ops back to
- */
 public class LegacyOpMapper {
 
     private LegacyOpMapper() {

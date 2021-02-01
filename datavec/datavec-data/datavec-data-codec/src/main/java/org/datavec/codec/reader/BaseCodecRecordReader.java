@@ -38,11 +38,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Codec record reader for parsing videos
- *
- * @author Adam Gibson
- */
 public abstract class BaseCodecRecordReader extends FileRecordReader implements SequenceRecordReader {
     protected int startFrame = 0;
     protected int numFrames = -1;

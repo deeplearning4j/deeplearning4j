@@ -25,11 +25,6 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import org.apache.commons.dbutils.ResultSetIterator;
 
-/**
- * Encapsulation of ResultSetIterator to allow resetting
- *
- * @author Adrien Plagnol
- */
 public class ResettableResultSetIterator implements Iterator<Object[]> {
 
     private ResultSet rs;

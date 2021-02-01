@@ -23,9 +23,6 @@ package org.nd4j.parameterserver.distributed.v2.transport;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.reactivestreams.Subscriber;
 
-/**
- * This interface describes Subscriber capable of providing safe access to underlying parameters
- */
 public interface UpdatesHandler extends Subscriber<INDArray> {
     /**
      * This method returns parameters array maintained by this handler

@@ -33,9 +33,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * @author raver119@gmail.com
- */
 @Data
 public class HistogramBin implements Serializable {
     private transient INDArray sourceArray;

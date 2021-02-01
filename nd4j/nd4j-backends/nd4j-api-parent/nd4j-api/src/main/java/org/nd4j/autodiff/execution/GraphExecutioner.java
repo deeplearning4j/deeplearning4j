@@ -29,10 +29,6 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-/**
- * This interface
- * @author raver119@gmail.com
- */
 public interface GraphExecutioner {
     enum Type {
         /**

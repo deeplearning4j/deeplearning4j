@@ -36,12 +36,6 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- * A slightly upgraded version of spring's
- * classpath resource
- *
- *
- */
 public class ClassPathResource extends AbstractFileResolvingResource {
 
     private final String path;

@@ -28,14 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * A base/abstract {@link Listener} with all methods implemented as no-op.
- * Extend this for custom listeners to selectively override only the required methods
- *
- * <strong>If you want to use evaluations in your listener, use {@link BaseEvaluationListener}</strong>
- *
- * @author Alex Black
- */
 public abstract class BaseListener implements Listener {
 
 

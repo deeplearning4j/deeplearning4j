@@ -27,9 +27,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.List;
 
-/**
- * @deprecated Use {@link org.nd4j.linalg.dataset.api.iterator.SamplingDataSetIterator}
- */
 @Deprecated
 public class SamplingDataSetIterator extends org.nd4j.linalg.dataset.api.iterator.SamplingDataSetIterator {
     public SamplingDataSetIterator(DataSet sampleFrom, int batchSize, int totalNumberSamples) {

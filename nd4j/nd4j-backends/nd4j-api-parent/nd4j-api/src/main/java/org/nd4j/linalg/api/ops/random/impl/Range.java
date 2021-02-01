@@ -36,11 +36,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Range Op implementation, generates from..to distribution within Z
- *
- * @author raver119@gmail.com
- */
 public class Range extends DynamicCustomOp {
     public static final DataType DEFAULT_DTYPE = DataType.FLOAT;
 

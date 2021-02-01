@@ -31,12 +31,6 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Simple iterator working with list of files.
- * File to DataSet conversion will be handled via provided FileCallback implementation
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class FileSplitDataSetIterator implements DataSetIterator {
     private DataSetPreProcessor preProcessor;

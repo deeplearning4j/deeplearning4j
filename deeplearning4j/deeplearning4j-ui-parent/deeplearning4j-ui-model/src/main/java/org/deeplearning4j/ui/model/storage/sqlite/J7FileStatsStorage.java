@@ -30,15 +30,6 @@ import java.io.*;
 import java.sql.*;
 import java.util.*;
 
-/**
- * A Java 7 compatible file-based {@link StatsStorage} implementation, based on SQLite.
- * Note: Where possible, use {@link FileStatsStorage} which should be faster (is based
- * on MapDB).
- * Obviously, the storage formats for J7FileStatsStorage and {@link FileStatsStorage} are
- * incompatible.
- *
- * @author Alex Black
- */
 public class J7FileStatsStorage implements StatsStorage {
 
     private static final String TABLE_NAME_METADATA = "StorageMetaData";

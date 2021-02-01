@@ -29,16 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * Rational tanh approximation
- * From https://arxiv.org/pdf/1508.01292v3
- *
- * f(x) = 1.7159 * tanh(2x/3)
- * where tanh is approximated as follows,
- * tanh(y) ~ sgn(y) * { 1 - 1/(1+|y|+y^2+1.41645*y^4)}
- *
- * Underlying implementation is in native code
- */
 @EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationRationalTanh extends BaseActivationFunction {

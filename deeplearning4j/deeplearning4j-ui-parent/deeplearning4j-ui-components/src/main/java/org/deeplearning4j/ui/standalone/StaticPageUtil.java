@@ -39,15 +39,6 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.util.*;
 
-/**
- * Idea: Render a set of components as a single static page.
- * The goal here is to provide a simple mechanism for exporting simple pages with static content (charts, etc),
- * where (a) the required UI components, and (b) the data itself, is embedded in the page
- * <p>
- * This is accomplished using a simple FreeMarker template
- *
- * @author Alex Black
- */
 public class StaticPageUtil {
 
     private StaticPageUtil() {}

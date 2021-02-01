@@ -47,9 +47,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
-/**
- * Created by agibsonccc on 4/1/16.
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class LoneTest extends BaseNd4jTest {

@@ -22,9 +22,6 @@ package org.datavec.api.transform.metadata;
 
 import lombok.EqualsAndHashCode;
 
-/**
- * Created by Alex on 18/07/2016.
- */
 @EqualsAndHashCode
 public abstract class BaseColumnMetaData implements ColumnMetaData {
 

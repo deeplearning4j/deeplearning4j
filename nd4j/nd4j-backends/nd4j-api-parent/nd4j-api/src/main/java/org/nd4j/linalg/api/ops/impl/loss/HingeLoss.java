@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.loss.bp.HingeLossBp;
 
 import java.util.List;
 
-/**
- * Hinge loss
- *
- * @author Alex Black
- */
 public class HingeLoss extends BaseLoss {
 
 

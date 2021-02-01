@@ -24,9 +24,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Terminate training if best model score does not improve for N epochs
- */
 @Slf4j
 @Data
 public class ScoreImprovementEpochTerminationCondition implements EpochTerminationCondition {

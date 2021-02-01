@@ -31,23 +31,6 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/**
- * Default internationalization implementation.<br>
- * Content for internationalization is implemented using resource files.<br>
- * For the resource files: they should be specified as follows:<br>
- * 1. In the /dl4j_i18n/ directory in resources<br>
- * 2. Filenames should be "somekey.langcode" - for example, "index.en" or "index.ja"<br>
- * 3. Each key should be unique across all files. Any key can appear in any file; files may be split for convenience<br>
- * <p>
- * Loading of these UI resources is done as follows:<br>
- * - On initialization of the DefaultI18N:<br>
- * &nbsp;&nbsp;- Resource files for the default language are loaded<br>
- * - If a different language is requested, the content will be loaded on demand (and stored in memory for future use)<br>
- * Note that if a specified language does not have the specified key, the result from the defaultfallback language (English)
- * will be used instead.
- *
- * @author Alex Black
- */
 @Slf4j
 public class DefaultI18N implements I18N {
 

@@ -35,11 +35,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Stacks n input tensors of same shape to tensor of rank n + 1.
- *
- * @author farizrahman4u@gmail.com
- */
 public class ParallelStack extends DynamicCustomOp {
 
     public ParallelStack() {

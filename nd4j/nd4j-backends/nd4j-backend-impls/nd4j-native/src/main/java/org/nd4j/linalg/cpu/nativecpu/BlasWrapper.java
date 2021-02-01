@@ -24,13 +24,6 @@ package org.nd4j.linalg.cpu.nativecpu;
 import org.nd4j.linalg.factory.BaseBlasWrapper;
 
 
-/**
- * Copy of SimpleBlas to handle offsets implementing
- * an interface for library neutral
- * jblas operations
- *
- * @author Adam Gibson
- */
 public class BlasWrapper extends BaseBlasWrapper {
 
 }

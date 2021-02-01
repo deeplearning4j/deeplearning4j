@@ -20,11 +20,6 @@
 
 package org.deeplearning4j.nn.conf.memory;
 
-/**
- * Type of memory
- *
- * @author Alex Black
- */
 public enum MemoryType {
     PARAMETERS, PARAMATER_GRADIENTS, ACTIVATIONS, ACTIVATION_GRADIENTS, UPDATER_STATE, WORKING_MEMORY_FIXED, WORKING_MEMORY_VARIABLE, CACHED_MEMORY_FIXED, CACHED_MEMORY_VARIABLE;
 

@@ -32,11 +32,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Min function
- *
- * @author Adam Gibson
- */
 public class Min extends BaseDynamicTransformOp {
     public Min() {}
 

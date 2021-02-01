@@ -20,11 +20,6 @@
 
 package org.nd4j.parameterserver.distributed.messages;
 
-/**
- * This interface describes number of actions happening within VoidParameterServer in distributed manner
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public interface Chain {
 

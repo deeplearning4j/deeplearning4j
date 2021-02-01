@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentMinBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Unsorted segment min operation
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class UnsortedSegmentMin extends DynamicCustomOp {
 

@@ -29,15 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * SELU Derivative elementwise function
- *
- * https://arxiv.org/pdf/1706.02515.pdf
- *
- * @deprecated Use {@link SeluBp}
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public class SELUDerivative extends BaseTransformStrictOp {
 

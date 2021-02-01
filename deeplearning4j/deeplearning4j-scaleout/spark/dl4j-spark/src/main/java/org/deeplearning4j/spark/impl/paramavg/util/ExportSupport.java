@@ -26,11 +26,6 @@ import org.apache.spark.api.java.JavaSparkContext;
 
 import java.io.IOException;
 
-/**
- * Utility for checking if exporting data sets is supported
- *
- * @author Ede Meijer
- */
 public class ExportSupport {
     /**
      * Verify that exporting data is supported, and throw an informative exception if not.

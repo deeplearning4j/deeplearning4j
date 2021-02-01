@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Ceiling elementwise function
- *
- * @author Adam Gibson
- */
 public class Ceil extends BaseTransformSameOp {
     public Ceil(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

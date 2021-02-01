@@ -43,9 +43,6 @@ import java.util.Collections;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @RunWith(Parameterized.class)
 public class BooleanIndexingTest extends BaseNd4jTest {
     public BooleanIndexingTest(Nd4jBackend backend) {

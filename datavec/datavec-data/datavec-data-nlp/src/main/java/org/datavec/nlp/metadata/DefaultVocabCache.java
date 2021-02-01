@@ -26,12 +26,6 @@ import org.datavec.nlp.vectorizer.TextVectorizer;
 import org.nd4j.common.util.MathUtils;
 import org.nd4j.common.util.Index;
 
-/**
- * Vocab cache used for storing information
- * about vocab
- *
- * @author Adam Gibson
- */
 public class DefaultVocabCache implements VocabCache {
 
     private Counter<String> wordFrequencies = new Counter<>();

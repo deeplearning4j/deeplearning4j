@@ -22,14 +22,6 @@ package org.deeplearning4j.clustering.lsh;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * This interface gathers the minimal elements for an LSH implementation
- *
- * See chapter 3 of :
- * _Mining Massive Datasets_, Anand Rajaraman and Jeffrey Ullman
- * <a href="http://www.mmds.org/">http://www.mmds.org/</a>
- *
- */
 public interface LSH {
 
     /**

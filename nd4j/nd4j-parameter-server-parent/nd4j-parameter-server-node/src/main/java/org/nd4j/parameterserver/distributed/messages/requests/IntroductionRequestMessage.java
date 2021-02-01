@@ -24,11 +24,6 @@ import lombok.NonNull;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 
-/**
- * This message will be sent by each shard, during meeting
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public class IntroductionRequestMessage extends BaseVoidMessage implements RequestMessage {
     private String ip;

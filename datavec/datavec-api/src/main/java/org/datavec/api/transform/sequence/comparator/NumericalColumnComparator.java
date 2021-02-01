@@ -28,13 +28,6 @@ import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Sequence comparator: compare elements in a sequence using the values in a single column
- *
- * Can be applied on any numerical column (Integer, Long, Double or Time columns)
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"columnType", "schema", "columnIdx"})
 @EqualsAndHashCode(callSuper = true, exclude = {"columnType"})
 @Data

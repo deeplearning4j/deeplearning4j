@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Scalar reverse subtraction
- *
- * @author Adam Gibson
- */
 public class ScalarReverseSubtraction extends BaseScalarOp {
 
     public ScalarReverseSubtraction() {}

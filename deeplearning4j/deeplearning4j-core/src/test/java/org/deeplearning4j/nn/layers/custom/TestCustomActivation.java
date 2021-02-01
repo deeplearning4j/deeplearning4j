@@ -40,9 +40,6 @@ import java.util.Collection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 19/12/2016.
- */
 public class TestCustomActivation extends BaseDL4JTest {
 
     @Test

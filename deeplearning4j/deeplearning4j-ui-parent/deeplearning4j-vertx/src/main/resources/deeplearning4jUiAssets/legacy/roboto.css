@@ -18,7 +18,6 @@
  *  *****************************************************************************
  */
 
-/* cyrillic-ext */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
@@ -26,7 +25,6 @@
   src: local('Roboto Light'), local('Roboto-Light'), url(http://fonts.gstatic.com/s/roboto/v15/0eC6fl06luXEYWpBSJvXCBJtnKITppOI_IvcXXDNrsc.woff2) format('woff2');
   unicode-range: U+0460-052F, U+20B4, U+2DE0-2DFF, U+A640-A69F;
 }
-/* cyrillic */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
@@ -74,7 +72,6 @@
   src: local('Roboto Light'), local('Roboto-Light'), url(http://fonts.gstatic.com/s/roboto/v15/Hgo13k-tfSpn0qi1SFdUfVtXRa8TVwTICgirnJhmVJw.woff2) format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;
 }
-/* cyrillic-ext */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;
@@ -82,7 +79,6 @@
   src: local('Roboto'), local('Roboto-Regular'), url(http://fonts.gstatic.com/s/roboto/v15/ek4gzZ-GeXAPcSbHtCeQI_esZW2xOQ-xsNqO47m55DA.woff2) format('woff2');
   unicode-range: U+0460-052F, U+20B4, U+2DE0-2DFF, U+A640-A69F;
 }
-/* cyrillic */
 @font-face {
   font-family: 'Roboto';
   font-style: normal;

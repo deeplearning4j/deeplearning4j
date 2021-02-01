@@ -33,11 +33,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
-/**
- * LSTM Parameter initializer, for LSTM based on
- * Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
- */
 public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer {
 
     private static final GravesBidirectionalLSTMParamInitializer INSTANCE =

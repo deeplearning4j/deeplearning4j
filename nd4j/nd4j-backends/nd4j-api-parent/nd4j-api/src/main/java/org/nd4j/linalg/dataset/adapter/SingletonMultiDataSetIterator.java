@@ -26,12 +26,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.NoSuchElementException;
 
-/**
- * A very simple adapter class for converting a single MultiDataSet to a MultiDataSetIterator.
- * Returns a single MultiDataSet as-is, once for each epoch
- *
- * @author Alex Black
- */
 public class SingletonMultiDataSetIterator implements MultiDataSetIterator {
 
     private final MultiDataSet multiDataSet;

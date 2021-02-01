@@ -28,11 +28,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A simple helper function for use in executing CalculateSortedRank
- *
- * @author Alex Black
- */
 public class UnzipForCalculateSortedRankFunction
                 implements Function<Pair<Pair<Writable, List<Writable>>, Long>, List<Writable>> {
     @Override

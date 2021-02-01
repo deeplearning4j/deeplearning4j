@@ -29,11 +29,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.List;
 
-/**
- * Abstract class for column conditions
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"columnIdx", "schema", "sequenceMode"})
 @EqualsAndHashCode(exclude = {"columnIdx", "schema", "sequenceMode"})
 @Data

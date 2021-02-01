@@ -29,22 +29,6 @@ import org.nd4j.linalg.schedule.FixedSchedule;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * L2 regularization: very similar to {@link WeightDecay}, but is applied before the updater is applied, not after.
- * <br>
- * <br>
- * Implements updating as follows:<br>
- * {@code L = loss + l2 * 0.5 * sum_i w[i]^2}<br>
- * {@code w[i] -= updater(gradient[i] + l2 * w[i])<br>
- * That is, L2 regularization is applied before the updater (Adam/Nesterov/etc) is applied to the gradients. This differs
- * from {@link WeightDecay} mainly in that WeightDecay is applied after the updater.
- *
- * See also: {@link WeightDecay} which should generally be preferred in practice.<br>
- * See <a href="https://www.fast.ai/2018/07/02/adam-weight-decay/">https://www.fast.ai/2018/07/02/adam-weight-decay/</a>
- * for further details
- *
- * @author Alex Black
- */
 @Data
 public class L2Regularization implements Regularization {
 

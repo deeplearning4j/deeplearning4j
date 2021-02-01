@@ -23,10 +23,6 @@ import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * A helper class for the Actor Critic update algorithm. The algorithm is the same whether it's used with a RNN or
- * not but, the shape of INDArrays are different. This class handles the non-recurrent case.
- */
 public class NonRecurrentActorCriticHelper extends ActorCriticHelper {
     private final int actionSpaceSize;
 

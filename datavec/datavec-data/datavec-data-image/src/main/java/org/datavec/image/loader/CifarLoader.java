@@ -44,14 +44,6 @@ import org.bytedeco.opencv.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
-/**
- * CifarLoader is loader specific for the Cifar10 dataset
- *
- * Reference: Learning Multiple Layers of Features from Tiny Images, Alex Krizhevsky, 2009.
- *
- * There is a special preProcessor used to normalize the dataset based on Sergey Zagoruyko example
- * <a href="https://github.com/szagoruyko/cifar.torch">https://github.com/szagoruyko/cifar.torch</a>
- */
 @Slf4j
 public class CifarLoader extends NativeImageLoader implements Serializable {
     public static final int NUM_TRAIN_IMAGES = 50000;

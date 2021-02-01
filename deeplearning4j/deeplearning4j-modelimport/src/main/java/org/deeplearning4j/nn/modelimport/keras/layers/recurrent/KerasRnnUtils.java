@@ -30,11 +30,6 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
 
-/**
- * Utility functions for Keras RNN layers
- *
- * @author Max Pumperla
- */
 public class KerasRnnUtils {
 
     /**

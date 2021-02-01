@@ -31,9 +31,6 @@ import org.deeplearning4j.spark.models.sequencevectors.learning.SparkElementsLea
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BaseSparkLearningAlgorithm implements SparkElementsLearningAlgorithm {
     protected transient VocabCache<ShallowSequenceElement> vocabCache;
     protected transient VectorsConfiguration vectorsConfiguration;

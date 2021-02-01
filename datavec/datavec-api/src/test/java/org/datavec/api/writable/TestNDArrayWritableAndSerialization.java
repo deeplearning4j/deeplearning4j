@@ -30,9 +30,6 @@ import java.io.*;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 02/06/2017.
- */
 public class TestNDArrayWritableAndSerialization extends BaseND4JTest {
 
     @Test

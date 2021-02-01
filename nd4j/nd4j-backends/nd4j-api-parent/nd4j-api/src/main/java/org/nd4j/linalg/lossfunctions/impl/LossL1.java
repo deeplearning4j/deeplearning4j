@@ -37,12 +37,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-/**
- * L1 loss function: i.e., sum of absolute errors, L = sum_i abs(predicted_i - actual_i)
- * See also {@link LossMAE} for a mathematically similar loss function (MAE has division by N, where N is output size)
- *
- * @author Susan Eraly
- */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter

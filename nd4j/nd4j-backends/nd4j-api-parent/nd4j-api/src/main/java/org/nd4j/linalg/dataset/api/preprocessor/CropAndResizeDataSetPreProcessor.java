@@ -30,12 +30,6 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * The CropAndResizeDataSetPreProcessor will crop and resize the processed dataset.
- * NOTE: The data format must be NHWC
- *
- * @author Alexandre Boulanger
- */
 public class CropAndResizeDataSetPreProcessor implements DataSetPreProcessor {
 
     public enum ResizeMethod {

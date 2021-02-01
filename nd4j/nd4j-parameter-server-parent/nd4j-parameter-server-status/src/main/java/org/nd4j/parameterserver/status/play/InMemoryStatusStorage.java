@@ -26,11 +26,6 @@ import org.nd4j.parameterserver.model.SubscriberState;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * In memory status storage
- * for parameter server subscribers
- * @author Adam Gibson
- */
 public class InMemoryStatusStorage extends BaseStatusStorage {
 
     /**

@@ -28,11 +28,6 @@ import java.util.Iterator;
 
 import static org.junit.Assert.*;
 
-/**
- * CounterMap tests
- *
- * @author raver119@gmail.com
- */
 public class CounterMapTest {
 
     @Test

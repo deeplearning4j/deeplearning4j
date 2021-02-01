@@ -23,12 +23,6 @@ package org.datavec.audio.fingerprint;
 import java.util.HashMap;
 import java.util.List;
 
-/**
- * Compute the similarity of two fingerprints
- * 
- * @author jacquet
- *
- */
 public class FingerprintSimilarityComputer {
 
     private FingerprintSimilarity fingerprintSimilarity;

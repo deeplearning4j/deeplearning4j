@@ -24,11 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
-/**
- * Trainable: an interface common to Layers and GraphVertices that have trainable parameters
- *
- * @author Alex Black
- */
 public interface Trainable {
 
     /**

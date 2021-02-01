@@ -29,11 +29,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 import org.nd4j.common.base.Preconditions;
 
-/**
- * Simple pair implementation
- *
- * @author raver119@gmail.com
- */
 @AllArgsConstructor
 @Data
 @NoArgsConstructor

@@ -32,12 +32,6 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This is main router implementation for VoidParameterServer
- * Basic idea: We route TrainingMessages conditionally, based on Huffman tree index (aka frequency-ordered position)
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public class InterleavedRouter extends BaseRouter {

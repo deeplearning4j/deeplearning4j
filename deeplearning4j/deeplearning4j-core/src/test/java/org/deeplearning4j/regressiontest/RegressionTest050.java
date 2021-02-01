@@ -50,14 +50,6 @@ import java.io.File;
 
 import static org.junit.Assert.*;
 
-/**
- *
- * Regression tests for DL4J 0.5.0 - i.e., can we still load basic models generated in 0.5.0?
- * See dl4j-test-resources/src/main/resources/regression_testing/050/050_regression_test_readme.md
- *
- *
- * @author Alex Black
- */
 public class RegressionTest050 extends BaseDL4JTest {
 
     @Override

@@ -30,13 +30,6 @@ import java.util.NoSuchElementException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**InputSplit for sequences of numbered files.
- * Example usages:<br>
- * Suppose files are sequenced according to "myFile_100.txt", "myFile_101.txt", ..., "myFile_200.txt"
- * then use new NumberedFileInputSplit("myFile_%d.txt",100,200)
- * NumberedFileInputSplit utilizes String.format(), hence the requirement for "%d" to represent
- * the integer index.
- */
 @Slf4j
 public class NumberedFileInputSplit implements InputSplit {
     private final String baseString;

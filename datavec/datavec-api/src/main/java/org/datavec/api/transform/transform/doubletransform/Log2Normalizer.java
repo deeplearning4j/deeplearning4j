@@ -27,13 +27,6 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Normalize by taking scale * log2((in-columnMin)/(mean-columnMin) + 1)
- * Maps values in range (columnMin to infinity) to (0 to infinity)
- * Most suitable for values with a geometric/negative exponential type distribution.
- *
- * @author Alex Black
- */
 @Data
 public class Log2Normalizer extends BaseDoubleTransform {
 

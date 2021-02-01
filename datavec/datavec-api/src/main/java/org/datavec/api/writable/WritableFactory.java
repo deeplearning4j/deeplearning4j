@@ -29,11 +29,6 @@ import java.lang.reflect.Constructor;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Factory class for creating and saving writable objects to/from DataInput and DataOutput
- *
- * @author Alex Black
- */
 public class WritableFactory {
 
     private static WritableFactory INSTANCE = new WritableFactory();

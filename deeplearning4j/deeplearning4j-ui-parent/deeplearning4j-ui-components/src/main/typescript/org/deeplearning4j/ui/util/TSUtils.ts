@@ -18,8 +18,6 @@
  *  *****************************************************************************
  */
 
-/// <reference path="../api/Margin.ts" />
-
 class TSUtils {
 
     //Get the maximum value

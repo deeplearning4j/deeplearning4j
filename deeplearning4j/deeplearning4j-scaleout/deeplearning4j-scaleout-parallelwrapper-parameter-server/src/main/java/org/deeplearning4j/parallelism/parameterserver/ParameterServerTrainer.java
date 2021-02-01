@@ -38,13 +38,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Using an {@link ParameterServerClient}
- * we maintain updates for training a neural net.
- * Training happens relative to the mode of the remote {@link org.nd4j.parameterserver.node.ParameterServerNode}
- *
- * @author Adam Gibson
- */
 @Builder
 @Slf4j
 @AllArgsConstructor

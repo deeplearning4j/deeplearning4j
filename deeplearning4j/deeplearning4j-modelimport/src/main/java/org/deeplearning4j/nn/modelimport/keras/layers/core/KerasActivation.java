@@ -31,11 +31,6 @@ import java.util.Map;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasActivationUtils.getIActivationFromConfig;
 
-/**
- * Imports an Activation layer from Keras.
- *
- * @author dave@skymind.io
- */
 @Slf4j
 public class KerasActivation extends KerasLayer {
 

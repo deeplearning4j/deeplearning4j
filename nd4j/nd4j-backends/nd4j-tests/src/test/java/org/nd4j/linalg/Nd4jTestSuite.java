@@ -28,14 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
 
-/**
- * Test suite for nd4j.
- *
- * This will run every combination of every unit test provided
- * that the backend's ordering and test line up.
- *
- * @author Adam Gibson
- */
 public class Nd4jTestSuite extends BlockJUnit4ClassRunner {
     //the system property for what backends should run
     public final static String BACKENDS_TO_LOAD = "backends";

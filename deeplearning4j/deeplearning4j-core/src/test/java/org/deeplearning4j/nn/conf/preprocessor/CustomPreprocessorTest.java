@@ -39,9 +39,6 @@ import java.util.Collection;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 09/09/2016.
- */
 public class CustomPreprocessorTest extends BaseDL4JTest {
 
     @Test

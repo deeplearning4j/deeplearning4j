@@ -37,10 +37,6 @@ import org.nd4j.linalg.util.FeatureUtil;
 import java.io.Serializable;
 import java.util.List;
 
-/**Map {@code Collection<Writable>} objects (out of a datavec-spark record reader function) to DataSet objects for Spark training.
- * Analogous to {@link RecordReaderDataSetIterator}, but in the context of Spark.
- * @author Alex Black
- */
 @Slf4j
 public class DataVecDataSetFunction implements Function<List<Writable>, DataSet>, Serializable {
 

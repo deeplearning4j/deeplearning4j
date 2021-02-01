@@ -23,15 +23,6 @@ package org.datavec.api.records.metadata;
 import java.io.Serializable;
 import java.net.URI;
 
-/**
- * RecordMetaData includes details on the record itself - for example, the source file or line number.<br>
- * It is used in conjunction with {@link org.datavec.api.records.reader.RecordReaderMeta}.<br>
- * There are two primary uses:<br>
- * (a) Tracking where a record has come from, for debugging purposes for example<br>
- * (b) Loading the raw data again later, from the record reader<br>
- *
- * @author Alex Black
- */
 public interface RecordMetaData extends Serializable {
 
     /**

@@ -24,10 +24,6 @@ import lombok.*;
 
 import java.io.Serializable;
 
-/**
- * Simple triple elements holder implementation
- * @author raver119@gmail.com
- */
 @Data
 @AllArgsConstructor
 @Builder

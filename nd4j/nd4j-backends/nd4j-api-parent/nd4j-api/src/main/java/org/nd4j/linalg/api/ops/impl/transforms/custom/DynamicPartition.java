@@ -37,21 +37,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.*;
 
 
-/**
- * Transforms a given input tensor into numPartitions partitions, as indicated by the indices in "partitions".
- * Output tensor has one more dimension than input tensor, the first dimension indicates the partition.
- *
- * Example:
- *
- * input:           [4, 3, 5, 7, 8, 0]
- * input shape:     [1, 6]
- * partitions:      [1, 0, 1, 0, 0, 1]
- * numPartitions:   2
- * outputs[0]:      [3, 7, 8]
- * outputs[1]:      [4, 5, 0]
- *
- * @author Max Pumperla
- */
 public class DynamicPartition extends DynamicCustomOp {
 
     private int numPartitions;

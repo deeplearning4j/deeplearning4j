@@ -26,9 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
-/**
- * Created by anton on 7/18/16.
- */
 public class InFileDataSetCache implements DataSetCache {
     private File cacheDirectory;
 

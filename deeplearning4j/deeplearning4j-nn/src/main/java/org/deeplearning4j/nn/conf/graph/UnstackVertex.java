@@ -32,15 +32,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * UnstackVertex allows for unstacking of inputs so that they may be forwarded through
- * a network. This is useful for cases such as Triplet Embedding, where embeddings can
- * be separated and run through subsequent layers.
- *
- * Works similarly to SubsetVertex, except on dimension 0 of the input.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Getter
 public class UnstackVertex extends GraphVertex {
     protected int from;

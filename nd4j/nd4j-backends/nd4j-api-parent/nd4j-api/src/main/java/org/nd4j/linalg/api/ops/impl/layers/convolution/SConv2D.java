@@ -37,9 +37,6 @@ import java.util.Collections;
 import java.util.List;
 
 
-/**
- * Separable convolution 2D operation
- */
 @Slf4j
 public class SConv2D extends Conv2D {
 

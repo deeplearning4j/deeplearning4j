@@ -52,11 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-/**
- * This unit contains tests for c++ --- java ops mapping
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class OpsMappingTests extends BaseNd4jTest {
 

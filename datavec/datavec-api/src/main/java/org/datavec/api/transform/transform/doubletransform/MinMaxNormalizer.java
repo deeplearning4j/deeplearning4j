@@ -28,13 +28,6 @@ import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Normalizer to map (min to max) -> (newMin-to newMax) linearly. <br>
- * <p>
- * Mathematically: (newMax-newMin)/(max-min) * (x-min) + newMin
- *
- * @author Alex Black
- */
 @Data
 @JsonIgnoreProperties({"ratio", "inputSchema", "columnNumber"})
 public class MinMaxNormalizer extends BaseDoubleTransform {

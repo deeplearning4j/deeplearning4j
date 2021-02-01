@@ -31,12 +31,6 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 
-/**
- * Base class for level 1 functions, abstract headers pulled from:
- * http://www.netlib.org/blas/blast-forum/cblas.h
- *
- * @author Adam Gibson
- */
 public abstract class BaseLevel1 extends BaseLevel implements Level1 {
     /**
      * computes a vector-vector dot product.

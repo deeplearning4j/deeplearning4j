@@ -28,9 +28,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 6/17/16.
- */
 public class Nd4jBase64Test extends BaseNd4jTest {
 
     public Nd4jBase64Test(Nd4jBackend backend) {

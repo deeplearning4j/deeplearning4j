@@ -20,9 +20,6 @@
 
 package org.deeplearning4j.nn.conf.stepfunctions;
 
-/**
- * Inverse step function
- */
 public class NegativeDefaultStepFunction extends StepFunction {
 
     private static final long serialVersionUID = -7172373342318047825L;

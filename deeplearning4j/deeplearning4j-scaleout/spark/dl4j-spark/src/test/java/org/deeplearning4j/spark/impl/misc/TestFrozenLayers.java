@@ -48,9 +48,6 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 10/07/2017.
- */
 public class TestFrozenLayers extends BaseSparkTest {
 
     @Test

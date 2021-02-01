@@ -23,11 +23,6 @@ package org.datavec.audio.extension;
 
 import org.datavec.audio.Wave;
 
-/**
- * Handles the wave data in amplitude-time domain.
- *
- * @author Jacquet Wong
- */
 public class NormalizedSampleAmplitudes {
 
     private Wave wave;

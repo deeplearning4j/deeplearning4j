@@ -23,34 +23,6 @@ package org.nd4j.linalg.api.ops;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * An accumulation is an op that given:<br>
- * x -> the origin ndarray<br>
- * y -> the pairwise ndarray<br>
- * n -> the number of times to accumulate<br>
- * <p/>
- * <p/>
- * Of note here in the extra arguments.
- * <p/>
- * An accumulation (or reduction in some terminology)
- * has a concept of a starting value.
- * <p/>
- * The starting value is the initialization of the solution
- * to the operation.
- * <p/>
- * An accumulation should always have the extraArgs()
- * contain the zero value as the first value.
- * <p/>
- * This allows the architecture to generalize to different backends
- * and gives the implementer of a backend a way of hooking in to
- * passing parameters to different engines.<br>
- *
- * Note that ReduceOp op implementations should be stateless
- * (other than the final result and x/y/z/n arguments) and hence threadsafe,
- * such that they may be parallelized using the update, combineSubResults and
- * set/getFinalResults methods.
- * @author Adam Gibson
- */
 public interface ReduceOp extends Op {
 
     /**

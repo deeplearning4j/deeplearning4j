@@ -27,13 +27,6 @@ import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
-/**
- * Basic implementation for ClientRouter: we route each message to random Shard
- *
- *
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public class RandomRouter extends BaseRouter {
     protected int numShards;

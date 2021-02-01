@@ -29,12 +29,6 @@ import org.nd4j.shade.jackson.databind.JsonNode;
 
 import java.io.IOException;
 
-/**
- * By default: Spark storage levels don't serialize/deserialize cleanly with Jackson (i.e., we can get different results out).
- * So we'll manually control the serialization/deserialization for StorageLevel objects
- *
- * @author Alex Black
- */
 public class StorageLevelDeserializer extends JsonDeserializer<StorageLevel> {
     @Override
     public StorageLevel deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)

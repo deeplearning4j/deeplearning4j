@@ -36,16 +36,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
-/**
- * Elementwise multiplication layer with weights: implements out = activationFn(input .* w + b) where:<br>
- * - w is a learnable weight vector of length nOut<br>
- * - ".*" is element-wise multiplication<br>
- * - b is a bias vector<br>
- * <br>
- * Note that the input and output sizes of the element-wise layer are the same for this layer
- * <p>
- * created by jingshu
- */
 public class ElementWiseMultiplicationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.misc.ElementWiseMultiplicationLayer> {
 
     public ElementWiseMultiplicationLayer(NeuralNetConfiguration conf, DataType dataType){

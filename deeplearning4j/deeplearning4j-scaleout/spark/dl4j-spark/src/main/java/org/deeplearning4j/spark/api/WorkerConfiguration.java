@@ -25,11 +25,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 
-/**
- * A simple configuration object (common settings for workers)
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class WorkerConfiguration implements Serializable {

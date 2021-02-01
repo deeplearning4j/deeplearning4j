@@ -35,11 +35,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * SVD - singular value decomposition
- *
- * @author Alex Black
- */
 public class Svd extends DynamicCustomOp {
     public static final int DEFAULT_SWITCHNUM = 16;
 

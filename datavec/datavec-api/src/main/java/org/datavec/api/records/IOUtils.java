@@ -27,9 +27,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/**
- * Various utility functions for Hadooop record I/O runtime.
- */
 public class IOUtils {
 
     /** Cannot create a new instance of IOUtils */

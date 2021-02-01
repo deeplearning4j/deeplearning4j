@@ -38,9 +38,6 @@ import java.util.UUID;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 9/23/16.
- */
 public class BinarySerdeTest extends BaseNd4jTest {
 
     public BinarySerdeTest(Nd4jBackend backend) {

@@ -37,12 +37,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
 
-/**
- * Wrapper which masks timesteps with activation equal to the specified masking value (0.0 default). Assumes that the
- * input shape is [batch_size, input_size, timesteps].
- *
- * @author Martin Boyanov mboyanov@gmail.com
- */
 @Data
 public class MaskZeroLayer extends BaseWrapperLayer {
 

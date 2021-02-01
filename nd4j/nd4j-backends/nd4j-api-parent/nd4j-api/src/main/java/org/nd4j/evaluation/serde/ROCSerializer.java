@@ -28,14 +28,6 @@ import org.nd4j.shade.jackson.databind.jsontype.TypeSerializer;
 
 import java.io.IOException;
 
-/**
- * Custom Jackson serializer for ROC.
- * This is necessary to force calculation of the AUC and AUPRC metrics, so said metrics can be stored in the JSON;
- * this is important for exact ROC, as if it's not present at the time of serialization, it cannot be calculated later,
- * due to the underlying (very large) predictions no longer being present.
- *
- * @author Alex Black
- */
 public class ROCSerializer extends JsonSerializer<ROC> {
     @Override
     public void serialize(ROC roc, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)

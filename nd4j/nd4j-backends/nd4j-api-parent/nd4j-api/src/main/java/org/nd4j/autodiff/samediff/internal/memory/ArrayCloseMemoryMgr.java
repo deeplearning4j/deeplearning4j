@@ -28,13 +28,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * A simple memory management strategy that deallocates memory as soon as it is no longer needed.<br>
- * This should result in a minimal amount of memory, but will have some overhead - notably, the cost of deallocating
- * and reallocating memory all the time.
- *
- * @author Alex Black
- */
 @Slf4j
 public class ArrayCloseMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
 

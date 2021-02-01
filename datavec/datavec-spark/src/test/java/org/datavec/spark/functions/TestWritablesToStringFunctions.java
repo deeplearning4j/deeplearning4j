@@ -38,9 +38,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 19/05/2017.
- */
 public class TestWritablesToStringFunctions extends BaseSparkTest {
 
     @Test

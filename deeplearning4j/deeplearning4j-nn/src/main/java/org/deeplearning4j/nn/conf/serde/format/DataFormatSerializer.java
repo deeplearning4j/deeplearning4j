@@ -28,11 +28,6 @@ import org.nd4j.shade.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 
-/**
- * Simple JSON deserializer for {@link DataFormat} instances - {@link CNN2DFormat} and {@link RNNFormat}
- *
- * @author Alex Black
- */
 public class DataFormatSerializer extends JsonSerializer<DataFormat> {
     @Override
     public void serialize(DataFormat dataFormat, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {

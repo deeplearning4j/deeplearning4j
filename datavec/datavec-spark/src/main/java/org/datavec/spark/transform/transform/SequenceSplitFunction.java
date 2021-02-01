@@ -27,9 +27,6 @@ import org.datavec.api.writable.Writable;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Created by Alex on 17/03/2016.
- */
 public class SequenceSplitFunction implements FlatMapFunction<List<List<Writable>>, List<List<Writable>>> {
 
     private final SequenceSplit split;

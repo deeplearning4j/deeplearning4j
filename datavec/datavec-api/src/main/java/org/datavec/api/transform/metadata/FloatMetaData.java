@@ -26,11 +26,6 @@ import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * MetaData for a Float column.
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class FloatMetaData extends BaseColumnMetaData {

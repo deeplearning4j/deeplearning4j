@@ -28,12 +28,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-/**
- * Simple class for conversion between LabelAwareIterator -> LabeledSentenceProvider for neural nets.
- * Since we already have converters for all other classes - this single converter allows us to accept all possible iterators
- *
- * @author raver119@gmail.com
- */
 public class LabelAwareConverter implements LabeledSentenceProvider {
     private LabelAwareIterator backingIterator;
     private List<String> labels;

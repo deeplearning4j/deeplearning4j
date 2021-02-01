@@ -32,13 +32,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * Score function for a MultiLayerNetwork or ComputationGraph with a single
- * {@link org.deeplearning4j.nn.conf.layers.AutoEncoder} layer.
- * Calculates the specified {@link Metric} on the layer's reconstructions.
- *
- * @author Alex Black
- */
 public class AutoencoderScoreCalculator extends BaseScoreCalculator<Model> {
 
     protected final Metric metric;

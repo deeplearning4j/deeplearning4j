@@ -24,12 +24,6 @@ import org.deeplearning4j.ui.model.stats.StatsListener;
 
 import java.io.Serializable;
 
-/**
- * Configuration interface for static (unchanging) information, to be reported by {@link StatsListener}.
- * This interface allows for software/hardware/model information to be collected (or, not)
- *
- * @author Alex Black
- */
 public interface StatsInitializationConfiguration extends Serializable {
 
     /**

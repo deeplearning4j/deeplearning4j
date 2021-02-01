@@ -25,11 +25,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * An interface defining operations that {@link BaseNetwork} need to do on different network implementations
- * (see {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork}, {@link org.deeplearning4j.nn.graph.ComputationGraph})
- * and networks composed of other networks (see {@link CompoundNetworkHandler}
- */
 public interface INetworkHandler {
     /**
      * @return true if the network is recurrent

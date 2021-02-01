@@ -26,10 +26,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import java.io.Serializable;
 import java.util.Iterator;
 
-/**An iterator for {@link org.nd4j.linalg.dataset.api.MultiDataSet} objects.
- * Typical usage is for machine learning algorithms with multiple independent input (features) and output (labels)
- * arrays.
- */
 public interface MultiDataSetIterator extends Iterator<MultiDataSet>, Serializable {
 
     /** Fetch the next 'num' examples. Similar to the next method, but returns a specified number of examples

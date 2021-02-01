@@ -25,19 +25,6 @@ import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.nd4j.linalg.activations.Activation;
 
-/**
- * Inception is based on GoogleLeNet configuration of convolutional layers for optimization of
- * resources and learning. You can use this module to add Inception to your own custom models.
- * <br>
- * The GoogleLeNet paper: <a href="https://arxiv.org/abs/1409.4842">https://arxiv.org/abs/1409.4842</a><br>
- * <br>
- * This module is based on the Inception GraphBuilderModule built for Torch and
- * a Scala implementation of GoogleLeNet.<br>
- * <a href="https://github.com/Element-Research/dpnn/blob/master/Inception.lua">https://github.com/Element-Research/dpnn/blob/master/Inception.lua</a><br>
- * <a href="https://gist.github.com/antikantian/f77e91f924614348ea8f64731437930d">https://gist.github.com/antikantian/f77e91f924614348ea8f64731437930d</a>
- *
- * @author Justin Long (crockpotveggies)
- */
 public class FaceNetHelper {
 
     public static String getModuleName() {

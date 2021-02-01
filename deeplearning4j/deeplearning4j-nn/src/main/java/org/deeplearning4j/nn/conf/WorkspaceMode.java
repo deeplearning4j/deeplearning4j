@@ -20,16 +20,6 @@
 
 package org.deeplearning4j.nn.conf;
 
-/**
- * Workspace mode to use. See <a href="https://deeplearning4j.konduit.ai/config/config-memory/config-workspaces">https://deeplearning4j.konduit.ai/config/config-memory/config-workspaces</a><br>
- * <br>
- * NONE: No workspaces will be used for the network. Highest memory use, least performance.<br>
- * ENABLED: Use workspaces. This is the default and should almost always be used<br>
- * SINGLE: Deprecated. Now equivalent to ENABLED, which should be used instead.<br>
- * SEPARATE: Deprecated. Now equivalent to ENABLED, which sohuld be used instead.<br>
- *
- * @author raver119@gmail.com
- */
 public enum WorkspaceMode {
     NONE, // workspace won't be used
     ENABLED,

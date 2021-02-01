@@ -36,12 +36,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 
-/**
- * A stochastic policy that, when training, explore the environment based on
- * the softmax output of the actor critic, but objects constructed.
- * Revert to a greedy policy when not training.
- *
- */
 public class ACPolicy<OBSERVATION extends Encodable> extends Policy<Integer> {
 
     final private IOutputNeuralNet neuralNet;

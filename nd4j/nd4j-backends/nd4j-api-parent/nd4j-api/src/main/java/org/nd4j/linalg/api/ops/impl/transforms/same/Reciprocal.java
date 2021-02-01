@@ -30,9 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Created by susaneraly on 3/28/18.
- */
 @NoArgsConstructor
 public class Reciprocal extends BaseTransformSameOp {
 

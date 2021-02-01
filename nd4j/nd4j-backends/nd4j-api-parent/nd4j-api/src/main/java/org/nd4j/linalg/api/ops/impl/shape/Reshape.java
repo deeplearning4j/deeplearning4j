@@ -40,11 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Reshape function
- *
- * @author Adam Gibson
- */
 @Slf4j
 @NoArgsConstructor
 public class Reshape extends DynamicCustomOp {

@@ -31,13 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
-/**
- * Nesterov's momentum.
- * Keep track of the previous layer's gradient
- * and use it as a way of updating the gradient.
- *
- * @author Adam Gibson
- */
 @AllArgsConstructor
 @Data
 @Builder(builderClassName = "Builder")

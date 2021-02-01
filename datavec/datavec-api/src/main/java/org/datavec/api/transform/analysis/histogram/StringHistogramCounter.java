@@ -22,11 +22,6 @@ package org.datavec.api.transform.analysis.histogram;
 
 import org.datavec.api.writable.Writable;
 
-/**
- * A counter for building histograms (of String length) on a String column
- *
- * @author Alex Black
- */
 public class StringHistogramCounter implements HistogramCounter {
 
     private final int minLength;

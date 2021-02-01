@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Rounding function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class Round extends BaseTransformSameOp {
 

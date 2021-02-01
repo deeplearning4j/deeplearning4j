@@ -28,10 +28,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * A serializable version of {@link Configuration}
- * @author Alex Black
- */
 public class SerializableHadoopConfig implements Serializable {
 
     private Map<String,String> content;

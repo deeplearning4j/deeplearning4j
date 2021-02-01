@@ -28,9 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.curves.ReliabilityDiagram}
- */
 @Deprecated
 @Data
 @EqualsAndHashCode(callSuper = true)

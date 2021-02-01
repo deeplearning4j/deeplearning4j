@@ -28,9 +28,6 @@ import org.nd4j.parameterserver.distributed.logic.completion.FrameCompletionHand
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
-/**
- * @author raver119@gmail.co,
- */
 @Deprecated
 public abstract class BaseTrainer<T extends TrainingMessage> implements TrainingDriver<T> {
     protected VoidConfiguration voidConfiguration;

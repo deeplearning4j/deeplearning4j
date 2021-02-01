@@ -30,9 +30,6 @@ import org.nd4j.common.function.Function;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by Alex on 5/03/2016.
- */
 @AllArgsConstructor
 @Slf4j
 public class LocalTransformFunction implements Function<List<Writable>, List<Writable>> {

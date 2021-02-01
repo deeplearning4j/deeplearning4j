@@ -33,36 +33,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Record writer for SVMLight format, which can generally
- * be described as
- *
- * LABEL INDEX:VALUE INDEX:VALUE ...
- *
- * SVMLight format is well-suited to sparse data (e.g.,
- * bag-of-words) because it omits all features with value
- * zero.
- *
- * We support an "extended" version that allows for multiple
- * targets (or labels) separated by a comma, as follows:
- *
- * LABEL1,LABEL2,... INDEX:VALUE INDEX:VALUE ...
- *
- * This can be used to represent either multitask problems or
- * multilabel problems with sparse binary labels (controlled
- * via the "MULTILABEL" configuration option).
- *
- * Like scikit-learn, we support both zero-based and one-based indexing.
- *
- * Further details on the format can be found at<br>
- * - <a href="http://svmlight.joachims.org/">http://svmlight.joachims.org/</a><br>
- * - <a href="http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html">http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html</a><br>
- * - <a href="http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html">http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html</a>
- *
- * @author Adam Gibson     (original)
- * @author Josh Patterson
- * @author dave@skymind.io
- */
 @Slf4j
 public class SVMLightRecordWriter extends FileRecordWriter {
     /* Configuration options. */

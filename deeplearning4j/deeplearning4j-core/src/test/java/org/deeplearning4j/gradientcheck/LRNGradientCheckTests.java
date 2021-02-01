@@ -42,9 +42,6 @@ import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 08/09/2016.
- */
 public class LRNGradientCheckTests extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;

@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp;
 
 import java.util.List;
 
-/**
- * HardSigmoid function
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class HardSigmoid extends BaseTransformStrictOp {
 

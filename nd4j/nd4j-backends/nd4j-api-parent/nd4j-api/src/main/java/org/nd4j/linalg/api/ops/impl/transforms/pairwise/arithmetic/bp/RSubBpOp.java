@@ -23,11 +23,6 @@ package org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 
-/**
- * Division backprop operation. Supports 'undoing' of auto broadcast as applied in div op forward pass
- *
- * @author Alex Black
- */
 public class RSubBpOp extends BaseArithmeticBackpropOp {
 
     public RSubBpOp() {}

@@ -29,11 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Manhattan distance
- *
- * @author Adam Gibson
- */
 public class ManhattanDistance extends BaseReduce3Op {
     public static final String OP_NAME = "manhattan";
 

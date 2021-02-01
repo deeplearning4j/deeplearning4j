@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MaxBp;
 
 import java.util.List;
 
-/**
- * Calculate the max over an array
- *
- * @author Adam Gibson
- */
 public class Max extends BaseReduceSameOp {
     public Max(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, dimensions, keepDims);

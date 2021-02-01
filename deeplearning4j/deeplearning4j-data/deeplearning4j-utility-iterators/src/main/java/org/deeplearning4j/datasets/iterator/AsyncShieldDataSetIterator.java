@@ -28,14 +28,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.List;
 
-/**
- * This wrapper takes your existing DataSetIterator implementation and prevents asynchronous prefetch
- * when using methods such as {@code MultiLayerNetwork.fit(DataSetIterator)}
- * This is mainly used for debugging purposes; generally an iterator that isn't safe to asynchronously prefetch from
- * should simply return {@code asyncSupported() == false}
- *
- * @author raver119@gmail.com
- */
 public class AsyncShieldDataSetIterator implements DataSetIterator {
     private DataSetIterator backingIterator;
 

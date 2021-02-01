@@ -31,12 +31,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
-/**
- * DataBufferFactory: Creates the data buffer wrt
- * a specified data opType
- *
- * @author Adam Gibson
- */
 public interface DataBufferFactory {
 
     /**

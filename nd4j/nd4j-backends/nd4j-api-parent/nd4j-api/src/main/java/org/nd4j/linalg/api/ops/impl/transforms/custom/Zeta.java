@@ -30,13 +30,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Element-wise Zeta function.
- *
- * Note that it is only defined for values x > 1, q > 0
- *
- * @author Alex Black
- */
 public class Zeta extends BaseDynamicTransformOp {
 
     public Zeta(SameDiff sameDiff, SDVariable x, SDVariable q) {

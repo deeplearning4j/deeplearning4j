@@ -23,10 +23,6 @@ package org.datavec.api.io.converters;
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.writable.Writable;
 
-/**
- * Baseline writable converter
- * @author Adam Gibson
- */
 public class SelfWritableConverter implements WritableConverter {
     @Override
     public Writable convert(Writable writable) {

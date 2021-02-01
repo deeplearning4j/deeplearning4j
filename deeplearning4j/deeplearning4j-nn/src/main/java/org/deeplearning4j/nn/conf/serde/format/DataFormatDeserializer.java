@@ -30,11 +30,6 @@ import org.nd4j.shade.jackson.databind.JsonNode;
 
 import java.io.IOException;
 
-/**
- * Simple JSON deserializer for {@link DataFormat} instances - {@link CNN2DFormat} and {@link RNNFormat}
- *
- * @author Alex Black
- */
 public class DataFormatDeserializer extends JsonDeserializer<DataFormat> {
     @Override
     public DataFormat deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {

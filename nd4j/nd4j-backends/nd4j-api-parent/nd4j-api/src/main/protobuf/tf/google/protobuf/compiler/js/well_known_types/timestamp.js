@@ -18,9 +18,6 @@
  *  *****************************************************************************
  */
 
-/* This code will be inserted into generated code for
- * google/protobuf/timestamp.proto. */
-
 /**
  * Returns a JavaScript 'Date' object corresponding to this Timestamp.
  * @return {!Date}

@@ -32,12 +32,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 
-/**
- * Start background daemons for tests
- * Credit to:
- * https://stackoverflow.com/questions/636367/executing-a-java-application-in-a-separate-process
- * @author Adam Gibson
- */
 @Slf4j
 public class BackgroundDaemonStarter {
 

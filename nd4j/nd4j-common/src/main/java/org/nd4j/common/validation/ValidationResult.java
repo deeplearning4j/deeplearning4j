@@ -30,11 +30,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Represents a standard way of validating models, files, etc before attempting to load them.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

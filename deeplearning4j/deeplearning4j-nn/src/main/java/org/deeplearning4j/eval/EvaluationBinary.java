@@ -25,9 +25,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Use {@link org.nd4j.evaluation.classification.EvaluationBinary}
- */
 @Deprecated
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)

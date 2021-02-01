@@ -35,13 +35,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.*;
 
-/**
- * Most of the normalizer functionality is shared with {@link MultiNormalizerMinMaxScaler}
- * and is covered in {@link NormalizerMinMaxScalerTest}. This test suite just verifies if it deals properly with
- * multiple inputs and multiple outputs
- *
- * @author Ede Meijer
- */
 @RunWith(Parameterized.class)
 public class MultiNormalizerMinMaxScalerTest extends BaseNd4jTest {
     private static final double TOLERANCE_PERC = 0.01; // 0.01% of correct value

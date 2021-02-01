@@ -24,11 +24,6 @@ import org.nd4j.linalg.api.rng.Random;
 
 import java.lang.reflect.Constructor;
 
-/**
- * This class acts as factory for new Random objects and thread-isolated holder for previously created Random instances
- *
- * @author raver119@gmail.com
- */
 public class RandomFactory {
     private ThreadLocal<Random> threadRandom = new ThreadLocal<>();
     private Class randomClass;

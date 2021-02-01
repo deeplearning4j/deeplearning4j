@@ -28,14 +28,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A listener interface for training DL4J models.<br>
- * The methods here will be called at various points during training, and only during training.<br>
- * Note that users can extend {@link BaseTrainingListener} and selectively override the required methods,
- * instead of implementing TrainingListener directly and having a number of no-op methods.
- *
- * @author Alex Black
- */
 public interface TrainingListener {
 
     /**

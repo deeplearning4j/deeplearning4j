@@ -24,11 +24,6 @@ import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * A simple utility iterator for creating a DataSetIterator from an {@code Iterable<Pair<INDArray,INDArray>>}.
- * First value in pair is the features vector, second value in pair is the labels.
- * @author raver119@gmail.com
- */
 public class INDArrayDataSetIterator extends AbstractDataSetIterator<INDArray> {
 
     /**

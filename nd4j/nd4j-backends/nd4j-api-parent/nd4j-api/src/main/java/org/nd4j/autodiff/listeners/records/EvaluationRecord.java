@@ -37,9 +37,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 
-/**
- * A helper class to hold evaluations and provide methods to easily query them
- */
 @Getter
 public class EvaluationRecord {
 

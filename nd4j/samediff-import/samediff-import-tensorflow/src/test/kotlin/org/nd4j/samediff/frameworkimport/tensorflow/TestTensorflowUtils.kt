@@ -1914,9 +1914,6 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                 Attribute("T",AttrValue {
                     type = DataType.DT_FLOAT
                 })
-                Attribute("U",AttrValue {
-                    type = DataType.DT_FLOAT
-                })
                 Attribute("is_training",AttrValue {
                     b = false
                 })
@@ -3989,12 +3986,6 @@ fun graphForOp(nd4jOpName: String,inputFrameworkOpName: String): List<GraphInput
                         name = "output"
                         Attribute("T",AttrValue {
                             type = DataType.DT_DOUBLE
-                        })
-                        Attribute("transpose_a",AttrValue {
-                            b = transA
-                        })
-                        Attribute("transpose_b",AttrValue {
-                            b = transB
                         })
                     }
 

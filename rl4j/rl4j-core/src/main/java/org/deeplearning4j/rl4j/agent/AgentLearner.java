@@ -30,10 +30,6 @@ import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 
-/**
- * The ActionLearner is an {@link Agent} that delegate the learning to a {@link ILearningBehavior}.
- * @param <ACTION> The type of the action
- */
 public class AgentLearner<ACTION> extends Agent<ACTION> implements IAgentLearner<ACTION> {
 
     private final ILearningBehavior<ACTION> learningBehavior;

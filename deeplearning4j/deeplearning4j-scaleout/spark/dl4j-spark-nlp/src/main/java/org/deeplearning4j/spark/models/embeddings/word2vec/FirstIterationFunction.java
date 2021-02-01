@@ -33,10 +33,6 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author jeffreytang
- * @author raver119@gmail.com
- */
 public class FirstIterationFunction implements
         FlatMapFunction<Iterator<Tuple2<List<VocabWord>, Long>>, Entry<VocabWord, INDArray>> {
 

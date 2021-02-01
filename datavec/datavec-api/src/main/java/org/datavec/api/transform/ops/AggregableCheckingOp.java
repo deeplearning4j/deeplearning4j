@@ -26,12 +26,6 @@ import lombok.Getter;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
 
-/**
- * A variant of {@link IAggregableReduceOp} exercised on a {@link Writable} that takes schema metadata
- * in its constructor, and checks the input {@link Writable} against the schema before accepting it.
- *
- * Created by huitseeker on 5/8/17.
- */
 @AllArgsConstructor
 @Data
 public class AggregableCheckingOp<T> implements IAggregableReduceOp<Writable, T> {

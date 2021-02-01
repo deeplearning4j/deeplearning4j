@@ -42,9 +42,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by susaneraly on 7/15/16.
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class PreProcessor3D4DTest extends BaseNd4jTest {

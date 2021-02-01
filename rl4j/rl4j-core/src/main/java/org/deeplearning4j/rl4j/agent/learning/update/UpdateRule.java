@@ -26,13 +26,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.updater.INeuralNetUpdater;
 
 import java.util.List;
 
-/**
- * This implementation of {@link IUpdateRule} delegates the <i>features-labels</i> or <i>gradients</i> computations to
- * a {@link IUpdateAlgorithm}, and the networks update to a {@link INeuralNetUpdater}.
- *
- * @param <RESULT_TYPE> The type of result returned by the IUpdateAlgorithm
- * @param <EXPERIENCE_TYPE> The type of experience
- */
 public class UpdateRule<RESULT_TYPE, EXPERIENCE_TYPE> implements IUpdateRule<EXPERIENCE_TYPE> {
 
     private final INeuralNetUpdater updater;

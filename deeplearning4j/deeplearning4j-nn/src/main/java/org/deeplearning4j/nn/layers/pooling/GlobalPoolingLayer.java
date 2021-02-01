@@ -43,33 +43,6 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
-/**
- * Global pooling layer - used to do pooling over time for RNNs, and 2d pooling for CNNs.<br>
- * Supports the following {@link PoolingType}s: SUM, AVG, MAX, PNORM<br>
- *
- * Global pooling layer can also handle mask arrays when dealing with variable length inputs.<br>
- * mask arrays are assumed to be 2d, and are fed forward through the network during
- * training or post-training forward pass:<br>
- * - Time series (RNNs, 1d CNNs): mask arrays are shape [miniBatchSize, maxTimeSeriesLength] and contain values 0 or 1 only<br>
- * - CNNs (2d): mask have shape [miniBatchSize, 1, height, 1] or [miniBatchSize, 1, 1, width] or [minibatch, 1, height, width].
- *   When used activations of shape [minibatch, channels, height, width] the size 1 dimensions are broadcast along the input<br>
- * <p>
- *
- * Behaviour with default settings:<br>
- * - 3d (time series) input with shape [miniBatchSize, vectorSize, timeSeriesLength] -> 2d output [miniBatchSize, vectorSize]<br>
- * - 4d (CNN) input with shape [miniBatchSize, channels, height, width] -> 2d output [miniBatchSize, channels]<br>
- * - 5d (CNN3D) input with shape [miniBatchSize, channels, depth, height, width] -> 2d output [miniBatchSize, channels]<br>
- *
- * <p>
- * Alternatively, by setting collapseDimensions = false in the configuration, it is possible to retain the reduced dimensions
- * as 1s: this gives
- * - [miniBatchSize, vectorSize, 1] for RNN output,
- * - [miniBatchSize, channels, 1, 1] for CNN output, and
- * - [miniBatchSize, channels, 1, 1, 1] for CNN3D output.
- * <br>
- *
- * @author Alex Black
- */
 public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer> {
 
     private static final int[] DEFAULT_TIMESERIES_POOL_DIMS = new int[]{2};

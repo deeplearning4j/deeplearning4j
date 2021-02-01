@@ -36,9 +36,6 @@ import java.util.Random;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 19/06/2017.
- */
 public class EvalCustomThreshold extends BaseNd4jTest {
 
     public EvalCustomThreshold(Nd4jBackend backend) {

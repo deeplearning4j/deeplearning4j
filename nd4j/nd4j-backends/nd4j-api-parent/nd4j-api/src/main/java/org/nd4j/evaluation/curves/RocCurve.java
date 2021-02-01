@@ -25,11 +25,6 @@ import lombok.EqualsAndHashCode;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * ROC curve: a set of (false positive, true positive) tuples at different thresholds
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"auc"}, callSuper = false)
 public class RocCurve extends BaseCurve {

@@ -35,20 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * A base deserialization class used to handle deserializing of a specific class given changes from subtype wrapper
- * format to class field format.<br>
- * That is: from...<br>
- * {@literal {@code @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)}}<br>
- * {@literal {@code @JsonSubTypes(value = {@JsonSubTypes.Type(value = LossBinaryXENT.class, name = "BinaryXENT"),}...}}<br>
- * <br>
- * to<br>
- * <br>
- * {@literal {@code @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")}}
- *
- * @param <T>  Type to deserialize
- * @author Alex Black
- */
 @Slf4j
 public abstract class BaseLegacyDeserializer<T> extends JsonDeserializer<T> {
 

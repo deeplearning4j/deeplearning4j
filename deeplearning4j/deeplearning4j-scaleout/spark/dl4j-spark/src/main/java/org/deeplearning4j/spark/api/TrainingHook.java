@@ -26,16 +26,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.io.Serializable;
 
-/**
- * A hook for the workers when training.
- * A pre update and post update method are specified
- * for when certain information needs to be collected
- * or there needs to be specific parameters
- * or models sent to remote locations for visualization
- * or other things.
- *
- * @author Adam Gibson
- */
 public interface TrainingHook extends Serializable {
     /**
      * A hook method for pre update.

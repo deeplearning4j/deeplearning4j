@@ -42,9 +42,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
- */
 @Deprecated
 public class DQN implements IDQN<DQN> {
 

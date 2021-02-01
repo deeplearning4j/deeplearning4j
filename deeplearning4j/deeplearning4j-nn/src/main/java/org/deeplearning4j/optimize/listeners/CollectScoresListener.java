@@ -31,11 +31,6 @@ import org.deeplearning4j.optimize.api.BaseTrainingListener;
 
 import java.io.Serializable;
 
-/**
- * A simple listener that collects scores to a list every N iterations. Can also optionally log the score.
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @Slf4j

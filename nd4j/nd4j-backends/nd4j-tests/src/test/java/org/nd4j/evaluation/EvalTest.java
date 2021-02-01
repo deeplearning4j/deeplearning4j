@@ -39,9 +39,6 @@ import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/**
- * Created by agibsonccc on 12/22/14.
- */
 public class EvalTest extends BaseNd4jTest {
 
     public EvalTest(Nd4jBackend backend) {

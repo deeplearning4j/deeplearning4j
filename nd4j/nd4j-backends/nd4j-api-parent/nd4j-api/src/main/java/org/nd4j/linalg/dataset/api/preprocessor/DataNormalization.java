@@ -25,13 +25,6 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
-/**
- * An interface for data normalizers.
- * Data normalizers compute some sort of statistics
- * over a dataset and scale the data in some way.
- *
- * @author Adam Gibson
- */
 public interface DataNormalization extends Normalizer<DataSet>, DataSetPreProcessor {
     /**
      * Iterates over a dataset

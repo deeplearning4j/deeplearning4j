@@ -32,10 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author raver119@gmail.com
- * @author saudet
- */
 public class NativeOpsHolder {
     private static Logger log = LoggerFactory.getLogger(NativeOpsHolder.class);
     private static final NativeOpsHolder INSTANCE = new NativeOpsHolder();

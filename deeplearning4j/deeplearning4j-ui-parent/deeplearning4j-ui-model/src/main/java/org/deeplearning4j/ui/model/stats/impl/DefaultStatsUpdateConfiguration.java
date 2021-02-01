@@ -24,9 +24,6 @@ import lombok.AllArgsConstructor;
 import org.deeplearning4j.ui.model.stats.api.StatsType;
 import org.deeplearning4j.ui.model.stats.api.StatsUpdateConfiguration;
 
-/**
- * Created by Alex on 07/10/2016.
- */
 @AllArgsConstructor
 public class DefaultStatsUpdateConfiguration implements StatsUpdateConfiguration {
 

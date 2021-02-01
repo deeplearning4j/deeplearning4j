@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Sparse threshold encoding op wrapper. Used in gradients sharing.
- * @author raver119@gmail.com
- */
 public class EncodeThreshold extends DynamicCustomOp {
     protected float threshold = 1e-3f;
     protected int boundary = Integer.MAX_VALUE;

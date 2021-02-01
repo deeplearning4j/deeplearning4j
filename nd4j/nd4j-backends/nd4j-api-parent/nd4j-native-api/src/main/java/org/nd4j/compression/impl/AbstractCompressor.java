@@ -34,9 +34,6 @@ import org.nd4j.linalg.compression.NDArrayCompressor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public abstract class AbstractCompressor implements NDArrayCompressor {
 

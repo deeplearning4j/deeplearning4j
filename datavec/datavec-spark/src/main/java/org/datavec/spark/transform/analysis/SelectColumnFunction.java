@@ -26,9 +26,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Select out the value from a single column
- */
 @AllArgsConstructor
 public class SelectColumnFunction implements Function<List<Writable>, Writable> {
 

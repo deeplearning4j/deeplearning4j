@@ -24,9 +24,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.agent.learning.update.updater.INeuralNetUpdater;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 
-/**
- * A {@link INeuralNetUpdater} that updates a neural network and sync a target network at defined intervals
- */
 public abstract class BaseAsyncNeuralNetUpdater<DATA_TYPE> implements INeuralNetUpdater<DATA_TYPE> {
     protected final ITrainableNeuralNet threadCurrent;
     private final AsyncSharedNetworksUpdateHandler sharedNetworksUpdateHandler;

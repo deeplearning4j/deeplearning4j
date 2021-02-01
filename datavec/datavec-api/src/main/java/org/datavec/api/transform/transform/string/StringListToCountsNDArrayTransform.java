@@ -39,12 +39,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * Converts String column into a bag-of-words (BOW) represented as an NDArray of "counts."<br>
- * Note that the original column is removed in the process
- *
- * @author dave@skymind.io
- */
 @JsonIgnoreProperties({"inputSchema", "map", "columnIdx"})
 @EqualsAndHashCode(callSuper = false, exclude = {"columnIdx"})
 @Data

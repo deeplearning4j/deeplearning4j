@@ -39,11 +39,6 @@ import org.tensorflow.framework.NodeDef;
 import java.lang.reflect.Field;
 import java.util.*;
 
-/**
- * Matrix multiplication/dot product
- *
- * @author Adam Gibson
- */
 @EqualsAndHashCode
 public class Mmul extends DynamicCustomOp {
 

@@ -25,10 +25,6 @@ import scala.Function1;
 import scala.Some;
 import scala.math.Ordering;
 
-/**
- * Orders by data set size.
- * This will force the dataset with a certain number of mini batches to be grouped at th end.
- */
 public class DataSetOrdering implements Ordering<DataSet> {
     @Override
     public Some<Object> tryCompare(DataSet dataSet, DataSet t1) {

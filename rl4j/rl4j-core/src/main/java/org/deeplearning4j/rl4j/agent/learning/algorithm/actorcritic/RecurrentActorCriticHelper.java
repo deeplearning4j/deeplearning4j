@@ -22,10 +22,6 @@ package org.deeplearning4j.rl4j.agent.learning.algorithm.actorcritic;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * A helper class for the Actor Critic update algorithm. The algorithm is the same whether it's used with a RNN or
- * not but, the shape of INDArrays are different. This class handles the recurrent case.
- */
 public class RecurrentActorCriticHelper extends ActorCriticHelper {
     private final int actionSpaceSize;
 

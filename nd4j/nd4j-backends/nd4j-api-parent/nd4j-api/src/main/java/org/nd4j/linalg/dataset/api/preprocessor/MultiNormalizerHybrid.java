@@ -34,18 +34,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Pre processor for MultiDataSet that can be configured to use different normalization strategies for different inputs
- * and outputs, or none at all. Can be used for example when one input should be normalized, but a different one should
- * be untouched because it's the input for an embedding layer. Alternatively, one might want to mix standardization and
- * min-max scaling for different inputs and outputs.
- * <p>
- * By default, no normalization is applied. There are methods to configure the desired normalization strategy for inputs
- * and outputs either globally or on an individual input/output level. Specific input/output strategies will override
- * global ones.
- *
- * @author Ede Meijer
- */
 @EqualsAndHashCode(callSuper = false)
 @Setter
 public class MultiNormalizerHybrid extends AbstractNormalizer implements MultiDataNormalization, Serializable {

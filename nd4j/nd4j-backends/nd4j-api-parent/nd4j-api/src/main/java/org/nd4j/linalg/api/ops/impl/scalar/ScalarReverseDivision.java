@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseScalarOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Scalar reverse division
- *
- * @author Adam Gibson
- */
 public class ScalarReverseDivision extends BaseScalarOp {
 
     public ScalarReverseDivision() {

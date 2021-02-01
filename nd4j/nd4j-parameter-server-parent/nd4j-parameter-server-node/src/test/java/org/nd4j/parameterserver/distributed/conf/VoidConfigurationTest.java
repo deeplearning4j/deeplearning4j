@@ -28,9 +28,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 public class VoidConfigurationTest extends BaseND4JTest {
 
     @Rule

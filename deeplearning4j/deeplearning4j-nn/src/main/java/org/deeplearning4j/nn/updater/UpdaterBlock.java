@@ -38,12 +38,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * UpdaterBlock: used in {@link BaseMultiLayerUpdater}, this class implements updating (i.e., Adam, RMSProp, Momentum,
- * etc) across multiple contiguous layers/parameters, as described in the {@link BaseMultiLayerUpdater} javadoc.
- *
- * @author Alex Black
- */
 @Data
 public class UpdaterBlock {
     private int paramOffsetStart;

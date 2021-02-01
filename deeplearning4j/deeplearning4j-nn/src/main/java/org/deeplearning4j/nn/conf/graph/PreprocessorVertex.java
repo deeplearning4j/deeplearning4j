@@ -32,12 +32,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * PreprocessorVertex is a simple adaptor class that allows a {@link InputPreProcessor} to be used in a ComputationGraph
- * GraphVertex, without it being associated with a layer.
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 @Data
 public class PreprocessorVertex extends GraphVertex {

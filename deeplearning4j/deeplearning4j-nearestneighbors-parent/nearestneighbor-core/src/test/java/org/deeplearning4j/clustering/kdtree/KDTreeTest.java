@@ -45,9 +45,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by agibsonccc on 1/1/15.
- */
 public class KDTreeTest extends BaseDL4JTest {
 
     @Override

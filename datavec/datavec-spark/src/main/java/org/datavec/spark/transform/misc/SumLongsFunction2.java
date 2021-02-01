@@ -22,9 +22,6 @@ package org.datavec.spark.transform.misc;
 
 import org.apache.spark.api.java.function.Function2;
 
-/**
- * Created by Alex on 03/09/2016.
- */
 public class SumLongsFunction2 implements Function2<Long, Long, Long> {
     @Override
     public Long call(Long l1, Long l2) throws Exception {

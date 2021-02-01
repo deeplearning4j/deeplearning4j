@@ -20,9 +20,6 @@
 
 package org.deeplearning4j.nn.conf.stepfunctions;
 
-/**
- * Subtract the line
- */
 public class NegativeGradientStepFunction extends StepFunction {
 
     private static final long serialVersionUID = 1180651861332789690L;

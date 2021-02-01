@@ -27,10 +27,6 @@ import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 
 import java.lang.reflect.Field;
 
-/**
- * Comparison for whether a string not equals a target string
- * returning a boolean
- */
 @AllArgsConstructor
 public class StringNotEqualsAdapter implements AttributeAdapter {
     private String compString;

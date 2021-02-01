@@ -34,9 +34,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class JointParallelDataSetIteratorTest extends BaseDL4JTest {
 

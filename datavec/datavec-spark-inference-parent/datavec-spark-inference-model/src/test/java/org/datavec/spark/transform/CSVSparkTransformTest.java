@@ -40,9 +40,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 12/24/16.
- */
 public class CSVSparkTransformTest {
     @Test
     public void testTransformer() throws Exception {

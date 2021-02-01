@@ -22,11 +22,6 @@ package org.nd4j.linalg.indexing.conditions;
 
 import org.nd4j.common.util.ArrayUtil;
 
-/**
- * Mini dsl for building conditions
- *
- * @author Adam Gibson
- */
 public class ConditionBuilder {
 
     private Condition soFar;

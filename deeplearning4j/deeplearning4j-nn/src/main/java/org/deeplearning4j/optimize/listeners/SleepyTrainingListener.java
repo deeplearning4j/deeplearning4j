@@ -32,15 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This TrainingListener implementation provides a way to "sleep" during specific Neural Network training phases.<br>
- * Suitable for debugging/testing purposes only.
- *
- * PLEASE NOTE: All timers treat time values as milliseconds.
- * PLEASE NOTE: Do not use it in production environment.
- *
- * @author raver119@gmail.com
- */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data

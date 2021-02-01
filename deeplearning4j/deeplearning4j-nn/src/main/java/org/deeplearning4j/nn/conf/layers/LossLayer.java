@@ -41,14 +41,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * LossLayer is a flexible output layer that performs a loss function on an input without MLP logic.<br> LossLayer is
- * similar to {@link OutputLayer} in that both perform loss calculations for network outputs vs. labels, but LossLayer
- * does not have any parameters. Consequently, setting nIn/nOut isn't supported - the output size is the same size as
- * the input activations.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

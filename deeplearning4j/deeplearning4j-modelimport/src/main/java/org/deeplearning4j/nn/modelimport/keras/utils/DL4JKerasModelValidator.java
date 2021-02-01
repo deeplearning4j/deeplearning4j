@@ -31,11 +31,6 @@ import org.nd4j.common.validation.ValidationResult;
 import java.io.File;
 import java.util.Collections;
 
-/**
- * A utility for validating serialized Keras sequential and functional models for import into DL4J
- *
- * @author Alex Black
- */
 public class DL4JKerasModelValidator {
 
     private DL4JKerasModelValidator(){ }

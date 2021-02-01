@@ -32,12 +32,6 @@ import java.util.Random;
 import static org.nd4j.shade.guava.base.Preconditions.checkArgument;
 import static org.nd4j.shade.guava.base.Preconditions.checkNotNull;
 
-/**
- * This is a custom partitioner that rebalances a minimum of elements
- * it expects a key in the form (SparkUID, class)
- *
- * @author huitseeker
- */
 public class HashingBalancedPartitioner extends Partitioner {
     private final int numClasses; // Total number of element classes
     private final int numPartitions; // Total number of partitions

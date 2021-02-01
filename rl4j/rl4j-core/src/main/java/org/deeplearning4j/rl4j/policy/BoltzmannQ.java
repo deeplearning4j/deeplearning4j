@@ -29,12 +29,6 @@ import org.nd4j.linalg.api.rng.Random;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.exp;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/10/16.
- *
- * Boltzmann exploration is a stochastic policy wrt to the
- * exponential Q-values as evaluated by the dqn model.
- */
 public class BoltzmannQ<OBSERVATION extends Encodable> extends Policy<Integer> {
 
     final private IDQN dqn;

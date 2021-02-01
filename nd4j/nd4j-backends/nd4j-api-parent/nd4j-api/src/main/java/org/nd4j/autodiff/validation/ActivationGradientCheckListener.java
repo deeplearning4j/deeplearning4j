@@ -36,12 +36,6 @@ import java.util.List;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * A listener used for debugging and testing purposes - specifically for gradient checking activations internally in
- * {@link GradCheckUtil}. It probably isn't useful for anything outside of this.
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class ActivationGradientCheckListener extends BaseListener {
 

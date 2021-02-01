@@ -33,11 +33,6 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Utility functionality for keras constraints.
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class KerasConstraintUtils {
 

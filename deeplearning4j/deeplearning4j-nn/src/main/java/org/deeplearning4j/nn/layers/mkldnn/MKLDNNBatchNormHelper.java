@@ -44,11 +44,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * MKL-DNN batch normalization helper implementation
- *
- * @author Alex Black
- */
 public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     private static final int[] RANK2_DIMS = {0};
     private static final int[] RANK4_DIMS_NCHW = {0,2,3};

@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Negative function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class Negative extends BaseTransformSameOp {
     public Negative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

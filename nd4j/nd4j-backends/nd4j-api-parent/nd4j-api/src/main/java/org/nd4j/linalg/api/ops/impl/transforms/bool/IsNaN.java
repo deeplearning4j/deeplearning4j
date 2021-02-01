@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * IsNaN function
- *
- * @author raver119@gmail.com
-  */
 @NoArgsConstructor
 public class IsNaN extends BaseTransformBoolOp {
     public IsNaN(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

@@ -34,12 +34,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-/**
- * Collection record reader.
- * Mainly used for testing.
- *
- * @author Adam Gibson
- */
 public class CollectionRecordReader extends BaseRecordReader {
     private Iterator<? extends Collection<Writable>> records;
     private final Collection<? extends Collection<Writable>> original;

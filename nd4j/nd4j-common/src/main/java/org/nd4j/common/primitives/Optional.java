@@ -25,12 +25,6 @@ import lombok.NonNull;
 
 import java.util.NoSuchElementException;
 
-/**
- * Simple Optional class, based loosely on Java 8's optional class
- *
- * @param <T> Type for optional
- * @author Alex Black
- */
 @EqualsAndHashCode
 public class Optional<T> {
     private static final Optional EMPTY = new Optional();

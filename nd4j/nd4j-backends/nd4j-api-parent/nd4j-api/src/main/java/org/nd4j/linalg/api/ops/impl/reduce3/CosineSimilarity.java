@@ -29,14 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Cosine similarity
- * Note that you need to initialize
- * a scaling constant equal to the norm2 of the
- * vector
- *
- * @author Adam Gibson
- */
 public class CosineSimilarity extends BaseReduce3Op {
     public static final String OP_NAME = "cosinesimilarity";
 

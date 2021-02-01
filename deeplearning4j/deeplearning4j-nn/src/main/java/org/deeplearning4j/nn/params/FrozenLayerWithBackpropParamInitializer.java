@@ -31,13 +31,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Parameter initializer for {@link FrozenLayer} instances. Relies on underlying layer's param initializer.
- * This is alost a line for line copy of {@link FrozenLayerParamInitializer}, just uses FrozenLayerWithBackprop instead
- * of FrozenLayer
- *
- * @author Ugljesa Jovanovic
- */
 public class FrozenLayerWithBackpropParamInitializer implements ParamInitializer {
 
     private static final FrozenLayerWithBackpropParamInitializer INSTANCE = new FrozenLayerWithBackpropParamInitializer();

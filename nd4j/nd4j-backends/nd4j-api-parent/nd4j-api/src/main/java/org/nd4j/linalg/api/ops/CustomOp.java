@@ -26,13 +26,6 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 
 import java.util.List;
 
-/**
- * This interface describe "custom operations.
- * Originally these operations are designed for SameDiff, and execution within graph,
- * but we also want to provide option to use them with regular ND4J methods via NativeOpExecutioner
- *
- * @author raver119@gmail.com
- */
 public interface CustomOp {
     /**
      * This method returns op opName as string

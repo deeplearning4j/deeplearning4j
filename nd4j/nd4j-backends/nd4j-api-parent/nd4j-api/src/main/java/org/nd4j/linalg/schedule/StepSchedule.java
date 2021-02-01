@@ -23,13 +23,6 @@ package org.nd4j.linalg.schedule;
 import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Step decay schedule, with 3 parameters: initial value, gamma and step.<br>
- * value(i) = initialValue * gamma^( floor(iter/step) )
- * where i is the iteration or epoch (depending on the setting)
- *
- * @author Alex Black
- */
 @Data
 public class StepSchedule implements ISchedule {
 

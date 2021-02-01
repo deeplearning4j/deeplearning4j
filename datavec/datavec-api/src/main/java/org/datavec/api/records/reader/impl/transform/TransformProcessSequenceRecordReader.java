@@ -37,13 +37,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * This wraps a {@link SequenceRecordReader} with a {@link TransformProcess}
- * which will allow every {@link Record} returned from the {@link SequenceRecordReader}
- * to be transformed before being returned.
- *
- * @author Adam Gibson
- */
 @AllArgsConstructor
 public class TransformProcessSequenceRecordReader implements SequenceRecordReader {
 

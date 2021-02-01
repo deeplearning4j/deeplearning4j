@@ -25,14 +25,6 @@ import org.nd4j.common.tools.BTools;
 
 import static org.junit.Assert.*;
 
-/**
- *
- *
- * 
- *
- * @author clavvis
- */
-
 public class BToolsTest {
 	//
 	

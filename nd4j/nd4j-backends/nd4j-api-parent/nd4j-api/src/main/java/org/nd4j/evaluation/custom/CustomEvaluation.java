@@ -35,19 +35,6 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * A evaluation using lambdas to calculate the score.
- *
- * Uses 3 lambdas:<br>
- *     EvaluationLambda: takes in the labels, predictions, mask, and metadata and returns a value of type T<br>
- *     MergeLambda: takes in two lists of Ts, returns one.  Used in merging for distributed training<br>
-*      ResultLambda (in Metric): takes a list of Ts, returns a double value<br>
- *     <br>
- * The EvaluationLambda will be called on each batch, and the results will be stored in a list.
- * MergeLambda merges two of those lists for distributed training (think Spark or Map-Reduce).
- * ResultLambda gets a score from that list.
- *
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CustomEvaluation<T> extends BaseEvaluation<CustomEvaluation> {

@@ -50,10 +50,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.junit.Assert.*;
 
-/**
- * Basic tests for mixed data types
- * @author raver119@gmail.com
- */
 @Slf4j
 public class MixedDataTypesTests extends BaseNd4jTest {
 

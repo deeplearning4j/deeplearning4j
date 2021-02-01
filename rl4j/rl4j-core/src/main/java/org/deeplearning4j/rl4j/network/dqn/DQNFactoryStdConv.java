@@ -43,9 +43,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/13/16.
- */
 @Value
 public class DQNFactoryStdConv implements DQNFactory {
 

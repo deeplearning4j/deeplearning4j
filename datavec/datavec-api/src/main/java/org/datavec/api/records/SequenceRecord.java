@@ -26,18 +26,6 @@ import org.datavec.api.writable.Writable;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * A SequenceRecord contains a set of values for a single sequence or time series (usually with multiple values per time step,
- * and multiple time steps).<br>
- * Each value in the Record is represented by {@link Writable} object; each time step is thus a {@code List<Writable>} and
- * the entire sequence is represented by a {@code List<List<Writable>>}, where the outer list is over time steps, and
- * the inner list is over values for a given time step.<br>
- * The SequenceRecord may (optionally) also have a {@link RecordMetaData} instance, that represents metadata (source
- * location, etc) for the record.<br>
- * For standard (non-sequential) data, see {@link Record}
- *
- * @author Alex Black
- */
 public interface SequenceRecord extends Serializable {
 
     /**

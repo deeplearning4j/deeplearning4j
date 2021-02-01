@@ -31,10 +31,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * Class for conducting early stopping training locally (single machine).<br>
- * Can be used to train a {@link ComputationGraph}
- */
 public class EarlyStoppingGraphTrainer extends BaseEarlyStoppingTrainer<ComputationGraph> { //implements IEarlyStoppingTrainer<ComputationGraph> {
     private ComputationGraph net;
 

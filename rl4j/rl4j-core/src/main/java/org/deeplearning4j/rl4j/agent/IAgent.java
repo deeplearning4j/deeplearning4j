@@ -22,10 +22,6 @@ package org.deeplearning4j.rl4j.agent;
 import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 
-/**
- * The interface of {@link Agent}
- * @param <ACTION>
- */
 public interface IAgent<ACTION> {
     /**
      * Will play a single episode

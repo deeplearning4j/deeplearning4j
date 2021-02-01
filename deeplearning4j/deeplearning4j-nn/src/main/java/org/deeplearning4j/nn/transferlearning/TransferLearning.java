@@ -47,14 +47,6 @@ import org.nd4j.common.primitives.Triple;
 
 import java.util.*;
 
-/**
- * The transfer learning API can be used to modify the architecture or the learning parameters of an existing multilayernetwork or computation graph.
- * It allows one to
- *  - change nOut of an existing layer
- *  - remove and add existing layers/vertices
- *  - fine tune learning configuration (learning rate, updater etc)
- *  - hold parameters for specified layers as a constant
- */
 @Slf4j
 public class TransferLearning {
 

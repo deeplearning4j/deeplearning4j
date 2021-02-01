@@ -26,12 +26,6 @@ import org.nd4j.common.base.Preconditions;
 
 import java.util.*;
 
-/**
- * A map for int arrays backed by a {@link java.util.TreeMap}
- * @param <V> the value for the map.
- *
- * @author Adam Gibson
- */
 public class IntArrayKeyMap<V> implements Map<int[],V> {
 
     private Map<IntArray,V> map = new LinkedHashMap<>();

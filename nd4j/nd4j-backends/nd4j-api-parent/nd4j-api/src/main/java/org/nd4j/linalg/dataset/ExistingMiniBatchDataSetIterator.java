@@ -28,12 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Read in existing mini batches created
- * by the mini batch file datasetiterator.
- *
- * @author Adam Gibson
- */
 public class ExistingMiniBatchDataSetIterator implements DataSetIterator {
 
     public static final String DEFAULT_PATTERN = "dataset-%d.bin";

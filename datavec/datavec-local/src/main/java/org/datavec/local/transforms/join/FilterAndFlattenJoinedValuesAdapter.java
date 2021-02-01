@@ -27,13 +27,6 @@ import org.datavec.local.transforms.functions.FlatMapFunctionAdapter;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Doing two things here:
- * (a) filter out any unnecessary values, and
- * (b) extract the List<Writable> values from the JoinedValue
- *
- * @author Alex Black
- */
 public class FilterAndFlattenJoinedValuesAdapter implements FlatMapFunctionAdapter<JoinedValue, List<Writable>> {
 
     private final Join.JoinType joinType;

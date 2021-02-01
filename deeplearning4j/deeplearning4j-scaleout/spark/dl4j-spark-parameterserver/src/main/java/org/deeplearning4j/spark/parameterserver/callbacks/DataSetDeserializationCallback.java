@@ -25,9 +25,6 @@ import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.DataInputStream;
 
-/**
- * @author raver119@gmail.com
- */
 public class DataSetDeserializationCallback implements PortableDataStreamCallback {
 
     @Override

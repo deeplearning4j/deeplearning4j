@@ -37,24 +37,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 
-/**
- * 2D Separable convolution layer configuration.
- *
- * Separable convolutions split a regular convolution operation into two simpler operations, which are usually
- * computationally more efficient.
- *
- * The first step in a separable convolution is a channels-wise convolution, which operates on each of the input maps
- * separately. A channels multiplier is used to specify the number of outputs per input map in this step. This
- * convolution is carried out with the specified kernel sizes, stride and padding values.
- *
- * The second step is a point-wise operation, in which the intermediary outputs of the channels-wise convolution are
- * mapped to the desired number of feature maps, by using a 1x1 convolution.
- *
- * The result of chaining these two operations will result in a tensor of the same shape as that for a standard conv2d
- * operation.
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

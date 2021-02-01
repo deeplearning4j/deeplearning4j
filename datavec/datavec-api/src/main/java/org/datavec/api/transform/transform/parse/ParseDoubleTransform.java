@@ -31,11 +31,6 @@ import org.datavec.api.writable.Writable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- *  Convert string writables to doubles
- *
- *  @author Adam GIbson
- */
 @Data
 public class ParseDoubleTransform extends BaseTransform {
 

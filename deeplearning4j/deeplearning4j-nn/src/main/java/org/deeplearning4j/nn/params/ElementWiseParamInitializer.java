@@ -32,9 +32,6 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * created by jingshu
- */
 public class ElementWiseParamInitializer extends DefaultParamInitializer{
 
     private static final ElementWiseParamInitializer INSTANCE = new ElementWiseParamInitializer();

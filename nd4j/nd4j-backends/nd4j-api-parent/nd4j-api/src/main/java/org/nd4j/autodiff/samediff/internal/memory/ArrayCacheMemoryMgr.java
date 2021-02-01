@@ -32,33 +32,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
-/**
- * ArrayCacheMemoryMgr reuses arrays to reduce the number of memory allocations and deallocations.<br>
- * Memory allocations and deallocations can be quite expensive, especially on GPUs.<br>
- * Note that when arrays are reused, they are reused for the same datatype only.<br>
- * If caching a released array would result in the the maximum cache size being is exceeded, the oldest arrays will
- * be deallocated first, until the new array can in the cache.
- * <br><br>
- * By default, the following parameters are used for the cache:
- * <ul>
- * <li>Maximum cache size: 0.25 x max memory, where:</li>
- * <ul>
- *      <li>CPU: max memory is determined using {@link Pointer#maxBytes()}</li>
- *      <li>GPU: max memory is determined using GPU 0 total memory</li>
- * </ul>
- * <li>Larger array max multiple: 2.0</li>
- * <ul>
- *     <li>This means: if an exact array size can't be provided from the cache, use the next smallest array with a buffer up to 2.0x larger than requested</li>
- *     <li>If no cached arrays of size &lt; 2x requested exists, allocate a new array</li>
- * </ul>
- * <li>Small array threshold: 1024 elements</li>
- * <ul>
- *      <li>This means: the "larger array max multiple" doesn't apply below this level. For example, we might return a size 1 array backed by a size 1023 buffer</li>
- * </ul>
- * </ul>
- *
- * @author Alex Black
- */
 @Getter
 public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 

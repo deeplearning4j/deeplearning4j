@@ -30,9 +30,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.awt.*;
 
-/**
- * Created by Alex on 3/04/2016.
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)

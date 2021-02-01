@@ -26,9 +26,6 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * Created by Alex on 19/12/2016.
- */
 @EqualsAndHashCode
 public class CustomActivation extends BaseActivationFunction implements IActivation {
     @Override

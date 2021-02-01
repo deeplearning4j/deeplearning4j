@@ -24,9 +24,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 
 import java.util.HashMap;
 
-/**
- * A {@link Gradient} container used to update neural networks.
- */
 public class Gradients {
 
     @Getter

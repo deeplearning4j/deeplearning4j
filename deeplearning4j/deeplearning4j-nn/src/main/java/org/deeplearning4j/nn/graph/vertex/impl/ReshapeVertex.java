@@ -32,13 +32,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * Adds the ability to reshape and flatten the tensor in the computation graph. This is the equivalent
- * of calling {@code .reshape(new int[]{})} on the input array to the vertex and passing the new shape
- * to the next layer. ReshapeVertex also ensures the shape is valid for the backward pass.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class ReshapeVertex extends BaseGraphVertex {
 
     private char order;

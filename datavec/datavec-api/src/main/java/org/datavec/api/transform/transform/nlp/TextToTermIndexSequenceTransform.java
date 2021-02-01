@@ -33,14 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
-/**
- *
- * Convert each text value in a sequence to a longer sequence of integer indices.
- * For example, "zero one two" would be converted to [0, 1, 2]. Values in other
- * columns will be duplicated.
- *
- * @author Dave Kale
- */
 @Data
 @EqualsAndHashCode(callSuper = true, exclude = {"writableMap"})
 @JsonIgnoreProperties({"writableMap"})

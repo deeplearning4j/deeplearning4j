@@ -32,12 +32,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * SequenceTrimTranform removes the first or last N values in a sequence. Note that the resulting sequence
- * may be of length 0, if the input sequence is less than or equal to N.
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"schema"})
 @EqualsAndHashCode(exclude = {"schema"})
 @Data

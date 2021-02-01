@@ -1,7 +1,5 @@
-in_0
-in_1
-Add/y
-in_0/read
-in_1/read
-Add
-Zeta
+Variable
+Cumsum/axis
+Variable/read
+Cumsum/x
+Cumsum

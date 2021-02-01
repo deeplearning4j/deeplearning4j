@@ -28,11 +28,6 @@ import org.nd4j.shade.jackson.databind.SerializerProvider;
 
 import java.io.IOException;
 
-/**
- * JsonSerializer for serializing Jodatime {@link DateTimeFieldType} instances
- *
- * @author Alex Black
- */
 public class DateTimeFieldTypeSerializer extends JsonSerializer<DateTimeFieldType> {
     @Override
     public void serialize(DateTimeFieldType dateTimeFieldType, JsonGenerator jsonGenerator,

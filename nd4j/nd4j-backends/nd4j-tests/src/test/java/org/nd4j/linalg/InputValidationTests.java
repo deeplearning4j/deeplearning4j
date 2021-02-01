@@ -29,9 +29,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.fail;
 
-/**
- * Created by Alex on 05/08/2016.
- */
 @RunWith(Parameterized.class)
 public class InputValidationTests extends BaseNd4jTest {
 

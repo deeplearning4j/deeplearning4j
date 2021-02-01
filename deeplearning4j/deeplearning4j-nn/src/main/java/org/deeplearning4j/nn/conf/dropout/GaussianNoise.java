@@ -29,13 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Applies additive, mean-zero Gaussian noise to the input - i.e., x = x + N(0,stddev).<br>
- * Note that this differs from {@link GaussianDropout}, which applies <it>multiplicative</it> mean-1 N(1,s) noise.<br>
- * Note also that schedules for the standard deviation value can also be used.
- *
- * @author Alex Black
- */
 @Data
 public class GaussianNoise implements IDropout {
 

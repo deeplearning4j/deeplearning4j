@@ -23,41 +23,6 @@ package org.nd4j.linalg.schedule;
 import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Cycle schedule
- *
- *  Based on 1cycle schedule as proposed in https://arxiv.org/abs/1803.09820
- *
- *  Starts at initial learning rate, then linearly increases learning rate until max learning rate is reached,
- *  at that point the learning rate is decreased back to initial learning rate.
- *
- *  When cycleLength - annealingLength is reached, the annealing period starts, and the learning rate starts decaying
- *  below the initial learning rate.
- *
- *  The Learning rate curve Looks something like this:
- *
- * +-----------------------------------------+
- * |               XX                        |
- * |              XX XX                      |
- * |             XX   XX                     |
- * |            XX     XX                    |
- * |           XX       XX                   |
- * |          XX         XX                  |
- * |         XX           XX                 |
- * |        XX             XX                |
- * |       XX               XX               |
- * |      XX                 XX              |
- * |     XX                   XX             |
- * |    XX                     XX            |
- * |   XX                       XX           |
- * |  XX                          XXX        |
- * |                                XXX      |
- * |                                   XXX   |
- * |                                         |
- * +-----------------------------------------+
- *
- * @author Paul Dubs
- */
 @Data
 public class CycleSchedule implements ISchedule {
 

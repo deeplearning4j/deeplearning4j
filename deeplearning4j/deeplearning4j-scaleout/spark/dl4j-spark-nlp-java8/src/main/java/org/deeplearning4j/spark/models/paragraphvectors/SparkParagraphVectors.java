@@ -33,9 +33,6 @@ import org.deeplearning4j.spark.models.paragraphvectors.functions.KeySequenceCon
 import org.deeplearning4j.spark.models.sequencevectors.SparkSequenceVectors;
 import org.deeplearning4j.text.documentiterator.LabelledDocument;
 
-/**
- * @author raver119@gmail.com
- */
 public class SparkParagraphVectors extends SparkSequenceVectors<VocabWord> {
 
     protected SparkParagraphVectors() {

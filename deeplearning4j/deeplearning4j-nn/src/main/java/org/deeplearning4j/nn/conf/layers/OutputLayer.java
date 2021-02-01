@@ -38,12 +38,6 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Output layer used for training via backpropagation based on labels and a specified loss function. Can be configured
- * for both classification and regression. Note that OutputLayer has parameters - it contains a fully-connected layer
- * (effectively contains a DenseLayer) internally. This allows the output size to be different to the layer input size.
- * OutputLayer is equivalent to ({@link DenseLayer} + {@link LossLayer})
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

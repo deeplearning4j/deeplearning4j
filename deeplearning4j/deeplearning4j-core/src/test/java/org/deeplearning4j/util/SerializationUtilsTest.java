@@ -33,9 +33,6 @@ import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by mjk on 9/15/14.
- */
 public class SerializationUtilsTest extends BaseDL4JTest {
 
     @Rule

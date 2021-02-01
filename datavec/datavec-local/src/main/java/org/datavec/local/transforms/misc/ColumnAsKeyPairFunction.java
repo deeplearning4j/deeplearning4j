@@ -27,12 +27,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-/**
- * Very simple function to extract out one writable (by index) and use it as a key in the resulting PairRDD
- * For example, myWritable.mapToPair(new ColumnsAsKeyPairFunction(myKeyColumnIdx))
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class ColumnAsKeyPairFunction implements Function<List<Writable>, Pair<Writable, List<Writable>>> {
     private final int columnIdx;

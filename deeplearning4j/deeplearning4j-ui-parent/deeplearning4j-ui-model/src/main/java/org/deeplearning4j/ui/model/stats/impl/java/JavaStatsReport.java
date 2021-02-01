@@ -39,9 +39,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by Alex on 14/12/2016.
- */
 @EqualsAndHashCode
 @ToString
 @Data

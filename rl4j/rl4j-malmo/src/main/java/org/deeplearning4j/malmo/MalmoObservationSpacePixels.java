@@ -29,10 +29,6 @@ import com.microsoft.msr.malmo.ByteVector;
 import com.microsoft.msr.malmo.TimestampedVideoFrameVector;
 import com.microsoft.msr.malmo.WorldState;
 
-/**
- * Observation space that contains a bitmap of Minecraft pixels
- * @author howard-abrams (howard.abrams@ca.com) on 2/19/17.
- */
 public class MalmoObservationSpacePixels extends MalmoObservationSpace {
     int xSize;
     int ySize;

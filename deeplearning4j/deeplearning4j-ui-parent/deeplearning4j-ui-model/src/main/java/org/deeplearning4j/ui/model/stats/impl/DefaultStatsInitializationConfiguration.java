@@ -23,9 +23,6 @@ package org.deeplearning4j.ui.model.stats.impl;
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.ui.model.stats.api.StatsInitializationConfiguration;
 
-/**
- * Created by Alex on 07/10/2016.
- */
 @AllArgsConstructor
 public class DefaultStatsInitializationConfiguration implements StatsInitializationConfiguration {
 

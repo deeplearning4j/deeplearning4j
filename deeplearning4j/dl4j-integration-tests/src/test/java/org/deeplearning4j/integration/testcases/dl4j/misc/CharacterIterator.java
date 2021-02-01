@@ -34,18 +34,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.*;
 
-/**
- * A simple DataSetIterator for use in the GravesLSTMCharModellingExample.
- * Given a text file and a few options, generate feature vectors and labels for training,
- * where we want to predict the next character in the sequence.<br>
- * This is done by randomly choosing a position in the text file, at offsets of 0, exampleLength, 2*exampleLength, etc
- * to start each sequence. Then we convert each character to an index, i.e., a one-hot vector.
- * Then the character 'a' becomes [1,0,0,0,...], 'b' becomes [0,1,0,0,...], etc
- * <p>
- * Feature vectors and labels are both one-hot vectors of same length
- *
- * @author Alex Black
- */
 public class CharacterIterator implements DataSetIterator {
     //Valid characters
     private char[] validCharacters;

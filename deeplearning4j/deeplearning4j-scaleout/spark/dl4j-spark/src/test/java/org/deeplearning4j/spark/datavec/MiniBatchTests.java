@@ -37,9 +37,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Handle dividing things up by mini batch
- */
 public class MiniBatchTests extends BaseSparkTest {
     private static final Logger log = LoggerFactory.getLogger(MiniBatchTests.class);
 

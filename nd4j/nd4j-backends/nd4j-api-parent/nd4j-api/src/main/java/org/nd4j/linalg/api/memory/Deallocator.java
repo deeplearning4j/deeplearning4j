@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.api.memory;
 
-/**
- * This interface describes callback which will be executed from unified reference tracking system context
- *
- * @author raver119@gmail.com
- */
 public interface Deallocator {
     /**
      * This method does actual deallocation

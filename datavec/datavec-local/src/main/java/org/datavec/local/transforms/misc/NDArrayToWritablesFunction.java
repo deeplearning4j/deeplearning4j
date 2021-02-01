@@ -30,11 +30,6 @@ import org.nd4j.common.function.Function;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Function for converting NDArrays to lists of writables.
- *
- * @author dave@skymind.io
- */
 @AllArgsConstructor
 public class NDArrayToWritablesFunction implements Function<INDArray, List<Writable>> {
     private boolean useNdarrayWritable = false;

@@ -34,9 +34,6 @@ import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SparkSkipGram extends BaseSparkLearningAlgorithm {
     @Override

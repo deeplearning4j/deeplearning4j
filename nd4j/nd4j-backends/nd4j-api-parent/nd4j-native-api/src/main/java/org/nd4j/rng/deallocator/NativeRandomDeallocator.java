@@ -31,11 +31,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.LockSupport;
 
-/**
- * Since NativeRandom assumes some native resources, we have to track their use, and deallocate them as soon they are released by JVM GC
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class NativeRandomDeallocator {
     private static final NativeRandomDeallocator INSTANCE = new NativeRandomDeallocator();

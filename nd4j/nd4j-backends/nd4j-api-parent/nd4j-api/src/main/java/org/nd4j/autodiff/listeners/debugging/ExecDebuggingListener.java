@@ -36,39 +36,6 @@ import org.nd4j.linalg.api.ops.ScalarOp;
 
 import java.util.Arrays;
 
-/**
- * A listener that logs operation execution for debugging purposes.
- * 3 modes are supported:<br><br>
- * <b>OPS_ONLY</b>: Only the operations names are printed. For example:<br>
- * {@code (iter=0,epoch=0,op=1) org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp}<br>
- * <b>SHAPES_ONLY</b>: Print the operation class, shape info (for inputs/output arrays) as well as any arguments - iArgs, bArgs, tArgs. For example:<br>
- * <pre>{@code
- * (iter=1,epoch=0,op=3) org.nd4j.linalg.api.ops.impl.loss.LogLoss
- * 	iArgs=[3]
- * 	tArgs=[1.0E-7]
- * 	Input[0]=Rank: 2, DataType: FLOAT, Offset: 0, Order: c, Shape: [1,2],  Stride: [1,1]
- * 	Input[1]=Rank: 0, DataType: FLOAT, Offset: 0, Order: c, Shape: [],  Stride: []
- * 	Input[2]=Rank: 2, DataType: FLOAT, Offset: 0, Order: c, Shape: [1,2],  Stride: [1,1]
- * 	Outputs[0]=Rank: 0, DataType: FLOAT, Offset: 0, Order: c, Shape: [],  Stride: []
- * }
- * </pre>
- * <b>REPRODUCE</b>: Print runnable Java code that should reproduce that op execution (other than perhaps exact input/output strides). For example:<br>
- * <pre>{@code
- * (iter=2,epoch=0,op=1) org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp
- * DynamicCustomOp op = new org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp();
- * INDArray[] inputs = new INDArray[2];
- * inputs[0] = Nd4j.createFromArray(1.5253239f, 0.8733858f).reshape(1, 2);
- * inputs[1] = Nd4j.createFromArray(0.483428f, 0.86025196f).reshape(1, 2);
- * op.addInputArgument(inputs);
- * INDArray[] outputs = new INDArray[1];
- * outputs[0] = Nd4j.createFromArray(2.012087f, 1.7303026f).reshape(1, 2);
- * op.addOutputArgument(outputs);
- * Nd4j.exec(op);
- * }
- * </pre>
- *
- * @author Alex Black
- */
 public class ExecDebuggingListener extends BaseListener {
 
     public enum PrintMode {OPS_ONLY, SHAPES_ONLY, REPRODUCE}

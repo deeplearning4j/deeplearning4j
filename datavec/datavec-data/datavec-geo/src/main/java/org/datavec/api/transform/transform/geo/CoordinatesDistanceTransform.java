@@ -33,12 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Computes the Euclidean distance between coordinates found in two columns, divided by an optional third for normalization purposes.
- * A new column (with the specified name) is added as the final column of the output. No other columns are modified.
- *
- * @author saudet
- */
 public class CoordinatesDistanceTransform extends BaseColumnsMathOpTransform {
 
     public final static String DEFAULT_DELIMITER = ":";

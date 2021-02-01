@@ -66,14 +66,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This is simple data-parallel wrapper
- * suitable for multi-cpu/multi-gpu environments.
- *
- * PLEASE NOTE: This implementation is NOT NUMA-aware.
- *
- * @author raver119@gmail.com
- */
 // TODO: We want this thing to be NUMA-aware in foreseeable future
 @Slf4j
 @Data

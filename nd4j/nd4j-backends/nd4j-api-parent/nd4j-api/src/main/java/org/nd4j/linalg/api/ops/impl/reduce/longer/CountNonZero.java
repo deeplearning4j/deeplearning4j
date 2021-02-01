@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseReduceLongOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Count the number of non-zero elements
- *
- * @author Max Pumperla
- */
 @NoArgsConstructor
 public class CountNonZero extends BaseReduceLongOp {
 

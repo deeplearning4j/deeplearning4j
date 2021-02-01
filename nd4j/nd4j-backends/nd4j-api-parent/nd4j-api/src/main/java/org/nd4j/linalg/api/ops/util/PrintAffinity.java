@@ -23,11 +23,6 @@ package org.nd4j.linalg.api.ops.util;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- * This is a wrapper for PrintAffinity op that just prints out affinity & locality status of INDArray
- *
- * @author raver119@gmail.com
- */
 public class PrintAffinity extends DynamicCustomOp {
 
     public PrintAffinity() {

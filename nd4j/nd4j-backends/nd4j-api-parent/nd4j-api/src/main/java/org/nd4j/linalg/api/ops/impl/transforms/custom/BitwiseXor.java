@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Bit-wise XOR operation, broadcastable
- *
- * @author raver119@gmail.com
- */
 public class BitwiseXor extends BaseDynamicTransformOp {
 
     public BitwiseXor(SameDiff sameDiff, SDVariable x, SDVariable y) {

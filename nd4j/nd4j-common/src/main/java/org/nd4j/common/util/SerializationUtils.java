@@ -24,11 +24,6 @@ import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 
-/**
- * Serialization utils for saving and reading serializable objects
- *
- * @author Adam Gibson
- */
 public class SerializationUtils {
 
     protected SerializationUtils() {}

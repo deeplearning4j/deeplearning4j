@@ -26,9 +26,6 @@ import lombok.NoArgsConstructor;
 
 import java.net.URI;
 
-/**
- * Created by kepricon on 17. 5. 24.
- */
 @Data
 @AllArgsConstructor
 @NoArgsConstructor

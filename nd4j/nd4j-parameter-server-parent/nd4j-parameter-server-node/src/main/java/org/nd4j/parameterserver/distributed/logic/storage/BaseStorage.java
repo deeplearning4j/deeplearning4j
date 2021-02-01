@@ -27,9 +27,6 @@ import org.nd4j.parameterserver.distributed.logic.Storage;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public abstract class BaseStorage implements Storage {

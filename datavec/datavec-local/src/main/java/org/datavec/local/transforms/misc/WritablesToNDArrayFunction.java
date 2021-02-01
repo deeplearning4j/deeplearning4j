@@ -30,13 +30,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Function for converting lists of Writables to a single
- * NDArray row vector. Necessary for creating and saving a
- * dense matrix representation of raw data.
- *
- * @author dave@skymind.io
- */
 public class WritablesToNDArrayFunction implements Function<List<Writable>, INDArray> {
 
     @Override

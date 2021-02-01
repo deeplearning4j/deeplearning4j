@@ -37,10 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Linspace op - with dynamic (SDVariable) args
- * @author Alex Black
- */
 public class Linspace extends DynamicCustomOp {
 
     private DataType dataType;

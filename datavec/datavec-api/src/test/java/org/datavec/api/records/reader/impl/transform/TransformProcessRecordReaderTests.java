@@ -41,9 +41,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by agibsonccc on 3/21/17.
- */
 public class TransformProcessRecordReaderTests extends BaseND4JTest {
 
     @Test

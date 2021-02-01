@@ -27,11 +27,6 @@ import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMCellConfiguratio
 
 import java.util.Map;
 
-/**
- * LSTM cell
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class LSTMCell extends DynamicCustomOp {
 

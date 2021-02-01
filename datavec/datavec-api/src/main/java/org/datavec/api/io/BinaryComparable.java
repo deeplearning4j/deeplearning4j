@@ -20,10 +20,6 @@
 
 package org.datavec.api.io;
 
-/**
- * Interface supported by {@link org.apache.hadoop.io.WritableComparable}
- * types supporting ordering/permutation by a representative set of bytes.
- */
 public abstract class BinaryComparable implements Comparable<BinaryComparable> {
 
     /**

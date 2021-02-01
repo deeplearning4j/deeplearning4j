@@ -26,11 +26,6 @@ import org.datavec.api.records.writer.RecordWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * A record listener that logs every record to be read or written.
- *
- * @author saudet
- */
 public class LogRecordListener implements RecordListener {
     private static final Logger log = LoggerFactory.getLogger(LogRecordListener.class);
     private boolean invoked = false;

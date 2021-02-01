@@ -29,10 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseOp;
 import org.nd4j.linalg.api.ops.Op;
 
-/**
- * POJO describing OP
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

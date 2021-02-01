@@ -58,11 +58,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Generic SequenceVectors implementation for dl4j-spark-nlp
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVectors<T> {
     protected Accumulator<Counter<Long>> elementsFreqAccum;

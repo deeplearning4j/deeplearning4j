@@ -32,11 +32,6 @@ import org.deeplearning4j.spark.models.sequencevectors.export.ExportContainer;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
-/**
- *
- *
- * @author raver119@gmail.coms
- */
 @Slf4j
 public class DistributedFunction<T extends SequenceElement> implements Function<T, ExportContainer<T>> {
 

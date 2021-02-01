@@ -29,14 +29,6 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/8/16.
- * <p>
- * Training for A3C in the Discrete Domain
- * <p>
- * We use specifically the Separate version because
- * the model is too small to have enough benefit by sharing layers
- */
 public class A3CDiscreteDense<OBSERVATION extends Encodable> extends A3CDiscrete<OBSERVATION> {
 
     @Deprecated

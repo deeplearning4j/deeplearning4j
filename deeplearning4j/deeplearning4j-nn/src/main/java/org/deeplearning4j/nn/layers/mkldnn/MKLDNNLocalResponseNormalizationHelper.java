@@ -35,11 +35,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * MKL-DNN Local response normalization helper
- *
- * @author Alex Black
- */
 public class MKLDNNLocalResponseNormalizationHelper extends BaseMKLDNNHelper implements LocalResponseNormalizationHelper {
 
     protected OpContext context;

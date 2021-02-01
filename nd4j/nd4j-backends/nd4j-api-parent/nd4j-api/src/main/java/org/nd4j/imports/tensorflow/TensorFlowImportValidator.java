@@ -40,22 +40,6 @@ import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipFile;
 
-/**
- * A simple utility that analyzes TensorFlow graphs and reports details about the models:<br>
- * - The path of the model file(s)<br>
- * - The path of the model(s) that can't be imported due to missing ops<br>
- * - The path of model files that couldn't be read for some reason (corrupt file?)<br>
- * - The total number of ops in all graphs<br>
- * - The number of unique ops in all graphs<br>
- * - The (unique) names of all ops encountered in all graphs<br>
- * - The (unique) names of all ops that were encountered, and can be imported, in all graphs<br>
- * - The (unique) names of all ops that were encountered, and can NOT be imported (lacking import mapping)<br>
- *<br>
- * Note that an op is considered to be importable if has an import mapping specified for that op name in SameDiff.<br>
- * This alone does not guarantee that the op can be imported successfully.
- *
- * @author Alex Black
- */
 @Slf4j
 public class TensorFlowImportValidator {
 

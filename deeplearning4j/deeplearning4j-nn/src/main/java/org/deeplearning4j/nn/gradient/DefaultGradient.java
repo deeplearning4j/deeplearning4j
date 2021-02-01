@@ -29,13 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Default gradient implementation. Basically lookup table
- * for ndarrays
- *
- * @author Adam Gibson
- */
-
 public class DefaultGradient implements Gradient {
     public static final char DEFAULT_FLATTENING_ORDER = 'f';
     private Map<String, INDArray> gradients = new LinkedHashMap<>();

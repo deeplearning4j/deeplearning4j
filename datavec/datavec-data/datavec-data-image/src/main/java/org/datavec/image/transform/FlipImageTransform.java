@@ -30,11 +30,6 @@ import java.util.Random;
 import org.bytedeco.opencv.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
 
-/**
- * Flips images deterministically or randomly.
- *
- * @author saudet
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class FlipImageTransform extends BaseImageTransform<Mat> {

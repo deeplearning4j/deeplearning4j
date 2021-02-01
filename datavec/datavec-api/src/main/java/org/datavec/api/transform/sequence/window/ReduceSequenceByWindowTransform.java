@@ -35,13 +35,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Idea: do two things.
- * First, apply a window function to the sequence data.
- * Second: Reduce that window of data into a single value by using a Reduce function
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema"})
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @Data

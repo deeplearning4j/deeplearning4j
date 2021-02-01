@@ -39,9 +39,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-/**
- * Created by Alex on 08/10/2016.
- */
 public class TestConvolutionalListener {
 
     @Test

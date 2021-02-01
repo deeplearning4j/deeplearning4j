@@ -21,12 +21,6 @@
 
 package org.deeplearning4j.nn.conf;
 
-/**
- * NCW = "channels first" - arrays of shape [minibatch, channels, width]<br>
- * NWC = "channels last" - arrays of shape [minibatch, width, channels]<br>
- * "width" corresponds to sequence length and "channels" corresponds to sequence item size.
- */
-
 public enum RNNFormat implements DataFormat {
     NCW,
     NWC

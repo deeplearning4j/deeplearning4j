@@ -24,7 +24,6 @@ import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.listener.EarlyStoppingListener;
 import org.deeplearning4j.nn.api.Model;
 
-/** Interface for early stopping trainers */
 public interface IEarlyStoppingTrainer<T extends Model> {
 
     /** Conduct early stopping training */

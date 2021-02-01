@@ -36,11 +36,6 @@ import org.nd4j.common.primitives.Counter;
 
 import java.util.Arrays;
 
-/**
- * Utilities for calculating input types
- *
- * @author Alex Black
- */
 @Slf4j
 public class InputTypeUtil {
 

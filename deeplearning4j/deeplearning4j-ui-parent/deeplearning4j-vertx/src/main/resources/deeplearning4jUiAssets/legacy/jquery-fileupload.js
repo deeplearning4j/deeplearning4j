@@ -18,19 +18,6 @@
  *  *****************************************************************************
  */
 
-/**
- * fileUpload
- * http://abandon.ie
- *
- * Plugin to add file uploads to jQuery ajax form submit
- *
- * November 2013
- *
- * @version 0.9
- * @author Abban Dunne http://abandon.ie
- * @license MIT
- *
- */
 ;(function($, window, document, undefined)
 {
     // Create the defaults once

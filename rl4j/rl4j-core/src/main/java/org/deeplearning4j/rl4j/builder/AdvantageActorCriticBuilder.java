@@ -38,16 +38,6 @@ import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.nd4j.linalg.api.rng.Random;
 
-/**
- * A {@link IAgentLearner} builder that will setup a {@link AdvantageActorCritic Advantage Actor Critic} algorithm with these:
- * <li>a specialized actor critic policy</li>
- * <li>a n-step state-action-reward experience handler</li>
- * <li>a neural net updater that expects gradient update data</li>
- * <li>a advantage actor critic gradient conputation algorithm</li>
- * <p />
- * Note: The network needs the {@link org.deeplearning4j.rl4j.network.ac.ActorCriticLoss ActorCriticLoss} as the
- * policy network loss function
- */
 public class AdvantageActorCriticBuilder extends BaseAsyncAgentLearnerBuilder<AdvantageActorCriticBuilder.Configuration> {
 
     private final Random rnd;

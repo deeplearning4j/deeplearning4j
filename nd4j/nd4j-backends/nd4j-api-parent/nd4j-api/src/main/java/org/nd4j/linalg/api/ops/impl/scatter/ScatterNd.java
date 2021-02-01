@@ -36,10 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Scatter ND operation
- * @author Alex Black
- */
 public class ScatterNd extends DynamicCustomOp {
 
     public ScatterNd(SameDiff sameDiff, SDVariable indices, SDVariable updates) {

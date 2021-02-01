@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Sinh function
- *
- * @author Adam Gibson
- */
 public class Sinh extends BaseTransformStrictOp {
     public Sinh(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

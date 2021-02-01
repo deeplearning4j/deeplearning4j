@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.List;
 
-/**
- * Copy operation
- *
- * @author Adam Gibson
- */
 public class CopyOp extends BaseTransformSameOp {
     public CopyOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

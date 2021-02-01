@@ -29,14 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A simple helper class for defining the following mappings:
- * - Op name to op
- * - Tensorflow op name to op (for import)
- * - Onnx op name to op (for import)
- *
- * @author Alex Black
- */
 @Slf4j
 public class ImportClassMapping {
 

@@ -41,12 +41,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * A function (used in forEachPartition) to convert Strings to DataSet objects using a RecordReader (such as a CSVRecordReader).
- * Use with {@code JavaRDD<String>.foreachPartition()}
- *
- * @author Alex Black
- */
 public class StringToDataSetExportFunction implements VoidFunction<Iterator<String>> {
 
     private final Broadcast<SerializableHadoopConfig> conf;

@@ -22,9 +22,6 @@ package org.datavec.api.writable;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Created by huitseeker on 5/13/17.
- */
 public class UnsafeWritableInjector {
     public static <T> Writable inject(T x) {
         if (x == null)

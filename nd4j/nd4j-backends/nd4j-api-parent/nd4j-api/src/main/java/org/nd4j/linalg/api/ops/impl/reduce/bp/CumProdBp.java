@@ -25,12 +25,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
-/**
- * Backprop op for cumulative product operation
- *
- * @author Alex Black
- */
-
 public class CumProdBp extends BaseReductionBp {
 
     private boolean exclusive;

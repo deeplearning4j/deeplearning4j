@@ -24,11 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.impl.*;
 
-/**
- * Default distribution factory
- *
- * @author Adam Gibson
- */
 public class DefaultDistributionFactory implements DistributionFactory {
     @Override
     public Distribution createBinomial(int n, INDArray p) {

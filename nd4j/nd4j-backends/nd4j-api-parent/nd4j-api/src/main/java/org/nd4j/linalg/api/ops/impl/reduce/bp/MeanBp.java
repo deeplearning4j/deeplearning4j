@@ -25,12 +25,6 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 
-/**
- * Backprop op for Mean reduction operation
- *
- * @author Alex Black
- */
-
 public class MeanBp extends BaseReductionBp {
     public MeanBp(SameDiff sameDiff, SDVariable origInput, SDVariable gradAtOutput, boolean keepDims, int... dimensions) {
         super(sameDiff, origInput, gradAtOutput, keepDims, dimensions);

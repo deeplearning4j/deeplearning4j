@@ -26,14 +26,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.Iterator;
 
-/**
- * An input split.
- * Basically, a list of loadable locations
- * exposed as an iterator.
- *
- *
- * @author Adam Gibson
- */
 public interface InputSplit  {
 
 

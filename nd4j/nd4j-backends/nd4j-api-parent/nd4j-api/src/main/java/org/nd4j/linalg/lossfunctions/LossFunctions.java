@@ -23,10 +23,6 @@ package org.nd4j.linalg.lossfunctions;
 import org.nd4j.linalg.lossfunctions.impl.*;
 
 
-/**
- * Central class for loss functions
- * @author Adam Gibson
- */
 public class LossFunctions {
 
     /**

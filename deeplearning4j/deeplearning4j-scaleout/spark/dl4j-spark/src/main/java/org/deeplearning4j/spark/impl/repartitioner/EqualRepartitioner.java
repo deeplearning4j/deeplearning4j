@@ -33,14 +33,6 @@ import scala.Tuple2;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Equal repartitioner. Splits the data into numExecutors equal sized partitions.<br>
- * Note that if the number of objects isn't an exact multiple of the number of executors, the "remainder"
- * are randomly allocated to one partition without replacement (i.e., the largest partitions will have exactly 1
- * more object than the smallest partitions)
- *
- * @author Alex Black
- */
 @Slf4j
 public class EqualRepartitioner implements Repartitioner {
     @Override

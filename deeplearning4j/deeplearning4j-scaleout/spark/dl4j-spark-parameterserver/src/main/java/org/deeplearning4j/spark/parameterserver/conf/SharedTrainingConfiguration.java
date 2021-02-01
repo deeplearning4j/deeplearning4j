@@ -29,10 +29,6 @@ import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
 import java.io.Serializable;
 
-/**
- *
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

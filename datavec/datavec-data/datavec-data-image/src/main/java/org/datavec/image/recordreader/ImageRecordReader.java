@@ -25,16 +25,6 @@ import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.io.labels.PathMultiLabelGenerator;
 import org.datavec.image.transform.ImageTransform;
 
-/**
- * Image record reader.
- * Reads a local file system and parses images of a given
- * height and width.
- * All images are rescaled and converted to the given height, width, and number of channels.
- *
- * Also appends the label if specified
- * (one of k encoding based on the directory structure where each subdir of the root is an indexed label)
- * @author Adam Gibson
- */
 public class ImageRecordReader extends BaseImageRecordReader {
 
 

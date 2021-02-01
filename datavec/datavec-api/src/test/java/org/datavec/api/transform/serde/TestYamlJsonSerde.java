@@ -72,9 +72,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 20/07/2016.
- */
 public class TestYamlJsonSerde  extends BaseND4JTest {
 
     public static YamlSerializer y = new YamlSerializer();

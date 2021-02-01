@@ -35,17 +35,6 @@ import org.nd4j.common.function.Predicate;
 
 import java.util.*;
 
-/**
- * AbstractSession is a SameDiff graph execution class that inference and training it built upon
- * It walks through the graph, dynamically executing operations that can be executed next, but (again, dynamically) only
- * executing the subset of the graph that is actually required to get the requested outputs.<br>
- * None of what AbstractSession implements is NDArray-specific.<br>
- * Note that most of the implementation complexity comes from dynamic graphs - i.e., nested loops, control ops, etc
- *
- * @param <T> Node output type - for example, INDArray, shape, etc depending on what we're calculating
- * @param <O> Op type
- * @author Alex Black
- */
 @Slf4j
 public abstract class AbstractSession<T, O> {
 

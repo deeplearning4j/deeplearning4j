@@ -28,11 +28,6 @@ import scala.Tuple2;
 
 import java.util.List;
 
-/**
- * A simple function to prepare data for saving via {@link org.datavec.spark.storage.SparkStorageUtils}
- *
- * @author Alex Black
- */
 public class SequenceRecordSavePrepPairFunction
                 implements PairFunction<Tuple2<List<List<Writable>>, Long>, LongWritable, SequenceRecordWritable> {
     @Override

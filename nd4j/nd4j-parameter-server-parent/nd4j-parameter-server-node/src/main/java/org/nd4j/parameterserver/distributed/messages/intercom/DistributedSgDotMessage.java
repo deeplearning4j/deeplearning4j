@@ -35,9 +35,6 @@ import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 
 import java.util.Arrays;
 
-/**
- * @author raver119@gmail.com
- */
 @Data
 @Slf4j
 @Deprecated

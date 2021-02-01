@@ -33,11 +33,6 @@ import java.io.File;
 import java.net.URI;
 import java.util.*;
 
-/**
- * Test utilitiez for ND4J
- *
- * @author Alex Black
- */
 public class ND4JTestUtils {
 
     private ND4JTestUtils(){ }

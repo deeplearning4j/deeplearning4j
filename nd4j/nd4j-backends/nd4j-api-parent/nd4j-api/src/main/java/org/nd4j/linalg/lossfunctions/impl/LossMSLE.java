@@ -35,11 +35,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-/**
- * Mean Squared Logarithmic Error loss function: L = 1/N sum_i (log(1+predicted_i) - log(1+actual_i))^2
- *
- * @author Susan Eraly
- */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter

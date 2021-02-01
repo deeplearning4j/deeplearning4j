@@ -24,11 +24,6 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- * Histogram op wrapper
- *
- * @author raver119@gmail.com
- */
 public class Histogram extends DynamicCustomOp {
     private long numBins;
 

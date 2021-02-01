@@ -35,12 +35,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * TFIDF record reader (wraps a tfidf vectorizer
- * for delivering labels and conforming to the record reader interface)
- *
- * @author Adam Gibson
- */
 public class TfidfRecordReader extends FileRecordReader {
     private TfidfVectorizer tfidfVectorizer;
     private List<Record> records = new ArrayList<>();

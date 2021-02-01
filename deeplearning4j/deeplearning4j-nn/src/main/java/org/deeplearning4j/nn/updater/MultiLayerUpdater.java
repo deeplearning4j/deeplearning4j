@@ -30,13 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.HashMap;
 
-/**
- * MultiLayerUpdater: Gradient updater for MultiLayerNetworks.
- * Expects backprop gradients for all layers to be in single Gradient object,
- * keyed by "0_b", "1_w" etc., as per MultiLayerNetwork.backward()
- *
- * @author Alex Black
- */
 @Getter
 @Slf4j
 public class MultiLayerUpdater extends BaseMultiLayerUpdater<MultiLayerNetwork> {

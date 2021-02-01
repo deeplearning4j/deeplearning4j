@@ -39,13 +39,6 @@ import java.util.Iterator;
 import java.util.List;
 
 
-/**Function to score examples individually. Note that scoring is batched for computational efficiency.<br>
- * This is essentially a Spark implementation of the {@link ComputationGraph#scoreExamples(MultiDataSet, boolean)} method<br>
- * <b>Note:</b> This method returns a score for each example, but the association between examples and scores is lost. In
- * cases where we need to know the score for particular examples, use {@link ScoreExamplesWithKeyFunction}
- * @author Alex Black
- * @see ScoreExamplesWithKeyFunction
- */
 @Slf4j
 public class ScoreExamplesFunction implements DoubleFlatMapFunction<Iterator<MultiDataSet>> {
 

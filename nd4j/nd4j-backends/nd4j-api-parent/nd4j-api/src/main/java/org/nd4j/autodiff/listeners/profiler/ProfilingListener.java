@@ -46,30 +46,6 @@ import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
 
-/**
- * SameDiff profiling listener: for profiling operation execution<br>
- * Writes profiles to a file in JSON format<br>
- * Format is Chrome profiler format. The output can be read by Google Chrome browser; open Chrome and go to:
- * chrome://tracing and load the output JSON format data
- * <br>
- * At present, only operation execution is profiled, not other aspects such as memory allocation and training-related
- * functionality.<br>
- * <br>
- * Tracing can be configured in a few different ways via the builder, {@link #builder(File)}:<br>
- * (a) warmup - don't record traces for the first N iterations<br>
- * (b) "all" mode (default) - record all-iterations, with no limit (after warmup, if applicable)<br>
- * (c) "n iterations" mode: record at most the first N iterations (after warmup, if applicable)<br>
- * (d) "n ms" mod: record for at most N milliseconds since the start of the first op execution (after warmup, if applicable)<br>
- *
- * Note: The Chrome Trace Event format can be found here:<br>
- * <a href="https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit">https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit</a>
- * SameDiff uses the JSON Array Format, as this can be written in an online/streaming manner.<br>
- * Conversely, TensorFlow uses the JSON Object Format.<br>
- * <br>
- * For summarizing, analyzing and comparing the results (SameDiff or TensorFlow format), see {@link org.nd4j.autodiff.listeners.profiler.comparison.ProfileAnalyzer}<br>
- *
- * @author Alex Black
- */
 @Getter
 @Slf4j
 public class ProfilingListener extends BaseListener {

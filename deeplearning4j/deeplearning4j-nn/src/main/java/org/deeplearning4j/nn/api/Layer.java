@@ -32,13 +32,6 @@ import org.nd4j.common.primitives.Pair;
 import java.io.Serializable;
 import java.util.Collection;
 
-/**
- * Interface for a layer of a neural network.
- * This has an activation function, an input and output size,
- * weights, and a bias
- *
- * @author Adam Gibson
- */
 public interface Layer extends Serializable, Cloneable, Model, Trainable {
 
     enum Type {

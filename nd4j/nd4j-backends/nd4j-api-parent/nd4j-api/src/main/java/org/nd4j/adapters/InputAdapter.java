@@ -22,10 +22,6 @@ package org.nd4j.adapters;
 
 import org.nd4j.linalg.dataset.MultiDataSet;
 
-/**
- * This interface describes method for transformation from object of type I to MultiDataSet.
- *
- */
 public interface InputAdapter<I> {
     /**
      * This method converts input object to MultiDataSet

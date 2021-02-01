@@ -28,9 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 public class BinaryRelativeError extends BaseTransformSameOp {
     private double threshold = 0.0;
 

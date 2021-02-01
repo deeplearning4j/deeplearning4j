@@ -36,25 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Space to channels utility layer configuration for convolutional input types.
- * <p>
- * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW) to
- * channels (C) for given blockSize.<br> The idea is that blocks of the input of size [blockSize,blockSize] are moved
- * from the spatial dimension to the depth dimension.<br> Thus, for NCHW input format, input shape {@code [mb,
- * inChannels, H, W]}, output has shape {@code [mb, inChannels * blockSize * blockSize, H/blockSize, W/blockSize]}
- * <p></p>
- * Example:
- * <pre>
- * blockSize = 4
- * dataFormat = "NCHW"
- * input shape =  [128, 16, 16, 3]
- * output shape = [128, 16/4, 16/4, 3*4*4]
- * </pre>
- *
- * @author Max Pumperla
- */
-
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)

@@ -30,10 +30,6 @@ import org.datavec.spark.transform.DataFrames;
 
 import java.util.*;
 
-/**
- * Convert a record to a row
- * @author Adam Gibson
- */
 public class SequenceToRows implements FlatMapFunction<List<List<Writable>>, Row> {
 
     private Schema schema;

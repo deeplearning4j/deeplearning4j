@@ -38,20 +38,6 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Parameter server
- * client for
- * publishing and
- * retrieving ndarrays
- *
- * pushNDArray will send the given ndarray to the send url.
- * This is used for updating the master's current state.
- *
- * getArray() is used for retrieving the master ndarray's current
- * state from the parameter server.
- *
- * @author Adam Gibson
- */
 @Data
 @AllArgsConstructor
 @Builder

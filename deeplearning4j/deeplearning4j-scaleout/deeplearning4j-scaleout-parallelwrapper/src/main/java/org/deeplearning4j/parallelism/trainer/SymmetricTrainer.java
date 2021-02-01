@@ -30,12 +30,6 @@ import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 
-/**
- * This trainer implementation does parallel training via gradients broadcasts.
- * After each iteration, gradients from this trainer will be propagated & applied to all other trainers
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTrainer {
     protected GradientsAccumulator accumulator;

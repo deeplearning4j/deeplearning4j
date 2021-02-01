@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Boolean OR pairwise transform
- *
- * @author raver119@gmail.com
- */
 public class Or extends BaseTransformBoolOp {
 
     protected double comparable = 0.0;

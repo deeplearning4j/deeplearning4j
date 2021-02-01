@@ -27,9 +27,6 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.Writable;
 
-/**
- * Abstract integer transformation (single column)
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor

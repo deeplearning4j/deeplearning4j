@@ -54,10 +54,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Run this manually to generate - or update - the saved files for a specific test.
- * Places results in dl4j-test-resources: assumes you have the dl4j-test-resources cloned parallel to the DL4J mono-repo.
- */
 @Slf4j
 public class IntegrationTestBaselineGenerator {
 

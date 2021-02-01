@@ -48,9 +48,6 @@ import java.io.InputStreamReader;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class TfidfVectorizer extends BaseTextVectorizer {
     /**

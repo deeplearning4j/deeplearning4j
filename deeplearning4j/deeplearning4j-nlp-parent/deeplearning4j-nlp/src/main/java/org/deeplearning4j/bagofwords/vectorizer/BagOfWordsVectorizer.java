@@ -46,9 +46,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 public class BagOfWordsVectorizer extends BaseTextVectorizer {
 
     protected BagOfWordsVectorizer() {

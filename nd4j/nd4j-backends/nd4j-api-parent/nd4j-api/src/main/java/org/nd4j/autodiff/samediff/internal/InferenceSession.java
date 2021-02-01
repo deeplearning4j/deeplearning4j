@@ -57,20 +57,6 @@ import java.util.*;
 
 import static org.nd4j.imports.VariableUtils.stripVarSuffix;
 
-/**
- * InferenceSession: Performs inference (forward pass) on a SameDiff instance to get the outputs of the requested nodes.<br>
- * Dynamically (in AbstractSession) calculates the required subgraph to execute to get the required outputs.<br>
- * Note that while AbstractSession handles the graph structure component, InferenceSession handles only op execution
- * and memory management<br>
- * <br>
- * For INDArray memory management - i.e., tracking and releasing memory manually, as soon as possible, to
- * minimize memory use - this is implemented using a {@link SessionMemMgr} instance (for allocations/deallocations) and
- * also {@link IdentityDependencyTracker} to track where arrays are actually used. The IdentityDependencyTracker tells
- * us when the array is no longer needed (i.e., has been "fully consumed" by all ops depending on it) accounting for the
- * fact that some operations, such as identity, enter, exit, etc, are "zero copy" for performance reasons.
- *
- * @author Alex Black
- */
 @Slf4j
 public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,OpContext>> {
     private static final String SCOPE_PANIC_MSG = "If required, arrays in workspaces can be detached using INDArray.detach() before being passed to the SameDiff instance.\n" +

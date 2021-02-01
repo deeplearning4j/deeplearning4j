@@ -24,12 +24,6 @@ import lombok.Data;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * A comparator for comparing
- * String values in a single column
- *
- * @author Alex
- */
 @Data
 public class StringComparator extends BaseColumnComparator {
 

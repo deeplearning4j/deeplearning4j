@@ -26,11 +26,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 
-/**
- * Strategy for saving and restoring {@link NormalizerStandardize} instances in single binary files
- *
- * @author Ede Meijer
- */
 public class StandardizeSerializerStrategy implements NormalizerSerializerStrategy<NormalizerStandardize> {
     @Override
     public void write(@NonNull NormalizerStandardize normalizer, @NonNull OutputStream stream) throws IOException {

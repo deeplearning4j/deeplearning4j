@@ -26,12 +26,6 @@ import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Condition that applies to the values in any column. Specifically, condition is true
- * if the Writable value is a NullWritable, and false for any other value
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class NullWritableColumnCondition extends BaseColumnCondition {

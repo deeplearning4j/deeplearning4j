@@ -27,12 +27,6 @@ import java.util.Observer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
-/**
- * Simple Observer implementation for
- * sequential inference
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class BasicInferenceObserver implements Observer {
     private AtomicBoolean finished;

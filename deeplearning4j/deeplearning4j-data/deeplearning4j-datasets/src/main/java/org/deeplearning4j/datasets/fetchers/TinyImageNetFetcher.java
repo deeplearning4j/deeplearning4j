@@ -34,17 +34,6 @@ import org.nd4j.common.base.Preconditions;
 import java.io.File;
 import java.util.Random;
 
-/**
- * Tiny ImageNet is a subset of the ImageNet database. TinyImageNet is the default course challenge for CS321n
- * at Stanford University.
- *
- * Tiny ImageNet has 200 classes, each consisting of 500 training images.
- *
- * See: <a href="http://cs231n.stanford.edu/">http://cs231n.stanford.edu/</a> and
- * <a href="https://tiny-imagenet.herokuapp.com/">https://tiny-imagenet.herokuapp.com/</a>
- *
- * @author Justin Long (crockpotveggies)
- */
 public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
     public static final String WORDS_FILENAME = "words.txt";
     public static final String LOCAL_CACHE_NAME = "TINYIMAGENET_200";

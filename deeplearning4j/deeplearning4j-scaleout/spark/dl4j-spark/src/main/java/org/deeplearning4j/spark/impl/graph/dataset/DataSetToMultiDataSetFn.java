@@ -25,8 +25,6 @@ import org.deeplearning4j.nn.graph.util.ComputationGraphUtil;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**Convert a {@code JavaRDD<DataSet>} to a {@code JavaRDD<MultiDataSet>}
- */
 public class DataSetToMultiDataSetFn implements Function<DataSet, MultiDataSet> {
     @Override
     public MultiDataSet call(DataSet d) throws Exception {

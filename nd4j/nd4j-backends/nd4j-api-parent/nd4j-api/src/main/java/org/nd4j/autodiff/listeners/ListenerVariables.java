@@ -37,13 +37,6 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
-/**
- * Specifies a Listener's required variables for each operation.
- * Used to ensure those variables end up in the minimum required subgraph calculated by {@link org.nd4j.autodiff.samediff.internal.InferenceSession}.
- * Otherwise, if the variables weren't required by a loss variable, they would not be calculated.
- * <p>
- * Any variables in here are guaranteed to have {@link Listener#activationAvailable(SameDiff, At, MultiDataSet, SameDiffOp, String, INDArray)} called for them.
- */
 @RequiredArgsConstructor
 @Getter
 public class ListenerVariables {

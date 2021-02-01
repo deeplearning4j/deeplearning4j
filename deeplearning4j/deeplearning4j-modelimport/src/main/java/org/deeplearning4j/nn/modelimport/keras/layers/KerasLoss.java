@@ -39,11 +39,6 @@ import java.util.ArrayList;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLossUtils.mapLossFunction;
 
-/**
- * Builds a DL4J LossLayer from a Keras training loss function.
- *
- * @author dave@skymind.io
- */
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)

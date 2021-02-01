@@ -36,11 +36,6 @@ import org.nd4j.shade.jackson.databind.jsontype.TypeResolverBuilder;
 import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
-/**
- * JSON mappers for deserializing neural net configurations, etc.
- *
- * @author Alex Black
- */
 @Slf4j
 public class JsonMappers {
 

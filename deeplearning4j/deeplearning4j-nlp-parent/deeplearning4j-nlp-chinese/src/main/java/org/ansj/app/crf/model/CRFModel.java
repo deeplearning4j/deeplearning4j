@@ -29,12 +29,6 @@ import java.io.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipException;
 
-/**
- * 加载ansj格式的crfmodel,目前此model格式是通过crf++ 或者wapiti生成的
- * 
- * @author Ansj
- *
- */
 public class CRFModel extends Model {
 
     public static final String VERSION = "ansj1";

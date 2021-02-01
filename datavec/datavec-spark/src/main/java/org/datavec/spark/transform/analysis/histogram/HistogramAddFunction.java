@@ -31,11 +31,6 @@ import org.datavec.api.writable.Writable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * An adder function used in the calculation of histograms
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class HistogramAddFunction implements Function2<List<HistogramCounter>, List<Writable>, List<HistogramCounter>> {
     private final int nBins;

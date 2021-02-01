@@ -32,9 +32,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class VirtualDataSetIteratorTest {
     @Before
     public void setUp() throws Exception {}

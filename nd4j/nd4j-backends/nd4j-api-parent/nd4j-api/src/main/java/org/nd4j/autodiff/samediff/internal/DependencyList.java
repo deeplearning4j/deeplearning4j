@@ -26,11 +26,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.List;
 
-/**
- * A list of dependencies, used in {@link AbstractDependencyTracker}
- *
- * @author Alex Black
- */
 @Data
 @AllArgsConstructor
 public class DependencyList<T, D> {

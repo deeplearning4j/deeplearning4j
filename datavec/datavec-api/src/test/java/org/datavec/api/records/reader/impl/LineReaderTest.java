@@ -48,9 +48,6 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 11/17/14.
- */
 public class LineReaderTest extends BaseND4JTest {
 
     @Rule

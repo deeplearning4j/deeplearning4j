@@ -35,15 +35,6 @@ import org.nd4j.common.primitives.AtomicBoolean;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-/**
- * This class provides additional functionality to FancyBlockingQueue: it tracks memory use of stored compressed INDArrays, and if their size becomes too big, it:
- * a) decompresses them into single INDArray
- * b) removes original updates messages
- * c) keeps updating single INDArray until it gets consumed
- * d) once that happened - it automatically switches back to original behavior
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SmartFancyBlockingQueue extends FancyBlockingQueue<INDArray> {
     protected final ReaderPreferenceReadWriteLock smartLock = new ReaderPreferenceReadWriteLock();

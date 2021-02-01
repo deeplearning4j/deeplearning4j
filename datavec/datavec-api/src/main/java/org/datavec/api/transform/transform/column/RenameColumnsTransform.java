@@ -33,11 +33,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Rename one or more columns
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema"})
 @Data
 public class RenameColumnsTransform implements Transform, ColumnOp {

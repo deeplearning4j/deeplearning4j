@@ -31,11 +31,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This class is used to manage labels/documents syncronization over iterators
- *
- * @author raver119@gmail.com
- */
 public class LabelsSource implements Serializable {
     private AtomicLong counter = new AtomicLong(0);
     @Setter

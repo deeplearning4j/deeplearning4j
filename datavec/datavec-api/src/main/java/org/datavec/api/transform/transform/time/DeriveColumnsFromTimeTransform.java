@@ -52,12 +52,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Create a number of new columns by deriving their values from a Time column.
- * Can be used for example to create new columns with the year, month, day, hour, minute, second etc.
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "insertAfterIdx", "deriveFromIdx"})
 @EqualsAndHashCode(exclude = {"inputSchema", "insertAfterIdx", "deriveFromIdx"})
 @Data

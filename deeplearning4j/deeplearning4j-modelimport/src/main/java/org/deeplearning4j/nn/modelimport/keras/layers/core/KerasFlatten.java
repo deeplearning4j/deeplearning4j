@@ -37,11 +37,6 @@ import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor
 
 import java.util.Map;
 
-/**
- * Imports a Keras Flatten layer as a DL4J {Cnn,Rnn}ToFeedForwardInputPreProcessor.
- *
- * @author dave@skymind.io
- */
 @Slf4j
 public class KerasFlatten extends KerasLayer {
 

@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Backprop op for squared difference operation, i.e. backprop for (x - y) * (x - y)
- *
- * @author Alex Black
- */
 public class SquaredDifferenceBpOp extends DynamicCustomOp {
 
     public SquaredDifferenceBpOp() {}

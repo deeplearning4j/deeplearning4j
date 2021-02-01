@@ -29,12 +29,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Entropy Op - returns the entropy (information gain, or uncertainty of a random variable).
- * -sum(x * log(x))
- *
- * @author raver119@gmail.com
- */
 public class Entropy extends BaseReduceFloatOp {
     public Entropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);

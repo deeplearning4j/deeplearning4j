@@ -30,11 +30,6 @@ import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.List;
 
-/**
- * A 'dummy' training configuration for use in frozen layers
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class DummyConfig implements TrainingConfig {
     private final String name;

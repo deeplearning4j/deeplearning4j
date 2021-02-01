@@ -47,11 +47,6 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.List;
 
-/**
- * Utility methods for Spark training stats
- *
- * @author Alex Black
- */
 public class StatsUtils {
 
     public static final long DEFAULT_MAX_TIMELINE_SIZE_MS = 20 * 60 * 1000; //20 minutes

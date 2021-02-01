@@ -35,57 +35,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * A MemoryReport is designed to represent the estimated memory usage of a model, as a function of:<br>
- * - Training vs. Inference usage of the network<br>
- * - Minibatch size<br>
- * - ND4J DataType setting<br>
- * - Cache mode<br>
- * Note that the memory use estimate may not be exact, as may not take into account all possible memory use;
- * Furthermore, memory may exceed this value depending on, for example, garbage collection.<br>
- * <br>
- * <br>
- * <br>
- * For the purposes of estimating memory use under different situations, we consider there to be 3 types of memory:<br>
- * Standard memory, working memory and Cached memory. Each type has the concept of 'fixed' size memory (independent
- * of minibatch size) and 'variable' memory (total use depends on minibatch size; memory reported is for one example).<br>
- * <br>
- * <br>
- * The following breakdown of memory types will be used:<br>
- * <ul>
- * <li>Standard memory</li>
- * <ul>
- * <li>Fixed size (parameters, parameter gradients, updater state)</li>
- * <li>Variable size (activations, activation gradients)</li>
- * </ul>
- * <li>Working memory (may be reused via workspace or garbage collected)</li>
- * <ul>
- * <li>Fixed size (may be different for train vs. inference)</li>
- * <li>Variable size (may be different for train vs. inference)</li>
- * </ul>
- * <li>Cached memory (only used for training mode)</li>
- * <ul>
- * <li>Fixed size (as a function of CacheMode)</li>
- * <li>Variable size (as a function of CacheMode)</li>
- * </ul>
- * </ul>
- * <br>
- * <br>
- * For MemoryUseMode (X = train or inference), for a given cache mode CM and minibatch size M and layers L:<br>
- * TotalMemory(X,CM,M) = sum_L ( StandardFixedMem(X) + M * StandardVariableMem(X) )<br>
- *  + max_L ( WorkingFixedMem(X,CM) + M * WorkingVariableMem(X,CM) )<br>
- *  + sum_L ( CachedFixedMem(X,CM) + M * CachedVariableMem(X,CM))<br>
- * <br>
- * Note 1: CachedFixedMem(INFERENCE,any) = 0 and CachedVariableMem(INFERENCE,any) = 0. i.e., cache is a train-only
- * feature.<br>
- * Note 2: Working memory may depend on cache mode: if we cache something, we have less computation to do later, and
- *         hence less working memory.<br>
- * Note 3: Reported memory figures are given in NDArray size unit - thus 1 refers to 1 float or 1 double value,
- * depending on the data type setting.
- * <br>
- *
- * @author Alex Black
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 @EqualsAndHashCode
 public abstract class MemoryReport {

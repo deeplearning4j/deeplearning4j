@@ -29,11 +29,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Set;
 
-/**
- * Condition that applies to the values in a Long column, using a {@link ConditionOp}
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class LongColumnCondition extends BaseColumnCondition {

@@ -37,9 +37,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @Deprecated
 public abstract class BaseAggregation extends BaseVoidMessage implements VoidAggregation, Serializable {

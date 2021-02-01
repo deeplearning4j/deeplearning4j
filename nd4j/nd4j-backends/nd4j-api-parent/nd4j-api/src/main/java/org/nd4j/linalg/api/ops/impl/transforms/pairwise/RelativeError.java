@@ -28,9 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 public class RelativeError extends BaseTransformSameOp {
     public RelativeError(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

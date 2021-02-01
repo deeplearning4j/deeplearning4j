@@ -24,9 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.HashMap;
 
-/**
- * A container that holds the features and the associated labels.
- */
 public class FeaturesLabels {
 
     @Getter

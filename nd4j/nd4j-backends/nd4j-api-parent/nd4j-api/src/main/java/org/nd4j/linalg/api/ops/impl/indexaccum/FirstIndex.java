@@ -34,12 +34,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Calculate the index
- * of max value over a vector
- *
- * @author raver119@gmail.com
- */
 @Data
 @NoArgsConstructor
 public class FirstIndex extends BaseIndexAccumulation {

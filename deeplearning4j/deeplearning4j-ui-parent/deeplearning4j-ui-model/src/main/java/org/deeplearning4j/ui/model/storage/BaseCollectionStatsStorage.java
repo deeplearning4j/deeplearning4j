@@ -28,11 +28,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * An implementation of the {@link StatsStorage} interface, backed by MapDB
- *
- * @author Alex Black
- */
 public abstract class BaseCollectionStatsStorage implements StatsStorage {
 
     protected Set<String> sessionIDs;

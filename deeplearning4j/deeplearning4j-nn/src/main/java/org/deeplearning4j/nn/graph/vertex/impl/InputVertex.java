@@ -31,9 +31,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/** An InputVertex simply defines the location (and connection structure) of inputs to the ComputationGraph.
- * It does not define forward or backward methods.
- */
 public class InputVertex extends BaseGraphVertex {
 
 

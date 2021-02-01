@@ -29,9 +29,6 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-/**
- * @author raver119@gmail.com
- */
 public class BasicGraphExecutioner implements GraphExecutioner {
     /**
      * This method returns Type of this executioner

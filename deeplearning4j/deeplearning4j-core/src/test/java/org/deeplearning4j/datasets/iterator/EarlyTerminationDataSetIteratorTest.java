@@ -34,9 +34,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by susaneraly on 6/8/17.
- */
 public class EarlyTerminationDataSetIteratorTest extends BaseDL4JTest {
 
     int minibatchSize = 10;

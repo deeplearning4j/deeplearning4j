@@ -58,9 +58,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 03/07/2016.
- */
 public class TestPreProcessedData extends BaseSparkTest {
 
     @Test

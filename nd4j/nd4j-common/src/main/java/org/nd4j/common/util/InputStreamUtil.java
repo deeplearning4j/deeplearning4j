@@ -25,11 +25,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Input stream jcuda.utils
- *
- * @author Adam Gibson
- */
 public class InputStreamUtil {
     /**
      * Count number of lines in a file

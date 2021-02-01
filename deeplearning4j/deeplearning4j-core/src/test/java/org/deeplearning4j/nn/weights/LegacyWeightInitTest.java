@@ -39,12 +39,6 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 
-/**
- * Test that {@link WeightInit} is compatible with the corresponding classes which implement {@link IWeightInit}. Mocks
- * Nd4j.randomFactory so that legacy and new implementation can be compared exactly.
- *
- * @author Christian Skarby
- */
 public class LegacyWeightInitTest extends BaseDL4JTest {
 
     private RandomFactory prevFactory;

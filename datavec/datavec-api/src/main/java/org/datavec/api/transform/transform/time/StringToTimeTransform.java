@@ -42,13 +42,6 @@ import java.util.TimeZone;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-/**
- * Convert a String column to a time column by parsing the date/time String, using a JodaTime.
- * <p>
- * Time format is specified as per <a href="http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html">http://www.joda.org/joda-time/apidocs/org/joda/time/format/DateTimeFormat.html</a>
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"formatter", "formatters"})
 @JsonIgnoreProperties({"formatters", "formatter"})

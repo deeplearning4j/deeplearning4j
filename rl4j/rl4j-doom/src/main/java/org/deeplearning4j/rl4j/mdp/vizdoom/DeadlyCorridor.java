@@ -25,9 +25,6 @@ import vizdoom.Button;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/1/16.
- */
 public class DeadlyCorridor extends VizDoom {
 
     public DeadlyCorridor(boolean render) {

@@ -24,13 +24,6 @@ import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Function to calculate the scores (reconstruction probability or log probability) for a variational autoencoder.<br>
- * Note that scoring is batched for computational efficiency.<br>
- *
- * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
- * @author Alex Black
- */
 public abstract class BaseVaeReconstructionProbWithKeyFunction<K> extends BaseVaeScoreWithKeyFunction<K> {
 
     private final boolean useLogProbability;

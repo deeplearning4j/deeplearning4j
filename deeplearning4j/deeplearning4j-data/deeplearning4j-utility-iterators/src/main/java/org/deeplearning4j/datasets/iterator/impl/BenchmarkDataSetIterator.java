@@ -31,12 +31,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Dataset iterator for simulated inputs, or input derived from a DataSet example. Primarily used for benchmarking.
- * Note that features/labels are re-used on each call of next() and are not re-created.
- *
- * @author Justin Long (crockpotveggies)
- */
 @Slf4j
 public class BenchmarkDataSetIterator implements DataSetIterator {
     private INDArray baseFeatures;

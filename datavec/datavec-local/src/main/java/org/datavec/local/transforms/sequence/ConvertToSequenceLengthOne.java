@@ -26,11 +26,6 @@ import org.nd4j.common.function.Function;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Very simple function to convert an example to sequence of length 1
- *
- * @author Alex Black
- */
 public class ConvertToSequenceLengthOne implements Function<List<Writable>, List<List<Writable>>> {
     @Override
     public List<List<Writable>> apply(List<Writable> writables) {

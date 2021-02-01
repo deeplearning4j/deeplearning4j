@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.PowBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Broadcastable element-wise power operation: x[i]^y[i]
- *
- * @author Alex Black
- */
 public class Pow extends DynamicCustomOp {
 
     public Pow(SameDiff sameDiff, SDVariable x, SDVariable y){

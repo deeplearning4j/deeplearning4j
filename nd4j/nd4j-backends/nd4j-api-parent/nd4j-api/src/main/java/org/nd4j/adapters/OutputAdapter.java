@@ -24,16 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
 
-/**
- * This interface describes entity used to convert neural network output to specified class.
- * I.e. INDArray -> int[] or INDArray -> Sentiment on the fly
- *
- * PLEASE NOTE: Implementation will be used in workspace environment to avoid additional allocations during inference.
- * This means you shouldn't store or return the INDArrays passed to OutputAdapter.apply(INDArray...) directly.
- * If you need a copy of the output array, use standard network output methods, or use INDArray.detach() before storing the array
- *
- * @param <T>
- */
 public interface OutputAdapter<T> extends Serializable {
 
     /**

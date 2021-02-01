@@ -36,11 +36,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Utility functionality for Keras convolution layers.
- *
- * @author Max Pumperla
- */
 public class KerasConvolutionUtils {
 
 

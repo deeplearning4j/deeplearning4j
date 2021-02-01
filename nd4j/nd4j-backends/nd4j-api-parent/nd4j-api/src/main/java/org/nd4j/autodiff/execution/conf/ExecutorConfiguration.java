@@ -31,10 +31,6 @@ import org.nd4j.graph.FlatConfiguration;
 import org.nd4j.graph.ProfilingMode;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 
-/**
- *
- * @author raver119@gmail.com
- */
 @Data
 @Slf4j
 @NoArgsConstructor

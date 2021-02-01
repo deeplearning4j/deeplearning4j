@@ -25,25 +25,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/**
- * Regularization API for magnitude-based regularization techniques such as:<br>
- * {@link L1Regularization}<br>
- * {@link L2Regularization}<br>
- * {@link WeightDecay}<br>
- * <br>
- * Implementations should have the following features:<br>
- * 1. Have a loss function (score) component that is based on the input (usually parameter) array<br>
- * 2. Modify the gradients (or updates) array based on the current input array (parameters)<br>
- * 3. Optionally, use the current learning rate when modifying gradients<br>
- * <br>
- * Note that generally this type of regularization is applied to parameters, but in principle this type of regularization
- * can be applied to activations also.
- * <br>
- * This Regularization interface cannot be used for all types of regularization, however; for example, the API
- * is not appropriate for implementing DropOut/DropConnect regularization.
- *
- * @author Alex Black
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface Regularization extends Serializable {
 

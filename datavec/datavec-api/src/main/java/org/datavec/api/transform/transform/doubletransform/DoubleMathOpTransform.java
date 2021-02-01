@@ -32,13 +32,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Double mathematical operation.<br>
- * This is an in-place operation of the double column value and a double scalar.
- *
- * @author Alex Black
- * @see DoubleColumnsMathOpTransform to do a mathematical operation involving multiple columns (instead of a scalar)
- */
 @Data
 public class DoubleMathOpTransform extends BaseColumnTransform {
 

@@ -32,9 +32,6 @@ import org.nd4j.linalg.api.ops.grid.OpDescriptor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BaseGridOp extends BaseOp implements GridOp {
     protected List<OpDescriptor> queuedOps = new ArrayList<>();
     protected List<GridPointers> grid = new ArrayList<>();

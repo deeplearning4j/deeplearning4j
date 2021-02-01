@@ -35,13 +35,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Filter by part of speech tag.
- * Any not valid part of speech tags
- * become NONE
- * @author Adam Gibson
- *
- */
 public class PosUimaTokenizer implements Tokenizer {
 
     private static AnalysisEngine engine;

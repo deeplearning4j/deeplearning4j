@@ -34,13 +34,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.net.URI;
 import java.util.Iterator;
 
-/**
- * A function (used in forEachPartition) to save DataSet objects to disk/HDFS. Each DataSet object is given a random and
- * (probably) unique name, starting with "dataset_" and ending  with ".bin".<br>
- * Use with {@code JavaRDD<DataSet>.foreachPartition()}
- *
- * @author Alex Black
- */
 public class DataSetExportFunction implements VoidFunction<Iterator<DataSet>> {
 
     private final URI outputDir;

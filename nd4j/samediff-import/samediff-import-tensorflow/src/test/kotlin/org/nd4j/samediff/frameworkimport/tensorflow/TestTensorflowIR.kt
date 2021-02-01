@@ -137,50 +137,8 @@ class TestTensorflowIR {
 
     }
 
-    @Test
-    @Ignore
-    fun manualTest3() {
-        val manualGraph = FileUtils.readFileToString(File("test.pbtxt"),Charset.defaultCharset())
-        val parsedGraph = GraphDef.newBuilder()
-        TextFormat.merge(manualGraph,parsedGraph)
-        val textGraph = parsedGraph.build()
-        val tfImporter = TensorflowFrameworkImporter()
-        val tensorflowIRGraph = TensorflowIRGraph(textGraph,tensorflowOps,tfImporter.registry)
-        println(textGraph)
-        val tfGraphRunner = TensorflowIRGraphRunner(tensorflowIRGraph, emptyList(), listOf("conv2d/Conv2D","conv2d/BiasAdd"))
-        val output = tfGraphRunner.run(emptyMap())
-        println(output.entries.map { (k,v) -> "$k,${v.shapeInfoToString()}" })
-    }
 
-    @Test
-    fun compareResults() {
-        /*   println("Variables added $variablesAdded")
-           FileUtils.writeLines(File("variables-added-new.txt"),variablesAdded)
-           println("Ops imported $opsImported")
-           FileUtils.writeLines(File("ops-imported-new.txt"),opsImported)
-           println("Ops added$opsAdded")
-           FileUtils.writeLines(File("ops-added-new.txt"),opsAdded)
-           println("Ops removed $opsRemoved")
-           FileUtils.writeLines(File("ops-removed-new.txt"),opsRemoved)
-   */
-        val variablesAddedOld = FileUtils.readLines(File("variables-added-old.txt"), Charset.defaultCharset())
-        val variablesAddedNew = FileUtils.readLines(File("variables-added-new.txt"), Charset.defaultCharset())
-        /*    for(i in 0 until variablesAddedNew.size) {
-                assertEquals("Index $i failed",variablesAddedOld[i],variablesAddedNew[i])
-            }*/
-        assertEquals(variablesAddedOld,variablesAddedNew)
-        val opsImportedOld = FileUtils.readLines(File("ops-imported-old.txt"), Charset.defaultCharset())
-        val opsImportedNew = FileUtils.readLines(File("ops-imported-new.txt"), Charset.defaultCharset())
-        assertEquals(opsImportedOld,opsImportedNew)
-        val opsAddedOld = FileUtils.readLines(File("ops-added-old.txt"), Charset.defaultCharset())
-        val opsAddedNew = FileUtils.readLines(File("ops-added-new.txt"), Charset.defaultCharset())
-        assertEquals(opsAddedOld,opsAddedNew)
-        val opsRemovedOld = FileUtils.readLines(File("ops-removed-old.txt"), Charset.defaultCharset())
-        val opsRemovedNew = FileUtils.readLines(File("ops-removed-new.txt"), Charset.defaultCharset())
-        assertEquals(opsRemovedOld,opsRemovedNew)
 
-        println()
-    }
 
 
     @Test
@@ -235,100 +193,6 @@ class TestTensorflowIR {
 
 
 
-    @Test
-    @Ignore
-    fun testOpsMapped() {
-        val tensorflowOpRegistry = registry()
-        val tensorflowOpNames = tensorflowOpRegistry.inputFrameworkOpNames().filter { tensorflowOpRegistry.registeredOps.containsKey(it) }
-        val nd4jOpNames = tensorflowOpRegistry.nd4jOpNames()
-
-        tensorflowOpNames.map {tensorflowOpName -> tensorflowOpRegistry.lookupOpMappingProcess(tensorflowOpName)}
-            .forEach {
-                val tensorflowNamesMapped = HashSet<String>()
-                val nd4jNamesMapped = HashSet<String>()
-                //we can ignore dtype for now
-                nd4jNamesMapped.add("dtype")
-                val opDef = tensorflowOpRegistry.lookupNd4jOpDef(it.opName())
-                val tensorflowOpDef = tensorflowOpRegistry.lookupInputFrameworkOpDef(it.inputFrameworkOpName())
-                val tensorflowAssertionNames = HashSet<String>()
-                tensorflowAssertionNames.addAll(tensorflowOpDef.inputArgList.map { arg -> arg.name })
-                tensorflowAssertionNames.addAll(tensorflowOpDef.attrList.map { attr -> attr.name })
-                val nd4jOpDefAssertions = HashSet<String>()
-                nd4jOpDefAssertions.addAll(opDef.argDescriptorList.map { argDescriptor -> argDescriptor.name })
-                val numRequiredInputsTf = tensorflowOpDef.inputArgCount
-                val nd4jInputs = opDef.argDescriptorList.filter { arg -> arg.argType == OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR }.count()
-                /**
-                 * TODO: Grab total collection of mapped nd4j names
-                 * as outputs and mapped tensorflow names as inputs.
-                 * Compare the mapped names to the op definitions
-                 * in nd4j and tensorflow respectively.
-                 */
-                it.tensorMappingRules().forEach { mappingRule ->
-                    mappingRule.mappingNamesToPerform().forEach {  mappingName ->
-                        tensorflowNamesMapped.add(mappingName.value)
-                        nd4jNamesMapped.add(mappingName.key)
-                    }
-                }
-
-                it.attributeMappingRules().forEach { mappingRule ->
-                    mappingRule.mappingNamesToPerform().forEach { mappingName ->
-                        tensorflowNamesMapped.add(mappingName.value)
-                        nd4jNamesMapped.add(mappingName.key)
-                    }
-
-                    mappingRule.mappingTransformerArgs().forEach {transformerArg ->
-                        run {
-                            transformerArg.value.forEach { argValue ->
-                                nd4jNamesMapped.add(argValue.name)
-
-                            }
-                        }
-                    }
-
-                }
-
-
-                tensorflowOpDef.inputArgList.map {input -> input.name}.forEach { inputName ->
-                    assertTrue(tensorflowAssertionNames.contains(inputName))
-                }
-
-                tensorflowOpDef.attrList.filter { attrDef -> attrDef.type != "type" }.map {attrDef -> attrDef.name }.forEach { attrName ->
-                    assertTrue(tensorflowAssertionNames.contains(attrName))
-                }
-
-
-
-                opDef.argDescriptorList.forEach {  argDef ->
-                    //only require it when the
-
-                    when(argDef.argType) {
-                        OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR -> {
-                            /**
-                             * Nd4j typically has many optional inputs that can also double as attributes
-                             * We need to allow for a bit of flexibility in how we handle op definitions. If they're not mapped 1 to 1,
-                             * we just log a warning for unmapped inputs. Otherwise we can do an assertion.
-                             */
-                            if(numRequiredInputsTf == nd4jInputs)
-                                assertTrue("Nd4j op name ${opDef.name} with tensorflow mapping ${tensorflowOpDef.name} has missing mapping ${argDef.name}",nd4jNamesMapped.contains(argDef.name))
-                            else if(!nd4jNamesMapped.contains(argDef.name)) {
-                                println("Warning: Nd4j op name ${opDef.name} with tensorflow mapping ${tensorflowOpDef.name} has missing mapping ${argDef.name}")
-                            }
-                        }
-                        OpNamespace.ArgDescriptor.ArgType.INT32,OpNamespace.ArgDescriptor.ArgType.INT64 -> {
-                            assertTrue("Nd4j op name ${opDef.name} with tensorflow mapping ${tensorflowOpDef.name}  has missing mapping ${argDef.name}",nd4jNamesMapped.contains(argDef.name))
-                        }
-                        OpNamespace.ArgDescriptor.ArgType.DOUBLE, OpNamespace.ArgDescriptor.ArgType.FLOAT -> {
-                            assertTrue("Nd4j op name ${opDef.name} with tensorflow mapping ${tensorflowOpDef.name}  has missing mapping ${argDef.name}",nd4jNamesMapped.contains(argDef.name))
-                        }
-                        OpNamespace.ArgDescriptor.ArgType.BOOL -> {
-                            assertTrue("Nd4j op name ${opDef.name} with tensorflow mapping ${tensorflowOpDef.name}  has missing mapping ${argDef.name}",nd4jNamesMapped.contains(argDef.name))
-                        }
-                    }
-
-                }
-
-            }
-    }
 
     @Test
     fun testInputOutputNames() {
@@ -385,6 +249,8 @@ class TestTensorflowIR {
 
 
     @Test
+    @Ignore
+    @org.junit.jupiter.api.Disabled
     fun testOpExecution() {
         Nd4j.getRandom().setSeed(12345)
         Nd4j.getEnvironment().isDebug = true
@@ -999,7 +865,7 @@ class TestTensorflowIR {
                     //The outputs from samediff might be slightly different (eg: not have every output tensorflow does or more)
 
                     //tf2 ops don't currently work in nd4j-tensorflow and can't be verified
-                    val tf2Ops = setOf("CheckNumericsV2","FusedBatchNormV3")
+                    val tf2Ops = setOf("CheckNumericsV2","FusedBatchNormV3","ParallelConcat","FusedBatchNorm","FusedBatchNormV2")
                     //these ops reflect ops that should generally be tested other ways and are usually tested down below
                     val bannedOps = setOf("noop","unique","unique_with_counts","matrix_determinant","log_matrix_determinant","Assert","split_v","identity_n","dynamic_partition","dynamic_stitch","draw_bounding_boxes","fused_batch_norm")
                     if(!bannedOps.contains(mappingProcess.opName()) && !tf2Ops.contains(mappingProcess.inputFrameworkOpName())) {
@@ -1072,7 +938,7 @@ class TestTensorflowIR {
                         assertEquals("Function ${nd4jOpDef.name} failed with input ${graphInput.inputNames}",tfResults, results)
 
                     }
-                    else if(mappingProcess.opName() == "fused_batch_norm") {
+                    else if(mappingProcess.opName() == "fused_batch_norm" && !tf2Ops.contains(mappingProcess.inputFrameworkOpName())) {
                         val tensorflowRunner = TensorflowIRGraphRunner(irGraph =  tensorflowGraph,inputNames = graphInput.inputNames,outputNames = graphInput.outputNames)
 
 

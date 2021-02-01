@@ -35,18 +35,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
-/**
- * A StringReducer is used to take a set of examples and reduce them.
- * The idea: suppose you have a large number of columns, and you want to combine/reduce the values in each column.<br>
- * StringReducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
- * See {@link Builder} and {@link ReduceOp} for the full list.<br>
- * <p>
- * Uses are:
- * (1) Reducing examples by a key
- * (2) Reduction operations in time series (windowing ops, etc)
- *
- * @author Alex Black
- */
 @Data
 @JsonIgnoreProperties({"schema", "keyColumnsSet"})
 @EqualsAndHashCode(exclude = {"schema", "keyColumnsSet"})

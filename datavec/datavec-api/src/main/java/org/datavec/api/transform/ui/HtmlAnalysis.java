@@ -47,11 +47,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/**
- * Utilities for rendering {@link DataAnalysis} objects as HTML
- *
- * @author Alex Black
- */
 public class HtmlAnalysis {
 
     private HtmlAnalysis() {

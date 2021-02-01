@@ -40,15 +40,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-/**
- * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
- *
- * @author Alex Black
- * @see LSTM LSTM class, for the version without peephole connections
- * @deprecated Will be eventually removed. Use {@link LSTM} instead, which has similar prediction accuracy, but supports
- * CuDNN for faster network training on CUDA (Nvidia) GPUs
- */
 @Deprecated
 @Data
 @NoArgsConstructor

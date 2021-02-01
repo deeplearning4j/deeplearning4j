@@ -18,11 +18,6 @@
  *  *****************************************************************************
  */
 
-// Type definitions for d3JS
-// Project: http://d3js.org/
-// Definitions by: Alex Ford <https://github.com/gustavderdrache>, Boris Yankov <https://github.com/borisyankov>
-// Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
-
 declare namespace d3 {
     /**
      * The current version of D3.js.

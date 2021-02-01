@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Segment min backprop operation
- *
- * @author Alex Black
- */
 public class SegmentMinBp extends DynamicCustomOp {
 
     public SegmentMinBp(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, SDVariable gradient) {

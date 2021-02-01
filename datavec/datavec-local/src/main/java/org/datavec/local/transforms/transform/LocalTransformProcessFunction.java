@@ -26,9 +26,6 @@ import org.datavec.local.transforms.BaseFlatMapFunctionAdaptee;
 
 import java.util.List;
 
-/**
- * Function for executing a transform process
- */
 public class LocalTransformProcessFunction extends BaseFlatMapFunctionAdaptee<List<Writable>, List<Writable>> {
 
     public LocalTransformProcessFunction(TransformProcess transformProcess) {

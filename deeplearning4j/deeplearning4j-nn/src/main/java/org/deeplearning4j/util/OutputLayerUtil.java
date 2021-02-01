@@ -34,11 +34,6 @@ import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Utility methods for output layer configuration/validation
- *
- * @author Alex Black
- */
 public class OutputLayerUtil {
 
     private OutputLayerUtil(){ }

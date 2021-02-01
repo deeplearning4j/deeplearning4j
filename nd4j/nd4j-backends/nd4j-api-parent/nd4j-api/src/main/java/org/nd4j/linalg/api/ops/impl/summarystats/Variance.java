@@ -39,13 +39,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Variance with bias correction.
- * Bias can either be divided by n or adjusted with:
- * (currentResult - (pow(bias, 2.0) / n())) / (n() - 1.0);
- *
- * @author Adam Gibson
- */
 public class Variance extends BaseReduceOp {
     protected double mean, bias;
     protected boolean biasCorrected = true;

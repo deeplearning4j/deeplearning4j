@@ -50,12 +50,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
-/**
- * Implementation of a SameDiff graph vertex.
- * Note that users should not be extending this directly - instead, use {@link SameDiffVertex}
- *
- * @author Alex Black
- */
 public class SameDiffGraphVertex extends BaseGraphVertex {
 
     protected SameDiffVertex config;

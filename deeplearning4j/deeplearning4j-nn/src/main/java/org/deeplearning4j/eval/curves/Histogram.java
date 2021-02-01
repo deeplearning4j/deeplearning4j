@@ -24,9 +24,6 @@ import lombok.Data;
 import org.nd4j.evaluation.curves.BaseHistogram;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.curves.Histogram}
- */
 @Deprecated
 @Data
 public class Histogram extends org.nd4j.evaluation.curves.Histogram {

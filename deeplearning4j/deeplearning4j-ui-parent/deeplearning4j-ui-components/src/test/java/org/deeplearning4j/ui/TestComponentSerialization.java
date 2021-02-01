@@ -43,9 +43,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 9/04/2016.
- */
 public class TestComponentSerialization extends BaseDL4JTest {
 
     @Test

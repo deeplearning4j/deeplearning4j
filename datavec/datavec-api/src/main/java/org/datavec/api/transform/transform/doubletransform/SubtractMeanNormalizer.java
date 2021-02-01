@@ -25,9 +25,6 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Normalize by substracting the mean
- */
 @Data
 public class SubtractMeanNormalizer extends BaseDoubleTransform {
 

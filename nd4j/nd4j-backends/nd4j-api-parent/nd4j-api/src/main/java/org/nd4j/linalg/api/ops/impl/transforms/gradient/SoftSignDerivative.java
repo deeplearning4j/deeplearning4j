@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * SoftSign derivative.
- *
- * @deprecated Use {@link SoftSignBp}
- */
 @Deprecated
 @NoArgsConstructor
 public class SoftSignDerivative extends BaseTransformStrictOp {

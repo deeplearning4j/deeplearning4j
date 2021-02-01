@@ -37,11 +37,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Dummy reader for use in {@link IteratorUtils}
- *
- * @author Alex Black
- */
 @Data
 public class SparkSourceDummyReader implements RecordReader, Serializable {
     private int readerIdx;

@@ -29,13 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * A SameDiff {@link org.nd4j.autodiff.samediff.internal.SessionMemMgr} that uses DL4J workspaces for memory management.
- * Any op outputs are allocated in the output workspace if they are returned to the layer; otherwise they are placed in
- * the DL4J working memory workspace
- *
- * @author Alex Black
- */
 public class DL4JSameDiffMemoryMgr extends AbstractMemoryMgr {
 
     private final String workingMemoryWs;

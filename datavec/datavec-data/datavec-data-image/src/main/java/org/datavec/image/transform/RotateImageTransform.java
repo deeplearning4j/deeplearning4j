@@ -39,13 +39,6 @@ import org.bytedeco.opencv.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
-/**
- * Rotates and scales images deterministically or randomly. Calls
- * {@link org.bytedeco.opencv.global.opencv_imgproc#warpAffine(Mat, Mat, Mat, Size, int, int, Scalar)}
- * with given properties (interMode, borderMode, and borderValue).
- *
- * @author saudet
- */
 @Accessors(fluent = true)
 @JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)

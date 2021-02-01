@@ -29,11 +29,6 @@ import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Reflects the state of
- * a parameter server
- * @author Adam Gibson
- */
 @Data
 @Builder
 @NoArgsConstructor

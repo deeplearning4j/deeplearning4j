@@ -26,9 +26,6 @@ import org.datavec.spark.inference.model.model.*;
 
 import java.io.IOException;
 
-/**
- * Created by agibsonccc on 6/12/17.
- */
 public interface DataVecTransformService {
 
     String SEQUENCE_OR_NOT_HEADER = "Sequence";

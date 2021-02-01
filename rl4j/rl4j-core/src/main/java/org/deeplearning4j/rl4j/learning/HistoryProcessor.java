@@ -38,11 +38,6 @@ import org.bytedeco.opencv.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/27/16.
- *
- * An IHistoryProcessor implementation using JavaCV
- */
 @Slf4j
 public class HistoryProcessor implements IHistoryProcessor {
 

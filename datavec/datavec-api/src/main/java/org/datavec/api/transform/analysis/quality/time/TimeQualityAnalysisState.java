@@ -27,9 +27,6 @@ import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.transform.quality.columns.TimeQuality;
 import org.datavec.api.writable.Writable;
 
-/**
- * @author Alex Black
- */
 public class TimeQualityAnalysisState implements QualityAnalysisState<TimeQualityAnalysisState> {
 
     @Getter

@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Absolute sum the components
- *
- * @author raver119@gmail.com
- */
 public class ASum extends BaseReduceSameOp {
     public ASum(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);

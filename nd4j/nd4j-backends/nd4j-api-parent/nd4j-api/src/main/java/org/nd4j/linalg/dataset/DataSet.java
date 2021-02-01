@@ -41,13 +41,6 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
 
-/**
- * A data transform (example/outcome pairs)
- * The outcomes are specifically for neural network encoding such that
- * any labels that are considered true are 1s. The rest are zeros.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 

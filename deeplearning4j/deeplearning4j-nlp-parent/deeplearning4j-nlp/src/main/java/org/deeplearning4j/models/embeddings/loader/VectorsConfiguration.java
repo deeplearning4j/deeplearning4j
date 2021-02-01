@@ -32,13 +32,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 
-/**
- *
- * This is simple bean/POJO for Word2Vec persistence handling.
- * It holds whole w2v model configuration info, except of TokenizerFactory and SentenceIterator, since they are not intended for serialization, and specified at run-time.
- *
- *  @author raver119@gmail.com
- */
 @Data
 public class VectorsConfiguration implements Serializable {
 

@@ -23,13 +23,6 @@ package org.datavec.api.transform;
 import org.datavec.api.transform.schema.Schema;
 
 
-/**
- * ColumnOp
- * is a transform meant
- * to run over 1 or more columns
- *
- * @author Adam Gibson
- */
 public interface ColumnOp extends Operation<Schema, Schema> {
 
     /** Set the input schema.

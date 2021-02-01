@@ -27,11 +27,6 @@ import scala.Tuple2;
 
 import java.util.List;
 
-/**
- * Spark function to map a n example to a pair, by using one of the columns as the key.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class SparkMapToPairByColumnFunction implements PairFunction<List<Writable>, Writable, List<Writable>> {
 

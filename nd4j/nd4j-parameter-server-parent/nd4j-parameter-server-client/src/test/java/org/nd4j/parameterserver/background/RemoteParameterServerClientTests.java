@@ -40,9 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 10/5/16.
- */
 @Slf4j
 public class RemoteParameterServerClientTests extends BaseND4JTest {
     private int parameterLength = 1000;

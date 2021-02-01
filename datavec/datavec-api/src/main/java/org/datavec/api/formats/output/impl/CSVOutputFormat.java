@@ -27,11 +27,6 @@ import org.datavec.api.formats.output.OutputFormat;
 import org.datavec.api.records.writer.RecordWriter;
 import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 
-/**
- * Creates an @link{CSVRecordWriter}
- *
- * @author Adam Gibson
- */
 public class CSVOutputFormat implements OutputFormat {
     @Override
     public RecordWriter createWriter(Configuration conf) throws DataVecException {

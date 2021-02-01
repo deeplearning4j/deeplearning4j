@@ -45,9 +45,6 @@ import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by kepricon on 17. 6. 19.
- */
 public class ImageSparkTransformServerTest {
 
     @Rule

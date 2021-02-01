@@ -28,11 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * Precision recall curve: A set of (recall, precision) points and different thresholds
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"area"}, callSuper = false)
 public class PrecisionRecallCurve extends BaseCurve {

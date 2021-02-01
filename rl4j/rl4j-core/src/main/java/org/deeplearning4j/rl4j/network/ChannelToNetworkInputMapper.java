@@ -30,9 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
-/**
- * A class that maps the channels of an {@link Observation} or a {@link Features} to the inputs of a network.
- */
 public class ChannelToNetworkInputMapper {
     private final IdxBinding[] networkInputsToChannelNameMap;
     private final int inputCount;

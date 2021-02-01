@@ -19,9 +19,9 @@
 #  ******************************************************************************/
 #
 
-# Author: kenton@google.com (Kenton Varda)
-#
-# Test protoc's zip output mode.
+
+
+
 
 fail() {
   echo "$@" >&2

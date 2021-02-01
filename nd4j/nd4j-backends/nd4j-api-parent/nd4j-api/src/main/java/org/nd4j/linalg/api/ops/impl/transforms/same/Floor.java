@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Floor elementwise function
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class Floor extends BaseTransformSameOp {
     public Floor(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

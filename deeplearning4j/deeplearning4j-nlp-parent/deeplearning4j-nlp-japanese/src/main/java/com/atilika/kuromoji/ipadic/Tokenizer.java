@@ -30,30 +30,6 @@ import com.atilika.kuromoji.viterbi.ViterbiNode;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A tokenizer based on the IPADIC dictionary
- * <p>
- * See {@link Token} for details on the morphological features produced by this tokenizer
- * <p>
- * The following code example demonstrates how to use the Kuromoji tokenizer:
- * <pre>{@code
- * package com.atilika.kuromoji.example;
- * import com.atilika.kuromoji.ipadic.Token;
- * import com.atilika.kuromoji.ipadic.Tokenizer;
- * import java.util.List;
- *
- * public class KuromojiExample {
- *     public static void main(String[] args) {
- *         Tokenizer tokenizer = new Tokenizer() ;
- *         List<Token> tokens = tokenizer.tokenize("お寿司が食べたい。");
- *         for (Token token : tokens) {
- *             System.out.println(token.getSurface() + "\t" + token.getAllFeatures());
- *         }
- *     }
- * }
- * }
- * </pre>
- */
 public class Tokenizer extends TokenizerBase {
 
     /**

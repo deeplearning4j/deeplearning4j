@@ -35,9 +35,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by susaneraly on 7/30/16.
- */
 @RunWith(Parameterized.class)
 public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
     public NormalizerStandardizeLabelsTest(Nd4jBackend backend) {

@@ -55,9 +55,6 @@ import java.util.List;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 30/12/2016.
- */
 @RunWith(Parameterized.class)
 public class TestActivation extends BaseNd4jTest {
 

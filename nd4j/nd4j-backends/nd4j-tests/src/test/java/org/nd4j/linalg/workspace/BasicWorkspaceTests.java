@@ -51,9 +51,6 @@ import java.io.File;
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.api.buffer.DataType.DOUBLE;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class BasicWorkspaceTests extends BaseNd4jTest {

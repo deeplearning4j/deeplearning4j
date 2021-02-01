@@ -32,11 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * Class similar to Java ThreadLocal class, but locality is preserved with respect to device used
- *
- * @author raver119@gmail.com
- */
 public abstract class DeviceLocal<T extends Object> {
     protected Map<Integer, T> backingMap = new ConcurrentHashMap<>();
     protected List<ReentrantReadWriteLock> locksMap = new ArrayList<>();

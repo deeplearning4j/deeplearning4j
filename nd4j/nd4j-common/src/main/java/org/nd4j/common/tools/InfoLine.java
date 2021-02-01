@@ -24,14 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-/**
- * Save values and titles for one values line.<br>
- * Columns are separated with char '|'.<br>
- *
- * Collaborate with class InfoValues.<br>
- * @author clavvis 
- */
-
 public class InfoLine {
 	//
 	public InfoLine() {

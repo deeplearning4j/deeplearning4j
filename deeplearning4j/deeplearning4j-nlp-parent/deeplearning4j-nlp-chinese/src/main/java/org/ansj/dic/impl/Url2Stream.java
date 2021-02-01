@@ -26,12 +26,6 @@ import org.ansj.exception.LibraryException;
 import java.io.InputStream;
 import java.net.URL;
 
-/**
- * url://http://maven.nlpcn.org/down/library/default.dic
- * 
- * @author ansj
- *
- */
 public class Url2Stream extends PathToStream {
 
     @Override

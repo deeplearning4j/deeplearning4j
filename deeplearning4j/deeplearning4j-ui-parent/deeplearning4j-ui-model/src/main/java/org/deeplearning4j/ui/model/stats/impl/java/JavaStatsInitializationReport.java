@@ -29,10 +29,6 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-/**
- * A 'pure java' implementation of {@link StatsInitializationReport}, mainly used for
- * Java 7 compatibility
- */
 @Data
 public class JavaStatsInitializationReport implements StatsInitializationReport {
 

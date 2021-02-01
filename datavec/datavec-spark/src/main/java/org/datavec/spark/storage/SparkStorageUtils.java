@@ -40,11 +40,6 @@ import org.datavec.spark.storage.functions.SequenceRecordSavePrepPairFunction;
 
 import java.util.List;
 
-/**
- * Utility methods for saving and restoring Writable objects from Spark RDD is to Hadoop formats
- *
- * @author Alex Black
- */
 public class SparkStorageUtils {
 
     /**

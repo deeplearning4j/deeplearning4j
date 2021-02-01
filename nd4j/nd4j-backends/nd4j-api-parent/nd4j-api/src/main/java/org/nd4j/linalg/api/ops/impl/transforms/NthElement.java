@@ -35,10 +35,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * NthElement op wrapper
- * @author raver119@gmail.com
- */
 public class NthElement extends DynamicCustomOp {
     protected boolean reverse = false;
 

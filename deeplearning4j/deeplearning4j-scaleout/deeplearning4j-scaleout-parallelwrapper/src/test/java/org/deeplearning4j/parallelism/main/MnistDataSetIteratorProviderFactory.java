@@ -25,9 +25,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.io.IOException;
 
-/**
- * Created by agibsonccc on 12/29/16.
- */
 public class MnistDataSetIteratorProviderFactory implements DataSetIteratorProviderFactory {
     /**
      * Create an {@link DataSetIterator}

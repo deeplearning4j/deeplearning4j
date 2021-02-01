@@ -27,10 +27,6 @@ import org.nd4j.linalg.api.memory.Deallocator;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
-/**
- * This method implements WeakReference for Deallocatable objects
- * @author raver119@gmail.com
- */
 @Data
 public class DeallocatableReference extends WeakReference<Deallocatable> {
     private String id;

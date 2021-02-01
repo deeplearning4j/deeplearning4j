@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
-/**
- * Stabilization function, forces values to be within a range
- *
- * @author Adam Gibson
- */
 public class Stabilize extends BaseTransformStrictOp {
     double realMin = 1.1755e-38f;
     double cutOff = FastMath.log(realMin);

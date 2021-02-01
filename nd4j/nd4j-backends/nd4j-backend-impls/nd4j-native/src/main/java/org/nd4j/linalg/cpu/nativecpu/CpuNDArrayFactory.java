@@ -52,12 +52,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.*;
 
-/**
- * {@link org.nd4j.linalg.factory.NDArrayFactory}
- * for cpus and the nd4j-native backend.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 

@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * tan elementwise function
- *
- * @author Adam Gibson
- */
 public class ATanh extends BaseTransformStrictOp {
 
     public ATanh(SameDiff sameDiff, SDVariable i_v) {

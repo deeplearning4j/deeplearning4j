@@ -29,11 +29,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-/**
- * A SequenceSchema is a {@link Schema} for sequential data.
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class SequenceSchema extends Schema {

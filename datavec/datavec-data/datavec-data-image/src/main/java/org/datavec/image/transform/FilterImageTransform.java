@@ -32,13 +32,6 @@ import java.util.Random;
 
 import static org.bytedeco.ffmpeg.global.avutil.*;
 
-/**
- * Filters images using FFmpeg (libavfilter):
- * <a href="https://ffmpeg.org/ffmpeg-filters.html">FFmpeg Filters Documentation</a>.
- *
- * @author saudet
- * @see FFmpegFrameFilter
- */
 @JsonIgnoreProperties({"filter", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data

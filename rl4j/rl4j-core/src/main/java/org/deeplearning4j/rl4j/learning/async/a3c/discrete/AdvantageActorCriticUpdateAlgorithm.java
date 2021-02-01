@@ -30,9 +30,6 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.List;
 
-/**
- * The Advantage Actor-Critic update algorithm can be used by A2C and A3C algorithms alike
- */
 public class AdvantageActorCriticUpdateAlgorithm implements UpdateAlgorithm<IActorCritic> {
 
     private final int[] shape;

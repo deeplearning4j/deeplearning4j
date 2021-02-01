@@ -60,9 +60,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class ParallelInferenceTest extends BaseDL4JTest {
     private static MultiLayerNetwork model;

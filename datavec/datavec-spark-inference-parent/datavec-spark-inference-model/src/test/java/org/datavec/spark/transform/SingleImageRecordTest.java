@@ -28,9 +28,6 @@ import org.nd4j.common.io.ClassPathResource;
 
 import java.io.File;
 
-/**
- * Created by kepricon on 17. 5. 24.
- */
 public class SingleImageRecordTest {
 
     @Rule

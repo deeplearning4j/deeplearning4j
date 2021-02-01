@@ -31,12 +31,6 @@ import org.nd4j.common.util.SetUtils;
 
 import java.util.*;
 
-/**
- * This is VPTree-based implementation for wordsNearest method, suited for multiple consequent calls.
- * Please note: VPTree will take some memory, dependant on your model size.
- *
- * @author raver119@gmail.com
- */
 public class TreeModelUtils<T extends SequenceElement> extends BasicModelUtils<T> {
     protected VPTree vpTree;
 

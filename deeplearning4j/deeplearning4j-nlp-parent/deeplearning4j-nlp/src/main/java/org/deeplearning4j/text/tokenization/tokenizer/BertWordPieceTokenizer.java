@@ -27,10 +27,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
-/**
- * A tokenizer that works with a vocab from a published bert model
- * @author Paul Dubs
- */
 @Slf4j
 public class BertWordPieceTokenizer implements Tokenizer {
     public static final Pattern splitPattern = Pattern.compile("\\p{javaWhitespace}+|((?<=\\p{Punct})+|(?=\\p{Punct}+))");

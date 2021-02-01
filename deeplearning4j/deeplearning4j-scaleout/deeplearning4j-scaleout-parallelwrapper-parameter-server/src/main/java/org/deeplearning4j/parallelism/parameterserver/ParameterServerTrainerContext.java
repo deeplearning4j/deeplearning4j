@@ -30,12 +30,6 @@ import org.deeplearning4j.parallelism.trainer.Trainer;
 import org.nd4j.parameterserver.client.ParameterServerClient;
 import org.nd4j.parameterserver.node.ParameterServerNode;
 
-/**
- * Used for creating and running {@link ParallelWrapper}
- * with {@link ParameterServerTrainer} workers.
- *
- * @author Adam Gibson
- */
 public class ParameterServerTrainerContext implements TrainerContext {
 
     private ParameterServerNode parameterServerNode;

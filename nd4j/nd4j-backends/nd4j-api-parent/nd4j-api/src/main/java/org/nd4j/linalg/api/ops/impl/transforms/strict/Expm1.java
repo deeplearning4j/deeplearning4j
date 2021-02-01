@@ -30,12 +30,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Element-wise exponential function minus 1, i.e. for each element x in a tensor computes the
- * transformation exp(x) - 1.
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class Expm1 extends BaseTransformStrictOp {
     public Expm1(SameDiff sameDiff, SDVariable i_v) {

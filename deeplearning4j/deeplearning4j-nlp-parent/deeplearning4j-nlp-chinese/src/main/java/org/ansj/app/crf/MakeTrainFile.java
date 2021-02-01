@@ -32,14 +32,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * 生成crf 或者是 wapiti的训练语聊工具.
- * 
- * 执行:java org.ansj.app.crf.MakeTrainFile [inputPath] [outputPath]
- * 
- * @author Ansj
- *
- */
 public class MakeTrainFile {
 
     private static final Log logger = LogFactory.getLog();

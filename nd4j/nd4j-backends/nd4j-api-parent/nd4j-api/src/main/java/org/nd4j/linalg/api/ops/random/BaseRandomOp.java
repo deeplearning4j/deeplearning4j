@@ -36,9 +36,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public abstract class BaseRandomOp extends BaseOp implements RandomOp {
     protected long[] shape;

@@ -33,14 +33,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Combiner function for use in {@link DataFrames#toRecordsSequence(Dataset<Row>)}
- * <p>
- * Assumption here: first two columns are the sequence UUID and the sequence index, as per
- * {@link DataFrames#toDataFrameSequence(Schema, JavaRDD)}
- *
- * @author Alex Black
- */
 public class DataFrameToSequenceMergeCombiner
                 implements Function2<List<List<Writable>>, List<List<Writable>>, List<List<Writable>>> {
 

@@ -22,9 +22,6 @@ package org.datavec.spark.transform.analysis.seqlength;
 
 import org.apache.spark.api.java.function.Function2;
 
-/**
- * Created by Alex on 7/03/2016.
- */
 public class SequenceLengthAnalysisAddFunction
                 implements Function2<SequenceLengthAnalysisCounter, Integer, SequenceLengthAnalysisCounter> {
 

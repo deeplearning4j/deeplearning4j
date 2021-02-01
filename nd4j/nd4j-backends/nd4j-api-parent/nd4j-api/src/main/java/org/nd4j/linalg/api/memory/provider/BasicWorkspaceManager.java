@@ -39,10 +39,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 
-/**
- * Workspace manager implementation. Please note, this class is supposed to be used via Nd4j.getWorkspaceManager(), to provide consistency between different threads within given JVM process
- * @author raver119@gmail.com
- */
 @Slf4j
 public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 

@@ -50,16 +50,6 @@ import java.util.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-/**
- * An image record reader for object detection.
- * <p>
- * Format of returned values: 4d array, with dimensions [minibatch, 4+C, h, w] (nchw) or [minibatch, h, w, 4+C] (nhwc)
- * Where the image is quantized into h x w grid locations.
- * <p>
- * Note that this matches the format required for Deeplearning4j's Yolo2OutputLayer
- *
- * @author Alex Black
- */
 public class ObjectDetectionRecordReader extends BaseImageRecordReader {
 
     private final int gridW;

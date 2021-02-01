@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RSubBpOp;
 
 import java.util.List;
 
-/**
- * Reverse subtraction operation
- *
- * @author Adam Gibson
- */
 public class RSubOp extends BaseDynamicTransformOp {
     public static final String OP_NAME = "reversesubtract";
 

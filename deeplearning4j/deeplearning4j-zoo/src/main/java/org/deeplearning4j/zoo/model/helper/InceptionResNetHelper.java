@@ -30,19 +30,6 @@ import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.nd4j.linalg.activations.Activation;
 
-/**
- * Inception is based on GoogleLeNet configuration of convolutional layers for optimization of
- * resources and learning. You can use this module to add Inception to your own custom models.
- * <br>
- * The GoogleLeNet paper: <a href="https://arxiv.org/abs/1409.4842">https://arxiv.org/abs/1409.4842</a>
- * <br>
- * This module is based on the Inception-ResNet paper that combined residual shortcuts with
- * Inception-style networks: <a href="https://arxiv.org/abs/1602.07261">https://arxiv.org/abs/1602.07261</a>
- *
- * Revised and consolidated. Likely needs further tuning for specific applications.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class InceptionResNetHelper {
 
     public static String nameLayer(String blockName, String layerName, int i) {

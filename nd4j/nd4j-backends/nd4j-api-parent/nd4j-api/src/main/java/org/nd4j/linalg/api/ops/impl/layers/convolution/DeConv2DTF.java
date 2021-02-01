@@ -47,9 +47,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 
-/**
- * DeConv2D operation, TF-wrapper
- */
 @Slf4j
 @Getter
 @NoArgsConstructor

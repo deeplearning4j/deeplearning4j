@@ -31,13 +31,6 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
- *
- * Abstract class common to all policies
- *
- * A Policy responsability is to choose the next action given a state
- */
 public abstract class Policy<A> implements INeuralNetPolicy<A> {
 
     public abstract IOutputNeuralNet getNeuralNet();

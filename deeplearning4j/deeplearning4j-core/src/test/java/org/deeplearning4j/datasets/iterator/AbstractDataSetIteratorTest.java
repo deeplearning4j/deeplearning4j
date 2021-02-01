@@ -33,9 +33,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by raver on 16.06.2016.
- */
 public class AbstractDataSetIteratorTest extends BaseDL4JTest {
     @Test
     public void next() throws Exception {

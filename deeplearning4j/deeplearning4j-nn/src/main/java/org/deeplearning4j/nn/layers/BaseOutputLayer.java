@@ -45,13 +45,6 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/**
- * Output layer with different objective
- * in co-occurrences for different objectives.
- * This includes classification as well as prediction
- * @author Adam Gibson
- *
- */
 public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseOutputLayer>
         extends BaseLayer<LayerConfT> implements Serializable, IOutputLayer {
 

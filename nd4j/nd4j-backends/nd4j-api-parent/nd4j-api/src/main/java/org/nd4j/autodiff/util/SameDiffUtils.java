@@ -36,9 +36,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JException;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * Utilities for SameDiff training and inference
- */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class SameDiffUtils {
 

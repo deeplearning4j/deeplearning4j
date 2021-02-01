@@ -27,12 +27,6 @@ import scala.Tuple2;
 
 import java.util.List;
 
-/**
- * Very simple function to extract out one writable (by index) and use it as a key in the resulting PairRDD
- * For example, myWritable.mapToPair(new ColumnsAsKeyPairFunction(myKeyColumnIdx))
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class ColumnAsKeyPairFunction implements PairFunction<List<Writable>, Writable, List<Writable>> {
     private final int columnIdx;

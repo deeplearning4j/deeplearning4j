@@ -33,23 +33,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-/**
- * {@link Writable} type for
- * a byte array.
- *
- * Note that this {@link Writable}
- * should be considered *raw* and *unsafe*
- * for typical use.
- * This writable's primary use case is for low level flexibility
- * and interop for accessing raw content when there are no alternatives.
- *
- * If you want *safe* indexing that you are familiar with, please
- * consider using nd4j's {@link DataBuffer} object
- * and the associated {@link #asNd4jBuffer(DataType, int)}
- *  method below.
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 public class BytesWritable extends ArrayWritable {
     @Getter

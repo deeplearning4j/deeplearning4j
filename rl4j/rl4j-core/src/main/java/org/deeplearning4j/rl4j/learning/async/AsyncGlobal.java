@@ -29,29 +29,6 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
- * <p>
- * In the original paper, the authors uses Asynchronous
- * Gradient Descent: Hogwild! It is a way to apply gradients
- * and modify a model in a lock-free manner.
- * <p>
- * As a way to implement this with dl4j, it is unfortunately
- * necessary at the time of writing to apply the gradient
- * (update the parameters) on a single separate global thread.
- * <p>
- * This Central thread for Asynchronous Method of reinforcement learning
- * enqueue the gradients coming from the different threads and update its
- * model and target. Those neurals nets are then synced by the other threads.
- * <p>
- * The benefits of this thread is that the updater is "shared" between all thread
- * we have a single updater which is the single updater of the model contained here
- * <p>
- * This is similar to RMSProp with shared g and momentum
- * <p>
- * When Hogwild! is implemented, this could be replaced by a simple data
- * structure
- */
 @Slf4j
 public class AsyncGlobal<NN extends NeuralNet> implements IAsyncGlobal<NN> {
 

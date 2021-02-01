@@ -38,15 +38,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.io.File;
 
-/**
- * Parallelwrapper main class.
- * Configure a {@link ParallelWrapper}
- * instance from the command line.
- *
- *
- *
- * @author Adam Gibson
- */
 @Data
 @Slf4j
 public class ParallelWrapperMain {

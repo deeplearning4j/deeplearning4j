@@ -33,12 +33,6 @@ import org.nd4j.linalg.indexing.conditions.EqualsCondition;
 
 import java.util.*;
 
-/**
- * An {@link ArrayList} like implementation of {@link List}
- * using {@link INDArray} as the backing data structure
- *
- * @author Adam Gibson
- */
 public class NDArrayList extends  BaseNDArrayList<Double>  {
     private INDArray container;
     private int size;

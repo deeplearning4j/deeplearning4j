@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.Op;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Non max suppression
- *
- * @author raver119@gmail.com
- */
 public class NonMaxSuppression extends DynamicCustomOp {
 
     public NonMaxSuppression() {}

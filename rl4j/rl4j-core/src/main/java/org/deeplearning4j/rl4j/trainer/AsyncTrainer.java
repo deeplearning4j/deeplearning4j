@@ -30,12 +30,6 @@ import java.util.function.Predicate;
 
 // TODO: Add listeners & events
 
-/**
- * A {@link ITrainer} implementation that will create a single {@link IAgentLearner} and perform the training in a
- * synchronized setup, until a stopping condition is met.
- *
- * @param <ACTION> The type of the actions expected by the environment
- */
 public class AsyncTrainer<ACTION> implements ITrainer {
 
     private final Builder<IAgentLearner<ACTION>> agentLearnerBuilder;

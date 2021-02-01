@@ -42,9 +42,6 @@ import java.nio.file.Path;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by anton on 7/18/16.
- */
 @RunWith(Parameterized.class)
 public class CachingDataSetIteratorTest extends BaseNd4jTest {
 

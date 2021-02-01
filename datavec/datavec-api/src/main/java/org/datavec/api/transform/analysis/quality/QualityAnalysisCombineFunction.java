@@ -26,11 +26,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Combine function used for undertaking analysis of a data set via Spark
- *
- * @author Alex Black
- */
 public class QualityAnalysisCombineFunction implements
         BiFunction<List<QualityAnalysisState>, List<QualityAnalysisState>, List<QualityAnalysisState>>, Serializable {
     @Override

@@ -22,11 +22,6 @@ package org.deeplearning4j.models.sequencevectors.interfaces;
 
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
-/**
- * This is interface for JSON -> SequenceElement serialization/deserialziation
- *
- * @author raver119@gmail.com
- */
 public interface SequenceElementFactory<T extends SequenceElement> {
     /**
      * This method builds object from provided JSON

@@ -30,9 +30,6 @@ import org.nd4j.common.function.BiFunction;
 
 import java.io.Serializable;
 
-/**
- * Created by Alex on 5/03/2016.
- */
 @AllArgsConstructor
 public class RealQualityAddFunction implements BiFunction<DoubleQuality, Writable, DoubleQuality>, Serializable {
 

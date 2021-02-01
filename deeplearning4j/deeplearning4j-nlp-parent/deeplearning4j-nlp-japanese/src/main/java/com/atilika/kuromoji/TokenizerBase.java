@@ -31,9 +31,6 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 
-/**
- * TokenizerBase main class
- */
 public abstract class TokenizerBase {
 
     public enum Mode {

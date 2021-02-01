@@ -22,9 +22,6 @@ package org.deeplearning4j.spark.stats;
 
 import org.deeplearning4j.core.util.UIDProvider;
 
-/**
- * Created by Alex on 26/06/2016.
- */
 public class BaseEventStats implements EventStats {
 
     protected final String machineId;

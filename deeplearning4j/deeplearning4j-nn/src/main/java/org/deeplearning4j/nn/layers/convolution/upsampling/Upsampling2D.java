@@ -41,13 +41,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Arrays;
 
 
-/**
- * 2D Upsampling layer.
- * <p>
- * Used for upsampling a 2D convolution
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class Upsampling2D extends AbstractLayer<org.deeplearning4j.nn.conf.layers.Upsampling2D> {
 

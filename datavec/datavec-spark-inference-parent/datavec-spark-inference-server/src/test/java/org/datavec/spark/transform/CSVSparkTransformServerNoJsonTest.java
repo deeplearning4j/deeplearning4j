@@ -41,9 +41,6 @@ import java.util.UUID;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeNotNull;
 
-/**
- * Created by agibsonccc on 1/22/17.
- */
 public class CSVSparkTransformServerNoJsonTest {
 
     private static CSVSparkTransformServer server;

@@ -33,12 +33,6 @@ import org.nd4j.parameterserver.distributed.v2.ModelParameterServer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * This MessageHandler implementation does the same as EncodingHandler, plus additionally:
- * sends encoded messages over the wire + receives encoded messages from outer parties
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class WiredEncodingHandler extends EncodingHandler {
     protected AtomicLong updatesCounter = new AtomicLong(0);

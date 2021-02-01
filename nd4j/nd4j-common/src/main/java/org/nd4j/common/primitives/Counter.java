@@ -25,10 +25,6 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Simple counter implementation
- * @author
- */
 public class Counter<T> implements Serializable {
     private static final long serialVersionUID = 119L;
 

@@ -20,12 +20,6 @@
 
 package org.nd4j.autodiff.loss;
 
-/**
- * The LossReduce enum specifies how (or if) the values of a loss function should be reduced to a single value.
- * See the javadoc comments on the individual enumeration constants for details.
- *
- * @author Alex Black
- */
 public enum LossReduce {
     /**
      * No reduction. In most cases, output is the same shape as the predictions/labels.<br>

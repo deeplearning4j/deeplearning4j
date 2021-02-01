@@ -29,12 +29,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-/**
- * A very simple adapter class for converting a single DataSet to a DataSetIterator.
- * Returns a single DataSet as-is, once for each epoch
- *
- * @author Alex Black
- */
 public class SingletonDataSetIterator implements DataSetIterator {
 
     private final DataSet dataSet;

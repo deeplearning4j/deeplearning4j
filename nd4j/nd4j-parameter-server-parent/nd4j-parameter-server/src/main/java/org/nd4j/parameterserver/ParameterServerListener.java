@@ -30,15 +30,6 @@ import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
 import org.nd4j.parameterserver.updater.storage.NoUpdateStorage;
 
 
-/**
- * Parameter server
- * listener. This holds an
- * {@link INDArray} in memory
- * and maintains the "master copy"
- *
- * of the ndarray.
- * @author Adam Gibson
- */
 @Data
 public class ParameterServerListener implements NDArrayCallback {
     private ParameterServerUpdater updater;

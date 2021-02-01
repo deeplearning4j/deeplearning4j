@@ -38,9 +38,6 @@ import java.util.Random;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 06/01/2017.
- */
 public class TestShuffleExamples extends BaseSparkTest {
 
     @Test

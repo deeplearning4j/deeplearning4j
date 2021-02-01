@@ -27,11 +27,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * A standard implementation of the {@link org.datavec.api.records.Record} interface
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class Record implements org.datavec.api.records.Record {

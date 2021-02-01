@@ -45,9 +45,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 public class PartitionTrainingFunction<T extends SequenceElement> implements VoidFunction<Iterator<Sequence<T>>> {
     protected Broadcast<VocabCache<ShallowSequenceElement>> vocabCacheBroadcast;
     protected Broadcast<VectorsConfiguration> configurationBroadcast;

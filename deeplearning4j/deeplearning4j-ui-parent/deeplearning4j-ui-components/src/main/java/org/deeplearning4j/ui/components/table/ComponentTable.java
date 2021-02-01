@@ -27,11 +27,6 @@ import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-/**
- * Simple 2d table for text,
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)

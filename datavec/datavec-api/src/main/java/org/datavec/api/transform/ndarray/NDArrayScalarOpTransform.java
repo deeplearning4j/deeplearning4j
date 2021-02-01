@@ -32,12 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Perform an NDArray/scalar element wise operation, such as X.addi(scalar).
- * Element wise operations are performed in place on each value of the underlying INDArray
- *
- * @author Alex Black
- */
 @Data
 public class NDArrayScalarOpTransform extends BaseColumnTransform {
 

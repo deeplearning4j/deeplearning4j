@@ -33,12 +33,6 @@ import org.nd4j.common.resources.Resources;
 import java.io.InputStream;
 
 
-/**
- * Unit tests for Keras1 model configuration import.
- *
- * @author Max Pumperla
- */
-
 @Slf4j
 public class Keras1ModelConfigurationTest extends BaseDL4JTest {
 

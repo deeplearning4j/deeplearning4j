@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Non-normalized Shannon Entropy Op - returns the entropy (information gain, or uncertainty of a random variable).
- *
- * @author raver119@gmail.com
- */
 public class ShannonEntropy extends BaseReduceFloatOp {
     public ShannonEntropy(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);

@@ -24,9 +24,6 @@ import org.nd4j.parameterserver.distributed.logic.SequenceProvider;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 @Deprecated
 public class BasicSequenceProvider implements SequenceProvider {
 

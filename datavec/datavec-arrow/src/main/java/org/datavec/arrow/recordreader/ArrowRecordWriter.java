@@ -33,11 +33,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Output arrow records to an output stream.
- *
- * @author Adam Gibson
- */
 public class ArrowRecordWriter implements RecordWriter {
 
     private Configuration configuration;

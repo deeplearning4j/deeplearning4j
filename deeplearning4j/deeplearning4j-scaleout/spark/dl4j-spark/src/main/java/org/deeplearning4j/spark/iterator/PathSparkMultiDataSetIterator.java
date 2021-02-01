@@ -37,12 +37,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Iterator;
 
-/**
- * A DataSetIterator that loads serialized DataSet objects (saved with {@link MultiDataSet#save(OutputStream)}) from
- * a String that represents the path (for example, on HDFS)
- *
- * @author Alex Black
- */
 public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
 
     public static final int BUFFER_SIZE = 4194304; //4 MB

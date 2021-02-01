@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SquaredDif
 
 import java.util.List;
 
-/**
- * Squared difference operation, i.e. returns (x - y) * (x - y)
- *
- * @author Max Pumperla
- */
 public class SquaredDifferenceOp extends BaseDynamicTransformOp {
     public static final String OP_NAME = "squaredsubtract";
 

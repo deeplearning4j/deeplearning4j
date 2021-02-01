@@ -23,11 +23,6 @@ package org.deeplearning4j.models.sequencevectors.graph.vertex;
 import org.deeplearning4j.models.sequencevectors.graph.primitives.Vertex;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
-/**
- * VertexFactory implementation
- *
- * @author raver119@gmail.com
- */
 public class AbstractVertexFactory<T extends SequenceElement> implements VertexFactory<T> {
 
     @Override

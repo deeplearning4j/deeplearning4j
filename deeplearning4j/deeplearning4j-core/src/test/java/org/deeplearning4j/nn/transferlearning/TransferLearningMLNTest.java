@@ -57,9 +57,6 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by susaneraly on 2/15/17.
- */
 @Slf4j
 public class TransferLearningMLNTest extends BaseDL4JTest {
 

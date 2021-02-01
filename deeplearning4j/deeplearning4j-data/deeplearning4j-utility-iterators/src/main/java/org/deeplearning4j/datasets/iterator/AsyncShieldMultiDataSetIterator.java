@@ -25,11 +25,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * This wrapper takes your existing MultiDataSetIterator implementation and prevents asynchronous prefetch
- *
- * @author raver119@gmail.com
- */
 public class AsyncShieldMultiDataSetIterator implements MultiDataSetIterator {
     private MultiDataSetIterator backingIterator;
 

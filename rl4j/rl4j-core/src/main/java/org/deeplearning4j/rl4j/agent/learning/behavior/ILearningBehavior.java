@@ -21,12 +21,6 @@ package org.deeplearning4j.rl4j.agent.learning.behavior;
 
 import org.deeplearning4j.rl4j.observation.Observation;
 
-/**
- * The <code>ILearningBehavior</code> implementations are in charge of the training. Through this interface, they are
- * notified as new experience is generated.
- *
- * @param <ACTION> The type of action
- */
 public interface ILearningBehavior<ACTION> {
 
     /**

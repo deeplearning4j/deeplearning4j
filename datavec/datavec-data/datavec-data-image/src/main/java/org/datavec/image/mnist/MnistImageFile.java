@@ -24,12 +24,6 @@ package org.datavec.image.mnist;
 import java.io.IOException;
 
 
-/**
- * 
- * MNIST database image file. Contains additional header information for the
- * number of rows and columns per each entry.
- * 
- */
 public class MnistImageFile extends MnistDbFile {
     private int rows;
     private int cols;

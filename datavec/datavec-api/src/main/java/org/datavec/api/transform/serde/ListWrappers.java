@@ -31,14 +31,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-/**
- * A collection of list wrappers to avoid issues with Jackson losing generic type information and hence
- * ignoring the json configuration annotations.<br>
- *
- * These are used internally in {@link BaseSerializer} and should not be used elsewhere
- *
- * @author Alex Black
- */
 public class ListWrappers {
 
     private ListWrappers() {}

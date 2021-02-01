@@ -34,12 +34,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Using {@link SystemInfo} - it prints a json representation
- * on each callback to the specified file.
- *
- * @author Adam Gibson
- */
 @Slf4j
 @Builder
 public class SystemInfoFilePrintListener implements TrainingListener {

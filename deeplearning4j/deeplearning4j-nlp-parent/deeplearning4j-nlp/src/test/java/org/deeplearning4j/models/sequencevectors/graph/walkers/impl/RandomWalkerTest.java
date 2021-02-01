@@ -38,9 +38,6 @@ import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 public class RandomWalkerTest extends BaseDL4JTest {
 
     private static IGraph<VocabWord, Double> graph;

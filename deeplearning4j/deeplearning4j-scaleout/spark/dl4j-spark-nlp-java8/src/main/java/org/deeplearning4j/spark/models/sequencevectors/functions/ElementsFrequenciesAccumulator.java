@@ -23,11 +23,6 @@ package org.deeplearning4j.spark.models.sequencevectors.functions;
 import org.apache.spark.AccumulatorParam;
 import org.nd4j.common.primitives.Counter;
 
-/**
- * Accumulator for elements count
- *
- * @author raver119@gmail.com
- */
 public class ElementsFrequenciesAccumulator implements AccumulatorParam<Counter<Long>> {
     @Override
     public Counter<Long> addAccumulator(Counter<Long> c1, Counter<Long> c2) {

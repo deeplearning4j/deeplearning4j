@@ -29,15 +29,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.*;
 
-/**
- * API for accessing resources (usually test resources) from a path.
- * For example, depending on the implementation (underlying set of {@link Resolver instances} this class cas be used to
- * resolve files on the classpath, or reference files (referring to a remote file that needs to be downloaded).<br>
- * By default only the {@link StrumpfResolver} is used, but others can be added using the Java {@link ServiceLoader} mechanism
- * for {@link Resolver} class.
- *
- * @author Alex Black
- */
 @Slf4j
 public class Resources {
     private static Resources INSTANCE = new Resources();

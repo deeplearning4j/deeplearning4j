@@ -20,11 +20,6 @@
 
 package org.deeplearning4j.parallelism.inference;
 
-/**
- * This enum describes different modes for ParallelInference
- *
- * @author raver119@gmail.com
- */
 public enum InferenceMode {
     /**
      * input will be passed into the model as is

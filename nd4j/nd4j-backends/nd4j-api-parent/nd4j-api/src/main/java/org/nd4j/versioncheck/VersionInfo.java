@@ -33,9 +33,6 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Properties;
 
-/**
- * Created by Alex on 04/08/2017.
- */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data

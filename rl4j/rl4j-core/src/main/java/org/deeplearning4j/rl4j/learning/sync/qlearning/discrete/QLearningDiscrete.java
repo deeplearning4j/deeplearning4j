@@ -56,13 +56,6 @@ import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/18/16.
- * <p>
- * DQN or Deep Q-Learning in the Discrete domain
- * <p>
- * http://arxiv.org/abs/1312.5602
- */
 public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O, Integer, DiscreteSpace> {
 
     @Getter

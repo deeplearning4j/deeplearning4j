@@ -30,14 +30,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Converts String column into a sparse bag-of-words (BOW)
- * represented as an NDArray of indices. Appropriate for
- * embeddings or as efficient storage before being expanded
- * into a dense array.
- *
- * @author dave@skymind.io
- */
 @Data
 public class StringListToIndicesNDArrayTransform extends StringListToCountsNDArrayTransform {
     /**

@@ -32,11 +32,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * KDTree based on: <a href="https://github.com/nicky-zs/kdtree-python/blob/master/kdtree.py">https://github.com/nicky-zs/kdtree-python/blob/master/kdtree.py</a>
- *
- * @author Adam Gibson
- */
 public class KDTree implements Serializable {
 
     private KDNode root;

@@ -25,16 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
-/**
- * The PermuteDataSetPreProcessor will rearrange the dimensions.
- * There are two pre-defined permutation types:
- * - from NCHW to NHWC
- * - from NHWC to NCHW
- *
- * Or, pass the new order to the ctor. For example PermuteDataSetPreProcessor(1, 2, 0) will rearrange the middle dimension first, the last one in the middle and the first one last.
- *
- * @author Alexandre Boulanger
- */
 public class PermuteDataSetPreProcessor implements DataSetPreProcessor {
 
     private final PermutationTypes permutationType;

@@ -27,11 +27,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.*;
 
-/**
- * Simple function used in AnalyzeSpark.getUnique
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class UniqueAddFunction implements Function2<Map<String,Set<Writable>>, List<Writable>, Map<String,Set<Writable>>> {
 

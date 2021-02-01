@@ -34,12 +34,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Simple utils for converting {@link Writable} s
- * lists to {@link INDArray}
- *
- * @author Adam Gibson
- */
 public class TimeSeriesWritableUtils {
 
     /**

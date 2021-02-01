@@ -42,9 +42,6 @@ import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 
-/**
- * Created by agibsonccc on 7/1/17.
- */
 @Slf4j
 public class BinarySerde {
 

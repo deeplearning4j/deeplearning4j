@@ -27,9 +27,6 @@ import org.nd4j.common.util.OneTimeLogger;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class OneTimeLoggerTest {
 

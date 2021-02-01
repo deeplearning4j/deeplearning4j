@@ -40,14 +40,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-/**
- * This compression is very special case, and shouldn't be ever used outside of ParallelWrapper/ParameterServer implementation.
- * It encodes data as delta between zero and abs threshold.
- *
- * PLEASE NOTE: DO NOT USE THIS COMPRESSOR UNLESS YOU'RE 100% SURE WHAT YOU DO!
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CpuThreshold extends AbstractCompressor {
     @Getter @Setter protected float threshold = 1e-3f;

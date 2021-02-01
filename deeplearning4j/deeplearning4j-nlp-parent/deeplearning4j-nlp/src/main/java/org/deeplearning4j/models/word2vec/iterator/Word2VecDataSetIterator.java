@@ -40,12 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-/**
- * Iterates over a sentence with moving window to produce a data applyTransformToDestination
- * for word windows based on a pretrained word2vec.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class Word2VecDataSetIterator implements DataSetIterator {
     private Word2Vec vec;

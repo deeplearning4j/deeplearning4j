@@ -35,9 +35,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by rcorbish
- */
 @RunWith(Parameterized.class)
 @Slf4j
 public class TestEigen extends BaseNd4jTest {

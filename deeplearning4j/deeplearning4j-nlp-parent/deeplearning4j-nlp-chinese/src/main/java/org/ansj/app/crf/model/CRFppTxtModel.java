@@ -34,14 +34,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-/**
- * 加载CRF+生成的crf文本模型,测试使用的CRF++版本为:CRF++-0.58
- * 
- * 下载地址:https://taku910.github.io/crfpp/#download 在这里感谢作者所做的工作.
- * 
- * @author Ansj
- *
- */
 public class CRFppTxtModel extends Model {
 
     /**

@@ -28,20 +28,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Function used to batch DataSet objects together. Typically used to combine singe-example DataSet objects out of
- * something like {@link org.deeplearning4j.spark.datavec.DataVecDataSetFunction} together into minibatches.<br>
- *
- * Usage:
- * <pre>
- * {@code
- *      RDD<DataSet> mySingleExampleDataSets = ...;
- *      RDD<DataSet> batchData = mySingleExampleDataSets.mapPartitions(new BatchDataSetsFunction(batchSize));
- * }
- * </pre>
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class BatchDataSetsFunction implements FlatMapFunction<Iterator<DataSet>, DataSet> {
     private final int minibatchSize;

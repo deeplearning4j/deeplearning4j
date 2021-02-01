@@ -30,10 +30,6 @@ import java.io.DataInputStream;
 import java.net.URI;
 import java.util.List;
 
-/**RecordReaderFunction: Given a SequenceRecordReader and a file (via Spark PortableDataStream), load and parse the
- * sequence data into a {@code List<List<Writable>>}
- * @author Alex Black
- */
 public class SequenceRecordReaderFunction
                 implements Function<Tuple2<String, PortableDataStream>, List<List<Writable>>> {
     protected SequenceRecordReader sequenceRecordReader;

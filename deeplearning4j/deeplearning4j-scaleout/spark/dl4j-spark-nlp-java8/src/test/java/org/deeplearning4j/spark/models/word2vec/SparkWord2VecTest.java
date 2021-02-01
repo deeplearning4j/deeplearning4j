@@ -46,11 +46,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Tests for new Spark Word2Vec implementation
- *
- * @author raver119@gmail.com
- */
 public class SparkWord2VecTest extends BaseDL4JTest {
 
     @Override

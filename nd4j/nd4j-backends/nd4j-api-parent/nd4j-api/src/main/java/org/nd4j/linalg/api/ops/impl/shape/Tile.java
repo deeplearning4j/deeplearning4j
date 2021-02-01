@@ -38,11 +38,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Tile function
- *
- * @author Adam Gibson
- */
 public class Tile extends DynamicCustomOp {
 
     private int[] jaxis;

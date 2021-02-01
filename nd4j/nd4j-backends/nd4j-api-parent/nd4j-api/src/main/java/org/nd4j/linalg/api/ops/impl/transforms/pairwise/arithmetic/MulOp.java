@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.MulBpOp;
 
 import java.util.List;
 
-/**
- * Multiplication operation
- *
- * @author Adam Gibson
- */
 public class MulOp  extends BaseDynamicTransformOp {
     public static final String OP_NAME = "multiply";
 

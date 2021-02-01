@@ -30,12 +30,6 @@ import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
-/**
- * Base score function based on an IEvaluation instance. Used for both MultiLayerNetwork and ComputationGraph
- *
- * @param <T> Type of model
- * @param <U> Type of evaluation
- */
 public abstract class BaseIEvaluationScoreCalculator<T extends Model, U extends IEvaluation> implements ScoreCalculator<T> {
 
     protected MultiDataSetIterator iterator;

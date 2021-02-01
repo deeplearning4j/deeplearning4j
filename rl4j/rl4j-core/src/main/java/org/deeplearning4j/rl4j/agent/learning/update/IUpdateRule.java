@@ -21,11 +21,6 @@ package org.deeplearning4j.rl4j.agent.learning.update;
 
 import java.util.List;
 
-/**
- * The role of IUpdateRule implementations is to use an experience batch to improve the accuracy of the policy.
- * Used by {@link org.deeplearning4j.rl4j.agent.AgentLearner AgentLearner}
- * @param <EXPERIENCE_TYPE> The type of the experience
- */
 public interface IUpdateRule<EXPERIENCE_TYPE> {
     /**
      * Perform the update

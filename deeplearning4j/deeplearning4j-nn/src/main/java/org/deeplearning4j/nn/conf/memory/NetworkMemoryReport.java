@@ -34,14 +34,6 @@ import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- *
- * Network memory reports is a class that is used to store/represent the memory requirements of a
- * {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph},
- * composed of multiple layers and/or vertices.
- *
- * @author Alex Black
- */
 @Getter
 @EqualsAndHashCode(callSuper = true)
 public class NetworkMemoryReport extends MemoryReport {

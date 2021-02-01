@@ -20,10 +20,6 @@
 
 package org.nd4j.parameterserver.distributed.v2.enums;
 
-/**
- * This enum
- * @author raver119@gmail.com
- */
 public enum MeshBuildMode {
     /**
      * In this mode all nodes are connected to the master, and master is responsible for messages propagation

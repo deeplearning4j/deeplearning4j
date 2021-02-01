@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
 
 import java.util.List;
 
-/**
- * Sum the components
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class Sum extends BaseReduceSameOp {
     public Sum(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {

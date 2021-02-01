@@ -24,9 +24,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.Iterator;
 
-/**
- * Created by agibsonccc on 9/15/15.
- */
 public class FlatIterator implements Iterator<int[]> {
 
     private int[] shape;

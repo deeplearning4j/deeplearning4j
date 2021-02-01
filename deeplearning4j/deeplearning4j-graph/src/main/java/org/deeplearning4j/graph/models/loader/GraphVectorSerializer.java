@@ -35,9 +35,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**GraphVectorSerializer: Provide static methods to save and load DeepWalk/Graph vectors
- *
- */
 public class GraphVectorSerializer {
     private static final Logger log = LoggerFactory.getLogger(GraphVectorSerializer.class);
     private static final String DELIM = "\t";

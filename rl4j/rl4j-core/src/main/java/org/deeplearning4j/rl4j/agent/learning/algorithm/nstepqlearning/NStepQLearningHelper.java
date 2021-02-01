@@ -26,11 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
 
-/**
- * A base helper class for the n-step Q-Learning update algorithm. The algorithm is the same whether it's used with a RNN or
- * not but, the shape of INDArrays are different. This class, {@link NonRecurrentNStepQLearningHelper},
- * and {@link RecurrentNStepQLearningHelper} handle the differences.
- */
 public abstract class NStepQLearningHelper {
 
     /**

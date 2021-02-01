@@ -34,15 +34,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.*;
 
-/**
- * TestCase: Validate a SameDiff instance.
- * Can be used to validate gradients (enabled by default) and expected outputs (forward pass for variables) if such
- * outputs are provided.
- * <p>
- * Used with {@link OpValidation}
- *
- * @author Alex Black
- */
 @Data
 @Accessors(fluent = true)
 @Getter

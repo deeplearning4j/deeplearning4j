@@ -30,12 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 
-/**
- * Downloads and caches the GeoLite2 City database created by MaxMind, available from
- * <a href="http://www.maxmind.com">http://www.maxmind.com</a> or uses one already available on system.
- *
- * @author saudet
- */
 public class GeoIPFetcher {
     protected static final Logger log = LoggerFactory.getLogger(GeoIPFetcher.class);
 

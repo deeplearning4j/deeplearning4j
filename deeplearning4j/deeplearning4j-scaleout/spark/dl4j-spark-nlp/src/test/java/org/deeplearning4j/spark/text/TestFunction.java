@@ -24,9 +24,6 @@ import org.apache.spark.api.java.function.Function;
 
 import java.util.List;
 
-/**
- * Created by jeffreytang on 8/14/15.
- */
 public class TestFunction implements Function<Integer, Integer> {
     public TestFunction(List<Integer> lst) {
         this.lst = lst;

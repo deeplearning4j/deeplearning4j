@@ -33,22 +33,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * A ShiftVertex is used to shift the activations of a single layer<br>
- * One could use it to add a bias or as part of some other calculation.
- * For example, Highway Layers need them in two places. One, it's often
- * useful to have the gate weights have a large negative bias. (Of course
- * for this, we could just initialize the biases that way.)
- * But, _also_ it needs to do this:
- * (1-sigmoid(weight * input + bias)) (*) input + sigmoid(weight * input + bias) (*) activation(w2 * input + bias) ((*) is hadamard product)
- * So, here, we could have
- * 1. a DenseLayer that does the sigmoid
- * 2. a ScaleVertex(-1) and
- * 3. a ShiftVertex(1)
- * to accomplish that.
- *
- * @author Binesh Bannerjee (binesh_binesh@hotmail.com, @bnsh on gitter)
- */
 public class ShiftVertex extends BaseGraphVertex {
 
     private double shiftFactor;

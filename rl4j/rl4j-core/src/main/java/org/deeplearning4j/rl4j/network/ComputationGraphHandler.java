@@ -32,9 +32,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * A {@link INetworkHandler} implementation to be used with {@link ComputationGraph ComputationGraphs}
- */
 public class ComputationGraphHandler implements INetworkHandler {
 
     private final ComputationGraph model;

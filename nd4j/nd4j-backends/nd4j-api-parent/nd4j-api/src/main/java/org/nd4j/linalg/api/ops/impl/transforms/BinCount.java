@@ -34,11 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * BinCount: counts the number of times each value appears in an integer array.
- *
- * @author Alex Black
- */
 public class BinCount extends DynamicCustomOp {
 
     private Integer minLength;

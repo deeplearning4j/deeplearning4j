@@ -24,11 +24,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
 
-/**
- * Interface to helper classes that return label descriptions.
- *
- * @author saudet
- */
 public interface Labels {
 
     /**

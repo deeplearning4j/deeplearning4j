@@ -30,9 +30,6 @@ import org.rocksdb.RocksIterator;
 
 import java.nio.ByteBuffer;
 
-/**
- * Created by agibsonccc on 12/2/16.
- */
 public class RocksDbStorage extends BaseUpdateStorage implements AutoCloseable {
     static {
         // a static method that loads the RocksDB C++ library.

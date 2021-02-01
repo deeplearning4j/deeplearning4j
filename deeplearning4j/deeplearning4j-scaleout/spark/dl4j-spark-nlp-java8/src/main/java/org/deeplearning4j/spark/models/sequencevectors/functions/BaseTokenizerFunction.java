@@ -29,9 +29,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 
 import java.io.Serializable;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class BaseTokenizerFunction implements Serializable {
     protected Broadcast<VectorsConfiguration> configurationBroadcast;
 

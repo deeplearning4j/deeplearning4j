@@ -23,11 +23,6 @@ package org.nd4j.linalg.api.ops.custom;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-/**
- * This op calculates gains - data used internally by Barnes-Hut-TSNE algorithm.
- *
- * @author alexander.stoyakin@gmail.com
- */
 public class BarnesHutGains extends DynamicCustomOp {
 
     public BarnesHutGains(){ }

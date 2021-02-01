@@ -39,13 +39,6 @@ import org.nd4j.common.util.SetUtils;
 
 import java.util.*;
 
-/**
- * Basic implementation for ModelUtils interface, suited for standalone use.
- *
- * PLEASE NOTE: This reader applies normalization to underlying lookup table.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T> {
     public static final String EXISTS = "exists";

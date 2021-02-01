@@ -33,12 +33,6 @@ import org.nd4j.linalg.util.FeatureUtil;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Turn a string in to a dataset based on
- * a record reader
- *
- * @author Adam Gibson
- */
 public class RecordReaderFunction implements Function<String, DataSet> {
     private RecordReader recordReader;
     private int labelIndex = -1;

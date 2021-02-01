@@ -27,13 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
-/**
- * Used for setting the gemm parameters
- * Separates blas logic from
- * the run time itself.
- *
- * @author Adam Gibson
- */
 public @Data class GemmParams {
     private int lda, ldb, ldc, m, n, k;
     private INDArray a, b, c;

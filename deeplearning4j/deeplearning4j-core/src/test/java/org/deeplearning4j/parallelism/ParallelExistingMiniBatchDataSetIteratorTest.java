@@ -39,9 +39,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class ParallelExistingMiniBatchDataSetIteratorTest extends BaseDL4JTest {
 

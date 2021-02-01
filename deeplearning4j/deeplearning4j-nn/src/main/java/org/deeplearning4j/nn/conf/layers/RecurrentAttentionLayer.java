@@ -40,28 +40,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Map;
 
-/**
- * Implements Recurrent Dot Product Attention
- *
- * Takes in RNN style input in the shape of [batchSize, features, timesteps]
- * and applies dot product attention using the hidden state as the query and
- * <b>all</b> time steps as keys/values.
- *
- * a_i = σ(W*x_i + R*attention(a_i, x, x) + b)
- *
- * The output will be in the shape of [batchSize, nOut, timesteps].
- *
- * Attention implemented as in
- * Attention is all you need by Vaswani et al. [arXiv:1706.03762], pp. 4,5
- *
- * <b>Note: At the moment this is limited to equal-length mini-batch input. Mixing mini-batches of differing timestep
- * counts will not work.</b>
- *
- * @see LearnedSelfAttentionLayer
- * @see SelfAttentionLayer
- * @see org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention
- * @author Paul Dubs
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class RecurrentAttentionLayer extends SameDiffLayer {

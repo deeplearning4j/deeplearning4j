@@ -31,11 +31,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.io.Serializable;
 import java.util.Collection;
 
-/**
- * Simple helper tuple used to execute parameter averaging
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 @Builder

@@ -33,16 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * CompositeReconstructionDistribution is a reconstruction distribution built from multiple other ReconstructionDistribution
- * instances.<br>
- * The typical use is to combine for example continuous and binary data in the same model, or to combine different
- * distributions for continuous variables. In either case, this class allows users to model (for example) the first 10 values
- * as continuous/Gaussian (with a {@link GaussianReconstructionDistribution}, the next 10 values as binary/Bernoulli (with
- * a {@link BernoulliReconstructionDistribution})
- *
- * @author Alex Black
- */
 @Data
 public class CompositeReconstructionDistribution implements ReconstructionDistribution {
 

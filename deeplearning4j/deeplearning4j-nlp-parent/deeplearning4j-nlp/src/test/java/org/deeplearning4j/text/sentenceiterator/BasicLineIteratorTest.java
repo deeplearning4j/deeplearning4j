@@ -32,9 +32,6 @@ import java.io.FileInputStream;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class BasicLineIteratorTest extends BaseDL4JTest {
 
     @Rule

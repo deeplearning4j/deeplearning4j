@@ -32,9 +32,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-/**
- * This is special test suit: we test operations that on C++ side modify arrays that come from Java
- */
 @Slf4j
 public class ExpandableOpsTests extends BaseNd4jTest {
 

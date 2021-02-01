@@ -35,13 +35,6 @@ import org.nd4j.common.primitives.Pair;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/**
- * Cropping layer for 3D convolutional neural networks.
- * Allows cropping to be done separately for upper and lower bounds of
- * depth, height and width dimensions.
- *
- * @author Max Pumperla
- */
 public class Cropping3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D> {
 
     private int[] cropping; //[cropLeftD, cropRightD, cropLeftH, cropRightH, cropLeftW, cropRightW]

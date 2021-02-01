@@ -29,30 +29,6 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-/**
- * An NDArrayMessageChunk
- * represents a chunked {@link NDArrayMessage}
- * that needs to be reassembled.
- *
- * This chunking is for large messages
- * that need to be segmented to be sent over the wire.
- *
- * An {@link AeronNDArraySubscriber}
- * would use this information to assemble a contiguous buffer
- * to be used for assembling a large {@link NDArrayMessage}
- *
- * Of note is that this chunk will also contain the needed data
- * for assembling in addition to the desired metadata such as the chunk size.
- *
- * A chunk has an idea which is used to track the chunk
- * across fragmentations, an index fr determining ordering
- * for re assembling, and metadata about the chunk such as
- * the chunk size and number of chunks
- *
- *
- *
- * @author Adam Gibson
- */
 @Data
 @Builder
 public class NDArrayMessageChunk implements Serializable {

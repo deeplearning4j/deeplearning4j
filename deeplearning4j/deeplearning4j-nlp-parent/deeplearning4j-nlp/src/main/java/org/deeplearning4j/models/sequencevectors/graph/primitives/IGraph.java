@@ -27,15 +27,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import java.util.List;
 import java.util.Random;
 
-/** Interface for a IGraph, with objects for each vertex and edge.
- * In the simplest case, edges and vertices may be labelled (i.e., IGraph<String,String> for example), or may be
- * any arbitrary object (or, null).<br>
- * IGraph may include directed edges, undirected edges, or a combination of both<br>
- * Note: Every vertex in the graph has an integer index, in range of 0 to numVertices() inclusive<br>
- * @param <V> type for vertex objects
- * @param <E> type for edge objects
- * @author Alex Black
- */
 public interface IGraph<V extends SequenceElement, E extends Number> {
 
     /** Number of vertices in the graph */

@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Signum function
- *
- * @author Adam Gibson
- */
 public class Sign extends BaseTransformSameOp {
     public Sign(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

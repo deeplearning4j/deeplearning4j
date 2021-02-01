@@ -59,21 +59,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 
-/** A utility for numerically checking gradients. <br>
- * Basic idea: compare calculated gradients with those calculated numerically,
- * to check implementation of backpropagation gradient calculation.<br>
- * See:<br>
- * - <a href="http://cs231n.github.io/neural-networks-3/#gradcheck">http://cs231n.github.io/neural-networks-3/#gradcheck</a><br>
- * - <a href="http://ufldl.stanford.edu/wiki/index.php/Gradient_checking_and_advanced_optimization">http://ufldl.stanford.edu/wiki/index.php/Gradient_checking_and_advanced_optimization</a><br>
- * - <a href="https://code.google.com/p/cuda-convnet/wiki/CheckingGradients">https://code.google.com/p/cuda-convnet/wiki/CheckingGradients</a><br>
- *
- *
- * Is C is cost function, then dC/dW ~= (C(w+epsilon)-C(w-epsilon)) / (2*epsilon).<br>
- * Method checks gradient calculation for every parameter separately by doing 2 forward pass
- * calculations for each parameter, so can be very time consuming for large networks.
- *
- * @author Alex Black
- */
 @Slf4j
 public class GradientCheckUtil {
 

@@ -31,13 +31,6 @@ import java.io.DataInputStream;
 import java.net.URI;
 import java.util.List;
 
-/**
- * SequenceRecordReaderBytesFunction: Converts two sets of binary data (in the form of a BytesPairWritable) to DataVec format data
- * ({@code Tuple2<List<List<<Writable>>,List<List<Writable>>}) using two SequenceRecordReaders.
- * Used for example when network input and output data comes from different files
- *
- * @author Alex Black
- */
 public class PairSequenceRecordReaderBytesFunction implements
                 Function<Tuple2<Text, BytesPairWritable>, Tuple2<List<List<Writable>>, List<List<Writable>>>> {
     private final SequenceRecordReader recordReaderFirst;

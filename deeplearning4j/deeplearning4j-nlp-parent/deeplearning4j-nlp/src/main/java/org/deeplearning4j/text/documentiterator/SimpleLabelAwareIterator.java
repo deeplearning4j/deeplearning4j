@@ -24,15 +24,6 @@ import lombok.NonNull;
 
 import java.util.Iterator;
 
-/**
- * This class provide option to build LabelAwareIterator from Iterable<LabelledDocument> or Iterator<LabelledDocument> objects
- *
- * PLEASE NOTE: This iterator is meant to be used with externally-originated data via Java Iterable/Iterator interface.
- * It IS possible to use Collection/List object here, but it's NOT recommended, since huge List with data might cause significant
- * performance penalty due to JVM Garbage Collection mechanics.
- *
- * @author raver119@gmail.com
- */
 public class SimpleLabelAwareIterator implements LabelAwareIterator {
     protected transient Iterable<LabelledDocument> underlyingIterable;
     protected transient Iterator<LabelledDocument> currentIterator;

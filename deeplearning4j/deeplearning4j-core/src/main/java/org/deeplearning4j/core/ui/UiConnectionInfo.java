@@ -23,11 +23,6 @@ package org.deeplearning4j.core.ui;
 import lombok.Data;
 import lombok.NonNull;
 
-/**
- * POJO describing the location and credentials for DL4j UiServer instance
- *
- * @author raver119@gmail.com
- */
 @Data
 public class UiConnectionInfo {
     private String sessionId;

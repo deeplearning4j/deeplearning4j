@@ -25,12 +25,6 @@ import org.deeplearning4j.models.sequencevectors.interfaces.SequenceIterator;
 import org.deeplearning4j.models.sequencevectors.sequence.Sequence;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 
-/**
- * Synchronized version of AbstractSeuqenceIterator, implemented on top of it.
- * Suitable for cases with non-strict multithreading environment, since it's just synchronized wrapper
- *
- * @author raver119@gmail.com
- */
 public class SynchronizedSequenceIterator<T extends SequenceElement> implements SequenceIterator<T> {
     protected SequenceIterator<T> underlyingIterator;
 

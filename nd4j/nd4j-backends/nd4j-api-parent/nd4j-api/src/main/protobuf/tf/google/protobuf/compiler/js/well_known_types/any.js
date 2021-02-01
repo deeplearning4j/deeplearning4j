@@ -18,9 +18,6 @@
  *  *****************************************************************************
  */
 
-/* This code will be inserted into generated code for
- * google/protobuf/any.proto. */
-
 /**
  * Returns the type name contained in this instance, if any.
  * @return {string|undefined}

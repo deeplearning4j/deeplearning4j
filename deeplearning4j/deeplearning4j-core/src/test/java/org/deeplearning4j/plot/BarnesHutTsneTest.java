@@ -56,11 +56,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.nd4j.linalg.factory.Nd4j.zeros;
 
-// import org.nd4j.jita.conf.CudaEnvironment;
-
-/**
- * Created by agibsonccc on 10/1/14.
- */
 @Slf4j
 public class BarnesHutTsneTest extends BaseDL4JTest {
 

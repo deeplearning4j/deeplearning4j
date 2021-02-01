@@ -34,14 +34,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import java.util.List;
 import java.util.Random;
 
-/**
- * This is vertex weight-based walker for SequenceVectors-based DeepWalk implementation.
- * Instead of random walks, this walker produces walks based on weight of the edges.
- *
- * @author AlexDBlack
- * @author raver119@gmail.com
- * Based on Alex Black WeightedWalkIterator implementation
- */
 public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T> implements GraphWalker<T> {
 
     protected WeightedWalker() {

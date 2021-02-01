@@ -26,9 +26,6 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by susaneraly on 5/26/16.
- */
 public class TestDataSetIterator implements DataSetIterator {
 
     private static final long serialVersionUID = -7569201667767185411L;

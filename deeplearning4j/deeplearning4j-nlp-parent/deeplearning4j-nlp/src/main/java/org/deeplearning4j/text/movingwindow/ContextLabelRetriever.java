@@ -30,10 +30,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Context Label Retriever
- * @author Adam Gibson
- */
 public class ContextLabelRetriever {
 
 

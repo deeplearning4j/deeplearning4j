@@ -45,9 +45,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 9/6/14.
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class ConvolutionTestsC extends BaseNd4jTest {

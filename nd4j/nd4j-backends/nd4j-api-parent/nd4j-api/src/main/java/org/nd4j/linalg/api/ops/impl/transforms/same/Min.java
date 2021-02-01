@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.BaseTransformSameOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Calculate the minimum value between two arrays in an elementwise fashion, broadcasting if required
- *
- * @author raver119@gmail.com
- */
 public class Min extends BaseTransformSameOp  {
 
     public Min(SameDiff sameDiff, SDVariable i_v, SDVariable i_v2) {

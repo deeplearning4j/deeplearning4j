@@ -24,9 +24,6 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * @author raver119@gmail.com
- */
 public class CpuAffinityManager extends BasicAffinityManager {
 
     /**

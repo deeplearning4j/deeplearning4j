@@ -21,11 +21,6 @@ package org.deeplearning4j.rl4j.observation.transform;
 
 import java.util.Map;
 
-/**
- * Used with {@link TransformProcess TransformProcess} to filter-out an observation.
- *
- * @author Alexandre Boulanger
- */
 public interface FilterOperation {
     /**
      * The logic that determines if the observation should be skipped.

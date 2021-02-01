@@ -37,19 +37,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 
-/**
- * Import previously stored YOLO9000 Keras net from https://github.com/allanzelener/YAD2K.
- * <p>
- * git clone https://github.com/allanzelener/YAD2K
- * cd YAD2K
- * wget http://pjreddie.com/media/files/yolo.weights
- * wget https://raw.githubusercontent.com/pjreddie/darknet/master/cfg/yolo.cfg
- * python3 yad2k.py yolo.cfg yolo.weights yolo.h5
- * <p>
- * To run this test put the output of this script on the test resources path.
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class KerasYolo9000PredictTest extends BaseDL4JTest {
 

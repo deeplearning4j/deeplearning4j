@@ -31,10 +31,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-/**
- * Static utility class for textual based windowing functions
- * @author Adam Gibson
- */
 public class Windows {
 
 

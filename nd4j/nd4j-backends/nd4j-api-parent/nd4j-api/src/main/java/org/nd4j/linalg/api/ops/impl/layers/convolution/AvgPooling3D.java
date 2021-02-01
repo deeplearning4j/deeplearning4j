@@ -37,11 +37,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Average Pooling3D operation
- *
- * @author Alex Black
- */
 @Slf4j
 @Getter
 @NoArgsConstructor

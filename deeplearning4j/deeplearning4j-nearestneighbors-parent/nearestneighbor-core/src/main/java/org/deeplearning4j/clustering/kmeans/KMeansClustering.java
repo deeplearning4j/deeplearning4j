@@ -26,11 +26,6 @@ import org.deeplearning4j.clustering.strategy.ClusteringStrategy;
 import org.deeplearning4j.clustering.strategy.FixedClusterCountStrategy;
 
 
-/**
- *
- * @author Julien Roch
- *
- */
 public class KMeansClustering extends BaseClusteringAlgorithm {
 
     private static final long serialVersionUID = 8476951388145944776L;

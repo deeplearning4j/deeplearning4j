@@ -36,9 +36,6 @@ import java.io.*;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * File-based implementation of ChunksTracker
- */
 @Slf4j
 public class FileChunksTracker<T extends VoidMessage> implements ChunksTracker<T> {
     @Getter

@@ -49,9 +49,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 04/07/2017.
- */
 public class TestKryo extends BaseSparkKryoTest {
 
     private <T> void testSerialization(T in, SerializerInstance si) {

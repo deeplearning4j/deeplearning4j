@@ -32,11 +32,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Manhattan distance
- *
- * @author Adam Gibson
- */
 public abstract class BaseReduce3Op extends BaseReduceFloatOp {
     public BaseReduce3Op(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);

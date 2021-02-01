@@ -36,12 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
 
-/**
- * This the "Algorithm S3 Asynchronous advantage actor-critic" of <i>Asynchronous Methods for Deep Reinforcement Learning</i>
- * @see <a href="https://arxiv.org/pdf/1602.01783.pdf">Asynchronous Methods for Deep Reinforcement Learning on arXiv</a>, page 14
- * <p/>
- * Note: The output of threadCurrent must contain a channel named "value".
- */
 public class AdvantageActorCritic implements IUpdateAlgorithm<Gradients, StateActionReward<Integer>> {
 
     private final ITrainableNeuralNet threadCurrent;

@@ -32,11 +32,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Map the values in a single column to new values.
- * For example: string -> string, or empty -> x type
- * transforms for a single column
- */
 @Data
 @JsonIgnoreProperties({"inputSchema", "columnNumber"})
 @NoArgsConstructor

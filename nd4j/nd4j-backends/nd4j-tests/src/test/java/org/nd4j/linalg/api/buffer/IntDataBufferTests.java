@@ -37,11 +37,6 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
-/**
- * Tests for INT INDArrays and DataBuffers serialization
- *
- * @author raver119@gmail.com
- */
 public class IntDataBufferTests extends BaseNd4jTest {
 
     public IntDataBufferTests(Nd4jBackend backend) {

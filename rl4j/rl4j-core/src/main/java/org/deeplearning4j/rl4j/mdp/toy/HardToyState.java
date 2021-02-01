@@ -24,9 +24,6 @@ import lombok.Value;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
- */
 @Value
 public class HardToyState implements Encodable {
 

@@ -25,11 +25,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * This is a wrapper for PrintVariable op that just prints out Variable to the stdout
- *
- * @author raver119@gmail.com
- */
 public class PrintVariable extends DynamicCustomOp {
 
     public PrintVariable() {

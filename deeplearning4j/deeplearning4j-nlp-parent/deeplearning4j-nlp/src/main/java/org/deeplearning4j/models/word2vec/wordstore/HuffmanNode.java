@@ -23,12 +23,6 @@ package org.deeplearning4j.models.word2vec.wordstore;
 import lombok.Data;
 import lombok.NonNull;
 
-/**
- * Huffman tree node info, needed for w2v calculations.
- * Used only in StandaloneWord2Vec internals.
- *
- * @author raver119@gmail.com
- */
 @Data
 public class HuffmanNode {
     @NonNull

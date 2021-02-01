@@ -34,14 +34,6 @@ import org.nd4j.common.base.Preconditions;
 import java.io.File;
 import java.util.Random;
 
-/**
- * CifarDataSetIterator is an iterator for CIFAR-10 dataset - 10 classes, with 32x32 images with 3 channels (RGB)
- *
- * This fetcher uses a cached version of the CIFAR dataset which is converted to PNG images,
- * see: <a href="https://pjreddie.com/projects/cifar-10-dataset-mirror/">https://pjreddie.com/projects/cifar-10-dataset-mirror/</a>.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class Cifar10Fetcher extends CacheableExtractableDataSetFetcher {
     public static final String LABELS_FILENAME = "labels.txt";
     public static final String LOCAL_CACHE_NAME = "cifar10";

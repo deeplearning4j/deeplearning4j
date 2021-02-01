@@ -26,11 +26,6 @@ import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * This OutputAdapter implementation takes single 2D nn output in, and returns JVM double[][] array
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class Regression2dAdapter implements OutputAdapter<double[][]> {
     @Override

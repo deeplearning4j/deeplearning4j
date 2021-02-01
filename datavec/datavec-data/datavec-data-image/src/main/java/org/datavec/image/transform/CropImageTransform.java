@@ -30,11 +30,6 @@ import java.util.Random;
 
 import org.bytedeco.opencv.opencv_core.*;
 
-/**
- * Crops images deterministically or randomly.
- *
- * @author saudet
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
 public class CropImageTransform extends BaseImageTransform<Mat> {

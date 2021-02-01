@@ -20,11 +20,6 @@
 
 package org.datavec.api.transform;
 
-/**
- * Enumeration for mathematical functions
- *
- * @author Alex Black
- */
 public enum MathFunction {
     ABS, ACOS, ASIN, ATAN, CEIL, COS, COSH, EXP, FLOOR, LOG, LOG10, SIGNUM, SIN, SINH, SQRT, TAN, TANH
 }

@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
-/**
- * Mish derivative
- *
- * @author raver119@gmail.com
- */
 public class MishDerivative extends BaseTransformStrictOp {
     public MishDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

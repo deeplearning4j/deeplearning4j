@@ -36,12 +36,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.Collection;
 
-/**
- * Stochastic Gradient Descent
- * Standard fix step size
- * No line search
- * @author Adam Gibson
- */
 @Slf4j
 public class StochasticGradientDescent extends BaseOptimizer {
 

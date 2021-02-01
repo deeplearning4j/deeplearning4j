@@ -27,10 +27,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Spark function for executing filter operations
- * @author Alex Black
- */
 @AllArgsConstructor
 public class SparkFilterFunction implements Function<List<Writable>, Boolean> {
 

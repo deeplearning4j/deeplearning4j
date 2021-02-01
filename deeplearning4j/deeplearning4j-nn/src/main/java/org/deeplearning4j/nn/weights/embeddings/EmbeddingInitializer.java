@@ -25,9 +25,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/**
- * An interface implemented by things like Word2Vec etc that allows them to be used as weight
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface EmbeddingInitializer extends Serializable {
 

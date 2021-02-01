@@ -32,14 +32,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
 
-/**
- * Statistics about the lower bounds and upper bounds of values in data.
- * Can be constructed incrementally by using the DynamicCustomOpsBuilder,
- * which is useful for obtaining these statistics from an
- * iterator.
- *
- * @author Ede Meijer
- */
 @EqualsAndHashCode
 @Slf4j
 public class MinMaxStats implements NormalizerStats {

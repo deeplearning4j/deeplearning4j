@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
-/**
- * Segregates functionality specific to Java 2D that is not available on Android.
- *
- * @author saudet
- */
 public class Java2DNativeImageLoader extends NativeImageLoader {
 
     Java2DFrameConverter converter2 = new Java2DFrameConverter();

@@ -23,11 +23,6 @@ package org.datavec.api.transform.quality.columns;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * Quality of an Integer column
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class IntegerQuality extends ColumnQuality {

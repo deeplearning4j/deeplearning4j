@@ -31,9 +31,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.nd4j.linalg.api.ndarray.TestNdArrReadWriteTxt.compareArrays;
 
-/**
- * Created by susaneraly on 6/18/16.
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class TestNdArrReadWriteTxtC extends BaseNd4jTest {

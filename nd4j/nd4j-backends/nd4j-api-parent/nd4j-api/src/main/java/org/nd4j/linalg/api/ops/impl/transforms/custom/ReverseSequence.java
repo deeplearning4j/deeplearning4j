@@ -35,10 +35,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Created by farizrahman4u on 3/16/18.
- */
-
 public class ReverseSequence extends DynamicCustomOp {
 
 

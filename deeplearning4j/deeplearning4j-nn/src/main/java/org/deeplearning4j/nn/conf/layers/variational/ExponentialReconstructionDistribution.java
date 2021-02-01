@@ -27,20 +27,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-/**
- * Exponential reconstruction distribution.<br>
- * Supports data in range [0,infinity)<br>
- * <p>
- * Parameterization used here: network models distribution parameter gamma, where gamma = log(lambda), with gamma \in (-inf, inf)
- * <p>
- * This means that an input from the decoder of gamma = 0 gives lambda = 1
- * which corresponds to a mean value for the expontial distribution of 1/lambda = 1
- * <p>
- * Regarding the choice of activation function: the parameterization above supports gamma in the range (-infinity,infinity)
- * therefore a symmetric activation function such as "identity" or perhaps "tanh" is preferred.
- *
- * @author Alex Black
- */
 @Data
 public class ExponentialReconstructionDistribution implements ReconstructionDistribution {
 

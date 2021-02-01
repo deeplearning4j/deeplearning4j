@@ -30,12 +30,6 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- * Constrain the maximum L2 norm of the incoming weights for each unit to be less than or equal to the specified value.
- * If the L2 norm exceeds the specified value, the weights will be scaled down to satisfy the constraint.
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class MaxNormConstraint extends BaseConstraint {

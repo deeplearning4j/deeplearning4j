@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * This op takes 1 n-dimensional array as input,
- * and returns true if for every adjacent pair we have x[i] <= x[i+1].
- *
- */
 @NoArgsConstructor
 public class IsNonDecreasing extends DynamicCustomOp {
 

@@ -32,9 +32,6 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/6/16.
- */
 public class QLearningDiscreteDense<OBSERVATION extends Encodable> extends QLearningDiscrete<OBSERVATION> {
 
 

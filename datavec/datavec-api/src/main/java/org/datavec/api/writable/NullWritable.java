@@ -26,11 +26,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
-/**
- * NullWritable. Typically only used in very limited circumstances, to signify that a value is missing.
- * Attempts to convert the NullWritable to some other value (using toInt(), toDouble() etc) will result in an
- * UnsupportedOperationException being thrown
- */
 public class NullWritable implements WritableComparable {
 
     public static final NullWritable INSTANCE = new NullWritable();

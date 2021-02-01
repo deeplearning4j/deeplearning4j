@@ -30,14 +30,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Base status storage for storage logic
- * and scheduling of ejection of
- * instances indicating
- * failure
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseStatusStorage implements StatusStorage {
     protected Map<Integer, SubscriberState> statusStorageMap = createMap();

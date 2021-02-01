@@ -28,9 +28,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class VirtualIteratorTest {
     @Before
     public void setUp() throws Exception {

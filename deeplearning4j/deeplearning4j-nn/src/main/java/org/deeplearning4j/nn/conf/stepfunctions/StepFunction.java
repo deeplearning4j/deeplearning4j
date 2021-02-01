@@ -27,9 +27,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo.Id;
 
 import java.io.Serializable;
 
-/**
- * Custom step function for line search.
- */
 @JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = DefaultStepFunction.class, name = "default"),
                 @JsonSubTypes.Type(value = GradientStepFunction.class, name = "gradient"),

@@ -39,13 +39,6 @@ import org.tensorflow.framework.NodeDef;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Base class for accumulation, initiates the initial entry
- * with respect to the child class. Also contains baseline fields
- * for the over all field with accumulation.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     @Setter @Getter

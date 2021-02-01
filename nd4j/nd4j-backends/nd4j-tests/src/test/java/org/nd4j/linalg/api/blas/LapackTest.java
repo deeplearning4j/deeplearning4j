@@ -31,9 +31,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author rcorbish
- */
 @RunWith(Parameterized.class)
 public class LapackTest extends BaseNd4jTest {
     public LapackTest(Nd4jBackend backend) {

@@ -27,10 +27,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Tree for a recursive neural tensor network
- * based on Socher et al's work.
- */
 public class Tree implements Serializable {
 
     private INDArray vector;

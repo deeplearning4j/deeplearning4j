@@ -28,9 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 public abstract class   BaseAggregate implements Aggregate {
     protected List<INDArray> arguments = new ArrayList<>();
     protected List<DataBuffer> shapes = new ArrayList<>();

@@ -24,9 +24,6 @@ import org.deeplearning4j.nn.api.Trainable;
 import org.deeplearning4j.nn.api.TrainingConfig;
 import org.nd4j.linalg.learning.config.IUpdater;
 
-/**
- * Created by Alex on 14/04/2017.
- */
 public class UpdaterUtils {
 
 

@@ -61,9 +61,6 @@ import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
-/**
- * Local transform executor
- */
 @Slf4j
 public class LocalTransformExecutor {
     //a boolean jvm argument that when the system property is true

@@ -53,11 +53,6 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 
-/**
- * Base class for the image record reader
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseImageRecordReader extends BaseRecordReader {
     protected boolean finishedInputStreamSplit;

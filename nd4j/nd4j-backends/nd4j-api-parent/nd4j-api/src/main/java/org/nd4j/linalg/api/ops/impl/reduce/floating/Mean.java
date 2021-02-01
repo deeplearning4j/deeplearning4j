@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
 
 import java.util.List;
 
-/**
- * Calculate the mean of the vector
- *
- * @author Adam Gibson
- */
 public class Mean extends BaseReduceFloatOp {
     public Mean(SameDiff sameDiff, SDVariable i_v, boolean keepDims, int[] dimensions) {
         super(sameDiff, i_v, keepDims, dimensions);

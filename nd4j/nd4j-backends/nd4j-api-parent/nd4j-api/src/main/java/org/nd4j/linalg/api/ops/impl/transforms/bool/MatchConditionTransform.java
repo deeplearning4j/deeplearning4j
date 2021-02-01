@@ -32,11 +32,6 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Match condition transform
- *
- * @author raver119@gmail.com
- */
 public class MatchConditionTransform extends BaseTransformBoolOp {
 
     private Condition condition;

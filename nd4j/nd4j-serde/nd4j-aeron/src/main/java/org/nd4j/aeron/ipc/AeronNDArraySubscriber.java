@@ -35,16 +35,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 
-/**
- *
- * Subscriber for ndarrays.
- * This is a pass through class for aeron
- * that will pass ndarrays received from channels
- * to an {@link NDArrayCallback} for operation after
- * assembling the ndaray from a raw {@link org.agrona.concurrent.UnsafeBuffer}
- *
- * @author Adam Gibson
- */
 @Data
 @Builder
 public class AeronNDArraySubscriber implements AutoCloseable {

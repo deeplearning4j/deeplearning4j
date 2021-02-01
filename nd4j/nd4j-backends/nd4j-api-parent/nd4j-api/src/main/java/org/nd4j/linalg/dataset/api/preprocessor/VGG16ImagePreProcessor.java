@@ -30,12 +30,6 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * This is a preprocessor specifically for VGG16.
- * It subtracts the mean RGB value, computed on the training set, from each pixel as reported in:
- * https://arxiv.org/pdf/1409.1556.pdf
- * @author susaneraly
- */
 @Slf4j
 public class VGG16ImagePreProcessor implements DataNormalization {
 

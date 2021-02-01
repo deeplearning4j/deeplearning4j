@@ -20,9 +20,6 @@
 
 package org.nd4j.autodiff.samediff;
 
-/**
- * A basic SameDiff lambda, used in while loop creation (the body).
- */
 public interface SameDiffLambda {
     SDVariable[] define(SameDiff sameDiff, SDVariable[] inputs);
 }

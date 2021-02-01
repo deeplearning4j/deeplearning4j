@@ -38,9 +38,6 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-/**
- * A set of tests to ensure that useful exceptions are thrown on invalid input
- */
 @Slf4j
 public class TestInvalidInput extends BaseDL4JTest {
 

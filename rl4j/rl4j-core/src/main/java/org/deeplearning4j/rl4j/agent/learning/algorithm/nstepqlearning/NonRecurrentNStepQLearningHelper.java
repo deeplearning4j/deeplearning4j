@@ -29,10 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.List;
 
-/**
- * A helper class for the n-step Q-Learning update algorithm. The algorithm is the same whether it's used with a RNN or
- * not but, the shape of INDArrays are different. This class handles the non-recurrent case.
- */
 public class NonRecurrentNStepQLearningHelper extends NStepQLearningHelper {
     private final int actionSpaceSize;
 

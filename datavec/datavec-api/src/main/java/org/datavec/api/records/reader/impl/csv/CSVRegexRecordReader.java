@@ -28,12 +28,6 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * A CSVRecordReader that can split
- * each column into additional columns using regexs.
- *
- * @author saudet
- */
 public class CSVRegexRecordReader extends CSVRecordReader {
 
     protected String[] regexs = null;

@@ -27,11 +27,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 
-/**
- * Strategy for saving and restoring {@link NormalizerMinMaxScaler} instances in single binary files
- *
- * @author Ede Meijer
- */
 public class MinMaxSerializerStrategy implements NormalizerSerializerStrategy<NormalizerMinMaxScaler> {
     @Override
     public void write(@NonNull NormalizerMinMaxScaler normalizer, @NonNull OutputStream stream) throws IOException {

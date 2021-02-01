@@ -33,11 +33,6 @@ import org.bytedeco.opencv.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_core.*;
 import static org.bytedeco.opencv.global.opencv_imgproc.*;
 
-/**
- * "<a href="https://opencv-srf.blogspot.com/2013/08/histogram-equalization.html">Histogram Equalization</a> equalizes the intensity distribution of an image or flattens the intensity distribution curve.
- * Used to improve the contrast of an image."
- *
- */
 @JsonIgnoreProperties({"splitChannels", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data

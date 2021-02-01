@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Calculate the absolute mean of the given vector
- *
- * @author raver119@gmail.com
- */
 public class  AMean extends BaseReduceFloatOp {
     public AMean(SameDiff sameDiff, SDVariable i_v, int[] dimensions) {
         super(sameDiff, i_v, dimensions);

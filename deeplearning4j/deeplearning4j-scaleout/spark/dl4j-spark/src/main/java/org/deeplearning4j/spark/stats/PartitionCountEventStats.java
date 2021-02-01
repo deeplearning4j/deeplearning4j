@@ -22,11 +22,6 @@ package org.deeplearning4j.spark.stats;
 
 import lombok.Getter;
 
-/**
- * Event stats implementation with partition count
- *
- * @author Alex Black
- */
 public class PartitionCountEventStats extends BaseEventStats {
 
     @Getter

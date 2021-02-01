@@ -24,11 +24,6 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Abstract memory manager, that implements ulike and dup methods using the underlying allocate methods
- *
- * @author Alex Black
- */
 public abstract class AbstractMemoryMgr implements SessionMemMgr {
 
     @Override

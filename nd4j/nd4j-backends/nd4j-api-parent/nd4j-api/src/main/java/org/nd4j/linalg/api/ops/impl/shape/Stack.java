@@ -37,11 +37,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Stack operation. Stacks n input tensors along provided axis.
- *
- * @author raver119@gmail.com
- */
 public class Stack extends DynamicCustomOp {
     protected int jaxis;
 

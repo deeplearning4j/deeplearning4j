@@ -27,12 +27,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.List;
 
-/**
- * LineRecordReaderFunction: Used to map a {@code JavaRDD<String>} to a {@code JavaRDD<Collection<Writable>>}
- * Note that this is most useful with LineRecordReader instances (CSVRecordReader, SVMLightRecordReader, etc)
- *
- * @author Alex Black
- */
 public class LineRecordReaderFunction implements Function<String, List<Writable>> {
     private final RecordReader recordReader;
 

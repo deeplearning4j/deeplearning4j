@@ -32,11 +32,6 @@ import org.nd4j.linalg.activations.impl.ActivationReLU;
 
 import java.util.Map;
 
-/**
- * Imports ReLU layer from Keras
- *
- * @author Alex Black
- */
 public class KerasReLU extends KerasLayer {
 
     /**

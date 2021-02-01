@@ -35,9 +35,6 @@ import java.util.*;
 import static org.junit.Assert.assertTrue;
 
 
-/**
- * Created by huitseeker on 4/4/17.
- */
 public class HashingBalancedPartitionerTest extends BaseSparkTest {
 
     // e.g. we have 3 partitions, with red and blue elements, red is indexed by 0, blue by 1:

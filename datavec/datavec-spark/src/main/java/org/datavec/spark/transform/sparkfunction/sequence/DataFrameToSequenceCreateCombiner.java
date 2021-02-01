@@ -30,11 +30,6 @@ import org.datavec.spark.transform.DataFrames;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A create combiner function for use in {@link DataFrames#toRecordsSequence(Dataset<Row>)}
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class DataFrameToSequenceCreateCombiner implements Function<Iterable<Row>, List<List<Writable>>> {
 

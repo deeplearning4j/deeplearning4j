@@ -30,11 +30,6 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Implementations of this interface should contain element-related learning algorithms. Like skip-gram or cbow
- *
- * @author raver119@gmail.com
- */
 public interface ElementsLearningAlgorithm<T extends SequenceElement> {
 
     String getCodeName();

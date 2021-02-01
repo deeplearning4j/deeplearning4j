@@ -25,12 +25,6 @@ import org.deeplearning4j.nn.api.Model;
 
 import java.io.Serializable;
 
-/**
- * Each iteration the listener is called, mainly used for debugging or visualizations
- * @author Adam Gibson
- *
- * @deprecated Use {@link TrainingListener} instead
- */
 @Deprecated
 public abstract class IterationListener extends BaseTrainingListener implements Serializable {
 

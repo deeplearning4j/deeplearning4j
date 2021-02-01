@@ -46,13 +46,6 @@ import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.R_KEY;
 import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.V_KEY;
 import static org.deeplearning4j.nn.layers.ocnn.OCNNParamInitializer.W_KEY;
 
-/**
- * Layer implementation for {@link org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer}
- * See {@link org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer}
- * for details.
- *
- * @author Adam Gibson
- */
 public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.ocnn.OCNNOutputLayer> {
     @Setter
     @Getter

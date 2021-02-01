@@ -22,11 +22,6 @@ package org.datavec.audio.dsp;
 
 import org.jtransforms.fft.DoubleFFT_1D;
 
-/**
- * FFT object, transform amplitudes to frequency intensities
- *
- * @author Jacquet Wong
- */
 public class FastFourierTransform {
 
     /**

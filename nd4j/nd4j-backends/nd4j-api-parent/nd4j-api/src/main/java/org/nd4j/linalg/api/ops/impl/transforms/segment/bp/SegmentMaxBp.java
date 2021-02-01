@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Segment max backprop operation
- *
- * @author Alex Black
- */
 public class SegmentMaxBp extends DynamicCustomOp {
 
     public SegmentMaxBp(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, SDVariable gradient) {

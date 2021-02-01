@@ -31,15 +31,6 @@ import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/27/16.
- *
- * Useful factorisations and helper methods for class inheriting
- * ILearning.
- *
- * Big majority of training method should inherit this
- *
- */
 @Slf4j
 public abstract class Learning<OBSERVATION extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 implements ILearning<OBSERVATION, A, AS>, NeuralNetFetchable<NN> {

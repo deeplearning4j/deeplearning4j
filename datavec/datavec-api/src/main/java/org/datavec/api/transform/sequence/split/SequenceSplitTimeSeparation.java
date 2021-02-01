@@ -33,16 +33,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Split a sequence into multiple sequences, based on the separation of time steps in a time column.
- * For example, suppose we have a sequence with a gap of 1 day between two blocks of entries: we can use
- * SequenceSplitTimeSeparation to split this data into two separate sequences.
- *
- * More generally, split the sequence any time the separation between consecutive time steps exceeds a specified
- * value.
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"separationMilliseconds", "timeColumnIdx", "schema"})
 @EqualsAndHashCode(exclude = {"separationMilliseconds", "timeColumnIdx", "schema"})
 @Data

@@ -26,11 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.MeaningfulMessage;
 
-/**
- * This message contains information about finished computations for specific batch, being sent earlier
- *
- * @author raver119@gmail.com
- */
 @Data
 @Slf4j
 @Deprecated

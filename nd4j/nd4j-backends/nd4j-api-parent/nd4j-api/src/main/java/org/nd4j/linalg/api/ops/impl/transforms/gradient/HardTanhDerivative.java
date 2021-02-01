@@ -31,13 +31,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Hard tanh elementwise derivative function
- *
- * @deprecated Use {@link HardTanhBp}
- *
- * @author Adam Gibson
- */
 @Deprecated
 @NoArgsConstructor
 public class HardTanhDerivative extends BaseTransformStrictOp {

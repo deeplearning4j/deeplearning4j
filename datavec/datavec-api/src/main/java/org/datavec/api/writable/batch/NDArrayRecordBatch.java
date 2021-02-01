@@ -33,16 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * A {@code List<List<Writable>>} record batch, backed by a {@code List<INDArray>}<br>
- * Each INDArray in the underlying list is assumed to represent a minibatch of examples, with dimension 0 indexing
- * the example.
- * On calls to methods like .get(int) the appropriate view is extracted from the underlying arrays and returned
- * as an NDArrayWritable
- *
- *
- * @author Alex Black
- */
 @Data
 public class NDArrayRecordBatch extends AbstractWritableRecordBatch {
 

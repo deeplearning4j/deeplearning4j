@@ -27,10 +27,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Assertion op wrapper
- * @author raver119@gmail.com
- */
 public class Assert extends DynamicCustomOp {
     @Override
     public String opName() {

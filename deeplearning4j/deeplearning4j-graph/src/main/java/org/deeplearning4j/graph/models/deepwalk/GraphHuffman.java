@@ -26,9 +26,6 @@ import org.deeplearning4j.graph.models.BinaryTree;
 import java.util.Arrays;
 import java.util.PriorityQueue;
 
-/**An implementation of a Huffman tree specifically for graphs.
- * Vertices in graph are indexed by an integer, 0 to nVertices-1
- */
 public class GraphHuffman implements BinaryTree {
     private final int MAX_CODE_LENGTH;
     private final long[] codes;

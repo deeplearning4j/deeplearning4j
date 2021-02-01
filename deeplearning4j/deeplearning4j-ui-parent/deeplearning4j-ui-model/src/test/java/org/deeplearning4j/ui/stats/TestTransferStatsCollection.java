@@ -42,9 +42,6 @@ import org.nd4j.linalg.learning.config.Sgd;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * Created by Alex on 07/04/2017.
- */
 public class TestTransferStatsCollection extends BaseDL4JTest {
 
     @Override

@@ -36,11 +36,6 @@ import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
- * <p>
- * Async Learning specialized for the Discrete Domain
- */
 public abstract class AsyncThreadDiscrete<OBSERVATION extends Encodable, NN extends NeuralNet>
         extends AsyncThread<OBSERVATION, Integer, DiscreteSpace, NN> {
 

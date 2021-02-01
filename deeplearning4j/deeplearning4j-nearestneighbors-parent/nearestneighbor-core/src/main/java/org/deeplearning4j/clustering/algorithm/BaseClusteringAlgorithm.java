@@ -45,14 +45,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-/**
- *
- * adapted to ndarray matrices
- *
- * @author Adam Gibson
- * @author Julien Roch
- *
- */
 @Slf4j
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializable {

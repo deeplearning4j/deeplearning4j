@@ -36,11 +36,6 @@ import java.util.List;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
-/**
- * Functionality to interpret the network output of Yolo2OutputLayer.
- *
- * @author saudet
- */
 public class YoloUtils {
 
     /** Essentially: just apply activation functions... For NCHW format. For NCHW format, use one of the other activate methods */

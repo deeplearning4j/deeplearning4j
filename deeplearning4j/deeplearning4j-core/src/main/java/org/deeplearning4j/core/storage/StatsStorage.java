@@ -23,28 +23,6 @@ package org.deeplearning4j.core.storage;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * A general-purpose stats storage mechanism, for storing stats information (mainly used for iteration listeners).
- * <p>
- * Key design ideas:
- * (a) Two types of storable objects:
- * i.  {@link Persistable} objects, for once per session objects ("static info") and also for periodically reported data ("updates")
- * ii. {@link StorageMetaData} objects, for
- * (b) There are 4 types of things used to uniquely identify these Persistable objects:<br>
- * i.   SessionID: A unique identifier for a single session<br>
- * ii.  TypeID: A unique identifier for the listener or type of data<br>
- * For example, we might have stats from 2 (or more) listeners with identical session and worker IDs<br>
- * This is typically hard-coded, per listener class<br>
- * iii. WorkerID: A unique identifier for workers, within a session<br>
- * iv.  Timestamp: time at which the record was created<br>
- * For example, single machine training (with 1 listener) would have 1 session ID, 1 type ID, 1 worker ID, and multiple timestamps.<br>
- * Distributed training multiple listeres could have 1 session ID, multiple type IDs, and multiple worker IDs, and multiple timestamps for each<br>
- * A hyperparameter optimization job could have multiple session IDs on top of that.<br>
- * <p>
- * Note that the StatsStorage interface extends {@link StatsStorageRouter}
- *
- * @author Alex Black
- */
 public interface StatsStorage extends StatsStorageRouter {
 
 

@@ -30,14 +30,6 @@ import java.time.format.DateTimeFormatter;
 
 
 
-/**
- * Show informations in console.<br>
- * if required save informations in file.<br>
- * 
- *
- * @author clavvis 
- */
-
 public class SIS {
 	// System Informations Saving
 	//

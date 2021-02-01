@@ -36,9 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
 
-/**
- * The base of all {@link StateActionRewardState Transition-based} TD algorithms.
- */
 public abstract class BaseTransitionTDAlgorithm implements IUpdateAlgorithm<FeaturesLabels, StateActionRewardState<Integer>> {
 
     protected final IOutputNeuralNet qNetwork;

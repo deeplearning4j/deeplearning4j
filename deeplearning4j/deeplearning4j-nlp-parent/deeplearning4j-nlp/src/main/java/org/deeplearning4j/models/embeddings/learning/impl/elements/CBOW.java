@@ -47,11 +47,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * CBOW implementation for DeepLearning4j
- *
- * @author raver119@gmail.com
- */
 public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorithm<T> {
     private VocabCache<T> vocabCache;
     private WeightLookupTable<T> lookupTable;

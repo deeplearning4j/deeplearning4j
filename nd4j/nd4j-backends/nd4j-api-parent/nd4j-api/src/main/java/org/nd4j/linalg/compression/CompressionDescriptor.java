@@ -29,15 +29,6 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-/**
- * A compression descriptor containing the
- * compression opType, compression algorithm,
- * original length, compressed length,
- * number of elements, and the original
- * element size
- *
- * @author raver119@gmail.com
- */
 @Data
 public class CompressionDescriptor implements Cloneable, Serializable {
     private CompressionType compressionType;

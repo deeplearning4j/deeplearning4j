@@ -48,9 +48,6 @@ import java.util.Properties;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by agibsonccc on 11/27/14.
- */
 @Slf4j
 public class MultiLayerNeuralNetConfigurationTest extends BaseDL4JTest {
 

@@ -40,15 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- *
- * Used to receive UI updates remotely.
- * Used in conjunction with {@link RemoteUIStatsStorageRouter}, which posts to the UI.
- * UI information is then deserialized and routed to the specified StatsStorageRouter, which may (or may not)
- * be attached to the UI
- *
- * @author Alex Black
- */
 @Slf4j
 public class RemoteReceiverModule implements UIModule {
 

@@ -45,11 +45,6 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Base class with {@link NativeOps}
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 

@@ -31,12 +31,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * DropConnect, based on Wan et. al 2013 - "Regularization of Neural Networks using DropConnect"<br>
- * Sets weights randomly to 0 with some probability, or leaves them unchanged.
- *
- * @author Alex Black
- */
 @Data
 public class DropConnect implements IWeightNoise {
 

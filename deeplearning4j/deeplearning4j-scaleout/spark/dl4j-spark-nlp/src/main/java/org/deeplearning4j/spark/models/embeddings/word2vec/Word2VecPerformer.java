@@ -38,11 +38,6 @@ import java.io.DataInputStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Base line word 2 vec performer
- *
- * @author Adam Gibson
- */
 @Deprecated
 public class Word2VecPerformer implements VoidFunction<Pair<List<VocabWord>, AtomicLong>> {
 

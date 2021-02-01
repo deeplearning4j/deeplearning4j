@@ -22,8 +22,6 @@ package org.nd4j.linalg.indexing.conditions;
 
 import org.apache.commons.math3.util.FastMath;
 
-/**Boolean condition on absolute value: abs(x) < value
- */
 public class AbsValueLessThan extends BaseCondition {
 
     /**

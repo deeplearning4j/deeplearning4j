@@ -39,11 +39,6 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-/**
- * Dilation2D op wrapper
- *
- * @author raver119@gmail.com
- */
 public class Dilation2D extends DynamicCustomOp {
     protected boolean isSameMode;
 

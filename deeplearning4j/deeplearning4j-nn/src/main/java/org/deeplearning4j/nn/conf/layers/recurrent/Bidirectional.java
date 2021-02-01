@@ -49,16 +49,6 @@ import java.util.Map;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 import static org.nd4j.linalg.indexing.NDArrayIndex.point;
 
-/**
- * Bidirectional is a "wrapper" layer: it wraps any uni-directional RNN layer to make it bidirectional.<br> Note that
- * multiple different modes are supported - these specify how the activations should be combined from the forward and
- * backward RNN networks. See {@link Mode} javadoc for more details.<br> Parameters are not shared here - there are 2
- * separate copies of the wrapped RNN layer, each with separate parameters.
- * <br>
- * Usage: {@code .layer(new Bidirectional(new LSTM.Builder()....build())}
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true, exclude = {"initializer"})

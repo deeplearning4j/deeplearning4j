@@ -28,11 +28,6 @@ import org.datavec.api.writable.Writable;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Csv record writer
- *
- * @author Adam Gibson
- */
 public class CSVRecordWriter extends FileRecordWriter {
     public static final String DEFAULT_DELIMITER = ",";
 

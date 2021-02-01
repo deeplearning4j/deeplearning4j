@@ -39,11 +39,6 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Base/abstract class for conducting early stopping training via Spark, on a {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork}
- * or a {@link org.deeplearning4j.nn.graph.ComputationGraph}
- * @author Alex Black
- */
 public abstract class BaseSparkEarlyStoppingTrainer<T extends Model> implements IEarlyStoppingTrainer<T> {
 
     private static Logger log = LoggerFactory.getLogger(BaseSparkEarlyStoppingTrainer.class);

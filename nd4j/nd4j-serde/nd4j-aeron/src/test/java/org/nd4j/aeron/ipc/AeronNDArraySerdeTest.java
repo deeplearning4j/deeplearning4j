@@ -35,9 +35,6 @@ import java.io.DataOutputStream;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by agibsonccc on 9/23/16.
- */
 public class AeronNDArraySerdeTest extends BaseND4JTest {
 
     @Test

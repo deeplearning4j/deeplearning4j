@@ -29,9 +29,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.Relu6Derivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * f(x) = min(max(input, cutoff), 6)
- */
 @EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationReLU6 extends BaseActivationFunction {

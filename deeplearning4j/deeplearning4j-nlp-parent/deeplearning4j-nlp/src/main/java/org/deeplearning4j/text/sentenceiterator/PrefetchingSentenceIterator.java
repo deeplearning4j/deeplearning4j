@@ -31,15 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * Wrapper over SentenceIterator, that allows background prefetch from original SentenceIterator
- * It could be useful, if your SentencePreProcessor implementation is CPU intensive as well as whole pipeline behind iterator is cpu intensive too.
- * This iterator will allow you to split workload in two different threads
- *
- * WORK IS IN PROGRESS, DO NOT USE PLEASE
- *
- * @author raver119@gmail.com
- */
 @Deprecated
 public class PrefetchingSentenceIterator implements SentenceIterator {
 

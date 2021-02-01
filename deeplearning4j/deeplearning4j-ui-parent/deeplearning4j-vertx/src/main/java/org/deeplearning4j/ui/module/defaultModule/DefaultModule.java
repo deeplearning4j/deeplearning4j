@@ -32,10 +32,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Landing page - i.e., "/" route
- * @author Alex Black
- */
 public class DefaultModule implements UIModule {
     private final boolean multiSession;
 

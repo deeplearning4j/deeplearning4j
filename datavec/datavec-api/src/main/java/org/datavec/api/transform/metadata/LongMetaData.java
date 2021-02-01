@@ -28,11 +28,6 @@ import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Metadata for a long column
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class LongMetaData extends BaseColumnMetaData {

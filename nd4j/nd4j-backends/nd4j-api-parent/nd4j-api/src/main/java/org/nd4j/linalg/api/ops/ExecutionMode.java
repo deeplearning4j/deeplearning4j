@@ -20,11 +20,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-/**
- * This enum describes execution mode for current op/graph. For some operations different execution modes might yield performance/implementation differences
- *
- * @author raver119@gmail.com
- */
 public enum ExecutionMode {
     UNDEFINED,
     TRAINING,

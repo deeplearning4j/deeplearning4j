@@ -55,26 +55,6 @@ import java.util.Map;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/**
- * ROC (Receiver Operating Characteristic) for binary classifiers.<br>
- * ROC has 2 modes of operation:
- * (a) Thresholded (less memory)<br>
- * (b) Exact (default; use numSteps == 0 to set. May not scale to very large datasets)
- * <p>
- * <p>
- * Thresholded Is an approximate method, that (for large datasets) may use significantly less memory than exact..
- * Whereas exact implementations will automatically calculate the threshold points based on the data set to give a
- * 'smoother' and more accurate  ROC curve (or optimal cut points for diagnostic purposes), thresholded uses fixed steps
- * of size 1.0 / thresholdSteps, as this allows easy implementation for batched and distributed evaluation scenarios (where the
- * full data set is not available in memory on any one machine at once).
- * Note that in some cases (very skewed probability predictions, for example) the threshold approach can be inaccurate,
- * often underestimating the true area.
- * <p>
- * The data is assumed to be binary classification - nColumns == 1 (single binary output variable) or nColumns == 2
- * (probability distribution over 2 classes, with column 1 being values for 'positive' examples)
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true,
         exclude = {"auc", "auprc", "probAndLabel", "exactAllocBlockSize", "rocCurve", "prCurve", "axis"})
 @Data

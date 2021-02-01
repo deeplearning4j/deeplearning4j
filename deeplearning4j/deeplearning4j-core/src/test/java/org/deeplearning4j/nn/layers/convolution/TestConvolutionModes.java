@@ -47,9 +47,6 @@ import java.util.List;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 15/11/2016.
- */
 @Slf4j
 public class TestConvolutionModes extends BaseDL4JTest {
 

@@ -27,13 +27,6 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
-/**
- * Slave connection info,
- * including the connection url,
- * and the associated master.
- *
- * @author Adam Gibson
- */
 @Data
 @Builder
 @NoArgsConstructor

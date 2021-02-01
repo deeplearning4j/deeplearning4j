@@ -33,11 +33,6 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 
-/**
- * File input split. Splits up a root directory in to files.
- *
- * @author Adam Gibson
- */
 public class FileSplit extends BaseInputSplit {
 
     protected File rootDir;

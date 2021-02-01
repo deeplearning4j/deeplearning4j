@@ -30,13 +30,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.*;
 
-/**
- * A base class for sequence expansion operations.
- * The idea: for one or more columns, expand the values to multiple sequence steps; for all other columns, just
- * duplicate the step values when expanding.
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})
 @JsonInclude(JsonInclude.Include.NON_NULL)

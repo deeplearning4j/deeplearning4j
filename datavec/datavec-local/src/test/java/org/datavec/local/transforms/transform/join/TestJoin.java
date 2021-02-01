@@ -34,9 +34,6 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 13/10/2016.
- */
 public class TestJoin  {
 
     @Test

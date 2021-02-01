@@ -80,14 +80,6 @@ import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-/**
- * This class defines a set of Jackson Mixins - which are a way of using a proxy class with annotations to override
- * the existing annotations.
- * In 1.0.0-beta, we switched how subtypes were handled in JSON ser/de: from "wrapper object" to "@class field".
- * We use these mixins to allow us to still load the old format
- *
- * @author Alex Black
- */
 public class LegacyJsonFormat {
 
     private LegacyJsonFormat(){ }

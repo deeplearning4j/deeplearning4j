@@ -28,13 +28,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.SeluBp;
 
 import java.util.List;
 
-/**
- * SELU activation function
- * <p>
- * https://arxiv.org/pdf/1706.02515.pdf
- *
- * @author raver119@gmail.com
- */
 public class SELU extends BaseTransformStrictOp {
 
     private static final double SELU_ALPHA = 1.6732632423543772848170429916717;

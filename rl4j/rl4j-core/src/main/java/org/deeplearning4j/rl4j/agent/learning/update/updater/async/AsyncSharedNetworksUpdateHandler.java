@@ -26,9 +26,6 @@ import org.deeplearning4j.rl4j.agent.learning.update.updater.NeuralNetUpdaterCon
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.nd4j.common.base.Preconditions;
 
-/**
- * A class that applies updates to the global current network and synchronize the target network
- */
 public class AsyncSharedNetworksUpdateHandler {
 
     @Getter

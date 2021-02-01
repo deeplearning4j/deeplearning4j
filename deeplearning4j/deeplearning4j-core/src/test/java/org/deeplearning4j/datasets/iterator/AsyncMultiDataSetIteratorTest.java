@@ -29,9 +29,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class AsyncMultiDataSetIteratorTest extends BaseDL4JTest {
 

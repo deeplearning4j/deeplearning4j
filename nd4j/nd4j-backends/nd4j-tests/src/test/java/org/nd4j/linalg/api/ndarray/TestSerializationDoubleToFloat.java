@@ -38,9 +38,6 @@ import java.io.*;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by susaneraly on 7/2/16.
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class TestSerializationDoubleToFloat extends BaseNd4jTest {

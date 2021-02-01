@@ -41,16 +41,6 @@ import java.util.Arrays;
 
 import static org.nd4j.common.util.ArrayUtil.prodLong;
 
-/**
- * Generic reshape preprocessor.
- * Note that shapes may be specified with or without the leading minibatch dimension, as long as hasMiniBatchDimension
- * is set appropriately in {@link #ReshapePreprocessor(long[], long[], boolean)}<br>
- * For example, to reshape from [minibatch, 32] to [minibatch, 2, 4, 4] you could use:<br>
- * hasMiniBatchDimension = true with inputShape = [-1, 32] and targetShape = [-1, 2, 4, 4] OR<br>
- * hasMiniBatchDimension = false with inputShape = [32] and targetShape = [2, 4, 4]
- *
- * @author Max Pumperla
- */
 @Data
 @Slf4j
 @EqualsAndHashCode(callSuper = false)

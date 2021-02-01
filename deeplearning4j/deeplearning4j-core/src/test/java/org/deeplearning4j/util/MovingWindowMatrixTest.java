@@ -30,9 +30,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by agibsonccc on 6/11/14.
- */
 public class MovingWindowMatrixTest extends BaseDL4JTest {
 
     @Test

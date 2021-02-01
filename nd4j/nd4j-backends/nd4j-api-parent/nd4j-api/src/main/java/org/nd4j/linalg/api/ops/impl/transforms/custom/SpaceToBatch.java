@@ -32,23 +32,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * N-dimensional space to batch operation. Transforms data from a tensor from M spatial dimensions into batch dimension
- * according to the "blocks" specified (a vector of length M). Afterwards the spatial dimensions are optionally padded,
- * as specified in "padding", a tensor of dim (M, 2), denoting the padding range.
- * <p>
- * Example:
- * input:         [[[[1], [2]], [[3], [4]]]]
- * input shape:   [1, 2, 2, 1]
- * blocks:        [2, 2]
- * padding:       [[0, 0], [0, 0]]
- * <p>
- * output:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
- * output shape:  [4, 1, 1, 1]
- * *
- *
- * @author Max Pumperla
- */
 public class SpaceToBatch extends DynamicCustomOp {
 
     protected int[] blocks;

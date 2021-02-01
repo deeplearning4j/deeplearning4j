@@ -44,9 +44,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class ParallelTransformerIteratorTest extends BaseDL4JTest {
     private TokenizerFactory factory = new DefaultTokenizerFactory();

@@ -23,11 +23,6 @@ package org.deeplearning4j.nn.weights;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * Initialize to a constant value (deafult 0).
- *
- * @author Christian Skarby
- */
 @EqualsAndHashCode
 public class WeightInitConstant implements IWeightInit {
 

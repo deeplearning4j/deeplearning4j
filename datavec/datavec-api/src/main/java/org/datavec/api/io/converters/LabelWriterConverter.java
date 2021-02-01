@@ -26,12 +26,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * Convert a label in to an index based on the
- *
- *
- * @author Adam Gibson
- */
 public class LabelWriterConverter implements WritableConverter {
     private List<String> labels;
 

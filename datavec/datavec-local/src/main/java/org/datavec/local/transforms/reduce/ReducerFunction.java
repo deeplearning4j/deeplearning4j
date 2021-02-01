@@ -27,12 +27,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.List;
 
-/**
- * Function for executing
- * a reduction of a set of examples by key
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 public class ReducerFunction implements Function<Iterable<List<Writable>>, List<Writable>> {
 

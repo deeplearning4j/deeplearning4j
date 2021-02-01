@@ -25,9 +25,6 @@ import org.nd4j.linalg.dataset.MultiDataSet;
 
 import java.io.DataInputStream;
 
-/**
- * @author raver119@gmail.com
- */
 public class MultiDataSetDeserializationCallback implements PortableDataStreamMDSCallback {
 
     @Override

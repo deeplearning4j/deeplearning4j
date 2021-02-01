@@ -36,11 +36,6 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-/**@author wangfeng
- * @date June 3,2017
- * @Description
- *
- */
 @Slf4j
 public class ChineseTokenizerTest extends BaseDL4JTest {
 

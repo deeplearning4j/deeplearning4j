@@ -67,9 +67,6 @@ import java.util.concurrent.Executors;
 import static org.junit.Assert.*;
 
 
-/**
- * Created by agibsonccc on 2/22/15.
- */
 @RunWith(Parameterized.class)
 public class OpExecutionerTests extends BaseNd4jTest {
 

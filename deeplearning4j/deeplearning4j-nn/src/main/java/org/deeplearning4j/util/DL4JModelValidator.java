@@ -41,11 +41,6 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- * A utility for validating Deeplearning4j Serialized model file formats
- *
- * @author Alex Black
- */
 public class DL4JModelValidator {
 
     private DL4JModelValidator(){ }

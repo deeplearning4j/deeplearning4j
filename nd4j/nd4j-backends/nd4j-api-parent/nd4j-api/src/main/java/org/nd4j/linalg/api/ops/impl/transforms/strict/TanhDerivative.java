@@ -28,11 +28,6 @@ import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
 
 import java.util.List;
 
-/**
- * Tanh derivative
- *
- * @deprecated Use {@link org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative}.
- */
 @Deprecated
 public class TanhDerivative extends BaseTransformStrictOp {
     public TanhDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

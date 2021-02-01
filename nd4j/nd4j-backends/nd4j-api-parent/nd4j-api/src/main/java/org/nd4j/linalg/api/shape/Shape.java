@@ -40,12 +40,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.nio.*;
 import java.util.*;
 
-/**
- * Encapsulates all shape related logic (vector of 0 dimension is a scalar is equivalent to
- * a vector of length 1...)
- *
- * @author Adam Gibson
- */
 public class Shape {
 
 

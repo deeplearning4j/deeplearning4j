@@ -36,12 +36,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Iterates through a list of strings return a record.
- * Only accepts an @link {ListStringInputSplit} as input.
- *
- * @author Adam Gibson
- */
 public class ListStringRecordReader extends BaseRecordReader {
     private List<List<String>> delimitedData;
     private Iterator<List<String>> dataIter;

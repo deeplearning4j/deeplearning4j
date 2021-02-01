@@ -33,23 +33,6 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Gaussian dropout. This is a multiplicative Gaussian noise (mean 1) on the input activations.<br>
- * <br>
- * Each input activation x is independently set to:<br>
- * x <- x * y, where y ~ N(1, stdev = sqrt((1-rate)/rate))<br>
- * Dropout schedules (i.e., varying probability p as a function of iteration/epoch) are also supported.<br>
- * <br>
- * Note 1: As per all IDropout instances, GaussianDropout is applied at training time only - and is automatically not
- * applied at test time (for evaluation, etc)<br>
- * Note 2: Frequently, dropout is not applied to (or, has higher retain probability for) input (first layer)
- * layers. Dropout is also often not applied to output layers.<br>
- * <br>
- * See: "Multiplicative Gaussian Noise" in Srivastava et al. 2014: Dropout: A Simple Way to Prevent Neural Networks from
- * Overfitting <a href="http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf">http://www.cs.toronto.edu/~rsalakhu/papers/srivastava14a.pdf</a>
- *
- * @author Alex Black
- */
 @Data
 @JsonIgnoreProperties({"noise"})
 @EqualsAndHashCode(exclude = {"noise"})

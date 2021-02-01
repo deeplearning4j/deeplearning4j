@@ -22,11 +22,6 @@ package org.datavec.api.transform.analysis.histogram;
 
 import org.datavec.api.writable.Writable;
 
-/**
- * A counter for building histograms on a Double column
- *
- * @author Alex Black
- */
 public class DoubleHistogramCounter implements HistogramCounter {
 
     private final double minValue;

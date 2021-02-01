@@ -41,11 +41,6 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.List;
 import java.util.Queue;
 
-/**
- * CPU-only MemoryWorkspace implementation
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CpuWorkspace extends Nd4jWorkspace implements Deallocatable {
 

@@ -20,9 +20,6 @@
 
 package org.nd4j.autodiff.samediff;
 
-/**
- * An interface for representing a conditional statement
- */
 public interface SameDiffConditional {
 
 

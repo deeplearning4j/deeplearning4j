@@ -37,40 +37,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-/**
- * CSVMultiSequenceRecordReader: Used to read CSV-format time series (sequence) data where there are multiple
- * independent sequences in each file.<br>
- * The assumption is that each sequence is separated by some delimiter - for example, a blank line between sequences,
- * or some other line that can be detected by a regex.<br>
- * Note that the number of columns (i.e., number of lines in the CSV per sequence) must be the same for all sequences.<br>
- * <br>
- * It supports 3 {@link Mode}s:<br>
- * (a) CONCAT mode: the output is a univariate (single column) sequence with the values from all lines
- * (b) EQUAL_LENGTH: Require that all lines have the exact same number of tokens<br>
- * (c) PAD: For any shorter lines (fewer tokens), a user-specified padding Writable value will be used to make them the same
- * length as the other sequences<br>
- * <br>
- * Example:<br>
- * Input data:
- * <pre>
- * {@code a,b,c
- *   1,2
- *
- *   A,B,C
- *   D,E,F}
- * </pre>
- * Output:<br>
- * (a) CONCAT: two sequences of length 5 and 6 respectively: [a,b,c,1,2] and [A,B,C,D,E,F]<br>
- * (b) EQUAL_LENGTH: Exception: because lines (a,b,c) and (1,2) have different lengths. If the second line was "1,2,3" instead,
- *    the output would be two sequences with 2 columns each, sequence length 3: [[a,b,c],[1,2,3]] and [[A,B,C],[D,E,F]]<br>
- * (c) PAD: two sequences with 2 columns each, sequence length 3: [[a,b,c],[1,2,PAD]] and [[A,B,C],[D,E,F]], where "PAD"
- *    is a user-specified padding value<br>
- * <br>
- * Note that the user has to specify a sequence separator regex: for "sequences are separated by an empty line" use "^$"
- *
- * @author Alex Black
- * @see CSVLineSequenceRecordReader CSVLineSequenceRecordReader for the edge case - a univariate version
- */
 public class CSVMultiSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader {
 
     public enum Mode {

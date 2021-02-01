@@ -27,14 +27,6 @@ import org.datavec.api.transform.condition.column.BaseColumnCondition;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Condition that applies to the values in a String column, using a provided regex.
- * Condition return true if the String matches the regex, or false otherwise<br>
- * <p>
- * <b>Note:</b> Uses Writable.toString(), hence can potentially be applied to non-String columns
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class StringRegexColumnCondition extends BaseColumnCondition {

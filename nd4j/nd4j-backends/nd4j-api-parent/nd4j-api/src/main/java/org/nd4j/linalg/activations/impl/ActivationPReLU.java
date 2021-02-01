@@ -28,15 +28,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.primitives.Pair;
 
-/**
- /** Parametrized Rectified Linear Unit (PReLU)
- *
- * f(x) = alpha * x for x < 0, f(x) = x for x >= 0
- *
- * alpha has the same shape as x and is a learned parameter.
- *
- * @author Max Pumperla
- */
 @EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationPReLU extends BaseActivationFunction {

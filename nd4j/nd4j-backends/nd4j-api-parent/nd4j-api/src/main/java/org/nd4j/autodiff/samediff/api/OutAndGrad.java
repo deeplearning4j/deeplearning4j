@@ -26,9 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
-/**
- * A simple object holding two maps - one of output arrays, another of gradient arrays
- */
 @AllArgsConstructor
 @Data
 public class OutAndGrad {

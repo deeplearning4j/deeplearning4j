@@ -39,11 +39,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-/**
- * OnesLike function - gives an output array with all values/entries being 1, with the same shape as the input.
- *
- * @author Alex Black
- */
 @Slf4j
 public class OnesLike extends DynamicCustomOp {
 

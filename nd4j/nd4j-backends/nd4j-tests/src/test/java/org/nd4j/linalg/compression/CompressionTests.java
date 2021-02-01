@@ -46,9 +46,6 @@ import java.util.Arrays;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class CompressionTests extends BaseNd4jTest {

@@ -29,9 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class DeviceAllocationsTracker {
     private Map<AllocationKind, AtomicLong> bytesMap = new HashMap<>();

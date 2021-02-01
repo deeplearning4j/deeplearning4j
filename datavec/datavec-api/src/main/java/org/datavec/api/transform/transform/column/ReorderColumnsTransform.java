@@ -33,13 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Rearrange the order of the columns.
- * Note: A partial list of columns can be used here. Any columns that are not explicitly mentioned
- * will be placed after those that are in the output, without changing their relative order.
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "outputOrder"})
 @Data
 public class ReorderColumnsTransform implements Transform, ColumnOp {

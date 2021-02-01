@@ -26,10 +26,6 @@ import org.deeplearning4j.rl4j.observation.Observation;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A class that manages a list of {@link AgentListener AgentListeners} listening to an {@link Agent}.
- * @param <ACTION>
- */
 public class AgentListenerList<ACTION> {
     protected final List<AgentListener<ACTION>> listeners = new ArrayList<>();
 

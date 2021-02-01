@@ -23,9 +23,6 @@ package org.deeplearning4j.eval.meta;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-/**
- * @deprecated Use {@link org.nd4j.evaluation.meta.Prediction}
- */
 @Data
 public class Prediction extends org.nd4j.evaluation.meta.Prediction {
     public Prediction(int actualClass, int predictedClass, Object recordMetaData){

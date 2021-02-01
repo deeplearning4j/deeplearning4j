@@ -24,9 +24,6 @@ import lombok.Getter;
 
 import java.util.Arrays;
 
-/**
- * @author raver119@gmail.com
- */
 public class ShapeDescriptor {
 
     @Getter private char order;

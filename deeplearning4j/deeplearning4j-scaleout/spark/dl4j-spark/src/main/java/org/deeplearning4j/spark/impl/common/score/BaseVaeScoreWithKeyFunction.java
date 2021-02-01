@@ -35,13 +35,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * Function to calculate the scores (reconstruction probability, reconstruction error) for a variational autoencoder.<br>
- * Note that scoring is batched for computational efficiency.<br>
- *
- * @param <K> Type of key, associated with each example. Used to keep track of which score belongs to which example
- * @author Alex Black
- */
 @Slf4j
 public abstract class BaseVaeScoreWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, INDArray>>, K, Double> {
 

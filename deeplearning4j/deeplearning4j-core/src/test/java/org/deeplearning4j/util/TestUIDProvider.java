@@ -28,9 +28,6 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-/**
- * Created by Alex on 26/06/2016.
- */
 public class TestUIDProvider extends BaseDL4JTest {
 
     @Test

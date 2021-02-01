@@ -33,18 +33,6 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/8/16.
- * <p>
- * Training for A3C in the Discrete Domain
- * <p>
- * Specialized constructors for the Conv (pixels input) case
- * Specialized conf + provide additional type safety
- * <p>
- * It uses CompGraph because there is benefit to combine the
- * first layers since they're essentially doing the same dimension
- * reduction task
- **/
 public class A3CDiscreteConv<OBSERVATION extends Encodable> extends A3CDiscrete<OBSERVATION> {
 
     final private HistoryProcessor.Configuration hpconf;

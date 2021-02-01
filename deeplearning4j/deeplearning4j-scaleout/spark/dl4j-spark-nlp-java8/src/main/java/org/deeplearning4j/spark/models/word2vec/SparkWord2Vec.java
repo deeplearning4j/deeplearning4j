@@ -40,9 +40,6 @@ import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SparkWord2Vec extends SparkSequenceVectors<VocabWord> {
 

@@ -24,29 +24,6 @@ import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.MathUtils;
 
-/**
- * <p>
- * Utility class used by various distributions to accurately compute their
- * respective probability mass functions. The implementation for this class is
- * based on the Catherine Loader's <a target="_blank"
- * href="http://www.herine.net/stat/software/dbinom.html">dbinom</a> routines.
- * </p>
- * <p>
- * This class is not intended to be called directly.
- * </p>
- * <p>
- * References:
- * <ol>
- * <li>Catherine Loader (2000). "Fast and Accurate Computation of Binomial
- * Probabilities.". <a target="_blank"
- * href="http://www.herine.net/stat/papers/dbinom.pdf">
- * http://www.herine.net/stat/papers/dbinom.pdf</a></li>
- * </ol>
- * </p>
- *
- * @version $Id: SaddlePointExpansion.java 1416643 2012-12-03 19:37:14Z tn $
- * @since 2.1
- */
 public class SaddlePointExpansion {
 
     /**

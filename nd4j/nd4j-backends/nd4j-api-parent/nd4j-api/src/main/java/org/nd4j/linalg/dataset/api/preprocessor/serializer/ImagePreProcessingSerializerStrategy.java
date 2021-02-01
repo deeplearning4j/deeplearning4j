@@ -24,16 +24,6 @@ import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 
 import java.io.*;
 
-/**
- * {@link NormalizerSerializerStrategy}
- * for {@link ImagePreProcessingScaler}
- *
- * Saves the min range, max range, and max pixel value as
- * doubles
- *
- *
- * @author Adam Gibson
- */
 public class ImagePreProcessingSerializerStrategy implements NormalizerSerializerStrategy<ImagePreProcessingScaler> {
     @Override
     public void write(ImagePreProcessingScaler normalizer, OutputStream stream) throws IOException {

@@ -32,17 +32,6 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-/**
- * Leaky Rectified linear unit. Default alpha=0.01, cutoff=0<br>
- * Out(x) = alpha*x if x<0<br>
- * Out(x) = x if x >= 0<br>
- * Leaky ReLU may avoid zero gradient "dying ReLU" problem by having non-zero
- * gradient below 0.<br>
- * See for example https://arxiv.org/abs/1505.00853 for a comparison of
- * ReLU variants.
- *
- * @author Alex Black
- */
 public class LeakyReLU extends BaseScalarOp {
     public static final double DEFAULT_ALPHA = 0.01;
     private double alpha = DEFAULT_ALPHA;

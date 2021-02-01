@@ -29,15 +29,6 @@ import java.io.IOException;
 import java.util.HashMap;
 
 
-/** A Comparator for {@link WritableComparable}s.
- *
- * <p>This base implemenation uses the natural ordering.  To define alternate
- * orderings, override {@link #compare(WritableComparable,WritableComparable)}.
- *
- * <p>One may optimize compare-intensive operations by overriding
- * {@link #compare(byte[],int,int,byte[],int,int)}.  Static utility methods are
- * provided to assist in optimized implementations of this method.
- */
 public class WritableComparator implements RawComparator {
 
     private static HashMap<Class, WritableComparator> comparators = new HashMap<>(); // registry

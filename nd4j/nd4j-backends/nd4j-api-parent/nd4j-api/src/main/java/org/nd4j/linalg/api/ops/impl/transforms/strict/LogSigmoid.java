@@ -30,11 +30,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * LogSigmoid function
- *
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 public class LogSigmoid extends BaseTransformStrictOp {
     public LogSigmoid(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {

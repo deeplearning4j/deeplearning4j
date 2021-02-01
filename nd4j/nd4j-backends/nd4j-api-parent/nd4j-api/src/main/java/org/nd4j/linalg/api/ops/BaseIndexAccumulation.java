@@ -34,11 +34,6 @@ import org.nd4j.linalg.api.shape.Shape;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Index based reduction algo
- *
- * @author Adam Gibson
- */
 @Slf4j
 @Data
 public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccumulation {

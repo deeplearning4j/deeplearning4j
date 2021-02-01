@@ -44,9 +44,6 @@ import java.util.List;
 
 import static play.mvc.Results.*;
 
-/**
- * Created by kepricon on 17. 6. 19.
- */
 @Slf4j
 @Data
 public class ImageSparkTransformServer extends SparkTransformServer {

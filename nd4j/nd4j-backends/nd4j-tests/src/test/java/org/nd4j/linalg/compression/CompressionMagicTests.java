@@ -32,9 +32,6 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @RunWith(Parameterized.class)
 public class CompressionMagicTests extends BaseNd4jTest {
     public CompressionMagicTests(Nd4jBackend backend) {

@@ -35,14 +35,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.util.Collection;
 
-/**
- * A TrainingMaster controls how distributed training is executed in practice<br>
- * In principle, a large number of different approches can be used in distributed training (synchronous vs. asynchronous,
- * parameter vs. gradient averaging, etc). Each of these different approaches would be implemented as a TrainingMaster;
- * this allows {@link SparkDl4jMultiLayer} and {@link SparkComputationGraph} to be used with different training methods.
- *
- * @author Alex Black
- */
 public interface TrainingMaster<R extends TrainingResult, W extends TrainingWorker<R>> {
 
 

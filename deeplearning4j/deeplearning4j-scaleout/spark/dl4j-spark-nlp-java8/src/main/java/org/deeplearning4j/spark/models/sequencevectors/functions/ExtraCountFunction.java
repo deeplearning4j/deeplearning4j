@@ -28,11 +28,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.spark.models.sequencevectors.primitives.ExtraCounter;
 import org.nd4j.common.primitives.Pair;
 
-/**
- * This accumulator function does count individual elements, using provided Accumulator
- *
- * @author raver119@gmail.com
- */
 public class ExtraCountFunction<T extends SequenceElement> implements Function<Sequence<T>, Pair<Sequence<T>, Long>> {
     protected Accumulator<ExtraCounter<Long>> accumulator;
     protected boolean fetchLabels;

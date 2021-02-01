@@ -28,10 +28,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Bitmap decoding op wrapper. Used in gradients sharing.
- * @author raver119@gmail.com
- */
 public class DecodeBitmap extends DynamicCustomOp {
 
     public DecodeBitmap() {

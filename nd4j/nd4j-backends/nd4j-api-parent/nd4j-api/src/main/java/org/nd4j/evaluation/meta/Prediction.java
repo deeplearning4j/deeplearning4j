@@ -23,12 +23,6 @@ package org.nd4j.evaluation.meta;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-/**
- * Prediction: a prediction for classification, used with the {@link org.deeplearning4j.eval.Evaluation} class.
- * Holds predicted and actual classes, along with an object for the example/record that produced this evaluation.
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class Prediction {

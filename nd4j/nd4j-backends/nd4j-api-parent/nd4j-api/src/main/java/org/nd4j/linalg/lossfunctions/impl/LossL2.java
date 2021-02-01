@@ -35,13 +35,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-/**
- * L2 loss function: i.e., sum of squared errors, L = sum_i (actual_i - predicted)^2
- * The L2 loss function is the square of the L2 norm of the difference between actual and predicted.
- * See also {@link LossMSE} for a mathematically similar loss function (MSE has division by N, where N is output size)
- *
- * @author Susan Eraly
- */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter

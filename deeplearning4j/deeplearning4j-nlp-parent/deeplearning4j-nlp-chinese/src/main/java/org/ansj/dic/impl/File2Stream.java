@@ -28,12 +28,6 @@ import org.nlpcn.commons.lang.util.logging.LogFactory;
 import java.io.*;
 import java.util.Vector;
 
-/**
- * 将文件转换为流 file://c:/dic.txt
- * 
- * @author ansj
- *
- */
 public class File2Stream extends PathToStream {
 
     private static final Log LOG = LogFactory.getLog(File2Stream.class);

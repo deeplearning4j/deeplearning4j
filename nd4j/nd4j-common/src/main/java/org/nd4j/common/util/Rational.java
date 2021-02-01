@@ -19,22 +19,11 @@
  */
 
 package org.nd4j.common.util;
-/*
- * To change this template, choose Tools | Templates and open the template in the editor.
- */
-
-// package org.nevec.rjm ;
-
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.MathContext;
 import java.math.RoundingMode;
 
-/**
- * Fractions (rational numbers).
- * They are divisions of two BigInteger variables, reduced to greatest
- * common divisors of 1.
- */
 class Rational implements Cloneable {
 
     /* The maximum and minimum value of a standard Java integer, 2^31.

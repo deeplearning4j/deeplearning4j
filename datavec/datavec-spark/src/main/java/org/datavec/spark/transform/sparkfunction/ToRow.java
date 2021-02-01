@@ -33,10 +33,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.List;
 
 
-/**
- * Convert a record to a row
- * @author Adam Gibson
- */
 public class ToRow implements Function<List<Writable>, Row> {
     private Schema schema;
     private StructType structType;

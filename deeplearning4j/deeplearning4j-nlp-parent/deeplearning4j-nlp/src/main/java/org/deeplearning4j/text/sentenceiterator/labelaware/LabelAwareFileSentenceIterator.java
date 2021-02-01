@@ -27,12 +27,6 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- *
- * Label aware sentence iterator
- *
- * @author Adam Gibson
- */
 public class LabelAwareFileSentenceIterator extends FileSentenceIterator implements LabelAwareSentenceIterator {
     /**
      * Takes a single file or directory

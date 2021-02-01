@@ -52,13 +52,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * ParameterAveragingTrainingWorker
- * implements standard parameter
- * averaging every m iterations.
- *
- * @author Alex Black
- */
 public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<ParameterAveragingTrainingResult> {
 
     private final Broadcast<NetBroadcastTuple> broadcast;

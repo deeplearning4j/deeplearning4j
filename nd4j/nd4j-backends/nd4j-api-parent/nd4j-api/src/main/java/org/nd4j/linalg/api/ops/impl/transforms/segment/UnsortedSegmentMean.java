@@ -32,11 +32,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentMeanBp;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Unsorted segment mean operation
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 public class UnsortedSegmentMean extends DynamicCustomOp {
 

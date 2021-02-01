@@ -30,9 +30,6 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by raver119 on 03.01.16.
- */
 public class FileLabelAwareIteratorTest extends BaseDL4JTest {
 
     @Rule

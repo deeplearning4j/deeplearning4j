@@ -28,11 +28,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Instances implementing this interface should be responsible for utility access to SequenceVectors model
- *
- * @author raver119@gmail.com
- */
 public interface ModelUtils<T extends SequenceElement> {
 
     /**

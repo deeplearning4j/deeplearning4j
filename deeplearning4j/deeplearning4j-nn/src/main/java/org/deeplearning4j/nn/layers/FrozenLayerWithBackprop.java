@@ -30,12 +30,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.OneTimeLogger;
 
-/**
- * Frozen layer freezes parameters of the layer it wraps, but allows the backpropagation to continue.
- *
- * @author Ugljesa Jovanovic (jovanovic.ugljesa@gmail.com)
- */
-
 @Slf4j
 public class FrozenLayerWithBackprop extends BaseWrapperLayer {
 

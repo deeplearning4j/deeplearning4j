@@ -28,9 +28,6 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * @author raver119@gmail.com
- */
 @NoArgsConstructor
 @Data
 public class NetworkInformation implements Serializable {

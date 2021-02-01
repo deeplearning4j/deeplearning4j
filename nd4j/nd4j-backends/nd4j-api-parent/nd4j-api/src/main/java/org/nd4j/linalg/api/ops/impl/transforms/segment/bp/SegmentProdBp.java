@@ -29,11 +29,6 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Segment product backprop operation
- *
- * @author Alex Black
- */
 public class SegmentProdBp extends DynamicCustomOp {
 
     public SegmentProdBp(SameDiff sameDiff, SDVariable data, SDVariable segmentIds, SDVariable gradient) {

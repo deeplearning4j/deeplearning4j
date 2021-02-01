@@ -36,10 +36,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * Scatter ND subtract operation
- * @author Alex Black
- */
 public class ScatterNdSub extends DynamicCustomOp {
 
     public ScatterNdSub(SameDiff sameDiff, SDVariable ref, SDVariable indices, SDVariable updates) {

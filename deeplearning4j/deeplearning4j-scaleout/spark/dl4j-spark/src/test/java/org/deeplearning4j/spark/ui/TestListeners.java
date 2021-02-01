@@ -48,9 +48,6 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 12/10/2016.
- */
 public class TestListeners extends BaseSparkTest {
 
     @Test

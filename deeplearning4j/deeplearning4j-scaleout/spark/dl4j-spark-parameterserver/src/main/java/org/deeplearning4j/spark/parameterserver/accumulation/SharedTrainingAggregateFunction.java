@@ -33,9 +33,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * @author raver119@gmail.com
- */
 public class SharedTrainingAggregateFunction implements
                 Function2<SharedTrainingAccumulationTuple, SharedTrainingResult, SharedTrainingAccumulationTuple> {
 

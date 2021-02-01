@@ -30,9 +30,6 @@ import java.util.*;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 public class NetworkOrganizerTest extends BaseND4JTest {
     @Before

@@ -29,11 +29,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Strategy for saving and restoring {@link MultiNormalizerStandardize} instances in single binary files
- *
- * @author Ede Meijer
- */
 public class MultiStandardizeSerializerStrategy implements NormalizerSerializerStrategy<MultiNormalizerStandardize> {
     /**
      * Serialize a MultiNormalizerStandardize to a output stream
