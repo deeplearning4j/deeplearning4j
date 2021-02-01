@@ -1,19 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
@@ -36,7 +37,7 @@ import org.deeplearning4j.rl4j.experience.ReplayMemoryExperienceHandler;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
+import org.deeplearning4j.rl4j.experience.StateActionRewardState;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
@@ -108,7 +109,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 .gamma(conf.getGamma())
                 .errorClamp(conf.getErrorClamp())
                 .build();
-        IUpdateAlgorithm<FeaturesLabels, Transition<Integer>> updateAlgorithm = conf.isDoubleDQN()
+        IUpdateAlgorithm<FeaturesLabels, StateActionRewardState<Integer>> updateAlgorithm = conf.isDoubleDQN()
             ? new DoubleDQN(qNetwork, target, aglorithmConfiguration)
             : new StandardDQN(qNetwork, target, aglorithmConfiguration);
 
@@ -116,14 +117,14 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             .targetUpdateFrequency(conf.getTargetDqnUpdateFreq())
                 .build();
         INeuralNetUpdater<FeaturesLabels> updater = new SyncLabelsNeuralNetUpdater(qNetwork, target, neuralNetUpdaterConfiguration);
-        IUpdateRule<Transition<Integer>> updateRule = new UpdateRule<FeaturesLabels, Transition<Integer>>(updateAlgorithm, updater);
+        IUpdateRule<StateActionRewardState<Integer>> updateRule = new UpdateRule<FeaturesLabels, StateActionRewardState<Integer>>(updateAlgorithm, updater);
 
         ReplayMemoryExperienceHandler.Configuration experienceHandlerConfiguration = ReplayMemoryExperienceHandler.Configuration.builder()
             .maxReplayMemorySize(conf.getExpRepMaxSize())
             .batchSize(conf.getBatchSize())
             .build();
-        ExperienceHandler<Integer, Transition<Integer>> experienceHandler = new ReplayMemoryExperienceHandler(experienceHandlerConfiguration, random);
-        return LearningBehavior.<Integer, Transition<Integer>>builder()
+        ExperienceHandler<Integer, StateActionRewardState<Integer>> experienceHandler = new ReplayMemoryExperienceHandler(experienceHandlerConfiguration, random);
+        return LearningBehavior.<Integer, StateActionRewardState<Integer>>builder()
                 .experienceHandler(experienceHandler)
                 .updateRule(updateRule)
                 .build();

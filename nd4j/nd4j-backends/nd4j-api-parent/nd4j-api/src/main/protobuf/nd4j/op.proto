@@ -1,0 +1,63 @@
+syntax = "proto3";
+package org.nd4j.ir;
+option java_outer_classname = "OpNamespace";
+
+import "tensor.proto";
+
+message ArgDescriptor {
+  enum ArgType {
+    FLOAT = 0;
+    DOUBLE = 1;
+    INT32 = 2;
+    INT64 = 3;
+    BOOL = 4;
+    DATA_TYPE = 5;
+    INPUT_TENSOR = 6;
+    OUTPUT_TENSOR = 7;
+    STRING = 8;
+  }
+
+  string name = 1;
+  float floatValue = 2;
+  double doubleValue = 3;
+  int32 int32Value = 4;
+  int64 int64Value = 5;
+  bool boolValue  = 6;
+  DataType dataTypeValue = 7;
+  TensorProto inputValue = 8;
+  TensorProto outputValue = 9;
+  ArgType argType = 10;
+  int32 argIndex = 11;
+  string stringValue = 12;
+  bool argOptional = 13;
+  bool convertBoolToInt = 14;
+  bool isArray = 15;
+}
+
+//Op descriptor
+message OpDescriptor {
+  enum OpDeclarationType {
+      CUSTOM_OP_IMPL = 0;
+      BOOLEAN_OP_IMPL = 1;
+      LIST_OP_IMPL = 2;
+      LOGIC_OP_IMPL = 3;
+      OP_IMPL = 4;
+      DIVERGENT_OP_IMPL = 6;
+      CONFIGURABLE_OP_IMPL = 7;
+      REDUCTION_OP_IMPL = 8;
+      BROADCASTABLE_OP_IMPL = 9;
+      BROADCASTABLE_BOOL_OP_IMPL = 10;
+      LEGACY_XYZ = 11;
+      PLATFORM_IMPL = 12;
+  }
+
+
+  string name = 1;
+  repeated ArgDescriptor argDescriptor = 2;
+  OpDeclarationType opDeclarationType = 3;
+}
+
+message OpDescriptorList {
+  repeated OpDescriptor opList = 1;
+}
+

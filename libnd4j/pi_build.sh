@@ -1,56 +1,122 @@
-#!/bin/bash
-TARGET=armv7-a
-BLAS_TARGET_NAME=ARMV7
-ARMCOMPUTE_TARGET=armv7a
+#!/usr/bin/env bash
+#
+# /* ******************************************************************************
+#  *
+#  *
+#  * This program and the accompanying materials are made available under the
+#  * terms of the Apache License, Version 2.0 which is available at
+#  * https://www.apache.org/licenses/LICENSE-2.0.
+#  *
+#  * Unless required by applicable law or agreed to in writing, software
+#  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  * License for the specific language governing permissions and limitations
+#  * under the License.
+#  *
+#  * SPDX-License-Identifier: Apache-2.0
+#  ******************************************************************************/
+#
+
+function message {
+	echo "BUILDER:::: ${@}"
+}
+
+BUILD_USING_MAVEN=
+CURRENT_TARGET=arm32
+HAS_ARMCOMPUTE=1
+ARMCOMPUTE_DEBUG=0
+ARMCOMPUTE_TAG=v20.05
+LIBND4J_BUILD_MODE=Release
+export ANDROID_VERSION=21
+OTHER_ARGS=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+
+case $key in
+    -a|--arch)
+    CURRENT_TARGET="$2"
+    shift
+    shift
+    ;;
+    -m|--mvn)
+    BUILD_USING_MAVEN="mvn"
+    shift
+    ;;
+    *)
+    OTHER_ARGS+=("$1")
+    shift
+    ;;
+esac
+done
+
+CC_URL32="https://developer.arm.com/-/media/Files/downloads/gnu-a/8.3-2019.03/binrel/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf.tar.xz?revision=e09a1c45-0ed3-4a8e-b06b-db3978fd8d56&la=en&hash=93ED4444B8B3A812B893373B490B90BBB28FD2E3"
+CC_URL64="https://developer.arm.com/-/media/Files/downloads/gnu-a/8.3-2019.03/binrel/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu.tar.xz?revision=2e88a73f-d233-4f96-b1f4-d8b36e9bb0b9&la=en&hash=167687FADA00B73D20EED2A67D0939A197504ACD"
+CC_ANDROID="https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip"
+TARGET_ARRS=( arm32 arm64 android-arm android-arm64 )
+COMPILER_ARRS=( "${CC_URL32}" "${CC_URL64}" "${CC_ANDROID}" "${CC_ANDROID}" )
+COMPILER_DOWNLOAD_CMD_LIST=( download_extract_xz download_extract_xz download_extract_unzip download_extract_unzip )
+COMPILER_DESTDIR=( "arm32" "arm64" "android" "android" )
+
+OPENBLAS_TARGETS=( ARMV7 ARMV8 ARMV7 ARMV8)
+ARMCOMPUTE_TARGETS=( armv7a arm64-v8a armv7a arm64-v8a)
+OS_LIST=( linux linux android android)
+LIBND4J_PLATFORM_EXT_LIST=( armhf arm64 arm arm64 )
+PREFIXES=( arm-linux-gnueabihf aarch64-linux-gnu arm-linux-androideabi aarch64-linux-android )
+TARGET_INDEX=-1
+
+for i in "${!TARGET_ARRS[@]}"; do
+   if [[ "${TARGET_ARRS[$i]}" = "${CURRENT_TARGET}" ]]; then
+       TARGET_INDEX=${i}
+   fi
+done
+
+if [ ${TARGET_INDEX} -eq -1 ];then
+	message "could not find  ${CURRENT_TARGET} in ${TARGET_ARRS[@]}"
+	exit -1
+fi
+
 #BASE_DIR=${HOME}/pi
 #https://stackoverflow.com/questions/59895/how-to-get-the-source-directory-of-a-bash-script-from-within-the-script-itself
 SOURCE="${BASH_SOURCE[0]}"
-ARMCOMPUTE_DEBUG=1
-LIBND4J_BUILD_MODE=Release
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
   DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
   SOURCE="$(readlink "$SOURCE")"
   [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 BASE_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+
+CROSS_COMPILER_URL=${COMPILER_ARRS[$TARGET_INDEX]}
+CROSS_COMPILER_DIR=${BASE_DIR}/compile_tools/cross_compiler_${COMPILER_DESTDIR[$TARGET_INDEX]}
+COMPILER_DOWNLOAD_CMD=${COMPILER_DOWNLOAD_CMD_LIST[$TARGET_INDEX]}
+DETECT=${DETECT_LIST[$TARGET_INDEX]}
+LIBND4J_PLATFORM_EXT=${LIBND4J_PLATFORM_EXT_LIST[$TARGET_INDEX]}
+BLAS_TARGET_NAME=${OPENBLAS_TARGETS[$TARGET_INDEX]}
+ARMCOMPUTE_TARGET=${ARMCOMPUTE_TARGETS[$TARGET_INDEX]}
+TARGET_OS=${OS_LIST[$TARGET_INDEX]}
+LIBND4J_PLATFORM=${TARGET_OS}-${LIBND4J_PLATFORM_EXT}
+PREFIX=${PREFIXES[$TARGET_INDEX]}
+
 CMAKE=cmake #/snap/bin/cmake
-
-mkdir -p ${BASE_DIR}/helper_bin/
-
-CROSS_COMPILER_URL=https://sourceforge.net/projects/raspberry-pi-cross-compilers/files/Raspberry%20Pi%20GCC%20Cross-Compiler%20Toolchains/Buster/GCC%208.3.0/Raspberry%20Pi%203A%2B%2C%203B%2B%2C%204/cross-gcc-8.3.0-pi_3%2B.tar.gz/download
-CROSS_COMPILER_DIR=${BASE_DIR}/helper_bin/cross_compiler
+mkdir -p ${BASE_DIR}/compile_tools/
 
 SCONS_LOCAL_URL=http://prdownloads.sourceforge.net/scons/scons-local-3.1.1.tar.gz
-SCONS_LOCAL_DIR=${BASE_DIR}/helper_bin/scons_local
+SCONS_LOCAL_DIR=${BASE_DIR}/compile_tools/scons_local
 
-THIRD_PARTY=${BASE_DIR}/third_party_libs
+THIRD_PARTY=${BASE_DIR}/third_party_libs${TARGET_INDEX}
 
 ARMCOMPUTE_GIT_URL=https://github.com/ARM-software/ComputeLibrary.git
-ARMCOMPUTE_TAG=v20.05
 ARMCOMPUTE_DIR=${THIRD_PARTY}/arm_compute_dir
 
 OPENBLAS_GIT_URL="https://github.com/xianyi/OpenBLAS.git"
 OPENBLAS_DIR=${THIRD_PARTY}/OpenBLAS
 
 
-LIBND4J_SRC_DIR=${BASE_DIR}
-
-LIBND4J_BUILD_DIR=${BASE_DIR}/build_pi
-
-#for some downloads
-XRTACT_STRIP="--strip-components=1"
-
-HAS_ARMCOMPUTE=1
 mkdir -p ${BASE_DIR}
 mkdir -p ${THIRD_PARTY}
 
 #change directory to base
 cd $BASE_DIR
-
-function message {
-	echo "BUILDER:::: ${@}"
-}
-
 
 function check_requirements {
 	for i in "${@}"
@@ -62,74 +128,129 @@ function check_requirements {
 	done
 }
 
-function download_extract {
+function rename_top_folder {
+	for dir in ${1}/*
+	do
+		if [ -d "$dir" ]
+		then
+		    mv "${dir}" "${1}/folder/"
+			message "${dir} => ${1}/folder/"
+			break
+		fi
+	done
+}
+
+function download_extract_base {
 	#$1 is url #2 is dir $3 is extract argument
-	if [ ! -f ${2}_file ]; then
+	if [ ! -f ${3}_file ]; then
 		message "download"
-		wget --quiet --show-progress -O ${2}_file ${1}
+		wget --quiet --show-progress -O ${3}_file ${2}
 	fi
  
-	message "extract"
+	message "extract $@"
     #extract
-	mkdir -p ${2}
-	command="tar -xzf ${2}_file --directory=${2} ${3} "
+	mkdir -p ${3} 
+	if [ ${1} = "-unzip" ]; then
+		command="unzip -qq ${3}_file -d ${3} "
+	else
+		command="tar ${1}  ${3}_file --directory=${3} "
+	fi
 	message $command
 	$command
+	check_requirements "${3}"
+}
 
-	check_requirements "${2}"
+function download_extract {
+	download_extract_base -xzf $@
+}
+
+function download_extract_xz {
+	download_extract_base -xf $@
+}
+
+function download_extract_unzip {
+	download_extract_base -unzip $@
 }
 
 function git_check {
 	#$1 is url #$2 is dir #$3 is tag or branch if optional
+	command=
+	if [ -n "$3" ]; then
+	    command="git clone --quiet --depth 1 --branch ${3} ${1} ${2}"	
+	else 
 	command="git clone --quiet ${1} ${2}"
+	fi
 	message "$command"
 	$command 
-	if [ -n "$3" ]; then
-		cd ${2}
-		command="git checkout ${3}"
-		message "$command"
-		$command 
-		cd ${BASE_DIR}
-	fi
 	check_requirements "${2}"
 }
 
+#fix py debug linkage manually and also makes it use gold
+function fix_pi_linker {
+  #$1 BINUTILS folder
+  if [ ! -f ${1}/ld.original ]; then
+    mv ${1}/ld ${1}/ld.original
+  fi
+  rm -f ${1}/ld
+  printf '#!/usr/bin/env bash\n'"${1}/ld.gold --long-plt \$*">${1}/ld
+  chmod +x ${1}/ld 
+}
 
-if [ ! -d ${CROSS_COMPILER_DIR} ]; then
+if [ ! -d ${CROSS_COMPILER_DIR}/folder ]; then
 	#out file
 	message "download CROSS_COMPILER"
-	download_extract ${CROSS_COMPILER_URL} ${CROSS_COMPILER_DIR} ${XRTACT_STRIP}
+	${COMPILER_DOWNLOAD_CMD} ${CROSS_COMPILER_URL} ${CROSS_COMPILER_DIR}
+	message "rename top folder  (instead of --strip-components=1)"
+	rename_top_folder ${CROSS_COMPILER_DIR}
 fi
 
-#useful exports
-export PI_FOLDER=${CROSS_COMPILER_DIR}
-export RPI_BIN=${PI_FOLDER}/bin/arm-linux-gnueabihf
-export PI_SYS_ROOT=${PI_FOLDER}/arm-linux-gnueabihf/libc
-export LD_LIBRARY_PATH=${PI_FOLDER}/lib:$LD_LIBRARY_PATH
-export CC=${RPI_BIN}-gcc
-export FC=${RPI_BIN}-gfortran
-export CXX=${RPI_BIN}-g++
-export CPP=${RPI_BIN}-cpp
-export RANLIB=${RPI_BIN}-gcc-ranlib
-export LD="${RPI_BIN}-ld"
-export AR="${RPI_BIN}-ar"
+CROSS_COMPILER_DIR=${CROSS_COMPILER_DIR}/folder
 
+if [ "${TARGET_OS}" = "android" ];then
+	ANDROID_TOOLCHAIN=${CROSS_COMPILER_DIR}/toolchains/llvm/prebuilt/linux-x86_64
+	COMPILER_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}${ANDROID_VERSION}"
+	TOOLCHAIN_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}"
+	if [ "$BLAS_TARGET_NAME" = "ARMV7" ];then
+	    BLAS_XTRA="ARM_SOFTFP_ABI=1 "
+		COMPILER_PREFIX="${ANDROID_TOOLCHAIN}/bin/armv7a-linux-androideabi${ANDROID_VERSION}"
+	fi
+	CC_EXE="clang"
+	CXX_EXE="clang++"
+	AR="${TOOLCHAIN_PREFIX}-ar"
+	RANLIB="${TOOLCHAIN_PREFIX}-ranlib"
+	BLAS_XTRA="CC=${COMPILER_PREFIX}-${CC_EXE} AR=${AR} RANLIB=${RANLIB} ${BLAS_XTRA}"
+else
+	BINUTILS_BIN=${CROSS_COMPILER_DIR}/${PREFIX}/bin
+	COMPILER_PREFIX=${CROSS_COMPILER_DIR}/bin/${PREFIX}
+	TOOLCHAIN_PREFIX=${COMPILER_PREFIX}
+	SYS_ROOT=${CROSS_COMPILER_DIR}/${PREFIX}/libc
+	#LD_LIBRARY_PATH=${CROSS_COMPILER_DIR}/lib:$LD_LIBRARY_PATH
+	CC_EXE="gcc"
+	CXX_EXE="g++"
+	RANLIB="${BINUTILS_BIN}/ranlib"
+	export LD="${BINUTILS_BIN}/ld"
+	AR="${BINUTILS_BIN}/ar"
+	BLAS_XTRA="CC=${COMPILER_PREFIX}-${CC_EXE} AR=${AR} RANLIB=${RANLIB}  CFLAGS=--sysroot=${SYS_ROOT} LDFLAGS=\"-L${SYS_ROOT}/../lib/ -lm\""
+fi
 
+check_requirements ${CC}
+
+if [ -z "${BUILD_USING_MAVEN}" ] ;then
 #lets build OpenBlas 
-if [ ! -d "${OPENBLAS_DIR}" ]; then 
+if [ ! -d "${OPENBLAS_DIR}" ]; then
 	message "download OpenBLAS"
-	git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}"
+	git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}" "v0.3.10"
 fi
 
 if [ ! -f "${THIRD_PARTY}/lib/libopenblas.so" ]; then
 	message "build and install OpenBLAS" 
 	cd ${OPENBLAS_DIR}
 
-	command="make TARGET=${BLAS_TARGET_NAME} HOSTCC=gcc CC=${CC} USE_THREAD=0 NOFORTRAN=1 CFLAGS=--sysroot=${PI_SYS_ROOT} LDFLAGS=\"-L${PI_SYS_ROOT}/../lib/ -lm\"  &>/dev/null"
+	command="make TARGET=${BLAS_TARGET_NAME} HOSTCC=gcc  NOFORTRAN=1 ${BLAS_XTRA} "
 	message $command
-	eval $command 
+	eval $command  &>/dev/null
     message "install it"
-	command="make PREFIX=${THIRD_PARTY} install"
+	command="make TARGET=${BLAS_TARGET_NAME} PREFIX=${THIRD_PARTY} install &>/dev/null"
 	message $command
 	$command
 	cd $BASE_DIR
@@ -137,7 +258,9 @@ if [ ! -f "${THIRD_PARTY}/lib/libopenblas.so" ]; then
 fi
 check_requirements ${THIRD_PARTY}/lib/libopenblas.so
 
+export OPENBLAS_PATH=${THIRD_PARTY}
 
+fi # end if [ -z "${BUILD_USING_MAVEN}"];then
 
 if [ ! -d ${SCONS_LOCAL_DIR} ]; then
 	#out file
@@ -146,40 +269,50 @@ if [ ! -d ${SCONS_LOCAL_DIR} ]; then
 fi
 check_requirements ${SCONS_LOCAL_DIR}/scons.py
 
-
 if [ ! -d "${ARMCOMPUTE_DIR}" ]; then 
 	message "download ArmCompute Source" 
-	git_check ${ARMCOMPUTE_GIT_URL} "${ARMCOMPUTE_DIR}" "tags/${ARMCOMPUTE_TAG}" 
+	git_check ${ARMCOMPUTE_GIT_URL} "${ARMCOMPUTE_DIR}" "${ARMCOMPUTE_TAG}" 
 fi
 
 #build armcompute
 if [ ! -f "${ARMCOMPUTE_DIR}/build/libarm_compute-static.a" ]; then
 message "build arm compute"
 cd ${ARMCOMPUTE_DIR}
-command="CC=gcc CXX=g++ python3 ${SCONS_LOCAL_DIR}/scons.py Werror=1 -j$(nproc) toolchain_prefix=${RPI_BIN}- debug=${ARMCOMPUTE_DEBUG}  neon=1 opencl=0 extra_cxx_flags=-fPIC os=linux build=cross_compile arch=${ARMCOMPUTE_TARGET} &>/dev/null"
+command="CC=${CC_EXE} CXX=${CXX_EXE} python3 ${SCONS_LOCAL_DIR}/scons.py Werror=1 -j$(nproc) toolchain_prefix=${TOOLCHAIN_PREFIX}-  compiler_prefix=${COMPILER_PREFIX}- debug=${ARMCOMPUTE_DEBUG}  neon=1 opencl=0 extra_cxx_flags=-fPIC os=${TARGET_OS} build=cross_compile arch=${ARMCOMPUTE_TARGET} "
 message $command
-eval $command
+eval $command &>/dev/null
 cd ${BASE_DIR} 
 fi
 check_requirements "${ARMCOMPUTE_DIR}/build/libarm_compute-static.a" "${ARMCOMPUTE_DIR}/build/libarm_compute_core-static.a"
 
+export ARMCOMPUTE_ROOT="${ARMCOMPUTE_DIR}"
+
+if [ "${TARGET_OS}" = "android" ];then
+	export ANDROID_NDK=${CROSS_COMPILER_DIR}
+else
+    export RPI_BIN=${CROSS_COMPILER_DIR}/bin/${PREFIX}
+	export JAVA_LIBRARY_PATH=${CROSS_COMPILER_DIR}/${PREFIX}/lib
+	fix_pi_linker ${BINUTILS_BIN}
+fi
 
 
-message "build cmake for LIBND4J. output: ${LIBND4J_BUILD_DIR}"
+#because of the toolchain passive detection we have to delete build folder manually
+detect=$(cat ${BASE_DIR}/blasbuild/cpu/CMakeCache.txt | grep -o ${PREFIX})
+if [ -z "${detect}" ] ;then
+message "remove blasbuild folder "
+rm -rf $BASE_DIR/blasbuild/
+else
+message "keep blasbuild folder"
+fi
 
-TOOLCHAIN=${LIBND4J_SRC_DIR}/cmake/rpi.cmake
-cmake_cmd="${CMAKE}  -G \"Unix Makefiles\"  -B${LIBND4J_BUILD_DIR} -S${LIBND4J_SRC_DIR}  -DCMAKE_BUILD_TYPE=${LIBND4J_BUILD_MODE} -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN} -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DSD_ALL_OPS=true  -DSD_CPU=true -DSD_LIBRARY_NAME=nd4jcpu -DSD_BUILD_TESTS=ON -DSD_ARM_BUILD=true -DOPENBLAS_PATH=${THIRD_PARTY} -DSD_ARCH=${TARGET} -DARMCOMPUTE_ROOT=${ARMCOMPUTE_DIR} -DHELPERS_armcompute=${HAS_ARMCOMPUTE}"
-message $cmake_cmd
-eval $cmake_cmd
-
-#build
-message "lets build"
-
-cd ${LIBND4J_BUILD_DIR}
-make -j $(nproc)
-
-
-
-
-
-
+if [ -z "${BUILD_USING_MAVEN}" ] ;then
+message "lets build just library"
+DHELPER="  -h armcompute "
+bash ./buildnativeoperations.sh -o ${LIBND4J_PLATFORM} -t ${DHELPER} -j $(nproc)
+else
+message "cd $BASE_DIR/.. "
+cd $BASE_DIR/..
+message "lets build jars"
+DHELPER=" -Dlibnd4j.helper=armcompute "
+mvn  install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER} -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+fi

@@ -1,7 +1,25 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.deeplearning4j.rl4j.agent.learning.algorithm.actorcritic;
 
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
@@ -54,9 +72,9 @@ public class RecurrentAdvantageActorCriticTest {
         int action = 0;
         final INDArray data = Nd4j.zeros(1, 2, 1);
         final Observation observation = new Observation(data);
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(observation, action, 0.0, true));
+                add(new StateActionReward<Integer>(observation, action, 0.0, true));
             }
         };
         when(threadCurrentMock.output(observation)).thenReturn(neuralNetOutputMock);
@@ -78,9 +96,9 @@ public class RecurrentAdvantageActorCriticTest {
         int action = 0;
         final INDArray data = Nd4j.zeros(1, 2, 1);
         final Observation observation = new Observation(data);
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(observation, action, 0.0, false));
+                add(new StateActionReward<Integer>(observation, action, 0.0, false));
             }
         };
         when(threadCurrentMock.output(observation)).thenReturn(neuralNetOutputMock);
@@ -106,10 +124,10 @@ public class RecurrentAdvantageActorCriticTest {
             result.put(CommonOutputNames.ActorCritic.Policy, invocation.getArgument(0, Observation.class).getData().mul(-0.1));
             return result;
         });
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { -1.1, -1.2 }).reshape(1, 2, 1)), 0, 1.0, false));
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { -2.1, -2.2 }).reshape(1, 2, 1)), 1, 2.0, false));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { -1.1, -1.2 }).reshape(1, 2, 1)), 0, 1.0, false));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { -2.1, -2.2 }).reshape(1, 2, 1)), 1, 2.0, false));
             }
         };
 
@@ -121,7 +139,7 @@ public class RecurrentAdvantageActorCriticTest {
         verify(threadCurrentMock, times(1)).computeGradients(argument.capture());
 
         // input side -- should be a stack of observations
-        INDArray featuresValues = argument.getValue().getFeatures();
+        INDArray featuresValues = argument.getValue().getFeatures().get(0);
         assertEquals(-1.1, featuresValues.getDouble(0, 0, 0), 0.00001);
         assertEquals(-1.2, featuresValues.getDouble(0, 1, 0), 0.00001);
         assertEquals(-2.1, featuresValues.getDouble(0, 0, 1), 0.00001);

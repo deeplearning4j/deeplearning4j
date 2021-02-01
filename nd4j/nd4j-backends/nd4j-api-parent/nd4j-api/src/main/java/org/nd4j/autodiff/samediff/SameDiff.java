@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.samediff;
 
@@ -43,6 +45,7 @@ import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.graph.*;
+import org.nd4j.imports.VariableUtils;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -94,6 +97,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.nd4j.autodiff.util.SameDiffUtils.stackOutputs;
+import static org.nd4j.imports.VariableUtils.stripVarSuffix;
 
 /**
  * SameDiff is the entrypoint for ND4J's automatic differentiation functionality.
@@ -571,9 +575,9 @@ public class SameDiff extends SDBaseOps {
      */
     public DifferentialFunction getVariableOutputOp(String variableName) {
         Preconditions.checkState(variables.containsKey(variableName), "No variable with name \"%s\" found in graph", variableName);
-        if (variables.get(variableName).getOutputOfOp() == null)
+        if (variables.get(variableName).getOutputOfOp() == null || ops.get(stripVarSuffix(variables.get(variableName).getOutputOfOp())) == null)
             return null;
-        return ops.get(variables.get(variableName).getOutputOfOp()).getOp();
+        return ops.get(stripVarSuffix(variables.get(variableName).getOutputOfOp())).getOp();
     }
 
     /**
@@ -2473,7 +2477,7 @@ public class SameDiff extends SDBaseOps {
      * Special case of {@link #batchOutput()}.
      */
     public Map<String, INDArray> outputAll(Map<String, INDArray> placeholders) {
-        return batchOutput().outputAll().inputs(placeholders).exec();
+        return batchOutput().outputAll().inputs(placeholders).output();
     }
     /**
      * Do inference for a single variable for a single batch.
@@ -2483,7 +2487,7 @@ public class SameDiff extends SDBaseOps {
      * Special case of {@link #batchOutput()}.
      */
     public INDArray outputSingle(Map<String, INDArray> placeholders, String output) {
-        return batchOutput().output(output).inputs(placeholders).execSingle();
+        return batchOutput().output(output).inputs(placeholders).outputSingle();
     }
 
     /**
@@ -2576,7 +2580,7 @@ public class SameDiff extends SDBaseOps {
         //Placeholder validation is performed in InferenceSession
 
         InferenceSession is = sessions.get(threadId);
-        return is.output(outputs == null ? Collections.<String>emptyList() : Arrays.asList(outputs),
+        return is.output(outputs == null ? Collections.emptyList() : Arrays.asList(outputs),
                 placeholders, batch, requiredActivations, activeListeners, at);
     }
 
@@ -3328,6 +3332,7 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
 
         Variable v = variables.get(from);
+        SameDiffOp opToReName = ops.get(stripVarSuffix(from));
         v.setName(to);
         v.getVariable().setVarName(to);
         if (v.getInputsForOp() != null) {
@@ -3337,6 +3342,7 @@ public class SameDiff extends SDBaseOps {
                 while (newInputs.contains(from)) {
                     newInputs.set(newInputs.indexOf(from), to);
                 }
+
                 op.setInputsToOp(newInputs);
             }
         }
@@ -3375,26 +3381,62 @@ public class SameDiff extends SDBaseOps {
         }
 
         if (v.getOutputOfOp() != null) {
-            SameDiffOp op = ops.get(v.getOutputOfOp());
-            List<String> newOuts = new ArrayList<>(op.getOutputsOfOp());
-            while (newOuts.contains(from)) {
-                newOuts.set(newOuts.indexOf(from), to);
+            SameDiffOp op = ops.get(stripVarSuffix(from));
+            if(op != null && op.getOutputsOfOp() != null) {
+                List<String> newOuts = new ArrayList<>(op.getOutputsOfOp());
+                while (newOuts.contains(from)) {
+                    newOuts.set(newOuts.indexOf(from), to);
+                }
+
+                //find other aliases and ensure those get updated as well,
+                //after this any other versions of the op may not be discoverable
+                //due to the renaming
+                String strippedVarSuffix = stripVarSuffix(from);
+                for(int i = 0; i < newOuts.size(); i++) {
+                    String newOut = newOuts.get(i);
+                    if(stripVarSuffix(newOut).equals(strippedVarSuffix)) {
+                        val idx = newOut.lastIndexOf(':');
+                        val newString = to + newOut.substring(idx);
+                        newOuts.set(i,newString);
+                    }
+                }
+
+                op.setOutputsOfOp(newOuts);
             }
-            op.setOutputsOfOp(newOuts);
+            else if(op != null) {
+                op.setOutputsOfOp(Arrays.asList(to));
+            }
         }
 
         variables.remove(from);
         variables.put(to, v);
+        //set as just op name, update to set as the name of the output
+        if(opToReName != null && opToReName.getOp() != null && opToReName.getOp().isOwnNameSetWithDefault()) {
+            ops.remove(from);
+            opToReName.getOp().setOwnName(to);
+            ops.put(to,opToReName);
+            opToReName.setName(to);
+        }
 
-        if(v.getVariable().getVariableType() == VariableType.CONSTANT && constantArrays.hasArray(from)){
+        for(Variable variable : variables.values()) {
+            if(variable.getInputsForOp() != null && variable.getInputsForOp().contains(from)) {
+                variable.getInputsForOp().set(variable.getInputsForOp().indexOf(from),to);
+            }
+
+            if(variable.getOutputOfOp() != null && variable.getOutputOfOp().equals(from)) {
+                variable.setOutputOfOp(to);
+            }
+        }
+
+        if(v.getVariable().getVariableType() == VariableType.CONSTANT && constantArrays.hasArray(from)) {
             constantArrays.rename(from, to);
         }
 
-        if(v.getVariable().getVariableType() == VariableType.VARIABLE && variablesArrays.hasArray(from)){
+        if(v.getVariable().getVariableType() == VariableType.VARIABLE && variablesArrays.hasArray(from)) {
             variablesArrays.rename(from, to);
         }
 
-        if(v.getVariable().getVariableType() == VariableType.PLACEHOLDER ){
+        if(v.getVariable().getVariableType() == VariableType.PLACEHOLDER) {
             for(Map<String,INDArray> e : placeholdersPerThread.values()){
                 //Not really thread safe - but renaming variables during execution in other threads can never be thread safe :)
                 if(e != null && e.containsKey(from)){
@@ -3434,6 +3476,7 @@ public class SameDiff extends SDBaseOps {
                 while (l.contains(from)) {
                     l.set(l.indexOf(from), to);
                 }
+
                 trainingConfig.setDataSetLabelMaskMapping(l);
             }
 
@@ -3453,7 +3496,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         //Check losses:
-        if(lossVariables.contains(from)){
+        if(lossVariables.contains(from)) {
             int idx = lossVariables.indexOf(from);
             lossVariables.set(idx, to);
         }
@@ -5225,10 +5268,10 @@ public class SameDiff extends SDBaseOps {
                 v2.setControlDepsForOp(l);
             }
 
-            if(v.controlDepsForVarLength() > 0){
+            if(v.controlDepsForVarLength() > 0) {
                 int num = v.controlDepsForVarLength();
                 List<String> l = new ArrayList<>(num);
-                for( int i=0; i<num; i++ ){
+                for( int i = 0; i < num; i++ ){
                     l.add(v.controlDepsForVar(i));
                 }
                 v2.setControlDepsForVar(l);
@@ -5309,7 +5352,7 @@ public class SameDiff extends SDBaseOps {
             if (fn.controlDepsLength() > 0) {
                 int l = fn.controlDepsLength();
                 List<String> list = new ArrayList<>(l);
-                for( int i=0; i<l; i++ ){
+                for( int i = 0; i < l; i++ ){
                     list.add(fn.controlDeps(i));
                 }
                 op.setControlDeps(list);
@@ -5318,7 +5361,7 @@ public class SameDiff extends SDBaseOps {
             if (fn.varControlDepsLength() > 0) {
                 int l = fn.varControlDepsLength();
                 List<String> list = new ArrayList<>(l);
-                for( int i=0; i<l; i++ ){
+                for( int i = 0; i<l; i++ ){
                     list.add(fn.varControlDeps(i));
                 }
                 op.setVarControlDeps(list);
@@ -5661,7 +5704,7 @@ public class SameDiff extends SDBaseOps {
             DifferentialFunction df = functions[i];
             String fnName = df.getOwnName() == null ? df.opName() : df.getOwnName();
 
-            sb.append(String.format(format, String.valueOf(i), fnName, df.getClass().getSimpleName(), dfInputStr.get(i), dfOutputStr.get(i))).append("\n");
+            sb.append(String.format(format, i, fnName, df.getClass().getSimpleName(), dfInputStr.get(i), dfOutputStr.get(i))).append("\n");
         }
 
         if (sameDiffFunctionInstances.size() > 0) {
@@ -5674,7 +5717,7 @@ public class SameDiff extends SDBaseOps {
                 int fns = (sd.ops() == null ? 0 : sd.ops().length);
                 int defFns = sd.definedFunctionNames().size();
 
-                sb.append(String.format(format, e.getKey(), String.valueOf(vars), String.valueOf(fns), String.valueOf(defFns))).append("\n");
+                sb.append(String.format(format, e.getKey(), vars, fns, defFns)).append("\n");
             }
         }
 
@@ -5683,7 +5726,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * For internal use only.
-     * Creates a new discinct block name from baseName.
+     * Creates a new distinct block name from baseName.
      * Block names are used by If and While
      */
     public String newBlockName(String baseName) {

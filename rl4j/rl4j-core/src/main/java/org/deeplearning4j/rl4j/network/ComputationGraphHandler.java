@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j.rl4j.network;
 
 import lombok.Getter;
@@ -22,6 +24,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -39,18 +42,48 @@ public class ComputationGraphHandler implements INetworkHandler {
     private final ComputationGraphConfiguration configuration;
     private final String[] labelNames;
     private final String gradientName;
+    private final int inputFeatureIdx;
+    private final ChannelToNetworkInputMapper channelToNetworkInputMapper;
 
     /**
      * @param model The {@link ComputationGraph} to use internally.
      * @param labelNames An array of the labels (in {@link FeaturesLabels}) to use as the network's input.
      * @param gradientName The name of the gradient (in {@link Gradients}) to use as the network's output.
+     * @param channelToNetworkInputMapper a {@link ChannelToNetworkInputMapper} instance that map the network inputs
+     *                                    to the feature channels
      */
-    public ComputationGraphHandler(ComputationGraph model, String[] labelNames, String gradientName) {
+    public ComputationGraphHandler(ComputationGraph model,
+                                   String[] labelNames,
+                                   String gradientName,
+                                   ChannelToNetworkInputMapper channelToNetworkInputMapper) {
         this.model = model;
         recurrent = model.getOutputLayer(0) instanceof RnnOutputLayer;
         configuration = model.getConfiguration();
         this.labelNames = labelNames;
         this.gradientName = gradientName;
+
+        this.inputFeatureIdx = 0;
+        this.channelToNetworkInputMapper = channelToNetworkInputMapper;
+    }
+
+    /**
+     * @param model The {@link ComputationGraph} to use internally.
+     * @param labelNames An array of the labels (in {@link FeaturesLabels}) to use as the network's input.
+     * @param gradientName The name of the gradient (in {@link Gradients}) to use as the network's output.
+     * @param inputFeatureIdx The channel index to use as the input of the model
+     */
+    public ComputationGraphHandler(ComputationGraph model,
+                                   String[] labelNames,
+                                   String gradientName,
+                                   int inputFeatureIdx) {
+        this.model = model;
+        recurrent = model.getOutputLayer(0) instanceof RnnOutputLayer;
+        configuration = model.getConfiguration();
+        this.labelNames = labelNames;
+        this.gradientName = gradientName;
+
+        this.inputFeatureIdx = inputFeatureIdx;
+        this.channelToNetworkInputMapper = null;
     }
 
     @Override
@@ -77,15 +110,13 @@ public class ComputationGraphHandler implements INetworkHandler {
 
     @Override
     public void performFit(FeaturesLabels featuresLabels) {
-        INDArray[] features = new INDArray[] { featuresLabels.getFeatures() };
-        INDArray[] labels = getLabelsFromFeaturesLabels(featuresLabels);
-        model.fit(features, labels);
+        model.fit(buildInputs(featuresLabels.getFeatures()), buildLabels(featuresLabels));
     }
 
     @Override
     public void performGradientsComputation(FeaturesLabels featuresLabels) {
-        model.setInput(0, featuresLabels.getFeatures());
-        model.setLabels(getLabelsFromFeaturesLabels(featuresLabels));
+        model.setInputs(buildInputs(featuresLabels.getFeatures()));
+        model.setLabels(buildLabels(featuresLabels));
         model.computeGradientAndScore();
     }
 
@@ -94,7 +125,7 @@ public class ComputationGraphHandler implements INetworkHandler {
         gradients.putGradient(gradientName, model.gradient());
     }
 
-    private INDArray[] getLabelsFromFeaturesLabels(FeaturesLabels featuresLabels) {
+    private INDArray[] buildLabels(FeaturesLabels featuresLabels) {
         int numLabels = labelNames.length;
         INDArray[] result = new INDArray[numLabels];
         for(int i = 0; i < numLabels; ++i) {
@@ -120,12 +151,17 @@ public class ComputationGraphHandler implements INetworkHandler {
 
     @Override
     public INDArray[] recurrentStepOutput(Observation observation) {
-        return model.rnnTimeStep(observation.getData());
+        return model.rnnTimeStep(buildInputs(observation));
     }
 
     @Override
-    public INDArray[] batchOutput(INDArray batch) {
-        return model.output(batch);
+    public INDArray[] stepOutput(Observation observation) {
+        return model.output(buildInputs(observation));
+    }
+
+    @Override
+    public INDArray[] batchOutput(Features features) {
+        return model.output(buildInputs(features));
     }
 
     @Override
@@ -135,11 +171,28 @@ public class ComputationGraphHandler implements INetworkHandler {
 
     @Override
     public INetworkHandler clone() {
-        return new ComputationGraphHandler(model.clone(), labelNames, gradientName);
+        if(channelToNetworkInputMapper != null) {
+            return new ComputationGraphHandler(model.clone(), labelNames, gradientName, channelToNetworkInputMapper);
+        }
+        return new ComputationGraphHandler(model.clone(), labelNames, gradientName, inputFeatureIdx);
     }
 
     @Override
     public void copyFrom(INetworkHandler from) {
         model.setParams(((ComputationGraphHandler) from).model.params());
     }
+
+
+    protected INDArray[] buildInputs(Observation observation) {
+        return channelToNetworkInputMapper == null
+                ? new INDArray[] { observation.getChannelData(inputFeatureIdx) }
+                : channelToNetworkInputMapper.getNetworkInputs(observation);
+    }
+
+    protected INDArray[] buildInputs(Features features) {
+        return channelToNetworkInputMapper == null
+                ? new INDArray[] { features.get(inputFeatureIdx) }
+                : channelToNetworkInputMapper.getNetworkInputs(features);
+    }
+
 }

@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops;
 
@@ -566,7 +568,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             } else {
                 String[] inputNames = sameDiff.getInputsForOp(this);
                 String[] arrayShapes = new String[inputNames.length];
-                for( int i=0; i<inputNames.length; i++ ){
+                for( int i = 0; i < inputNames.length; i++) {
                     INDArray arr = sameDiff.getVariable(inputNames[i]).getArr();
                     arrayShapes[i] = (arr == null ? "<no array present>" : Arrays.toString(arr.shape()));
                 }
@@ -846,7 +848,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
          * multiple times and it will add arguments to a list.
          * PLEASE NOTE: this method does NOT validate values.
          *
-         * @param iargs
+         * @param bargs
          * @return
          */
         public DynamicCustomOpsBuilder addBooleanArguments(boolean... bargs) {

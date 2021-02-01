@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.functions;
 
@@ -77,13 +79,18 @@ public abstract class DifferentialFunction {
     @Getter
     @Setter
     @JsonIgnore
-    private String ownName;
+    protected String ownName;
+
+    @JsonIgnore
+    @Getter
+    @Setter
+    protected boolean ownNameSetWithDefault = false;
 
     public DifferentialFunction() {
         this(true);
     }
 
-    public DifferentialFunction(boolean sameDiff){
+    public DifferentialFunction(boolean sameDiff) {
         //Only need instance ID if using function in context of SameDiff, not standard ND4J with INDArray args
         if(sameDiff)
             setInstanceId();
@@ -166,9 +173,9 @@ public abstract class DifferentialFunction {
         return ret;
     }
 
-    public void setPropertiesForFunction(Map<String,Object> properties){
+    public void setPropertiesForFunction(Map<String,Object> properties) {
         Map<String,Field> fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
-        for(String s : properties.keySet()){
+        for(String s : properties.keySet()) {
             Field f = fields.get(s);
             if(f == null){
                 log.warn("No fields found for property name {} for class {}", s, this.getClass().getName());
@@ -456,7 +463,12 @@ public abstract class DifferentialFunction {
         }
     }
 
-    public void replaceArg(int i, SDVariable newArg){
+    /**
+     * Replace argument at the specfied index
+     * @param i the index
+     * @param newArg the new argument
+     */
+    public void replaceArg(int i, SDVariable newArg) {
         if(sameDiff != null){
             sameDiff.replaceArgFor(i, newArg, this);
         }
@@ -475,20 +487,20 @@ public abstract class DifferentialFunction {
     /**
      * @return The output variable, or the first output variable, if multiple outputs exist
      */
-    public SDVariable outputVariable(){
+    public SDVariable outputVariable() {
         return outputVariables()[0];
     }
 
-    public List<SDVariable> outputs(){
+    public List<SDVariable> outputs() {
         SDVariable[] out = outputVariables();
         return out == null ? null : Arrays.asList(out);
     }
 
 
-    public String[] outputVariablesNames(){
+    public String[] outputVariablesNames() {
         SDVariable[] outputVars = outputVariables();
         String[] out = new String[outputVars.length];
-        for( int i=0; i<out.length; i++ ){
+        for( int i = 0; i < out.length; i++) {
             out[i] = outputVars[i].name();
         }
         return out;
@@ -595,6 +607,7 @@ public abstract class DifferentialFunction {
 
     protected void setInstanceId() {
         if(ownName == null) {
+            ownNameSetWithDefault = true;
             if(sameDiff == null)
                 this.ownName = UUID.randomUUID().toString();
             else {
@@ -699,20 +712,16 @@ public abstract class DifferentialFunction {
         return FlatBuffersMapper.cloneViaSerialize(sameDiff, this);
     }
 
-
-
-
-
     /**
      * Calculate the output shape for this op
      * @return List of output shape descriptors
      */
     public List<LongShapeDescriptor> calculateOutputShape() {
-        throw new ND4JIllegalStateException("calculateOutputShape() method leaked out for [" + this.opName() + "]");
+        throw new ND4JIllegalStateException("Op type of " + getClass().getName() + "did not override calculateOutputShape() method leaked out for [" + this.opName() + "]");
     }
 
     public List<LongShapeDescriptor> calculateOutputShape(OpContext oc){
-        throw new ND4JIllegalStateException("calculateOutputShape(OpContext) method leaked out for [" + this.opName() + "]");
+        throw new ND4JIllegalStateException("Op type of " + getClass().getName() + " did not override calculateOutputShape(OpContext) method leaked out for [" + this.opName() + "]");
     }
 
     /**
@@ -726,7 +735,7 @@ public abstract class DifferentialFunction {
      * @return The data types of the outputs
      */
     public List<org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(List<org.nd4j.linalg.api.buffer.DataType> dataTypes){
-        throw new UnsupportedOperationException("calculateOutputDataTypes() has not been implemented for " + getClass().getName());
+        throw new UnsupportedOperationException("Op type of " + getClass().getName() + " and name " +  this.toString() + " did not override  calculateOutputDataTypes()! This function has not been implemented for " + getClass().getName());
     }
 
 

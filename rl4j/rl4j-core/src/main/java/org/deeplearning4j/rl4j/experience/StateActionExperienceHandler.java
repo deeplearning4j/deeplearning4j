@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j.rl4j.experience;
 
 import lombok.Builder;
@@ -31,7 +33,7 @@ import java.util.List;
  *
  * @author Alexandre Boulanger
  */
-public class StateActionExperienceHandler<A> implements ExperienceHandler<A, StateActionPair<A>> {
+public class StateActionExperienceHandler<A> implements ExperienceHandler<A, StateActionReward<A>> {
     private static final int DEFAULT_BATCH_SIZE = 8;
 
     private final int batchSize;
@@ -42,25 +44,25 @@ public class StateActionExperienceHandler<A> implements ExperienceHandler<A, Sta
         this.batchSize = configuration.getBatchSize();
     }
 
-    private List<StateActionPair<A>> stateActionPairs = new ArrayList<>();
+    private List<StateActionReward<A>> stateActionRewards = new ArrayList<>();
 
     public void setFinalObservation(Observation observation) {
         isFinalObservationSet = true;
     }
 
     public void addExperience(Observation observation, A action, double reward, boolean isTerminal) {
-        stateActionPairs.add(new StateActionPair<A>(observation, action, reward, isTerminal));
+        stateActionRewards.add(new StateActionReward<A>(observation, action, reward, isTerminal));
     }
 
     @Override
     public int getTrainingBatchSize() {
-        return stateActionPairs.size();
+        return stateActionRewards.size();
     }
 
     @Override
     public boolean isTrainingBatchReady() {
-        return stateActionPairs.size() >= batchSize
-                || (isFinalObservationSet && stateActionPairs.size() > 0);
+        return stateActionRewards.size() >= batchSize
+                || (isFinalObservationSet && stateActionRewards.size() > 0);
     }
 
     /**
@@ -70,16 +72,16 @@ public class StateActionExperienceHandler<A> implements ExperienceHandler<A, Sta
      * @return The list of experience elements
      */
     @Override
-    public List<StateActionPair<A>> generateTrainingBatch() {
-        List<StateActionPair<A>> result = stateActionPairs;
-        stateActionPairs = new ArrayList<>();
+    public List<StateActionReward<A>> generateTrainingBatch() {
+        List<StateActionReward<A>> result = stateActionRewards;
+        stateActionRewards = new ArrayList<>();
 
         return result;
     }
 
     @Override
     public void reset() {
-        stateActionPairs = new ArrayList<>();
+        stateActionRewards = new ArrayList<>();
         isFinalObservationSet = false;
     }
 

@@ -1,22 +1,24 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j.rl4j.agent.learning.algorithm.nstepqlearning;
 
-import org.deeplearning4j.rl4j.experience.StateActionPair;
-import org.deeplearning4j.rl4j.helper.INDArrayHelper;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -42,16 +44,6 @@ public class RecurrentNStepQLearningHelper extends NStepQLearningHelper {
     }
 
     @Override
-    protected INDArray createFeatureArray(int size, long[] observationShape) {
-        return INDArrayHelper.createRnnBatchForShape(size, observationShape);
-    }
-
-    @Override
-    protected void setFeature(INDArray features, long idx, INDArray data) {
-        getElementAtIndex(features, idx).assign(data);
-    }
-
-    @Override
     public INDArray getExpectedQValues(INDArray allExpectedQValues, int idx) {
         return getElementAtIndex(allExpectedQValues, idx);
     }
@@ -62,7 +54,7 @@ public class RecurrentNStepQLearningHelper extends NStepQLearningHelper {
     }
 
     @Override
-    public INDArray getTargetExpectedQValuesOfLast(IOutputNeuralNet target, List<StateActionPair<Integer>> trainingBatch, INDArray features) {
+    public INDArray getTargetExpectedQValuesOfLast(IOutputNeuralNet target, List<StateActionReward<Integer>> trainingBatch, Features features) {
         return getElementAtIndex(target.output(features).get(CommonOutputNames.QValues), trainingBatch.size() - 1);
     }
 

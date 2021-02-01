@@ -1,0 +1,215 @@
+syntax = "proto3";
+package org.nd4j.ir;
+
+
+option java_outer_classname = "TensorNamespace";
+
+
+//Using a subset of onnx, we define a small IR
+//for defining nd4j operations
+
+// StringStringEntryProto follows the pattern for cross-proto-version maps.
+// See https://developers.google.com/protocol-buffers/docs/proto3#maps
+message StringStringEntryProto {
+  string key = 1;
+  string value= 2;
+}
+
+enum DataType {
+  UNDEFINED = 0;
+  // Basic types.
+  FLOAT = 1;   // float
+  UINT8 = 2;   // uint8_t
+  INT8 = 3;    // int8_t
+  UINT16 = 4;  // uint16_t
+  INT16 = 5;   // int16_t
+  INT32 = 6;   // int32_t
+  INT64 = 7;   // int64_t
+  STRING = 8;  // string
+  BOOL = 9;    // bool
+
+  // IEEE754 half-precision floating-point format (16 bits wide).
+  // This format has 1 sign bit, 5 exponent bits, and 10 mantissa bits.
+  FLOAT16 = 10;
+
+  DOUBLE = 11;
+  UINT32 = 12;
+  UINT64 = 13;
+  COMPLEX64 = 14;     // complex with float32 real and imaginary components
+  COMPLEX128 = 15;    // complex with float64 real and imaginary components
+
+  // Non-IEEE floating-point format based on IEEE754 single-precision
+  // floating-point number truncated to 16 bits.
+  // This format has 1 sign bit, 8 exponent bits, and 7 mantissa bits.
+  BFLOAT16 = 16;
+
+  // Future extensions go here.
+}
+
+
+
+
+// Define the types.
+message TypeProto {
+
+  message TensorDescriptor {
+    // This field MUST NOT have the value of UNDEFINED
+    // This field MUST be present for this version of the IR.
+    DataType elem_type = 1;
+    TensorShapeProto shape = 2;
+  }
+
+
+  oneof value {
+    // The type of a tensor.
+    TensorDescriptor tensor_type = 1;
+
+  }
+}
+
+// Defines a tensor shape. A dimension can be either an integer value
+// or a symbolic variable. A symbolic variable represents an unknown
+// dimension.
+message TensorShapeProto {
+  message Dimension {
+    oneof value {
+      int64 dim_value = 1;
+      string dim_param = 2;   // namespace Shape
+    };
+  };
+  repeated Dimension dim = 1;
+}
+
+
+// Defines information on value, including the name, the type, and
+// the shape of the value.
+message ValueInfoProto {
+  // This field MUST be present in this version of the IR.
+  string name = 1;     // namespace Value
+  // This field MUST be present in this version of the IR.
+  TypeProto type = 2;
+  // A human-readable documentation for this value. Markdown is allowed.
+  string doc_string = 3;
+}
+
+
+
+
+// Tensors
+//
+// A serialized tensor value.
+message TensorProto {
+
+  // The shape of the tensor.
+  repeated int64 dims = 1;
+
+  // The data type of the tensor.
+  // This field MUST have a valid TensorProto.DataType value
+  int32 data_type = 2;
+
+  // For very large tensors, we may want to store them in chunks, in which
+  // case the following fields will specify the segment that is stored in
+  // the current TensorProto.
+  message Segment {
+    int64 begin = 1;
+    int64 end = 2;
+  }
+  Segment segment = 3;
+
+  // Tensor content must be organized in row-major order.
+  //
+  // Depending on the data_type field, exactly one of the fields below with
+  // name ending in _data is used to store the elements of the tensor.
+
+  // For float and complex64 values
+  // Complex64 tensors are encoded as a single array of floats,
+  // with the real components appearing in odd numbered positions,
+  // and the corresponding imaginary component appearing in the
+  // subsequent even numbered position. (e.g., [1.0 + 2.0i, 3.0 + 4.0i]
+  // is encoded as [1.0, 2.0 ,3.0 ,4.0]
+  // When this field is present, the data_type field MUST be FLOAT or COMPLEX64.
+  repeated float float_data = 4 [packed = true];
+
+  // For int32, uint8, int8, uint16, int16, bool, and float16 values
+  // float16 values must be bit-wise converted to an uint16_t prior
+  // to writing to the buffer.
+  // When this field is present, the data_type field MUST be
+  // INT32, INT16, INT8, UINT16, UINT8, BOOL, or FLOAT16
+  repeated int32 int32_data = 5 [packed = true];
+
+  // For strings.
+  // Each element of string_data is a UTF-8 encoded Unicode
+  // string. No trailing null, no leading BOM. The protobuf "string"
+  // scalar type is not used to match ML community conventions.
+  // When this field is present, the data_type field MUST be STRING
+  repeated bytes string_data = 6;
+
+  // For int64.
+  // When this field is present, the data_type field MUST be INT64
+  repeated int64 int64_data = 7 [packed = true];
+
+  // Optionally, a name for the tensor.
+  string name = 8; // namespace Value
+
+  // A human-readable documentation for this tensor. Markdown is allowed.
+  string doc_string = 12;
+
+  // Serializations can either use one of the fields above, or use this
+  // raw bytes field. The only exception is the string case, where one is
+  // required to store the content in the repeated bytes string_data field.
+  //
+  // When this raw_data field is used to store tensor value, elements MUST
+  // be stored in as fixed-width, little-endian order.
+  // Floating-point data types MUST be stored in IEEE 754 format.
+  // Complex64 elements must be written as two consecutive FLOAT values, real component first.
+  // Complex128 elements must be written as two consecutive DOUBLE values, real component first.
+  // Boolean type MUST be written one byte per tensor element (00000001 for true, 00000000 for false).
+  //
+  // Note: the advantage of specific field rather than the raw_data field is
+  // that in some cases (e.g. int data), protobuf does a better packing via
+  // variable length storage, and may lead to smaller binary footprint.
+  // When this field is present, the data_type field MUST NOT be STRING or UNDEFINED
+  bytes raw_data = 9;
+
+  // Data can be stored inside the protobuf file using type-specific fields or raw_data.
+  // Alternatively, raw bytes data can be stored in an external file, using the external_data field.
+  // external_data stores key-value pairs describing data location. Recognized keys are:
+  // - "location" (required) - POSIX filesystem path relative to the directory where the ONNX
+  //                           protobuf model was stored
+  // - "offset" (optional) - position of byte at which stored data begins. Integer stored as string.
+  //                         Offset values SHOULD be multiples 4096 (page size) to enable mmap support.
+  // - "length" (optional) - number of bytes containing data. Integer stored as string.
+  // - "checksum" (optional) - SHA1 digest of file specified in under 'location' key.
+  repeated StringStringEntryProto external_data = 13;
+
+  // Location of the data for this tensor. MUST be one of:
+  // - DEFAULT - data stored inside the protobuf message. Data is stored in raw_data (if set) otherwise in type-specified field.
+  // - EXTERNAL - data stored in an external location as described by external_data field.
+  enum DataLocation {
+    DEFAULT = 0;
+    EXTERNAL = 1;
+  }
+
+  // If value not set, data is stored in raw_data (if set) otherwise in type-specified field.
+  DataLocation data_location = 14;
+
+  // For double
+  // Complex128 tensors are encoded as a single array of doubles,
+  // with the real components appearing in odd numbered positions,
+  // and the corresponding imaginary component appearing in the
+  // subsequent even numbered position. (e.g., [1.0 + 2.0i, 3.0 + 4.0i]
+  // is encoded as [1.0, 2.0 ,3.0 ,4.0]
+  // When this field is present, the data_type field MUST be DOUBLE or COMPLEX128
+  repeated double double_data = 10 [packed = true];
+
+  // For uint64 and uint32 values
+  // When this field is present, the data_type field MUST be
+  // UINT32 or UINT64
+  repeated uint64 uint64_data = 11 [packed = true];
+
+  // For half values (tensorflow compatibility)
+  repeated int32 half_val = 15 [packed = true];
+  //boolean values
+  repeated bool  bool_val = 16 [packed = true];
+}
+

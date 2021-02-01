@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
@@ -89,11 +91,15 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
         if (input.columns() != 1) {
-            //Assume shape is [numExamples,1], and each entry is an integer index
-            throw new DL4JInvalidInputException(
-                            "Cannot do forward pass for embedding layer with input more than one column. "
-                                            + "Expected input shape: [numExamples,1] with each entry being an integer index "
-                                            + layerId());
+            if(input.isRowVector()) {
+                input = input.reshape(input.length(),1);
+            }
+            else
+                //Assume shape is [numExamples,1], and each entry is an integer index
+                throw new DL4JInvalidInputException(
+                        "Cannot do forward pass for embedding layer with input more than one column. "
+                                + "Expected input shape: [numExamples,1] with each entry being an integer index "
+                                + layerId());
         }
 
         val nIn = layerConf().getNIn();

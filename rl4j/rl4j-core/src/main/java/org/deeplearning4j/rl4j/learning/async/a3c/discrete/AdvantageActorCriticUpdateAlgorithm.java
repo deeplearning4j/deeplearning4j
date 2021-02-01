@@ -1,22 +1,24 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j.rl4j.learning.async.a3c.discrete;
 
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.async.UpdateAlgorithm;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
@@ -49,7 +51,7 @@ public class AdvantageActorCriticUpdateAlgorithm implements UpdateAlgorithm<IAct
     }
 
     @Override
-    public Gradient[] computeGradients(IActorCritic current, List<StateActionPair<Integer>> experience) {
+    public Gradient[] computeGradients(IActorCritic current, List<StateActionReward<Integer>> experience) {
         int size = experience.size();
 
         int[] nshape = recurrent ? Learning.makeShape(1, shape, size)
@@ -60,23 +62,23 @@ public class AdvantageActorCriticUpdateAlgorithm implements UpdateAlgorithm<IAct
         INDArray logSoftmax = recurrent ? Nd4j.zeros(1, actionSpaceSize, size)
                 : Nd4j.zeros(size, actionSpaceSize);
 
-        StateActionPair<Integer> stateActionPair = experience.get(size - 1);
+        StateActionReward<Integer> stateActionReward = experience.get(size - 1);
         double value;
-        if (stateActionPair.isTerminal()) {
+        if (stateActionReward.isTerminal()) {
             value = 0;
         } else {
-            INDArray[] output = current.outputAll(stateActionPair.getObservation().getData());
+            INDArray[] output = current.outputAll(stateActionReward.getObservation().getChannelData(0));
             value = output[0].getDouble(0);
         }
 
         for (int i = size - 1; i >= 0; --i) {
-            stateActionPair = experience.get(i);
+            stateActionReward = experience.get(i);
 
-            INDArray observationData = stateActionPair.getObservation().getData();
+            INDArray observationData = stateActionReward.getObservation().getChannelData(0);
 
             INDArray[] output = current.outputAll(observationData);
 
-            value = stateActionPair.getReward() + gamma * value;
+            value = stateActionReward.getReward() + gamma * value;
             if (recurrent) {
                 input.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(i)).assign(observationData);
             } else {
@@ -90,9 +92,9 @@ public class AdvantageActorCriticUpdateAlgorithm implements UpdateAlgorithm<IAct
             double expectedV = output[0].getDouble(0);
             double advantage = value - expectedV;
             if (recurrent) {
-                logSoftmax.putScalar(0, stateActionPair.getAction(), i, advantage);
+                logSoftmax.putScalar(0, stateActionReward.getAction(), i, advantage);
             } else {
-                logSoftmax.putScalar(i, stateActionPair.getAction(), advantage);
+                logSoftmax.putScalar(i, stateActionReward.getAction(), advantage);
             }
         }
 

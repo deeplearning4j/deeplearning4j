@@ -105,7 +105,7 @@ CONFIGURABLE_OP_IMPL(alpha_dropout_bp, 2, 1, false, 4, 1) {
     int seed = INT_ARG(0);
     
     double probValue   = T_ARG(0);
-    double alphaValue  = T_ARG(0);
+    double alphaValue  = T_ARG(1);
     double alpha1Value = T_ARG(2);
     double betaValue   = T_ARG(3);
 

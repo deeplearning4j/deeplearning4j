@@ -1,20 +1,23 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j.rl4j.observation.transform;
 
+import lombok.Getter;
 import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.rl4j.helper.INDArrayHelper;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -47,6 +50,7 @@ import java.util.Map;
 public class TransformProcess {
 
     private final List<Map.Entry<String, Object>> operations;
+    @Getter
     private final String[] channelNames;
     private final HashSet<String> operationsChannelNames;
 
@@ -146,8 +150,11 @@ public class TransformProcess {
             channelsData.replace(channelName, INDArrayHelper.forceCorrectShape(finalChannelData));
         }
 
-        // TODO: Add support to multi-channel observations
-        INDArray data = ((INDArray) channelsData.get(channelNames[0]));
+        INDArray[] data = new INDArray[channelNames.length];
+        for(int i = 0; i < channelNames.length; ++i) {
+            data[i] = ((INDArray) channelsData.get(channelNames[i]));
+        }
+
         return new Observation(data);
     }
 
@@ -218,11 +225,6 @@ public class TransformProcess {
             for(String channelName : channelNames) {
                 Preconditions.checkNotNull(channelName, "Error: got a null channel name");
                 requiredChannelNames.add(channelName);
-            }
-
-            // TODO: Remove when multi-channel observation is supported
-            if(channelNames.length != 1) {
-                throw new NotImplementedException("Multi-channel observations is not presently supported.");
             }
 
             return new TransformProcess(this, channelNames);

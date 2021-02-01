@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
@@ -172,15 +174,15 @@ public class Dilation2D extends DynamicCustomOp {
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
 
 
-        tfMappings.put("r0", new IntArrayIntIndexAdpater(0));
-        tfMappings.put("r1", new IntArrayIntIndexAdpater(1));
-        tfMappings.put("r2", new IntArrayIntIndexAdpater(2));
-        tfMappings.put("r3", new IntArrayIntIndexAdpater(3));
+        tfMappings.put("r0", new IntArrayIntIndexAdapter(0));
+        tfMappings.put("r1", new IntArrayIntIndexAdapter(1));
+        tfMappings.put("r2", new IntArrayIntIndexAdapter(2));
+        tfMappings.put("r3", new IntArrayIntIndexAdapter(3));
 
-        tfMappings.put("s0", new IntArrayIntIndexAdpater(0));
-        tfMappings.put("s1", new IntArrayIntIndexAdpater(1));
-        tfMappings.put("s2", new IntArrayIntIndexAdpater(2));
-        tfMappings.put("s3", new IntArrayIntIndexAdpater(3));
+        tfMappings.put("s0", new IntArrayIntIndexAdapter(0));
+        tfMappings.put("s1", new IntArrayIntIndexAdapter(1));
+        tfMappings.put("s2", new IntArrayIntIndexAdapter(2));
+        tfMappings.put("s3", new IntArrayIntIndexAdapter(3));
 
         tfMappings.put("isSameMode",new StringEqualsAdapter("SAME"));
 

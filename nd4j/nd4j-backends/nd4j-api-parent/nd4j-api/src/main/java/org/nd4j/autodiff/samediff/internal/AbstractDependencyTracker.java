@@ -1,3 +1,21 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.nd4j.autodiff.samediff.internal;
 
 import lombok.Getter;
@@ -36,11 +54,15 @@ public abstract class AbstractDependencyTracker<T, D> {
     private final Map<T, Set<D>> dependencies;                              //Key: the dependent. Value: all things that the key depends on
     @Getter
     private final Map<T, Set<Pair<D, D>>> orDependencies;                    //Key: the dependent. Value: the set of OR dependencies
+    @Getter
     private final Map<D, Set<T>> reverseDependencies = new HashMap<>();     //Key: the dependee. Value: The set of all dependents that depend on this value
+    @Getter
     private final Map<D, Set<T>> reverseOrDependencies = new HashMap<>();
+    @Getter
     private final Set<D> satisfiedDependencies = new HashSet<>();           //Mark the dependency as satisfied. If not in set: assumed to not be satisfied
-
+    @Getter
     private final Set<T> allSatisfied;                                      //Set of all dependent values (Ys) that have all dependencies satisfied
+    @Getter
     private final Queue<T> allSatisfiedQueue = new LinkedList<>();          //Queue for *new* "all satisfied" values. Values are removed using the "new all satisfied" methods
 
 

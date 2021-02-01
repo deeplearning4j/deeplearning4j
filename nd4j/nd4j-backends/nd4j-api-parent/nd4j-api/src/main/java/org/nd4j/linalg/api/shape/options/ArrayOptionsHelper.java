@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.shape.options;
 
@@ -41,15 +43,21 @@ public class ArrayOptionsHelper {
     public static final long DTYPE_UTF8_BIT = 1048576;
     public static final long DTYPE_UNSIGNED_BIT = 8388608;
 
+    public static final long HAS_PADDED_BUFFER = (1<<25);
+
     public static boolean hasBitSet(long[] shapeInfo, long bit) {
         val opt = Shape.options(shapeInfo);
 
         return hasBitSet(opt, bit);
     }
 
+    public static long setOptionBit(long extras, long bit) {
+        return extras | bit;
+    }
+
     public static void setOptionBit(long[] storage, ArrayType type) {
         int length = Shape.shapeInfoLength(storage);
-        storage[length - 3] = setOptionBit(storage[length-3], type);
+        storage[length - 3] = setOptionBit(storage[length - 3], type);
     }
 
     public static boolean hasBitSet(long storage, long bit) {

@@ -27,7 +27,7 @@ import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.Resource;
 import org.nd4j.nativeblas.CudaEnvironment;
 import org.nd4j.nativeblas.Nd4jCuda;
-
+import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -94,6 +94,11 @@ public class JCublasBackend extends Nd4jBackend {
     }
 
     @Override
+    public String buildInfo() {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().buildInfo();
+    }
+
+    @Override
     public void logBackendInit() {
         String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
         boolean logInit = Boolean.parseBoolean(logInitProperty);
@@ -118,6 +123,7 @@ public class JCublasBackend extends Nd4jBackend {
                     long totalMem = ((Number) dev.get(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY)).longValue();
                     log.info("CUDA device {}: [{}]; cc: [{}.{}]; Total memory: [{}]", i, name, major, minor, totalMem);
                 }
+                log.info("Backend build information:\n {}", buildInfo()); 
             } catch (Throwable t) {
                 log.debug("Error logging CUDA backend versions and devices", t);
             }

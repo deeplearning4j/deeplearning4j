@@ -87,7 +87,8 @@
 
 #define FLOAT_NATIVE \
         (sd::DataType::FLOAT32, float), \
-        (sd::DataType::DOUBLE, double)
+        (sd::DataType::DOUBLE, double), \
+        (sd::DataType::HALF, float16)
 
 #define FLOAT_TYPES_0 \
         (sd::DataType::HALF, float16)

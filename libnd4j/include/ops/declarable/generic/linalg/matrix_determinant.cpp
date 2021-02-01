@@ -77,7 +77,7 @@ namespace sd {
             auto output = OUTPUT_VARIABLE(0);
 
             REQUIRE_TRUE(input->rankOf() >=2, 0, "log_matrix_determinant: The rank of input array should not less than 2, but %i is given", input->rankOf());
-            REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "log_matrix_determinant: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
+            REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "log_matrix_determinant: The last two dimensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
 
             return helpers::logAbsDeterminant(block.launchContext(), input, output);
         }

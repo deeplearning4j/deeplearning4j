@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.custom;
 
@@ -865,7 +867,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, out);
     }
 
-    @Ignore("AS 11/13/2019 https://github.com/eclipse/deeplearning4j/issues/8374")
     @Test
     public void testAdjustContrastShape(){
         DynamicCustomOp op = DynamicCustomOp.builder("adjust_contrast_v2")
@@ -877,7 +878,6 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
 
-    @Ignore("AS 11/13/2019 https://github.com/eclipse/deeplearning4j/issues/8374")
     @Test
     public void testBitCastShape(){
         INDArray out = Nd4j.createUninitialized(1,10);
@@ -919,7 +919,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, out);
     }
 
-    @Ignore("AS 11/13/2019 https://github.com/eclipse/deeplearning4j/issues/8374")
     @Test
     public void testDrawBoundingBoxesShape() {
         INDArray images = Nd4j.createFromArray(new float[]{0.7788f, 0.8012f, 0.7244f,  0.2309f, 0.7271f,
@@ -945,7 +944,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, output);
     }
 
-    @Ignore(" 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8402")
     @Test
     public void testFakeQuantAgainstTF_1() {
         INDArray x = Nd4j.createFromArray(new float[]{ 0.7788f,    0.8012f,    0.7244f,    0.2309f,    0.7271f,
@@ -974,7 +972,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertArrayEquals(new long[]{4,1} , out.shape());
     }
 
-    @Ignore("2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8403")
     @Test
     public void testResizeBilinear1() {
 

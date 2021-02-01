@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
@@ -22,6 +24,8 @@ import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InputType.InputTypeConvolutional;
+import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -87,6 +91,10 @@ public class KerasFlatten extends KerasLayer {
         if (inputType.length > 1)
             throw new InvalidKerasConfigurationException(
                     "Keras Flatten layer accepts only one input (received " + inputType.length + ")");
+        /**
+         * TODO: On layer name dropout_2 as input the flatten layer seems to be outputting 20 instead of 80.
+         * Likely due to needing to multiply the final outputs totaled to 80, but only getting to 20.
+         */
         InputPreProcessor preprocessor = null;
         if (inputType[0] instanceof InputTypeConvolutional) {
             InputTypeConvolutional it = (InputTypeConvolutional) inputType[0];
@@ -111,6 +119,21 @@ public class KerasFlatten extends KerasLayer {
             InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
             val inputShape = new long[]{it.getSize()};
             preprocessor = new ReshapePreprocessor(inputShape, inputShape, false, null);
+        } else if(inputType[0] instanceof InputType.InputTypeConvolutional3D) {
+            InputType.InputTypeConvolutional3D it = (InputType.InputTypeConvolutional3D) inputType[0];
+            switch (this.getDimOrder()) {
+                case NONE:
+                case THEANO:
+                    preprocessor = new Cnn3DToFeedForwardPreProcessor(it.getDepth(),it.getHeight(),it.getWidth(),
+                            it.getChannels(),it.getDataFormat() == Convolution3D.DataFormat.NCDHW);
+                    break;
+                case TENSORFLOW:
+                    preprocessor = new Cnn3DToFeedForwardPreProcessor(it.getDepth(),it.getHeight(),it.getWidth(),
+                            it.getChannels(),it.getDataFormat() != Convolution3D.DataFormat.NCDHW);
+                    break;
+                default:
+                    throw new InvalidKerasConfigurationException("Unknown Keras backend " + this.getDimOrder());
+            }
         }
         return preprocessor;
     }

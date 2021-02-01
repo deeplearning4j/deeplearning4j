@@ -987,6 +987,7 @@ std::vector<Nd4jLong> ShapeUtils::evalDimsWithoutUnities(const Nd4jLong* shapeIn
 void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const Nd4jLong* source, const char order) {
 
     shape::updateStrides(dest, order);
+    dest[2 * dest[0] +1] = 0; //zero extra
     ArrayOptions::copyDataType(dest, source);
 }
 

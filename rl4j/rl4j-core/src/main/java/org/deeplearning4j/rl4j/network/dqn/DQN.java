@@ -1,27 +1,31 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.rl4j.network.dqn;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.network.CommonGradientNames;
@@ -79,11 +83,18 @@ public class DQN implements IDQN<DQN> {
         result.put(CommonOutputNames.QValues, mln.output(batch));
 
         return result;
+    }
 
+    @Override
+    public NeuralNetOutput output(Features features) {
+        NeuralNetOutput result = new NeuralNetOutput();
+        result.put(CommonOutputNames.QValues, mln.output(features.get(0)));
+
+        return result;
     }
 
     public NeuralNetOutput output(Observation observation) {
-        return output(observation.getData());
+        return output(observation.getChannelData(0));
     }
 
     @Deprecated
@@ -93,7 +104,7 @@ public class DQN implements IDQN<DQN> {
 
     @Override
     public void fit(FeaturesLabels featuresLabels) {
-        fit(featuresLabels.getFeatures(), featuresLabels.getLabels(CommonLabelNames.QValues));
+        fit(featuresLabels.getFeatures().get(0), featuresLabels.getLabels(CommonLabelNames.QValues));
     }
 
     @Override
@@ -129,7 +140,7 @@ public class DQN implements IDQN<DQN> {
 
     @Override
     public Gradients computeGradients(FeaturesLabels featuresLabels) {
-        mln.setInput(featuresLabels.getFeatures());
+        mln.setInput(featuresLabels.getFeatures().get(0));
         mln.setLabels(featuresLabels.getLabels(CommonLabelNames.QValues));
         mln.computeGradientAndScore();
         Collection<TrainingListener> iterationListeners = mln.getListeners();

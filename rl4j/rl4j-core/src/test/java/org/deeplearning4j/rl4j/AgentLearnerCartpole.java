@@ -1,3 +1,21 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.deeplearning4j.rl4j;
 
 import org.apache.commons.lang3.builder.Builder;
@@ -69,8 +87,8 @@ public class AgentLearnerCartpole {
         };
 
         //Builder<IAgentLearner<Integer>> builder = setupDoubleDQN(environmentBuilder, transformProcessBuilder, listeners, rnd);
-        //Builder<IAgentLearner<Integer>> builder = setupNStepQLearning(environmentBuilder, transformProcessBuilder, listeners, rnd);
-        Builder<IAgentLearner<Integer>> builder = setupAdvantageActorCritic(environmentBuilder, transformProcessBuilder, listeners, rnd);
+        Builder<IAgentLearner<Integer>> builder = setupNStepQLearning(environmentBuilder, transformProcessBuilder, listeners, rnd);
+        //Builder<IAgentLearner<Integer>> builder = setupAdvantageActorCritic(environmentBuilder, transformProcessBuilder, listeners, rnd);
 
         ITrainer trainer;
         if(IS_ASYNC) {
@@ -90,8 +108,7 @@ public class AgentLearnerCartpole {
         trainer.train();
         long after = System.nanoTime();
 
-
-        System.out.println(String.format("Total time for %d episodes: %fs", NUM_EPISODES, (after - before) / 1e6));
+        System.out.println(String.format("Total time for %d episodes: %fms", NUM_EPISODES, (after - before) / 1e6));
     }
 
     private static Builder<IAgentLearner<Integer>> setupDoubleDQN(Builder<Environment<Integer>> environmentBuilder,
@@ -184,7 +201,7 @@ public class AgentLearnerCartpole {
                 .build();
         DQNFactory factory = new DQNFactoryStdDense(netConf);
         IDQN dqnNetwork = factory.buildDQN(new int[] { 4 }, 2);
-        return new QNetwork((MultiLayerNetwork)dqnNetwork.getNeuralNetworks()[0]);
+        return QNetwork.builder().withNetwork((MultiLayerNetwork)dqnNetwork.getNeuralNetworks()[0]).build();
     }
 
     private static ITrainableNeuralNet buildActorCriticNetwork() {
@@ -197,12 +214,16 @@ public class AgentLearnerCartpole {
         if(USE_SEPARATE_NETWORKS) {
             ActorCriticFactorySeparateStdDense factory = new ActorCriticFactorySeparateStdDense(netConf);
             ActorCriticSeparate network =  factory.buildActorCritic(new int[] { 4 }, 2);
-            return new ActorCriticNetwork((MultiLayerNetwork)network.getNeuralNetworks()[0], (MultiLayerNetwork)network.getNeuralNetworks()[1]);
+            return ActorCriticNetwork.builder()
+                    .withSeparateNetworks((MultiLayerNetwork)network.getNeuralNetworks()[0], (MultiLayerNetwork)network.getNeuralNetworks()[1])
+                    .build();
         }
 
         ActorCriticFactoryCompGraphStdDense factory = new ActorCriticFactoryCompGraphStdDense(netConf);
         ActorCriticCompGraph network = factory.buildActorCritic(new int[] { 4 }, 2);
-        return new ActorCriticNetwork((ComputationGraph) network.getNeuralNetworks()[0]);
+        return ActorCriticNetwork.builder()
+                    .withCombinedNetwork((ComputationGraph) network.getNeuralNetworks()[0])
+                    .build();
     }
 
     private static class EpisodeScorePrinter implements AgentListener<Integer> {

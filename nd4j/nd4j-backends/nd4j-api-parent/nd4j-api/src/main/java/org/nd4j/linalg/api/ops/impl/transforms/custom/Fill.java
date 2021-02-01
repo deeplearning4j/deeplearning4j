@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
@@ -46,24 +48,23 @@ import java.util.Map;
 public class Fill extends DynamicCustomOp {
 
     private double value;
-    private DataType outputDataType;
+    private DataType dtype;
 
     public Fill() {
     }
 
 
-    public Fill(SameDiff sameDiff, SDVariable shape, DataType outputDataType, double value) {
+    public Fill(SameDiff sameDiff, SDVariable shape, DataType dtype, double value) {
         super(null,sameDiff, new SDVariable[] {shape}, false);
         this.value = value;
-        this.outputDataType = outputDataType;
-        this.outputDataType = outputDataType;
+        this.dtype = dtype;
         addArgs();
     }
 
-    public Fill(INDArray shape, DataType outputDataType, double value) {
-        super(new INDArray[]{shape, Nd4j.scalar(outputDataType, value)}, null);
+    public Fill(INDArray shape, DataType dtype, double value) {
+        super(new INDArray[]{shape, Nd4j.scalar(dtype, value)}, null);
         this.value = value;
-        this.outputDataType = outputDataType;
+        this.dtype = dtype;
     }
 
     public Fill(INDArray shape, INDArray result, double value) {
@@ -83,7 +84,7 @@ public class Fill extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         org.tensorflow.framework.DataType dt = attributesForNode.get("T").getType();
-        this.outputDataType = DataTypeAdapter.dtypeConv(dt);
+        this.dtype = DataTypeAdapter.dtypeConv(dt);
     }
 
     @Override
@@ -139,7 +140,7 @@ public class Fill extends DynamicCustomOp {
         //1 or 2 possible: 2 for TF import (fill with specified value
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
                 "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);
-        Preconditions.checkNotNull(outputDataType, "Output datatype was null (not set)");
-        return Collections.singletonList(outputDataType);
+        Preconditions.checkNotNull(dtype, "Output datatype was null (not set)");
+        return Collections.singletonList(dtype);
     }
 }

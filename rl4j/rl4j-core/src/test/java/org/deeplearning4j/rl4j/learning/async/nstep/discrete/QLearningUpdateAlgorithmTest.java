@@ -1,22 +1,24 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.rl4j.learning.async.nstep.discrete;
 
-import org.deeplearning4j.rl4j.experience.StateActionPair;
+import org.deeplearning4j.rl4j.experience.StateActionReward;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.UpdateAlgorithm;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
@@ -61,9 +63,9 @@ public class QLearningUpdateAlgorithmTest {
         setup(1.0);
 
         final Observation observation = new Observation(Nd4j.zeros(1, 2));
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(observation, 0, 0.0, true));
+                add(new StateActionReward<Integer>(observation, 0, 0.0, true));
             }
         };
 
@@ -80,9 +82,9 @@ public class QLearningUpdateAlgorithmTest {
         setup(1.0);
 
         final Observation observation = new Observation(Nd4j.create(new double[] { -123.0, -234.0 }).reshape(1, 2));
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(observation, 0, 0.0, false));
+                add(new StateActionReward<Integer>(observation, 0, 0.0, false));
             }
         };
 
@@ -106,10 +108,10 @@ public class QLearningUpdateAlgorithmTest {
         double gamma = 0.9;
         setup(gamma);
 
-        List<StateActionPair<Integer>> experience = new ArrayList<StateActionPair<Integer>>() {
+        List<StateActionReward<Integer>> experience = new ArrayList<StateActionReward<Integer>>() {
             {
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { -1.1, -1.2 }).reshape(1, 2)), 0, 1.0, false));
-                add(new StateActionPair<Integer>(new Observation(Nd4j.create(new double[] { -2.1, -2.2 }).reshape(1, 2)), 1, 2.0, true));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { -1.1, -1.2 }).reshape(1, 2)), 0, 1.0, false));
+                add(new StateActionReward<Integer>(new Observation(Nd4j.create(new double[] { -2.1, -2.2 }).reshape(1, 2)), 1, 2.0, true));
             }
         };
 

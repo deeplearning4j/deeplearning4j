@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
@@ -144,10 +146,11 @@ public class Concat extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         DataType first = dataTypes.get(0);
 
-        for( int i=1; i<dataTypes.size() - (isDynamicAxis ? 1 : 0); i++ ){
+        for( int i = 1; i < dataTypes.size() - (isDynamicAxis ? 1 : 0); i++) {
             DataType dt = dataTypes.get(i);
             Preconditions.checkState(first == dt, "All inputs must have same datatype - got %s and %s for inputs 0 and %s respectively", first, dt, i);
         }
+
         if(isDynamicAxis) {
             Preconditions.checkState(dataTypes.get(dataTypes.size() - 1).isIntType(),
                     "For dynamic axis case, last datatype must be an integer type, got input types %s");

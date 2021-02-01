@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j.rl4j.builder;
 
 import lombok.Data;
@@ -29,7 +31,7 @@ import org.deeplearning4j.rl4j.environment.Environment;
 import org.deeplearning4j.rl4j.environment.IActionSchema;
 import org.deeplearning4j.rl4j.experience.ExperienceHandler;
 import org.deeplearning4j.rl4j.experience.ReplayMemoryExperienceHandler;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
+import org.deeplearning4j.rl4j.experience.StateActionRewardState;
 import org.deeplearning4j.rl4j.network.ITrainableNeuralNet;
 import org.deeplearning4j.rl4j.observation.transform.TransformProcess;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
@@ -47,7 +49,7 @@ import org.nd4j.linalg.api.rng.Random;
  *
  * Used as the base of DQN builders.
  */
-public abstract class BaseDQNAgentLearnerBuilder<CONFIGURATION_TYPE extends BaseDQNAgentLearnerBuilder.Configuration> extends BaseAgentLearnerBuilder<Integer, Transition<Integer>, FeaturesLabels, CONFIGURATION_TYPE> {
+public abstract class BaseDQNAgentLearnerBuilder<CONFIGURATION_TYPE extends BaseDQNAgentLearnerBuilder.Configuration> extends BaseAgentLearnerBuilder<Integer, StateActionRewardState<Integer>, FeaturesLabels, CONFIGURATION_TYPE> {
 
     private final Random rnd;
 
@@ -71,7 +73,7 @@ public abstract class BaseDQNAgentLearnerBuilder<CONFIGURATION_TYPE extends Base
     }
 
     @Override
-    protected ExperienceHandler<Integer, Transition<Integer>> buildExperienceHandler() {
+    protected ExperienceHandler<Integer, StateActionRewardState<Integer>> buildExperienceHandler() {
         return new ReplayMemoryExperienceHandler(configuration.getExperienceHandlerConfiguration(), rnd);
     }
 

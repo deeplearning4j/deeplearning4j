@@ -312,7 +312,7 @@ def json_gzip_extract_objects(filename, property_name, next_contains_value=''):
         is_End = False
         #total = 0
         while is_End==False:
-            buffer  = f.read(8192*2)
+            buffer  = f.read(16384*2)
             
             lenx= len(buffer)
             #total +=lenx
@@ -341,7 +341,7 @@ def json_gzip_extract_objects(filename, property_name, next_contains_value=''):
                 strx = b''
                 #print('----+++')
                 
-            if(len(strx)>16384*3):
+            if(len(strx)>16384*4):
                 #buffer to big
                 #try to avoid big parents
                 if DEBUG_LOG:

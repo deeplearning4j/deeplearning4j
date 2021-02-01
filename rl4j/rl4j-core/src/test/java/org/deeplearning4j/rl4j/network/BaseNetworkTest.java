@@ -1,10 +1,30 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.deeplearning4j.rl4j.network;
 
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -12,6 +32,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -62,8 +83,9 @@ public class BaseNetworkTest {
     public void when_callingComputeGradients_expect_handlerComputeGradientsIsNotifiedAndResponseIsFilled() {
         // Arrange
         setup(false);
-        FeaturesLabels featuresLabels = new FeaturesLabels(Nd4j.create(12, 1));
-        Gradients gradientsMock = mock(Gradients.class);
+        Features featuresMock = mock(Features.class);
+        when(featuresMock.getBatchSize()).thenReturn(12L);
+        FeaturesLabels featuresLabels = new FeaturesLabels(featuresMock);
 
         // Act
         Gradients response = sut.computeGradients(featuresLabels);
@@ -72,7 +94,7 @@ public class BaseNetworkTest {
         verify(handlerMock, times(1)).performGradientsComputation(featuresLabels);
         verify(handlerMock, times(1)).notifyGradientCalculation();
         verify(handlerMock, times(1)).fillGradientsResponse(response);
-        assertEquals(response.getBatchSize(), 12);
+        assertEquals(12, response.getBatchSize());
     }
 
     @Test
@@ -96,13 +118,13 @@ public class BaseNetworkTest {
         setup(false);
         Observation observation = new Observation(Nd4j.rand(1, 2));
         INDArray[] batchOutputResult = new INDArray[] { Nd4j.rand(1, 2) };
-        when(handlerMock.batchOutput(observation.getData())).thenReturn(batchOutputResult);
+        when(handlerMock.stepOutput(observation)).thenReturn(batchOutputResult);
 
         // Act
         sut.output(observation);
 
         // Assert
-        verify(handlerMock, times(1)).batchOutput(observation.getData());
+        verify(handlerMock, times(1)).stepOutput(observation);
         verify(sut, times(1)).packageResult(batchOutputResult);
     }
 
@@ -126,15 +148,20 @@ public class BaseNetworkTest {
     public void when_callingOutput_expect_nonRecurrentOutputIsReturned() {
         // Arrange
         setup(false);
-        INDArray batch = Nd4j.rand(1, 2);
+        INDArray featuresData = Nd4j.rand(1, 2);
+        Features features = new Features(new INDArray[] { featuresData });
         INDArray[] batchOutputResult = new INDArray[] { Nd4j.rand(1, 2) };
-        when(handlerMock.batchOutput(batch)).thenReturn(batchOutputResult);
+        when(handlerMock.batchOutput(features)).thenReturn(batchOutputResult);
 
         // Act
-        sut.output(batch);
+        sut.output(features);
 
         // Assert
-        verify(handlerMock, times(1)).batchOutput(batch);
+        ArgumentCaptor<Features> captor = ArgumentCaptor.forClass(Features.class);
+        verify(handlerMock, times(1)).batchOutput(captor.capture());
+        INDArray resultData = captor.getValue().get(0);
+        assertSame(featuresData, resultData);
+
         verify(sut, times(1)).packageResult(batchOutputResult);
     }
 
@@ -180,7 +207,6 @@ public class BaseNetworkTest {
         setup(false);
         Observation observation = new Observation(Nd4j.rand(1, 2));
         INDArray[] batchOutputResult = new INDArray[] { Nd4j.rand(1, 2) };
-        when(handlerMock.batchOutput(observation.getData())).thenReturn(batchOutputResult);
 
         // Act
         sut.output(observation);
@@ -189,7 +215,7 @@ public class BaseNetworkTest {
 
         // Assert
         // Note: calling batchOutput twice means BaseNetwork.fit() has cleared the cache
-        verify(handlerMock, times(2)).batchOutput(observation.getData());
+        verify(handlerMock, times(2)).stepOutput(observation);
     }
 
     @Test
@@ -198,7 +224,6 @@ public class BaseNetworkTest {
         setup(false);
         Observation observation = new Observation(Nd4j.rand(1, 2));
         INDArray[] batchOutputResult = new INDArray[] { Nd4j.rand(1, 2) };
-        when(handlerMock.batchOutput(observation.getData())).thenReturn(batchOutputResult);
 
         // Act
         sut.output(observation);
@@ -207,7 +232,7 @@ public class BaseNetworkTest {
 
         // Assert
         // Note: calling batchOutput twice means BaseNetwork.fit() has cleared the cache
-        verify(handlerMock, times(2)).batchOutput(observation.getData());
+        verify(handlerMock, times(2)).stepOutput(observation);
     }
 
     @Test
@@ -218,8 +243,6 @@ public class BaseNetworkTest {
         when(gradientsMock.getBatchSize()).thenReturn(12L);
         Observation observation = new Observation(Nd4j.rand(1, 2));
         INDArray[] batchOutputResult = new INDArray[] { Nd4j.rand(1, 2) };
-        when(handlerMock.batchOutput(observation.getData())).thenReturn(batchOutputResult);
-
 
         // Act
         sut.output(observation);
@@ -228,7 +251,7 @@ public class BaseNetworkTest {
 
         // Assert
         // Note: calling batchOutput twice means BaseNetwork.applyGradients() has cleared the cache
-        verify(handlerMock, times(2)).batchOutput(observation.getData());
+        verify(handlerMock, times(2)).stepOutput(observation);
     }
 
     @Test
@@ -237,8 +260,6 @@ public class BaseNetworkTest {
         setup(false);
         Observation observation = new Observation(Nd4j.rand(1, 2));
         INDArray[] batchOutputResult = new INDArray[] { Nd4j.rand(1, 2) };
-        when(handlerMock.batchOutput(observation.getData())).thenReturn(batchOutputResult);
-
 
         // Act
         sut.output(observation);
@@ -247,7 +268,7 @@ public class BaseNetworkTest {
 
         // Assert
         // Note: calling batchOutput twice means BaseNetwork.reset() has cleared the cache
-        verify(handlerMock, times(2)).batchOutput(observation.getData());
+        verify(handlerMock, times(2)).stepOutput(observation);
     }
 
     @Test
@@ -256,7 +277,6 @@ public class BaseNetworkTest {
         setup(false);
         Observation observation = new Observation(Nd4j.rand(1, 2));
         INDArray[] batchOutputResult = new INDArray[] { Nd4j.rand(1, 2) };
-        when(handlerMock.batchOutput(observation.getData())).thenReturn(batchOutputResult);
 
 
         // Act
@@ -266,7 +286,7 @@ public class BaseNetworkTest {
 
         // Assert
         // Note: calling batchOutput twice means BaseNetwork.reset() has cleared the cache
-        verify(handlerMock, times(2)).batchOutput(observation.getData());
+        verify(handlerMock, times(2)).stepOutput(observation);
     }
 
 }

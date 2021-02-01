@@ -1,18 +1,20 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.samediff.internal;
 
@@ -118,7 +120,7 @@ public abstract class AbstractSession<T, O> {
     }
 
     /**
-     * Get the output of the session - i.e., perform inference/forward pass and return the autputs for the specified variables
+     * Get the output of the session - i.e., perform inference/forward pass and return the outputs for the specified variables
      *
      * @param variables           Name of the variables we want the arrays/activations for
      * @param placeholderValues   The placeholder values (if any). May be null.
@@ -163,6 +165,7 @@ public abstract class AbstractSession<T, O> {
 
         //Step 2: Check that we have required placeholders
         List<String> phNames = sameDiff.inputs();
+        log.info("Placeholder names were " + phNames);
         if (placeholderValues == null || !placeholderValues.keySet().containsAll(phNames)) {
             /* We only have a subset of all placeholders
             Validate that we have all *required* placeholder values. Some might not be needed to calculate the requested outputs
@@ -190,9 +193,15 @@ public abstract class AbstractSession<T, O> {
                 }
 
                 if (required && (placeholderValues == null || !placeholderValues.containsKey(s))) {
-                    throw new IllegalStateException(
-                            "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
-                                    " but a placeholder value was not provided");
+                    if(placeholderValues != null)
+                        throw new IllegalStateException(
+                                "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
+                                        " but a placeholder value was not provided. Placeholders specified were " + placeholderValues.keySet());
+                    else {
+                        throw new IllegalStateException(
+                                "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
+                                        " but a placeholder value was not provided. Place holder values were null! ");
+                    }
                 }
             }
         }
@@ -282,7 +291,7 @@ public abstract class AbstractSession<T, O> {
             log.trace("Beginning execution step {}: {}", step, es);
 
             FrameIter outFrameIter;
-            boolean skipDepUpdate = false;      //Only used for Switch ops, which have slighly different handling...
+            boolean skipDepUpdate = false;      //Only used for Switch ops, which have slightly different handling...
             boolean skipMarkSatisfied = false;  //Only for enter ops, because of different frame/iter
             if (es.getType() == ExecType.CONSTANT || es.getType() == ExecType.VARIABLE) {
                 VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null);
@@ -514,7 +523,7 @@ public abstract class AbstractSession<T, O> {
      * Execution failed - can't calculate all requested outputs, and there's nothing left to calculate.
      * Throws an exception with a useful message
      *
-     * @param userRequestedUnique All outputs that the user requseted
+     * @param userRequestedUnique All outputs that the user reqeseted
      * @param out                 Current outputs
      * @param step                Execution step
      */

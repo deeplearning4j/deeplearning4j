@@ -1,18 +1,20 @@
-/* *****************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.factory;
 
@@ -374,7 +376,7 @@ public class Nd4j {
         INDArray concatArray = Nd4j.valueArrayOf(paShape, val, arr.dataType());
         return appendFlag ? Nd4j.concat(axis, arr, concatArray) : Nd4j.concat(axis, concatArray, arr);
     }
-    
+
     /**
      * Expand the array dimensions.
      * This is equivalent to
@@ -562,7 +564,7 @@ public class Nd4j {
      * @return the ndarray of the specified description.
      */
     public static INDArray create(LongShapeDescriptor descriptor, boolean initialize) {
-        if(descriptor.isEmpty() && descriptor.rank() == 0){
+        if(descriptor.isEmpty() && descriptor.rank() == 0) {
             return Nd4j.empty(descriptor.dataType());
         }
         if (initialize)
@@ -873,7 +875,7 @@ public class Nd4j {
      * See {@link #matmul(INDArray, INDArray, INDArray, boolean, boolean, boolean)}
      */
     public static INDArray matmul(INDArray a, INDArray b, boolean transposeA, boolean transposeB, boolean transposeResult){
-       return matmul(a, b, null, transposeA, transposeB, transposeResult);
+        return matmul(a, b, null, transposeA, transposeB, transposeResult);
     }
 
     /**
@@ -1103,7 +1105,7 @@ public class Nd4j {
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, length);
         return ret;
     }
-    
+
     /**
      * Creates a buffer of the specified length based on the data opType
      *
@@ -2646,7 +2648,7 @@ public class Nd4j {
     public static void clearNans(INDArray arr) {
         getExecutioner().exec(new ReplaceNans(arr, Nd4j.EPS_THRESHOLD));
     }
-    
+
     /**
      * Reverses the passed in matrix such that m[0] becomes m[m.length - 1] etc
      *
@@ -2746,7 +2748,7 @@ public class Nd4j {
     public static INDArray choice(INDArray source, INDArray probs, INDArray target) {
         return choice(source, probs, target, Nd4j.getRandom());
     }
-    
+
     // @see tag works well here.
     /**
      * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs.
@@ -3737,10 +3739,10 @@ public class Nd4j {
      */
     public static INDArray empty(DataType type) {
         if(EMPTY_ARRAYS[type.ordinal()] == null){
-            try(MemoryWorkspace ignored = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+            try(MemoryWorkspace ignored = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 val ret = INSTANCE.empty(type);
                 EMPTY_ARRAYS[type.ordinal()] = ret;
-                    }
+            }
         }
         return EMPTY_ARRAYS[type.ordinal()];
     }
@@ -4094,7 +4096,7 @@ public class Nd4j {
      * @param buffer data data buffer used for initialisation.
      * @return the created ndarray.
      */
-     public static INDArray create(DataBuffer buffer) {
+    public static INDArray create(DataBuffer buffer) {
         return INSTANCE.create(buffer);
     }
 
@@ -4246,7 +4248,7 @@ public class Nd4j {
         if(shape.length == 0)
             return Nd4j.scalar(dataType(), 0.0);
 
-       return INSTANCE.create(shape, ordering);
+        return INSTANCE.create(shape, ordering);
     }
 
     // used  often.
@@ -4831,7 +4833,7 @@ public class Nd4j {
     public static INDArray stack(int axis, @NonNull INDArray... values){
         Preconditions.checkArgument(values != null && values.length > 0, "No inputs: %s", (Object[]) values);
         Preconditions.checkState(axis >= -(values[0].rank()+1) && axis < values[0].rank()+1, "Invalid axis: must be between " +
-                "%s (inclusive) and %s (exclusive) for rank %s input, got %s", -(values[0].rank()+1), values[0].rank()+1,
+                        "%s (inclusive) and %s (exclusive) for rank %s input, got %s", -(values[0].rank()+1), values[0].rank()+1,
                 values[0].rank(), axis);
 
         Stack stack = new Stack(values, null, axis);
@@ -5851,7 +5853,7 @@ public class Nd4j {
         }
 
     }
-  
+
     public static DataType defaultFloatingPointType() {
         return defaultFloatingPointDataType.get();
     }
@@ -6583,7 +6585,7 @@ public class Nd4j {
     @Deprecated
     public static void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int... axis) {
         Preconditions.checkArgument(indices.dataType() == DataType.INT || indices.dataType() == DataType.LONG,
-                                "Indices should have INT data type");
+                "Indices should have INT data type");
         Preconditions.checkArgument(array.dataType() == updates.dataType(), "Array and updates should have the same data type");
         getExecutioner().scatterUpdate(op, array, indices, updates, axis);
     }

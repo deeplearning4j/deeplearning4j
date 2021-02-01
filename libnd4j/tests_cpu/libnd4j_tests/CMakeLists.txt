@@ -53,8 +53,6 @@ if (${HELPERS_armcompute})
     set(HAVE_ARMCOMPUTE 1)
     # Add preprocessor definition for ARM Compute NEON
     add_definitions(-DARMCOMPUTENEON_ENABLED)
-    #build our library with neon support
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
     include_directories(${ARMCOMPUTE_INCLUDE})
  endif()
 

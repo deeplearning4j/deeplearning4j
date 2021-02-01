@@ -56,7 +56,7 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
     auto dataLayout = isNCHW ? arm_compute::DataLayout::NCHW : arm_compute::DataLayout::NHWC;
 
     // Calculate individual paddings
-    unsigned int pad_left, pad_top, pad_right, pad_bottom;
+    unsigned int padLeft, padTop, padRight, padBottom;
     int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, 0, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
@@ -64,16 +64,16 @@ PLATFORM_IMPL(maxpool2d, ENGINE_CPU) {
     if(paddingMode){ 
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW); 
     }
-    pad_left   = pW;
-    pad_top    = pH;
-    pad_right  = (oW - 1) * sW - iW + kW - pW ;
-    pad_bottom = (oH - 1) * sH - iH + kH - pH ; 
+    padLeft   = pW;
+    padTop    = pH;
+    padRight  = (oW - 1) * sW - iW + kW - pW ;
+    padBottom = (oH - 1) * sH - iH + kH - pH ; 
 #if 0
     nd4j_printf("avgpool kH = %d, kW = %d, sH = %d, sW = %d  , pH = %d  , pW = %d, dH = %d, dW = %d, paddingMode = %d , isNCHW %d exclude pad %d \n" , kH , kW , sH , sW  , pH 
      , pW , dH , dW , paddingMode,isNCHW?1:0 ,exclude_padding?1:0);
 #endif
 
-    auto poolPad = arm_compute::PadStrideInfo(sW, sH, pad_left,pad_right, pad_top, pad_bottom, arm_compute::DimensionRoundingType::FLOOR);
+    auto poolPad = arm_compute::PadStrideInfo(sW, sH, padLeft,padRight, padTop, padBottom, arm_compute::DimensionRoundingType::FLOOR);
     auto poolInfo = arm_compute::PoolingLayerInfo(arm_compute::PoolingType::MAX, arm_compute::Size2D(kW, kH), dataLayout, poolPad);
     ArmFunction<arm_compute::NEPoolingLayer> pool;
 
@@ -93,10 +93,10 @@ PLATFORM_CHECK(maxpool2d, ENGINE_CPU) {
     // Data types supported: QASYMM8/QASYMM8_SIGNED/F16/F32
     auto dTypeInput = getArmType(input->dataType());
     auto dTypeOutput = getArmType(output->dataType());  
-    bool is_supported = dH==1 && dW==1 && isArmcomputeFriendly(*input) && isArmcomputeFriendly(*output)
+    bool isSupported = dH==1 && dW==1 && isArmcomputeFriendly(*input) && isArmcomputeFriendly(*output)
             && (dTypeInput ==Arm_DataType::F32) 
             && (dTypeOutput ==Arm_DataType::F32); 
-    return  is_supported; 
+    return  isSupported; 
 }
 
 
