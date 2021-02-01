@@ -1,5 +1,7 @@
 Variable
-Cumsum/axis
+Variable_1
 Variable/read
-Cumsum/x
-Cumsum
+Variable_1/read
+floordiv/x
+floordiv/y
+floordiv

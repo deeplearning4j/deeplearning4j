@@ -1,3 +1,5 @@
 Variable/read,Variable/read
-Cumsum/x,Cumsum/x
-Cumsum,Cumsum
+Variable_1/read,Variable_1/read
+floordiv/x,floordiv/x
+floordiv/y,floordiv/y
+floordiv,floordiv
