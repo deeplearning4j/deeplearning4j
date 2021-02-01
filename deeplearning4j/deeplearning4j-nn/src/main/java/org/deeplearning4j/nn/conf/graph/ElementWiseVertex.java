@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -22,6 +22,7 @@ import lombok.Data;
 import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -127,6 +128,8 @@ public class ElementWiseVertex extends GraphVertex {
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
             return vertexInputs[0];
+        InputTypeUtil.convertMultipleTypes(vertexInputs);
+
         InputType first = vertexInputs[0];
         if (first.getType() != InputType.Type.CNN) {
             //FF, RNN or flat CNN data inputs

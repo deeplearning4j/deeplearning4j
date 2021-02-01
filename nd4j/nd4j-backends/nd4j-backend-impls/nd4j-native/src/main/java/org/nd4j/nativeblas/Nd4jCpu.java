@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -3312,6 +3312,9 @@ public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointe
 public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
 public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
 public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+public native OpaqueConstantShapeBuffer shapeBufferEx(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+public native OpaqueConstantShapeBuffer shapeBufferEx(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+public native OpaqueConstantShapeBuffer shapeBufferEx(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
 
 public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer data, int length);
 public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer data, int length);
@@ -4279,6 +4282,11 @@ public native @Cast("char*") String buildInfo();
         public native @Cast("Nd4jLong") long bufferOffset();
 
         /**
+         *  checks if array has padded buffer
+         */
+        public native @Cast("bool") boolean hasPaddedBuffer();
+
+        /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
         public native Pointer specialBuffer();
@@ -5174,6 +5182,9 @@ public native @Cast("char*") String buildInfo();
 
 
 //////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -26166,7 +26177,8 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
- *
+ * Copyright (c) 2019-2020 Konduit K.K.
+ * 
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -26182,7 +26194,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 //
 //  @author raver119@gmail.com
-//
+//  @author AbdelRauf 
 
 // #ifndef DEV_TESTS_SHAPEDESCRIPTOR_H
 // #define DEV_TESTS_SHAPEDESCRIPTOR_H
@@ -26191,8 +26203,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <vector>
 // #include <system/dll.h>
 // #include <system/pointercast.h>
+// #include <array/ArrayOptions.h>
 // #include <array/DataType.h>
 // #include <initializer_list>
+
+
+public static final int SHAPE_DESC_OK = 0;
+public static final int SHAPE_DESC_INCORRECT_STRIDES = 1; //strides does not match shapes
+public static final int SHAPE_DESC_INCORRECT_EWS = 2; //ews neither matches stride nor continuity
+public static final int SHAPE_DESC_INCORRECT_RANK = 4; //rank > 32 or shape size and rank does not match
 
 @Namespace("sd") @NoOffset public static class ShapeDescriptor extends Pointer {
     static { Loader.load(); }
@@ -26248,12 +26267,6 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, int rank);
         public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, int rank) { super((Pointer)null); allocate(type, order, shape, rank); }
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, int rank);
-        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, empty); }
-        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty);
-        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, empty); }
-        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty);
-        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, empty); }
-        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty);
         public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape) { super((Pointer)null); allocate(type, order, shape); }
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
         public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape) { super((Pointer)null); allocate(type, order, shape); }
@@ -26272,6 +26285,13 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("Nd4jLong*") @StdVector LongBuffer strides, @Cast("const Nd4jLong") long ews);
         public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("Nd4jLong*") @StdVector long[] strides, @Cast("const Nd4jLong") long ews) { super((Pointer)null); allocate(type, order, shape, strides, ews); }
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("Nd4jLong*") @StdVector long[] strides, @Cast("const Nd4jLong") long ews);
+        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, extras); }
+        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, extras); }
+        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, extras); }
+        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+
         public ShapeDescriptor() { super((Pointer)null); allocate(); }
         private native void allocate();
 
@@ -26283,6 +26303,12 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         public native @Cast("bool") boolean isEmpty();
         public native @Cast("Nd4jLong*") @StdVector LongPointer shape();
         public native @Cast("Nd4jLong*") @StdVector LongPointer strides();
+
+        //returns minimal allocation length
+        public native @Cast("Nd4jLong") long allocLength();
+
+        //returns Status for the correctness
+        public native @Cast("Nd4jLong") long validate();
 
         // we use default copy assignment operator
         public native @ByRef @Name("operator =") ShapeDescriptor put(@Const @ByRef ShapeDescriptor other);
@@ -26298,9 +26324,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         public native @Cast("Nd4jLong*") LongPointer toShapeInfo();
 
 
+
         public native @ByVal ShapeDescriptor emptyDescriptor(@Cast("const sd::DataType") int type);
         public native @ByVal ShapeDescriptor scalarDescriptor(@Cast("const sd::DataType") int type);
         public native @ByVal ShapeDescriptor vectorDescriptor(@Cast("const Nd4jLong") long length, @Cast("const sd::DataType") int type);
+
+        //create Descriptor with padded buffer.
+        public native @ByVal ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("Nd4jLong*") @StdVector LongPointer paddings);
+        public native @ByVal ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("Nd4jLong*") @StdVector LongBuffer paddings);
+        public native @ByVal ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("Nd4jLong*") @StdVector long[] paddings);
     }
 
 

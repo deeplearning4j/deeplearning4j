@@ -410,6 +410,11 @@ public class JCublasNDArray extends BaseNDArray {
         super(data, shape, stride, offset, ordering);
     }
 
+    public JCublasNDArray(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
+            MemoryWorkspace workspace){
+        super(dataType, shape, paddings, paddingOffsets, ordering, workspace);
+    }
+
     @Override
     public INDArray dup() {
         if (this.isCompressed() && this.ordering() == Nd4j.order().charValue()) {

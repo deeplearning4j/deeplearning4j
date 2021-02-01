@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -466,6 +466,11 @@ public class NDArray extends BaseNDArray {
 
     public NDArray(int[] shape, DataBuffer buffer) {
         super(shape, buffer);
+    }
+
+    public NDArray(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
+            MemoryWorkspace workspace){
+        super(dataType, shape, paddings, paddingOffsets, ordering, workspace);
     }
 
     private Object writeReplace() throws java.io.ObjectStreamException {

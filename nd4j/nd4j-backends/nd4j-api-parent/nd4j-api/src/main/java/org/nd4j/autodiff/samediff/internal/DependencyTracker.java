@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 /**
- * Dependenci tracker. See {@link AbstractDependencyTracker} for details
+ * Dependency tracker. See {@link AbstractDependencyTracker} for details
  *
  * @param <T> For a dependency X -> Y, Y has type T
  * @param <D> For a dependency X -> Y, X has type D

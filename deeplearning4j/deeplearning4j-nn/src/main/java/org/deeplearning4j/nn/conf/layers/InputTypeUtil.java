@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToRnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.primitives.Counter;
 
 import java.util.Arrays;
 
@@ -577,4 +578,65 @@ public class InputTypeUtil {
         }
     }
 
+    /**
+     * Convert multiple types when multiple are found.
+     * Only handles simple obvious cases, otherwise errs on throwing an exception.
+     * Useful for multiple input vertices such as {@link org.deeplearning4j.nn.conf.graph.MergeVertex}
+     *  and {@link org.deeplearning4j.nn.conf.graph.ElementWiseVertex}
+     * @param vertexInputs the input types to convert
+     */
+    public static void convertMultipleTypes(InputType[] vertexInputs) {
+        Counter<InputType.Type> counter = new Counter<>();
+        for(int i = 0; i < vertexInputs.length; i++) {
+            counter.incrementCount(vertexInputs[i].getType(),1.0);
+        }
+
+        InputType.Type maxType = counter.argMax();
+        //more than one type
+        //convert feed forward to rnn and back
+        if(counter.size() > 1) {
+            switch(maxType) {
+                case  FF:
+                    for(int i = 0; i < vertexInputs.length; i++) {
+                        if(vertexInputs[i].getType() != maxType) {
+                            switch(vertexInputs[i].getType()) {
+                                case RNN:
+                                    InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) vertexInputs[i];
+                                    if(recurrent.getTimeSeriesLength() == 1) {
+                                        vertexInputs[i] = InputType.feedForward(recurrent.getSize());
+                                    }
+                                    break;
+                                default:
+                                    throw new IllegalArgumentException("Attempted conversion of types and was unable to");
+                            }
+                        }
+                    }
+                    break;
+                case RNN:
+                    RNNFormat rnnFormat = null;
+                    for(int i = 0; i < vertexInputs.length; i++) {
+                        if(vertexInputs[i].getType() == InputType.Type.RNN) {
+                            InputType.InputTypeRecurrent firstRecurrent = (InputType.InputTypeRecurrent)  vertexInputs[i];
+                            rnnFormat = firstRecurrent.getFormat();
+                            break;
+
+                        }
+                    }
+                    for(int i = 0; i < vertexInputs.length; i++) {
+                        if(vertexInputs[i].getType() != maxType) {
+                            switch(vertexInputs[i].getType()) {
+                                case FF:
+                                    InputType.InputTypeFeedForward ff = (InputType.InputTypeFeedForward) vertexInputs[i];
+                                    vertexInputs[i] =  InputType.recurrent(ff.getSize(),rnnFormat);
+                                    break;
+                                default:
+                                    throw new IllegalArgumentException("Attempted conversion of types and was unable to");
+
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+    }
 }

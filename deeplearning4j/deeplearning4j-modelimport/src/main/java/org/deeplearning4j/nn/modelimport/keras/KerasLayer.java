@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -58,6 +59,7 @@ public class KerasLayer {
     protected int[] inputShape; // Keras layer input shape
     protected DimOrder dimOrder; // Keras layer backend dimension order
     protected List<String> inboundLayerNames; // List of inbound layers
+    protected List<String> outboundLayerNames; //List of outbound layers
     protected Layer layer; // Resulting DL4J layer
     protected GraphVertex vertex; // Resulting DL4J vertex
     protected Map<String, INDArray> weights; // Weights
@@ -66,7 +68,8 @@ public class KerasLayer {
     protected double dropout = 1.0; // Dropout
     protected Integer kerasMajorVersion = 2; // Set 2 as default for now
     protected KerasLayerConfiguration conf;
-
+    @Getter
+    protected  Map<String, Object> originalLayerConfig;
 
     /**
      * Constructor with Keras version only.
@@ -80,6 +83,7 @@ public class KerasLayer {
         this.inputShape = null;
         this.dimOrder = DimOrder.NONE;
         this.inboundLayerNames = new ArrayList<>();
+        this.outboundLayerNames = new ArrayList<>();
         this.layer = null;
         this.vertex = null;
         this.weights = null;
@@ -98,6 +102,7 @@ public class KerasLayer {
         this.inputShape = null;
         this.dimOrder = DimOrder.NONE;
         this.inboundLayerNames = new ArrayList<>();
+        this.outboundLayerNames = new ArrayList<>();
         this.layer = null;
         this.vertex = null;
         this.weights = null;
@@ -126,6 +131,7 @@ public class KerasLayer {
      */
     protected KerasLayer(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
             throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this.originalLayerConfig = layerConfig;
         this.kerasMajorVersion = (Integer) layerConfig.get(LAYER_FIELD_KERAS_VERSION);
         this.conf = KerasLayerConfigurationFactory.get(this.kerasMajorVersion);
         this.className = KerasLayerUtils.getClassNameFromConfig(layerConfig, conf);
@@ -137,6 +143,7 @@ public class KerasLayer {
         this.inputShape = KerasLayerUtils.getInputShapeFromConfig(layerConfig, conf);
         this.dimOrder = KerasLayerUtils.getDimOrderFromConfig(layerConfig, conf);
         this.inboundLayerNames = KerasLayerUtils.getInboundLayerNamesFromConfig(layerConfig, conf);
+        this.outboundLayerNames = KerasLayerUtils.getOutboundLayerNamesFromConfig(layerConfig,conf);
         this.layer = null;
         this.vertex = null;
         this.weights = null;
@@ -451,10 +458,29 @@ public class KerasLayer {
     public InputPreProcessor getInputPreprocessor(InputType... inputType) throws InvalidKerasConfigurationException {
         InputPreProcessor preprocessor = null;
         if (this.layer != null) {
-            if (inputType.length > 1)
-                throw new InvalidKerasConfigurationException(
-                        "Keras layer of type \"" + this.className + "\" accepts only one input");
-            preprocessor = this.layer.getPreProcessorForInputType(inputType[0]);
+            if (inputType.length > 1) {
+                InputType toUse = null;
+                for(int i = 0; i < inputType.length; i++) {
+                    if(inputType[i] != null) {
+                        if(toUse == null)
+                            toUse = inputType[i];
+                        else if(!toUse.equals(inputType[i])) {
+                            throw new InvalidKerasConfigurationException(
+                                    "Keras layer of type \"" + this.className + "\" accepts only one input");
+                        }
+                    }
+                }
+
+                if(toUse == null) {
+                    throw new InvalidKerasConfigurationException(
+                            "Keras layer of type \"" + this.className + " did not have any inputs!");
+                }
+
+                preprocessor = this.layer.getPreProcessorForInputType(toUse);
+
+            }
+            else
+                preprocessor = this.layer.getPreProcessorForInputType(inputType[0]);
         }
         return preprocessor;
     }

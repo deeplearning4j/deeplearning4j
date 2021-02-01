@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ /* ******************************************************************************
-  ~  * Copyright (c) 2021 Deeplearning4j Contributors
+  ~  *
   ~  *
   ~  * This program and the accompanying materials are made available under the
   ~  * terms of the Apache License, Version 2.0 which is available at
@@ -34,14 +34,6 @@
 
     <name>rl4j</name>
     <description>Deep Reinforcement Learning for the JVM</description>
-
-    <developers>
-        <developer>
-            <id>rubenfiszel</id>
-            <name>Ruben Fiszel</name>
-            <email>ruben.fiszel@epfl.ch</email>
-        </developer>
-    </developers>
 
     <modules>
         <module>rl4j-api</module>

@@ -1,6 +1,7 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
- *
+ * Copyright (c) 2019-2020 Konduit K.K.
+ * 
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
@@ -16,11 +17,12 @@
 
 //
 //  @author raver119@gmail.com
-//
+//  @author AbdelRauf 
 
 #include <array/ShapeDescriptor.h>
 #include <helpers/shape.h>
 #include <helpers/ShapeBuilders.h>
+
 
 namespace sd {
 
@@ -28,7 +30,7 @@ namespace sd {
 // equal to operator
     bool ShapeDescriptor::operator==(const ShapeDescriptor &other) const {
 
-        if (_empty != other._empty)
+        if (_extraProperties != other._extraProperties)
             return false;
         if (_rank != other._rank)
             return false;
@@ -51,13 +53,14 @@ namespace sd {
 //////////////////////////////////////////////////////////////////////////
 // less than operator
     bool ShapeDescriptor::operator<(const ShapeDescriptor &other) const {
-        return std::tie(_empty, _rank, _dataType, _ews, _order, _shape, _strides) <
-               std::tie(other._empty, other._rank, other._dataType, other._ews, other._order, other._shape,
+        return std::tie(_extraProperties, _rank, _dataType, _ews, _order, _shape, _strides) <
+               std::tie(other._extraProperties, other._rank, other._dataType, other._ews, other._order, other._shape,
                         other._strides);
     }
 
     Nd4jLong *ShapeDescriptor::toShapeInfo() const {
-        if (_empty) {
+        //for empy array use original
+        if (isEmpty()) {
             if (_rank == 0)
                 return ShapeBuilders::emptyShapeInfo(_dataType);
             else {
@@ -65,31 +68,29 @@ namespace sd {
             }
         }
 
-
+        Nd4jLong * shapeInfo;
         switch (_rank) {
             case 0: {
-                auto shapeInfo = ShapeBuilders::createScalarShapeInfo(_dataType);
+                shapeInfo = ShapeBuilders::createScalarShapeInfo(_dataType);
                 shapeInfo[2] = _ews;
-                return shapeInfo;
             }
+            break;
             case 1: {
-                auto shapeInfo = ShapeBuilders::createVectorShapeInfo(_dataType, _shape[0]);
+                shapeInfo = ShapeBuilders::createVectorShapeInfo(_dataType, _shape[0]);
                 shapeInfo[2 + _rank * 2] = _ews;
                 shapeInfo[2] = _strides[0];
                 shapeInfo[2 + _rank * 2 + 1] = _order;
-                return shapeInfo;
             }
+            break;
             default: {
-                auto shapeInfo = ShapeBuilders::createShapeInfo(_dataType, _order, _shape);
-
+                shapeInfo = ShapeBuilders::createShapeInfo(_dataType, _order, _shape);
                 for (int e = 0; e < _rank; e++)
                     shapeInfo[e + 1 + _rank] = _strides[e];
-
                 shapeInfo[2 + _rank * 2] = _ews;
-
-                return shapeInfo;
             }
         }
+        ArrayOptions::setPropertyBit(shapeInfo, _extraProperties);
+        return shapeInfo;
     }
 
     ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape, const int rank)
@@ -105,24 +106,23 @@ namespace sd {
         else
             shape::calcStridesFortran(_shape.data(), _shape.size(), _strides.data());
 
-
         for (auto v:_shape) {
             if (v == 0) {
-                _empty = true;
+                _extraProperties = ARRAY_EMPTY;
                 break;
             }
         }
     }
 
     ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const Nd4jLong *shape,
-                                     const Nd4jLong *strides, const int rank, Nd4jLong ews, const bool empty) {
+                                     const Nd4jLong *strides, const int rank, Nd4jLong ews, Nd4jLong extras) {
         _shape.resize(rank);
         _strides.resize(rank);
 
         _dataType = type;
         _order = order;
         _rank = rank;
-        _empty = empty;
+        _extraProperties = extras;
         _ews = ews;
 
         for (int e = 0; e < rank; e++)
@@ -134,7 +134,7 @@ namespace sd {
 
         for (auto v:_shape) {
             if (v == 0) {
-                _empty = true;
+                _extraProperties |= ARRAY_EMPTY;
                 break;
             }
         }
@@ -151,13 +151,12 @@ namespace sd {
 
             for (auto v:_shape) {
                 if (v == 0) {
-                    _empty = true;
+                    _extraProperties |= ARRAY_EMPTY;
                     break;
                 }
             }
-
             // no point calculating strides for empty arrays
-            if (!_empty) {
+            if (!isEmpty()) {
                 if (order == 'c')
                     shape::calcStrides(_shape.data(), shape.size(), _strides.data());
                 else
@@ -184,7 +183,7 @@ namespace sd {
 
         for (auto v:_shape) {
             if (v == 0) {
-                _empty = true;
+                _extraProperties |= ARRAY_EMPTY;
                 break;
             }
         }
@@ -201,7 +200,7 @@ namespace sd {
 
     ShapeDescriptor::ShapeDescriptor(const DataType type, const Nd4jLong length) : _dataType(type), _ews(1),
                                                                                    _order('c'), _rank(1),
-                                                                                   _empty(false) {
+                                                                                   _extraProperties(0) {
         _shape = {length};
         _strides = {1};
     }
@@ -211,15 +210,14 @@ namespace sd {
         _ews = shape::elementWiseStride(shapeInfo);
         _rank = shape::rank(shapeInfo);
 
+        _extraProperties = ArrayOptions::propertyWithoutDataType(shapeInfo);
         if (inheritDtype)
             _dataType = ArrayOptions::dataType(shapeInfo);
-
-        _empty = shape::isEmpty(shapeInfo);
 
         for (int e = 0; e < _rank; e++) {
             _shape.emplace_back(shapeInfo[e + 1]);
             if (shapeInfo[e + 1] == 0)
-                _empty = true;
+                _extraProperties |= ARRAY_EMPTY;
         }
 
         for (int e = 0; e < _rank; e++)
@@ -252,11 +250,62 @@ namespace sd {
     }
 
     Nd4jLong ShapeDescriptor::arrLength() const {
-
+        //when _ews == 1 allocation length is also array length
         Nd4jLong len = 1;
-        for (const auto &dim : const_cast<ShapeDescriptor *>(this)->shape())
+        for (const auto& dim : _shape)
             len *= dim;
         return len;
+    }
+
+    Nd4jLong ShapeDescriptor::allocLength() const {
+        if (_paddedAllocSize > 0) return _paddedAllocSize;
+        Nd4jLong len = 1;
+        if (_ews == 1 && _rank>1) {
+            //calculate using max stride
+            int ind = _order == 'c' ? 0:  _rank - 1;
+            return _shape[ind] * _strides[ind];
+        }
+        for (int i = 0; i < _rank; i++) {
+            len += (_shape[i] - 1) * _strides[i];
+        }
+        return len;
+    }
+
+    Nd4jLong ShapeDescriptor::validate() const {
+        auto status = SHAPE_DESC_OK;
+        bool is_continous = true;
+        if (_rank != _shape.size() || _rank > MAX_RANK) status |= SHAPE_DESC_INCORRECT_RANK;
+        bool ranks_match = (_strides.size() == _shape.size());
+        if (!ranks_match) status = status | SHAPE_DESC_INCORRECT_STRIDES;
+        if (_rank > 0 && ranks_match) {
+            if (_order == 'c') {
+                for (int j = _rank - 2; j >= 0; j--) {
+                    Nd4jLong currentStride = _strides[j];
+                    Nd4jLong allowedStride = _strides[j + 1] * _shape[j + 1];
+                    if (currentStride < allowedStride) {
+                        status = status | SHAPE_DESC_INCORRECT_STRIDES;
+                        break;
+                    }
+                    is_continous = is_continous & (currentStride == allowedStride);
+                }
+            }
+            else {
+                for (int j = 1; j < _rank; j++) {
+                    Nd4jLong currentStride = _strides[j];
+                    Nd4jLong allowedStride = _strides[j - 1] * _shape[j - 1];
+                    if (currentStride < allowedStride) {
+                        status = status | SHAPE_DESC_INCORRECT_STRIDES;
+                        break;
+                    }
+                    is_continous = is_continous & (currentStride == allowedStride);
+                }
+            }
+
+            int index = (_order == 'c') ? _rank - 1 : 0;
+            auto correctEws = is_continous ? _strides[index] : 0;
+            if (correctEws != _ews) status = status | SHAPE_DESC_INCORRECT_EWS;
+        }
+        return status;
     }
 
     char ShapeDescriptor::order() const {
@@ -268,7 +317,7 @@ namespace sd {
     }
 
     bool ShapeDescriptor::isEmpty() const {
-        return _empty;
+        return _extraProperties & ARRAY_EMPTY;
     }
 
     std::vector<Nd4jLong> &ShapeDescriptor::shape() {
@@ -282,18 +331,19 @@ namespace sd {
     ShapeDescriptor::ShapeDescriptor(const ShapeDescriptor &other) {
         _rank = other._rank;
         _ews = other._ews;
-        _empty = other._empty;
+        _extraProperties = other._extraProperties;
         _dataType = other._dataType;
         _order = other._order;
         _shape = other._shape;
         _strides = other._strides;
+        _paddedAllocSize = other._paddedAllocSize;
     }
 
 //////////////////////////////////////////////////////////////////////////
     ShapeDescriptor::ShapeDescriptor(const DataType type, const char order, const std::vector<Nd4jLong> &shape,
                                      const std::vector<Nd4jLong> &strides) : _dataType(type), _order(order),
                                                                              _shape(shape) {
-
+        _rank = shape.size();
         if (strides.empty() && !shape.empty()) {
             _strides.resize(shape.size());
             if (order == 'c')
@@ -307,7 +357,7 @@ namespace sd {
 
         for (auto v:_shape) {
             if (v == 0) {
-                _empty = true;
+                _extraProperties |= ARRAY_EMPTY;
                 break;
             }
         }
@@ -316,7 +366,7 @@ namespace sd {
     ShapeDescriptor ShapeDescriptor::emptyDescriptor(const DataType type) {
         ShapeDescriptor descriptor;
         descriptor._dataType = type;
-        descriptor._empty = true;
+        descriptor._extraProperties = ARRAY_EMPTY;
         descriptor._rank = 0;
         descriptor._order = 'c';
         descriptor._ews = 1;
@@ -327,7 +377,7 @@ namespace sd {
     ShapeDescriptor ShapeDescriptor::scalarDescriptor(const DataType type) {
         ShapeDescriptor descriptor;
         descriptor._dataType = type;
-        descriptor._empty = false;
+        descriptor._extraProperties = 0;
         descriptor._rank = 0;
         descriptor._order = 'c';
         descriptor._ews = 1;
@@ -344,7 +394,7 @@ namespace sd {
             descriptor._strides.emplace_back(1);
         else {
             descriptor._strides.emplace_back(0);
-            descriptor._empty = true;
+            descriptor._extraProperties = ARRAY_EMPTY;
         }
 
         descriptor._order = 'c';
@@ -353,6 +403,58 @@ namespace sd {
 
         return descriptor;
     }
+
+    ShapeDescriptor ShapeDescriptor::paddedBufferDescriptor(const DataType type, const char order, const std::vector<Nd4jLong>& shape, const std::vector<Nd4jLong>& paddings) {
+        ShapeDescriptor descriptor;
+        descriptor._dataType = type;
+        descriptor._order = order;
+        descriptor._shape = shape;
+        descriptor._rank = shape.size();
+        descriptor._strides.resize(shape.size());
+        descriptor._extraProperties = 0;
+        if (descriptor._rank < 1) {
+            descriptor._ews = 1;
+            return descriptor;
+        }
+        //calculate strides with paddings
+        int min_rank = descriptor._rank > paddings.size() ? paddings.size() : descriptor._rank;
+        bool is_continous = true;
+        if (order == 'c') {
+            
+            descriptor._strides[descriptor._rank - 1] = 1L;
+            for (int j = descriptor._rank - 2; j >= 0; j--) {
+                Nd4jLong pad = (j + 1 < min_rank) ? paddings[j + 1] : 0;
+                descriptor._strides[j] = descriptor._strides[j + 1] * (descriptor._shape[j + 1] + pad);
+                descriptor._extraProperties = descriptor._extraProperties | (descriptor._shape[j + 1] == 0);
+                if (pad != 0) is_continous = false;
+            }
+            if (!is_continous && descriptor._rank > 0) {
+                Nd4jLong size_pad =  paddings.size()>0 ? paddings[0] : 0;
+                //alloc size should be supplied manually as we dont have place to store it
+                descriptor._paddedAllocSize = descriptor._strides[0] * (descriptor._shape[0] + size_pad);
+            }
+        }
+        else {
+            descriptor._strides[0] = 1L;
+            for (int j = 1; j < descriptor._rank; j++) {
+                Nd4jLong pad = (j - 1 < min_rank) ? paddings[j - 1] : 0;
+                descriptor._strides[j] = descriptor._strides[j - 1] * (descriptor._shape[j - 1] + pad);
+                descriptor._extraProperties = descriptor._extraProperties | (descriptor._shape[j - 1] == 0);
+                if (pad != 0) is_continous = false;
+            }
+            if (!is_continous && descriptor._rank > 0) {
+                Nd4jLong size_pad =  paddings.size()>=descriptor._rank  ? paddings[descriptor._rank-1] : 0;
+                //alloc size should be supplied manually as we dont have place to store it
+                descriptor._paddedAllocSize = descriptor._strides[descriptor._rank-1] * (descriptor._shape[descriptor._rank-1] + size_pad);
+            }
+        }
+
+        descriptor._ews = is_continous ? 1 : 0;
+        if(!is_continous)  descriptor._extraProperties |= ARRAY_HAS_PADDED_BUFFER;
+        return descriptor;
+    }
+
+
 }
 
 namespace std {

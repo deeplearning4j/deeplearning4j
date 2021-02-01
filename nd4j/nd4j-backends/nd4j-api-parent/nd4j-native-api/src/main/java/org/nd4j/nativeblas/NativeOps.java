@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -1150,6 +1150,8 @@ public interface NativeOps {
     int dataTypeFromNpyHeader(Pointer numpyHeader);
 
     OpaqueConstantShapeBuffer shapeBuffer(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, boolean empty);
+
+    OpaqueConstantShapeBuffer shapeBufferEx(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, long extras);
 
     OpaqueConstantDataBuffer constantBufferDouble(int dtype, DoublePointer data, int length);
 

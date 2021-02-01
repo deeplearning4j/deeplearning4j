@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -3278,8 +3278,9 @@ public class Shape {
         */
 
         val dtype = ArrayOptionsHelper.dataType(extras);
-        val empty = ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
-        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, empty);
+        //val empty = ArrayOptionsHelper.hasBitSet(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
+        //just propogate extra // it is the same value in the backend
+        return Nd4j.getExecutioner().createShapeInfo(shape, stride, elementWiseStride, order, dtype, extras); 
     }
 
     public static DataBuffer createSparseInformation(int[] flags, long[] sparseOffsets, int[] hiddenDimensions,

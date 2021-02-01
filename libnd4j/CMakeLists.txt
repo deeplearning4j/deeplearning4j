@@ -60,7 +60,7 @@ else()
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
 
-    if (SD_CPU)
+    if (SD_CPU AND SD_SANITIZE)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
     endif()
 endif()
@@ -131,23 +131,31 @@ if(NOT SD_CUDA)
     endif()
 endif()
 
+
 #arm-compute entry
 if(${HELPERS_armcompute})
  find_package(ARMCOMPUTE REQUIRED)
+ execute_process(COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE ld_version)
+ if ("${ld_version}" MATCHES "GNU gold")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold ")
+   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_link_options("-Wl,--long-plt")
+   endif()
+ endif()
 
  if(ARMCOMPUTE_FOUND)
     message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
     set(HAVE_ARMCOMPUTE 1)
     # Add preprocessor definition for ARM Compute NEON 
     add_definitions(-DARMCOMPUTENEON_ENABLED)
-    #build our library with neon support
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
     include_directories(${ARMCOMPUTE_INCLUDE})
     message("----${ARMCOMPUTE_INCLUDE}---")
  endif()
 
+
 endif()
- 
+
+
 
 # new mkl-dnn entry
 if (${HELPERS_mkldnn})

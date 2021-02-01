@@ -1,0 +1,238 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
+package org.deeplearning4j.nn.modelimport.keras.layers.embeddings;
+
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.RNNFormat;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
+import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
+import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
+import org.deeplearning4j.nn.params.DefaultParamInitializer;
+import org.deeplearning4j.nn.weights.IWeightInit;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUtils.getWeightInitFromConfig;
+import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
+
+/**
+ * Imports an Embedding layer from Keras.
+ *
+ * @author dave@skymind.io
+ */
+@Slf4j
+@Data
+@EqualsAndHashCode(callSuper = false)
+public class Keras2DEmbedding extends KerasLayer {
+
+    private final int NUM_TRAINABLE_PARAMS = 1;
+    private boolean zeroMasking;
+    private int inputDim;
+    private int inputLength;
+    private boolean inferInputLength;
+
+
+    /**
+     * Pass through constructor for unit tests
+     *
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public Keras2DEmbedding() throws UnsupportedKerasConfigurationException {
+    }
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public Keras2DEmbedding(Map<String, Object> layerConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        this(layerConfig, true);
+    }
+
+    /**
+     * Constructor from parsed Keras layer configuration dictionary.
+     *
+     * @param layerConfig           dictionary containing Keras layer configuration
+     * @param enforceTrainingConfig whether to enforce training-related configuration options
+     * @throws InvalidKerasConfigurationException     Invalid Keras config
+     * @throws UnsupportedKerasConfigurationException Unsupported Keras config
+     */
+    public Keras2DEmbedding(Map<String, Object> layerConfig, boolean enforceTrainingConfig)
+            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+        super(layerConfig, enforceTrainingConfig);
+
+        this.inputDim = getInputDimFromConfig(layerConfig);
+        this.inputLength = getInputLengthFromConfig(layerConfig);
+        this.inferInputLength = this.inputLength == 0;
+        if (this.inferInputLength)
+            this.inputLength = 1; // set dummy value, so shape inference works
+
+        this.zeroMasking = KerasLayerUtils.getZeroMaskingFromConfig(layerConfig, conf);
+        if (zeroMasking)
+            log.warn("Masking in keras and DL4J work differently. We do not completely support mask_zero flag " +
+                    "on Embedding layers. Zero Masking for the Embedding layer only works with unidirectional LSTM for now."
+                    + " If you want to have this behaviour for your imported model " +
+                    "in DL4J, apply masking as a pre-processing step to your input." +
+                    "See https://deeplearning4j.konduit.ai/models/recurrent#masking-one-to-many-many-to-one-and-sequence-classification for more on this.");
+
+        IWeightInit init = getWeightInitFromConfig(layerConfig,
+                conf.getLAYER_FIELD_EMBEDDING_INIT(),
+                enforceTrainingConfig,
+                conf, kerasMajorVersion);
+
+        LayerConstraint embeddingConstraint = KerasConstraintUtils.getConstraintsFromConfig(
+                layerConfig, conf.getLAYER_FIELD_EMBEDDINGS_CONSTRAINT(), conf, kerasMajorVersion);
+        int nOutFromConfig = getNOutFromConfig(layerConfig, conf);
+        EmbeddingLayer.Builder builder = new EmbeddingLayer.Builder()
+                .name(this.layerName)
+                .nIn(inputDim)
+                .nOut(nOutFromConfig)
+                .dropOut(this.dropout).activation(Activation.IDENTITY)
+                .weightInit(init)
+                .biasInit(0.0)
+                .l1(this.weightL1Regularization)
+                .l2(this.weightL2Regularization)
+                .hasBias(false);
+        if (embeddingConstraint != null)
+            builder.constrainWeights(embeddingConstraint);
+        this.layer = builder.build();
+
+        this.inputShape = new int[]{inputDim,1};
+    }
+
+    /**
+     * Get DL4J Embedding Sequence layer.
+     *
+     * @return Embedding Sequence layer
+     */
+    public EmbeddingLayer getEmbeddingLayer() {
+        return (EmbeddingLayer) this.layer;
+    }
+
+    /**
+     * Get layer output type.
+     *
+     * @param inputType Array of InputTypes
+     * @return output type as InputType
+     * @throws InvalidKerasConfigurationException Invalid Keras config
+     */
+    @Override
+    public InputType getOutputType(InputType... inputType) throws InvalidKerasConfigurationException {
+        /* Check whether layer requires a preprocessor for this InputType. */
+        InputPreProcessor preprocessor = getInputPreprocessor(inputType[0]);
+        if (preprocessor != null) {
+            return this.getEmbeddingLayer().getOutputType(-1, preprocessor.getOutputType(inputType[0]));
+        }
+        return this.getEmbeddingLayer().getOutputType(-1, inputType[0]);
+    }
+
+    /**
+     * Returns number of trainable parameters in layer.
+     *
+     * @return number of trainable parameters (1)
+     */
+    @Override
+    public int getNumParams() {
+        return NUM_TRAINABLE_PARAMS;
+    }
+
+    /**
+     * Set weights for layer.
+     *
+     * @param weights Embedding layer weights
+     */
+    @Override
+    public void setWeights(Map<String, INDArray> weights) throws InvalidKerasConfigurationException {
+        this.weights = new HashMap<>();
+        // TODO: "embeddings" is incorrectly read as "s" for some applications
+        if (weights.containsKey("s")) {
+            INDArray kernel = weights.get("s");
+            weights.remove("s");
+            weights.put(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS(), kernel);
+        }
+
+        if (!weights.containsKey(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS()))
+            throw new InvalidKerasConfigurationException(
+                    "Parameter " + conf.getLAYER_FIELD_EMBEDDING_WEIGHTS() + " does not exist in weights");
+        INDArray kernel = weights.get(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
+        if (this.zeroMasking) {
+            kernel.putRow(0, Nd4j.zeros(kernel.columns()));
+        }
+        this.weights.put(DefaultParamInitializer.WEIGHT_KEY, kernel);
+
+        if (weights.size() > 2) {
+            Set<String> paramNames = weights.keySet();
+            paramNames.remove(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
+            String unknownParamNames = paramNames.toString();
+            log.warn("Attempting to set weights for unknown parameters: "
+                    + unknownParamNames.substring(1, unknownParamNames.length() - 1));
+        }
+    }
+
+    /**
+     * Get Keras input length from Keras layer configuration. In Keras input_length, if present, denotes
+     * the number of indices to embed per mini-batch, i.e. input will be of shape (mb, input_length)
+     * and (mb, 1) else.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return input length as int
+     */
+    private int getInputLengthFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_LENGTH()))
+            throw new InvalidKerasConfigurationException(
+                    "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_LENGTH() + " field");
+        if (innerConfig.get(conf.getLAYER_FIELD_INPUT_LENGTH()) == null) {
+            return 0;
+        } else {
+            return (int) innerConfig.get(conf.getLAYER_FIELD_INPUT_LENGTH());
+        }
+    }
+
+    /**
+     * Get Keras input dimension from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return input dim as int
+     */
+    private int getInputDimFromConfig(Map<String, Object> layerConfig) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
+        if (!innerConfig.containsKey(conf.getLAYER_FIELD_INPUT_DIM()))
+            throw new InvalidKerasConfigurationException(
+                    "Keras Embedding layer config missing " + conf.getLAYER_FIELD_INPUT_DIM() + " field");
+        return (int) innerConfig.get(conf.getLAYER_FIELD_INPUT_DIM());
+    }
+}

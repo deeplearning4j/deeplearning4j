@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -33,6 +33,7 @@ public class KerasModelConfiguration {
     private final String fieldClassName = "class_name";
     private final String fieldClassNameSequential = "Sequential";
     private final String fieldClassNameModel = "Model";
+    private final String fieldNameClassFunctional = "Functional";
     private final String fieldKerasVersion = "keras_version";
     private final String fieldBackend = "backend";
 

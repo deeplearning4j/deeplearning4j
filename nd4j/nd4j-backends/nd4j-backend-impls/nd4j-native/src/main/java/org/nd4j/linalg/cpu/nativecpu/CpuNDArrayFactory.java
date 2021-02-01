@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -1089,5 +1089,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         val buffer = new Utf8Buffer(strings);
         val list = new ArrayList<>(strings);
         return Nd4j.createArrayFromShapeBuffer(buffer, pairShape);
+    }
+
+    @Override
+    public INDArray create(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
+            MemoryWorkspace workspace) { 
+        return new NDArray(dataType, shape, paddings, paddingOffsets, ordering, workspace);
     }
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ /* ******************************************************************************
-  ~  * Copyright (c) 2021 Deeplearning4j Contributors
+  ~  *
   ~  *
   ~  * This program and the accompanying materials are made available under the
   ~  * terms of the Apache License, Version 2.0 which is available at
@@ -107,9 +107,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-python</artifactId>
-            <version>${datavec.version}</version>
+            <groupId>org.nd4j</groupId>
+            <artifactId>python4j-numpy</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

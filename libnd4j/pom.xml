@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ /* ******************************************************************************
-  ~  * Copyright (c) 2021 Deeplearning4j Contributors
+  ~  *
   ~  *
   ~  * This program and the accompanying materials are made available under the
   ~  * terms of the Apache License, Version 2.0 which is available at
@@ -37,23 +37,7 @@
     <description>The C++ engine that powers the scientific computing library ND4J - n-dimensional
         arrays for Java
     </description>
-    <url>http://nd4j.org/</url>
 
-    <developers>
-        <developer>
-            <id>agibsonccc</id>
-            <name>Adam Gibson</name>
-            <email>adam@skymind.io</email>
-        </developer>
-        <developer>
-            <id>raver119</id>
-            <name>raver119</name>
-        </developer>
-        <developer>
-            <id>saudet</id>
-            <name>Samuel Audet</name>
-        </developer>
-    </developers>
 
     <properties>
         <!-- CUDA version is linked with the artifact name so cannot move to parent pom.xml -->

@@ -18,7 +18,7 @@
 //
 // Created by raver119 on 2018-09-16.
 // @author Oleg Semeniv <oleg.semeniv@gmail.com>
-//
+// @author Abdelrauf
 
 #ifndef DEV_TESTS_NDARRAYFACTORY_H
 #define DEV_TESTS_NDARRAYFACTORY_H
@@ -32,6 +32,7 @@
 
 
 namespace sd {
+
     class ND4J_EXPORT NDArrayFactory {
     private:
         template <typename T>
@@ -57,6 +58,10 @@ namespace sd {
 
         template <typename T>
         static NDArray* linspace(T from, T to, Nd4jLong numElements);
+
+        static NDArray create(const ShapeDescriptor& shapeDescriptor, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
+
+        static NDArray create(const char order, const std::vector<Nd4jLong>& shape, sd::DataType dataType, const std::vector<Nd4jLong>& paddings, const std::vector<Nd4jLong>& paddingOffsets, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
 
 
         template <typename T>

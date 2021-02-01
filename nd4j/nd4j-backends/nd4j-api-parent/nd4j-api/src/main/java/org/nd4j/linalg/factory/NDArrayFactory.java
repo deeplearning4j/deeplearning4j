@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -1059,6 +1059,18 @@ public interface NDArrayFactory {
     INDArray create(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace);
 
     INDArray create(DataType dataType, long[] shape, long[] strides, char ordering, MemoryWorkspace workspace);
+
+   /**
+     * Create an ndArray with padded Buffer
+     * @param dataType
+     * @param shape
+     * @param paddings
+     * @param paddingOffsets
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @param workspace
+     * @return
+     */
+    INDArray create(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering, MemoryWorkspace workspace);
 
     INDArray createUninitialized(int[] shape, char ordering);
 

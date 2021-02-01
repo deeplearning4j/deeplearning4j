@@ -1,6 +1,6 @@
 /*
  *  ******************************************************************************
- *  * Copyright (c) 2021 Deeplearning4j Contributors
+ *  *
  *  *
  *  * This program and the accompanying materials are made available under the
  *  * terms of the Apache License, Version 2.0 which is available at
@@ -199,7 +199,7 @@ public class KerasEmbedding extends KerasLayer {
             Set<String> paramNames = weights.keySet();
             paramNames.remove(conf.getLAYER_FIELD_EMBEDDING_WEIGHTS());
             String unknownParamNames = paramNames.toString();
-            log.warn("Attemping to set weights for unknown parameters: "
+            log.warn("Attempting to set weights for unknown parameters: "
                     + unknownParamNames.substring(1, unknownParamNames.length() - 1));
         }
     }
