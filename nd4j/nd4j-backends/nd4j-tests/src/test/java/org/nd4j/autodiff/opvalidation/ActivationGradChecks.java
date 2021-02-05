@@ -43,7 +43,7 @@ public class ActivationGradChecks extends BaseOpValidation {
     }
 
     @Test
-    public void testActivationGradientCheck1(){
+    public void testActivationGradientCheck1() {
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("x", Nd4j.rand(DataType.DOUBLE, 3, 4));
@@ -61,7 +61,7 @@ public class ActivationGradChecks extends BaseOpValidation {
     }
 
     @Test
-    public void testActivationGradientCheck2(){
+    public void testActivationGradientCheck2() {
         Nd4j.getRandom().setSeed(12345);
         SameDiff sd = SameDiff.create();
         SDVariable x = sd.placeHolder("x", DataType.DOUBLE, 3, 4);

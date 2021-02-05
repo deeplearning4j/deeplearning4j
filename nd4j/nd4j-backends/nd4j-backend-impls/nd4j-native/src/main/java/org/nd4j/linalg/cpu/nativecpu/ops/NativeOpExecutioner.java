@@ -1725,7 +1725,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for( int i = 0; i < result.size(); i++) {
                 arr[i] = result.get(i).toString();
             }
-            log.trace("Calculated output shapes for op {} - {}", op.getClass().getName(), Arrays.toString(arr));
+
+            DifferentialFunction differentialFunction = (DifferentialFunction) op;
+            log.trace("Calculated output shapes for op  of name {} and type {} - {}",differentialFunction.getOwnName(), op.getClass().getName(), Arrays.toString(arr));
         }
         return result;
     }
@@ -2022,7 +2024,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
-        val dbf = loop.shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
+        OpaqueConstantShapeBuffer dbf = loop.shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());
 

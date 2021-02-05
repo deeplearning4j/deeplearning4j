@@ -567,7 +567,12 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(failed.toString(), 0, failed.size());
     }
 
-    @Test
+    @Override
+    public long getTimeoutMilliseconds() {
+        return Long.MAX_VALUE;
+    }
+
+    @Test()
     public void testStack() {
         Nd4j.getRandom().setSeed(12345);
 
@@ -606,22 +611,22 @@ public class ShapeOpValidation extends BaseOpValidation {
                     }
 
                     INDArray expStack = null;
-                    if(Arrays.equals(new long[]{3,4}, shape)){
+                    if(Arrays.equals(new long[]{3,4}, shape)) {
                         if(axis == 0){
                             INDArray out = Nd4j.create(numInputs, 3, 4);
-                            for( int i=0; i<numInputs; i++ ){
+                            for( int i = 0; i < numInputs; i++) {
                                 out.get(point(i), all(), all()).assign(inArr[i]);
                             }
                             expStack = out;
                         } else if(axis == 1) {
                             INDArray out = Nd4j.create(3, numInputs, 4);
-                            for( int i=0; i<numInputs; i++ ){
+                            for( int i = 0; i<numInputs; i++) {
                                 out.get(all(), point(i), all()).assign(inArr[i]);
                             }
                             expStack = out;
                         } else {
                             INDArray out = Nd4j.create(3, 4, numInputs);
-                            for( int i=0; i<numInputs; i++ ){
+                            for( int i = 0; i < numInputs; i++) {
                                 out.get(all(), all(), point(i)).assign(inArr[i]);
                             }
                             expStack = out;

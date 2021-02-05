@@ -46,7 +46,6 @@ public class SDVariable implements Serializable {
     protected SameDiff sameDiff;
 
     @Getter
-    @Setter
     protected String varName;
     @Getter
     @Setter
@@ -82,6 +81,10 @@ public class SDVariable implements Serializable {
      */
     public String name(){
         return varName;
+    }
+
+    public void setVarName(String varName) {
+        this.varName = varName;
     }
 
     /**

@@ -263,7 +263,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 continue;   //Switch case: we only ever get one of 2 outputs, other is null (branch not executed)
 
             String name = outVarNames.get(i);
-            Variable v = sameDiff.getVariables().get(stripVarSuffix(name));
+            Variable v = sameDiff.getVariables().get(name);
             List<String> inputsForOps = v.getInputsForOp();
             if (inputsForOps != null) {
                 for (String opName : inputsForOps) {
@@ -799,9 +799,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //Might be due to repeated inputs
                 Set<String> uniqueArgNames = new HashSet<>();
                 Collections.addAll(uniqueArgNames, argNames);
-                Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters),
+             /*   Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
-                        opName, uniqueArgNames, opInputs, constAndPhInputs);
+                        opName, uniqueArgNames, opInputs, constAndPhInputs);*/
             } else {
                 Preconditions.checkState(numArgs == (numNonConstIns + numConstPhIns),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),

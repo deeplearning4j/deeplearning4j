@@ -1097,13 +1097,16 @@ public class SameDiff extends SDBaseOps {
         ops.get(function.getOwnName()).setInputsToOp(Arrays.asList(variables));     //Duplicate variables OK/required here
 
         for (String variableName : variables) {
-            List<String> funcs = this.variables.get(variableName).getInputsForOp();
-            if (funcs == null) {
-                funcs = new ArrayList<>();
-                this.variables.get(variableName).setInputsForOp(funcs);
+            if(this.variables.containsKey(variableName)) {
+                List<String> funcs = this.variables.get(variableName).getInputsForOp();
+                if (funcs == null) {
+                    funcs = new ArrayList<>();
+                    this.variables.get(variableName).setInputsForOp(funcs);
+                }
+                if (!funcs.contains(function.getOwnName()))  //Avoid duplicates for function names.
+                    funcs.add(function.getOwnName());
             }
-            if (!funcs.contains(function.getOwnName()))  //Avoid duplicates for function names.
-                funcs.add(function.getOwnName());
+
         }
     }
 
@@ -2541,7 +2544,7 @@ public class SameDiff extends SDBaseOps {
 
         validateListenerActivations(activeListeners, operation);
 
-        Map<String, INDArray> ret = directExecHelper(placeholders, At.defaultAt(operation), null, Collections.<String>emptyList(), activeListeners, outputs);
+        Map<String, INDArray> ret = directExecHelper(placeholders, At.defaultAt(operation), null, Collections.emptyList(), activeListeners, outputs);
 
         for (Listener l : activeListeners) {
             l.operationEnd(this, operation);
@@ -3316,16 +3319,18 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Rename the specified variable to the new name.
-     *
+     * Note here we also specify the op.
+     * Sometimes, ops have multiple outputs and after the first rename of the variable
+     * we lose the reference to the correct op to modify.
+     * @param opToReName  the op to rename
      * @param from The variable to rename - this variable must exist
      * @param to   The new name for the variable - no variable with this name must already exist
      */
-    public void renameVariable(String from, String to) {
+    public void renameVariable(SameDiffOp opToReName,String from, String to) {
         Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
         Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
 
         Variable v = variables.get(from);
-        SameDiffOp opToReName = ops.get(stripVarSuffix(from));
         v.setName(to);
         v.getVariable().setVarName(to);
         if (v.getInputsForOp() != null) {
@@ -3374,52 +3379,16 @@ public class SameDiff extends SDBaseOps {
         }
 
         if (v.getOutputOfOp() != null) {
-            SameDiffOp op = ops.get(stripVarSuffix(from));
-            if(op != null && op.getOutputsOfOp() != null) {
-                List<String> newOuts = new ArrayList<>(op.getOutputsOfOp());
-                while (newOuts.contains(from)) {
-                    newOuts.set(newOuts.indexOf(from), to);
-                }
-
-                //find other aliases and ensure those get updated as well,
-                //after this any other versions of the op may not be discoverable
-                //due to the renaming
-                String strippedVarSuffix = stripVarSuffix(from);
-                for(int i = 0; i < newOuts.size(); i++) {
-                    String newOut = newOuts.get(i);
-                    if(stripVarSuffix(newOut).equals(strippedVarSuffix)) {
-                        val idx = newOut.lastIndexOf(':');
-                        val newString = to + newOut.substring(idx);
-                        newOuts.set(i,newString);
-                    }
-                }
-
-                op.setOutputsOfOp(newOuts);
+            SameDiffOp op = ops.get(v.getOutputOfOp());
+            List<String> newOuts = new ArrayList<>(op.getOutputsOfOp());
+            while (newOuts.contains(from)) {
+                newOuts.set(newOuts.indexOf(from), to);
             }
-            else if(op != null) {
-                op.setOutputsOfOp(Arrays.asList(to));
-            }
+            op.setOutputsOfOp(newOuts);
         }
 
         variables.remove(from);
         variables.put(to, v);
-        //set as just op name, update to set as the name of the output
-        if(opToReName != null && opToReName.getOp() != null && opToReName.getOp().isOwnNameSetWithDefault()) {
-            ops.remove(from);
-            opToReName.getOp().setOwnName(to);
-            ops.put(to,opToReName);
-            opToReName.setName(to);
-        }
-
-        for(Variable variable : variables.values()) {
-            if(variable.getInputsForOp() != null && variable.getInputsForOp().contains(from)) {
-                variable.getInputsForOp().set(variable.getInputsForOp().indexOf(from),to);
-            }
-
-            if(variable.getOutputOfOp() != null && variable.getOutputOfOp().equals(from)) {
-                variable.setOutputOfOp(to);
-            }
-        }
 
         if(v.getVariable().getVariableType() == VariableType.CONSTANT && constantArrays.hasArray(from)) {
             constantArrays.rename(from, to);
@@ -3493,6 +3462,18 @@ public class SameDiff extends SDBaseOps {
             int idx = lossVariables.indexOf(from);
             lossVariables.set(idx, to);
         }
+    }
+
+
+    /**
+     * Rename the specified variable to the new name.
+     *
+     * @param from The variable to rename - this variable must exist
+     * @param to   The new name for the variable - no variable with this name must already exist
+     */
+    public void renameVariable(String from, String to) {
+        SameDiffOp op = ops.get(stripVarSuffix(from));
+        renameVariable(op,from,to);
     }
 
 
@@ -4557,6 +4538,7 @@ public class SameDiff extends SDBaseOps {
         associateSameDiffWithOpsAndVariables();
     }
 
+
     /**
      * Try to infer the loss variable/s (usually loss variables). Note that this is not reliable in general.
      */
@@ -4604,16 +4586,19 @@ public class SameDiff extends SDBaseOps {
         return variables.get(varName).getVariable().isPlaceHolder();
     }
 
+
     /**
      * Updates the variable name property on the passed in variable, the reference in samediff, and returns the variable.
      * <p>
      * Note that if null for the new variable is passed in, it will just return the original input variable.
-     *
+     * @param opToRename  note we pass in the op here for times when an op may have multiple outputs
+     *                    when this is the case, we need to pass in the op to rename otherwise context gets lost
+     *                    and subsequent rename attempts will not operate on the op.
      * @param varToUpdate the variable to update
      * @param newVarName  the new variable name
      * @return the passed in variable
      */
-    public SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName) {
+    public SDVariable updateVariableNameAndReference(SameDiffOp opToRename,SDVariable varToUpdate, String newVarName) {
         if (varToUpdate == null) {
             throw new NullPointerException("Null input: No variable found for updating!");
         }
@@ -4644,8 +4629,22 @@ public class SameDiff extends SDBaseOps {
 
         val oldVarName = varToUpdate.name();
         varToUpdate.setVarName(newVarName);
-        renameVariable(oldVarName, newVarName);
+        renameVariable(opToRename,oldVarName, newVarName);
         return varToUpdate;
+    }
+
+    /**
+     * Updates the variable name property on the passed in variable, the reference in samediff, and returns the variable.
+     * <p>
+     * Note that if null for the new variable is passed in, it will just return the original input variable.
+     *
+     * @param varToUpdate the variable to update
+     * @param newVarName  the new variable name
+     * @return the passed in variable
+     */
+    public SDVariable updateVariableNameAndReference(SDVariable varToUpdate, String newVarName) {
+        SameDiffOp op = ops.get(varToUpdate.name());
+        return updateVariableNameAndReference(op,varToUpdate,newVarName);
     }
 
 
@@ -4791,7 +4790,7 @@ public class SameDiff extends SDBaseOps {
         val flatNodes = new ArrayList<Integer>();
 
         // first of all we build VariableSpace dump
-        val variableList = new ArrayList<SDVariable>(variables());
+        val variableList = new ArrayList<>(variables());
         val reverseMap = new LinkedHashMap<String, Integer>();
         val forwardMap = new LinkedHashMap<String, Integer>();
         val framesMap = new LinkedHashMap<String, Integer>();
@@ -5244,18 +5243,18 @@ public class SameDiff extends SDBaseOps {
             Variable v2 = sd.variables.get(n);
 
             //Reconstruct control dependencies
-            if(v.controlDepsLength() > 0){
+            if(v.controlDepsLength() > 0) {
                 int num = v.controlDepsLength();
                 List<String> l = new ArrayList<>(num);
-                for( int i=0; i<num; i++ ){
+                for(int i = 0; i < num; i++) {
                     l.add(v.controlDeps(i));
                 }
                 v2.setControlDeps(l);
             }
-            if(v.controlDepForOpLength() > 0){
+            if(v.controlDepForOpLength() > 0) {
                 int num = v.controlDepForOpLength();
                 List<String> l = new ArrayList<>(num);
-                for( int i=0; i<num; i++ ){
+                for( int i = 0; i < num; i++) {
                     l.add(v.controlDepForOp(i));
                 }
                 v2.setControlDepsForOp(l);
@@ -5264,7 +5263,7 @@ public class SameDiff extends SDBaseOps {
             if(v.controlDepsForVarLength() > 0) {
                 int num = v.controlDepsForVarLength();
                 List<String> l = new ArrayList<>(num);
-                for( int i = 0; i < num; i++ ){
+                for(int i = 0; i < num; i++) {
                     l.add(v.controlDepsForVar(i));
                 }
                 v2.setControlDepsForVar(l);

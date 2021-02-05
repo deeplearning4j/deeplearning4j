@@ -2815,9 +2815,9 @@ public class SameDiffTests extends BaseNd4jTest {
         out.markAsLoss();
         out.eval();
 
-        out.eval();
-        sd.grad("a").eval();
-
+        INDArray outEvaled = out.eval();
+        INDArray gradOutput = sd.grad("a").eval();
+        INDArray bOutputEval = sd.grad("b").eval();
         String err = OpValidation.validate(new TestCase(sd)
                 .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
                 .gradientCheck(true));

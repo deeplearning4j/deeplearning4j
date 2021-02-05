@@ -35,6 +35,8 @@ import org.nd4j.common.function.Predicate;
 
 import java.util.*;
 
+import static org.nd4j.imports.VariableUtils.stripVarSuffix;
+
 @Slf4j
 public abstract class AbstractSession<T, O> {
 
@@ -156,7 +158,6 @@ public abstract class AbstractSession<T, O> {
 
         //Step 2: Check that we have required placeholders
         List<String> phNames = sameDiff.inputs();
-        log.info("Placeholder names were " + phNames);
         if (placeholderValues == null || !placeholderValues.keySet().containsAll(phNames)) {
             /* We only have a subset of all placeholders
             Validate that we have all *required* placeholder values. Some might not be needed to calculate the requested outputs
@@ -184,15 +185,9 @@ public abstract class AbstractSession<T, O> {
                 }
 
                 if (required && (placeholderValues == null || !placeholderValues.containsKey(s))) {
-                    if(placeholderValues != null)
-                        throw new IllegalStateException(
-                                "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
-                                        " but a placeholder value was not provided. Placeholders specified were " + placeholderValues.keySet());
-                    else {
-                        throw new IllegalStateException(
-                                "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
-                                        " but a placeholder value was not provided. Place holder values were null! ");
-                    }
+                    throw new IllegalStateException(
+                            "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
+                                    " but a placeholder value was not provided");
                 }
             }
         }
@@ -282,7 +277,7 @@ public abstract class AbstractSession<T, O> {
             log.trace("Beginning execution step {}: {}", step, es);
 
             FrameIter outFrameIter;
-            boolean skipDepUpdate = false;      //Only used for Switch ops, which have slightly different handling...
+            boolean skipDepUpdate = false;      //Only used for Switch ops, which have slighly different handling...
             boolean skipMarkSatisfied = false;  //Only for enter ops, because of different frame/iter
             if (es.getType() == ExecType.CONSTANT || es.getType() == ExecType.VARIABLE) {
                 VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null);
@@ -514,7 +509,7 @@ public abstract class AbstractSession<T, O> {
      * Execution failed - can't calculate all requested outputs, and there's nothing left to calculate.
      * Throws an exception with a useful message
      *
-     * @param userRequestedUnique All outputs that the user reqeseted
+     * @param userRequestedUnique All outputs that the user requested
      * @param out                 Current outputs
      * @param step                Execution step
      */
@@ -544,7 +539,7 @@ public abstract class AbstractSession<T, O> {
             }
         }
         String s = sb.toString();
-//        System.out.println(sameDiff.summary());
+        System.out.println(sameDiff.summary());
         throw new IllegalStateException(s);
     }
 
@@ -564,6 +559,52 @@ public abstract class AbstractSession<T, O> {
             List<String> outNames = op.getOutputsOfOp();
             for (String s : outNames) {
                 Variable v = sameDiff.getVariables().get(s);
+                if(v != null) {
+                    List<String> inputsToOps = v.getInputsForOp();
+                    if (inputsToOps != null) {
+                        for (String opName : inputsToOps) {
+                            if (subgraphOps.contains(opName)) {
+                                //We've just executed X, and there's dependency X -> Y
+                                //But, there also might be a Z -> Y that we should mark as needed for Y
+                                addDependenciesForOp(opName, outFrameIter);
+                            }
+                        }
+                    }
+
+
+                    //Also add control dependencies (variable)
+                    List<String> cdForOps = v.getControlDepsForOp();
+                    if (cdForOps != null) {
+                        for (String opName : cdForOps) {
+                            if (subgraphOps.contains(opName)) {
+                                //We've just executed X, and there's dependency X -> Y
+                                //But, there also might be a Z -> Y that we should mark as needed for Y
+                                addDependenciesForOp(opName, outFrameIter);
+                            }
+                        }
+                    }
+                }
+
+            }
+        } else if (t == ExecType.VARIABLE || t == ExecType.CONSTANT || t == ExecType.PLACEHOLDER) {
+            Variable v = sameDiff.getVariables().get(n);
+            if(v != null) {
+                List<String> inputsToOps = v.getInputsForOp();
+                if (inputsToOps != null) {
+                    for (String opName : inputsToOps) {
+                        if (subgraphOps.contains(opName)) {
+                            addDependenciesForOp(opName, outFrameIter);
+                        }
+                    }
+                }
+            }
+
+        } else if (justExecuted.getType() == ExecType.SWITCH_L || justExecuted.getType() == ExecType.SWITCH_R) {
+            SameDiffOp op = sameDiff.getOps().get(n);
+            List<String> outNames = op.getOutputsOfOp();
+            String branchVarName = (justExecuted.getType() == ExecType.SWITCH_L ? outNames.get(0) : outNames.get(1));
+            Variable v = sameDiff.getVariables().get(branchVarName);
+            if(v != null) {
                 List<String> inputsToOps = v.getInputsForOp();
                 if (inputsToOps != null) {
                     for (String opName : inputsToOps) {
@@ -574,45 +615,8 @@ public abstract class AbstractSession<T, O> {
                         }
                     }
                 }
+            }
 
-
-                //Also add control dependencies (variable)
-                List<String> cdForOps = v.getControlDepsForOp();
-                if (cdForOps != null) {
-                    for (String opName : cdForOps) {
-                        if (subgraphOps.contains(opName)) {
-                            //We've just executed X, and there's dependency X -> Y
-                            //But, there also might be a Z -> Y that we should mark as needed for Y
-                            addDependenciesForOp(opName, outFrameIter);
-                        }
-                    }
-                }
-            }
-        } else if (t == ExecType.VARIABLE || t == ExecType.CONSTANT || t == ExecType.PLACEHOLDER) {
-            Variable v = sameDiff.getVariables().get(n);
-            List<String> inputsToOps = v.getInputsForOp();
-            if (inputsToOps != null) {
-                for (String opName : inputsToOps) {
-                    if (subgraphOps.contains(opName)) {
-                        addDependenciesForOp(opName, outFrameIter);
-                    }
-                }
-            }
-        } else if (justExecuted.getType() == ExecType.SWITCH_L || justExecuted.getType() == ExecType.SWITCH_R) {
-            SameDiffOp op = sameDiff.getOps().get(n);
-            List<String> outNames = op.getOutputsOfOp();
-            String branchVarName = (justExecuted.getType() == ExecType.SWITCH_L ? outNames.get(0) : outNames.get(1));
-            Variable v = sameDiff.getVariables().get(branchVarName);
-            List<String> inputsToOps = v.getInputsForOp();
-            if (inputsToOps != null) {
-                for (String opName : inputsToOps) {
-                    if (subgraphOps.contains(opName)) {
-                        //We've just executed X, and there's dependency X -> Y
-                        //But, there also might be a Z -> Y that we should mark as needed for Y
-                        addDependenciesForOp(opName, outFrameIter);
-                    }
-                }
-            }
         } else {
             throw new UnsupportedOperationException("Unknown or not yet implemented exec type: " + justExecuted);
         }
@@ -691,8 +695,17 @@ public abstract class AbstractSession<T, O> {
             return new ExecStep(ExecType.CONSTANT, v.getVariable().name(), new FrameIter(OUTER_FRAME, 0, null));
         } else {
             //Array type. Must be output of an op
+            if(v.getOutputOfOp() == null) {
+                v = sameDiff.getVariables().get(stripVarSuffix(v.getName()));
+            }
+
             String outOfOp = v.getOutputOfOp();
             SameDiffOp sdo = sameDiff.getOps().get(outOfOp);
+
+            if(sdo == null) {
+                throw new IllegalStateException("Samediff output op named " + v.getName() + " did not have any ops associated with it.");
+            }
+
             if (sdo.getOp() instanceof Switch) {
                 //For dependency tracking purposes, we track left and right output branches of switch op separately
                 //Otherwise, ops depending both branches will be marked as available if we just rely on "op has been executed"
@@ -771,7 +784,11 @@ public abstract class AbstractSession<T, O> {
 
             if (!subgraph.contains(varName)) {
                 String[] opInputs = opName == null ? null : sameDiff.getInputsForOp(sameDiff.getOpById(opName));
-                List<String> controlDeps = sameDiff.getVariables().get(varName).getControlDeps();
+                Variable currVar = sameDiff.getVariables().get(varName);
+                log.trace("Adding " + varName + " to subgraph for output.");
+                List<String> opInputsFor = currVar.getInputsForOp();
+                List<String> controlDeps = currVar.getControlDeps();
+                String output = currVar.getOutputOfOp();
                 int numInputs = (opInputs == null ? 0 : opInputs.length);
                 if (controlDeps != null) {
                     //Also count variable control dependencies as inputs - even a constant may not be available for use
@@ -781,6 +798,8 @@ public abstract class AbstractSession<T, O> {
                 if (numInputs == 0 && opName != null) {
                     zeroInputOpsInSubgraph.add(opName);
                 }
+
+
                 subgraph.add(varName);
 
                 if (opName != null) {
@@ -796,11 +815,14 @@ public abstract class AbstractSession<T, O> {
                         }
                     }
                 }
+
+
             }
 
             if (opName != null) {
                 //To execute op - and hence get this variable: need inputs to that op
-                String[] inputs = sameDiff.getInputsForOp(sameDiff.getOpById(opName));
+                DifferentialFunction opById = sameDiff.getOpById(opName);
+                String[] inputs = sameDiff.getInputsForOp(opById);
                 for (String s2 : inputs) {
                     if (!subgraph.contains(s2)) {
                         processingQueue.add(s2);

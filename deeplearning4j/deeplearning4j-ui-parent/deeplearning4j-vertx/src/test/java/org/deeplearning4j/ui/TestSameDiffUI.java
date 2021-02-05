@@ -71,8 +71,8 @@ public class TestSameDiffUI extends BaseDL4JTest {
         lfw.registerEventName("accuracy");
         lfw.registerEventName("precision");
         long t = System.currentTimeMillis();
-        for( int iter=0; iter<50; iter++) {
-            double d = Math.cos(0.1*iter);
+        for( int iter = 0; iter < 50; iter++) {
+            double d = Math.cos(0.1 * iter);
             d *= d;
             lfw.writeScalarEvent("accuracy", LogFileWriter.EventSubtype.EVALUATION, t + iter, iter, 0, d);
 
@@ -84,7 +84,7 @@ public class TestSameDiffUI extends BaseDL4JTest {
         lfw.registerEventName("histogramDiscrete");
         lfw.registerEventName("histogramEqualSpacing");
         lfw.registerEventName("histogramCustomBins");
-        for( int i=0; i<3; i++ ){
+        for(int i = 0; i < 3; i++) {
             INDArray discreteY = Nd4j.createFromArray(0, 1, 2);
             lfw.writeHistogramEventDiscrete("histogramDiscrete", LogFileWriter.EventSubtype.TUNING_METRIC,  t+i, i, 0, Arrays.asList("zero", "one", "two"), discreteY);
 

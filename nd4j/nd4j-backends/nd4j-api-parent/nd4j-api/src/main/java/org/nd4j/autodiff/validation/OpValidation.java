@@ -145,12 +145,12 @@ public class OpValidation {
 
         SameDiff sameDiff = testCase.sameDiff();
         List<Listener> listeners = sameDiff.getListeners();
-        if(listeners.isEmpty()){
+        if(listeners.isEmpty()) {
             sameDiff.addListeners(new NonInplaceValidationListener());
         } else {
             boolean found = false;
             for(Listener l : listeners){
-                if(l instanceof NonInplaceValidationListener){
+                if(l instanceof NonInplaceValidationListener) {
                     found = true;
                     break;
                 }

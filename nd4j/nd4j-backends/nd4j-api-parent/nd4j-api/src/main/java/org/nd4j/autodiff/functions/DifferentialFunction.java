@@ -28,23 +28,31 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.indexing.functions.Zero;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.lang.reflect.Field;
 import java.util.*;
+
+import static org.nd4j.imports.VariableUtils.stripVarSuffix;
 
 
 @Data
@@ -261,7 +269,7 @@ public abstract class DifferentialFunction {
                 target.set(o, value);
             } catch (IllegalAccessException e){
                 throw new RuntimeException("Error setting configuration field \"" + propertyName + "\" for config field \"" + propertyName
-                    + "\" on class " + getClass().getName());
+                        + "\" on class " + getClass().getName());
             }
 
         } else {
@@ -549,7 +557,7 @@ public abstract class DifferentialFunction {
     public String[] argNames(){
         SDVariable[] args = args();
         String[] out = new String[args.length];
-        for( int i=0; i<args.length; i++ ){
+        for( int i = 0; i < args.length; i++ ){
             out[i] = args[i].name();
         }
         return out;
@@ -710,7 +718,7 @@ public abstract class DifferentialFunction {
      * Duplicate this function
      * @return
      */
-    public  DifferentialFunction dup() {
+    public DifferentialFunction dup() {
         return FlatBuffersMapper.cloneViaSerialize(sameDiff, this);
     }
 

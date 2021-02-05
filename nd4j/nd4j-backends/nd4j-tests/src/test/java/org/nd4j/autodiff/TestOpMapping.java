@@ -121,6 +121,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Ignore("No longer relevant after model import rewrite.")
 public class TestOpMapping extends BaseNd4jTest {
 
     Set<Class<? extends DifferentialFunction>> subTypes;
@@ -151,7 +152,7 @@ public class TestOpMapping extends BaseNd4jTest {
         Map<String, DifferentialFunction> onnxOpNameMapping = ImportClassMapping.getOnnxOpMappingFunctions();
 
 
-        for(Class<? extends DifferentialFunction> c : subTypes){
+        for(Class<? extends DifferentialFunction> c : subTypes) {
 
             if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers()) || ILossFunction.class.isAssignableFrom(c))
                 continue;

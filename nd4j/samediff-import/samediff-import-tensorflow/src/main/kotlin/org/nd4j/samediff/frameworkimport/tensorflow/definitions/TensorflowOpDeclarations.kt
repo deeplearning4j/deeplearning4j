@@ -1654,7 +1654,8 @@ val randomCrop = mapTensorNamesWithOp(inputFrameworkOpName = "RandomCrop",opName
         attributeMappingRules = listOf(valueMapping(mutableMapOf("seed" to "seed")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
-val placeHolder = mapTensorNamesWithOp(inputFrameworkOpName = "Placeholder",opName = "placeholder",tensorNames = mutableMapOf()
+val placeHolder = mapTensorNamesWithOp(inputFrameworkOpName = "Placeholder",opName = "placeholder",tensorNames = mutableMapOf(),
+        attributeMappingRules = listOf()
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
 val randomGamma = mapTensorNamesWithOp(inputFrameworkOpName = "RandomGamma",opName = "random_gamma",tensorNames = mutableMapOf("shape" to "shape","alpha" to "alpha"),

@@ -84,7 +84,7 @@ public class ProfilingListenerTest extends BaseNd4jTest {
         Map<String,INDArray> ph = new HashMap<>();
         ph.put("in", i);
 
-        for( int x=0; x<10; x++ ) {
+        for( int x = 0; x < 10; x++) {
             sd.outputSingle(ph, "predictions");
         }
 
@@ -94,8 +94,8 @@ public class ProfilingListenerTest extends BaseNd4jTest {
 
         //Should be 2 begins and 2 ends for each entry
         //5 warmup iterations, 5 profile iterations, x2 for both the op name and the op "instance" name
-        String[] opNames = {"mmul", "add", "softmax"};
-        for(String s : opNames){
+        String[] opNames = {"matmul", "add", "softmax"};
+        for(String s : opNames) {
             assertEquals(s, 10, StringUtils.countMatches(content, s));
         }
 

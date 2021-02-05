@@ -468,6 +468,11 @@ public class ReductionOpValidation extends BaseOpValidation {
         assertEquals("Failed: " + failed, 0, failed.size());
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return Long.MAX_VALUE;
+    }
+
     @Test
     public void testReductionGradients2() {
         //Test reductions: NON-final function
