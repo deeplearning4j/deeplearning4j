@@ -1,5 +1,2 @@
-Identity,Variable/read
-Identity,Variable_1/read
-Pack,floordiv/x
-Pack,floordiv/y
-FloorDiv,floordiv
+Identity,in_0/read
+MaxPoolWithArgmax,MaxPoolWithArgmax

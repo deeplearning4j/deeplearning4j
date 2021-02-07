@@ -99,13 +99,6 @@ class TestTensorflowIR {
         val output2 = importedGraph.outputAll(inputMap)
 
 
-        val matrix =
-            TensorflowIRTensor(tensorflowIRGraph.nodeByName("in_0").attrMap["value"]!!.tensor).toNd4jNDArray()
-        val roll2 = Roll(matrix, Nd4j.scalar(2), Nd4j.scalar(1))
-        val outputs = Nd4j.exec(roll2)[0]
-        val tfOutputRoll = tfOutput["Roll"]
-        val nd4jOutput = output["Roll"]
-
         //assertEquals(tfOutput.keys,outputList)
         //assertEquals(tfOutput.keys,output2.keys)
         val names = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }

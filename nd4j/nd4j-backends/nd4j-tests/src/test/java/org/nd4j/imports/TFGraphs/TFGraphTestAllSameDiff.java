@@ -69,14 +69,11 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-            //   "max_pool_with_argmax/int32_int64_padding_SAME",
+               "max_pool_with_argmax/int32_int64_padding_SAME",
             //      "fused_batch_norm/float32_nhwc",
-            //     "max_pool_with_argmax/int64_int64_padding_SAME",
+                 "max_pool_with_argmax/int64_int64_padding_SAME"
             //      "fused_batch_norm/float16_nhwc",
-            "roll/rank3_int32_axis",
-            "roll/rank3_int32_axis",
-            "roll/rank2_float32_zeroshift",
-            "roll/rank3_float64_axis"
+
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{

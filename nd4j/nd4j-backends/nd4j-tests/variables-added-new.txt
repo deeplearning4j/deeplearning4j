@@ -1,2 +1,3 @@
 in_0/read,in_0/read
-Roll,Roll
+MaxPoolWithArgmax,MaxPoolWithArgmax
+MaxPoolWithArgmax:1,MaxPoolWithArgmax
