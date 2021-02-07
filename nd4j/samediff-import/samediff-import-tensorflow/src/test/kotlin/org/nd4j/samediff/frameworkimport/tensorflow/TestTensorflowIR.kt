@@ -32,6 +32,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.api.ops.DynamicCustomOp
+import org.nd4j.linalg.api.ops.custom.Roll
 import org.nd4j.linalg.api.ops.impl.transforms.BinCount
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt
 import org.nd4j.linalg.factory.Nd4j
@@ -46,6 +47,7 @@ import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFramework
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraphRunner
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRNode
+import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRTensor
 import org.nd4j.shade.protobuf.ByteString
 import org.nd4j.shade.protobuf.TextFormat
 import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner
@@ -96,6 +98,14 @@ class TestTensorflowIR {
         val output = graph.outputAll(inputMap)
         val output2 = importedGraph.outputAll(inputMap)
 
+
+        val matrix =
+            TensorflowIRTensor(tensorflowIRGraph.nodeByName("in_0").attrMap["value"]!!.tensor).toNd4jNDArray()
+        val roll2 = Roll(matrix, Nd4j.scalar(2), Nd4j.scalar(1))
+        val outputs = Nd4j.exec(roll2)[0]
+        val tfOutputRoll = tfOutput["Roll"]
+        val nd4jOutput = output["Roll"]
+
         //assertEquals(tfOutput.keys,outputList)
         //assertEquals(tfOutput.keys,output2.keys)
         val names = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }
@@ -116,7 +126,7 @@ class TestTensorflowIR {
 
         println(notEquals)
 
-       // assertEquals(output,output2)
+        // assertEquals(output,output2)
         //assertEquals(tfOutput,output)
     }
 

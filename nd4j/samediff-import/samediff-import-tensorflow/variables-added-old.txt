@@ -1,5 +1,2 @@
 in_0/read,in_0/read
-eye/diag,eye/diag
-Add,Add
-Svd,Svd
-Abs,Abs
+Roll,Roll

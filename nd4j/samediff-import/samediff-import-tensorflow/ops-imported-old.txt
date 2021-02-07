@@ -1,5 +1,2 @@
 Identity,in_0/read
-MatrixDiag,eye/diag
-Add,Add
-Svd,Svd
-Abs,Abs
+Roll,Roll

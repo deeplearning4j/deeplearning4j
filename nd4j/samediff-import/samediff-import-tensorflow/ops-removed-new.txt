@@ -1,5 +1,5 @@
-data
-partitions
-output
-out0
-out1
+in_0
+Roll/shift
+Roll/axis
+in_0/read
+Roll

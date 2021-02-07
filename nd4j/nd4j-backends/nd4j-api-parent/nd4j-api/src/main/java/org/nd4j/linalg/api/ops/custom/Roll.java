@@ -34,10 +34,10 @@ public class Roll extends DynamicCustomOp {
 
     public Roll() {}
 
-    public Roll(@NonNull INDArray input, @NonNull INDArray axes, @NonNull INDArray shifts) {
+    public Roll(@NonNull INDArray input, @NonNull INDArray shifts, @NonNull INDArray axes) {
         Preconditions.checkArgument(axes.rank() == shifts.rank(), "Roll: shifts and axes should be the same rank");
         Preconditions.checkArgument(axes.length() == shifts.length(), "Roll: shifts and axes should be the same length");
-        addInputArgument(input, axes, shifts);
+        addInputArgument(input, shifts, axes);
     }
 
     public Roll(@NonNull INDArray input, int shift) {
@@ -49,8 +49,8 @@ public class Roll extends DynamicCustomOp {
         super("", sameDiff, new SDVariable[]{input,shift});
     }
 
-    public Roll(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable axes, @NonNull SDVariable shift) {
-        super("", sameDiff, new SDVariable[]{input,axes,shift});
+    public Roll(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable shift, @NonNull SDVariable axes) {
+        super("", sameDiff, new SDVariable[]{input,shift,axes});
     }
 
     public Roll(@NonNull SameDiff sameDiff, @NonNull SDVariable input, int shift) {

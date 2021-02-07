@@ -1,7 +1,5 @@
 Const,in_0
-Const,eye/ones
+Const,Roll/shift
+Const,Roll/axis
 Identity,in_0/read
-MatrixDiag,eye/diag
-Add,Add
-Svd,Svd
-Abs,Abs
+Roll,Roll

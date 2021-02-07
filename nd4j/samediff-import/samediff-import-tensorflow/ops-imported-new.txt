@@ -1,3 +1,2 @@
-DynamicPartition,output
-Identity,out0
-Identity,out1
+Identity,in_0/read
+Roll,Roll

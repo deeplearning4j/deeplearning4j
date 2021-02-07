@@ -1,5 +1,5 @@
-Placeholder,data
-Placeholder,partitions
-DynamicPartition,output
-Identity,out0
-Identity,out1
+Const,in_0
+Const,Roll/shift
+Const,Roll/axis
+Identity,in_0/read
+Roll,Roll

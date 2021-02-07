@@ -36,6 +36,10 @@ class TensorflowIRDataType(inputDataType: DataType): IRDataType<DataType> {
             DataType.DT_DOUBLE, DataType.DT_DOUBLE_REF -> return IRDataTypeValue.DT_DOUBLE
             DataType.DT_FLOAT, DataType.DT_FLOAT_REF -> return IRDataTypeValue.DT_FLOAT
             DataType.DT_HALF, DataType.DT_HALF_REF -> return IRDataTypeValue.DT_HALF
+            DataType.DT_INT8, DataType.DT_INT8_REF -> return IRDataTypeValue.DT_INT8
+            DataType.DT_UINT8, DataType.DT_UINT8_REF -> return IRDataTypeValue.DT_UINT8
+            DataType.DT_UINT16, DataType.DT_UINT16_REF -> return IRDataTypeValue.DT_UINT16
+            DataType.DT_UINT32, DataType.DT_UINT32_REF -> return IRDataTypeValue.DT_UINT32
             DataType.DT_INT16, DataType.DT_INT16_REF -> return IRDataTypeValue.DT_INT16
             DataType.DT_INT32, DataType.DT_INT32_REF -> return IRDataTypeValue.DT_INT32
             DataType.DT_INT64, DataType.DT_INT64_REF -> return IRDataTypeValue.DT_INT64
@@ -70,9 +74,11 @@ class TensorflowIRDataType(inputDataType: DataType): IRDataType<DataType> {
             DataType.DT_BFLOAT16, DataType.DT_BFLOAT16_REF -> return org.nd4j.linalg.api.buffer.DataType.BFLOAT16
             DataType.DT_INT64, DataType.DT_INT64_REF -> return org.nd4j.linalg.api.buffer.DataType.INT64
             DataType.DT_HALF, DataType.DT_HALF_REF -> return org.nd4j.linalg.api.buffer.DataType.FLOAT16
+            DataType.DT_INT8, DataType.DT_INT8_REF -> return org.nd4j.linalg.api.buffer.DataType.INT8
             DataType.DT_INT16, DataType.DT_INT16_REF -> return org.nd4j.linalg.api.buffer.DataType.INT16
             DataType.DT_INT32, DataType.DT_INT32_REF -> return org.nd4j.linalg.api.buffer.DataType.INT32
             DataType.DT_DOUBLE, DataType.DT_DOUBLE_REF -> return org.nd4j.linalg.api.buffer.DataType.DOUBLE
+            DataType.DT_UINT8, DataType.DT_UINT8_REF -> return org.nd4j.linalg.api.buffer.DataType.UINT8
             DataType.DT_UINT16, DataType.DT_UINT16_REF -> return org.nd4j.linalg.api.buffer.DataType.UINT16
             DataType.DT_UINT32, DataType.DT_UINT32_REF -> return org.nd4j.linalg.api.buffer.DataType.UINT32
             DataType.DT_UINT64, DataType.DT_UINT64_REF -> return org.nd4j.linalg.api.buffer.DataType.UINT64

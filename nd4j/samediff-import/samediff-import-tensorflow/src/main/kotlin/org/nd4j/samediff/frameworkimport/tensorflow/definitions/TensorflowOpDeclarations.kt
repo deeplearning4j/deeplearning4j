@@ -358,7 +358,7 @@ val bitCast = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
         inputFrameworkOpName = "Bitcast",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input"))),
-        attributeMappingRules = listOf(dataTypeToInt(mutableMapOf("newType" to "type")), valueMapping(mutableMapOf("dataType" to "type")))
+        attributeMappingRules = listOf(dataTypeToInt(mutableMapOf("newType" to "type")), valueMapping(mutableMapOf("dtype" to "type")))
 )
 
 val bitwiseAnd = TensorflowMappingProcess(
@@ -1070,7 +1070,7 @@ val fill = TensorflowMappingProcess(
         inputFrameworkOpName = "Fill",
         opMappingRegistry = tensorflowOpRegistry,
         attributeMappingRules = listOf(convertNDArrayInputToNumericalAttr(mutableMapOf("value" to "value")),
-                dataTypeToInt(mutableMapOf("dtype" to "T")),
+                dataTypeToInt(mutableMapOf("outputDataType" to "T")),
                 valueMapping(mutableMapOf("dtype" to "T"))),
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("shapeArray" to "dims")))
 )
@@ -1381,6 +1381,7 @@ val maxPoolArgmax = multipleNameMapping(
                 intConstant(inputName = "extraParam0",constantValue = 0 ,argumentIndex = 9)[0],
                 intConstant(inputName = "isNHWC",argumentIndex = 10,constantValue = 1 )[0],
                 intConstant(inputName = "sameMode",argumentIndex = 8,constantValue = 8 )[0],
+                valueMapping(mutableMapOf("dtype" to "T"))
         )
         ,tensorflowOpRegistry = tensorflowOpRegistry
 )
@@ -1454,6 +1455,13 @@ val mirrorPadding = mapTensorNamesWithOp(inputFrameworkOpName = "MirrorPad",opNa
  * TODO: Need to add a constant mapping or something for NonMaxSuppression
  * v1 and 2 which do not have a scoreThreshold to map. V3 does.
  */
+
+val matrixBandPart = mapTensorNamesWithOp(inputFrameworkOpName = "MatrixBandPart",opName = "matrix_band_part",
+        tensorNames = mutableMapOf("input" to "input","minLowerT" to "num_lower",
+        "maxUpperT" to "num_upper"),
+        attributeMappingRules = listOf()
+        ,tensorflowOpRegistry = tensorflowOpRegistry)
+
 
 val nonMaxSuppressionV1 = multipleNameMapping(inputFrameworkOpNames = listOf("NonMaxSuppression"),
         opName = "non_max_suppression",
@@ -1654,7 +1662,8 @@ val randomCrop = mapTensorNamesWithOp(inputFrameworkOpName = "RandomCrop",opName
         attributeMappingRules = listOf(valueMapping(mutableMapOf("seed" to "seed")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
-val placeHolder = mapTensorNamesWithOp(inputFrameworkOpName = "Placeholder",opName = "placeholder",tensorNames = mutableMapOf(),
+val placeHolder = mapTensorNamesWithOp(inputFrameworkOpName = "Placeholder",opName = "placeholder",
+        tensorNames = mutableMapOf(),
         attributeMappingRules = listOf()
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
@@ -1823,8 +1832,8 @@ val reverseSequence = multipleNameMapping(inputFrameworkOpNames = listOf("Revers
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
 val roll = multipleNameMapping(inputFrameworkOpNames = listOf("Roll"),opName = "roll",
-        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("shift" to "shift"))),
-        tensorNames = mutableMapOf("input" to "input","dimensions" to "axis","shiftsI" to "shift")
+        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("shift" to "shift","dimensions" to "axis"))),
+        tensorNames = mutableMapOf("input" to "input")
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
 //TODO: verify usingLocking property, it's not showing up in descriptors
@@ -1941,6 +1950,7 @@ val size = TensorflowMappingProcess(
         opMappingRegistry = tensorflowOpRegistry,
         inputFrameworkOpName = "Size",
         opName = "size",
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "out_type"))),
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input")))
 )
 

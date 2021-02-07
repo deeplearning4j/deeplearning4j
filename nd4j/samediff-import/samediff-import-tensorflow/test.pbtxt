@@ -5,26 +5,26 @@ node {
     key: "value"
     value {
       tensor {
-        dtype: DT_FLOAT
+        dtype: DT_DOUBLE
         tensor_shape {
           dim {
-            size: 2
+            size: 4
           }
           dim {
-            size: 3
+            size: 5
           }
           dim {
-            size: 3
+            size: 4
           }
         }
-        tensor_content: "~^G?L\033M?\236p9?\220ol>\356%:?X\2708><q\001?b|d?\224\316\v?\314al?P@\257=,5K?\326\271(?\3566\016?`u#>0\024\236>\240{\036>\240h\360>"
+        tensor_content: "0m4\347\376y\315?\344\033;\004\236p\351?\026..t\357%\352? \306G>\322\023\247?\230\303\330E)\235\327?,5\313k\v\350\345?\334m\034\311\255s\321?0\024\236\222\260\272\321?@\321\340\331\240{\316?v|\234\234\223o\356?\244&\\\214\314W\332?\270\376rL\357\224\331?\030\216\353R\253\023\332?*A<\365%\024\344?h\f\326CH\250\351?0\320Y{\256\\\261?\366\226\304\200\016\350\343?@cr\031B\026\323?\300Q\006<\213\200\303?\f\377 \310\035\271\320?\300\325\277\177]\302\347?\270\337\237\302\321P\343?\256L\224~H]\351?0\243.\031\266\256\342?\200B\250\257\316j\301?\304\372\266\312\352\225\332?D\320\255\371\vB\327?\364\025&\270p\360\327?H:\241v\n\272\312?0-} \201!\323?l2\v\247;|\331?\320r}\'\v\372\341?\006u\364aS@\347?P6<\211\270\337\273?\024\340\006`\267\262\322?t\222JV\310\'\325?\264/\177\232\"]\322?\242\037L\006\215=\345?\270\376\302\274\332\310\323?R\2100\375\212\314\355?\300;\026W\321\210\230?\260?t#\314\203\322?\366=D:{\005\342?p_\v\2335\315\356?\344U\370\034\372\317\332? l1N\344\252\330?\354\327\003\223\206\215\321?^C\326M\353\234\345?\326\333u\025\2449\354?\264\000\334Z\177\326\353?\244\341\253\326!\272\345?\320\336\312`\255\005\311?\244u\220o\266\033\324?V\b\201\267\276\271\351?$\253\324_o3\356?\264:\260\357i\003\335?\300[\'7L8\256?02UU\205\214\265?\240\255\276\263r+\257? \303\207\022\3446\334?\220\032\360l\364(\324?\030\374\036.\217W\355?\340!;ay\034\257?\312\255)\371\227\333\346?F\233`e\300\335\343?\264>\261\354\324\345\331?\212v\025\026\265o\342?|\036\036F\364}\330?\034\203\363\362\364\204\322?\000:\260e\"\372\230?F\316\345\330\2577\343?\356uN6<b\355?6\216\263\234\243N\351?\306b\204\305\260\200\342?\210\213\262X/J\331?(\352\313\203=\217\312?\310\3327\231\362\a\345?\210\234<\035}\241\313?\224\'0\201\363V\344?\240\260-3\3655\345?"
       }
     }
   }
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      type: DT_DOUBLE
     }
   }
 }
@@ -33,6 +33,12 @@ node {
   op: "Identity"
   input: "in_0"
   attr {
+    key: "T"
+    value {
+      type: DT_DOUBLE
+    }
+  }
+  attr {
     key: "_class"
     value {
       list {
@@ -40,94 +46,71 @@ node {
       }
     }
   }
+}
+node {
+  name: "Roll/shift"
+  op: "Const"
   attr {
-    key: "T"
+    key: "dtype"
     value {
-      type: DT_FLOAT
+      type: DT_INT32
+    }
+  }
+  attr {
+    key: "value"
+    value {
+      tensor {
+        dtype: DT_INT32
+        tensor_shape {
+        }
+        int_val: 2
+      }
     }
   }
 }
 node {
-  name: "eye/ones"
+  name: "Roll/axis"
   op: "Const"
   attr {
     key: "value"
     value {
       tensor {
-        dtype: DT_FLOAT
+        dtype: DT_INT32
         tensor_shape {
-          dim {
-            size: 2
-          }
-          dim {
-            size: 3
-          }
         }
-        float_val: 1.0
+        int_val: 1
       }
     }
   }
   attr {
     key: "dtype"
     value {
-      type: DT_FLOAT
+      type: DT_INT32
     }
   }
 }
 node {
-  name: "eye/diag"
-  op: "MatrixDiag"
-  input: "eye/ones"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "Add"
-  op: "Add"
+  name: "Roll"
+  op: "Roll"
   input: "in_0/read"
-  input: "eye/diag"
+  input: "Roll/shift"
+  input: "Roll/axis"
   attr {
-    key: "T"
+    key: "Taxis"
     value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "Svd"
-  op: "Svd"
-  input: "Add"
-  attr {
-    key: "full_matrices"
-    value {
-      b: true
+      type: DT_INT32
     }
   }
   attr {
-    key: "compute_uv"
+    key: "Tshift"
     value {
-      b: false
+      type: DT_INT32
     }
   }
   attr {
     key: "T"
     value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "Abs"
-  op: "Abs"
-  input: "Svd"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
+      type: DT_DOUBLE
     }
   }
 }

@@ -1172,6 +1172,18 @@ mappings {
     ruleType: "tensor"
     inputFrameworkOpName: "Size"
   }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "out_type"
+    outputDataTypeName: "dtype"
+    inputToOutput {
+      key: "dtype"
+      value: "out_type"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Size"
+  }
 }
 mappings {
   frameworkName: "tensorflow"
@@ -2613,6 +2625,35 @@ mappings {
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Polygamma"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
+  opName: "matrix_band_part"
+  inputFrameworkOpName: "MatrixBandPart"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    inputTensorName: "num_lower"
+    inputTensorName: "num_upper"
+    outputTensorName: "input"
+    outputTensorName: "minLowerT"
+    outputTensorName: "maxUpperT"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    inputToOutput {
+      key: "minLowerT"
+      value: "num_lower"
+    }
+    inputToOutput {
+      key: "maxUpperT"
+      value: "num_upper"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "MatrixBandPart"
   }
 }
 mappings {
@@ -6427,8 +6468,9 @@ mappings {
     ruleName: "valuemapping"
     functionName: "valuemapping"
     inputDataTypeName: "type"
+    outputDataTypeName: "dtype"
     inputToOutput {
-      key: "dataType"
+      key: "dtype"
       value: "type"
     }
     ruleType: "attribute"
@@ -6834,22 +6876,10 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
-    inputTensorName: "axis"
-    inputTensorName: "shift"
     outputTensorName: "input"
-    outputTensorName: "dimensions"
-    outputTensorName: "shiftsI"
     inputToOutput {
       key: "input"
       value: "input"
-    }
-    inputToOutput {
-      key: "dimensions"
-      value: "axis"
-    }
-    inputToOutput {
-      key: "shiftsI"
-      value: "shift"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Roll"
@@ -6861,6 +6891,10 @@ mappings {
     inputToOutput {
       key: "shift"
       value: "shift"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Roll"
@@ -7251,6 +7285,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "start"
     outputDoubleName: "stop"
     inputToOutput {
       key: "start"
@@ -9237,6 +9272,8 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "on"
+    outputDoubleName: "off"
     inputToOutput {
       key: "on"
       value: "on_value"
@@ -10592,6 +10629,8 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "min"
+    outputDoubleName: "max"
     inputToOutput {
       key: "min"
       value: "minval"
@@ -12082,10 +12121,10 @@ mappings {
   rule {
     ruleName: "datatypetoint"
     functionName: "datatypetoint"
+    outputIntName: "outputDataType"
     inputDataTypeName: "T"
-    outputDataTypeName: "dtype"
     inputToOutput {
-      key: "dtype"
+      key: "outputDataType"
       value: "T"
     }
     ruleType: "attribute"
@@ -12350,6 +12389,18 @@ mappings {
         argIndex: 8
       }
     }
+    inputFrameworkOpName: "MaxPoolWithArgmax"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "T"
+    outputDataTypeName: "dtype"
+    inputToOutput {
+      key: "dtype"
+      value: "T"
+    }
+    ruleType: "attribute"
     inputFrameworkOpName: "MaxPoolWithArgmax"
   }
 }
@@ -13428,6 +13479,9 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "from"
+    outputDoubleName: "to"
+    outputDoubleName: "step"
     inputToOutput {
       key: "from"
       value: "start"
@@ -14778,6 +14832,7 @@ mappings {
     functionName: "ndarrayinputtonumericalattribute"
     outputIntName: "maxOutputSize"
     outputDoubleName: "overlapThreshold"
+    outputDoubleName: "scoreThreshold"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -15157,7 +15212,7 @@ mappings {
     functionName: "stringequals"
     inputStringAttrName: "padding"
     inputStringAttrName: "padding"
-    outputBooleanName: "isSameMode"
+    outputIntName: "isSameMode"
     inputToOutput {
       key: "isSameMode"
       value: "padding"

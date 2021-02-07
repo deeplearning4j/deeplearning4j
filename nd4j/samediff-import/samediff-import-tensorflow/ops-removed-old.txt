@@ -1,7 +1,5 @@
 in_0
-eye/ones
+Roll/shift
+Roll/axis
 in_0/read
-eye/diag
-Add
-Svd
-Abs
+Roll

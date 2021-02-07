@@ -207,12 +207,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                     OpMappingRegistry<GRAPH_TYPE, NODE_TYPE, OP_DEF_TYPE, TENSOR_TYPE,
                             DATA_TYPE, ATTR_DEF_TYPE, ATTR_VALUE_TYPE>): SameDiff {
 
-        /*
-            First, build an in-memory representation of the graph that allows us to build the graph incrementally
-            If we can build the graph incrementally, we can make sure that the added variables are set up with the correct
-            datatype and (once implemented) greedy shape inference
-             */
-
 
         /*
         First, build an in-memory representation of the graph that allows us to build the graph incrementally
@@ -442,19 +436,34 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         val op = SameDiffOp.builder()
                             .name(name)
                             .op(df)
-                            .inputsToOp(inNames) //.outputsOfOp(outNames)    //We'll set this later
                             .controlDeps(controlDeps)
                             .build()
+                        //take only up to the inputs that are specified in the node/
+                        //this is for cases where node inputs is > intended number for ops
+                        //a common example is when ops convert input ndarrays to integers or float inputs
+                        val numInputsToTake = importInfo[name]!!.second.argDescriptorList.filter { input -> input.argType == OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR }
+                            .size
+                        op.inputsToOp = inNames.subList(0,numInputsToTake)
+
                         //add nodes/other pre processing in order for this node to work
-                        var addToGraph = true
                         sd.ops[name] = op
-                        defaultRunner.initAttributes(df, sd, importInfo[name]!!)
+                        //clear out inputs for variables as well to reflect the actual graph structure
+                        if(numInputsToTake < numInputs) {
+                            for(i in numInputsToTake until numInputs) {
+                                if(sd.hasVariable(nd.inputAt(i))) {
+                                    val currInputVar = sd.variables[nd.inputAt(i)]!!
+                                    currInputVar.inputsForOp.remove(op.name)
+                                }
+                            }
+                        }
+
                         //cache attributes just in case we have any rules so we don't create the rules more than once
                         val attributes = mappingContext.nodeAttributesAsMap()
                         mappingContext.relevantPrehookRules().forEach { rule ->
                             rule.preProcess(op, sd,attributes)
                         }
 
+                        defaultRunner.initAttributes(df, sd, importInfo[name]!!)
 
 
                         //add nodes/other post processing in order for this node to work

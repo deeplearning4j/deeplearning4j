@@ -73,7 +73,7 @@ namespace helpers {
                 }
             }
 
-            // stage 3) swap remainer of items.
+            // stage 3) swap remainder of items.
             if (remainShift && shiftCount)
             for (int i = actualShift; i < 2 * actualShift; ++i) {
                 auto _e0 = output->e<T>(i);
@@ -95,10 +95,11 @@ namespace helpers {
         auto source = output; //input;
         for (size_t i = 0; i < axes.size(); i++) {
             int axe = axes[i];
-            if (axe == source->rankOf() - 1) {// last dimension
+           // if (axe == source->rankOf() - 1) {// last dimension
                 ResultSet listOfTensors = source->allTensorsAlongDimension({axe});
                 ResultSet listOfOutTensors = output->allTensorsAlongDimension({axe});
                 int fullLen = listOfTensors.size();
+                nd4j_debug("Roll: fullLen at last dimension is %d\n",fullLen);
                 int theShift = shifts[i];
                 if (theShift > 0) {
                     theShift %= fullLen;
@@ -109,7 +110,7 @@ namespace helpers {
                 for (int k = 0; k < fullLen; k++) {
                     rollFunctorLinear(context, listOfTensors.at(k), listOfOutTensors.at(k), theShift, true);
                 }
-            }
+    /*        }
             else {
                 std::vector<int> dims(source->rankOf() - axe - 1);
                 for (size_t i = 0; i < dims.size(); ++i)
@@ -120,6 +121,7 @@ namespace helpers {
                 //
                 int fullLen = listOfTensors.size();
                 int sizeAt = input->sizeAt(axe);
+                nd4j_debug("Roll: fullLen at  dimension %d is %d\n",i,fullLen);
 
                 int theShift = shifts[i];
 
@@ -131,14 +133,14 @@ namespace helpers {
                 }
 
                 if (theShift) {
-                    for (int dim = 0; dim < fullLen / sizeAt; ++dim) {
-                        for (int e = theShift; e < sizeAt - theShift; ++e) {
+                    for (size_t dim = 0; dim < fullLen / sizeAt; ++dim) {
+                        for (size_t e = theShift; e < sizeAt - theShift; ++e) {
                             auto sourceM = listOfTensors.at(dim * sizeAt + e - theShift);
                             auto targetM = listOfOutTensors.at(dim * sizeAt + e);
                             sourceM->swapUnsafe(*targetM);
                         }
 
-                        for (int e = 0; e < theShift; ++e) {
+                        for (size_t e = 0; e < theShift; ++e) {
                             int sourceIndex = dim * sizeAt + sizeAt - theShift + e;
                             auto sourceM = listOfTensors.at(sourceIndex);
                             auto targetM = listOfOutTensors.at(dim * sizeAt + e);
@@ -149,7 +151,7 @@ namespace helpers {
                 }
             }
 //            if (!inplace)
-//                source = output;
+//                source = output;*/
         }
     }
 

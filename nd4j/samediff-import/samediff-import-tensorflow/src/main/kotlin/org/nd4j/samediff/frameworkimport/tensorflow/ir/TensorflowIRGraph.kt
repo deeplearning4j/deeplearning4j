@@ -134,7 +134,6 @@ class TensorflowIRGraph(graphDef: GraphDef, opDef: OpList
         val node = nodeByName(varName)
         val attrMap = node.attrMap
         if(!attrMap.containsKey("dtype")) {
-
             val retSet =  attrMap.values.filter { attrValue -> attrValue.type != DataType.DT_INVALID }
             if(retSet.isEmpty()) {
                 return TensorflowIRDataType(DataType.DT_INVALID)
