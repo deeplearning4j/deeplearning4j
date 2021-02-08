@@ -69,10 +69,8 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-               "max_pool_with_argmax/int32_int64_padding_SAME",
-            //      "fused_batch_norm/float32_nhwc",
-                 "max_pool_with_argmax/int64_int64_padding_SAME"
-            //      "fused_batch_norm/float16_nhwc",
+                  "fused_batch_norm/float32_nhwc"
+           // , "fused_batch_norm/float16_nhwc"
 
     );
 
@@ -85,9 +83,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             // Still failing 2020/04/27 java.lang.IllegalStateException: Could not find class for TF Ops: TruncateMod
             "truncatemod/.*",
-
-            //Still failing as of 2019/09/11 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
-            "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
 
             //2019/09/11 - No tensorflow op found for SparseTensorDenseAdd
             // 2020/04/27 java.lang.IllegalStateException: Could not find class for TF Ops: SparseTensorDenseAdd

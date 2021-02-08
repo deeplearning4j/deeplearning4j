@@ -51,9 +51,9 @@ endif()
 
 if(WIN32 AND NOT ANDROID)
     get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
-	endif()
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj")
+    endif()
     foreach(dir ${dirs})
         message(STATUS "dir='${dir}'")
     endforeach()
@@ -161,8 +161,8 @@ if(SD_CUDA)
     endif()
 
     if (CUDA_FOUND)
-		message("CUDA include directory: ${CUDA_INCLUDE_DIRS}")
-		include_directories(${CUDA_INCLUDE_DIRS})
+        message("CUDA include directory: ${CUDA_INCLUDE_DIRS}")
+        include_directories(${CUDA_INCLUDE_DIRS})
         message("CUDA found!")
         if ("${SD_EXPERIMENTAL}" STREQUAL "yes")
             message("Experimental mode ENABLED")
@@ -181,7 +181,7 @@ if(SD_CUDA)
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
         endif()
 
-        string( TOLOWER "${COMPUTE}" COMPUTE_CMP ) 
+        string( TOLOWER "${COMPUTE}" COMPUTE_CMP )
         if ("${COMPUTE_CMP}" STREQUAL "all")
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Common")
         elseif("${COMPUTE_CMP}" STREQUAL "auto")
@@ -197,9 +197,9 @@ if(SD_CUDA)
         endif()
         # list to spaces
         string (REPLACE ";" " " CUDA_ARCH_FLAGS "${CUDA_ARCH_FLAGS}")
- 
+
         set(CMAKE_CUDA_FLAGS " ${CMAKE_CUDA_FLAGS} -DCUDA_VERSION_MAJOR=${CUDA_VERSION_MAJOR} ${EXPM} -w --cudart=static --expt-extended-lambda -Xfatbin -compress-all ${CUDA_ARCH_FLAGS}")
- 
+
         file(GLOB_RECURSE PERF_SOURCES false ../include/performance/*.cpp ../include/performance/*.h)
         file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)
         file(GLOB_RECURSE EXEC_SOURCES false ../include/execution/impl/*.cpp ../include/execution/*.cu ../include/execution/*.h)
@@ -218,23 +218,23 @@ if(SD_CUDA)
 
 
         file(GLOB_RECURSE COMPILATION_UNITS false ../include/loops/cuda/compilation_units/*.cu.in
-          ../include/ops/impl/compilation_units/*.cpp.in)
+                ../include/ops/impl/compilation_units/*.cpp.in)
 
-        foreach(FL_ITEM ${COMPILATION_UNITS})   
+        foreach(FL_ITEM ${COMPILATION_UNITS})
             genCompilation(FL_ITEM)
-        endforeach() 
+        endforeach()
 
         if (HAVE_CUDNN)
             message("cuDNN included")
             file(GLOB_RECURSE CUSTOMOPS_CUDNN_SOURCES false ../include/ops/declarable/platform/cudnn/*.cu)
         endif()
 
-		add_library(samediff_obj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES}
+        add_library(samediff_obj OBJECT ${LOOPS_SOURCES_CUDA} ${LEGACY_SOURCES}
                 ${CUSTOMOPS_HELPERS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES}
                 ${LOOPS_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
                 ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${INDEXING_SOURCES} ${EXCEPTIONS_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES} ${CUSTOMOPS_CUDNN_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES}
-				${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
-				)
+                ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
+                )
 
         if (WIN32)
             message("MSVC runtime for library: ${MSVC_RT_LIB}")
@@ -266,10 +266,10 @@ if(SD_CUDA)
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
         endif()
 
-		target_link_libraries(${SD_LIBRARY_NAME} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN})
-	    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
+        target_link_libraries(${SD_LIBRARY_NAME} ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusolver_LIBRARY} ${CUDNN} ${MKLDNN})
+        set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/cuda)
 
-		install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
+        install(TARGETS ${SD_LIBRARY_NAME} DESTINATION .)
     endif(CUDA_FOUND)
 elseif(SD_CPU)
 
@@ -295,13 +295,13 @@ elseif(SD_CPU)
     file(GLOB_RECURSE LOOPS_SOURCES false ../include/loops/*.cpp ../include/loops/*.h)
 
 
-    file(GLOB_RECURSE COMPILATION_UNITS false ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in 
-    ../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in
-    ../include/ops/impl/compilation_units/*.cpp.in)
+    file(GLOB_RECURSE COMPILATION_UNITS false ../include/ops/declarable/helpers/cpu/compilation_units/*.cpp.in
+            ../include/loops/cpu/compilation_units/*.cpp.in ../include/helpers/cpu/loops/*.cpp.in
+            ../include/ops/impl/compilation_units/*.cpp.in)
 
-    foreach(FL_ITEM ${COMPILATION_UNITS})   
+    foreach(FL_ITEM ${COMPILATION_UNITS})
         genCompilation(FL_ITEM)
-    endforeach() 
+    endforeach()
 
     if (SD_X86_BUILD)
         # we disable platform optimizations for certains files for linux/macos
@@ -312,36 +312,36 @@ elseif(SD_CPU)
 
 
     if(SD_CHECK_VECTORIZATION)
-       set(VECT_FILES cpu/NativeOps.cpp ${OPS_SOURCES} ${HELPERS_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${LOOPS_SOURCES})
-       if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-        
-        if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0)
-            set(CHECK_VECT_FLAGS "-ftree-vectorize -fsave-optimization-record")
-            #to process fsave-optimization-record we will need our cython version code
-            message("Build Auto vectorization helpers")
-            execute_process(COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../auto_vectorization/cython_setup.py" "build_ext" "--inplace" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../auto_vectorization/" RESULT_VARIABLE ret)
-            message("build='${ret}'")
+        set(VECT_FILES cpu/NativeOps.cpp ${OPS_SOURCES} ${HELPERS_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${LOOPS_SOURCES})
+        if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 
-            #remove fail cases that gcc fails produce sometimes
-            file(GLOB_RECURSE FAILURE_CASES false ../include/loops/cpu/compilation_units/reduce3*.cpp)
-            #message("*****${FAILURE_CASES}")
-            foreach(FL_ITEM ${FAILURE_CASES})
-                message("Removing failure cases ${FL_ITEM}")
-                list(REMOVE_ITEM VECT_FILES ${FL_ITEM})
-            endforeach() 
-        else()
-            set(CHECK_VECT_FLAGS "-ftree-vectorize -fopt-info-vec-optimized-missed")
+            if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0)
+                set(CHECK_VECT_FLAGS "-ftree-vectorize -fsave-optimization-record")
+                #to process fsave-optimization-record we will need our cython version code
+                message("Build Auto vectorization helpers")
+                execute_process(COMMAND "python3" "${CMAKE_CURRENT_SOURCE_DIR}/../auto_vectorization/cython_setup.py" "build_ext" "--inplace" WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/../auto_vectorization/" RESULT_VARIABLE ret)
+                message("build='${ret}'")
+
+                #remove fail cases that gcc fails produce sometimes
+                file(GLOB_RECURSE FAILURE_CASES false ../include/loops/cpu/compilation_units/reduce3*.cpp)
+                #message("*****${FAILURE_CASES}")
+                foreach(FL_ITEM ${FAILURE_CASES})
+                    message("Removing failure cases ${FL_ITEM}")
+                    list(REMOVE_ITEM VECT_FILES ${FL_ITEM})
+                endforeach()
+            else()
+                set(CHECK_VECT_FLAGS "-ftree-vectorize -fopt-info-vec-optimized-missed")
+            endif()
+            message("CHECK VECTORIZATION ${CHECK_VECT_FLAGS}")
+            set_source_files_properties( ${VECT_FILES}  PROPERTIES COMPILE_FLAGS "${CHECK_VECT_FLAGS}" )
         endif()
-        message("CHECK VECTORIZATION ${CHECK_VECT_FLAGS}")
-        set_source_files_properties( ${VECT_FILES}  PROPERTIES COMPILE_FLAGS "${CHECK_VECT_FLAGS}" )
-       endif()
-    endif()    
+    endif()
 
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
     add_library(samediff_obj OBJECT ${LEGACY_SOURCES}
             ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
-            ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES} 
+            ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES}
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
     if(IOS)
         add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
@@ -373,7 +373,11 @@ elseif(SD_CPU)
     foreach (_variableName ${_variableNames})
         message(STATUS "${_variableName}=${${_variableName}}")
     endforeach()
-    target_link_libraries(${SD_LIBRARY_NAME} ${MKLDNN}  ${MKLDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+
+    #This breaks the build. Normally you want to run tests anyways.
+    if(NOT "$ENV{CLION_IDE}")
+        target_link_libraries(${SD_LIBRARY_NAME} ${MKLDNN}  ${MKLDNN_LIBRARIES} ${ARMCOMPUTE_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
+    endif()
 
     if ("${SD_ALL_OPS}" AND "${SD_BUILD_MINIFIER}")
         message(STATUS "Building minifier...")
@@ -382,7 +386,7 @@ elseif(SD_CPU)
     endif()
 
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}" VERSION_LESS 4.9)
-      message(FATAL_ERROR "You need at least GCC 4.9")
+        message(FATAL_ERROR "You need at least GCC 4.9")
     endif()
 
     # OpenMP works well pretty much only with GCC

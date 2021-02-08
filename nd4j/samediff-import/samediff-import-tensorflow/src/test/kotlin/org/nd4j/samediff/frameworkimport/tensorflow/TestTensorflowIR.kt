@@ -90,7 +90,9 @@ class TestTensorflowIR {
         //val inputMap = mapOf("image" to Nd4j.ones(1,128,128,4))
         val inputMap = emptyMap<String,INDArray>()
         val tensorflowIRGraph = TensorflowIRGraph(textGraph,tensorflowOps,tfImporter.registry)
-        val outputList = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }.toSet()
+        val outputList = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }.toMutableSet()
+        outputList.add("FusedBatchNormV3:1")
+        outputList.add("FusedBatchNormV3:2")
         val tfGraphRunner = TensorflowIRGraphRunner(tensorflowIRGraph, inputMap.keys.toList(), outputList.toList())
         val importedGraph = TFGraphMapper.importGraph(textGraph)
         val graph = tfImporter.importFromGraph(textGraph,inputMap)
@@ -104,7 +106,7 @@ class TestTensorflowIR {
         val names = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }
         val skipValidation = setOf("parallel_stack/ExpandDims/dim")
         //assertEquals(output.keys,output2.keys)
-        val notEquals = HashSet<String>()
+    /*    val notEquals = HashSet<String>()
         names.forEach {
             val value = output[it]
             val value2 = output2[it]
@@ -115,9 +117,9 @@ class TestTensorflowIR {
                 val newVar = graph.variables[it]
                 notEquals.add(it)
             }
-        }
+        }*/
 
-        println(notEquals)
+        //println(notEquals)
 
         // assertEquals(output,output2)
         //assertEquals(tfOutput,output)

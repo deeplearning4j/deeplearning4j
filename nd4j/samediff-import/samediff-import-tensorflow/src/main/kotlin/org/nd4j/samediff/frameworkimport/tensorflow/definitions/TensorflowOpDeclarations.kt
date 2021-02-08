@@ -958,7 +958,7 @@ val fusedBatchnormV1 = TensorflowMappingProcess(
                 "offset" to "offset","mean" to "mean","variance" to "variance"))),
         inputFrameworkOpName = "FusedBatchNorm",
         opMappingRegistry = tensorflowOpRegistry,
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("epsilon" to "epsilon")),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("epsilon" to "epsilon","dtype" to "T")),
                 invertBooleanNumber(mutableMapOf("isTraining" to "is_training")),
                 stringEqualsRule(outputAttribute = "dataFormat",inputFrameworkAttributeName = "data_format",valueToTest = "NCHW",argumentIndex = 0))
 )
@@ -971,7 +971,7 @@ val fusedBatchnormV2 = TensorflowMappingProcess(
                 "offset" to "offset","mean" to "mean","variance" to "variance"))),
         inputFrameworkOpName = "FusedBatchNormV2",
         opMappingRegistry = tensorflowOpRegistry,
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("epsilon" to "epsilon")),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("epsilon" to "epsilon","dtype" to "T")),
                 invertBooleanNumber(mutableMapOf("isTraining" to "is_training")),
                 stringEqualsRule(outputAttribute = "dataFormat",inputFrameworkAttributeName = "data_format",valueToTest = "NCHW",argumentIndex = 0))
 )
@@ -983,7 +983,7 @@ val fusedBatchnormV3 = TensorflowMappingProcess(
                 "offset" to "offset","mean" to "mean","variance" to "variance"))),
         inputFrameworkOpName = "FusedBatchNormV3",
         opMappingRegistry = tensorflowOpRegistry,
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("epsilon" to "epsilon")),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("epsilon" to "epsilon","dtype" to "T")),
                 invertBooleanNumber(mutableMapOf("isTraining" to "is_training")),
                 stringEqualsRule(outputAttribute = "dataFormat",inputFrameworkAttributeName = "data_format",valueToTest = "NCHW",argumentIndex = 0))
 )

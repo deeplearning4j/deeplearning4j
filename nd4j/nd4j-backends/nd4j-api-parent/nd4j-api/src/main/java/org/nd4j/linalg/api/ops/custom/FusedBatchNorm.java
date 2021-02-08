@@ -87,9 +87,12 @@ public class FusedBatchNorm extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes) {
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        if(!dArguments.isEmpty()) {
+            return Arrays.asList(dArguments.get(0),dArguments.get(0),dArguments.get(0));
+        }
         return Arrays.asList(outputDataType == null ? DataType.FLOAT : outputDataType,
                 outputDataType == null ? DataType.FLOAT : outputDataType,
                 outputDataType == null ? DataType.FLOAT : outputDataType);

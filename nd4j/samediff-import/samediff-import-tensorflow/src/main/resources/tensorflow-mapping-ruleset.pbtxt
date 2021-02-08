@@ -8367,9 +8367,15 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "epsilon"
     outputDoubleName: "epsilon"
+    inputDataTypeName: "T"
+    outputDataTypeName: "dtype"
     inputToOutput {
       key: "epsilon"
       value: "epsilon"
+    }
+    inputToOutput {
+      key: "dtype"
+      value: "T"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "FusedBatchNorm"
@@ -12480,9 +12486,15 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "epsilon"
     outputDoubleName: "epsilon"
+    inputDataTypeName: "T"
+    outputDataTypeName: "dtype"
     inputToOutput {
       key: "epsilon"
       value: "epsilon"
+    }
+    inputToOutput {
+      key: "dtype"
+      value: "T"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "FusedBatchNormV3"
@@ -13056,9 +13068,15 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "epsilon"
     outputDoubleName: "epsilon"
+    inputDataTypeName: "T"
+    outputDataTypeName: "dtype"
     inputToOutput {
       key: "epsilon"
       value: "epsilon"
+    }
+    inputToOutput {
+      key: "dtype"
+      value: "T"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "FusedBatchNormV2"
