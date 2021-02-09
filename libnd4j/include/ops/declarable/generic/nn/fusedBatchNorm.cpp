@@ -156,7 +156,7 @@ namespace sd {
 
             return SHAPELIST(CONSTANT(outShapeInfo), CONSTANT(batchMeanShapeInfo), CONSTANT(batchVarShapeInfo));
         }
-        
+
     }
 }
 
