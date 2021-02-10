@@ -19,6 +19,7 @@
  */
 package org.nd4j.samediff.frameworkimport.rule.tensor
 
+import org.nd4j.common.primitives.Counter
 import org.nd4j.ir.MapperNamespace
 import org.nd4j.ir.OpNamespace
 import org.nd4j.ir.TensorNamespace
@@ -87,9 +88,10 @@ abstract class BaseNDArrayMappingRule<
     override fun convertInput(mappingContext: MappingContext<GRAPH_DEF, NODE_DEF_TYPE, OP_DEF_TYPE, TENSOR_TYPE, ATTR_DEF, ATTR_VALUE_TYPE, DATA_TYPE>): List<OpNamespace.ArgDescriptor> {
         val ret = ArrayList<OpNamespace.ArgDescriptor>()
         val mappingsToPerform = inputArgumentMappings()
+        val nameUsageCounts = Counter<String>()
         mappingsToPerform.forEach { (k, v) ->
             ret.add(ArgDescriptor {
-                name = k
+                name = mappingContext.nodeInputNameForOpDefInputName(v)
                 argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
                 inputValue = mappingContext.tensorInputFor(v).toArgTensor()
                 argIndex = lookupIndexForArgDescriptor(
@@ -98,6 +100,8 @@ abstract class BaseNDArrayMappingRule<
                     argDescriptorType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
                 )
             })
+
+            nameUsageCounts.incrementCount(v,1.0)
         }
 
 

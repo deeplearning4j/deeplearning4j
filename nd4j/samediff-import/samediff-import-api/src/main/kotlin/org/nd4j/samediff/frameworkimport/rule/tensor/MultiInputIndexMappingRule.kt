@@ -94,7 +94,7 @@ abstract class MultiInputIndexMappingRule<
             //in the outputs yet
             relevantInputs.forEachIndexed {index,inputName ->
                 ret.add(ArgDescriptor {
-                    name = "$k:$index"
+                    name = "$v"
                     argType = OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR
                     inputValue = mappingContext.tensorInputFromInputFrameworkName(inputName).toArgTensor()
                     argIndex = baseIndex + index

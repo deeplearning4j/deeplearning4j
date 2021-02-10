@@ -69,9 +69,28 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-                  "fused_batch_norm/float32_nhwc"
-           // , "fused_batch_norm/float16_nhwc"
-
+            "conv2d_transpose/channels_last_b1_k2_s2_SAME",
+            "conv2d_transpose/channels_last_b1_k2_s1_SAME",
+            "bincount/rank1",
+            "bincount/rank1_weights",
+            "bincount/rank1_max5",
+            "emptyArrayTests/zeros/ones_rank3",
+            "conv2d_transpose/channels_last_b2_k2_s1_SAME_nobias",
+            "emptyArrayTests/identity_n/rank3.",
+            "emptyReduceAxisTests/reduce_sum/rank1",
+            "emptyReduceAxisTests/reduce_sum/rank1_keep",
+            "emptyReduceAxisTests/reduce_sum/rank3",
+            "emptyReduceAxisTests/reduce_any/rank2",
+            "embedding_lookup/rank2_multiple_div_nomaxnorm",
+            "emptyReduceAxisTests/reduce_all/rank2_keep",
+            "conv2d_transpose/channels_first_b1_k2_s1_SAME_sigmoid",
+            "conv2d_transpose/channels_first_b1_k2_s1_SAME_elu",
+            "emptyReduceAxisTests/reduce_prod/rank1",
+            "conv2d_transpose/channels_first_b2_k2_s1_SAME_nobias",
+            "conv2d_transpose/channels_last_b2_k2_s1_SAME_regularizers",
+            "conv2d_transpose/channels_last_b1_k2_s1_SAME_elu",
+            "conv2d_transpose/channels_first_b1_k2_s1_SAME_selu_nobias",
+            "embedding_lookup/rank2_multiple_mod_maxnorm1"
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{

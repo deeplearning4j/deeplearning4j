@@ -136,4 +136,12 @@ IRGraph<Onnx.GraphProto, Onnx.NodeProto, Onnx.NodeProto, Onnx.TensorProto,
         return OnnxIRTensor(attemptedTensor!!)
     }
 
+    override fun nodeInputNameForOpDefInputName(name: String): String {
+        var foundIndex = opDef.inputList.map { input -> input.toString() }.indexOf(name)
+        if(foundIndex < 0) {
+           throw IllegalArgumentException("No name ${name} found on op def with name ${opDef.name}")
+        }
+        return node.getInput(foundIndex)
+    }
+
 }

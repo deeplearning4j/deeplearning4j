@@ -93,8 +93,7 @@ public class Merge extends BaseCompatOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input dataypes for %s, got %s", getClass(), inputDataTypes);
-        Preconditions.checkState(inputDataTypes.get(0) == inputDataTypes.get(1), "Input datatypes must be the same for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() >= 1, "Expected at least 1  input data types for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));
     }
 }

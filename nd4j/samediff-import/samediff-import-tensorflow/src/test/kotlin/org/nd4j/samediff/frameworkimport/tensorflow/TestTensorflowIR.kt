@@ -88,17 +88,28 @@ class TestTensorflowIR {
         //TFGraphMapper.importGraph(textGraph)
         // val inputMap = mapOf("input_1" to Nd4j.zeros(10).castTo(org.nd4j.linalg.api.buffer.DataType.INT32),"input_2" to Nd4j.zeros(1,8).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE))
         //val inputMap = mapOf("image" to Nd4j.ones(1,128,128,4))
+        /**
+         * TODO: fix emptyReduce.
+         * When we pass in 2 inputs where input 1 is the dimensions, the results
+         * work. In our model import, it appears that
+         * the empty dimensions aren't being passed down
+         * for int arguments properly.
+         * We need to figure out the difference between specifying 2 input arrays
+         * and ints, that or we need to make it so that arrays can be passed in
+         * for dimensions for each singular reduce op.
+         *
+         * Each op seems to be able to take in dimensions for indices.
+         * It *MIGHT* be better just to pass in dimensions directly.
+         */
         val inputMap = emptyMap<String,INDArray>()
         val tensorflowIRGraph = TensorflowIRGraph(textGraph,tensorflowOps,tfImporter.registry)
         val outputList = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }.toMutableSet()
-        outputList.add("FusedBatchNormV3:1")
-        outputList.add("FusedBatchNormV3:2")
         val tfGraphRunner = TensorflowIRGraphRunner(tensorflowIRGraph, inputMap.keys.toList(), outputList.toList())
         val importedGraph = TFGraphMapper.importGraph(textGraph)
         val graph = tfImporter.importFromGraph(textGraph,inputMap)
         val tfOutput = tfGraphRunner.run(inputMap)
-        val output = graph.outputAll(inputMap)
         val output2 = importedGraph.outputAll(inputMap)
+        val output = graph.outputAll(inputMap)
 
 
         //assertEquals(tfOutput.keys,outputList)

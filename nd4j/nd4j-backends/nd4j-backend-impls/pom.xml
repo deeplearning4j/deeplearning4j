@@ -36,11 +36,6 @@
 
     <name>nd4j-backend-impls</name>
 
-    <modules>
-        <module>nd4j-cuda</module>
-        <module>nd4j-cuda-platform</module>
-    </modules>
-
     <properties>
         <!-- Hack to load only at runtime platform specific dependency with Maven -->
         <dependency.groupId>${project.groupId}</dependency.groupId>

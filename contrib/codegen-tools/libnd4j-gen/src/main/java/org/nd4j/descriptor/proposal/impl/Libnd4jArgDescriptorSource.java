@@ -64,7 +64,7 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
     public final static String T_ARG = "T_ARG";
     public final static String B_ARG = "B_ARG";
     public final static String DECLARE_SYN = "DECLARE_SYN";
-    public final static String DEFAULT_LIBND4J_DIRECTORY = "../../libnd4j";
+    public final static String DEFAULT_LIBND4J_DIRECTORY = "../../../libnd4j";
     public final static int BROADCASTABLE_OP_IMPL_DEFAULT_NIN = 2;
     public final static int BROADCASTABLE_OP_IMPL_DEFAULT_NOUT = 1;
     public final static String CUSTOM_OP_IMPL = "CUSTOM_OP_IMPL";

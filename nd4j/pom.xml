@@ -129,7 +129,7 @@
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>${maven-jar-plugin.version}</version>
+                <version>3.0.2</version>
                 <configuration>
                     <includes>
                         <include>**/*.so</include>

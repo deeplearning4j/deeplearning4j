@@ -441,10 +441,18 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         //take only up to the inputs that are specified in the node/
                         //this is for cases where node inputs is > intended number for ops
                         //a common example is when ops convert input ndarrays to integers or float inputs
-                        val numInputsToTake = importInfo[name]!!.second.argDescriptorList.filter { input -> input.argType == OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR }
-                            .size
-                        op.inputsToOp = inNames.subList(0,numInputsToTake)
+                        val resolvedArgInputs = importInfo[name]!!.second.argDescriptorList.filter {input -> input.argType == OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR}
+                            .sortedBy { argDescriptor -> argDescriptor.argIndex }
+                        val numInputsToTake = resolvedArgInputs.size
 
+                        if(numInputsToTake != inNames.size) {
+                            if(numInputsToTake < inNames.size)
+                                op.inputsToOp = inNames.subList(0, numInputsToTake)
+                            else if(numInputsToTake > inNames.size) {
+                                op.inputsToOp = resolvedArgInputs.map { input -> input.name }
+                            }
+                        } else
+                            op.inputsToOp = inNames
                         //add nodes/other pre processing in order for this node to work
                         sd.ops[name] = op
                         //clear out inputs for variables as well to reflect the actual graph structure

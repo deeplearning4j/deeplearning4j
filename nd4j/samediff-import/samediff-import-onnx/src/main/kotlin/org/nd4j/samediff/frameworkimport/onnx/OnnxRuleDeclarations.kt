@@ -27,6 +27,7 @@ import org.nd4j.samediff.frameworkimport.onnx.process.OnnxMappingProcess
 import org.nd4j.samediff.frameworkimport.onnx.rule.attribute.*
 import org.nd4j.samediff.frameworkimport.onnx.rule.tensor.NDArrayMappingRule
 import org.nd4j.samediff.frameworkimport.onnx.rule.tensor.OnnxMultiInputIndexMappingRule
+import org.nd4j.samediff.frameworkimport.onnx.rule.tensor.OnnxPassThroughMultiInputTensorMapping
 import org.nd4j.samediff.frameworkimport.rule.attribute.AttributeMappingRule
 
 fun mappingNDArrayInputs(inputs: MutableMap<String,String>) : NDArrayMappingRule {
@@ -38,6 +39,10 @@ fun mappingNDArrayInputs(inputs: MutableMap<String,String>) : NDArrayMappingRule
 fun mappingListNDArrays(inputs: MutableMap<String,String>) : OnnxMultiInputIndexMappingRule {
     return OnnxMultiInputIndexMappingRule(
         mappingNamesToPerform = inputs)
+}
+
+fun passThroughNDArrayInputs() : OnnxPassThroughMultiInputTensorMapping {
+    return OnnxPassThroughMultiInputTensorMapping()
 }
 
 fun conditionalFieldValueIntIndexNDArrayRule(outputAttribute: String,

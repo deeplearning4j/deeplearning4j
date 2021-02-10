@@ -133,5 +133,13 @@ class TensorflowMappingContext(opDef: OpDef, node: NodeDef, graph: IRGraph<Graph
         return TensorflowIRTensor(searchedNode.getAttrOrThrow("value").tensor)
     }
 
+    override fun nodeInputNameForOpDefInputName(name: String): String {
+        val inputNameIdx  = opDef.inputArgList.map { input -> input.name  }.indexOf(name)
+        if(inputNameIdx < 0) {
+            throw java.lang.IllegalArgumentException("No name ${name} found on op def with name ${opDef.name}")
+        }
+        return node.getInput(inputNameIdx)
+    }
+
 
 }

@@ -21,7 +21,6 @@
 package org.nd4j.common.base;
 
 import org.junit.Test;
-import org.nd4j.common.base.Preconditions;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;

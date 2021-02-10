@@ -496,6 +496,15 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                                     .setArgIndex(boolIdx)
                                     .build()).build());
 
+                    argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                            .sourceOfProposal("java")
+                            .proposalWeight(9999.0)
+                            .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                    .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                    .setName("dimensions")
+                                    .setIsArray(false)
+                                    .setArgIndex(1)
+                                    .build()).build());
                 }
 
 
@@ -541,6 +550,20 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                                     .build()).build());
                 }
             }
+
+            if(name.contains("loop_cond")) {
+                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                        .sourceOfProposal("java")
+                        .proposalWeight(9999.0)
+                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                .setName("input")
+                                .setIsArray(false)
+                                .setArgIndex(0)
+                                .build()).build());
+
+            }
+
 
             if(name.equals("top_k")) {
                 if(!containsProposalWithDescriptorName("sorted",argDescriptorProposals)) {

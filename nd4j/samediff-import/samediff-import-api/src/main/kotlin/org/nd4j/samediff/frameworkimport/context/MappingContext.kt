@@ -81,6 +81,12 @@ interface MappingContext<GRAPH_TYPE: GeneratedMessageV3,NODE_TYPE: GeneratedMess
      */
     fun opDef(): OP_DEF_TYPE
 
+    /**
+     * Resolve the actual real input name for the specific node
+     * mapped to the generic op definition name that tne node
+     * is an op for.
+     */
+    fun nodeInputNameForOpDefInputName(name: String): String
 
     /**
      * The op name we're mapping

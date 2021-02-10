@@ -244,6 +244,9 @@ public class DeConv2DTF extends DynamicCustomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){ //inShape, weights, input
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
+        if(!dArguments.isEmpty()) {
+            return Arrays.asList(dArguments.get(0));
+        }
         return Collections.singletonList(inputDataTypes.get(2));
     }
 }

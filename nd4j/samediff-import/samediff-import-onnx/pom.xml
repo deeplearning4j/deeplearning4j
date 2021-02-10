@@ -38,6 +38,15 @@
     <jgit.version>5.10.0.202012080955-r</jgit.version>
   </properties>
 
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+
 
   <dependencies>
     <dependency>

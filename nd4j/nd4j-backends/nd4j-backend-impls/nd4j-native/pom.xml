@@ -88,14 +88,14 @@
                         <configuration>
                             <skipMain>${javacpp.parser.skip}</skipMain>
                             <includes>
-                                <include>org/nd4j/nativeblas/Nd4jCpuPresets.java</include>
+                                <include>org/nd4j/nativeblas/**.java</include>
                             </includes>
                         </configuration>
                     </execution>
                 </executions>
                 <configuration>
-                    <source>7</source>
-                    <target>7</target>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
             <plugin>
@@ -185,7 +185,7 @@
                             <goal>build</goal>
                         </goals>
                     </execution>
-                    <execution>
+               <!--     <execution>
                         <id>javacpp-parser</id>
                         <phase>generate-sources</phase>
                         <goals>
@@ -197,7 +197,7 @@
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCpuPresets
                             </classOrPackageName>
                         </configuration>
-                    </execution>
+                    </execution>-->
                     <execution>
                         <id>javacpp-compiler</id>
                         <phase>process-classes</phase>
@@ -387,7 +387,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
-                        <version>3.0.2</version>
+                        <version>3.1.2</version>
                         <executions>
                             <execution>
                                 <id>unpack</id>

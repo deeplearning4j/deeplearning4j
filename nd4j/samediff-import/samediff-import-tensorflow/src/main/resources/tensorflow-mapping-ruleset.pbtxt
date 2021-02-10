@@ -1748,8 +1748,8 @@ mappings {
   opName: "stack"
   inputFrameworkOpName: "Pack"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
+    ruleName: "multiinputindex"
+    functionName: "multiinputindex"
     inputTensorName: "values"
     outputTensorName: "input"
     inputToOutput {
@@ -2020,10 +2020,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "reduction_indices"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "reduction_indices"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Sum"
@@ -2056,20 +2062,8 @@ mappings {
   opName: "dynamic_stitch"
   inputFrameworkOpName: "DynamicStitch"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    inputTensorName: "indices"
-    outputTensorName: "index"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "index"
-      value: "data"
-    }
-    inputToOutput {
-      key: "input"
-      value: "indices"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "DynamicStitch"
   }
@@ -2094,10 +2088,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "dimension"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "dimension"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ArgMax"
@@ -2153,10 +2153,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "reduction_indices"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "reduction_indices"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Min"
@@ -2318,26 +2324,8 @@ mappings {
   opName: "scatter_list"
   inputFrameworkOpName: "TensorArrayScatterV3"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "value"
-    inputTensorName: "indices"
-    inputTensorName: "flow_in"
-    outputTensorName: "array"
-    outputTensorName: "sizes"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "array"
-      value: "value"
-    }
-    inputToOutput {
-      key: "sizes"
-      value: "indices"
-    }
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayScatterV3"
   }
@@ -2359,26 +2347,8 @@ mappings {
   opName: "scatter_list"
   inputFrameworkOpName: "TensorArrayScatterV2"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "value"
-    inputTensorName: "indices"
-    inputTensorName: "flow_in"
-    outputTensorName: "array"
-    outputTensorName: "sizes"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "array"
-      value: "value"
-    }
-    inputToOutput {
-      key: "sizes"
-      value: "indices"
-    }
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayScatterV2"
   }
@@ -4497,14 +4467,8 @@ mappings {
   opName: "tensorarraywritev3"
   inputFrameworkOpName: "TensorArrayWriteV3"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "handle"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "handle"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayWriteV3"
   }
@@ -4928,6 +4892,12 @@ mappings {
   rule {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
+    inputTensorName: "input"
+    outputTensorName: "input"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
     ruleType: "tensor"
     inputFrameworkOpName: "LoopCond"
   }
@@ -5183,8 +5153,8 @@ mappings {
   opName: "merge"
   inputFrameworkOpName: "Merge"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
+    ruleName: "multiinputindex"
+    functionName: "multiinputindex"
     inputTensorName: "inputs"
     outputTensorName: "input"
     inputToOutput {
@@ -5350,14 +5320,8 @@ mappings {
   opName: "size_list"
   inputFrameworkOpName: "TensorArraySize"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "flow_in"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArraySize"
   }
@@ -6395,15 +6359,21 @@ mappings {
   opName: "stack_list"
   inputFrameworkOpName: "TensorArrayConcat"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "flow_in"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
+    inputFrameworkOpName: "TensorArrayConcat"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "dtype"
+    outputDataTypeName: "dtype"
+    inputToOutput {
+      key: "dtype"
+      value: "dtype"
+    }
+    ruleType: "attribute"
     inputFrameworkOpName: "TensorArrayConcat"
   }
 }
@@ -6876,10 +6846,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "axis"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "axis"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Roll"
@@ -6891,10 +6867,6 @@ mappings {
     inputToOutput {
       key: "shift"
       value: "shift"
-    }
-    inputToOutput {
-      key: "dimensions"
-      value: "axis"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Roll"
@@ -7073,26 +7045,8 @@ mappings {
   opName: "split_list"
   inputFrameworkOpName: "TensorArraySplit"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "lengths"
-    inputTensorName: "value"
-    inputTensorName: "value"
-    outputTensorName: "sizes"
-    outputTensorName: "list"
-    outputTensorName: "array"
-    inputToOutput {
-      key: "sizes"
-      value: "lengths"
-    }
-    inputToOutput {
-      key: "list"
-      value: "value"
-    }
-    inputToOutput {
-      key: "array"
-      value: "value"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArraySplit"
   }
@@ -7174,10 +7128,10 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
+    outputIntName: "outputType"
     inputBooleanName: "init"
     outputBooleanName: "init"
     inputDataTypeName: "dtype"
-    outputDataTypeName: "outputType"
     inputToOutput {
       key: "init"
       value: "init"
@@ -7192,8 +7146,8 @@ mappings {
   rule {
     ruleName: "datatypetoint"
     functionName: "datatypetoint"
+    outputIntName: "outputType"
     inputDataTypeName: "dtype"
-    outputDataTypeName: "outputType"
     inputToOutput {
       key: "outputType"
       value: "dtype"
@@ -8036,14 +7990,8 @@ mappings {
   opName: "read_list"
   inputFrameworkOpName: "TensorArrayRead"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "handle"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "list"
-      value: "handle"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayRead"
   }
@@ -8200,26 +8148,8 @@ mappings {
   opName: "scatter_list"
   inputFrameworkOpName: "TensorArrayScatter"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "value"
-    inputTensorName: "indices"
-    inputTensorName: "flow_in"
-    outputTensorName: "array"
-    outputTensorName: "sizes"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "array"
-      value: "value"
-    }
-    inputToOutput {
-      key: "sizes"
-      value: "indices"
-    }
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayScatter"
   }
@@ -8241,14 +8171,8 @@ mappings {
   opName: "size_list"
   inputFrameworkOpName: "TensorArraySizeV2"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "flow_in"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArraySizeV2"
   }
@@ -8258,14 +8182,8 @@ mappings {
   opName: "size_list"
   inputFrameworkOpName: "TensorArraySizeV3"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "flow_in"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArraySizeV3"
   }
@@ -8563,14 +8481,8 @@ mappings {
   opName: "read_list"
   inputFrameworkOpName: "TensorArrayReadV3"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "handle"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "list"
-      value: "handle"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayReadV3"
   }
@@ -8641,14 +8553,8 @@ mappings {
   opName: "read_list"
   inputFrameworkOpName: "TensorArrayReadV2"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "handle"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "list"
-      value: "handle"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayReadV2"
   }
@@ -9324,13 +9230,13 @@ mappings {
     inputTensorName: "x"
     inputTensorName: "perm"
     outputTensorName: "input"
-    outputTensorName: "permutationVector"
+    outputTensorName: "permuteDims"
     inputToOutput {
       key: "input"
       value: "x"
     }
     inputToOutput {
-      key: "permutationVector"
+      key: "permuteDims"
       value: "perm"
     }
     ruleType: "tensor"
@@ -9344,17 +9250,6 @@ mappings {
     inputToOutput {
       key: "dtype"
       value: "T"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Transpose"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "permuteDims"
-    inputToOutput {
-      key: "permuteDims"
-      value: "perm"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Transpose"
@@ -9601,26 +9496,8 @@ mappings {
   opName: "split_list"
   inputFrameworkOpName: "TensorArraySplitV2"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "lengths"
-    inputTensorName: "value"
-    inputTensorName: "value"
-    outputTensorName: "sizes"
-    outputTensorName: "list"
-    outputTensorName: "array"
-    inputToOutput {
-      key: "sizes"
-      value: "lengths"
-    }
-    inputToOutput {
-      key: "list"
-      value: "value"
-    }
-    inputToOutput {
-      key: "array"
-      value: "value"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArraySplitV2"
   }
@@ -9685,26 +9562,8 @@ mappings {
   opName: "split_list"
   inputFrameworkOpName: "TensorArraySplitV3"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "lengths"
-    inputTensorName: "value"
-    inputTensorName: "value"
-    outputTensorName: "sizes"
-    outputTensorName: "list"
-    outputTensorName: "array"
-    inputToOutput {
-      key: "sizes"
-      value: "lengths"
-    }
-    inputToOutput {
-      key: "list"
-      value: "value"
-    }
-    inputToOutput {
-      key: "array"
-      value: "value"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArraySplitV3"
   }
@@ -10179,10 +10038,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "reduction_indices"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "reduction_indices"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Max"
@@ -10292,20 +10157,8 @@ mappings {
   opName: "gather_list"
   inputFrameworkOpName: "TensorArrayGather"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "indices"
-    inputTensorName: "flow_in"
-    outputTensorName: "indices"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "indices"
-      value: "indices"
-    }
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayGather"
   }
@@ -10331,8 +10184,12 @@ mappings {
     functionName: "ndarraymapping"
     inputTensorName: "weights"
     inputTensorName: "arr"
+    inputTensorName: "size"
+    inputTensorName: "size"
     outputTensorName: "weights"
     outputTensorName: "values"
+    outputTensorName: "min"
+    outputTensorName: "max"
     inputToOutput {
       key: "weights"
       value: "weights"
@@ -10340,6 +10197,14 @@ mappings {
     inputToOutput {
       key: "values"
       value: "arr"
+    }
+    inputToOutput {
+      key: "min"
+      value: "size"
+    }
+    inputToOutput {
+      key: "max"
+      value: "size"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Bincount"
@@ -10372,8 +10237,8 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
+    outputIntName: "outputType"
     inputDataTypeName: "T"
-    outputDataTypeName: "outputType"
     inputToOutput {
       key: "outputType"
       value: "T"
@@ -10452,10 +10317,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "reduction_indices"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "reduction_indices"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Prod"
@@ -10712,10 +10583,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "dimension"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "dimension"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "ArgMin"
@@ -11614,6 +11491,18 @@ mappings {
     }
     inputFrameworkOpName: "Conv2DBackpropInput"
   }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "T"
+    outputDataTypeName: "dtype"
+    inputToOutput {
+      key: "dtype"
+      value: "T"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "Conv2DBackpropInput"
+  }
 }
 mappings {
   frameworkName: "tensorflow"
@@ -11669,15 +11558,21 @@ mappings {
   opName: "stack_list"
   inputFrameworkOpName: "TensorArrayConcatV3"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "flow_in"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
+    inputFrameworkOpName: "TensorArrayConcatV3"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "dtype"
+    outputDataTypeName: "dtype"
+    inputToOutput {
+      key: "dtype"
+      value: "dtype"
+    }
+    ruleType: "attribute"
     inputFrameworkOpName: "TensorArrayConcatV3"
   }
 }
@@ -11686,15 +11581,21 @@ mappings {
   opName: "stack_list"
   inputFrameworkOpName: "TensorArrayConcatV2"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "flow_in"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
+    inputFrameworkOpName: "TensorArrayConcatV2"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "dtype"
+    outputDataTypeName: "dtype"
+    inputToOutput {
+      key: "dtype"
+      value: "dtype"
+    }
+    ruleType: "attribute"
     inputFrameworkOpName: "TensorArrayConcatV2"
   }
 }
@@ -12022,10 +11923,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "reduction_indices"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "reduction_indices"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "All"
@@ -12045,7 +11952,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -12127,10 +12033,10 @@ mappings {
   rule {
     ruleName: "datatypetoint"
     functionName: "datatypetoint"
-    outputIntName: "outputDataType"
+    outputIntName: "dtype"
     inputDataTypeName: "T"
     inputToOutput {
-      key: "outputDataType"
+      key: "dtype"
       value: "T"
     }
     ruleType: "attribute"
@@ -12139,8 +12045,8 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
+    outputIntName: "dtype"
     inputDataTypeName: "T"
-    outputDataTypeName: "dtype"
     inputToOutput {
       key: "dtype"
       value: "T"
@@ -12538,20 +12444,8 @@ mappings {
   opName: "gather_list"
   inputFrameworkOpName: "TensorArrayGatherV2"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "indices"
-    inputTensorName: "flow_in"
-    outputTensorName: "indices"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "indices"
-      value: "indices"
-    }
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayGatherV2"
   }
@@ -12584,20 +12478,8 @@ mappings {
   opName: "gather_list"
   inputFrameworkOpName: "TensorArrayGatherV3"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "indices"
-    inputTensorName: "flow_in"
-    outputTensorName: "indices"
-    outputTensorName: "list"
-    inputToOutput {
-      key: "indices"
-      value: "indices"
-    }
-    inputToOutput {
-      key: "list"
-      value: "flow_in"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "TensorArrayGatherV3"
   }
@@ -14635,10 +14517,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "reduction_indices"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "reduction_indices"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Mean"
@@ -14972,10 +14860,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
+    inputTensorName: "reduction_indices"
     outputTensorName: "input"
+    outputTensorName: "dimensions"
     inputToOutput {
       key: "input"
       value: "input"
+    }
+    inputToOutput {
+      key: "dimensions"
+      value: "reduction_indices"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Any"
@@ -14995,7 +14889,6 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
-    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -15354,20 +15247,8 @@ mappings {
   opName: "dynamic_stitch"
   inputFrameworkOpName: "ParallelDynamicStitch"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "data"
-    inputTensorName: "indices"
-    outputTensorName: "index"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "index"
-      value: "data"
-    }
-    inputToOutput {
-      key: "input"
-      value: "indices"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "ParallelDynamicStitch"
   }
@@ -15965,8 +15846,8 @@ mappings {
   opName: "mergesum"
   inputFrameworkOpName: "AddN"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
+    ruleName: "multiinputindex"
+    functionName: "multiinputindex"
     inputTensorName: "inputs"
     outputTensorName: "input"
     inputToOutput {

@@ -264,7 +264,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         // FIXME: this should be moved down to C++ on per-op basis
-        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions().toIntVector());
+        val dimension = Shape.normalizeAxis(x.rank(), op.dimensions() != null ?  op.dimensions().toIntVector() : null);
         // reduce to scalar case, ReduceBool ops require special treatment
         if (op instanceof BaseReduceBoolOp && x.isEmpty() && (dimension == null || (dimension.length == 1 && dimension[0] == Integer.MAX_VALUE))) {
             if (z == null) {

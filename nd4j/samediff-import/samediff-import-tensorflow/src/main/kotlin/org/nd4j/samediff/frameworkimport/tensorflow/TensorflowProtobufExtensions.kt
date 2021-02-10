@@ -27,6 +27,7 @@ import org.nd4j.samediff.frameworkimport.tensorflow.process.TensorflowMappingPro
 import org.nd4j.samediff.frameworkimport.tensorflow.rule.attribute.TensorflowArgDescriptorConstant
 import org.nd4j.samediff.frameworkimport.tensorflow.rule.tensor.NDArrayMappingRule
 import org.nd4j.samediff.frameworkimport.tensorflow.rule.tensor.TensorflowMultiInputIndexMappingRule
+import org.nd4j.samediff.frameworkimport.tensorflow.rule.tensor.TensorflowPassThroughMultiTensorMapping
 import org.nd4j.shade.protobuf.ByteString
 import org.tensorflow.framework.*
 import java.nio.charset.Charset
@@ -201,6 +202,11 @@ fun mappingListNDArrays(inputs: MutableMap<String, String>) : TensorflowMultiInp
     )
 }
 
+
+fun passThroughNDArrayInputs() : TensorflowPassThroughMultiTensorMapping {
+    return TensorflowPassThroughMultiTensorMapping()
+}
+
 fun booleanConstant(inputName: String, constantValue: Boolean,argumentIndex: Int): List<TensorflowArgDescriptorConstant> {
     return listOf(argDescriptorConstant(listOf(
         ArgDescriptor {
@@ -334,7 +340,7 @@ fun defineSingularReduce(inputFrameworkOpName: String,
             valueMapping(mutableMapOf("keepDims" to "keep_dims")),
             ndarrayToIntList(mutableMapOf("dimensions" to "reduction_indices"))
         ),
-        tensorNames = mutableMapOf("input" to "input"),
+        tensorNames = mutableMapOf("input" to "input","dimensions" to "reduction_indices"),
         tensorflowOpRegistry = tensorflowOpRegistry
     )
 }
