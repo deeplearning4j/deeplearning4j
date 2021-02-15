@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -73,8 +74,10 @@ public class Identity extends BaseDynamicTransformOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got input %s", getClass(), dataTypes);
+        if(!dArguments.isEmpty())
+            return Arrays.asList(dArguments.get(0));
         return dataTypes;
     }
 

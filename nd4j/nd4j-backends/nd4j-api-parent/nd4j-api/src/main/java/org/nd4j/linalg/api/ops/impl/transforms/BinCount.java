@@ -89,7 +89,7 @@ public class BinCount extends DynamicCustomOp {
                 inputTypes, getClass());
 
         //If weights present, same type as weights. Otherwise specified dtype
-        if(inputTypes.size() == 2 || inputTypes.size() == 4) {
+        if(inputTypes.size() >= 2) {
             //weights available case or TF import case (args 2/3 are min/max)
             return Collections.singletonList(inputTypes.get(1));
         } else {

@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentSqrtNBp;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @NoArgsConstructor
@@ -61,10 +62,14 @@ public class UnsortedSegmentSqrtN extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        if(!dArguments.isEmpty()) {
+            return Collections.singletonList(dArguments.get(0));
+        }
+
         Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 2 || inputDataTypes.size() == 3),
                 "Expected exactly 2 input data types for %s, got %s", getClass(), inputDataTypes);
         List<DataType> out = new ArrayList<>();
-        for( int i=0; i<numSegments; i++ ){
+        for( int i = 0; i < numSegments; i++) {
             out.add(inputDataTypes.get(0));
         }
         return out;

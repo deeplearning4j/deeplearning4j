@@ -443,6 +443,7 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                         //a common example is when ops convert input ndarrays to integers or float inputs
                         val resolvedArgInputs = importInfo[name]!!.second.argDescriptorList.filter {input -> input.argType == OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR}
                             .sortedBy { argDescriptor -> argDescriptor.argIndex }
+
                         val numInputsToTake = resolvedArgInputs.size
 
                         if(numInputsToTake != inNames.size) {
@@ -496,17 +497,6 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
                                 val dt2 = if (v2 == null) v1!!.dataType() else v2.dataType()
                                 newInDtypes.add(dt1)
                                 newInDtypes.add(dt2)
-                            } else if(df is Concat) {
-                                //note we use the nd4j data types here so we only have input data types indexed by the actual
-                                //output from nd4j. A common scenario import is dimensions being converted to ints
-                                //Dimensions are converted from inputs in the input framework to plain integers elsewhere.
-                                //This lets the import process dictate the actual ordering of the data types.
-                                for (s in inputNames) {
-                                    val v = sd.getVariable(s)
-                                    newInDtypes.add(v.dataType())
-                                }
-
-                                op.inputsToOp = inputNames
                             }
                             else {
                                 for (s in newInNames) {

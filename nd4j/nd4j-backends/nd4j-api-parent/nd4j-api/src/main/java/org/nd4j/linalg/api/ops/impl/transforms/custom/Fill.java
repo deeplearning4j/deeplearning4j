@@ -138,7 +138,10 @@ public class Fill extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        if(!dArguments.isEmpty()) {
+            return Collections.singletonList(dArguments.get(0));
+        }
         //1 or 2 possible: 2 for TF import (fill with specified value
         Preconditions.checkState(dataTypes != null && (dataTypes.size() == 1 || dataTypes.size() == 2),
                 "Expected 1 or 2 input datatypes for %s, got %s", getClass(), dataTypes);

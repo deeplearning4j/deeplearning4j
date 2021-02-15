@@ -855,6 +855,63 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                                 .build()).build());
                             }
 
+                            if(name.contains("fill")) {
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("java")
+                                        .proposalWeight(Double.MAX_VALUE)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("shape")
+                                                .setIsArray(false)
+                                                .setArgIndex(0)
+                                                .build()).build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("java")
+                                        .proposalWeight(Double.MAX_VALUE)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("result")
+                                                .setIsArray(false)
+                                                .setArgIndex(1)
+                                                .build()).build());
+
+                            }
+
+                            if(name.contains("unsorted_")) {
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("c++")
+                                        .proposalWeight(Double.MAX_VALUE)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("input")
+                                                .setIsArray(false)
+                                                .setArgIndex(0)
+                                                .build()).build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("c++")
+                                        .proposalWeight(Double.MAX_VALUE)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("idxSegments")
+                                                .setIsArray(false)
+                                                .setArgIndex(1)
+                                                .build()).build());
+
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("c++")
+                                        .proposalWeight(Double.MAX_VALUE)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("numSegments")
+                                                .setIsArray(false)
+                                                .setArgIndex(2)
+                                                .build()).build());
+
+
+                            }
+
 
                             if(name.equals("lin_space")) {
                                 argDescriptorProposals.add(ArgDescriptorProposal.builder()

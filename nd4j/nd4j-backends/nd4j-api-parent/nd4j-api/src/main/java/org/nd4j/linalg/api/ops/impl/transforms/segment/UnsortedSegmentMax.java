@@ -65,6 +65,9 @@ public class UnsortedSegmentMax extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        if(!dArguments.isEmpty()) {
+            return Collections.singletonList(dArguments.get(0));
+        }
         Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 2 || inputDataTypes.size() == 3),
                 "Expected exactly 2 input data types for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));

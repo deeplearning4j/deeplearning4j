@@ -551,6 +551,31 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                 }
             }
 
+
+
+            if(name.contains("fill")) {
+                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                        .sourceOfProposal("java")
+                        .proposalWeight(Double.MAX_VALUE)
+                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                .setName("shape")
+                                .setIsArray(false)
+                                .setArgIndex(0)
+                                .build()).build());
+
+                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                        .sourceOfProposal("java")
+                        .proposalWeight(Double.MAX_VALUE)
+                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                .setName("result")
+                                .setIsArray(false)
+                                .setArgIndex(1)
+                                .build()).build());
+
+            }
+
             if(name.contains("loop_cond")) {
                 argDescriptorProposals.add(ArgDescriptorProposal.builder()
                         .sourceOfProposal("java")

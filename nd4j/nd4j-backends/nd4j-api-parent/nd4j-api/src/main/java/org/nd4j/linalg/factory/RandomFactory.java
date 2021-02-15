@@ -87,7 +87,8 @@ public class RandomFactory {
     }
 
     /**
-     * This method returns new onject implementing Random interface, initialized with seed value, with size of elements in buffer
+     * This method returns a new object implementing {@link Random}
+     * interface, initialized with seed value, with size of elements in buffer
      *
      * @param seed rng seed
      * @param size size of underlying buffer

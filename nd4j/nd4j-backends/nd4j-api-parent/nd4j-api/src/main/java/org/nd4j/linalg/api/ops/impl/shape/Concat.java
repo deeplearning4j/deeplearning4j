@@ -146,6 +146,10 @@ public class Concat extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+        if(!dArguments.isEmpty()) {
+            return Collections.singletonList(dArguments.get(0));
+        }
+
         DataType first = dataTypes.get(0);
 
         for( int i = 1; i < dataTypes.size() - (isDynamicAxis ? 1 : 0); i++) {

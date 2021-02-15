@@ -33,7 +33,8 @@ namespace sd {
         _offset = offset;
 
         if (_offset + length > _dataBuffer->getLenInBytes()) {
-            throw std::runtime_error("offset + length is higher than original length");
+            this->expand(length);
+            nd4j_debug("Expanding data buffer length by %d\n",length);
         }
     }
 

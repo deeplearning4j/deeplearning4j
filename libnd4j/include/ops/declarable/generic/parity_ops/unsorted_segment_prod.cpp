@@ -27,18 +27,21 @@ namespace sd {
     namespace ops {
         CUSTOM_OP_IMPL(unsorted_segment_prod, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
+            auto reshapedInput = *input;
+         /*   if(!input->isVector()) {
+                reshapedInput = input->reshape('c',{input->lengthOf()},false);
+            }*/
+
             auto idxSegments = INPUT_VARIABLE(1);
+            auto reshapedSegments = *idxSegments;
+            if(!idxSegments->isVector() && idxSegments->rankOf() > 1) {
+                reshapedSegments = idxSegments->reshape('c',{idxSegments->lengthOf()},false);
+            }
+
             auto segmentedOutput = OUTPUT_NULLIFIED(0);
             Nd4jLong numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : INT_ARG(0);
-            REQUIRE_TRUE(idxSegments->isVector(), 0, "unsorted_segment_prod: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
-            REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "unsorted_segment_prod: segment indexes array length should be equal to the input first dimension, but %ld != %ld.", idxSegments->lengthOf(), input->sizeAt(0));
-
-            Nd4jLong wrong = 0;
-
-            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), idxSegments, numOfClasses, wrong), 0, "unsorted_segment_prod: segment indices should be in range [0, %ld), but %ld != %ld",
-                    numOfClasses, wrong, numOfClasses);
-
-            helpers::unsortedSegmentProdFunctor(block.launchContext(), input, idxSegments, numOfClasses, segmentedOutput);
+            REQUIRE_TRUE(reshapedSegments.isVector(), 0, "unsorted_segment_sum: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
+            helpers::unsortedSegmentProdFunctor(block.launchContext(), &reshapedInput, &reshapedSegments, numOfClasses, segmentedOutput);
 
             return ND4J_STATUS_OK;
         }
@@ -50,14 +53,23 @@ namespace sd {
             Nd4jLong* outputShape = nullptr;
             Nd4jLong numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : INT_ARG(0);
 
-            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+            if(INPUT_VARIABLE(0)->rankOf() >= 2) {
+                ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+                outputShape[0] = outRank;
+                outputShape[1] = numOfClasses;
+                for(int i = 1; i < outRank; i++)
+                    outputShape[i + 1] = shape::sizeAt(in, i);
 
-            outputShape[0] = outRank;
-            outputShape[1] = numOfClasses;
-            for(int i = 1; i < outRank; ++i)
-                outputShape[i + 1] = shape::sizeAt(in, i);
+                ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
+            } else {
+                ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
+                outputShape[0] = 1;
+                outputShape[1] = numOfClasses;
+                shape::printShapeInfo(outputShape);
+                ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
+            }
+
 
             return SHAPELIST(CONSTANT(outputShape));
         }
@@ -90,7 +102,7 @@ namespace sd {
         DECLARE_TYPES(unsorted_segment_prod_bp) {
             getOpDescriptor()
                     ->setAllowedOutputTypes(0, {ALL_FLOATS})
-					->setAllowedOutputTypes(1, {ALL_INDICES})
+                    ->setAllowedOutputTypes(1, {ALL_INDICES})
                     ->setAllowedInputTypes(0, {ALL_FLOATS})
                     ->setAllowedInputTypes(1, {ALL_INDICES})
                     ->setAllowedInputTypes(2,{ALL_FLOATS, ALL_INTS})

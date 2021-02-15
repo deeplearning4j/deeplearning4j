@@ -1,3 +1,3 @@
 in_0/read,in_0/read
-MaxPoolWithArgmax,MaxPoolWithArgmax
-MaxPoolWithArgmax:1,MaxPoolWithArgmax
+in_1/read,in_1/read
+UnsortedSegmentSum,UnsortedSegmentSum

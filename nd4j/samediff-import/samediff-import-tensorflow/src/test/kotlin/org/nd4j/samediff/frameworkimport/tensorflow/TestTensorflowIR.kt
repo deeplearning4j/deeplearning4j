@@ -108,6 +108,14 @@ class TestTensorflowIR {
         val importedGraph = TFGraphMapper.importGraph(textGraph)
         val graph = tfImporter.importFromGraph(textGraph,inputMap)
         val tfOutput = tfGraphRunner.run(inputMap)
+
+        /**
+         * TODO: UnsortedSegmentSum ,Solution is almost there, need to figure out how to
+         * output correct shape.
+         *
+         * Shape in TF is 5 x 5 but actual real output seems to be 1 x 10.
+         * We need to change the output shape to work like TF does.
+         */
         val output2 = importedGraph.outputAll(inputMap)
         val output = graph.outputAll(inputMap)
 
@@ -117,10 +125,12 @@ class TestTensorflowIR {
         val names = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }
         val skipValidation = setOf("parallel_stack/ExpandDims/dim")
         //assertEquals(output.keys,output2.keys)
-    /*    val notEquals = HashSet<String>()
+        val notEquals = HashSet<String>()
+        val notEqualsTf = HashSet<String>()
         names.forEach {
             val value = output[it]
             val value2 = output2[it]
+            val tfValue = tfOutput[it]
             if(value!! != (value2!!)) {
                 val oldOps = importedGraph.ops[it]
                 val newOps = graph.ops[it]
@@ -128,10 +138,19 @@ class TestTensorflowIR {
                 val newVar = graph.variables[it]
                 notEquals.add(it)
             }
-        }*/
 
-        //println(notEquals)
+            if(tfValue!! != (value!!)) {
+                val oldOps = importedGraph.ops[it]
+                val newOps = graph.ops[it]
+                val oldVar = importedGraph.variables[it]
+                val newVar = graph.variables[it]
+                notEqualsTf.add(it)
+            }
+        }
 
+        println(notEquals)
+        println(notEqualsTf)
+        println()
         // assertEquals(output,output2)
         //assertEquals(tfOutput,output)
     }

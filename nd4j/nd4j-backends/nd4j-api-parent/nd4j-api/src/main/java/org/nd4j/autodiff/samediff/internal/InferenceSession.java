@@ -672,6 +672,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (tArr == null && allIterInputs != null) {
                 tArr = lookup(inTensorArray.name(), allIterInputs, false);
             }
+
             List<INDArray> l = tensorArrays.get(tArr);
             Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
 
@@ -703,6 +704,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 if (valuesArr.rank() == 1 && get.rank() > 0) {
                     get = get.reshape();
                 }
+
+                //reflect the expanded storage
+                if(outIdx >= l.size()) {
+                    while(l.size() < outIdx) {
+                        l.add(null);
+                    }
+                }
+
                 l.set(outIdx, get);
 
                 //Add dependency for values array until end of execution

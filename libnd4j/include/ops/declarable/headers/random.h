@@ -50,7 +50,7 @@ namespace sd {
          *    0 - uniformly distributed values of given type (between min and max)
          */
         #if NOT_EXCLUDED(OP_randomuniform)
-        DECLARE_CUSTOM_OP(randomuniform, 1, 1, false, 0, 0);
+        DECLARE_CUSTOM_OP(randomuniform, 1, 1, false, 0, -1);
         #endif
         /*
          * multinomial (categorical) random generator draws samples from a multinomial distribution

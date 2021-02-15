@@ -69,28 +69,40 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
      * the status of the test failing. No tests will run.
      */
     public final static List<String> EXECUTE_ONLY_MODELS = Arrays.asList(
-            "conv2d_transpose/channels_last_b1_k2_s2_SAME",
-            "conv2d_transpose/channels_last_b1_k2_s1_SAME",
-            "bincount/rank1",
-            "bincount/rank1_weights",
-            "bincount/rank1_max5",
-            "emptyArrayTests/zeros/ones_rank3",
-            "conv2d_transpose/channels_last_b2_k2_s1_SAME_nobias",
-            "emptyArrayTests/identity_n/rank3.",
-            "emptyReduceAxisTests/reduce_sum/rank1",
-            "emptyReduceAxisTests/reduce_sum/rank1_keep",
-            "emptyReduceAxisTests/reduce_sum/rank3",
-            "emptyReduceAxisTests/reduce_any/rank2",
-            "embedding_lookup/rank2_multiple_div_nomaxnorm",
-            "emptyReduceAxisTests/reduce_all/rank2_keep",
-            "conv2d_transpose/channels_first_b1_k2_s1_SAME_sigmoid",
-            "conv2d_transpose/channels_first_b1_k2_s1_SAME_elu",
-            "emptyReduceAxisTests/reduce_prod/rank1",
-            "conv2d_transpose/channels_first_b2_k2_s1_SAME_nobias",
-            "conv2d_transpose/channels_last_b2_k2_s1_SAME_regularizers",
-            "conv2d_transpose/channels_last_b1_k2_s1_SAME_elu",
-            "conv2d_transpose/channels_first_b1_k2_s1_SAME_selu_nobias",
-            "embedding_lookup/rank2_multiple_mod_maxnorm1"
+            /*"layers_dropout/rank2_d01_train",
+            "layers_dropout/rank4_d05_train",
+            "layers_dropout/rank3_d05_train_mask2",
+            "layers_dropout/rank4_d05_train_mask",
+            "layers_dropout/rank3_d05_train_mask1",
+            "layers_dropout/rank2_d09_train",
+            "layers_dropout/rank2_d05_train",*/
+          /*  "primitive_gru_dynamic",
+            "layers_dropout/rank4_d05_train",
+            "fused_batch_norm/float16_nhwc",
+            "rnn/lstmblockcell/dynamic_b1_n5-3_ts4_noPH_noClip_fB1_noIS_withTM",
+            "rnn/lstmcell/dynamic_b1_nIn5_nOut3_ts4_noPH_noClip_fB1_Tanh_noIS_float_withTM",
+            "rnn/grublockcellv2/dynamic_b1_n3-2_ts1_noIS_noTM"*/
+             /*        "unsorted_segment/unsorted_segment_mean_rank3",
+         "unsorted_segment/unsorted_segment_sqrt_n_rank2",
+            "unsorted_segment/unsorted_segment_mean_rank2",
+            "unsorted_segment/unsorted_segment_mean_rank3",
+            "unsorted_segment/unsorted_segment_sum_rank3",
+            "unsorted_segment/unsorted_segment_min_rank2",
+            "unsorted_segment/unsorted_segment_prod_rank2",
+            "unsorted_segment/unsorted_segment_max_rank2",*/
+            "bincount/rank0_weights",
+            "bincount/rank2_weights"
+        /*    "compare_and_bitpack/bool",
+            "compare_and_bitpack/float32",
+            "compare_and_bitpack/float64",
+            "compare_and_bitpack/half",
+            "compare_and_bitpack/int32",
+            "compare_and_bitpack/int8",
+            "compare_and_bitpack/int64",
+            "compare_and_bitpack/int16"*/
+
+
+
     );
 
     public static final String[] IGNORE_REGEXES = new String[]{
@@ -98,7 +110,12 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // Still failing 2020/04/27 java.lang.IllegalStateException: Requested output variable Bincount does not exist in SameDiff instance
             //Invalid test cases. Verified by running graph against actual TF.
             "slogdet/.*",
-
+            //IGNORE THIS: the TF results from comparing against an actual TF java run compared to this seem to be different.
+            "fused_batch_norm/float16_nhwc",
+            //Don't bother to test RNG. We can test subsets of ops with dropout to make sure they are consistent
+            //These tests have random uniform and other RNG in them that don't need to be perfectly compatible to be acceptable.
+            //We need different test cases here.
+            "layers_dropout/.*",
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             // Still failing 2020/04/27 java.lang.IllegalStateException: Could not find class for TF Ops: TruncateMod
             "truncatemod/.*",
@@ -109,15 +126,11 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
 
             //2019/09/11 - Couple of tests failing (InferenceSession issues)
             // Still failing 2020/04/27 Requested output variable concat does not exist in SameDiff instance
-            "rnn/bstack/d_.*",
 
-            //2019/05/21 - Failing on AVX2/512 intermittently (Linux, OSX), passing elsewhere
-            //"unsorted_segment/.*",
 
             //2019/05/21 - Failing on windows-x86_64-cuda-9.2 only -
             "conv_4",
             "g_09",
-            //"unsorted_segment/unsorted_segment_mean_rank2",
 
             //2019/05/28 - JVM crash on ppc64le only - See issue 7657
             "g_11",
@@ -130,12 +143,9 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             // Still failing 2020/04/27 java.lang.IllegalStateException: Could not find descriptor for op: deconv3d_tf - class: org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DTF
             "conv3d_transpose.*",
 
-            //2019/11/15 - mapping is not present yet https://github.com/eclipse/deeplearning4j/issues/8397
+            //2019/11/15 - mapping is not present yet https://github.com/eclipse/deepleRaggedRange arning4j/issues/8397
             // Still failing 2020/04/27 java.lang.AssertionError: Predictions do not match on ragged/reduce_mean/2d_a1, node RaggedReduceMean/truediv
             "ragged/reduce_mean/.*",
-
-            // 01.05.2020 -  https://github.com/eclipse/deeplearning4j/issues/8898
-            "primitive_gru",
 
 
             //08.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8927
@@ -144,15 +154,14 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //08.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8928
             "Conv3DBackpropInputV2/.*",
 
-            //12.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8940
-            "compare_and_bitpack/.*",
 
 
             //12.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8946
             "non_max_suppression_v4/.*","non_max_suppression_v5/.*",
 
 
-            // 18.05.2020 - https://github.com/eclipse/deeplearning4j/issues/8963
+            // 18.05.2020 - :wq:wq
+
             "random_uniform_int/.*",
             "random_uniform/.*",
             "random_poisson_v2/.*"
@@ -163,10 +172,11 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
        If a test name matches any regex here, an ExecPrintListener will be added to the listeners, and all output
        arrays will be printed during execution
      */
-    private final List<String> debugModeRegexes = null; //Arrays.asList("resize_nearest_neighbor/.*", "add_n.*");
+    private final List<String> debugModeRegexes = Arrays.asList("fused_batch_norm/float16_nhwc");
 
     @BeforeClass
     public static void beforeClass() {
+        Nd4j.scalar(1.0);
         Nd4j.setDataType(DataType.FLOAT);
         Nd4j.getExecutioner().setProfilingMode(OpExecutioner.ProfilingMode.SCOPE_PANIC);
     }

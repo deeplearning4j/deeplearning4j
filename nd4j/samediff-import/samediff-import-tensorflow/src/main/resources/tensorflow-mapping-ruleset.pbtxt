@@ -1251,6 +1251,47 @@ mappings {
     inputFrameworkOpName: "StatelessRandomUniform"
   }
   rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "max"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "max"
+        doubleValue: 1.0
+        argType: DOUBLE
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "StatelessRandomUniform"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "min"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "min"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "StatelessRandomUniform"
+  }
+  rule {
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "seed"
+    inputToOutput {
+      key: "seed"
+      value: "seed"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "StatelessRandomUniform"
+  }
+  rule {
     ruleName: "datatypetoint"
     functionName: "datatypetoint"
     outputIntName: "dtype"
@@ -1272,140 +1313,6 @@ mappings {
       value: "dtype"
     }
     ruleType: "attribute"
-    inputFrameworkOpName: "StatelessRandomUniform"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputFloatName: "min"
-    inputFloatName: "max"
-    inputTensorName: "min"
-    inputTensorName: "max"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "min"
-        argType: DOUBLE
-      }
-      transformerArgs {
-        name: "max"
-        doubleValue: 1.0
-        argType: DOUBLE
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "min"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "max"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 2
-      }
-    }
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "min"
-        argType: DOUBLE
-      }
-      transformerArgs {
-        name: "max"
-        doubleValue: 1.0
-        argType: DOUBLE
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "min"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "max"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 2
-      }
-    }
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "min"
-        argType: DOUBLE
-      }
-      transformerArgs {
-        name: "max"
-        doubleValue: 1.0
-        argType: DOUBLE
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "min"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "max"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 2
-      }
-    }
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "min"
-        argType: DOUBLE
-      }
-      transformerArgs {
-        name: "max"
-        doubleValue: 1.0
-        argType: DOUBLE
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "min"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "max"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 2
-      }
-    }
     inputFrameworkOpName: "StatelessRandomUniform"
   }
 }
@@ -1722,16 +1629,6 @@ mappings {
     inputFrameworkOpName: "Squeeze"
   }
   rule {
-    ruleName: "listnumbertondarray"
-    functionName: "listnumbertondarray"
-    inputToOutput {
-      key: "a"
-      value: "squeeze_dims"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Squeeze"
-  }
-  rule {
     ruleName: "listnumbertolistnumber"
     functionName: "listnumbertolistnumber"
     outputIntName: "_a"
@@ -1787,8 +1684,10 @@ mappings {
     functionName: "ndarraymapping"
     inputTensorName: "data"
     inputTensorName: "segment_ids"
+    inputTensorName: "num_segments"
     outputTensorName: "input"
     outputTensorName: "idxSegments"
+    outputTensorName: "numSegments"
     inputToOutput {
       key: "input"
       value: "data"
@@ -1797,13 +1696,16 @@ mappings {
       key: "idxSegments"
       value: "segment_ids"
     }
+    inputToOutput {
+      key: "numSegments"
+      value: "num_segments"
+    }
     ruleType: "tensor"
     inputFrameworkOpName: "UnsortedSegmentProd"
   }
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -6548,6 +6450,36 @@ mappings {
     inputFrameworkOpName: "RandomUniform"
   }
   rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "max"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "max"
+        doubleValue: 1.0
+        argType: DOUBLE
+        argIndex: 1
+      }
+    }
+    inputFrameworkOpName: "RandomUniform"
+  }
+  rule {
+    ruleName: "argdescriptorconstant"
+    functionName: "argdescriptorconstant"
+    inputFloatName: "min"
+    ruleType: "attribute"
+    transformerArgs {
+      key: "value"
+      transformerArgs {
+        name: "min"
+        argType: DOUBLE
+      }
+    }
+    inputFrameworkOpName: "RandomUniform"
+  }
+  rule {
     ruleName: "datatypetoint"
     functionName: "datatypetoint"
     outputIntName: "dtype"
@@ -6562,147 +6494,19 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
+    inputIntName: "seed"
+    outputIntName: "seed"
     inputDataTypeName: "dtype"
     outputDataTypeName: "dataType"
     inputToOutput {
       key: "dataType"
       value: "dtype"
     }
+    inputToOutput {
+      key: "seed"
+      value: "seed"
+    }
     ruleType: "attribute"
-    inputFrameworkOpName: "RandomUniform"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputFloatName: "min"
-    inputFloatName: "max"
-    inputTensorName: "min"
-    inputTensorName: "max"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "min"
-        argType: DOUBLE
-      }
-      transformerArgs {
-        name: "max"
-        doubleValue: 1.0
-        argType: DOUBLE
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "min"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "max"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 2
-      }
-    }
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "min"
-        argType: DOUBLE
-      }
-      transformerArgs {
-        name: "max"
-        doubleValue: 1.0
-        argType: DOUBLE
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "min"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "max"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 2
-      }
-    }
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "min"
-        argType: DOUBLE
-      }
-      transformerArgs {
-        name: "max"
-        doubleValue: 1.0
-        argType: DOUBLE
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "min"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "max"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 2
-      }
-    }
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "min"
-        argType: DOUBLE
-      }
-      transformerArgs {
-        name: "max"
-        doubleValue: 1.0
-        argType: DOUBLE
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "min"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 1
-      }
-      transformerArgs {
-        name: "max"
-        inputValue {
-          data_type: 11
-          double_data: 1.0
-        }
-        argType: INPUT_TENSOR
-        argIndex: 2
-      }
-    }
     inputFrameworkOpName: "RandomUniform"
   }
 }
@@ -6847,8 +6651,10 @@ mappings {
     functionName: "ndarraymapping"
     inputTensorName: "input"
     inputTensorName: "axis"
+    inputTensorName: "shift"
     outputTensorName: "input"
     outputTensorName: "dimensions"
+    outputTensorName: "shiftsI"
     inputToOutput {
       key: "input"
       value: "input"
@@ -6856,6 +6662,10 @@ mappings {
     inputToOutput {
       key: "dimensions"
       value: "axis"
+    }
+    inputToOutput {
+      key: "shiftsI"
+      value: "shift"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Roll"
@@ -6972,8 +6782,10 @@ mappings {
     functionName: "ndarraymapping"
     inputTensorName: "data"
     inputTensorName: "segment_ids"
+    inputTensorName: "num_segments"
     outputTensorName: "input"
     outputTensorName: "idxSegments"
+    outputTensorName: "numSegments"
     inputToOutput {
       key: "input"
       value: "data"
@@ -6982,13 +6794,16 @@ mappings {
       key: "idxSegments"
       value: "segment_ids"
     }
+    inputToOutput {
+      key: "numSegments"
+      value: "num_segments"
+    }
     ruleType: "tensor"
     inputFrameworkOpName: "UnsortedSegmentMin"
   }
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -7239,7 +7054,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "start"
     outputDoubleName: "stop"
     inputToOutput {
       key: "start"
@@ -7255,8 +7069,8 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
+    outputIntName: "dataType"
     inputDataTypeName: "T"
-    outputDataTypeName: "dataType"
     inputToOutput {
       key: "dataType"
       value: "T"
@@ -7380,8 +7194,10 @@ mappings {
     functionName: "ndarraymapping"
     inputTensorName: "data"
     inputTensorName: "segment_ids"
+    inputTensorName: "num_segments"
     outputTensorName: "input"
     outputTensorName: "idxSegments"
+    outputTensorName: "numSegments"
     inputToOutput {
       key: "input"
       value: "data"
@@ -7390,13 +7206,16 @@ mappings {
       key: "idxSegments"
       value: "segment_ids"
     }
+    inputToOutput {
+      key: "numSegments"
+      value: "num_segments"
+    }
     ruleType: "tensor"
     inputFrameworkOpName: "UnsortedSegmentSum"
   }
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -9065,7 +8884,7 @@ mappings {
     inputTensorName: "max_output_size"
     outputTensorName: "boxes"
     outputTensorName: "scales"
-    outputTensorName: "iouThreshold"
+    outputTensorName: "overlayThreshold"
     outputTensorName: "maxOutputSize"
     inputToOutput {
       key: "boxes"
@@ -9076,7 +8895,7 @@ mappings {
       value: "scores"
     }
     inputToOutput {
-      key: "iouThreshold"
+      key: "overlayThreshold"
       value: "iou_threshold"
     }
     inputToOutput {
@@ -9184,8 +9003,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "on"
-    outputDoubleName: "off"
     inputToOutput {
       key: "on"
       value: "on_value"
@@ -9300,6 +9117,41 @@ mappings {
 }
 mappings {
   frameworkName: "tensorflow"
+  opName: "compare_and_bitpack"
+  inputFrameworkOpName: "CompareAndBitpack"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "input"
+    inputTensorName: "threshold"
+    outputTensorName: "input"
+    outputTensorName: "y"
+    inputToOutput {
+      key: "input"
+      value: "input"
+    }
+    inputToOutput {
+      key: "y"
+      value: "threshold"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "CompareAndBitpack"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "T"
+    outputDataTypeName: "dtype"
+    inputToOutput {
+      key: "dtype"
+      value: "T"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "CompareAndBitpack"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
   opName: "segment_min"
   inputFrameworkOpName: "SegmentMin"
   rule {
@@ -9353,8 +9205,10 @@ mappings {
     functionName: "ndarraymapping"
     inputTensorName: "data"
     inputTensorName: "segment_ids"
+    inputTensorName: "num_segments"
     outputTensorName: "input"
     outputTensorName: "idxSegments"
+    outputTensorName: "numSegments"
     inputToOutput {
       key: "input"
       value: "data"
@@ -9363,13 +9217,16 @@ mappings {
       key: "idxSegments"
       value: "segment_ids"
     }
+    inputToOutput {
+      key: "numSegments"
+      value: "num_segments"
+    }
     ruleType: "tensor"
     inputFrameworkOpName: "UnsortedSegmentMax"
   }
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -9429,13 +9286,13 @@ mappings {
     inputBooleanName: "align_corners"
     inputBooleanName: "half_pixel_centers"
     outputBooleanName: "alignCorners"
-    outputBooleanName: "halfPixelCenter"
+    outputBooleanName: "halfPixelCenters"
     inputToOutput {
       key: "alignCorners"
       value: "align_corners"
     }
     inputToOutput {
-      key: "halfPixelCenter"
+      key: "halfPixelCenters"
       value: "half_pixel_centers"
     }
     ruleType: "attribute"
@@ -9833,7 +9690,7 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "iou_threshold"
     inputToOutput {
-      key: "iouThreshold"
+      key: "overlayThreshold"
       value: "iou_threshold"
     }
     ruleType: "attribute"
@@ -10185,11 +10042,9 @@ mappings {
     inputTensorName: "weights"
     inputTensorName: "arr"
     inputTensorName: "size"
-    inputTensorName: "size"
     outputTensorName: "weights"
     outputTensorName: "values"
     outputTensorName: "min"
-    outputTensorName: "max"
     inputToOutput {
       key: "weights"
       value: "weights"
@@ -10202,36 +10057,7 @@ mappings {
       key: "min"
       value: "size"
     }
-    inputToOutput {
-      key: "max"
-      value: "size"
-    }
     ruleType: "tensor"
-    inputFrameworkOpName: "Bincount"
-  }
-  rule {
-    ruleName: "argdescriptorconstant"
-    functionName: "argdescriptorconstant"
-    inputIntName: "minLength"
-    ruleType: "attribute"
-    transformerArgs {
-      key: "value"
-      transformerArgs {
-        name: "minLength"
-        argType: INT64
-      }
-    }
-    inputFrameworkOpName: "Bincount"
-  }
-  rule {
-    ruleName: "ndarrayinputtonumericalattribute"
-    functionName: "ndarrayinputtonumericalattribute"
-    outputIntName: "maxLength"
-    inputToOutput {
-      key: "maxLength"
-      value: "size"
-    }
-    ruleType: "attribute"
     inputFrameworkOpName: "Bincount"
   }
   rule {
@@ -10245,14 +10071,6 @@ mappings {
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Bincount"
-  }
-  indexOverrides {
-    key: 1
-    value: 2
-  }
-  indexOverrides {
-    key: 2
-    value: 1
   }
 }
 mappings {
@@ -10483,31 +10301,29 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "shape"
-    inputTensorName: "minval"
-    inputTensorName: "maxval"
     outputTensorName: "shape"
-    outputTensorName: "min"
-    outputTensorName: "max"
     inputToOutput {
       key: "shape"
       value: "shape"
-    }
-    inputToOutput {
-      key: "min"
-      value: "minval"
-    }
-    inputToOutput {
-      key: "max"
-      value: "maxval"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "RandomUniformInt"
   }
   rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputIntName: "seed"
+    outputIntName: "seed"
+    inputToOutput {
+      key: "seed"
+      value: "seed"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "RandomUniformInt"
+  }
+  rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "min"
-    outputDoubleName: "max"
     inputToOutput {
       key: "min"
       value: "minval"
@@ -10822,14 +10638,8 @@ mappings {
   opName: "shapes_of"
   inputFrameworkOpName: "ShapeN"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "ShapeN"
   }
@@ -10943,8 +10753,10 @@ mappings {
     functionName: "ndarraymapping"
     inputTensorName: "input_sizes"
     inputTensorName: "filter"
+    inputTensorName: "out_backprop"
     outputTensorName: "gradIShape"
     outputTensorName: "weights"
+    outputTensorName: "gradO"
     inputToOutput {
       key: "gradIShape"
       value: "input_sizes"
@@ -10952,6 +10764,10 @@ mappings {
     inputToOutput {
       key: "weights"
       value: "filter"
+    }
+    inputToOutput {
+      key: "gradO"
+      value: "out_backprop"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Conv2DBackpropInput"
@@ -11629,6 +11445,18 @@ mappings {
     }
     inputFrameworkOpName: "CopyHost"
   }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "T"
+    outputDataTypeName: "dataType"
+    inputToOutput {
+      key: "dataType"
+      value: "T"
+    }
+    ruleType: "attribute"
+    inputFrameworkOpName: "CopyHost"
+  }
 }
 mappings {
   frameworkName: "tensorflow"
@@ -12011,10 +11839,16 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "dims"
-    outputTensorName: "shapeArray"
+    inputTensorName: "value"
+    outputTensorName: "shape"
+    outputTensorName: "outputs"
     inputToOutput {
-      key: "shapeArray"
+      key: "shape"
       value: "dims"
+    }
+    inputToOutput {
+      key: "outputs"
+      value: "value"
     }
     ruleType: "tensor"
     inputFrameworkOpName: "Fill"
@@ -12026,18 +11860,6 @@ mappings {
     inputToOutput {
       key: "value"
       value: "value"
-    }
-    ruleType: "attribute"
-    inputFrameworkOpName: "Fill"
-  }
-  rule {
-    ruleName: "datatypetoint"
-    functionName: "datatypetoint"
-    outputIntName: "dtype"
-    inputDataTypeName: "T"
-    inputToOutput {
-      key: "dtype"
-      value: "T"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "Fill"
@@ -12306,11 +12128,11 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
-    inputDataTypeName: "T"
+    inputDataTypeName: "Targmax"
     outputDataTypeName: "dtype"
     inputToOutput {
       key: "dtype"
-      value: "T"
+      value: "Targmax"
     }
     ruleType: "attribute"
     inputFrameworkOpName: "MaxPoolWithArgmax"
@@ -13288,14 +13110,8 @@ mappings {
   opName: "identity_n"
   inputFrameworkOpName: "IdentityN"
   rule {
-    ruleName: "ndarraymapping"
-    functionName: "ndarraymapping"
-    inputTensorName: "input"
-    outputTensorName: "input"
-    inputToOutput {
-      key: "input"
-      value: "input"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "IdentityN"
   }
@@ -13379,9 +13195,6 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
-    outputDoubleName: "from"
-    outputDoubleName: "to"
-    outputDoubleName: "step"
     inputToOutput {
       key: "from"
       value: "start"
@@ -14760,20 +14573,8 @@ mappings {
   opName: "concat"
   inputFrameworkOpName: "ConcatV2"
   rule {
-    ruleName: "multiinputindex"
-    functionName: "multiinputindex"
-    inputTensorName: "values"
-    inputTensorName: "axis"
-    outputTensorName: "input"
-    outputTensorName: "concatDimension"
-    inputToOutput {
-      key: "input"
-      value: "values"
-    }
-    inputToOutput {
-      key: "concatDimension"
-      value: "axis"
-    }
+    ruleName: "passthrough"
+    functionName: "passthrough"
     ruleType: "tensor"
     inputFrameworkOpName: "ConcatV2"
   }
@@ -15639,6 +15440,18 @@ mappings {
         argType: BOOL
       }
     }
+    inputFrameworkOpName: "DeepCopy"
+  }
+  rule {
+    ruleName: "valuemapping"
+    functionName: "valuemapping"
+    inputDataTypeName: "T"
+    outputDataTypeName: "dataType"
+    inputToOutput {
+      key: "dataType"
+      value: "T"
+    }
+    ruleType: "attribute"
     inputFrameworkOpName: "DeepCopy"
   }
 }
