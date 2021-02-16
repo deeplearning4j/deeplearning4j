@@ -1578,20 +1578,20 @@ namespace sd {
         int rank = shape::rank(_shapeInfo);
         int lim = shape::shapeInfoLength(rank);
 
-        if(msg != nullptr)
-            printf("shapeInfo %s: [", msg);
-        else
-            printf("shapeInfo: [");
-
-        printf("%i,  ", rank);
+        if(msg != nullptr) {
+            nd4j_printf("shapeInfo %s: [", msg);
+        } else {
+            nd4j_printf("shapeInfo: [%s", "");
+        }
+        nd4j_printf("%i,  ", rank);
         for (int i = 1; i < shape::shapeInfoLength(rank) - 3; i++){
             if(i == rank + 1)
-                printf("  ");
-            printf("%lld,", _shapeInfo[i]);
+                nd4j_printf("  ","");
+            nd4j_printf("%lld,", _shapeInfo[i]);
         }
-        printf("  %lld,", shape::type(_shapeInfo));
-        printf("%lld,", shape::elementWiseStride(_shapeInfo));
-        printf("%lld]\n", (Nd4jLong)shape::order(_shapeInfo));
+        nd4j_printf("  %lld,", shape::type(_shapeInfo));
+        nd4j_printf("%lld,", shape::elementWiseStride(_shapeInfo));
+        nd4j_printf("%lld]\n", (Nd4jLong)shape::order(_shapeInfo));
 
         fflush(stdout);
     }

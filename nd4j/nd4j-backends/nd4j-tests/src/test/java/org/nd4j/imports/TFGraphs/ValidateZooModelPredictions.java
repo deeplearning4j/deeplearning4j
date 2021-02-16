@@ -64,6 +64,10 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(123);
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return Long.MAX_VALUE;
+    }
 
     @Test
     public void testMobilenetV1() throws Exception {

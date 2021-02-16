@@ -24,38 +24,32 @@ import junit.framework.Assert.assertEquals
 import junit.framework.Assert.assertTrue
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.IOUtils
+import org.junit.Assert
 import org.junit.Ignore
 import org.junit.jupiter.api.Test
-import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper
 import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.api.ops.DynamicCustomOp
-import org.nd4j.linalg.api.ops.custom.Roll
-import org.nd4j.linalg.api.ops.impl.transforms.BinCount
-import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.profiler.ProfilerConfig
 import org.nd4j.samediff.frameworkimport.ImportGraph
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
-import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.samediff.frameworkimport.registry.OpRegistryHolder
 import org.nd4j.samediff.frameworkimport.tensorflow.context.TensorflowMappingContext
 import org.nd4j.samediff.frameworkimport.tensorflow.definitions.registry
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph
 import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraphRunner
-import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRNode
-import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRTensor
-import org.nd4j.shade.protobuf.ByteString
 import org.nd4j.shade.protobuf.TextFormat
-import org.nd4j.tensorflow.conversion.graphrunner.GraphRunner
 import org.tensorflow.framework.*
 import java.io.File
-import java.lang.IllegalStateException
 import java.nio.charset.Charset
-import kotlin.math.max
+import java.nio.charset.StandardCharsets
+import java.util.*
+import kotlin.collections.HashMap
+import kotlin.collections.HashSet
 
 data class GraphInput(val graphDef: GraphDef,val inputNames: List<String>,val outputNames: List<String>,
                       val inputArrays: Map<String,INDArray>,val dynamicArrays: Map<String,INDArray>)
@@ -78,6 +72,7 @@ class TestTensorflowIR {
     fun manualTest() {
         val manualGraph = FileUtils.readFileToString(File("test.pbtxt"),Charset.defaultCharset())
         val parsedGraph = GraphDef.newBuilder()
+       //C:\Users\agibs\.nd4jtests\resnetv2_imagenet_frozen_graph
         TextFormat.merge(manualGraph,parsedGraph)
         val textGraph = parsedGraph.build()
         println(textGraph)
@@ -154,6 +149,150 @@ class TestTensorflowIR {
         // assertEquals(output,output2)
         //assertEquals(tfOutput,output)
     }
+
+
+    @Test
+    @Ignore
+    fun manualTestBinary() {
+        val path = "C:\\Users\\agibs\\.nd4jtests\\resnetv2_imagenet_frozen_graph\\resnetv2_imagenet_frozen_graph.pb"
+        val bytes = FileUtils.readFileToByteArray(File(path))
+        val parsedGraph = GraphDef.parseFrom(bytes)
+        val tfImporter = TensorflowFrameworkImporter()
+        //with names [image] and shapes {image=[4, 2, 28, 28, 3]}
+        Nd4j.getEnvironment().isDebug = true
+        Nd4j.getEnvironment().isVerbose = true
+        //TFGraphMapper.importGraph(textGraph)
+        // val inputMap = mapOf("input_1" to Nd4j.zeros(10).castTo(org.nd4j.linalg.api.buffer.DataType.INT32),"input_2" to Nd4j.zeros(1,8).castTo(org.nd4j.linalg.api.buffer.DataType.DOUBLE))
+        //val inputMap = mapOf("image" to Nd4j.ones(1,128,128,4))
+        /**
+         * TODO: fix emptyReduce.
+         * When we pass in 2 inputs where input 1 is the dimensions, the results
+         * work. In our model import, it appears that
+         * the empty dimensions aren't being passed down
+         * for int arguments properly.
+         * We need to figure out the difference between specifying 2 input arrays
+         * and ints, that or we need to make it so that arrays can be passed in
+         * for dimensions for each singular reduce op.
+         *
+         * Each op seems to be able to take in dimensions for indices.
+         * It *MIGHT* be better just to pass in dimensions directly.
+         */
+
+
+        //Load data
+        //Because we don't have DataVec NativeImageLoader in ND4J tests due to circular dependencies, we'll load the image previously saved...
+        var imgFile =
+         File("goldenretriever_rgb224_unnormalized_nchw_INDArray.bin")
+        var img = Nd4j.readBinary(imgFile).castTo(org.nd4j.linalg.api.buffer.DataType.FLOAT)
+        img = img.permute(0, 2, 3, 1).dup() //to NHWC
+
+
+        //Perform inference
+
+        //Resnet v2 - NO external normalization, just resize and center crop
+        // https://github.com/tensorflow/models/blob/d32d957a02f5cffb745a4da0d78f8432e2c52fd4/research/tensorrt/tensorrt.py#L70
+        // https://github.com/tensorflow/models/blob/1af55e018eebce03fb61bba9959a04672536107d/official/resnet/imagenet_preprocessing.py#L253-L256
+
+        val importedGraph = TFGraphMapper.importGraph(parsedGraph)
+
+        //Load labels
+        val labels = labels()
+
+
+        //Perform inference
+        val inputs: List<String> = importedGraph.inputs()
+        Assert.assertEquals(1, inputs.size.toLong())
+
+        val out = "softmax_tensor"
+        val m: Map<String, INDArray> = importedGraph.output(Collections.singletonMap(inputs[0], img), out)
+
+        val outArr = m[out]
+
+
+        println("SHAPE: " + Arrays.toString(outArr!!.shape()))
+        println(outArr)
+
+        val argmax = outArr!!.argMax(1)
+
+        //Load labels
+
+        val classIdx = argmax.getInt(0)
+        val className = labels[classIdx]
+        val expClass = "golden retriever"
+        val prob = outArr!!.getDouble(classIdx.toLong())
+
+        println("Predicted class: $classIdx - \"$className\" - probability = $prob")
+        Assert.assertEquals(expClass, className)
+
+        val inputMap = Collections.singletonMap(inputs[0], img)
+        val tensorflowIRGraph = TensorflowIRGraph(parsedGraph,tensorflowOps,tfImporter.registry)
+        val outputList = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }.toMutableSet()
+        val tfGraphRunner = TensorflowIRGraphRunner(tensorflowIRGraph, inputMap.keys.toList(),listOf("batch_normalization/FusedBatchNorm",out))
+        val graph = tfImporter.importFromGraph(parsedGraph,inputMap)
+        val tfOutput = tfGraphRunner.run(inputMap)
+
+        /**
+         * TODO: UnsortedSegmentSum ,Solution is almost there, need to figure out how to
+         * output correct shape.
+         *
+         * Shape in TF is 5 x 5 but actual real output seems to be 1 x 10.
+         * We need to change the output shape to work like TF does.
+         */
+        val output2 = importedGraph.outputAll(inputMap)
+        val output = graph.outputAll(inputMap)
+
+
+        //assertEquals(tfOutput.keys,outputList)
+        //assertEquals(tfOutput.keys,output2.keys)
+        val names = tensorflowIRGraph.nodeList().map { input -> input.nodeName() }
+        val skipValidation = setOf("parallel_stack/ExpandDims/dim")
+        //assertEquals(output.keys,output2.keys)
+        val notEquals = LinkedHashSet<String>()
+        val notEqualsTf = LinkedHashSet<String>()
+        val notEqualsOp = LinkedHashSet<String>()
+        names.forEach {
+            val value = output[it]
+            val value2 = output2[it]
+            val tfValue = tfOutput[it]
+            if(value!! != (value2!!)) {
+                val oldOps = importedGraph.ops[it]
+                val newOps = graph.ops[it]
+                val oldVar = importedGraph.variables[it]
+                val newVar = graph.variables[it]
+                notEquals.add(it)
+            }
+
+            if(tfValue != null && tfValue!! != (value!!)) {
+                val oldOps = importedGraph.ops[it]
+                val newOps = graph.ops[it]
+                val oldVar = importedGraph.variables[it]
+                val newVar = graph.variables[it]
+                notEqualsTf.add(it)
+            }
+
+            val oldOp = importedGraph.ops[it]
+            val newOp = graph.ops[it]
+            if(oldOp != newOp) {
+                notEqualsOp.add(it)
+            }
+
+        }
+
+        println(notEquals)
+        println(notEqualsTf)
+        println("Not equals ops $notEqualsOp")
+        println()
+        // assertEquals(output,output2)
+        //assertEquals(tfOutput,output)
+    }
+
+    @Throws(Exception::class)
+    fun labels(): List<String?> {
+        val labelsFile =
+            File("imagenet_labellist.txt")
+        return FileUtils.readLines(labelsFile, StandardCharsets.UTF_8)
+    }
+
 
     @Test
     @Ignore

@@ -489,7 +489,6 @@ val compareAndBitPack = TensorflowMappingProcess(
         opName = "compare_and_bitpack",
         opMappingRegistry = tensorflowOpRegistry,
         inputFrameworkOpName = "CompareAndBitpack",
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "T"))),
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "input","y" to "threshold")))
 )
 

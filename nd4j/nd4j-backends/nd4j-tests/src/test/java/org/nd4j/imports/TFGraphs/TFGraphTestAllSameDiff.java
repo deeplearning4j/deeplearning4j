@@ -76,30 +76,15 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "layers_dropout/rank3_d05_train_mask1",
             "layers_dropout/rank2_d09_train",
             "layers_dropout/rank2_d05_train",*/
-          /*  "primitive_gru_dynamic",
-            "layers_dropout/rank4_d05_train",
-            "fused_batch_norm/float16_nhwc",
-            "rnn/lstmblockcell/dynamic_b1_n5-3_ts4_noPH_noClip_fB1_noIS_withTM",
-            "rnn/lstmcell/dynamic_b1_nIn5_nOut3_ts4_noPH_noClip_fB1_Tanh_noIS_float_withTM",
-            "rnn/grublockcellv2/dynamic_b1_n3-2_ts1_noIS_noTM"*/
-             /*        "unsorted_segment/unsorted_segment_mean_rank3",
-         "unsorted_segment/unsorted_segment_sqrt_n_rank2",
-            "unsorted_segment/unsorted_segment_mean_rank2",
-            "unsorted_segment/unsorted_segment_mean_rank3",
-            "unsorted_segment/unsorted_segment_sum_rank3",
-            "unsorted_segment/unsorted_segment_min_rank2",
-            "unsorted_segment/unsorted_segment_prod_rank2",
-            "unsorted_segment/unsorted_segment_max_rank2",*/
-            "bincount/rank0_weights",
-            "bincount/rank2_weights"
-        /*    "compare_and_bitpack/bool",
+
+            "compare_and_bitpack/bool",
             "compare_and_bitpack/float32",
             "compare_and_bitpack/float64",
             "compare_and_bitpack/half",
             "compare_and_bitpack/int32",
             "compare_and_bitpack/int8",
             "compare_and_bitpack/int64",
-            "compare_and_bitpack/int16"*/
+            "compare_and_bitpack/int16"
 
 
 

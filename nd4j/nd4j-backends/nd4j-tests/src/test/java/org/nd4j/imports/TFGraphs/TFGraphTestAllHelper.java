@@ -88,6 +88,7 @@ import static org.nd4j.imports.tfgraphs.TFGraphsSkipNodes.skipNode;
 @Slf4j
 public class TFGraphTestAllHelper {
     public static final String resourceFolderVar = "DL4J_TEST_RESOURCES";
+    public static TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
 
     public enum ExecuteWith {
         SAMEDIFF, LIBND4J, JUST_PRINT
@@ -103,7 +104,6 @@ public class TFGraphTestAllHelper {
                 e.printStackTrace();
             }
 
-            TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
             return tensorflowFrameworkImporter.runImport(file.getAbsolutePath(),Collections.emptyMap());
         }
     }

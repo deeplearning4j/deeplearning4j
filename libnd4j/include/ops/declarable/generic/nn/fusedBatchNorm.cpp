@@ -45,6 +45,7 @@ namespace sd {
 
             const bool dataFormat = (bool)INT_ARG(0);               // 0->NHWC, 1->NCHW
             const bool isTraining = (bool)INT_ARG(1);
+            nd4j_debug("CUSTOM_OP fused_batch_norm: data format, is NCHW: %d, isTraining: %d\n",dataFormat,isTraining);
 
             REQUIRE_TRUE(x->rankOf() == 4, 0, "CUSTOM_OP fused_batch_norm: the rank of input x array must be equal to 4, but got %i instead !", x->rankOf());
 
@@ -62,8 +63,19 @@ namespace sd {
             }
 
             auto xCast = x->cast(sd::DataType::FLOAT32);
-
-
+            //move to NWHC
+            /**
+             * TODO: TF has a permute to NWHC here:
+             * https://github.com/tensorflow/tensorflow/blob/ce34a83e03394492b1c4e5bb92fbd56da2ba7ce5/tensorflow/core/kernels/fused_batch_norm_op.cc#L137
+             *
+             * This should be done as well for us, but results are still off.
+             * Figure out differences.
+             */
+            if(dataFormat) {
+                xCast.printShapeInfo("x cast shape info pre permute");
+                xCast = xCast.permute({0, 2, 3, 1});
+                xCast.printShapeInfo("x cast shape info post permute");
+            }
             REQUIRE_TRUE(scale->rankOf() == 1  && scale->sizeAt(0)  == iD, 0, "CUSTOM_OP fused_batch_norm: wrong shape of input scale array, expected is [%i], but got %s instead", iD, ShapeUtils::shapeAsString(scale).c_str());
             REQUIRE_TRUE(offset->rankOf() == 1 && offset->sizeAt(0) == iD, 0, "CUSTOM_OP fused_batch_norm: wrong shape of input offset array, expected is [%i], but got %s instead", iD, ShapeUtils::shapeAsString(offset).c_str());
 
@@ -126,14 +138,22 @@ namespace sd {
             auto scaledVariance =  ((*variance + epsilon).transform(transform::RSqrt) * (*scale)).cast(xAffected.dataType());
             auto xScaled1 = xCentered * scaledVariance;
             auto xShifted1 = xScaled1 + *offset;
+            if(dataFormat) {
+                //need to reshape from matrix to 4d then permute the ordering due to NWHC  ordering
+                auto reshaped = xShifted1.reshape(xCast.ordering(),xCast.getShapeAsVector());
+                reshaped.permutei({0,3,1,2});
+                y->assign(reshaped);
 
-            y->assign(xShifted1);
+            }
+            else //NWHC case
+                y->assign(xShifted1);
+
 
             if(isTraining) {
                 delete mean;
                 delete variance;
             }
-
+            
             return Status::OK();
         }
 
