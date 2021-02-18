@@ -60,7 +60,7 @@ public class ScatterUpdate extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "scatter_upd";
+        return "scatter_update";
     }
 
     @Override

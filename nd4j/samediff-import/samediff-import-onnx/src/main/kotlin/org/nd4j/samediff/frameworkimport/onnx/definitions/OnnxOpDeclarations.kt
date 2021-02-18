@@ -210,7 +210,7 @@ val constantFill = OnnxMappingProcess(
         opName = "fill",
         inputFrameworkOpName = "ConstantOfShape",
         opMappingRegistry = onnxOpRegistry,
-        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("shapeArray" to "input"))),
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("shape" to "input"))),
         attributeMappingRules = listOf(ndarrayAttributeToScalarAttribute(outputAttributeValue = "value",inputAttributeValue = "value"),
                 intConstant(inputName = "outputDataType",constantValue = 0,argumentIndex = 0)[0])
 )
@@ -908,7 +908,7 @@ val transpose = OnnxMappingProcess(
         opName = "transpose",
         inputFrameworkOpName = "Transpose",
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "data"))),
-        attributeMappingRules = listOf(listNumberToNDarray(outputAttributeValue = "permutationVector", inputAttributeValue = "perm")),
+        attributeMappingRules = listOf(listNumberToNDarray(outputAttributeValue = "permuteDims", inputAttributeValue = "perm")),
         opMappingRegistry = onnxOpRegistry
 )
 

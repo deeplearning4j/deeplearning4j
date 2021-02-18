@@ -1562,7 +1562,7 @@ mappings {
     ruleName: "listnumbertondarray"
     functionName: "listnumbertondarray"
     inputToOutput {
-      key: "permutationVector"
+      key: "permuteDims"
       value: "perm"
     }
     ruleType: "attribute"
@@ -2814,9 +2814,9 @@ mappings {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "input"
-    outputTensorName: "shapeArray"
+    outputTensorName: "shape"
     inputToOutput {
-      key: "shapeArray"
+      key: "shape"
       value: "input"
     }
     ruleType: "tensor"

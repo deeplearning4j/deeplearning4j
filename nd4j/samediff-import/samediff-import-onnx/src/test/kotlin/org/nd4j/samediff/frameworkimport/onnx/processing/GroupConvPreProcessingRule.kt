@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
 import org.nd4j.enums.DataFormat
 import org.nd4j.enums.WeightsFormat
+import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.ops.DynamicCustomOp
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig
 import org.nd4j.samediff.frameworkimport.hooks.PreImportHook
@@ -34,7 +35,12 @@ import java.lang.IllegalArgumentException
 
 @PreHookRule(nodeNames = ["conv2_1"],opNames = [],"onnx")
 class GroupConvPreProcessingRule: PreImportHook {
-    override fun preProcess(op: SameDiffOp, sd: SameDiff, attributes: Map<String, Any>): HookResult {
+    override fun preProcess(
+        op: SameDiffOp,
+        sd: SameDiff,
+        attributes: Map<String, Any>,
+        descriptor: OpNamespace.OpDescriptor
+    ): HookResult {
         if(op.op.opName() != "conv2d") {
             throw IllegalArgumentException("Illegal op being processed of type ${op.op.opName()} with node name ${op.op.ownName}")
         }
@@ -45,19 +51,19 @@ class GroupConvPreProcessingRule: PreImportHook {
             return HookResult()
         }
 
-        val conv2d = op.op as DynamicCustomOp
+        val intArgs = descriptor.argDescriptorList.filter { input -> input.argType == OpNamespace.ArgDescriptor.ArgType.INT64 }.sortedBy { input -> input.argIndex }
         val config = Conv2DConfig.builder()
-            .sH(conv2d.getIArgument(2))
-            .sW(conv2d.getIArgument(3))
-            .kH(conv2d.getIArgument(0))
-            .kW(conv2d.getIArgument(1))
-            .pH(conv2d.getIArgument(4))
-            .pW(conv2d.getIArgument(5))
-            .dH(conv2d.getIArgument(6))
-            .dW(conv2d.getIArgument(7))
-            .isSameMode(conv2d.getIArgument(8) > 0)
-            .weightsFormat(WeightsFormat.values()[conv2d.getIArgument(10).toInt()])
-            .dataFormat(DataFormat.values()[conv2d.getIArgument(9).toInt()].name)
+            .sH(intArgs[2].int64Value)
+            .sW(intArgs[3].int64Value)
+            .kH(intArgs[0].int64Value)
+            .kW(intArgs[1].int64Value)
+            .pH(intArgs[4].int64Value)
+            .pW(intArgs[5].int64Value)
+            .dH(intArgs[6].int64Value)
+            .dW(intArgs[7].int64Value)
+            .isSameMode(intArgs[8].int64Value > 0)
+            .weightsFormat(WeightsFormat.values()[intArgs[10].int64Value.toInt()])
+            .dataFormat(DataFormat.values()[intArgs[9].int64Value.toInt()].name)
             .build()
 
         val listOfFunctions = ArrayList<DifferentialFunction>()
@@ -68,6 +74,14 @@ class GroupConvPreProcessingRule: PreImportHook {
         /**
          * NOTE: Need to look in to how to wire up inputs and outputs properly.
          * May need HookResult to return an indicator of variables and ops to remove.
+         */
+        /**
+         * TODO: figure out how to change weights to be divided by 2 in size.
+         * Run in to : CUSTOM CONV2D OP: wrong shape of weights array, expected is [256, 24, 5, 5], but got [256, 48, 5, 5] instead !
+         * We could also try getting rid of validation. Either way we may need to split up the weights by the number of group occurrences.
+         * We technically seem to be doing that down below but that doesn't seem to be enough.
+         *
+         * The input/output variable weight shape may also not be properly updated. Need to verify.
          */
         val outputVars = ArrayList<SDVariable>()
         split.forEachIndexed { index,input ->
@@ -90,6 +104,6 @@ class GroupConvPreProcessingRule: PreImportHook {
         val concat = sd.concat(op.name,0,*toTypedArray)
         resultMap[op.name] = listOf(concat)
 
-        return HookResult(outputVariables = resultMap,listOfFunctions)
+        return HookResult(outputVariables = resultMap,listOfFunctions,proceedWithInit = false)
     }
 }

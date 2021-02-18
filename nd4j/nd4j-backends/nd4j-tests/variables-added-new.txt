@@ -1,3 +1,5 @@
 in_0/read,in_0/read
 in_1/read,in_1/read
-UnsortedSegmentSum,UnsortedSegmentSum
+in_2/read,in_2/read
+Assign,Assign
+ScatterNdSub,ScatterNdSub

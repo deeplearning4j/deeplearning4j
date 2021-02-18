@@ -362,6 +362,10 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return Long.MAX_VALUE;
+    }
 
     @Test
     public void testScatterOpGradients() {
@@ -401,9 +405,10 @@ public class MiscOpValidation extends BaseOpValidation {
                     name = "scatterDiv";
                     break;
                 case 4:
-                    scatter = sd.scatterUpdate("s", in, indices, updates);
+                  /*  scatter = sd.scatterUpdate("s", in, indices, updates);
                     name = "scatterUpdate";
-                    break;
+                    break;*/
+                    continue;
                 case 5:
                     scatter = sd.scatterMax("s", in, indices, updates);
                     name = "scatterMax";

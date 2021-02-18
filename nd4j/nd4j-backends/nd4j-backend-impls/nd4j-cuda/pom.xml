@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -43,6 +43,12 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-cuda-11.0-preset</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>${dependency.groupId}</groupId>
             <artifactId>${dependency.artifactId}</artifactId>
@@ -72,9 +78,9 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
-            <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
-            <classifier>${dependency.platform}</classifier>
+            <artifactId>cuda-platform-redist</artifactId>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}
+            </version>
         </dependency>
 
         <dependency>
@@ -157,33 +163,15 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>javacpp-parser</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <skipMain>${javacpp.parser.skip}</skipMain>
-                            <includes>
-                                <include>org/nd4j/nativeblas/Nd4jCudaPresets.java</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
                 <dependencies>
+                    <dependency>
+                        <groupId>org.nd4j</groupId>
+                        <artifactId>nd4j-cuda-11.0-preset</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
                     <dependency>
                         <groupId>org.nd4j</groupId>
                         <artifactId>nd4j-native-api</artifactId>
@@ -191,7 +179,7 @@
                     </dependency>
                     <dependency>
                         <groupId>org.bytedeco</groupId>
-                        <artifactId>cuda</artifactId>
+                        <artifactId>cuda-platform-redist</artifactId>
                         <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}
                         </version>
                     </dependency>
@@ -267,10 +255,35 @@
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCuda</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <skipMain>${javacpp.parser.skip}</skipMain>
+                            <includes>
+                                <include>org/nd4j/nativeblas/**.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
             </plugin>

@@ -211,10 +211,11 @@
             </activation>
             <modules>
                 <module>nd4j-native</module>
+                <module>nd4j-native-preset</module>
                 <module>nd4j-native-platform</module>
             </modules>
         </profile>
-       <!-- <profile>
+        <profile>
             <id>cuda</id>
             <activation>
                 <property>
@@ -224,6 +225,7 @@
             </activation>
             <modules>
                 <module>nd4j-cuda</module>
+                <module>nd4j-cuda-preset</module>
                 <module>nd4j-cuda-platform</module>
             </modules>
         </profile>
@@ -238,7 +240,7 @@
                 <module>nd4j-cuda</module>
                 <module>nd4j-cuda-platform</module>
             </modules>
-        </profile>-->
+        </profile>
         <profile>
             <id>javacpp-platform-default</id>
             <activation>

@@ -1656,6 +1656,12 @@ val placeHolder = mapTensorNamesWithOp(inputFrameworkOpName = "Placeholder",opNa
         attributeMappingRules = listOf()
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
+val placeHolderWithDefault = mapTensorNamesWithOp(inputFrameworkOpName = "PlaceholderWithDefault",opName = "placeholder",
+        tensorNames = mutableMapOf(),
+        attributeMappingRules = listOf()
+        ,tensorflowOpRegistry = tensorflowOpRegistry)
+
+
 val randomGamma = mapTensorNamesWithOp(inputFrameworkOpName = "RandomGamma",opName = "random_gamma",tensorNames = mutableMapOf("shape" to "shape","alpha" to "alpha"),
         attributeMappingRules = listOf(valueMapping(mutableMapOf("seed" to "seed"))),tensorflowOpRegistry = tensorflowOpRegistry)
 

@@ -399,11 +399,21 @@
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
+            <properties>
+                <cuda.version>11.0</cuda.version>
+                <cudnn.version>8.0</cudnn.version>
+                <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
+            </properties>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
                     <artifactId>nd4j-cuda-11.0</artifactId>
                     <version>${project.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>cuda-platform-redist</artifactId>
+                    <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
                 </dependency>
             </dependencies>
             <build>
@@ -412,6 +422,16 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <dependencies>
+                            <dependency>
+                                <groupId>org.nd4j</groupId>
+                                <artifactId>nd4j-cuda-11.0</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                            <dependency>
+                                <groupId>org.bytedeco</groupId>
+                                <artifactId>cuda-platform</artifactId>
+                                <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+                            </dependency>
                             <dependency>
                                 <groupId>org.apache.maven.surefire</groupId>
                                 <artifactId>surefire-junit47</artifactId>

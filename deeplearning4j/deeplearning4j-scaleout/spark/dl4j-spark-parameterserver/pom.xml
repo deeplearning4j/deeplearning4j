@@ -36,6 +36,7 @@
     <name>dl4j-spark-parameterserver</name>
 
     <properties>
+        <rxjava.version>2.2.1</rxjava.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>

@@ -6258,6 +6258,17 @@ mappings {
 }
 mappings {
   frameworkName: "tensorflow"
+  opName: "placeholder"
+  inputFrameworkOpName: "PlaceholderWithDefault"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    ruleType: "tensor"
+    inputFrameworkOpName: "PlaceholderWithDefault"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
   opName: "stack_list"
   inputFrameworkOpName: "TensorArrayConcat"
   rule {

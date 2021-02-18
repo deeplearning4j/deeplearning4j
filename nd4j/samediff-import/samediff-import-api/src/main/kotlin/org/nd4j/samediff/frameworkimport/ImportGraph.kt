@@ -36,7 +36,6 @@ import org.nd4j.ir.OpNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ops.DynamicCustomOp
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge
-import org.nd4j.linalg.api.ops.impl.shape.Concat
 import org.nd4j.samediff.frameworkimport.context.MappingContext
 import org.nd4j.samediff.frameworkimport.ir.IRGraph
 import org.nd4j.samediff.frameworkimport.ir.IRNode
@@ -468,16 +467,18 @@ open class ImportGraph <GRAPH_TYPE: GeneratedMessageV3,
 
                         //cache attributes just in case we have any rules so we don't create the rules more than once
                         val attributes = mappingContext.nodeAttributesAsMap()
+                        var proceedWithInit = true
                         mappingContext.relevantPrehookRules().forEach { rule ->
-                            rule.preProcess(op, sd,attributes)
+                            proceedWithInit = proceedWithInit && rule.preProcess(op, sd, attributes,importInfo[name]!!.second).proceedWithInit
                         }
 
-                        defaultRunner.initAttributes(df, sd, importInfo[name]!!)
+                        if(proceedWithInit)
+                            defaultRunner.initAttributes(df, sd, importInfo[name]!!)
 
 
                         //add nodes/other post processing in order for this node to work
                         mappingContext.relevantPosthookRules().forEach { rule ->
-                            rule.postProcess(op, sd,attributes)
+                            rule.postProcess(op, sd, attributes,importInfo[name]!!.second)
                         }
 
                         //only add to the graph if the pre processing didn't over ride the node

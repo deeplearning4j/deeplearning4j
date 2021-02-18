@@ -153,7 +153,7 @@ namespace sd {
                 delete mean;
                 delete variance;
             }
-            
+
             return Status::OK();
         }
 

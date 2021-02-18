@@ -59,7 +59,6 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
-
             //2019/07/22 - Result value failure
             "xlnet_cased_L-24_H-1024_A-16",
 
@@ -85,6 +84,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
             // Graph wasn't topsorted for all Keras RNNs (possible TF's too)
             // https://github.com/eclipse/deeplearning4j/issues/7974
+            //Alexnet takes too long
             "PorV-RNN",
             "temperature_bidirectional_63",
             "temperature_stacked_63",
@@ -196,7 +196,10 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                     throw new IllegalStateException("Unknown format: " + filename);
                 }
 
-                return TFGraphTestAllHelper.LOADER.apply(modelFile, name);
+                SameDiff apply = TFGraphTestAllHelper.LOADER.apply(modelFile, name);
+                //"suggest" a GC before running the model to mitigate OOM
+                System.gc();
+                return apply;
             } catch (IOException e){
                 throw new RuntimeException(e);
             }

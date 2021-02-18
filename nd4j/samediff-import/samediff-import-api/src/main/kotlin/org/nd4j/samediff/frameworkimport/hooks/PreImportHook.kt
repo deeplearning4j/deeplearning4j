@@ -21,10 +21,11 @@ package org.nd4j.samediff.frameworkimport.hooks
 
 import org.nd4j.autodiff.samediff.SameDiff
 import org.nd4j.autodiff.samediff.internal.SameDiffOp
+import org.nd4j.ir.OpNamespace
 import org.nd4j.samediff.frameworkimport.hooks.annotations.HookResult
 
 interface PreImportHook {
 
-    fun preProcess(op: SameDiffOp, sd: SameDiff, attributes: Map<String, Any>): HookResult
+    fun preProcess(op: SameDiffOp, sd: SameDiff, attributes: Map<String, Any>, descriptor: OpNamespace.OpDescriptor): HookResult
 
 }

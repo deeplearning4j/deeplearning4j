@@ -707,7 +707,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
 
                 //reflect the expanded storage
                 if(outIdx >= l.size()) {
-                    while(l.size() < outIdx) {
+                    while(l.size() <= outIdx) {
                         l.add(null);
                     }
                 }

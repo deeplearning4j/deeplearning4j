@@ -191,7 +191,7 @@ public class OpValidation {
                     error = e.getValue().apply(actual);
                 } catch (Throwable t) {
                     throw new IllegalStateException("Error checking forward pass for variable \"" + e.getKey() + "\": exception was" +
-                            " thrown by foward pass validation function", t);
+                            " thrown by forward pass validation function", t);
                 }
 
                 if (error != null) {

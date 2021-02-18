@@ -20,6 +20,7 @@
 
 package org.nd4j;
 
+import org.bytedeco.javacpp.Loader;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -81,7 +82,6 @@ public class OpValidationSuite {
     public static void beforeClass() {
         Nd4j.create(1);
         initialType = Nd4j.dataType();
-
         Nd4j.setDataType(DataType.DOUBLE);
         Nd4j.getRandom().setSeed(123);
     }

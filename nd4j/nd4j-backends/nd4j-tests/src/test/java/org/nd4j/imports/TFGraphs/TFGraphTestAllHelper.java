@@ -30,23 +30,26 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.nd4j.autodiff.execution.NativeGraphExecutioner;
-
 import org.nd4j.autodiff.execution.conf.ExecutionMode;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCloseMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.CloseValidationMemoryMgr;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.common.base.Preconditions;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.imports.tfgraphs.listener.OpExecOrderListener;
+import org.nd4j.common.function.BiFunction;
+import org.nd4j.common.io.ClassPathResource;
+import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.resources.strumpf.ResourceFile;
+import org.nd4j.common.resources.strumpf.StrumpfResolver;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.imports.listeners.ExecPrintListener;
+import org.nd4j.imports.tfgraphs.listener.OpExecOrderListener;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -54,20 +57,12 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.function.BiFunction;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.string.NDArrayStrings;
-import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.common.resources.strumpf.ResourceFile;
-import org.nd4j.common.resources.strumpf.StrumpfResolver;
 import org.nd4j.samediff.frameworkimport.tensorflow.importer.TensorflowFrameworkImporter;
-import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraph;
-import org.nd4j.samediff.frameworkimport.tensorflow.ir.TensorflowIRGraphRunner;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -80,7 +75,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.nd4j.imports.tfgraphs.TFGraphsSkipNodes.skipNode;
@@ -89,7 +83,7 @@ import static org.nd4j.imports.tfgraphs.TFGraphsSkipNodes.skipNode;
 public class TFGraphTestAllHelper {
     public static final String resourceFolderVar = "DL4J_TEST_RESOURCES";
     public static TensorflowFrameworkImporter tensorflowFrameworkImporter = new TensorflowFrameworkImporter();
-
+    public final static String PRINT_GRAPH_PROP = "org.nd4j.imports.tfgraphs.printgraphs";
     public enum ExecuteWith {
         SAMEDIFF, LIBND4J, JUST_PRINT
     }
@@ -97,12 +91,19 @@ public class TFGraphTestAllHelper {
     public static class DefaultGraphLoader implements BiFunction<File,String,SameDiff> {
         @Override
         public SameDiff apply(File file, String name) {
-            try {
-                GraphDef graphDef = GraphDef.parseFrom(Files.toByteArray(file));
-                System.out.println("Processing graph: \n" + graphDef.toString());
-            } catch (IOException e) {
-                e.printStackTrace();
+
+            String prop = System.getProperty(PRINT_GRAPH_PROP,"false");
+            Boolean printGraph = Boolean.parseBoolean(prop);
+            if(printGraph) {
+                try {
+                    GraphDef graphDef = GraphDef.parseFrom(Files.toByteArray(file));
+                    System.out.println("Processing graph : \n" + graphDef);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
+            else
+                System.out.println("Processing graph at path : \n" + file.getAbsolutePath());
 
             return tensorflowFrameworkImporter.runImport(file.getAbsolutePath(),Collections.emptyMap());
         }
@@ -433,7 +434,7 @@ public class TFGraphTestAllHelper {
             if(!graph.getSessions().containsKey(tid))
                 graph.getSessions().put(tid, new InferenceSession(graph));*/
             //Execute
-           // graph.getSessions().get(tid).setMmgr(mmgr);
+            // graph.getSessions().get(tid).setMmgr(mmgr);
             Map<String,String> shapes = new HashMap<>();
             inputs.entrySet().stream().forEach(entry -> {
                 shapes.put(entry.getKey(),Arrays.toString(entry.getValue().shape()));

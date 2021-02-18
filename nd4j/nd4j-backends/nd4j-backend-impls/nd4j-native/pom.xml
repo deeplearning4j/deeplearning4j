@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -71,6 +71,11 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-native-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-preset</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -103,6 +108,11 @@
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
                 <dependencies>
+                    <dependency>
+                        <groupId>org.nd4j</groupId>
+                        <artifactId>nd4j-native-preset</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
                     <dependency>
                         <groupId>org.nd4j</groupId>
                         <artifactId>nd4j-native-api</artifactId>
@@ -185,7 +195,7 @@
                             <goal>build</goal>
                         </goals>
                     </execution>
-               <!--     <execution>
+                    <execution>
                         <id>javacpp-parser</id>
                         <phase>generate-sources</phase>
                         <goals>
@@ -197,7 +207,7 @@
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCpuPresets
                             </classOrPackageName>
                         </configuration>
-                    </execution>-->
+                    </execution>
                     <execution>
                         <id>javacpp-compiler</id>
                         <phase>process-classes</phase>
@@ -209,6 +219,7 @@
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCpu</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
+                            <outputDirectory>${project.build.directory}/classes</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>

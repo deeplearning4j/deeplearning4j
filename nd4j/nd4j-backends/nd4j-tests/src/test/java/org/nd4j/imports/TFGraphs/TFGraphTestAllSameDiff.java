@@ -76,17 +76,20 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "layers_dropout/rank3_d05_train_mask1",
             "layers_dropout/rank2_d09_train",
             "layers_dropout/rank2_d05_train",*/
-
-            "compare_and_bitpack/bool",
-            "compare_and_bitpack/float32",
-            "compare_and_bitpack/float64",
-            "compare_and_bitpack/half",
-            "compare_and_bitpack/int32",
-            "compare_and_bitpack/int8",
-            "compare_and_bitpack/int64",
-            "compare_and_bitpack/int16"
-
-
+            "reductions/scatter_update_vector",
+            "reductions/scatter_update_scalar",
+            "random_poisson/rank1_float16",
+            "random_poisson/rank1_float16",
+            "matrix_band_part/float64",
+            "emptyArrayTests/scatter_update/rank1_emptyIndices_emptyUpdates",
+            "bincount/rank0_weights",
+            "bincount/rank2_weights",
+            "scatter_nd_add/locking/rank1shape_1indices",
+            "scatter_nd_add/locking/rank2shape_1indices",
+            "scatter_nd_add/locking/rank3shape_1indices",
+            "scatter_nd_sub/locking/rank1shape_1indices",
+            "scatter_nd_sub/locking/rank2shape_1indices",
+            "scatter_nd_sub/locking/rank3shape_1indices"
 
     );
 
@@ -94,6 +97,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             // Still failing 2020/04/27 java.lang.IllegalStateException: Requested output variable Bincount does not exist in SameDiff instance
             //Invalid test cases. Verified by running graph against actual TF.
+           "compare_and_bitpack/.*",
             "slogdet/.*",
             //IGNORE THIS: the TF results from comparing against an actual TF java run compared to this seem to be different.
             "fused_batch_norm/float16_nhwc",

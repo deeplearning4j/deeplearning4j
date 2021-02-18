@@ -64,7 +64,7 @@ public class CNN1DGradientCheckTest extends BaseDL4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 90000L;
+        return 180000;
     }
 
     @Test
