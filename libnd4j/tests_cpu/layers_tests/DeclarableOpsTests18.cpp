@@ -1057,6 +1057,76 @@ TEST_F(DeclarableOpsTests18, TestUpdaterAdam3) {
     ASSERT_TRUE(stateM.isSameShape(results.at(2)));
     ASSERT_TRUE(stateM.equalsTo(results.at(2)));
 }
+//
+TEST_F(DeclarableOpsTests18, TestUpdaterAdaBelief1) {
+    //here is the python code used for generating test numbers
+    //import numpy as np
+    //alpha=0.001
+    //beta1=0.9
+    //beta2=0.999
+    //epsilon=1.e-8
+    //#https://arxiv.org/pdf/2010.07468.pdf
+    //def update( t, w, gradW,   mt, st):
+    //        mt =  beta1* mt + (1- beta1)*gradW 
+    //        st =  beta2* st + (1- beta2)*((gradW-mt)**2) + epsilon
+    //        mt_corr =  mt/(1- beta1**t) 
+    //        st_corr =  st/(1- beta2**t)
+    //        upW= alpha*(mt_corr/(np.sqrt(st_corr)+epsilon)) 
+    //        w = w -  upW 
+    //        return ( w, upW,  mt, st )
+    //#if you want to test with more precision np.set_printoptions(precision=9)
+    //grad = np.array([1,2,3,4,5], dtype = np.float32)
+    //w=np.zeros(5, dtype = np.float32)
+    //mt=np.zeros(5, dtype = np.float32)
+    //st = np.zeros(5, dtype = np.float32)
+    //for t in range(1,4):
+    //    w, upW,    mt, st = update(t,w,grad, mt,st )
+    //    print(f"---{t}----")
+    //    print(f"update {upW}")
+    //    print(f" s state {st} ")    
+    //    print(f" m state {mt} ")
+
+
+    NDArray grad('c', { 1, 5 }, { 1,2,3,4,5 }, DataType::FLOAT32);
+    NDArray initU('c', { 1, 5 }, { 0.0,  0.0,   0.0,  0.0,  0.0 }, DataType::FLOAT32);
+    NDArray initM('c', { 1, 5 }, { 0.0,  0.0,   0.0,  0.0,  0.0 }, DataType::FLOAT32);
+
+    NDArray update('c', { 1, 5 }, DataType::FLOAT32);
+
+    sd::ops::adabelief_updater op;
+    auto t=0;
+    Nd4jStatus status = op.execute({ &grad, &initU, &initM }, { &update, &initU, &initM }, { 0.001f, 0.9f, 0.999f, 1.0e-8 }, { });
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    NDArray updateExp0('c', { 1, 5 }, { 0.0011111f,  0.00111111f, 0.00111111f, 0.00111111f, 0.00111111f }, DataType::FLOAT32);
+    NDArray stateV('c', { 1, 5 }, { 0.00081001f, 0.00324001f, 0.00729001f, 0.01296001f, 0.02025001f }, DataType::FLOAT32);
+    NDArray stateM0('c', { 1, 5 }, { 0.1f, 0.2f, 0.3f, 0.4f, 0.5f}, DataType::FLOAT32);
+    ASSERT_TRUE(update.equalsTo(updateExp0));
+    ASSERT_TRUE(initU.equalsTo(stateV));
+    ASSERT_TRUE(initM.equalsTo(stateM0));
+    t=1;
+    status = op.execute({ &grad, &initU, &initM }, { &update, &initU, &initM }, { 0.001f, 0.9f, 0.999f, 1.0e-8 }, { t});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    NDArray updateExp1('c', { 1, 5 }, { 0.001168f, 0.001168f, 0.001168f, 0.001168f, 0.001168f}, DataType::FLOAT32);
+    NDArray stateV1('c', { 1, 5 }, { 0.00146531f, 0.00586118f, 0.01318763f, 0.02344466f, 0.03663227f }, DataType::FLOAT32);
+    NDArray stateM1('c', { 1, 5 }, { 0.19f, 0.38f, 0.57000005f, 0.76f, 0.95f }, DataType::FLOAT32);
+    ASSERT_TRUE(update.equalsTo(updateExp1));
+    ASSERT_TRUE(initU.equalsTo(stateV1));
+    ASSERT_TRUE(initM.equalsTo(stateM1));
+    t=2;
+    status = op.execute({ &grad, &initU, &initM }, { &update, &initU, &initM }, { 0.001f, 0.9f, 0.999f, 1.0e-8 }, {t});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    NDArray updateExp2('c', { 1, 5 }, { 0.00122557f, 0.00122558f, 0.00122558f, 0.00122558f, 0.00122558f }, DataType::FLOAT32);
+    NDArray stateV2('c', { 1, 5 }, { 0.0019953f,  0.00798109f, 0.01795742f, 0.03192428f, 0.04988168f }, DataType::FLOAT32);
+    NDArray stateM2('c', { 1, 5 }, { 0.271f, 0.542f, 0.813f, 1.084f, 1.355f }, DataType::FLOAT32);
+
+    ASSERT_TRUE(update.equalsTo(updateExp2));
+    ASSERT_TRUE(initU.equalsTo(stateV2));
+    ASSERT_TRUE(initM.equalsTo(stateM2));
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests18, TestUpdaterAdaDelta1) {
 
