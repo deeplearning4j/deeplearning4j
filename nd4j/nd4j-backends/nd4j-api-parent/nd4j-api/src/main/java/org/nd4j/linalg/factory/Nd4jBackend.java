@@ -1,19 +1,22 @@
-/* ******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.factory;
 
@@ -30,38 +33,6 @@ import java.net.URLClassLoader;
 import java.security.PrivilegedActionException;
 import java.util.*;
 
-/**
- * An ND4j backend.
- *
- * A "backend" is also described here: https://deeplearning4j.konduit.ai/nd4j/backend
- *
- * A backend also has 2  variables to be aware of.
- * 1 is the environment variable, ND4J_DYNAMIC_LOAD_CLASSPATH
- * This will define a uri path separated by ; where jars will be
- * loaded from the path and dynamically loaded.
- *
- * The other is the system property:
- * org.nd4j.backend.dynamicbackend
- *
- * This has the same use case but is for system properties.
- * Of note here is that the system property takes loading precedence over
- * the environment variable. If you want to just use the environment variable,
- * don't define the system property.
- *
- * Both of these variables are for dynamically loading a backend relative to a path.
- * The main idea here is for distributed environments like spark where
- * you have multiple worker nodes with some having gpus and others not.
- *
- * When you define an environment variable on the server, you can
- * have a hardware jar file load with respect to the node nd4j is installed on.
- * The system property is mainly for flexibility and probably shouldn't be
- * used in practice.
- *
- * @author eronwright
- * @author Adam Gibson
- * @author saudet
- *
- */
 @Slf4j
 public abstract class Nd4jBackend {
 
@@ -148,6 +119,10 @@ public abstract class Nd4jBackend {
 
     public abstract Environment getEnvironment();
 
+    /**
+     * Get the build information of the backend
+     */
+    public abstract String buildInfo();
 
     /**
      * Loads the best available backend.

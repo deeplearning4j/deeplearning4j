@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.dropout;
 
@@ -30,19 +34,6 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Spatial dropout: can only be applied to 3D (time series), 4D (convolutional 2D) or 5D (convolutional 3D) activations.
- * Dropout mask is generated along the depth dimension, and is applied to:<br>
- * For 3D/time series/sequence input: each step in the sequence<br>
- * For 4D (CNN 2D) input: each x/y location in an image.<br>
- * For 5D (CNN 3D) input: each x/y/z location in a volume<br>
- * Note that the dropout mask is generated independently for each example: i.e., a dropout mask of shape [minibatch, channels]
- * is generated and applied to activations of shape [minibatch, channels, height, width]
- * <p>
- * Reference: Efficient Object Localization Using Convolutional Networks: <a href="https://arxiv.org/abs/1411.4280">https://arxiv.org/abs/1411.4280</a>
- *
- * @author Alex Black
- */
 @Data
 @JsonIgnoreProperties({"mask"})
 @EqualsAndHashCode(exclude = {"mask"})

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.nlp.transforms;
 
@@ -23,24 +27,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.List;
 
-/**
- * A bag of words transform represents taking a list of words
- * and converting it to a vector where that vector is
- * of length number of vocab words.
- * Vocab words are determined by what is passed in to the transform via a constructor generally.
- *
- * To build a vocab in NLP, you crawl a corpus with a tokenizer tracking word frequencies.
- * Any words above a specified frequency are added to an ordered list.
- *
- * When using this ordered list in NLP pipelines (at least for bag of words)
- * you perform a lookup for each word in a string (determined by a tokenizer)
- * and fill in the appropriate weight (a word count or tfidf weight generally)
- * to represent the word at a particular column.
- *
- * The column is determined by the ordered list of words.
- *
- * @author Adam Gibson
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface BagOfWordsTransform extends Transform {
 

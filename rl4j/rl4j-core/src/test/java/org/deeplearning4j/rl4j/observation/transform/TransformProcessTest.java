@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.deeplearning4j.rl4j.observation.transform;
 
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -318,6 +338,25 @@ public class TransformProcessTest {
 
         // Act
         sut.transform(channelsData, 0, false);
+    }
+
+    @Test
+    public void when_transformProcessHaveMultipleChannels_expect_channelsAreCreatedInTheDefinedOrder() {
+        // Arrange
+        TransformProcess sut = TransformProcess.builder()
+                .build("channel0", "channel1");
+        Map<String, Object> channelsData = new HashMap<String, Object>() {{
+            put("channel0", Nd4j.create(new double[] { 123.0 }));
+            put("channel1", Nd4j.create(new double[] { 234.0 }));
+        }};
+
+        // Act
+        Observation result = sut.transform(channelsData, 0, false);
+
+        // Assert
+        assertEquals(2, result.numChannels());
+        assertEquals(123.0, result.getChannelData(0).getDouble(0), 0.000001);
+        assertEquals(234.0, result.getChannelData(1).getDouble(0), 0.000001);
     }
 
     private static class FilterOperationMock implements FilterOperation {

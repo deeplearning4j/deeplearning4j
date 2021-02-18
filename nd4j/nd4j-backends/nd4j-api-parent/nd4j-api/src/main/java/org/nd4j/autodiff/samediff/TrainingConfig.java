@@ -1,18 +1,22 @@
-/* ******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.samediff;
 
@@ -30,21 +34,6 @@ import org.nd4j.serde.json.JsonMappers;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * TrainingConfig is a simple configuration class for defining settings for training a {@link SameDiff} instance.<br>
- * It defines the following settings:<br>
- * <ul>
- *     <li>The {@link IUpdater} to use (i.e., {@link org.nd4j.linalg.learning.config.Adam}, {@link org.nd4j.linalg.learning.config.Nesterovs} etc.
- *     The IUpdater instance is also how the learning rate (or learning rate schedule) is set.</li>
- *     <li>The L1 and L2 regularization coefficients (set to 0.0 by default)</li>
- *     <li>The DataSet feature and label mapping - which defines how the feature/label arrays from the DataSet/MultiDataSet
- *     should be associated with SameDiff variables (usually placeholders)</li>
- * </ul>
- * The TrainingConfig instance also stores the iteration count and the epoch count - these values are updated during training
- * and are used for example in learning rate schedules.
- *
- * @author Alex Black
- */
 @Data
 @Builder
 @NoArgsConstructor

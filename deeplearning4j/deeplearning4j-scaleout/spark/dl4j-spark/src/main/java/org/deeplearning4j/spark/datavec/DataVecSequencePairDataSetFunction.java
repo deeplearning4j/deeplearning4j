@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.datavec;
 
@@ -33,13 +37,6 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 
-/**Map {@code Tuple2<Collection<Collection<Writable>>,Collection<Collection<Writable>>} objects (out of a TWO datavec-spark
- *  sequence record reader functions) to  DataSet objects for Spark training.
- * Analogous to {@link SequenceRecordReaderDataSetIterator}, but in the context of Spark.
- * Supports loading data from a TWO sources only; hence supports many-to-one and one-to-many situations.
- * see {@link DataVecSequenceDataSetFunction} for the single file version
- * @author Alex Black
- */
 public class DataVecSequencePairDataSetFunction
                 implements Function<Tuple2<List<List<Writable>>, List<List<Writable>>>, DataSet>, Serializable {
     /**Alignment mode for dealing with input/labels of differing lengths (for example, one-to-many and many-to-one type situations).

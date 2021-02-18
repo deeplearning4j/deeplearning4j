@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelexport.solr.handler;
 
@@ -42,34 +46,6 @@ import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-/**
- * A <a href="https://lucene.apache.org/solr/7_7_1/solr-solrj/org/apache/solr/client/solrj/io/stream/TupleStream.html">
- * org.apache.solr.client.solrj.io.stream.TupleStream</a> that uses a {@link Model} to compute output scores.
- * <a href="https://lucene.apache.org/solr/7_7_1/solr-solrj/org/apache/solr/client/solrj/io/Tuple.html">Tuple</a>
- * fields are the model inputs and the model output(s) are added to the returned tuple.
- * <p>
- * Illustrative configuration snippet:
- * <pre>
-  &lt;expressible name="emailModel" class="org.deeplearning4j.nn.modelexport.solr.handler.ModelTupleStream"/&gt;
-</pre>
- * <p>
- * Illustrative expression snippet:
- * <pre>
-  emailModel(search(myCollection,
-                    q="*:*",
-                    fl="id,fieldX,fieldY,fieldZ",
-                    sort="id asc",
-                    qt="/export"),
-             serializedModelFileName="mySerializedModel",
-             inputKeys="fieldX,fieldY,fieldZ",
-             outputKeys="modelScoreField1,modelScoreField2")
-</pre>
- * <p>
- * Apache Solr Reference Guide:
- * <ul>
- * <li> <a href="https://lucene.apache.org/solr/guide/7_7/streaming-expressions.html">Streaming Expressions</a>
- * </ul>
- */
 public class ModelTupleStream extends TupleStream implements Expressible {
 
   final private static String SERIALIZED_MODEL_FILE_NAME_PARAM = "serializedModelFileName";

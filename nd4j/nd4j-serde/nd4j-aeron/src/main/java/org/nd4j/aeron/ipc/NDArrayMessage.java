@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.aeron.ipc;
 
@@ -36,23 +40,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
-/**
- * A message sent over the wire for ndarrays
- * includ   ing the timestamp sent (in nanoseconds),
- * index (for tensor along dimension view based updates)
- * and dimensions.
- *
- * Fields:
- * arr: Using {@link AeronNDArraySerde#toArray(DirectBuffer, int)} we extract the array from a buffer
- * sent: the timestamp in milliseconds of when the message was sent (UTC timezone) - use {@link NDArrayMessage#getCurrentTimeUtc()}
- * when sending a message
- * index: the index of the tensor along dimension for update (use -1 if there is no index, eg: when you are going to use the whole array)
- * dimensions: the dimensions to do for a tensoralongdimension update, if you intend on updating the whole array send: new int[]{ -1} which
- * will indicate to use the whole array for an update.
- *
- *
- * @author Adam Gibson
- */
 @Data
 @Builder
 @AllArgsConstructor

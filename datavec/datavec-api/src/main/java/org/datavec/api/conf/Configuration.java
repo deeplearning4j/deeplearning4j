@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.conf;
 
@@ -44,71 +48,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-/**
- * Provides access to configuration parameters.
- *
- * <h4 id="Resources">Resources</h4>
- *
- * <p>Configurations are specified by resources. A resource contains a set of
- * name/value pairs as XML data. Each resource is named by either a
- * <code>String</code> or a <code>Path</code>. If named by a
- * <code>String</code>, then the classpath is examined for a file with that
- * name. If named by a <code>Path</code>, then the local filesystem is
- * examined directly, without referring to the classpath.
- *
- * <p>Unless explicitly turned off, Hadoop by default specifies two 
- * resources, loaded in-order from the classpath: <ol>
- * <li><tt><a href="{@docRoot}/../core-default.html">core-default.xml</a>
- * </tt>: Read-only defaults for hadoop.</li>
- * <li><tt>core-site.xml</tt>: Site-specific configuration for a given hadoop
- * installation.</li>
- * </ol>
- * Applications may add additional resources, which are loaded
- * subsequent to these resources in the order they are added.
- *
- * <h4 id="FinalParams">Final Parameters</h4>
- *
- * <p>Configuration parameters may be declared <i>final</i>. 
- * Once a resource declares a value final, no subsequently-loaded 
- * resource can alter that value.  
- * For example, one might define a final parameter with:
- * <tt><pre>
- *  &lt;property&gt;
- *    &lt;name&gt;dfs.client.buffer.dir&lt;/name&gt;
- *    &lt;value&gt;/tmp/hadoop/dfs/client&lt;/value&gt;
- *    <b>&lt;final&gt;true&lt;/final&gt;</b>
- *  &lt;/property&gt;</pre></tt>
- *
- * Administrators typically define parameters as final in 
- * <tt>core-site.xml</tt> for values that user applications may not alter.
- *
- * <h4 id="VariableExpansion">Variable Expansion</h4>
- *
- * <p>Value strings are first processed for <i>variable expansion</i>. The
- * available properties are:<ol>
- * <li>Other properties defined in this Configuration; and, if a name is
- * undefined here,</li>
- * <li>Properties in {@link System#getProperties()}.</li>
- * </ol>
- *
- * <p>For example, if a configuration resource contains the following property
- * definitions: 
- * <tt><pre>
- *  &lt;property&gt;
- *    &lt;name&gt;basedir&lt;/name&gt;
- *    &lt;value&gt;/user/${<i>user.name</i>}&lt;/value&gt;
- *  &lt;/property&gt;
- *
- *  &lt;property&gt;
- *    &lt;name&gt;tempdir&lt;/name&gt;
- *    &lt;value&gt;${<i>basedir</i>}/tmp&lt;/value&gt;
- *  &lt;/property&gt;</pre></tt>
- *
- * When <tt>conf.get("tempdir")</tt> is called, then <tt>${<i>basedir</i>}</tt>
- * will be resolved to another property in this Configuration, while
- * <tt>${<i>user.name</i>}</tt> would then ordinarily be resolved to the value
- * of the System property with that name.
- */
 public class Configuration implements Iterable<Map.Entry<String, String>>, Writable, Serializable {
     private static final Logger LOG = LoggerFactory.getLogger(Configuration.class);
 

@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -320,22 +322,21 @@ namespace sd {
                             if (!shape::equalsSoft(out, shape) || shape::isEmpty(out) != shape::isEmpty(shape)) {
                                 auto eShape = ShapeUtils::shapeAsString(out);
                                 auto aShape = ShapeUtils::shapeAsString(shape);
-
+                                auto eShapeInfoString = ShapeUtils::shapeInfoAsString(out);
+                                auto aShapeInfoString = ShapeUtils::shapeInfoAsString(shape);
                                 //outSha->destroy();
                                 delete outSha;
 
-                                nd4j_printf("Expected vs provided shapes mismatch %s vs %s at index %i\n", eShape.c_str(), aShape.c_str(), pair.second);
+                                nd4j_printf("Expected vs provided shapes mismatch %s vs %s at index %i with expected shape info %s and output shape info %s\n", eShape.c_str(), aShape.c_str(), pair.second,eShapeInfoString.c_str(),aShapeInfoString.c_str());
+
                                 throw std::runtime_error("Expected vs provided shapes mismatch");
                             }
 
-                            /*
-                             * FIXME: we want to uncomment this eventually, and check data types equality
                             //checking out data type equality
                             if (ArrayOptions::dataType(out) != ArrayOptions::dataType(shape)) {
                                 std::string msg = "Provided array [" + StringUtils::valueToString<int>(pair.second) + "] has unexpected data type";
                                 throw sd::datatype_exception::build(msg, ArrayOptions::dataType(out), ArrayOptions::dataType(shape));
                             }
-                             */
                         }
                     } else {
                         auto fout = ctx.fastpath_out();
@@ -346,16 +347,22 @@ namespace sd {
                             ctx.setOutputArray(idx, outArr, true);
                         } else {
                             auto array = fout[idx];
+                            int shapeEquals = shape::equalsSoft(out, array->shapeInfo());
+                            int arrayEmpty = array->isEmpty();
                             // checking out shape equality
-                            if (!shape::equalsSoft(out, array->shapeInfo()) || shape::isEmpty(out) != array->isEmpty()) {
+                            if (!shapeEquals || arrayEmpty) {
                                 auto eShape = ShapeUtils::shapeAsString(out);
                                 auto aShape = ShapeUtils::shapeAsString(array->shapeInfo());
+                                auto eShapeInfoString = ShapeUtils::shapeInfoAsString(out);
+                                auto aShapeInfoString = ShapeUtils::shapeInfoAsString(array->shapeInfo());
+                                if(eShapeInfoString != aShapeInfoString) {
+                                    //outSha->destroy();
+                                    delete outSha;
 
-                                //outSha->destroy();
-                                delete outSha;
+                                    nd4j_printf("Expected vs provided shapes mismatch %s vs %s at index %i with expected shape info %s and output shape info %s. Conditions, shapeEquals: %d, array empty: %d\n", eShape.c_str(), aShape.c_str(), idx,eShapeInfoString.c_str(),aShapeInfoString.c_str(),shapeEquals,arrayEmpty);
+                                    throw std::runtime_error("Output array did not match expected shape.");
+                                }
 
-                                nd4j_printf("Expected vs provided shape mismatch %s vs %s at index %i\n", eShape.c_str(), aShape.c_str(), idx);
-                                throw std::runtime_error("Expected vs provided shape mismatch");
                             }
                         }
                     }

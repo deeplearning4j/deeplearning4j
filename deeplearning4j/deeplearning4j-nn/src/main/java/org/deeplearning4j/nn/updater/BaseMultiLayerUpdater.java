@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.updater;
 
@@ -39,18 +43,6 @@ import org.nd4j.linalg.learning.config.IUpdater;
 
 import java.util.*;
 
-/**
- * BaseMultiLayerUpdater - core functionality for applying updaters to MultiLayerNetwork and ComputationGraph.
- * <p>
- * This implements updater combining: that is, for any layers (and variables) that:<br>
- * (a) have contiguous parameters/gradients in the view arrays, and<br>
- * (b) have identical updater configuration (including updater, LR, LR/momentum schedules, etc - different L1/L2 are OK,
- *     however)<br>
- * are combined into a single {@link org.nd4j.linalg.learning.GradientUpdater} operation, instead of having a set of
- * smaller operations. A smaller number of larger operations improves performance, especially for GPUs.
- *
- * @author Alex Black
- */
 @Getter
 public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater {
 

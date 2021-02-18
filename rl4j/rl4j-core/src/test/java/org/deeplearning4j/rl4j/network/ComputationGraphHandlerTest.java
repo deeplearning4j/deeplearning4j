@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.deeplearning4j.rl4j.network;
 
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -6,6 +26,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
 import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -48,7 +69,7 @@ public class ComputationGraphHandlerTest {
             when(modelMock.getOutputLayer(0)).thenReturn(new RnnOutputLayer(null, null));
         }
 
-        sut = new ComputationGraphHandler(modelMock, LABEL_NAMES, GRADIENT_NAME);
+        sut = new ComputationGraphHandler(modelMock, LABEL_NAMES, GRADIENT_NAME, 1);
     }
 
     @Test
@@ -87,7 +108,8 @@ public class ComputationGraphHandlerTest {
     public void when_callingPerformFit_expect_fitCalledOnModelWithCorrectLabels() {
         // Arrange
         setup(false);
-        INDArray features = Nd4j.rand(1, 2);
+        INDArray featuresData = Nd4j.rand(1, 2);
+        Features features = new Features(new INDArray[] { Nd4j.rand(1, 2), featuresData });
         INDArray labels = Nd4j.rand(1, 2);
         FeaturesLabels featuresLabels = new FeaturesLabels(features);
         featuresLabels.putLabels("TEST_LABEL", labels);
@@ -100,7 +122,7 @@ public class ComputationGraphHandlerTest {
         ArgumentCaptor<INDArray[]> labelsCaptor = ArgumentCaptor.forClass(INDArray[].class);
         verify(modelMock, times(1)).fit(featuresCaptor.capture(), labelsCaptor.capture());
         INDArray featuresArg = featuresCaptor.getValue()[0];
-        assertSame(featuresArg, features);
+        assertSame(featuresArg, featuresData);
         INDArray labelsArg = labelsCaptor.getValue()[0];
         assertSame(labelsArg, labels);
     }
@@ -109,8 +131,9 @@ public class ComputationGraphHandlerTest {
     public void when_callingperformGradientsComputation_expect_modelCalledWithCorrectFeaturesLabels() {
         // Arrange
         setup(false);
-        INDArray features = Nd4j.rand(1, 2);
+        INDArray featuresData = Nd4j.rand(1, 2);
         INDArray labels = Nd4j.rand(1, 2);
+        Features features = new Features(new INDArray[] { Nd4j.rand(1, 2), featuresData });
         FeaturesLabels featuresLabels = new FeaturesLabels(features);
         featuresLabels.putLabels("TEST_LABEL", labels);
 
@@ -118,11 +141,13 @@ public class ComputationGraphHandlerTest {
         sut.performGradientsComputation(featuresLabels);
 
         // Assert
-        verify(modelMock, times(1)).setInput(0, features);
+        ArgumentCaptor<INDArray> inputsCaptor = ArgumentCaptor.forClass(INDArray.class);
+        verify(modelMock, times(1)).setInputs(inputsCaptor.capture());
+        INDArray inputsArg = inputsCaptor.getValue();
+        assertSame(featuresData, inputsArg);
 
         ArgumentCaptor<INDArray> labelsCaptor = ArgumentCaptor.forClass(INDArray.class);
         verify(modelMock, times(1)).setLabels(labelsCaptor.capture());
-        Object debug = labelsCaptor.getAllValues();
         INDArray labelsArg = labelsCaptor.getValue();
         assertSame(labels, labelsArg);
 
@@ -175,7 +200,7 @@ public class ComputationGraphHandlerTest {
         setup(false);
         Observation observationMock = mock(Observation.class);
         INDArray observationData = Nd4j.rand(1, 2);
-        when(observationMock.getData()).thenReturn(observationData);
+        when(observationMock.getChannelData(1)).thenReturn(observationData);
 
         // Act
         sut.recurrentStepOutput(observationMock);
@@ -185,16 +210,17 @@ public class ComputationGraphHandlerTest {
     }
 
     @Test
-    public void when_callingBatchOutput_expect_outputCalledWithBatch() {
+    public void when_callingFeaturesBatchOutput_expect_outputCalledWithBatch() {
         // Arrange
         setup(false);
-        INDArray batch = Nd4j.rand(1, 2);
+        INDArray channelData = Nd4j.rand(1, 2);
+        Features features = new Features(new INDArray[] { Nd4j.rand(1, 2), channelData });
 
         // Act
-        sut.batchOutput(batch);
+        sut.batchOutput(features);
 
         // Assert
-        verify(modelMock, times(1)).output(batch);
+        verify(modelMock, times(1)).output(new INDArray[] { channelData });
     }
 
     @Test
@@ -240,7 +266,7 @@ public class ComputationGraphHandlerTest {
         setup(false);
         INDArray params = Nd4j.rand(1, 2);
         when(modelMock.params()).thenReturn(params);
-        ComputationGraphHandler from = new ComputationGraphHandler(modelMock, null, null);
+        ComputationGraphHandler from = new ComputationGraphHandler(modelMock, null, null, 0);
 
         // Act
         sut.copyFrom(from);
@@ -272,4 +298,25 @@ public class ComputationGraphHandlerTest {
         // Assert
         assertTrue(isRecurrent);
     }
+
+    @Test
+    public void when_creatingWithMapper_expect_computationsUseTheMapper() {
+        // Arrange
+        ChannelToNetworkInputMapper channelToNetworkInputMapperMock = mock(ChannelToNetworkInputMapper.class);
+        modelMock = mock(ComputationGraph.class);
+        trainingListenerMock = mock(TrainingListener.class);
+        INDArray featuresData = Nd4j.rand(1, 2);
+        Features features = new Features(new INDArray[] { Nd4j.rand(1, 2), featuresData });
+        INDArray labels = Nd4j.rand(1, 2);
+        FeaturesLabels featuresLabels = new FeaturesLabels(features);
+        featuresLabels.putLabels("TEST_LABEL", labels);
+        sut = new ComputationGraphHandler(modelMock, LABEL_NAMES, GRADIENT_NAME, channelToNetworkInputMapperMock);
+
+        // Act
+        sut.performGradientsComputation(featuresLabels);
+
+        // Assert
+        verify(channelToNetworkInputMapperMock, times(1)).getNetworkInputs(features);
+    }
+
 }

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.lossfunctions.impl;
 
@@ -32,36 +36,6 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * This is a cost function associated with a mixture-density network.
- * For background, this is inspired by Bishop's work pioneering the mixture
- * density network.  The essence of the idea is that the cost function attempts
- * to model the output as if it were a mixture of gaussian probability
- * densities.  The network attempts to converge on a cost function which
- * involves the negative log likelihood of the output fitting a set of data
- * and estimates the "alpha" contribution to of each of the distributions
- * the 'mu' (mean) and 'sigma' (standard deviation) of each of the
- * distributions.
- * 
- * For a full description of the technique, refer to Bishop's work.
- * 
- * Bishop CM. Mixture density networks,
- * Neural Computing Research Group Report:
- * NCRG/94/004, Aston University, Birmingham, 1994
- * https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/bishop-ncrg-94-004.pdf
- * 
- * There is no public constructor, please use the builder to create an
- * approriate mixture loss function for the number of outputs and number
- * of mixtures you would like to fit.
- * 
- * Note that this means that the output
- * layer must provide (labelWidth+2)*mixtures output values in order to describe
- * the distributions of vectors of width labelWidth.
- * Please ensure that the size of the output layer matches the number of
- * mixtures provided.
- * 
- * @author Jonathan Arney
- */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class LossMixtureDensity implements ILossFunction {

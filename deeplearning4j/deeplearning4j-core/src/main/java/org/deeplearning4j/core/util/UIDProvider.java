@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.core.util;
 
@@ -22,16 +26,6 @@ import java.net.NetworkInterface;
 import java.rmi.server.UID;
 import java.util.Enumeration;
 
-/**
- * Static methods for obtaining unique identifiers for both the machine (hardware) and the JVM.
- *
- * Note: the unique hardware identifier does NOT provide any strong guarantees of uniqueness of the returned identifier
- * with respect to machine restarts and hardware changes, and should not be relied upon for anything where guarantees
- * are required.
- * Note also that as a fallback, if no hardware UID can be determined, the JVM UID will be returned as the hardware UID also.
- *
- * @author Alex Black
- */
 @Slf4j
 public class UIDProvider {
 

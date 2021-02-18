@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 // @author Paul Dubs
@@ -35,7 +39,7 @@ namespace ops  {
 
         std::vector<int> axis = *block.getIArguments();
 
-        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
+        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // 0-NCHW,  1-NHWC
         const int dimC = isNCHW ? 1 : input->rankOf() - 1;
 
         REQUIRE_TRUE(gain->rankOf() == 1 && gain->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM OP: wrong shape of gain array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());
@@ -82,7 +86,7 @@ namespace ops  {
         auto dLdg = OUTPUT_VARIABLE(1);
         auto dLdb = block.width() == 4 ? OUTPUT_VARIABLE(2) : nullptr;
 
-        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
+        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       //  0-NCHW,  1-NHWC
         const int dimC = isNCHW ? 1 : input->rankOf() - 1;
 
         REQUIRE_TRUE(gain->rankOf() == 1 && gain->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM_BP OP: wrong shape of gain array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());

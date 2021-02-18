@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.impl.multilayer.scoring;
 
@@ -32,13 +36,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-/**Function to score examples individually. Note that scoring is batched for computational efficiency.<br>
- * This is essentially a Spark implementation of the {@link MultiLayerNetwork#scoreExamples(DataSet, boolean)} method<br>
- * <b>Note:</b> This method returns a score for each example, but the association between examples and scores is lost. In
- * cases where we need to know the score for particular examples, use {@link ScoreExamplesWithKeyFunction}
- * @author Alex Black
- * @see ScoreExamplesWithKeyFunction
- */
 public class ScoreExamplesFunction implements DoubleFlatMapFunction<Iterator<DataSet>> {
 
     protected static Logger log = LoggerFactory.getLogger(ScoreExamplesFunction.class);

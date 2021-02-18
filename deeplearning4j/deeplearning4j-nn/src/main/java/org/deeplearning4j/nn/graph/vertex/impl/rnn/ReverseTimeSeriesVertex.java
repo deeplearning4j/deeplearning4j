@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
@@ -30,18 +34,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/**
- * ReverseTimeSeriesVertex is used in recurrent neural networks to revert the order of time series.
- * As a result, the last time step is moved to the beginning of the time series and the first time step
- * is moved to the end. This allows recurrent layers to backward process time series.<p>
- *
- * <b>Masks</b>: The input might be masked (to allow for varying time series lengths in one minibatch). In this case the
- * present input (mask array = 1) will be reverted in place and the padding (mask array = 0) will be left untouched at
- * the same place. For a time series of length n, this would normally mean, that the first n time steps are reverted and
- * the following padding is left untouched, but more complex masks are supported (e.g. [1, 0, 1, 0, ...].<br>
- *
- * @author Klaus Broelemann (SCHUFA Holding AG)
- */
 public class ReverseTimeSeriesVertex extends BaseGraphVertex {
     private final String inputName;
     private final int inputIdx;

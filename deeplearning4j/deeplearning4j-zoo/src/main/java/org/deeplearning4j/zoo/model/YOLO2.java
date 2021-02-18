@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.zoo.model;
 
@@ -44,50 +48,6 @@ import org.nd4j.linalg.learning.config.IUpdater;
 
 import static org.deeplearning4j.zoo.model.helper.DarknetHelper.addLayers;
 
-/**
- * YOLOv2
- *  Reference: https://arxiv.org/pdf/1612.08242.pdf
- *
- * <p>ImageNet+COCO weights for this model are available and have been converted from https://pjreddie.com/darknet/yolo/
- * using https://github.com/allanzelener/YAD2K and the following code.</p>
- *
- * <pre>{@code
- *     String filename = "yolo.h5";
- *     KerasLayer.registerCustomLayer("Lambda", KerasSpaceToDepth.class);
- *     ComputationGraph graph = KerasModelImport.importKerasModelAndWeights(filename, false);
- *     INDArray priors = Nd4j.create(priorBoxes);
- *
- *     FineTuneConfiguration fineTuneConf = new FineTuneConfiguration.Builder()
- *             .seed(seed)
- *             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
- *             .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
- *             .gradientNormalizationThreshold(1.0)
- *             .updater(new Adam.Builder().learningRate(1e-3).build())
- *             .l2(0.00001)
- *             .activation(Activation.IDENTITY)
- *             .trainingWorkspaceMode(workspaceMode)
- *             .inferenceWorkspaceMode(workspaceMode)
- *             .build();
- *
- *     ComputationGraph model = new TransferLearning.GraphBuilder(graph)
- *             .fineTuneConfiguration(fineTuneConf)
- *             .addLayer("outputs",
- *                     new Yolo2OutputLayer.Builder()
- *                             .boundingBoxPriors(priors)
- *                             .build(),
- *                     "conv2d_23")
- *             .setOutputs("outputs")
- *             .build();
- *
- *     System.out.println(model.summary(InputType.convolutional(608, 608, 3)));
- *
- *     ModelSerializer.writeModel(model, "yolo2_dl4j_inference.v1.zip", false);
- *}</pre>
- *
- * The channels of the 608x608 input images need to be in RGB order (not BGR), with values normalized within [0, 1].
- *
- * @author saudet
- */
 @AllArgsConstructor
 @Builder
 public class YOLO2 extends ZooModel {

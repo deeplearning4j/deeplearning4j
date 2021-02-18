@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.models.sequencevectors.graph.primitives;
 
@@ -23,15 +27,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import java.util.List;
 import java.util.Random;
 
-/** Interface for a IGraph, with objects for each vertex and edge.
- * In the simplest case, edges and vertices may be labelled (i.e., IGraph<String,String> for example), or may be
- * any arbitrary object (or, null).<br>
- * IGraph may include directed edges, undirected edges, or a combination of both<br>
- * Note: Every vertex in the graph has an integer index, in range of 0 to numVertices() inclusive<br>
- * @param <V> type for vertex objects
- * @param <E> type for edge objects
- * @author Alex Black
- */
 public interface IGraph<V extends SequenceElement, E extends Number> {
 
     /** Number of vertices in the graph */

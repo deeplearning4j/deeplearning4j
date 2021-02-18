@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.split;
 
@@ -27,18 +31,6 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.util.*;
 
-/**
- * StreamInputSplit is a way of specifying input as a bunch of URIs, as well as the way those URIs should be opened.
- * For example, if data was stored remotely (HDFS, S3, etc) you could use StreamInputSplit to load them, doing two things:
- * (a) providing the URIs of the remote data to the constructor<br>
- * (b) providing a {@code Function<URI,InputStream>} that opens an InputStream for the given URI.<br>
- * <br>
- * Note: supports optional randomization (shuffling of order in which streams are read) via {@link #StreamInputSplit(List, Function, Random)}
- * by providing a {@link Random} instance. If no Random instance is provided, the order will always be according to the
- * order in the provided list of URIs.
- *
- * @author Alex Black
- */
 @Data
 public class StreamInputSplit implements InputSplit {
 

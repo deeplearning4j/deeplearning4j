@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.iterator.bert;
 
@@ -23,17 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * A standard/default {@link BertSequenceMasker}. Implements masking as per the BERT paper:
- * <a href="https://arxiv.org/abs/1810.04805">https://arxiv.org/abs/1810.04805</a>
- * That is, each token is chosen to be masked independently with some probability "maskProb".
- * For tokens that are masked, 3 possibilities:<br>
- * 1. They are replaced with the mask token (such as "[MASK]") in the input, with probability "maskTokenProb"<br>
- * 2. They are replaced with a random word from the vocabulary, with probability "randomTokenProb"<br>
- * 3. They are are left unmodified with probability 1.0 - maskTokenProb - randomTokenProb<br>
- *
- * @author Alex Black
- */
 public class BertMaskedLMMasker implements BertSequenceMasker {
     public static final double DEFAULT_MASK_PROB = 0.15;
     public static final double DEFAULT_MASK_TOKEN_PROB = 0.8;

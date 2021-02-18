@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -53,6 +55,10 @@ namespace sd {
         DECLARE_CUSTOM_OP(expand_dims, 1, 1, false, 0, -2);
         #endif
 
+        #if NOT_EXCLUDED(OP_flatten_2d)
+            DECLARE_CUSTOM_OP(flatten_2d, 1, 1, false, 0, 1);
+        #endif
+
         #if NOT_EXCLUDED(OP_reshape)
         DECLARE_CUSTOM_OP(reshape, 1, 1, false, 0, -2);
         #endif
@@ -92,7 +98,7 @@ namespace sd {
          *  shape array - array containing shape be broadcasted to
          */
         #if NOT_EXCLUDED(OP_broadcast_to)
-        DECLARE_CUSTOM_OP(broadcast_to, 2, 1, false, 0, 0);        
+        DECLARE_CUSTOM_OP(broadcast_to, 2, 1, false, 0, 0);
         #endif
 
 

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.validation;
 
@@ -101,31 +105,6 @@ import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-/**
- * Main test case runner for validating ops used in SameDiff.<br>
- * This OpValidation class also collects test coverage information, to determine the op test coverage, for both
- * op outputs and gradients/backprop.
- * <br><br>
- * Two types of test cases are supported:<br>
- * 1. {@link TestCase} - Can be used to check op outputs, as well as gradients<br>
- * 2. {@link OpTestCase} - Used to check the output(s) of a single op only<br>
- * <br>
- * NOTE: For the op coverage information to work properly for ND4J tests, we need the op validation to be run as part of
- * the OpValidationSuite test suite.  * Otherwise, we could report coverage information before all test have run -
- * underestimating coverage.<br>
- * <br>
- * SINGLE OP TEST: OpValidation.validate(new OpTestCase(op).expectedOutputs(0, <INDArray here>))
- * - OpTestCase checks the output values of a single op, no backprop/gradients<br>
- * - Returns an error message if op failed, or NULL if op passed<br>
- * SAMEDIFF TEST:  OpValidation.validate(new TestCase(sameDiff).gradientCheck(true).expectedOutput("someVar", <INDArray>))<br>
- * - These tests can be used to check both gradients AND expected output, collecting coverage as required<br>
- * - Returns an error message if op failed, or NULL if op passed<br>
- * - Note gradientCheck(true) is the default<br>
- * - Expected outputs are optional<br>
- * - You can specify a function for validating the correctness of each output using {@link org.nd4j.autodiff.validation.TestCase#expected(String, Function)}<br>
- *
- * @author Alex Black
- */
 @Slf4j
 public class OpValidation {
 
@@ -166,12 +145,12 @@ public class OpValidation {
 
         SameDiff sameDiff = testCase.sameDiff();
         List<Listener> listeners = sameDiff.getListeners();
-        if(listeners.isEmpty()){
+        if(listeners.isEmpty()) {
             sameDiff.addListeners(new NonInplaceValidationListener());
         } else {
             boolean found = false;
             for(Listener l : listeners){
-                if(l instanceof NonInplaceValidationListener){
+                if(l instanceof NonInplaceValidationListener) {
                     found = true;
                     break;
                 }
@@ -212,7 +191,7 @@ public class OpValidation {
                     error = e.getValue().apply(actual);
                 } catch (Throwable t) {
                     throw new IllegalStateException("Error checking forward pass for variable \"" + e.getKey() + "\": exception was" +
-                            " thrown by foward pass validation function", t);
+                            " thrown by forward pass validation function", t);
                 }
 
                 if (error != null) {
@@ -262,7 +241,7 @@ public class OpValidation {
         List<SDVariable> vars = original.variables();
         List<SDVariable> varsDe = deserialized.variables();
         Preconditions.checkState(vars.size() == varsDe.size(), "Number of variables differs: expected %s, got %s", vars.size(), varsDe.size());
-        for( int i=0; i<vars.size(); i++ ){
+        for( int i = 0; i < vars.size(); i++) {
             SDVariable vO = vars.get(i);
             SDVariable vD = varsDe.get(i);
             Preconditions.checkState(vO.name().equals(vD.name()), "Names should be equal for variable %s: expected %s vs %s",
@@ -274,7 +253,7 @@ public class OpValidation {
         Map<String,SameDiffOp> opsDeser = deserialized.getOps();
         Preconditions.checkState(opsOrig.keySet().equals(opsDeser.keySet()), "Op names differs: %s vs. %s", opsOrig.keySet(), opsDeser.keySet());
 
-        for(String s : opsOrig.keySet()){
+        for(String s : opsOrig.keySet()) {
             SameDiffOp orig = opsOrig.get(s);
             SameDiffOp des = opsDeser.get(s);
             Preconditions.checkState(orig.getName().equals(des.getName()), "Names differ: %s vs %s", orig.getName(), des.getName());
@@ -293,7 +272,7 @@ public class OpValidation {
             Preconditions.checkState((orig.getControlDepFor() == null) == (des.getControlDepFor() == null), "Op control dependencies for list differ: %s vs. %s", orig.getControlDepFor(), des.getControlDepFor());
             Preconditions.checkState(orig.getControlDepFor() == null || orig.getControlDepFor().equals(des.getControlDepFor()), "Op variable control dependencies differ: %s vs. %s", orig.getControlDepFor(), des.getControlDepFor());
 
-            Preconditions.checkState(orig.getOp().getClass() == des.getOp().getClass(), "Classes differ: %s v. %s", orig.getOp().getClass(), des.getOp().getClass());
+            Preconditions.checkState(orig.getOp().getClass().equals(des.getOp().getClass()), "Classes differ: %s v. %s", orig.getOp().getClass(), des.getOp().getClass());
         }
 
         //Check placeholders:

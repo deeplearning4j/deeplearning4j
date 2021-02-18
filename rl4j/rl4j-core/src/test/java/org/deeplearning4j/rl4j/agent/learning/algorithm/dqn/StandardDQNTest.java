@@ -1,8 +1,28 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.deeplearning4j.rl4j.agent.learning.algorithm.dqn;
 
-import org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
 import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
+import org.deeplearning4j.rl4j.experience.StateActionRewardState;
 import org.deeplearning4j.rl4j.network.CommonLabelNames;
 import org.deeplearning4j.rl4j.network.CommonOutputNames;
 import org.deeplearning4j.rl4j.network.IOutputNeuralNet;
@@ -38,14 +58,14 @@ public class StandardDQNTest {
 
     @Before
     public void setup() {
-        when(qNetworkMock.output(any(INDArray.class))).thenAnswer(i -> {
+        when(qNetworkMock.output(any(Features.class))).thenAnswer(i -> {
             NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, i.getArgument(0, INDArray.class));
+            result.put(CommonOutputNames.QValues, i.getArgument(0, Features.class).get(0));
             return result;
         });
-        when(targetQNetworkMock.output(any(INDArray.class))).thenAnswer(i -> {
+        when(targetQNetworkMock.output(any(Features.class))).thenAnswer(i -> {
             NeuralNetOutput result = new NeuralNetOutput();
-            result.put(CommonOutputNames.QValues, i.getArgument(0, INDArray.class));
+            result.put(CommonOutputNames.QValues, i.getArgument(0, Features.class).get(0));
             return result;
         });
     }
@@ -55,17 +75,17 @@ public class StandardDQNTest {
     public void when_isTerminal_expect_rewardValueAtIdx0() {
 
         // Assemble
-        List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
+        List<StateActionRewardState<Integer>> stateActionRewardStates = new ArrayList<StateActionRewardState<Integer>>() {
             {
                 add(buildTransition(buildObservation(new double[]{1.1, 2.2}),
                         0, 1.0, true, buildObservation(new double[]{11.0, 22.0})));
             }
         };
 
-        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN sut = new org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN(qNetworkMock, targetQNetworkMock, configuration);
+        StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, configuration);
 
         // Act
-        FeaturesLabels result = sut.compute(transitions);
+        FeaturesLabels result = sut.compute(stateActionRewardStates);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels(CommonLabelNames.QValues);
@@ -77,7 +97,7 @@ public class StandardDQNTest {
     public void when_isNotTerminal_expect_rewardPlusEstimatedQValue() {
 
         // Assemble
-        List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
+        List<StateActionRewardState<Integer>> stateActionRewardStates = new ArrayList<StateActionRewardState<Integer>>() {
             {
                 add(buildTransition(buildObservation(new double[]{1.1, 2.2}),
                         0, 1.0, false, buildObservation(new double[]{11.0, 22.0})));
@@ -87,7 +107,7 @@ public class StandardDQNTest {
         org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN sut = new org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN(qNetworkMock, targetQNetworkMock, configuration);
 
         // Act
-        FeaturesLabels result = sut.compute(transitions);
+        FeaturesLabels result = sut.compute(stateActionRewardStates);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels(CommonLabelNames.QValues);
@@ -99,7 +119,7 @@ public class StandardDQNTest {
     public void when_batchHasMoreThanOne_expect_everySampleEvaluated() {
 
         // Assemble
-        List<Transition<Integer>> transitions = new ArrayList<Transition<Integer>>() {
+        List<StateActionRewardState<Integer>> stateActionRewardStates = new ArrayList<StateActionRewardState<Integer>>() {
             {
                 add(buildTransition(buildObservation(new double[]{1.1, 2.2}),
                         0, 1.0, false, buildObservation(new double[]{11.0, 22.0})));
@@ -110,10 +130,10 @@ public class StandardDQNTest {
             }
         };
 
-        org.deeplearning4j.rl4j.agent.learning.algorithm.dqn.StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, configuration);
+        StandardDQN sut = new StandardDQN(qNetworkMock, targetQNetworkMock, configuration);
 
         // Act
-        FeaturesLabels result = sut.compute(transitions);
+        FeaturesLabels result = sut.compute(stateActionRewardStates);
 
         // Assert
         INDArray evaluatedQValues = result.getLabels(CommonLabelNames.QValues);
@@ -132,8 +152,8 @@ public class StandardDQNTest {
         return new Observation(Nd4j.create(data).reshape(1, 2));
     }
 
-    private Transition<Integer> buildTransition(Observation observation, Integer action, double reward, boolean isTerminal, Observation nextObservation) {
-        Transition<Integer> result = new Transition<Integer>(observation, action, reward, isTerminal);
+    private StateActionRewardState<Integer> buildTransition(Observation observation, Integer action, double reward, boolean isTerminal, Observation nextObservation) {
+        StateActionRewardState<Integer> result = new StateActionRewardState<Integer>(observation, action, reward, isTerminal);
         result.setNextObservation(nextObservation);
 
         return result;

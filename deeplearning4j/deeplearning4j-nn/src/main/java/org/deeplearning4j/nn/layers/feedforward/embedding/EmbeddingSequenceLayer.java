@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
@@ -37,16 +41,6 @@ import java.util.Arrays;
 
 import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
 
-/**
- * Embedding layer for sequences: feed-forward layer that expects fixed-length number (inputLength) of integers/indices
- * per example as input, ranged from 0 to numClasses - 1. This input thus has shape [numExamples, inputLength].
- * The output of this layer is 3D, namely of shape [numExamples, nOut, inputLength].
- * <b>Note</b>: can only be used as the first layer for a network<br>
- * <b>Note 2</b>: For a given example index i, the output is activationFunction(weights.getRow(i) + bias), hence the
- * weight rows can be considered a vector/embedding of each index.
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer> {
     private static final int[] WEIGHT_DIM = new int[]{1};
@@ -111,8 +105,11 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
     @Override
     protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
+        if(input.rank() == 1) {
+            input = input.reshape(input.length(), 1,1);
+        }
 
-        if((input.rank() == 3 && input.size(1) != 1) || (input.rank() != 2 && input.rank() != 3)){
+        if((input.rank() == 3 && input.size(1) != 1) || (input.rank() != 2 && input.rank() != 3)) {
             throw new IllegalStateException("Invalid input: EmbeddingSequenceLayer expects either rank 2 input of shape " +
                     "[minibatch,seqLength] or rank 3 input of shape [minibatch,1,seqLength]. Got rank " + input.rank() +
                     " input of shape " + Arrays.toString(input.shape()));
@@ -168,7 +165,7 @@ public class EmbeddingSequenceLayer extends BaseLayer<org.deeplearning4j.nn.conf
 
         val shape = new long[]{minibatch, inputLength, nOut};
         INDArray ret = rows.reshape('c', shape);
-        if(layerConf().getOutputFormat() == RNNFormat.NCW){
+        if(layerConf().getOutputFormat() == RNNFormat.NCW) {
             ret = ret.permute(0, 2, 1); //[minibatch, seqLen, nOut] -> [minibatch, nOut, seqLen] i.e., NWC -> NCW
         }
         return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, ret);

@@ -1,41 +1,64 @@
-<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright (c) 2015-2018 Skymind, Inc.
-  ~
-  ~ This program and the accompanying materials are made available under the
-  ~ terms of the Apache License, Version 2.0 which is available at
-  ~ https://www.apache.org/licenses/LICENSE-2.0.
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-  ~ License for the specific language governing permissions and limitations
-  ~ under the License.
-  ~
-  ~ SPDX-License-Identifier: Apache-2.0
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
-
-    <groupId>org.nd4j</groupId>
-    <artifactId>nd4j-aeron</artifactId>
-    <packaging>jar</packaging>
-
-    <name>nd4j-aeron</name>
 
     <parent>
         <groupId>org.nd4j</groupId>
         <artifactId>nd4j-serde</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
+
+    <artifactId>nd4j-aeron</artifactId>
+
+    <name>nd4j-aeron</name>
+
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <sbe.version>1.5.4</sbe.version>
         <aeron.version>1.4.0</aeron.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.aeron</groupId>
+            <artifactId>aeron-all</artifactId>
+            <version>${aeron.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <profiles>
         <profile>
@@ -50,7 +73,6 @@
         <profile>
             <id>testresources</id>
         </profile>
-
         <profile>
             <id>nd4j-tests-cpu</id>
             <activation>
@@ -70,7 +92,8 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <environmentVariables>
-                                <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/
+                                <LD_LIBRARY_PATH>
+                                    ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/
                                 </LD_LIBRARY_PATH>
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
@@ -83,9 +106,11 @@
                             </includes>
                             <junitArtifactName>junit:junit</junitArtifactName>
                             <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                <org.nd4j.linalg.defaultbackend>
+                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
                                 </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                <org.nd4j.linalg.tests.backendstorun>
+                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
                                 </org.nd4j.linalg.tests.backendstorun>
                             </systemPropertyVariables>
                             <!--
@@ -100,7 +125,6 @@
                 </plugins>
             </build>
         </profile>
-
         <profile>
             <id>nd4j-tests-cuda</id>
             <activation>
@@ -141,9 +165,11 @@
                             </includes>
                             <junitArtifactName>junit:junit</junitArtifactName>
                             <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend
+                                <org.nd4j.linalg.defaultbackend>
+                                    org.nd4j.linalg.jcublas.JCublasBackend
                                 </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend
+                                <org.nd4j.linalg.tests.backendstorun>
+                                    org.nd4j.linalg.jcublas.JCublasBackend
                                 </org.nd4j.linalg.tests.backendstorun>
                             </systemPropertyVariables>
                             <!--
@@ -157,45 +183,4 @@
             </build>
         </profile>
     </profiles>
-
-
-    <dependencies>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.aeron</groupId>
-            <artifactId>aeron-all</artifactId>
-            <version>${aeron.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-common-tests</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 </project>

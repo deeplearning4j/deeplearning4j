@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2019 Konduit K.K.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -173,12 +175,12 @@ namespace helpers {
          s ← s + p.
     return x.
      * */
-    template <typename T>
+    template <typename T, typename Z>
     void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
         auto shift = output->lengthOf() / lambda->lengthOf();
         auto step = lambda->lengthOf();
         T* lambdaBuf = lambda->dataBuffer()->primaryAsT<T>();
-        T* outputBuf = output->dataBuffer()->primaryAsT<T>();
+        Z* outputBuf = output->dataBuffer()->primaryAsT<Z>();
         bool directLa = lambda->ews() == 1 && lambda->ordering() == 'c';
         bool directOut = output->ews() == 1 && output->ordering() == 'c';
         PRAGMA_OMP_PARALLEL_FOR
@@ -188,7 +190,7 @@ namespace helpers {
             for (Nd4jLong e = 0; e < step; e++) {
                 auto p = math::nd4j_exp<T, T>(-lambda->t<T>(e));
                 auto s = p;
-                auto x = T(0.f);
+                auto x = Z(0.f);
                 while (u > s) {
                     x += 1.f;
                     p *= directLa?lambdaBuf[e]/x:lambda->t<T>(e) / x;
@@ -197,16 +199,19 @@ namespace helpers {
                 if (directOut)
                     outputBuf[pos + e] = x;
                 else
-                    output->r<T>(pos + e) = x;
+                    output->r<Z>(pos + e) = x;
             }
         }
     }
 
+
     void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomPoisson_, (context, rng, lambda, output), FLOAT_NATIVE);
+        BUILD_DOUBLE_SELECTOR(lambda->dataType(), output->dataType(), fillRandomPoisson_, (context, rng, lambda, output), FLOAT_TYPES, FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template void fillRandomPoisson_, (LaunchContext* context,
-            graph::RandomGenerator& rng, NDArray* lambda, NDArray* output), FLOAT_TYPES);
+
+    BUILD_DOUBLE_TEMPLATE(template void fillRandomPoisson_, (LaunchContext* context,
+            graph::RandomGenerator& rng, NDArray* lambda, NDArray* output), FLOAT_TYPES, FLOAT_TYPES);
+ 
 
     template <typename T>
     void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.optimize.listeners.callbacks;
 
@@ -27,15 +31,6 @@ import org.nd4j.evaluation.IEvaluation;
 import java.io.File;
 import java.io.IOException;
 
-/**
- * This callback will save model after each EvaluativeListener invocation.
- *
- * Filename template respects %d pattern, which will be replaced with integer value representing invocation number (not iteration!).
- * I.e. if EvaluativeListener has frequency set to 50, it will be invoked once every 50 iterations, each invocation will increment number by 1. So, after 500 epochs there will be 10 invocations in total, and 10 models will be saved.
- *
- * PLEASE NOTE:
- * @author raver119@gmail.com
- */
 public class ModelSavingCallback implements EvaluationCallback {
     protected File rootFolder;
     protected String template;

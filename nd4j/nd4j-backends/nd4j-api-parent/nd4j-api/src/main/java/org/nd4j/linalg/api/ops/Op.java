@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops;
 
@@ -22,24 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.nio.Buffer;
 
-/**
- * An op is defined as follows:
- * opName: opName of the operation
- * x: the origin ndarray
- * y: the ndarray to parse in parallel
- * z: the resulting buffer
- * n: the number of elements to iterate over
- * where x is the origin ndarray,
- * y, is a pairwise op
- * over n elements in the ndarray
- * stored in result z
- * <p/>
- * This is followed from the standard template for a BLAS operation
- * such that given a linear buffer, a function defines 3 buffers (x,y,z)
- * and the associated strides and offsets (handled by the ndarrays in this case)
- *
- * @author Adam Gibson
- */
 public interface Op {
     enum Type {
         SCALAR,

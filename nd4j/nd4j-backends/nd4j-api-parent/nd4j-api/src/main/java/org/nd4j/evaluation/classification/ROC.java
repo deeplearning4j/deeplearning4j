@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.evaluation.classification;
 
@@ -51,26 +55,6 @@ import java.util.Map;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/**
- * ROC (Receiver Operating Characteristic) for binary classifiers.<br>
- * ROC has 2 modes of operation:
- * (a) Thresholded (less memory)<br>
- * (b) Exact (default; use numSteps == 0 to set. May not scale to very large datasets)
- * <p>
- * <p>
- * Thresholded Is an approximate method, that (for large datasets) may use significantly less memory than exact..
- * Whereas exact implementations will automatically calculate the threshold points based on the data set to give a
- * 'smoother' and more accurate  ROC curve (or optimal cut points for diagnostic purposes), thresholded uses fixed steps
- * of size 1.0 / thresholdSteps, as this allows easy implementation for batched and distributed evaluation scenarios (where the
- * full data set is not available in memory on any one machine at once).
- * Note that in some cases (very skewed probability predictions, for example) the threshold approach can be inaccurate,
- * often underestimating the true area.
- * <p>
- * The data is assumed to be binary classification - nColumns == 1 (single binary output variable) or nColumns == 2
- * (probability distribution over 2 classes, with column 1 being values for 'positive' examples)
- *
- * @author Alex Black
- */
 @EqualsAndHashCode(callSuper = true,
         exclude = {"auc", "auprc", "probAndLabel", "exactAllocBlockSize", "rocCurve", "prCurve", "axis"})
 @Data

@@ -1,24 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019-2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 // Created by raver119 on 2018-09-16.
 // @author Oleg Semeniv <oleg.semeniv@gmail.com>
-//
+// @author Abdelrauf
 
 #ifndef DEV_TESTS_NDARRAYFACTORY_H
 #define DEV_TESTS_NDARRAYFACTORY_H
@@ -32,6 +35,7 @@
 
 
 namespace sd {
+
     class ND4J_EXPORT NDArrayFactory {
     private:
         template <typename T>
@@ -57,6 +61,10 @@ namespace sd {
 
         template <typename T>
         static NDArray* linspace(T from, T to, Nd4jLong numElements);
+
+        static NDArray create(const ShapeDescriptor& shapeDescriptor, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
+
+        static NDArray create(const char order, const std::vector<Nd4jLong>& shape, sd::DataType dataType, const std::vector<Nd4jLong>& paddings, const std::vector<Nd4jLong>& paddingOffsets, sd::LaunchContext * context = sd::LaunchContext ::defaultContext());
 
 
         template <typename T>

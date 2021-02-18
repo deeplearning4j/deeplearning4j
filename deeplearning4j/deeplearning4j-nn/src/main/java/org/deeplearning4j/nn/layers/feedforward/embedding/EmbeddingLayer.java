@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.feedforward.embedding;
 
@@ -32,16 +36,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 
-/**Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
- * as input. This input has shape [numExamples,1] instead of [numExamples,numClasses] for the equivalent one-hot representation.
- * Mathematically, EmbeddingLayer is equivalent to using a DenseLayer with a one-hot representation for the input; however,
- * it can be much more efficient with a large number of classes (as a dense layer + one-hot input does a matrix multiply
- * with all but one value being zero).<br>
- * <b>Note</b>: can only be used as the first layer for a network<br>
- * <b>Note 2</b>: For a given example index i, the output is activationFunction(weights.getRow(i) + bias), hence the
- * weight rows can be considered a vector/embedding for each example.
- * @author Alex Black
- */
 @Slf4j
 public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.EmbeddingLayer> {
     private static final int[] DIM_1 = new int[]{1};
@@ -89,11 +83,15 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
     protected INDArray preOutput(boolean training, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
         if (input.columns() != 1) {
-            //Assume shape is [numExamples,1], and each entry is an integer index
-            throw new DL4JInvalidInputException(
-                            "Cannot do forward pass for embedding layer with input more than one column. "
-                                            + "Expected input shape: [numExamples,1] with each entry being an integer index "
-                                            + layerId());
+            if(input.isRowVector()) {
+                input = input.reshape(input.length(),1);
+            }
+            else
+                //Assume shape is [numExamples,1], and each entry is an integer index
+                throw new DL4JInvalidInputException(
+                        "Cannot do forward pass for embedding layer with input more than one column. "
+                                + "Expected input shape: [numExamples,1] with each entry being an integer index "
+                                + layerId());
         }
 
         val nIn = layerConf().getNIn();

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.data;
 
@@ -31,19 +35,6 @@ import org.nd4j.common.primitives.Pair;
 import java.net.URI;
 import java.util.*;
 
-/**
- * Function used with {@code RDD<DataSet>.mapPartitionsWithIndex}.
- * It does two things:
- * 1. Batch DataSets together, to the specified minibatch size. This may result in splitting or combining existing
- * DataSet objects as required
- * 2. Export the DataSet objects to the specified directory.
- * <p>
- * Naming convention for exported files:
- * "dataset_" + partitionIdx + JVM_UID + "_" + idx + ".bin"
- * where 'idx' is the index of the DataSet objects in this partition
- *
- * @author Alex Black
- */
 public class BatchAndExportDataSetsFunction implements Function2<Integer, Iterator<DataSet>, Iterator<String>> {
     private final int minibatchSize;
     private final String exportBaseDirectory;

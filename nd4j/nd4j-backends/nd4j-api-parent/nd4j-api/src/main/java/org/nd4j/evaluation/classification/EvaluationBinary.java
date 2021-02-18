@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.evaluation.classification;
 
@@ -41,21 +45,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * EvaluationBinary: used for evaluating networks with binary classification outputs. The typical classification metrics,
- * such as accuracy, precision, recall, F1 score, etc. are calculated for each output.<br>
- * Note that {@link ROCBinary} is also used internally to calculate AUC for each output, but only when using an
- * appropriate constructor, {@link #EvaluationBinary(int, Integer)}
- * <p>
- * Note that EvaluationBinary supports both per-example and per-output masking.<br>
- * EvaluationBinary by default uses a decision threshold of 0.5, however decision thresholds can be set on a per-output
- * basis using {@link #EvaluationBinary(INDArray)}.
- * <p>
- * The most common use case: multi-task networks, where each output is a binary value. This differs from {@link Evaluation}
- * in that {@link Evaluation} is for a single class (binary or non-binary) evaluation.
- *
- * @author Alex Black
- */
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 @Data

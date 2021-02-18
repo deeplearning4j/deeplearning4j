@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.cpu.nativecpu.buffer;
 
@@ -139,9 +143,9 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
 
         // at this point we should have fully allocated buffer, time to fill length
         val headerLength = (strings.size() + 1) * 8;
-        val headerPointer = new LongPointer(this.pointer);
-        val dataPointer = new BytePointer(this.pointer);
-
+        val headerPointer = new LongPointer(getPointer());
+        val dataPointer = new BytePointer(getPointer());
+        this.pointer.retainReference();
         numWords = strings.size();
 
         long cnt = 0;
@@ -163,15 +167,20 @@ public class Utf8Buffer extends BaseCpuDataBuffer {
         headerPointer.put(cnt, currentLength);
     }
 
-    public String getString(long index) {
+    
+    private synchronized Pointer getPointer() {
+        return this.pointer;
+    }
+
+    public synchronized String getString(long index) {
         if (index > numWords)
             throw new IllegalArgumentException("Requested index [" + index + "] is above actual number of words stored: [" + numWords + "]");
 
-        val headerPointer = new LongPointer(this.pointer);
-        val dataPointer = (BytePointer) (this.pointer);
+        val headerPointer = new LongPointer(getPointer());
+        val dataPointer = (BytePointer) (getPointer());
 
         val start = headerPointer.get(index);
-        val end = headerPointer.get(index+1);
+        val end = headerPointer.get(index + 1);
 
         if (end - start > Integer.MAX_VALUE)
             throw new IllegalStateException("Array is too long for Java");

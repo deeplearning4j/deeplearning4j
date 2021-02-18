@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.validation;
 
@@ -37,11 +41,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.lang.reflect.Field;
 import java.util.*;
 
-/**
- * Gradient check utility
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class GradCheckUtil {
 
@@ -148,16 +147,16 @@ public class GradCheckUtil {
             listenerIdx = 0;
         } else {
             boolean found = false;
-            int i=0;
-            for(Listener l : listenersBefore){
-                if(l instanceof NonInplaceValidationListener){
+            int i = 0;
+            for(Listener l : listenersBefore) {
+                if(l instanceof NonInplaceValidationListener) {
                     found = true;
                     listenerIdx = i;
                     break;
                 }
                 i++;
             }
-            if(!found){
+            if(!found) {
                 sd.addListeners(new NonInplaceValidationListener());
                 listenerIdx = i;
             }
@@ -200,7 +199,7 @@ public class GradCheckUtil {
         int totalCount = 0;
         double maxError = 0.0;
         Random r = new Random(12345);
-        for(SDVariable s : sd.variables()){
+        for(SDVariable s : sd.variables()) {
             if (fnOutputs.contains(s.name()) || !s.dataType().isFPType()) {
                 //This is not an input to the graph, or is not a floating point input (so can't be gradient checked)
                 continue;
@@ -211,7 +210,7 @@ public class GradCheckUtil {
                 continue;
             }
 
-            if(s.dataType() != DataType.DOUBLE){
+            if(s.dataType() != DataType.DOUBLE) {
                 log.warn("DataType for variable {} is not double (is: {}) may cause precision issues in gradient checks", s.name(), s.dataType());
             }
 
@@ -223,7 +222,7 @@ public class GradCheckUtil {
             }
 
             Iterator<long[]> iter;
-            if(maxPerParam > 0 && subset != null && maxPerParam < a.length()){
+            if(maxPerParam > 0 && subset != null && maxPerParam < a.length()) {
                 //Subset case
                 long[] shape = a.shape();
                 List<long[]> l = new ArrayList<>();
@@ -244,7 +243,7 @@ public class GradCheckUtil {
                     //Every N
                     long everyN = n / maxPerParam;
                     long curr = 0;
-                    while(curr < n){
+                    while(curr < n) {
                         long[] pos = Shape.ind2subC(shape, curr);
                         l.add(pos);
                         curr += everyN;
@@ -263,8 +262,8 @@ public class GradCheckUtil {
                 Preconditions.checkState(varMask.dataType() == DataType.BOOL, "Variable \"%s\": Gradient check mask must be BOOLEAN datatype, got %s", s.name(), varMask.dataType());
             }
 
-            int i=0;
-            while(iter.hasNext()){
+            int i = 0;
+            while(iter.hasNext()) {
                 long[] idx = iter.next();
                 String strIdx = null;
                 if(print){
@@ -594,7 +593,7 @@ public class GradCheckUtil {
 
         Set<String> varSetStr = new HashSet<>();
         for(SDVariable v : vars){
-            if(varSetStr.contains(v.name())){
+            if(varSetStr.contains(v.name())) {
                 throw new IllegalStateException("Variable with name " + v.name() + " already encountered");
             }
             varSetStr.add(v.name());
@@ -606,15 +605,15 @@ public class GradCheckUtil {
         Preconditions.checkState(dfs.length == ops.size(), "All functions not present in incomingArgsReverse");
         for(DifferentialFunction df : dfs){
             Preconditions.checkState(ops.containsKey(df.getOwnName()), df.getOwnName() + " not present in ops map");
-
-            List<String> str = ops.get(df.getOwnName()).getInputsToOp();
+            SameDiffOp sameDiffOp = ops.get(df.getOwnName());
+            List<String> str = sameDiffOp.getInputsToOp();
             if(str != null) {
                 for (String s : str) {
                     Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in op inputs not a known variable name");
                 }
             }
 
-            str = ops.get(df.getOwnName()).getOutputsOfOp();
+            str = sameDiffOp.getOutputsOfOp();
             if(str != null) {
                 for (String s : str) {
                     Preconditions.checkState(varSetStr.contains(s), "Variable " + s + " in op outputs not a known variable name");

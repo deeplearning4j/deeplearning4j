@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.datasets.iterator.impl;
 
@@ -25,29 +29,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * EMNIST DataSetIterator<br>
- * EMNIST is similar to the common MNIST dataset (available via {@link MnistDataSetIterator}), with 6 different splits/
- * variants, specified by {@link Set}:<br>
- * <ul>
- *     <li>COMPLETE: Also known as 'ByClass' split. 814,255 examples total (train + test), 62 classes</li>
- *     <li>MERGE: Also known as 'ByMerge' split. 814,255 examples total. 47 unbalanced classes. Combines lower and upper
- *     case characters (that are difficult to distinguish) into one class for each letter (instead of 2), for letters
- *     C, I, J, K, L, M, O, P, S, U, V, W, X, Y and Z </li>
- *     <li>BALANCED: 131,600 examples total. 47 classes (equal number of examples in each class)</li>
- *     <li>LETTERS: 145,600 examples total. 26 balanced classes</li>
- *     <li>DIGITS: 280,000 examples total. 10 balanced classes</li>
- *     <li>MNIST: 70,000 examples total. 10 balanced classes. Equivalent to the original MNIST dataset in {@link MnistDataSetIterator}</li>
- * </ul>
- * <br>
- * See: <a href="https://www.nist.gov/itl/iad/image-group/emnist-dataset">
- *     https://www.nist.gov/itl/iad/image-group/emnist-dataset</a> and
- * <a href="https://arxiv.org/abs/1702.05373">https://arxiv.org/abs/1702.05373</a>
- *
- * As per {@link MnistDataSetIterator}, the features data is in "flattened" format: shape [minibatch, 784].
- *
- * @author Alex Black
- */
 public class EmnistDataSetIterator extends BaseDatasetIterator {
 
     private static final int NUM_COMPLETE_TRAIN = 697932;

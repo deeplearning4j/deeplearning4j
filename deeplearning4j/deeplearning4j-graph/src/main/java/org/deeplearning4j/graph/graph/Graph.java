@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.graph.graph;
 
@@ -26,19 +30,6 @@ import org.deeplearning4j.graph.vertexfactory.VertexFactory;
 import java.lang.reflect.Array;
 import java.util.*;
 
-/** Graph, where all edges and vertices are stored in-memory.<br>
- * Internally, this is a directed graph with adjacency list representation; however, if undirected edges
- * are added, these edges are duplicated internally to allow for fast lookup.<br>
- * Depending on the value of {@code allowMultipleEdges}, this graph implementation may or may not allow
- * multiple edges between any two adjacent nodes. If multiple edges are required (such that two or more distinct edges
- * between vertices X and Y exist simultaneously) then {@code allowMultipleEdges} should be set to {@code true}.<br>
- * As per {@link IGraph}, this graph representation can have arbitrary objects attached<br>
- * Vertices are initialized either directly via list, or via a {@link VertexFactory}. Edges are added using one of the
- * addEdge methods.
- * @param <V> Type parameter for vertices (type of objects attached to each vertex)
- * @param <E> Type parameter for edges (type of objects attached to each edge)
- * @author Alex Black
- */
 public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean allowMultipleEdges;
     private List<Edge<E>>[] edges; //edge[i].get(j).to = k, then edge from i -> k

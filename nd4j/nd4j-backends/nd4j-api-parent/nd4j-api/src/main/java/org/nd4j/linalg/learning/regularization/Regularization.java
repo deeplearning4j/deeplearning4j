@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.learning.regularization;
 
@@ -21,25 +25,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 
-/**
- * Regularization API for magnitude-based regularization techniques such as:<br>
- * {@link L1Regularization}<br>
- * {@link L2Regularization}<br>
- * {@link WeightDecay}<br>
- * <br>
- * Implementations should have the following features:<br>
- * 1. Have a loss function (score) component that is based on the input (usually parameter) array<br>
- * 2. Modify the gradients (or updates) array based on the current input array (parameters)<br>
- * 3. Optionally, use the current learning rate when modifying gradients<br>
- * <br>
- * Note that generally this type of regularization is applied to parameters, but in principle this type of regularization
- * can be applied to activations also.
- * <br>
- * This Regularization interface cannot be used for all types of regularization, however; for example, the API
- * is not appropriate for implementing DropOut/DropConnect regularization.
- *
- * @author Alex Black
- */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface Regularization extends Serializable {
 
