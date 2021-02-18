@@ -2619,7 +2619,7 @@ INLINEDEF _CUDA_HD int numOfNonUnitDims(const int rank, const Nd4jLong* inShape)
     }
 
     INLINEDEF _CUDA_HD bool isEmpty(const Nd4jLong *shapeInfo) {
-        return ((shape::extra(const_cast<Nd4jLong*>(shapeInfo)) & ARRAY_EMPTY) == ARRAY_EMPTY) || (!shape::isScalar(shapeInfo) && shape::length(shapeInfo) < 1);
+        return ((shape::extra(const_cast<Nd4jLong*>(shapeInfo)) & ARRAY_EMPTY) == ARRAY_EMPTY) ;
     }
 
 
