@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops;
 
@@ -31,13 +35,9 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-/**
- * Base scalar operation
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
 
@@ -196,8 +196,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         //All scalar ops: output type is same as input type
-        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 input datatype %s, got input %s", getClass(), dataTypes);
-        return dataTypes;
+        Preconditions.checkState(dataTypes != null && dataTypes.size() >= 1, "Expected 1 or more input datatype %s, got input %s", getClass(), dataTypes);
+        return Collections.singletonList(dataTypes.get(0));
     }
 
 }

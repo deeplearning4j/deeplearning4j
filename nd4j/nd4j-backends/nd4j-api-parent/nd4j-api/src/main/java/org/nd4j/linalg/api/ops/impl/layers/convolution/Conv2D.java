@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
@@ -45,9 +49,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 
-/**
- * Conv2D operation
- */
 @Slf4j
 @Getter
 @NoArgsConstructor
@@ -70,7 +71,7 @@ public class Conv2D extends DynamicCustomOp {
     }
 
     public Conv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
-            super(inputs, outputs);
+        super(inputs, outputs);
 
         initConfig(config);
     }
@@ -125,7 +126,9 @@ public class Conv2D extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        return config.toProperties();
+        if(config != null)
+            return config.toProperties();
+        return Collections.emptyMap();
     }
 
     @Override
@@ -167,12 +170,12 @@ public class Conv2D extends DynamicCustomOp {
 
 
         Map<String, AttributeAdapter> onnxMappings = new HashMap<>();
-        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
-        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdpater(0, 2, 0));
-        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdpater(1, 2, 0));
+        onnxMappings.put("kH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
+        onnxMappings.put("kW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
+        onnxMappings.put("dH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
+        onnxMappings.put("dW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
+        onnxMappings.put("sH", new SizeThresholdIntArrayIntIndexAdapter(0, 2, 0));
+        onnxMappings.put("sW", new SizeThresholdIntArrayIntIndexAdapter(1, 2, 0));
         onnxMappings.put("isSameMode", new StringEqualsAdapter("SAME"));
 
         ret.put(tensorflowName(), tfMappings);

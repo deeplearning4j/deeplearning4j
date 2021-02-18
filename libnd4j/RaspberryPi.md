@@ -1,3 +1,28 @@
+
+### Cross compiling for rapsberry pi and android on linux
+
+`bash pi_build.sh` using this helper script one can cross build libnd4j and dl4j with **arm COMPUTE LIBRARY** . it will download cross compiler and arm compute library.
+
+
+|options | value  | description
+|--|--|--|
+| -a or --arch | arm32  | cross compiles for pi/linux 32bit
+| -a or --arch | arm64  | cross compiles for pi/linux 64bit
+| -a or --arch | android-arm  | cross compiles for android 32bit
+| -a or --arch | android-arm64  | cross compiles for android 64bit
+|-m or --mvn |  | if provided will build dl4j using maven
+
+example:  
+`bash pi_build.sh --arch android-arm64 --mvn`
+
+to change version of the  **arm COMPUTE LIBRARY**  modify this line in the script
+    ```
+    ARMCOMPUTE_TAG=v20.05
+    ```
+
+
+##### old one
+
 Please follow following instructions to build nd4j for raspberry PI:
 
 1. download cross compilation tools for Raspberry PI

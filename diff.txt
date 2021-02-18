@@ -1,0 +1,782 @@
+2874,2876d2873
+< deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-vertx/target/classes/templates/TrainingModel.html.ftl
+< deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-vertx/target/classes/templates/TrainingOverview.html.ftl
+< deeplearning4j/deeplearning4j-ui-parent/deeplearning4j-vertx/target/classes/templates/TrainingSystem.html.ftl
+3171,3185d3167
+< libnd4j/blasbuild/cpu/cpu_features-src/include/cpu_features_cache_info.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/cpu_features_macros.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/cpuinfo_aarch64.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/cpuinfo_arm.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/cpuinfo_mips.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/cpuinfo_ppc.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/cpuinfo_x86.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/internal/bit_utils.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/internal/cpuid_x86.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/internal/filesystem.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/internal/hwcaps.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/internal/stack_line_reader.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/internal/string_view.h
+< libnd4j/blasbuild/cpu/cpu_features-src/include/internal/unix_features_aggregator.h
+< libnd4j/blasbuild/cpu/cpu_features-src/LICENSE
+3188,3211d3169
+< libnd4j/blasbuild/cpu/cpu_features-src/src/cpuinfo_aarch64.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/cpuinfo_arm.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/cpuinfo_mips.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/cpuinfo_ppc.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/cpuinfo_x86.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/filesystem.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/hwcaps.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/stack_line_reader.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/string_view.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/unix_features_aggregator.c
+< libnd4j/blasbuild/cpu/cpu_features-src/src/utils/list_cpu_features.c
+< libnd4j/blasbuild/cpu/cpu_features-src/test/bit_utils_test.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/cpuinfo_aarch64_test.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/cpuinfo_arm_test.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/cpuinfo_mips_test.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/cpuinfo_ppc_test.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/cpuinfo_x86_test.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/filesystem_for_testing.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/filesystem_for_testing.h
+< libnd4j/blasbuild/cpu/cpu_features-src/test/hwcaps_for_testing.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/hwcaps_for_testing.h
+< libnd4j/blasbuild/cpu/cpu_features-src/test/stack_line_reader_test.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/string_view_test.cc
+< libnd4j/blasbuild/cpu/cpu_features-src/test/unix_features_aggregator_test.cc
+3215,3216d3172
+< libnd4j/blasbuild/cpu/flatbuffers-src/android/jni/include.mk
+< libnd4j/blasbuild/cpu/flatbuffers-src/android/jni/main.cpp
+3220,3221d3175
+< libnd4j/blasbuild/cpu/flatbuffers-src/CMake/BuildFlatBuffers.cmake
+< libnd4j/blasbuild/cpu/flatbuffers-src/CMake/FindFlatBuffers.cmake
+3226d3179
+< libnd4j/blasbuild/cpu/flatbuffers-src/conan/test_package/test_package.cpp
+3230,3231d3182
+< libnd4j/blasbuild/cpu/flatbuffers-src/dart/example/example.dart
+< libnd4j/blasbuild/cpu/flatbuffers-src/dart/LICENSE
+3239d3189
+< libnd4j/blasbuild/cpu/flatbuffers-src/grpc/flatbuffers-java-grpc/src/main/java/com/google/flatbuffers/grpc/FlatbuffersUtils.java
+3241,3244d3190
+< libnd4j/blasbuild/cpu/flatbuffers-src/grpc/src/compiler/java_generator.cc
+< libnd4j/blasbuild/cpu/flatbuffers-src/grpc/src/compiler/java_generator.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/grpc/tests/grpctest.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/grpc/tests/JavaGrpcTest.java
+3247,3263d3192
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/code_generators.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/flatbuffers.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/flatc.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/flexbuffers.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/grpc.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/hash.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/idl.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/minireflect.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/reflection.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/registry.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/stl_emulation.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/util.h
+< libnd4j/blasbuild/cpu/flatbuffers-src/java/com/google/flatbuffers/ByteBufferUtil.java
+< libnd4j/blasbuild/cpu/flatbuffers-src/java/com/google/flatbuffers/Constants.java
+< libnd4j/blasbuild/cpu/flatbuffers-src/java/com/google/flatbuffers/FlatBufferBuilder.java
+< libnd4j/blasbuild/cpu/flatbuffers-src/java/com/google/flatbuffers/Struct.java
+< libnd4j/blasbuild/cpu/flatbuffers-src/java/com/google/flatbuffers/Table.java
+3265,3279d3193
+< libnd4j/blasbuild/cpu/flatbuffers-src/LICENSE.txt
+< libnd4j/blasbuild/cpu/flatbuffers-src/lobster/flatbuffers.lobster
+< libnd4j/blasbuild/cpu/flatbuffers-src/net/FlatBuffers/ByteBuffer.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/net/FlatBuffers/ByteBufferUtil.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/net/FlatBuffers/FlatBufferBuilder.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/net/FlatBuffers/FlatBufferConstants.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/net/FlatBuffers/IFlatbufferObject.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/net/FlatBuffers/Offset.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/net/FlatBuffers/Struct.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/net/FlatBuffers/Table.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/php/ByteBuffer.php
+< libnd4j/blasbuild/cpu/flatbuffers-src/php/Constants.php
+< libnd4j/blasbuild/cpu/flatbuffers-src/php/FlatbufferBuilder.php
+< libnd4j/blasbuild/cpu/flatbuffers-src/php/Struct.php
+< libnd4j/blasbuild/cpu/flatbuffers-src/php/Table.php
+3291d3204
+< libnd4j/blasbuild/cpu/flatbuffers-src/reflection/generate_code.bat
+3305,3306d3217
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/android/jni/main.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/android/jni/schemas/animal.fbs
+3317,3319d3227
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/sample_binary.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/sample_binary.go
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/sample_binary.lobster
+3322,3325d3229
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/sample_text.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/sample_text.lobster
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/SampleBinary.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/SampleBinary.java
+3327d3230
+< libnd4j/blasbuild/cpu/flatbuffers-src/samples/SampleBinary.php
+3329,3349d3231
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/code_generators.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/flatc.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/flatc_main.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/flathash.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_cpp.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_dart.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_fbs.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_general.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_go.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_grpc.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_js.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_json_schema.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_lobster.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_lua.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_php.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_python.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_rust.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_gen_text.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/idl_parser.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/reflection.cpp
+< libnd4j/blasbuild/cpu/flatbuffers-src/src/util.cpp
+3351,3359d3232
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/Assert.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/ByteBufferTests.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/FlatBufferBuilderTests.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersExampleTests.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersFuzzTests.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersTestClassAttribute.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersTestMethodAttribute.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/FuzzTestData.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/Lcg.cs
+3361,3363d3233
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/Program.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/Properties/AssemblyInfo.cs
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/FlatBuffers.Test/TestTable.cs
+3367d3236
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/generate_code.bat
+3369d3237
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/go_test.go
+3374,3375d3241
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/JavaTest.bat
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/JavaTest.java
+3377d3242
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/lobstertest.lobster
+3415d3279
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/RustTest.bat
+3417d3280
+< libnd4j/blasbuild/cpu/flatbuffers-src/tests/test.cpp
+3491,3492d3353
+< libnd4j/blasbuild/cuda/flatbuffers-src/android/jni/include.mk
+< libnd4j/blasbuild/cuda/flatbuffers-src/android/jni/main.cpp
+3496,3497d3356
+< libnd4j/blasbuild/cuda/flatbuffers-src/CMake/BuildFlatBuffers.cmake
+< libnd4j/blasbuild/cuda/flatbuffers-src/CMake/FindFlatBuffers.cmake
+3502d3360
+< libnd4j/blasbuild/cuda/flatbuffers-src/conan/test_package/test_package.cpp
+3506,3507d3363
+< libnd4j/blasbuild/cuda/flatbuffers-src/dart/example/example.dart
+< libnd4j/blasbuild/cuda/flatbuffers-src/dart/LICENSE
+3515d3370
+< libnd4j/blasbuild/cuda/flatbuffers-src/grpc/flatbuffers-java-grpc/src/main/java/com/google/flatbuffers/grpc/FlatbuffersUtils.java
+3517,3520d3371
+< libnd4j/blasbuild/cuda/flatbuffers-src/grpc/src/compiler/java_generator.cc
+< libnd4j/blasbuild/cuda/flatbuffers-src/grpc/src/compiler/java_generator.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/grpc/tests/grpctest.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/grpc/tests/JavaGrpcTest.java
+3523,3539d3373
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/code_generators.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/flatbuffers.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/flatc.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/flexbuffers.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/grpc.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/hash.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/idl.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/minireflect.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/reflection.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/registry.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/stl_emulation.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/include/flatbuffers/util.h
+< libnd4j/blasbuild/cuda/flatbuffers-src/java/com/google/flatbuffers/ByteBufferUtil.java
+< libnd4j/blasbuild/cuda/flatbuffers-src/java/com/google/flatbuffers/Constants.java
+< libnd4j/blasbuild/cuda/flatbuffers-src/java/com/google/flatbuffers/FlatBufferBuilder.java
+< libnd4j/blasbuild/cuda/flatbuffers-src/java/com/google/flatbuffers/Struct.java
+< libnd4j/blasbuild/cuda/flatbuffers-src/java/com/google/flatbuffers/Table.java
+3541,3555d3374
+< libnd4j/blasbuild/cuda/flatbuffers-src/LICENSE.txt
+< libnd4j/blasbuild/cuda/flatbuffers-src/lobster/flatbuffers.lobster
+< libnd4j/blasbuild/cuda/flatbuffers-src/net/FlatBuffers/ByteBuffer.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/net/FlatBuffers/ByteBufferUtil.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/net/FlatBuffers/FlatBufferBuilder.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/net/FlatBuffers/FlatBufferConstants.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/net/FlatBuffers/IFlatbufferObject.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/net/FlatBuffers/Offset.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/net/FlatBuffers/Struct.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/net/FlatBuffers/Table.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/php/ByteBuffer.php
+< libnd4j/blasbuild/cuda/flatbuffers-src/php/Constants.php
+< libnd4j/blasbuild/cuda/flatbuffers-src/php/FlatbufferBuilder.php
+< libnd4j/blasbuild/cuda/flatbuffers-src/php/Struct.php
+< libnd4j/blasbuild/cuda/flatbuffers-src/php/Table.php
+3567d3385
+< libnd4j/blasbuild/cuda/flatbuffers-src/reflection/generate_code.bat
+3581,3582d3398
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/android/jni/main.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/android/jni/schemas/animal.fbs
+3593,3595d3408
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/sample_binary.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/sample_binary.go
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/sample_binary.lobster
+3598,3601d3410
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/sample_text.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/sample_text.lobster
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/SampleBinary.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/SampleBinary.java
+3603d3411
+< libnd4j/blasbuild/cuda/flatbuffers-src/samples/SampleBinary.php
+3605,3625d3412
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/code_generators.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/flatc.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/flatc_main.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/flathash.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_cpp.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_dart.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_fbs.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_general.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_go.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_grpc.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_js.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_json_schema.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_lobster.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_lua.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_php.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_python.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_rust.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_gen_text.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/idl_parser.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/reflection.cpp
+< libnd4j/blasbuild/cuda/flatbuffers-src/src/util.cpp
+3627,3635d3413
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/Assert.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/ByteBufferTests.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/FlatBufferBuilderTests.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersExampleTests.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersFuzzTests.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersTestClassAttribute.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersTestMethodAttribute.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/FuzzTestData.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/Lcg.cs
+3637,3639d3414
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/Program.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/Properties/AssemblyInfo.cs
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/FlatBuffers.Test/TestTable.cs
+3643d3417
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/generate_code.bat
+3645d3418
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/go_test.go
+3650,3651d3422
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/JavaTest.bat
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/JavaTest.java
+3653d3423
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/lobstertest.lobster
+3694d3463
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/RustTest.bat
+3696d3464
+< libnd4j/blasbuild/cuda/flatbuffers-src/tests/test.cpp
+3941,3955d3708
+< libnd4j/cmake-build-debug/cpu_features-src/include/cpu_features_cache_info.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/cpu_features_macros.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/cpuinfo_aarch64.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/cpuinfo_arm.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/cpuinfo_mips.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/cpuinfo_ppc.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/cpuinfo_x86.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/internal/bit_utils.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/internal/cpuid_x86.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/internal/filesystem.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/internal/hwcaps.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/internal/stack_line_reader.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/internal/string_view.h
+< libnd4j/cmake-build-debug/cpu_features-src/include/internal/unix_features_aggregator.h
+< libnd4j/cmake-build-debug/cpu_features-src/LICENSE
+3958,3981d3710
+< libnd4j/cmake-build-debug/cpu_features-src/src/cpuinfo_aarch64.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/cpuinfo_arm.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/cpuinfo_mips.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/cpuinfo_ppc.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/cpuinfo_x86.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/filesystem.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/hwcaps.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/stack_line_reader.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/string_view.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/unix_features_aggregator.c
+< libnd4j/cmake-build-debug/cpu_features-src/src/utils/list_cpu_features.c
+< libnd4j/cmake-build-debug/cpu_features-src/test/bit_utils_test.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/cpuinfo_aarch64_test.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/cpuinfo_arm_test.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/cpuinfo_mips_test.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/cpuinfo_ppc_test.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/cpuinfo_x86_test.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/filesystem_for_testing.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/filesystem_for_testing.h
+< libnd4j/cmake-build-debug/cpu_features-src/test/hwcaps_for_testing.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/hwcaps_for_testing.h
+< libnd4j/cmake-build-debug/cpu_features-src/test/stack_line_reader_test.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/string_view_test.cc
+< libnd4j/cmake-build-debug/cpu_features-src/test/unix_features_aggregator_test.cc
+3986,3987d3714
+< libnd4j/cmake-build-debug/flatbuffers-src/android/jni/include.mk
+< libnd4j/cmake-build-debug/flatbuffers-src/android/jni/main.cpp
+3991,3992d3717
+< libnd4j/cmake-build-debug/flatbuffers-src/CMake/BuildFlatBuffers.cmake
+< libnd4j/cmake-build-debug/flatbuffers-src/CMake/FindFlatBuffers.cmake
+3997d3721
+< libnd4j/cmake-build-debug/flatbuffers-src/conan/test_package/test_package.cpp
+4001,4002d3724
+< libnd4j/cmake-build-debug/flatbuffers-src/dart/example/example.dart
+< libnd4j/cmake-build-debug/flatbuffers-src/dart/LICENSE
+4010d3731
+< libnd4j/cmake-build-debug/flatbuffers-src/grpc/flatbuffers-java-grpc/src/main/java/com/google/flatbuffers/grpc/FlatbuffersUtils.java
+4012,4015d3732
+< libnd4j/cmake-build-debug/flatbuffers-src/grpc/src/compiler/java_generator.cc
+< libnd4j/cmake-build-debug/flatbuffers-src/grpc/src/compiler/java_generator.h
+< libnd4j/cmake-build-debug/flatbuffers-src/grpc/tests/grpctest.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/grpc/tests/JavaGrpcTest.java
+4018,4034d3734
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/code_generators.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/flatbuffers.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/flatc.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/flexbuffers.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/grpc.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/hash.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/idl.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/minireflect.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/reflection.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/registry.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/stl_emulation.h
+< libnd4j/cmake-build-debug/flatbuffers-src/include/flatbuffers/util.h
+< libnd4j/cmake-build-debug/flatbuffers-src/java/com/google/flatbuffers/ByteBufferUtil.java
+< libnd4j/cmake-build-debug/flatbuffers-src/java/com/google/flatbuffers/Constants.java
+< libnd4j/cmake-build-debug/flatbuffers-src/java/com/google/flatbuffers/FlatBufferBuilder.java
+< libnd4j/cmake-build-debug/flatbuffers-src/java/com/google/flatbuffers/Struct.java
+< libnd4j/cmake-build-debug/flatbuffers-src/java/com/google/flatbuffers/Table.java
+4036,4050d3735
+< libnd4j/cmake-build-debug/flatbuffers-src/LICENSE.txt
+< libnd4j/cmake-build-debug/flatbuffers-src/lobster/flatbuffers.lobster
+< libnd4j/cmake-build-debug/flatbuffers-src/net/FlatBuffers/ByteBuffer.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/net/FlatBuffers/ByteBufferUtil.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/net/FlatBuffers/FlatBufferBuilder.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/net/FlatBuffers/FlatBufferConstants.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/net/FlatBuffers/IFlatbufferObject.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/net/FlatBuffers/Offset.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/net/FlatBuffers/Struct.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/net/FlatBuffers/Table.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/php/ByteBuffer.php
+< libnd4j/cmake-build-debug/flatbuffers-src/php/Constants.php
+< libnd4j/cmake-build-debug/flatbuffers-src/php/FlatbufferBuilder.php
+< libnd4j/cmake-build-debug/flatbuffers-src/php/Struct.php
+< libnd4j/cmake-build-debug/flatbuffers-src/php/Table.php
+4062d3746
+< libnd4j/cmake-build-debug/flatbuffers-src/reflection/generate_code.bat
+4077,4078d3760
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/android/jni/main.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/android/jni/schemas/animal.fbs
+4089,4091d3770
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/sample_binary.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/sample_binary.go
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/sample_binary.lobster
+4094,4097d3772
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/sample_text.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/sample_text.lobster
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/SampleBinary.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/SampleBinary.java
+4099d3773
+< libnd4j/cmake-build-debug/flatbuffers-src/samples/SampleBinary.php
+4101,4121d3774
+< libnd4j/cmake-build-debug/flatbuffers-src/src/code_generators.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/flatc.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/flatc_main.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/flathash.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_cpp.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_dart.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_fbs.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_general.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_go.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_grpc.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_js.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_json_schema.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_lobster.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_lua.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_php.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_python.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_rust.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_gen_text.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/idl_parser.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/reflection.cpp
+< libnd4j/cmake-build-debug/flatbuffers-src/src/util.cpp
+4123,4131d3775
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/Assert.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/ByteBufferTests.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/FlatBufferBuilderTests.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersExampleTests.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersFuzzTests.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersTestClassAttribute.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersTestMethodAttribute.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/FuzzTestData.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/Lcg.cs
+4133,4135d3776
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/Program.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/Properties/AssemblyInfo.cs
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/FlatBuffers.Test/TestTable.cs
+4139d3779
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/generate_code.bat
+4141d3780
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/go_test.go
+4146,4147d3784
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/JavaTest.bat
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/JavaTest.java
+4149d3785
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/lobstertest.lobster
+4190d3825
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/RustTest.bat
+4192d3826
+< libnd4j/cmake-build-debug/flatbuffers-src/tests/test.cpp
+4420,4434d4053
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/cpu_features_cache_info.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/cpu_features_macros.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/cpuinfo_aarch64.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/cpuinfo_arm.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/cpuinfo_mips.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/cpuinfo_ppc.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/cpuinfo_x86.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/internal/bit_utils.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/internal/cpuid_x86.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/internal/filesystem.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/internal/hwcaps.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/internal/stack_line_reader.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/internal/string_view.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/include/internal/unix_features_aggregator.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/LICENSE
+4437,4460d4055
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/cpuinfo_aarch64.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/cpuinfo_arm.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/cpuinfo_mips.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/cpuinfo_ppc.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/cpuinfo_x86.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/filesystem.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/hwcaps.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/stack_line_reader.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/string_view.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/unix_features_aggregator.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/src/utils/list_cpu_features.c
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/bit_utils_test.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/cpuinfo_aarch64_test.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/cpuinfo_arm_test.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/cpuinfo_mips_test.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/cpuinfo_ppc_test.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/cpuinfo_x86_test.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/filesystem_for_testing.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/filesystem_for_testing.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/hwcaps_for_testing.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/hwcaps_for_testing.h
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/stack_line_reader_test.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/string_view_test.cc
+< libnd4j/cmake-build-debug-mingw/cpu_features-src/test/unix_features_aggregator_test.cc
+4465,4466d4059
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/android/jni/include.mk
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/android/jni/main.cpp
+4470,4471d4062
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/CMake/BuildFlatBuffers.cmake
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/CMake/FindFlatBuffers.cmake
+4476d4066
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/conan/test_package/test_package.cpp
+4480,4481d4069
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/dart/example/example.dart
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/dart/LICENSE
+4489d4076
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/grpc/flatbuffers-java-grpc/src/main/java/com/google/flatbuffers/grpc/FlatbuffersUtils.java
+4491,4494d4077
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/grpc/src/compiler/java_generator.cc
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/grpc/src/compiler/java_generator.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/grpc/tests/grpctest.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/grpc/tests/JavaGrpcTest.java
+4497,4513d4079
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/code_generators.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/flatbuffers.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/flatc.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/flexbuffers.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/grpc.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/hash.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/idl.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/minireflect.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/reflection.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/registry.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/stl_emulation.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/include/flatbuffers/util.h
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/java/com/google/flatbuffers/ByteBufferUtil.java
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/java/com/google/flatbuffers/Constants.java
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/java/com/google/flatbuffers/FlatBufferBuilder.java
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/java/com/google/flatbuffers/Struct.java
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/java/com/google/flatbuffers/Table.java
+4515,4529d4080
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/LICENSE.txt
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/lobster/flatbuffers.lobster
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/net/FlatBuffers/ByteBuffer.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/net/FlatBuffers/ByteBufferUtil.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/net/FlatBuffers/FlatBufferBuilder.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/net/FlatBuffers/FlatBufferConstants.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/net/FlatBuffers/IFlatbufferObject.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/net/FlatBuffers/Offset.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/net/FlatBuffers/Struct.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/net/FlatBuffers/Table.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/php/ByteBuffer.php
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/php/Constants.php
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/php/FlatbufferBuilder.php
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/php/Struct.php
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/php/Table.php
+4541d4091
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/reflection/generate_code.bat
+4556,4557d4105
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/android/jni/main.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/android/jni/schemas/animal.fbs
+4568,4570d4115
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/sample_binary.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/sample_binary.go
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/sample_binary.lobster
+4573,4576d4117
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/sample_text.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/sample_text.lobster
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/SampleBinary.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/SampleBinary.java
+4578d4118
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/samples/SampleBinary.php
+4580,4600d4119
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/code_generators.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/flatc.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/flatc_main.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/flathash.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_cpp.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_dart.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_fbs.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_general.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_go.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_grpc.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_js.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_json_schema.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_lobster.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_lua.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_php.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_python.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_rust.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_gen_text.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/idl_parser.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/reflection.cpp
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/src/util.cpp
+4602,4610d4120
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/Assert.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/ByteBufferTests.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/FlatBufferBuilderTests.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersExampleTests.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersFuzzTests.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersTestClassAttribute.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/FlatBuffersTestMethodAttribute.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/FuzzTestData.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/Lcg.cs
+4612,4614d4121
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/Program.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/Properties/AssemblyInfo.cs
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/FlatBuffers.Test/TestTable.cs
+4618d4124
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/generate_code.bat
+4620d4125
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/go_test.go
+4625,4626d4129
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/JavaTest.bat
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/JavaTest.java
+4628d4130
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/lobstertest.lobster
+4669d4170
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/RustTest.bat
+4671d4171
+< libnd4j/cmake-build-debug-mingw/flatbuffers-src/tests/test.cpp
+4695d4194
+< libnd4j/cmake-build-debug-mingw/tests_cpu/googletest-src/googlemock/scripts/generator/LICENSE
+6338d5836
+< LICENSE
+7728,7906d7225
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/bfloat16/bfloat16.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/bfloat16/bfloat16.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/db/snapfn.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/db/sqlite.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/db/sqlite.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/db/sqlite_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gif/gif_io.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gif/gif_io.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/array_slice.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/array_slice_internal.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/array_slice_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/cleanup.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/cleanup_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/compactptrset.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/compactptrset_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/edit_distance.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/edit_distance_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/flatmap.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/flatmap_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/flatrep.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/flatset.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/flatset_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/inlined_vector.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/inlined_vector_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/int_type.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/int_type_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/iterator_range.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/iterator_range_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/manual_constructor.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/manual_constructor_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/map_util.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/map_util_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/optional.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/optional.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/optional_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/priority_queue_util.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/stl_util.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/top_n.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/gtl/top_n_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/hash/crc32c.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/hash/crc32c.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/hash/crc32c_accelerate.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/hash/crc32c_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/hash/hash.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/hash/hash.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/hash/hash_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/histogram/histogram.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/histogram/histogram.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/histogram/histogram_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/block.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/block.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/block_builder.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/block_builder.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/buffered_inputstream.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/buffered_inputstream.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/buffered_inputstream_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/compression.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/compression.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/format.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/format.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/inputbuffer.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/inputbuffer.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/inputbuffer_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/inputstream_interface.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/inputstream_interface.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/inputstream_interface_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/iterator.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/iterator.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/path.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/path.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/path_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/proto_encode_helper.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/random_inputstream.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/random_inputstream.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/random_inputstream_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/record_reader.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/record_reader.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/record_reader_writer_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/record_writer.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/record_writer.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/recordio_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/snappy/snappy_buffers_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/snappy/snappy_inputbuffer.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/snappy/snappy_inputbuffer.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/snappy/snappy_outputbuffer.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/snappy/snappy_outputbuffer.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/table.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/table.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/table_builder.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/table_builder.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/table_options.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/table_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/two_level_iterator.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/two_level_iterator.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/zlib_buffers_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/zlib_compression_options.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/zlib_inputstream.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/zlib_inputstream.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/zlib_outputbuffer.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/io/zlib_outputbuffer.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/jpeg/jpeg_handle.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/jpeg/jpeg_handle.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/jpeg/jpeg_mem.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/jpeg/jpeg_mem.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/jpeg/jpeg_mem_unittest.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/math/math_util.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/math/math_util_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/collected_metrics.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/collection_registry.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/collection_registry.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/collection_registry_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/counter.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/counter_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/gauge.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/gauge_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/metric_def.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/metric_def_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/mobile_counter.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/mobile_gauge.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/mobile_sampler.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/sampler.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/sampler.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/monitoring/sampler_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/png/png_io.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/png/png_io.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/distribution_sampler.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/distribution_sampler.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/distribution_sampler_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/exact_uniform_int.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/philox_random.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/philox_random_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/philox_random_test_utils.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/random.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/random.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/random_distributions.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/random_distributions.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/random_distributions_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/random_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/simple_philox.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/simple_philox.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/simple_philox_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/weighted_picker.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/weighted_picker.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/random/weighted_picker_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/base64.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/base64.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/base64_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/numbers.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/numbers.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/numbers_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/ordered_code.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/ordered_code.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/ordered_code_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/proto_serialization.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/proto_serialization.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/proto_text_util.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/proto_text_util.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/scanner.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/scanner.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/scanner_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/str_util.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/str_util.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/str_util_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/strcat.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/strcat.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/strcat_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/stringprintf.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/stringprintf.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/strings/stringprintf_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/wav/wav_io.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/wav/wav_io.h
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/lib/wav/wav_io_test.cc
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/protobuf/cluster.proto
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/protobuf/device_properties.proto
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/protobuf/master.proto
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/protobuf/master_service.proto
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/protobuf/tensorflow_server.proto
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/protobuf/worker.proto
+< nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/protobuf/tf/tensorflow/core/protobuf/worker_service.proto
+8757,8758d8075
+< nd4j/nd4j-shade/guava/target/classes/META-INF/maven/com.google.errorprone/error_prone_annotations/pom.xml
+< nd4j/nd4j-shade/guava/target/classes/META-INF/maven/com.google.j2objc/j2objc-annotations/pom.xml

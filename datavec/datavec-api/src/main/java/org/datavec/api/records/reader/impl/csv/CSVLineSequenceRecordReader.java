@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.records.reader.impl.csv;
 
@@ -29,21 +33,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * CSVLineSequenceRecordReader: Used for loading <b>univariance</b> (single valued) sequences from a CSV,
- * where each line in a CSV represents an independent sequence, and each sequence has exactly 1 value
- * per time step.<br>
- * For example, a CSV file with content:
- * <pre>
- * a,b,c
- * 1,2,3,4
- * </pre>
- * will produce two sequences, both with one value per time step; one of length 3 (values a, b, then c for the 3 time steps
- * respectively) and one of length 4 (values 1, 2, 3, then 4 for each of the 4 time steps respectively)
- *
- *
- * @author Alex Black
- */
 public class CSVLineSequenceRecordReader extends CSVRecordReader implements SequenceRecordReader {
 
     /**

@@ -287,13 +287,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from array/DataType.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -340,13 +342,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from array/DataBuffer.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -496,21 +500,25 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from array/PointerDeallocator.h
 
-/*******************************************************************************
- * Copyright (c) 2019-2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 //  @author raver119@gmail.com
@@ -529,21 +537,25 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from array/PointerWrapper.h
 
-/*******************************************************************************
- * Copyright (c) 2019-2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 //  @author raver119@gmail.com
@@ -563,13 +575,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from array/ConstantDataBuffer.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -624,21 +638,25 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from array/ConstantShapeBuffer.h
 
-/*******************************************************************************
- * Copyright (c) 2019-2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 // @author raver119@gmail.com
@@ -681,21 +699,25 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from array/ConstantOffsetsBuffer.h
 
-/*******************************************************************************
- * Copyright (c) 2019-2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 // @author raver119@gmail.com
@@ -738,13 +760,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from array/ConstantDescriptor.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -824,13 +848,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from array/TadPack.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -892,13 +918,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from execution/ErrorReference.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -949,13 +977,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from execution/Engine.h
 
-/*******************************************************************************
- * Copyright (c) 2019 Konduit K.K.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -982,13 +1012,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from execution/ExecutionMode.h
 
-/*******************************************************************************
- * Copyright (c) 2019-2020 Konduit K.K
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -997,6 +1029,7 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+
 
 //
 // @author raver119@gmail.com
@@ -1016,13 +1049,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from system/Environment.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -1137,13 +1172,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from types/utf8string.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -1202,13 +1239,15 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
 // Parsed from legacy/NativeOps.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -3151,9 +3190,31 @@ public native void sortCooIndices(@Cast("Nd4jPointer*") PointerPointer extraPoin
                                 @Cast("Nd4jLong") long length,
                                 @Cast("const Nd4jLong*") long[] xShapeInfo);
 
+/**
+ *
+ * @param extraPointers     not used
+ * @param indices           DataBuffer containing COO indices for a sparse matrix that is to be raveled/flattened
+ * @param flatIndices       DataBuffer where the raveled/flattened indices are to be written to
+ * @param length            number of non-zero entries (length of flatIndices)
+ * @param fullShapeBuffer   DataBuffer with ShapeInfo for the full matrix to be flattened
+ * @param mode              clipMode determines the strategy to use if some of the the passed COO indices does
+ *                          not fit into the shape determined by fullShapeBuffer
+ *                              0   throw an exception (default)
+ *                              1   wrap around shape
+ *                              2   clip to shape
+ */
 public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, @Cast("Nd4jLong*") LongPointer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongPointer shapeInfo, int mode);
 public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, @Cast("Nd4jLong*") LongBuffer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongBuffer shapeInfo, int mode);
 public native void ravelMultiIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, @Cast("Nd4jLong*") long[] flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") long[] shapeInfo, int mode);
+
+/**
+ *
+ * @param extraPointers     not used
+ * @param indices           DataBuffer where the unraveled COO indices are to be written
+ * @param flatIndices       DataBuffer containing the raveled/flattened indices to be unravel
+ * @param length            number of non-zero entries (length of flatIndices)
+ * @param fullShapeBuffer   DataBuffer with ShapeInfo for the full matrix to be unraveled
+ */
 public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongPointer indices, @Cast("Nd4jLong*") LongPointer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongPointer shapeInfo);
 public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") LongBuffer indices, @Cast("Nd4jLong*") LongBuffer flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") LongBuffer shapeInfo);
 public native void unravelIndex(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong*") long[] indices, @Cast("Nd4jLong*") long[] flatIndices, @Cast("Nd4jLong") long length,  @Cast("Nd4jLong*") long[] shapeInfo);
@@ -3272,6 +3333,9 @@ public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointe
 public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
 public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
 public native OpaqueConstantShapeBuffer shapeBuffer(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("bool") boolean empty);
+public native OpaqueConstantShapeBuffer shapeBufferEx(int rank, @Cast("Nd4jLong*") LongPointer shape, @Cast("Nd4jLong*") LongPointer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+public native OpaqueConstantShapeBuffer shapeBufferEx(int rank, @Cast("Nd4jLong*") LongBuffer shape, @Cast("Nd4jLong*") LongBuffer strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+public native OpaqueConstantShapeBuffer shapeBufferEx(int rank, @Cast("Nd4jLong*") long[] shape, @Cast("Nd4jLong*") long[] strides, @Cast("sd::DataType") int dtype, char order, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
 
 public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongPointer data, int length);
 public native OpaqueConstantDataBuffer constantBufferLong(@Cast("sd::DataType") int dtype, @Cast("const Nd4jLong*") LongBuffer data, int length);
@@ -3374,15 +3438,60 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H
 
 
-// Parsed from memory/ExternalWorkspace.h
+// Parsed from build_info.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+// #ifndef LIBND4J_BUILD_INFO_H
+// #define LIBND4J_BUILD_INFO_H
+
+// #ifdef  _WIN32
+// #define ND4J_EXPORT   __declspec( dllexport )
+// #else
+// #define ND4J_EXPORT
+// #endif
+
+// #define STRINGIFY(x) #x
+// #define TOSTRING(x) STRINGIFY(x)
+
+// #ifdef __cplusplus
+// #endif
+
+public native @Cast("char*") String buildInfo();
+
+// #ifdef __cplusplus
+// #endif
+
+// #endif
+
+
+// Parsed from memory/ExternalWorkspace.h
+
+/* ******************************************************************************
+ *
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -3434,13 +3543,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from memory/Workspace.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -3528,13 +3639,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from indexing/NDIndex.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -3634,13 +3747,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from indexing/IndicesList.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -3676,13 +3791,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/VariableType.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -3712,13 +3829,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/ArgumentsList.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -3780,13 +3899,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from types/pair.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -3834,13 +3955,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from array/NDArray.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -4196,6 +4319,11 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
         *   returns buffer offset (offset is the same for host and device buffers)
         */
         public native @Cast("Nd4jLong") long bufferOffset();
+
+        /**
+         *  checks if array has padded buffer
+         */
+        public native @Cast("bool") boolean hasPaddedBuffer();
 
         /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
@@ -5101,6 +5229,9 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 ////////////////////////////////////////////////////////////////////////
 
 
+////////////////////////////////////////////////////////////////////////
+
+
 
 // #if defined(__CUDACC__) //&& defined(BUILD_TESTS)
 // for CUDA we need stil stuff inline
@@ -5114,13 +5245,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from array/NDArrayList.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -5189,13 +5322,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from array/ResultSet.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -5267,13 +5402,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/RandomGenerator.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -5417,13 +5554,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/Variable.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -5539,13 +5678,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/VariablesSet.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -5596,13 +5737,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/FlowPath.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -5688,13 +5831,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/Intervals.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -5755,13 +5900,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/Stash.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -5863,13 +6010,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/GraphState.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -5979,13 +6128,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/VariableSpace.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -6105,13 +6256,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from helpers/helper_generator.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -6354,13 +6507,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/profiling/GraphProfile.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -6463,13 +6618,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/profiling/NodeProfile.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -6913,13 +7070,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from graph/ResultWrapper.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -6960,13 +7119,15 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 
 // Parsed from helpers/shape.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -9462,13 +9623,15 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // Parsed from helpers/OpArgsHolder.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -9569,13 +9732,15 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // Parsed from array/ShapeList.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -9650,13 +9815,15 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // Parsed from system/type_boilerplate.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -10296,13 +10463,15 @@ public static final int ALL_FLOATS =BFLOAT16;
 
 // Parsed from system/op_boilerplate.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -11875,13 +12044,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/InputType.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -11911,13 +12082,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/OpDescriptor.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12066,13 +12239,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/PlatformHelper.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12152,13 +12327,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/BroadcastableOp.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12196,13 +12373,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/BroadcastableBoolOp.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12240,13 +12419,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/DeclarableOp.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12417,13 +12598,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/DeclarableListOp.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12465,13 +12648,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/DeclarableReductionOp.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12505,13 +12690,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/DeclarableCustomOp.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12545,13 +12732,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/BooleanOp.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12593,13 +12782,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/LogicOp.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12645,13 +12836,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/OpRegistrator.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12742,13 +12935,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/CustomOperations.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -12940,13 +13135,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/activations.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -13769,13 +13966,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/boolean.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -14154,13 +14353,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/broadcastable.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -15327,13 +15528,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/convo.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -16286,13 +16489,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/list.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -16593,13 +16798,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/recurrent.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -17393,13 +17600,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/transforms.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -18390,22 +18599,25 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/parity_ops.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019-2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 //  @author raver119@gmail.com
@@ -22947,13 +23159,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/shape.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -23118,6 +23332,27 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+//         #if NOT_EXCLUDED(OP_flatten_2d)
+            @Namespace("sd::ops") public static class flatten_2d extends DeclarableCustomOp {
+                static { Loader.load(); }
+                /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                public flatten_2d(Pointer p) { super(p); }
+                /** Native array allocator. Access with {@link Pointer#position(long)}. */
+                public flatten_2d(long size) { super((Pointer)null); allocateArray(size); }
+                private native void allocateArray(long size);
+                @Override public flatten_2d position(long position) {
+                    return (flatten_2d)super.position(position);
+                }
+                @Override public flatten_2d getPointer(long i) {
+                    return new flatten_2d(this).position(position + i);
+                }
+            
+                                                                                    public flatten_2d() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
 //         #if NOT_EXCLUDED(OP_reshape)
         @Namespace("sd::ops") public static class reshape extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -23259,7 +23494,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public broadcast_to() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }        
+                                                                                }
 //         #endif
 
 
@@ -23323,22 +23558,25 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/random.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 //  @author raver119@gmail.com
@@ -23595,13 +23833,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/nn.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -24143,13 +24383,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/blas.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -24407,13 +24649,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/tests.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -24556,13 +24800,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/bitwise.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -24832,13 +25078,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/loss.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -25622,13 +25870,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/datatypes.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -25888,13 +26138,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from execution/ContextBuffers.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -25968,13 +26220,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from execution/LaunchContext.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -26062,13 +26316,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from array/ShapeDescriptor.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -26080,7 +26336,7 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 //
 //  @author raver119@gmail.com
-//
+//  @author AbdelRauf 
 
 // #ifndef DEV_TESTS_SHAPEDESCRIPTOR_H
 // #define DEV_TESTS_SHAPEDESCRIPTOR_H
@@ -26089,8 +26345,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <vector>
 // #include <system/dll.h>
 // #include <system/pointercast.h>
+// #include <array/ArrayOptions.h>
 // #include <array/DataType.h>
 // #include <initializer_list>
+
+
+public static final int SHAPE_DESC_OK = 0;
+public static final int SHAPE_DESC_INCORRECT_STRIDES = 1; //strides does not match shapes
+public static final int SHAPE_DESC_INCORRECT_EWS = 2; //ews neither matches stride nor continuity
+public static final int SHAPE_DESC_INCORRECT_RANK = 4; //rank > 32 or shape size and rank does not match
 
 @Namespace("sd") @NoOffset public static class ShapeDescriptor extends Pointer {
     static { Loader.load(); }
@@ -26146,12 +26409,6 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, int rank);
         public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, int rank) { super((Pointer)null); allocate(type, order, shape, rank); }
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, int rank);
-        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, empty); }
-        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty);
-        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, empty); }
-        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty);
-        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, empty); }
-        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, int rank, @Cast("Nd4jLong") long ews, @Cast("const bool") boolean empty);
         public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape) { super((Pointer)null); allocate(type, order, shape); }
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape);
         public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape) { super((Pointer)null); allocate(type, order, shape); }
@@ -26170,6 +26427,13 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("Nd4jLong*") @StdVector LongBuffer strides, @Cast("const Nd4jLong") long ews);
         public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("Nd4jLong*") @StdVector long[] strides, @Cast("const Nd4jLong") long ews) { super((Pointer)null); allocate(type, order, shape, strides, ews); }
         private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("Nd4jLong*") @StdVector long[] strides, @Cast("const Nd4jLong") long ews);
+        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, extras); }
+        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongPointer shape, @Cast("const Nd4jLong*") LongPointer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, extras); }
+        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") LongBuffer shape, @Cast("const Nd4jLong*") LongBuffer strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+        public ShapeDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras) { super((Pointer)null); allocate(type, order, shape, strides, rank, ews, extras); }
+        private native void allocate(@Cast("const sd::DataType") int type, byte order, @Cast("const Nd4jLong*") long[] shape, @Cast("const Nd4jLong*") long[] strides, int rank, @Cast("Nd4jLong") long ews, @Cast("Nd4jLong") long extras);
+
         public ShapeDescriptor() { super((Pointer)null); allocate(); }
         private native void allocate();
 
@@ -26181,6 +26445,12 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         public native @Cast("bool") boolean isEmpty();
         public native @Cast("Nd4jLong*") @StdVector LongPointer shape();
         public native @Cast("Nd4jLong*") @StdVector LongPointer strides();
+
+        //returns minimal allocation length
+        public native @Cast("Nd4jLong") long allocLength();
+
+        //returns Status for the correctness
+        public native @Cast("Nd4jLong") long validate();
 
         // we use default copy assignment operator
         public native @ByRef @Name("operator =") ShapeDescriptor put(@Const @ByRef ShapeDescriptor other);
@@ -26196,9 +26466,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
         public native @Cast("Nd4jLong*") LongPointer toShapeInfo();
 
 
+
         public native @ByVal ShapeDescriptor emptyDescriptor(@Cast("const sd::DataType") int type);
         public native @ByVal ShapeDescriptor scalarDescriptor(@Cast("const sd::DataType") int type);
         public native @ByVal ShapeDescriptor vectorDescriptor(@Cast("const Nd4jLong") long length, @Cast("const sd::DataType") int type);
+
+        //create Descriptor with padded buffer.
+        public native @ByVal ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape, @Cast("Nd4jLong*") @StdVector LongPointer paddings);
+        public native @ByVal ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape, @Cast("Nd4jLong*") @StdVector LongBuffer paddings);
+        public native @ByVal ShapeDescriptor paddedBufferDescriptor(@Cast("const sd::DataType") int type, byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @Cast("Nd4jLong*") @StdVector long[] paddings);
     }
 
 
@@ -26212,13 +26488,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from array/TadDescriptor.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -26297,13 +26575,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from helpers/DebugInfo.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -26369,13 +26649,15 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
 
 // Parsed from ops/declarable/headers/third_party.h
 
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the

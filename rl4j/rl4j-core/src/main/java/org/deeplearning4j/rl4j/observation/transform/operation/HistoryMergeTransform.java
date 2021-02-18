@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j.rl4j.observation.transform.operation;
 
 import org.datavec.api.transform.Operation;
@@ -24,23 +28,6 @@ import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.Hist
 import org.deeplearning4j.rl4j.observation.transform.operation.historymerge.HistoryStackAssembler;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * The HistoryMergeTransform will accumulate features from incoming INDArrays and will assemble its content
- * into a new INDArray containing a single example.
- *
- * This is used in scenarios where motion in an important element.
- *
- * There is a special case:
- *    * When the store is not full (not ready), the data from the incoming INDArray is stored but null is returned (will be interpreted as a skipped observation)
- * <br>
- * The HistoryMergeTransform requires two sub components: <br>
- *    1) The {@link HistoryMergeElementStore HistoryMergeElementStore} that supervises what and how input INDArrays are kept. (ex.: Circular FIFO, trailing min/max/avg, etc...)
- *       The default is a Circular FIFO.
- *    2) The {@link HistoryMergeAssembler HistoryMergeAssembler} that will assemble the store content into a resulting single INDArray. (ex.: stacked along a dimension, squashed into a single observation, etc...)
- *       The default is stacking along the dimension 0.
- *
- * @author Alexandre Boulanger
- */
 public class HistoryMergeTransform implements Operation<INDArray, INDArray>, ResettableOperation {
 
     private final HistoryMergeElementStore historyMergeElementStore;

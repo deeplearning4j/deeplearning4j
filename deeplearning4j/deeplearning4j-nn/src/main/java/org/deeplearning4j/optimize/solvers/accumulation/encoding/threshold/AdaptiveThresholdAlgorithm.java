@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.optimize.solvers.accumulation.encoding.threshold;
 
@@ -24,35 +28,6 @@ import org.deeplearning4j.optimize.solvers.accumulation.encoding.ThresholdAlgori
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * An adaptive threshold algorithm used to determine the encoding threshold for distributed training.<br>
- * The idea: the threshold can be too high or too low for optimal training - both cases are bad.<br>
- * So instead, we'll define a range of "acceptable" sparsity ratio values (default: 1e-4 to 1e-2).<br>
- * The sparsity ratio is defined as numValues(encodedUpdate)/numParameters<br>
- * <br>
- * If the sparsity ratio falls outside of this acceptable range, we'll either increase or decrease the threshold.<br>
- * The threshold changed multiplicatively using the decay rate:<br>
- * To increase threshold: {@code newThreshold = decayRate * threshold}<br>
- * To decrease threshold: {@code newThreshold = (1.0/decayRate) * threshold}<br>
- * The default decay rate used is {@link #DEFAULT_DECAY_RATE}=0.965936 which corresponds to an a maximum increase or
- * decrease of the threshold by a factor of:<br>
- * * 2.0 in 20 iterations<br>
- * * 100 in 132 iterations<br>
- * * 1000 in 200 iterations<br>
- * <br>
- * <br>
- * A high threshold leads to few values being encoded and communicated - a small "sparsity ratio".<br>
- * Too high threshold (too low sparsity ratio): fast network communication but slow training (few parameter updates being communicated).<br>
- * <br>
- * A low threshold leads to many values being encoded and communicated - a large "sparsity ratio".<br>
- * Too low threshold (too high sparsity ratio): slower network communication and maybe slow training (lots of parameter updates
- * being communicated - but they are all very small, changing network's predictions only a tiny amount).<br>
- * <br>
- * A sparsity ratio of 1.0 means all values are present in the encoded update vector.<br>
- * A sparsity ratio of 0.0 means all values were excluded from the encoded update vector.<br>
- *
- * @author Alex Black
- */
 @Slf4j
 @EqualsAndHashCode(exclude = {"lastThreshold", "lastSparsity"})
 public class AdaptiveThresholdAlgorithm implements ThresholdAlgorithm {

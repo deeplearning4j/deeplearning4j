@@ -52,15 +52,17 @@ elseif(WIN32)
     if (SD_CUDA)
         set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
+        set(CMAKE_CUDA_STANDARD 14)
     else()
         set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC")
+        set(CMAKE_CUDA_STANDARD 14)
     endif()
 else()
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
 
-    if (SD_CPU)
+    if (SD_CPU AND SD_SANITIZE)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
     endif()
 endif()
@@ -131,23 +133,31 @@ if(NOT SD_CUDA)
     endif()
 endif()
 
+
 #arm-compute entry
 if(${HELPERS_armcompute})
  find_package(ARMCOMPUTE REQUIRED)
+ execute_process(COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE ld_version)
+ if ("${ld_version}" MATCHES "GNU gold")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold ")
+   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_link_options("-Wl,--long-plt")
+   endif()
+ endif()
 
  if(ARMCOMPUTE_FOUND)
     message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
     set(HAVE_ARMCOMPUTE 1)
     # Add preprocessor definition for ARM Compute NEON 
     add_definitions(-DARMCOMPUTENEON_ENABLED)
-    #build our library with neon support
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
     include_directories(${ARMCOMPUTE_INCLUDE})
     message("----${ARMCOMPUTE_INCLUDE}---")
  endif()
 
+
 endif()
- 
+
+
 
 # new mkl-dnn entry
 if (${HELPERS_mkldnn})
@@ -259,8 +269,8 @@ set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/mai
 # Set package information
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Native operations for nd4j.")
 set(CPACK_PACKAGE_RELEASE 1)
-set(CPACK_PACKAGE_CONTACT "raver119 <raver119@skymind.io>")
-set(CPACK_PACKAGE_VENDOR "Skymind")
+set(CPACK_PACKAGE_CONTACT "agibsonccc <adam@skymind.global>")
+set(CPACK_PACKAGE_VENDOR "Eclipse")
 set(CPACK_SETDESTDIR "false")
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/lib")
 set(CPACK_PACKAGE_NAME "libnd4j")
@@ -291,7 +301,7 @@ if(DISTRIBUTION STREQUAL "Ubuntu")
   # For Ubuntu <= 12, libatlas3gf-base, liblapack3gf
   # Build deps: libatlas3-base liblapack3 libopenblas-dev libatlas-dev liblapack-dev gcc-5 g++-5
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
-  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/deeplearning4j/libnd4j")
+  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/eclipse/deeplearning4j")
   set(CPACK_GENERATOR "DEB")
   set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
   set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm;" )

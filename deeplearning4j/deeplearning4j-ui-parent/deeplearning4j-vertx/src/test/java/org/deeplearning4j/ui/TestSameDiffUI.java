@@ -1,19 +1,22 @@
-/* ******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.ui;
 
@@ -68,8 +71,8 @@ public class TestSameDiffUI extends BaseDL4JTest {
         lfw.registerEventName("accuracy");
         lfw.registerEventName("precision");
         long t = System.currentTimeMillis();
-        for( int iter=0; iter<50; iter++) {
-            double d = Math.cos(0.1*iter);
+        for( int iter = 0; iter < 50; iter++) {
+            double d = Math.cos(0.1 * iter);
             d *= d;
             lfw.writeScalarEvent("accuracy", LogFileWriter.EventSubtype.EVALUATION, t + iter, iter, 0, d);
 
@@ -81,7 +84,7 @@ public class TestSameDiffUI extends BaseDL4JTest {
         lfw.registerEventName("histogramDiscrete");
         lfw.registerEventName("histogramEqualSpacing");
         lfw.registerEventName("histogramCustomBins");
-        for( int i=0; i<3; i++ ){
+        for(int i = 0; i < 3; i++) {
             INDArray discreteY = Nd4j.createFromArray(0, 1, 2);
             lfw.writeHistogramEventDiscrete("histogramDiscrete", LogFileWriter.EventSubtype.TUNING_METRIC,  t+i, i, 0, Arrays.asList("zero", "one", "two"), discreteY);
 

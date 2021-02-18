@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.transform.transform.sequence;
 
@@ -29,23 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * SequenceDifferenceTransform: for an input sequence, calculate the difference on one column.<br>
- * For each time t, calculate someColumn(t) - someColumn(t-s), where s >= 1 is the 'lookback' period.<br>
- * <br>
- * Note: at t=0 (i.e., the first step in a sequence; or more generally, for all times t < s), there is no previous value
- * from which to calculate the difference. The {@link FirstStepMode} enumeration provides the following ways of handling
- * these time steps:<br>
- * 1. Default: output = someColumn(t) - someColumn(max(t-s, 0))
- * 2. SpecifiedValue: output = someColumn(t) - someColumn(t-s) if t-s >= 0, or a custom Writable object (for example, a DoubleWritable(0)
- * or NullWritable).
- * <p>
- * Note: this is an <i>in-place</i> operation: i.e., the values in each column are modified. If the original values are
- * to be retained in the data set, first make a copy (for example, using {@link org.datavec.api.transform.TransformProcess.Builder#duplicateColumn(String, String)})
- * and apply the difference operation in-place on the copy.
- *
- * @author Alex Black
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"inputSchema", "columnType"})
 @Data

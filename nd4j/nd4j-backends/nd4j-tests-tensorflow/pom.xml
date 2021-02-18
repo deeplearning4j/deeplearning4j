@@ -1,34 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
 
-<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright (c) 2015-2018 Skymind, Inc.
-  ~
-  ~ This program and the accompanying materials are made available under the
-  ~ terms of the Apache License, Version 2.0 which is available at
-  ~ https://www.apache.org/licenses/LICENSE-2.0.
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-  ~ License for the specific language governing permissions and limitations
-  ~ under the License.
-  ~
-  ~ SPDX-License-Identifier: Apache-2.0
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>nd4j-backends</artifactId>
         <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-backends</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
     <artifactId>nd4j-tests-tensorflow</artifactId>
 
     <name>nd4j-tests-tensorflow</name>
-
 
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
@@ -37,6 +42,29 @@
         <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
         <maven.compiler.testSource>1.8</maven.compiler.testSource>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-tensorflow</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <testSourceDirectory>${test.root}</testSourceDirectory>
@@ -66,34 +94,6 @@
             </plugin>
         </plugins>
     </build>
-
-
-    <dependencies>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-tensorflow</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-common-tests</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
     <profiles>
         <profile>
@@ -134,7 +134,6 @@
             <properties>
                 <test.root>src/test/gpujava</test.root>
             </properties>
-
             <build>
                 <plugins>
                     <plugin>
@@ -204,14 +203,17 @@
                             </dependency>
                         </dependencies>
                         <configuration>
-                            <testSourceDirectory>${project.basedir}/src/test/gpujava</testSourceDirectory>
+                            <testSourceDirectory>${project.basedir}/src/test/gpujava
+                            </testSourceDirectory>
                             <includes>
                                 <include>**/*.java</include>
                             </includes>
                             <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend
+                                <org.nd4j.linalg.defaultbackend>
+                                    org.nd4j.linalg.jcublas.JCublasBackend
                                 </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend
+                                <org.nd4j.linalg.tests.backendstorun>
+                                    org.nd4j.linalg.jcublas.JCublasBackend
                                 </org.nd4j.linalg.tests.backendstorun>
                             </systemPropertyVariables>
                             <!--
@@ -273,14 +275,17 @@
                             </dependency>
                         </dependencies>
                         <configuration>
-                            <testSourceDirectory>${project.basedir}/src/test/cpujava</testSourceDirectory>
+                            <testSourceDirectory>${project.basedir}/src/test/cpujava
+                            </testSourceDirectory>
                             <includes>
                                 <include>**/*.java</include>
                             </includes>
                             <systemPropertyVariables>
-                                <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                <org.nd4j.linalg.defaultbackend>
+                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
                                 </org.nd4j.linalg.defaultbackend>
-                                <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                <org.nd4j.linalg.tests.backendstorun>
+                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
                                 </org.nd4j.linalg.tests.backendstorun>
                             </systemPropertyVariables>
                             <!--
@@ -308,5 +313,4 @@
             </dependencies>
         </profile>
     </profiles>
-
 </project>

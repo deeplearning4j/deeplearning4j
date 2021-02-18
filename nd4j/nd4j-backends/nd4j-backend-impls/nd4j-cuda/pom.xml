@@ -1,28 +1,38 @@
-<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright (c) 2015-2018 Skymind, Inc.
-  ~
-  ~ This program and the accompanying materials are made available under the
-  ~ terms of the Apache License, Version 2.0 which is available at
-  ~ https://www.apache.org/licenses/LICENSE-2.0.
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-  ~ License for the specific language governing permissions and limitations
-  ~ under the License.
-  ~
-  ~ SPDX-License-Identifier: Apache-2.0
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>nd4j-backend-impls</artifactId>
-        <groupId>org.nd4j</groupId>
-        <version>1.0.0-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-backend-impls</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
     <artifactId>nd4j-cuda-11.0</artifactId>
+
     <name>nd4j-cuda</name>
 
     <properties>
@@ -31,6 +41,90 @@
         <cudnn.version>8.0</cudnn.version>
         <javacpp-presets.cuda.version>1.5.4</javacpp-presets.cuda.version>
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-cuda-11.0-preset</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>${dependency.groupId}</groupId>
+            <artifactId>${dependency.artifactId}</artifactId>
+            <version>${dependency.version}</version>
+            <type>${dependency.packaging}</type>
+            <classifier>${dependency.classifier}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>5.0.2.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <classifier>${dependency.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>cuda</artifactId>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>cuda-platform-redist</artifactId>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}
+            </version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Reflections: required in one of the tests -->
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <version>${reflections.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.code.findbugs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-common-tests</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <build>
         <plugins>
@@ -46,15 +140,20 @@
                 </dependencies>
                 <configuration>
                     <environmentVariables>
-                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/</LD_LIBRARY_PATH>
+                        <LD_LIBRARY_PATH>
+                            ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/
+                        </LD_LIBRARY_PATH>
                     </environmentVariables>
                     <testSourceDirectory>src/test/java</testSourceDirectory>
                     <includes>
                         <include>*.java</include>
                     </includes>
                     <systemPropertyVariables>
-                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.defaultbackend>
-                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.jcublas.JCublasBackend</org.nd4j.linalg.tests.backendstorun>
+                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.jcublas.JCublasBackend
+                        </org.nd4j.linalg.defaultbackend>
+                        <org.nd4j.linalg.tests.backendstorun>
+                            org.nd4j.linalg.jcublas.JCublasBackend
+                        </org.nd4j.linalg.tests.backendstorun>
                     </systemPropertyVariables>
                     <!--
                         Maximum heap size was set to 6g, as a minimum required value for tests run.
@@ -64,32 +163,15 @@
                 </configuration>
             </plugin>
             <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>javacpp-parser</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>compile</goal>
-                        </goals>
-                        <configuration>
-                            <skipMain>${javacpp.parser.skip}</skipMain>
-                            <includes>
-                                <include>org/nd4j/nativeblas/Nd4jCudaPresets.java</include>
-                            </includes>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-	        <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-            </plugin>
-            <plugin>
                 <groupId>org.bytedeco</groupId>
                 <artifactId>javacpp</artifactId>
                 <version>${javacpp.version}</version>
                 <dependencies>
+                    <dependency>
+                        <groupId>org.nd4j</groupId>
+                        <artifactId>nd4j-cuda-11.0-preset</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
                     <dependency>
                         <groupId>org.nd4j</groupId>
                         <artifactId>nd4j-native-api</artifactId>
@@ -97,13 +179,15 @@
                     </dependency>
                     <dependency>
                         <groupId>org.bytedeco</groupId>
-                        <artifactId>cuda</artifactId>
-                        <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+                        <artifactId>cuda-platform-redist</artifactId>
+                        <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}
+                        </version>
                     </dependency>
                     <dependency>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>cuda</artifactId>
-                        <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
+                        <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}
+                        </version>
                         <classifier>${dependency.platform}</classifier>
                     </dependency>
                 </dependencies>
@@ -128,7 +212,8 @@
                     </classPaths>
                     <includePaths>
                         <includePath>${libnd4jhome}/blasbuild/cuda/include</includePath>
-                        <includePath>${libnd4jhome}/blasbuild/cuda/flatbuffers-src/include/</includePath>
+                        <includePath>${libnd4jhome}/blasbuild/cuda/flatbuffers-src/include/
+                        </includePath>
                         <includePath>${libnd4jhome}/blas</includePath>
                         <includePath>${libnd4jhome}/include</includePath>
                         <includePath>${libnd4jhome}/include/helpers</includePath>
@@ -155,7 +240,8 @@
                         <configuration>
                             <skip>${javacpp.parser.skip}</skip>
                             <outputDirectory>${project.build.sourceDirectory}</outputDirectory>
-                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCudaPresets</classOrPackageName>
+                            <classOrPackageName>org.nd4j.nativeblas.Nd4jCudaPresets
+                            </classOrPackageName>
                         </configuration>
                     </execution>
                     <execution>
@@ -169,14 +255,39 @@
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCuda</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <skipMain>${javacpp.parser.skip}</skipMain>
+                            <includes>
+                                <include>org/nd4j/nativeblas/**.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
             </plugin>
-	    <plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
@@ -193,16 +304,20 @@
                             <rules>
                                 <requireProperty>
                                     <property>libnd4jhome</property>
-                                    <message>You must set the LIBND4J_HOME environment variable!</message>
+                                    <message>You must set the LIBND4J_HOME environment variable!
+                                    </message>
                                     <regex>.*/.*</regex>
-                                    <regexMessage>!!! LIBND4J_HOME must be a valid unix path!</regexMessage>
+                                    <regexMessage>!!! LIBND4J_HOME must be a valid unix path!
+                                    </regexMessage>
                                 </requireProperty>
                                 <requireFilesExist>
                                     <files>
                                         <file>${libnd4jhome}/include/legacy/NativeOps.h</file>
                                         <file>${libnd4jhome}/blasbuild/cuda/blas</file>
                                     </files>
-                                    <message>!!! You have to compile libnd4j with cuda support first!</message>
+                                    <message>!!! You have to compile libnd4j with cuda support
+                                        first!
+                                    </message>
                                 </requireFilesExist>
                             </rules>
                             <fail>true</fail>
@@ -210,115 +325,8 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
-
-
-    <dependencies>
-        <dependency>
-            <groupId>${dependency.groupId}</groupId>
-            <artifactId>${dependency.artifactId}</artifactId>
-            <version>${dependency.version}</version>
-            <type>${dependency.packaging}</type>
-            <classifier>${dependency.classifier}</classifier>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.0.2.RELEASE</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>javacpp</artifactId>
-            <version>${javacpp.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>javacpp</artifactId>
-            <version>${javacpp.version}</version>
-            <classifier>${dependency.platform}</classifier>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.cuda.version}</version>
-            <classifier>${dependency.platform}</classifier>
-        </dependency>
-        <!--
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>libnd4j</artifactId>
-            <version>${project.version}</version>
-            <type>zip</type>
-            <classifier>${javacpp.platform}-cuda-${cuda.version}</classifier>
-            <scope>provided</scope>
-        </dependency>
-        -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Reflections: required in one of the tests -->
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>${reflections.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-common-tests</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
     <profiles>
         <profile>
@@ -327,7 +335,9 @@
         <profile>
             <id>msvc</id>
             <activation>
-                <os><family>windows</family></os>
+                <os>
+                    <family>windows</family>
+                </os>
             </activation>
             <build>
                 <plugins>
@@ -344,7 +354,6 @@
                 </plugins>
             </build>
         </profile>
-
         <profile>
             <id>libnd4j-assembly</id>
             <activation>
@@ -384,7 +393,7 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
-                        <version>3.0.2</version>
+                        <version>3.1.2</version>
                         <executions>
                             <execution>
                                 <id>unpack</id>
@@ -399,9 +408,11 @@
                                             <artifactId>libnd4j</artifactId>
                                             <version>${project.version}</version>
                                             <type>zip</type>
-                                            <classifier>${javacpp.platform}-cuda-${cuda.version}</classifier>
+                                            <classifier>${javacpp.platform}-cuda-${cuda.version}
+                                            </classifier>
                                             <overWrite>true</overWrite>
-                                            <outputDirectory>${project.build.directory}</outputDirectory>
+                                            <outputDirectory>${project.build.directory}
+                                            </outputDirectory>
                                         </artifactItem>
                                     </artifactItems>
                                 </configuration>
@@ -412,5 +423,4 @@
             </build>
         </profile>
     </profiles>
-
 </project>

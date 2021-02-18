@@ -1,78 +1,23 @@
-<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  ~ Copyright (c) 2015-2018 Skymind, Inc.
-  ~
-  ~ This program and the accompanying materials are made available under the
-  ~ terms of the Apache License, Version 2.0 which is available at
-  ~ https://www.apache.org/licenses/LICENSE-2.0.
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-  ~ WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-  ~ License for the specific language governing permissions and limitations
-  ~ under the License.
-  ~
-  ~ SPDX-License-Identifier: Apache-2.0
-  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
-
 <!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
 
-CacheManager Configuration
-==========================
-An ehcache.xml corresponds to a single CacheManager.
-
-See instructions below or the ehcache schema (ehcache.xsd) on how to configure.
-
-System property tokens can be specified in this file which are replaced when the configuration
-is loaded. For example multicastGroupPort=${multicastGroupPort} can be replaced with the
-System property either from an environment variable or a system property specified with a
-command line switch such as -DmulticastGroupPort=4446. Another example, useful for Terracotta
-server based deployments is <terracottaConfig url="${serverAndPort}"/ and specify a command line
-switch of -Dserver36:9510
-
-The attributes of <ehcache> are:
-* name - an optional name for the CacheManager.  The name is optional and primarily used
-for documentation or to distinguish Terracotta clustered cache state.  With Terracotta
-clustered caches, a combination of CacheManager name and cache name uniquely identify a
-particular cache store in the Terracotta clustered memory.
-* updateCheck - an optional boolean flag specifying whether this CacheManager should check
-for new versions of Ehcache over the Internet.  If not specified, updateCheck="true".
-* dynamicConfig - an optional setting that can be used to disable dynamic configuration of caches
-associated with this CacheManager.  By default this is set to true - i.e. dynamic configuration
-is enabled.  Dynamically configurable caches can have their TTI, TTL and maximum disk and
-in-memory capacity changed at runtime through the cache's configuration object.
-* monitoring - an optional setting that determines whether the CacheManager should
-automatically register the SampledCacheMBean with the system MBean server.
-
-Currently, this monitoring is only useful when using Terracotta clustering and using the
-Terracotta Developer Console. With the "autodetect" value, the presence of Terracotta clustering
-will be detected and monitoring, via the Developer Console, will be enabled. Other allowed values
-are "on" and "off".  The default is "autodetect". This setting does not perform any function when
-used with JMX monitors.
-
-* maxBytesLocalHeap - optional setting that constraints the memory usage of the Caches managed by the CacheManager
-to use at most the specified number of bytes of the local VM's heap.
-* maxBytesLocalOffHeap - optional setting that constraints the offHeap usage of the Caches managed by the CacheManager
-to use at most the specified number of bytes of the local VM's offHeap memory.
-* maxBytesLocalDisk - optional setting that constraints the disk usage of the Caches managed by the CacheManager
-to use at most the specified number of bytes of the local disk.
-
-These settings let you define "resource pools", caches will share. For instance setting maxBytesLocalHeap to 100M, will result in
-all caches sharing 100 MegaBytes of ram. The CacheManager will balance these 100 MB across all caches based on their respective usage
-patterns. You can allocate a precise amount of bytes to a particular cache by setting the appropriate maxBytes* attribute for that cache.
-That amount will be subtracted from the CacheManager pools, so that if a cache a specified 30M requirement, the other caches will share
-the remaining 70M.
-
-Also, specifying a maxBytesLocalOffHeap at the CacheManager level will result in overflowToOffHeap to be true by default. If you don't want
-a specific cache to overflow to off heap, you'll have to set overflowToOffHeap="false" explicitly
-
-Here is an example of CacheManager level resource tuning, which will use up to 400M of heap and 2G of offHeap:
-
-<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="ehcache.xsd"
-         updateCheck="true" monitoring="autodetect"
-         dynamicConfig="true" maxBytesLocalHeap="400M" maxBytesLocalOffHeap="2G">
-
--->
 <ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd" updateCheck="true" monitoring="autodetect" dynamicConfig="true">
     <!--
 

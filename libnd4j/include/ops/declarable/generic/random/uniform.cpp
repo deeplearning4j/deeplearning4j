@@ -1,19 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 // Created by raver119 on 29/10/17.
@@ -33,16 +36,23 @@ namespace sd {
          * uniform distribution
          * takes 1 ndarray
          *
-         * T argumens map:
+         * T arguments map:
          * TArgs[0] - min for rng
          * TArgs[1] - max for rng
          */
-        CUSTOM_OP_IMPL(randomuniform, 1, 1, true, 0, 0) {
+        CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -1) {
             // uniform distribution
             auto rng = block.randomGenerator();
             auto dtype = DataType::FLOAT32;
             if (block.getIArguments()->size())
                 dtype = (DataType)INT_ARG(0);
+
+            if(block.getIArguments()->size() > 1) {
+                auto seed = INT_ARG(1);
+                rng.setStates(seed,seed ^ 0xdeadbeef);
+                nd4j_debug("randomuniform: Setting seed %d\n",seed);
+                //rng.setSeed(seed);
+            }
 
             auto min = block.width() > 1 ? INPUT_VARIABLE(1) : (NDArray*) nullptr;
             auto max = block.width() > 2 ? INPUT_VARIABLE(2) : (NDArray*) nullptr;

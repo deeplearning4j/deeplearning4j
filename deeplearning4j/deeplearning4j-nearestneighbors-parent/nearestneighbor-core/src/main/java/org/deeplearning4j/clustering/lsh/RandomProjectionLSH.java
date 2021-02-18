@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.clustering.lsh;
 
@@ -34,28 +38,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import java.util.Arrays;
 
 
-/**
- * This class implements Entropy LSH for the cosine distance, in order to preserve memory for large datasets.
- *
- * Entropy SLH is the LSH scheme of
- *
- * _Entropy based nearest neighbor search in high dimensions_
- * R Panigrahy - SIAM 2006
- * <a href="https://arxiv.org/pdf/cs/0510019.pdf">https://arxiv.org/pdf/cs/0510019.pdf</a>
- *
- * To read more about LSH, in particular for the Cosine distance, see
- * chapter 3 of :
- * _Mining Massive Datasets_, Anand Rajaraman and Jeffrey Ullman
- * <a href="http://www.mmds.org/">http://www.mmds.org/</a>
- *
- * The original development of LSH for the cosine distance is from
- * Similarity estimation techniques from rounding algorithms
- * MS Charikar - STOCS, 2002
- *
- * Note for high-precision or distributed settings, you should not
- * use this and rather extend this to layered LSH ( <a href="https://arxiv.org/abs/1210.7057">https://arxiv.org/abs/1210.7057</a> )
- *
- */
 public class RandomProjectionLSH implements LSH {
 
     @Override

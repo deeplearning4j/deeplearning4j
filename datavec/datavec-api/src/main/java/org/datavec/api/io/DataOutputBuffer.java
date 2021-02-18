@@ -1,42 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.io;
 
 import java.io.*;
 
-/** A reusable {@link DataOutput} implementation that writes to an in-memory
- * buffer.
- *
- * <p>This saves memory over creating a new DataOutputStream and
- * ByteArrayOutputStream each time data is written.
- *
- * <p>Typical usage is something like the following:<pre>
- *
- * DataOutputBuffer buffer = new DataOutputBuffer();
- * while (... loop condition ...) {
- *   buffer.reset();
- *   ... write buffer using DataOutput methods ...
- *   byte[] data = buffer.getData();
- *   int dataLength = buffer.getLength();
- *   ... write data to its ultimate destination ...
- * }
- * </pre>
- *
- */
 public class DataOutputBuffer extends DataOutputStream {
 
     private static class Buffer extends ByteArrayOutputStream {

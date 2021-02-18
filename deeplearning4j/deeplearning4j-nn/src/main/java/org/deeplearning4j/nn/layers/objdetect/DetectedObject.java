@@ -1,34 +1,28 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.objdetect;
 
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * A detected object, by an object detection algorithm.
- * Note that the dimensions (for center X/Y, width/height) depend on the specific implementation.
- * For example, in the {@link Yolo2OutputLayer}, the dimensions are grid cell units - for example, with 416x416 input,
- * 32x downsampling, we have 13x13 grid cells (each corresponding to 32 pixels in the input image). Thus, a centerX
- * of 5.5 would be xPixels=5.5x32 = 176 pixels from left. Widths and heights are similar: in this example, a with of 13
- * would be the entire image (416 pixels), and a height of 6.5 would be 6.5/13 = 0.5 of the image (208 pixels).
- *
- * @author Alex Black
- */
 @Data
 public class DetectedObject {
 

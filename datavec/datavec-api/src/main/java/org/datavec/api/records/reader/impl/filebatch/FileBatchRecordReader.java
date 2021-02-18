@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.records.reader.impl.filebatch;
 
@@ -34,25 +38,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * FileBatchRecordReader reads the files contained in a {@link FileBatch} using the specified RecordReader.<br>
- * Specifically, the {@link RecordReader#record(URI, DataInputStream)} method of the underlying reader is used to
- * load files.<br>
- * For example, if the FileBatch was constructed using image files (png, jpg etc), FileBatchRecordReader could be used
- * with ImageRecordReader. For example:<br>
- * <pre>
- * {@code
- * List<File> imgFiles = ...;
- * FileBatch fb = FileBatch.forFiles(imgFiles);
- * PathLabelGenerator labelMaker = new ParentPathLabelGenerator();
- * ImageRecordReader rr = new ImageRecordReader(32, 32, 1, labelMaker);
- * rr.setLabels(Arrays.asList("class0", "class1"));
- * FileBatchRecordReader fbrr = new FileBatchRecordReader(rr, fb);
- * }
- * </pre>
- *
- * @author Alex Black
- */
 public class FileBatchRecordReader implements RecordReader {
 
     private final RecordReader recordReader;

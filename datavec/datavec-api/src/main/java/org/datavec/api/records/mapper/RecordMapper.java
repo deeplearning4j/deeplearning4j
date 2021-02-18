@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.records.mapper;
 
@@ -28,38 +32,6 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-/**
- * This takes data from a specified {@link RecordReader}
- * and writes the data out with the specified {@link RecordWriter}.
- *
- * The setup is as follows:
- *
- * Specify a {@link RecordReader} as the data source
- * Specify a {@link RecordWriter} as the destination.
- *
- * When setting up the locations, use 2 different {@link InputSplit}
- * callling {@link RecordWriter#initialize(InputSplit, Partitioner)}
- * and {@link RecordReader#initialize(InputSplit)}
- * respectively to configure the locations of where the data will be
- * read from and written to.
- *
- * When writing the data, you need to specify a link {@link Partitioner} to
- * determine how to slice up the data being written (say in to number of lines per record per file
- * per {@link org.datavec.api.split.partition.NumberOfRecordsPartitioner} among other implementations.
- *
- * Finally, you may specify a batch size for batch read and write if the record reader and writer support it.
- *
- * Of note, is you can also specify multiple readers.
- * In which case, it will read from every stream jointly and write out the specified
- * writer accordingly.
- *
- * {@link #copy()} will work the same with the following exceptions, you must specify
- * {@link #splitPerReader} (one split per reader)
- * {@link #readersToConcat} and the readers which will be read from
- * writing to the same record writer.
- *
- * See {@link #copy()} for more information here.
- */
 @Builder
 public class RecordMapper {
 

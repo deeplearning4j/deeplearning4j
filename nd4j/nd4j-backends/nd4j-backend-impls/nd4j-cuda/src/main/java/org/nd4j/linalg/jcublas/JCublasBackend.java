@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.jcublas;
 
@@ -27,7 +31,7 @@ import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.common.io.Resource;
 import org.nd4j.nativeblas.CudaEnvironment;
 import org.nd4j.nativeblas.Nd4jCuda;
-
+import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -51,6 +55,7 @@ public class JCublasBackend extends Nd4jBackend {
             while (e.getCause() != null) {
                 e = e.getCause();
             }
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
         return true;
@@ -94,6 +99,11 @@ public class JCublasBackend extends Nd4jBackend {
     }
 
     @Override
+    public String buildInfo() {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().buildInfo();
+    }
+
+    @Override
     public void logBackendInit() {
         String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
         boolean logInit = Boolean.parseBoolean(logInitProperty);
@@ -118,6 +128,7 @@ public class JCublasBackend extends Nd4jBackend {
                     long totalMem = ((Number) dev.get(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY)).longValue();
                     log.info("CUDA device {}: [{}]; cc: [{}.{}]; Total memory: [{}]", i, name, major, minor, totalMem);
                 }
+                log.info("Backend build information:\n {}", buildInfo()); 
             } catch (Throwable t) {
                 log.debug("Error logging CUDA backend versions and devices", t);
             }

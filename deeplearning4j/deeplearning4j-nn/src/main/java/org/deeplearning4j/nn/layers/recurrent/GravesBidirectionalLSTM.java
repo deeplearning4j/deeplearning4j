@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.recurrent;
 
@@ -30,26 +34,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Map;
 
-/**
- *
- * RNN tutorial: https://deeplearning4j.konduit.ai/models/recurrent
- * READ THIS FIRST
- *
- * Bdirectional LSTM layer implementation.
- * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * <a href="http://www.cs.toronto.edu/~graves/phd.pdf">http://www.cs.toronto.edu/~graves/phd.pdf</a>
- * See also for full/vectorized equations (and a comparison to other LSTM variants):
- * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
- * <a href="https://arxiv.org/pdf/1503.04069.pdf">https://arxiv.org/pdf/1503.04069.pdf</a>
- *
- * A high level description of bidirectional LSTM can be found from
- * "Hybrid Speech Recognition with Deep Bidirectional LSTM"
- * <a href="http://www.cs.toronto.edu/~graves/asru_2013.pdf">http://www.cs.toronto.edu/~graves/asru_2013.pdf</a>
- *
- *
- * @author Alex Black
- * @author Benjamin Joseph
- */
 @Slf4j
 public class GravesBidirectionalLSTM
                 extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM> {

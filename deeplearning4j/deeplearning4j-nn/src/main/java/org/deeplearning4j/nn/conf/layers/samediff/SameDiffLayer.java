@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
@@ -33,25 +37,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * A base layer used for implementing Deeplearning4j layers using SameDiff. These layers are not scoring/output layers:
- * that is, they should be used as the intermediate layer in a network only.<br> To implement an output layer, extend
- * {@link SameDiffOutputLayer} instead.<br> Note also that if multiple inputs are required, it is possible to implement
- * a vertex instead: {@link SameDiffVertex}<br>
- * <br>
- * To implement a Deeplearning layer using SameDiff, extend this class.<br> There are 4 required methods:<br> -
- * defineLayer: Defines the forward pass for the layer<br> - defineParameters: Define the layer's parameters in a way
- * suitable for DL4J<br> - initializeParameters: if required, set the initial parameter values for the layer<br> -
- * getOutputType: determine the type of output/activations for the layer (without actually executing the layer's forward
- * pass)<br>
- * <br>
- * Furthermore, there are 3 optional methods:<br> - setNIn(InputType inputType, boolean override): if implemented, set
- * the number of inputs to the layer during network initialization<br> - getPreProcessorForInputType: return the
- * preprocessor that should be added (if any), for the given input type<br> - applyGlobalConfigToLayer: apply any global
- * configuration options (weight init, activation functions etc) to the layer's configuration.<br>
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public abstract class SameDiffLayer extends AbstractSameDiffLayer {

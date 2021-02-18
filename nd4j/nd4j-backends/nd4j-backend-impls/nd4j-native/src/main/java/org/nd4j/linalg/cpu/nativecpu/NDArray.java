@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.cpu.nativecpu;
 
@@ -45,23 +49,6 @@ import java.io.IOException;
 import java.util.List;
 
 
-/**
- * NDArray: (think numpy)
- * <p/>
- * A few things of note.
- * <p/>
- * An NDArray can have any number of dimensions.
- * <p/>
- * An NDArray is accessed via strides.
- * <p/>
- * Strides are how to index over
- * a contiguous block of data.
- * <p/>
- * This block of data has 2 orders(as of right now):
- * fortran and c
- *
- * @author Adam Gibson
- */
 public class NDArray extends BaseNDArray {
     static {
         //invoke the override
@@ -464,6 +451,11 @@ public class NDArray extends BaseNDArray {
 
     public NDArray(int[] shape, DataBuffer buffer) {
         super(shape, buffer);
+    }
+
+    public NDArray(DataType dataType, long[] shape, long[] paddings, long[] paddingOffsets, char ordering,
+            MemoryWorkspace workspace){
+        super(dataType, shape, paddings, paddingOffsets, ordering, workspace);
     }
 
     private Object writeReplace() throws java.io.ObjectStreamException {

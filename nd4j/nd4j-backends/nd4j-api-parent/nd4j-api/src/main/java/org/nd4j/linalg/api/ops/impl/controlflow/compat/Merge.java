@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
@@ -33,7 +37,7 @@ import java.util.Map;
 
 public class Merge extends BaseCompatOp {
 
-    public Merge(SameDiff sd, SDVariable[] inputs){
+    public Merge(SameDiff sd, SDVariable ... inputs){
         super(sd, inputs);
     }
 
@@ -41,9 +45,7 @@ public class Merge extends BaseCompatOp {
         super(inputs);
     }
 
-    public Merge(){
-        
-    }
+    public Merge(){ }
 
     /**
      * WARNING: do not change without changing serialization methods
@@ -53,9 +55,6 @@ public class Merge extends BaseCompatOp {
     public static final String OP_NAME = "merge";
     public static final int OP_NUM = 60;
 
-    public Merge(SameDiff sd, SDVariable a, SDVariable b){
-        this(sd, new SDVariable[]{a, b});
-    }
 
     @Override
     public String opName() {
@@ -71,7 +70,7 @@ public class Merge extends BaseCompatOp {
     public SDVariable[] outputVariables() {
         return super.outputVariables();
     }
-
+    //rnn/TensorArrayStack/TensorArrayGatherV3
     @Override
     public String tensorflowName() {
         return "Merge";
@@ -94,8 +93,7 @@ public class Merge extends BaseCompatOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected 2 input dataypes for %s, got %s", getClass(), inputDataTypes);
-        Preconditions.checkState(inputDataTypes.get(0) == inputDataTypes.get(1), "Input datatypes must be the same for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() >= 1, "Expected at least 1  input data types for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(0));
     }
 }

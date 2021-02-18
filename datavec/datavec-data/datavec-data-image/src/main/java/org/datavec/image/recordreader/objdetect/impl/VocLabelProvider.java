@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.image.recordreader.objdetect.impl;
 
@@ -28,21 +32,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Label provider for object detection, for use with {@link org.datavec.image.recordreader.objdetect.ObjectDetectionRecordReader}.
- * This label provider reads the datasets from the PASCAL Visual Object Classes - VOC2007 to VOC2012 datasets.<br>
- * The VOC datasets contain 20 classes and (for VOC2012) 17,125 images.<br>
- * <a href="http://host.robots.ox.ac.uk/pascal/VOC/voc2007/">http://host.robots.ox.ac.uk/pascal/VOC/voc2007/</a><br>
- * <a href="http://host.robots.ox.ac.uk/pascal/VOC/voc2012/">http://host.robots.ox.ac.uk/pascal/VOC/voc2012/</a>
- * <br>
- * <br>
- * How to use:<br>
- * 1. Download and extract VOC dataset<br>
- * 2. Set baseDirectory to (for example) VOC2012 directory (should contain JPEGImages and Annotations directories)<br>
- *
- *
- * @author Alex Black
- */
 public class VocLabelProvider implements ImageObjectLabelProvider {
 
     private static final String OBJECT_START_TAG = "<object>";

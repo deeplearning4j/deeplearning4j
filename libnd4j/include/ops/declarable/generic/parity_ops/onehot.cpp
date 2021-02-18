@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -34,8 +36,8 @@ namespace sd {
             double on(1.0f); // T_ARG(0);
             double off(0.0f); //T_ARG(1);
 
-            auto depth = -1; //INT_ARG(0);
-            auto axis = -1; //INT_ARG(1);
+            auto axis = -1; //INT_ARG(0);
+            auto depth = -1; //INT_ARG(1);
 
             if (block.numI() > 0)
                 axis = INT_ARG(0);

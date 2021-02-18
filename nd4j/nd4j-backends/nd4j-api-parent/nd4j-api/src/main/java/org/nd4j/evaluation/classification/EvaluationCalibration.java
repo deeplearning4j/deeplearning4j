@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.evaluation.classification;
 
@@ -44,23 +48,6 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * EvaluationCalibration is an evaluation class designed to analyze the calibration of a classifier.<br>
- * It provides a number of tools for this purpose:
- * - Counts of the number of labels and predictions for each class<br>
- * - Reliability diagram (or reliability curve)<br>
- * - Residual plot (histogram)<br>
- * - Histograms of probabilities, including probabilities for each class separately<br>
- *<br>
- * References:<br>
- * - Reliability diagram: see for example Niculescu-Mizil and Caruana 2005, Predicting Good Probabilities With
- * Supervised Learning<br>
- * - Residual plot: see Wallace and Dahabreh 2012, Class Probability Estimates are Unreliable for Imbalanced Data
- * (and How to Fix Them)<br>
- *
- *
- * @author Alex Black
- */
 @Getter
 @EqualsAndHashCode
 public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration> {

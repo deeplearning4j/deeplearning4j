@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.layers;
 
@@ -31,25 +35,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
 import java.util.Map;
-
-/**
- * Space to channels utility layer configuration for convolutional input types.
- * <p>
- * This operation takes 4D array in, in either NCHW or NHWC format, and moves data from spatial dimensions (HW) to
- * channels (C) for given blockSize.<br> The idea is that blocks of the input of size [blockSize,blockSize] are moved
- * from the spatial dimension to the depth dimension.<br> Thus, for NCHW input format, input shape {@code [mb,
- * inChannels, H, W]}, output has shape {@code [mb, inChannels * blockSize * blockSize, H/blockSize, W/blockSize]}
- * <p></p>
- * Example:
- * <pre>
- * blockSize = 4
- * dataFormat = "NCHW"
- * input shape =  [128, 16, 16, 3]
- * output shape = [128, 16/4, 16/4, 3*4*4]
- * </pre>
- *
- * @author Max Pumperla
- */
 
 @Data
 @NoArgsConstructor

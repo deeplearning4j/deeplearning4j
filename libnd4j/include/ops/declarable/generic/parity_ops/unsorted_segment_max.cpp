@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -26,42 +28,50 @@ namespace sd {
         CUSTOM_OP_IMPL(unsorted_segment_max, 2, 1, false, 0, 0) {
             auto input = INPUT_VARIABLE(0);
             auto idxSegments = INPUT_VARIABLE(1);
+            auto reshapedSegments = *idxSegments;
+            if(!idxSegments->isVector() && idxSegments->rankOf() > 1) {
+                reshapedSegments = idxSegments->reshape('c',{idxSegments->lengthOf()},false);
+            }
+
             auto segmentedOutput = OUTPUT_NULLIFIED(0);
             Nd4jLong numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : INT_ARG(0);
-            REQUIRE_TRUE(idxSegments->isVector(), 0, "unsorted_segment_max: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
-            REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "unsorted_segment_max: segment indexes array length should be equal to the input first dimension, but %ld != %ild.", idxSegments->lengthOf(), input->sizeAt(0));
-
-            Nd4jLong wrong;
-
-            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), idxSegments, numOfClasses, wrong), 0, "unsorted_segment_max: segment indices should be in range [0, %ld), but %ld != %ld",
-                    numOfClasses, wrong, numOfClasses);
-
-            helpers::unsortedSegmentMaxFunctor(block.launchContext(), input, idxSegments, numOfClasses, segmentedOutput);
+            REQUIRE_TRUE(reshapedSegments.isVector(), 0, "unsorted_segment_max: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
+            helpers::unsortedSegmentMaxFunctor(block.launchContext(), input, &reshapedSegments, numOfClasses, segmentedOutput);
 
             return ND4J_STATUS_OK;
         }
         DECLARE_TYPES(unsorted_segment_max) {
             getOpDescriptor()
-                ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
-                ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
-                ->setAllowedInputTypes(1, {ALL_INTS})
-                ->setSameMode(true);
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setSameMode(true);
         }
         DECLARE_SHAPE_FN(unsorted_segment_max) {
 
+
             auto in = inputShape->at(0);
             int outRank = shape::rank(in);
+            Nd4jLong* outputShape = nullptr;
             Nd4jLong numOfClasses = block.width() == 3 ? INPUT_VARIABLE(2)->e<Nd4jLong>(0) : INT_ARG(0);
-            Nd4jLong* outputShape;
 
-            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+            if(INPUT_VARIABLE(0)->rankOf() >= 2) {
+                ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+                outputShape[0] = outRank;
+                outputShape[1] = numOfClasses;
+                for(int i = 1; i < outRank; i++)
+                    outputShape[i + 1] = shape::sizeAt(in, i);
 
-            outputShape[0] = outRank;
-            outputShape[1] = numOfClasses;
-            for(int i = 1; i < outRank; ++i)
-                outputShape[i + 1] = shape::sizeAt(in, i);
+                ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
-            ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
+            } else {
+                ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(1), Nd4jLong);
+                outputShape[0] = 1;
+                outputShape[1] = numOfClasses;
+                shape::printShapeInfo(outputShape);
+                ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
+            }
+
 
             return SHAPELIST(CONSTANT(outputShape));
         }
@@ -73,7 +83,7 @@ namespace sd {
         DECLARE_TYPES(unsorted_segment_max_bp) {
             getOpDescriptor()
                     ->setAllowedOutputTypes(0, {ALL_FLOATS})
-					->setAllowedOutputTypes(1, {ALL_INTS})
+                    ->setAllowedOutputTypes(1, {ALL_INTS})
                     ->setAllowedInputTypes(0, {ALL_FLOATS})
                     ->setAllowedInputTypes(1, {ALL_INTS})
                     ->setAllowedInputTypes(2, {ALL_FLOATS})

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.transform.transform.time;
 
@@ -28,14 +32,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.concurrent.TimeUnit;
 
-/**
- * Transform math op on a time column
- * <p>
- * Note: only the following MathOps are supported: Add, Subtract, ScalarMin, ScalarMax<br>
- * For ScalarMin/Max, the TimeUnit must be milliseconds - i.e., value must be in epoch millisecond format
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "columnNumber", "asMilliseconds"})
 @Data
 public class TimeMathOpTransform extends BaseColumnTransform {

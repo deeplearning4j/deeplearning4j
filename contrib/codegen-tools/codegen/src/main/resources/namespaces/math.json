@@ -1,0 +1,54 @@
+{ "name" : "math",
+
+  "include" : [
+
+  ],
+
+  "ops": [
+
+  {
+    "opName" : "BaseArithmeticOp",
+    "isAbstract" : true,
+    "javaPackage" : "org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic",
+    "inputs" : [ {
+      "name" : "x",
+      "description" : "First input to %OPNAME%",
+      "constraints" : ["T"]
+    }, {
+      "name" : "y",
+      "description" : "Second input to %OPNAME%",
+      "constraints" : ["T"]
+    } ],
+    "outputs" : [ {
+      "name" : "z",
+      "description" : "Output array after executing %OPNAME% on inputs"
+    } ],
+    "args" : null,
+    "constraints" : {
+      "T": {
+        "type": "allowed_dtype",
+        "values": [
+          "NUMERICAL"
+        ]
+      }
+    },
+    "doc" : [ {
+      "scope" : "ALL",
+      "language" : "ANY",
+      "text" : "%OPNAME% op doc text that will appear everywhere - classes, constructors, op creators"
+    } ]
+  },
+
+
+  {
+    "opName" : "Add",
+    "libnd4jOpName" : "add",
+    "extendsOp" : "BaseArithmeticOp"
+  },
+
+  {
+    "opName" : "Sub",
+    "libnd4jOpName" : "sub",
+    "extendsOp" : "BaseArithmeticOp"
+  }
+]}

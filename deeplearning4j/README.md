@@ -1,17 +1,6 @@
 Eclipse Deeplearning4J: Neural Networks for Java/JVM
 =========================
 
-[![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.deeplearning4j/deeplearning4j-core/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.deeplearning4j/deeplearning4j-core)
-[![Javadoc](https://javadoc-badge.appspot.com/org.deeplearning4j/deeplearning4j-core.svg)](https://deeplearning4j.org/api/latest/)
-
-Eclipse Deeplearning4J is part of the [Skymind Intelligence Layer](https://docs.skymind.ai/docs), along with ND4J, DataVec, Arbiter and RL4J. It is an Apache 2.0-licensed, open-source, distributed neural net library written in Java and Scala. By contributing code to this repository, you agree to make your contribution available under an Apache 2.0 license.
-
-Deeplearning4J integrates with Hadoop and Spark and runs on several backends that enable use of CPUs and GPUs. The aim is to create a plug-and-play solution that is more convention than configuration, and which allows for fast prototyping.
-
-The most recent stable release in Maven Central is `0.9.1`, and the current master on Github can be built from source. 
-
-For more info, see: https://docs.skymind.ai/docs
 
 ---
 ## Using Eclipse Deeplearning4j
@@ -42,7 +31,8 @@ Documentation is available at [deeplearning4j.org](https://deeplearning4j.org/ov
 
 ## Support
 
-We are not supporting Stackoverflow right now. Github issues should focus on bug reports and feature requests. Please join the community on [Gitter](https://gitter.im/deeplearning4j/deeplearning4j), where we field questions about how to install the software and work with neural nets. For support from Skymind, please see our [contact page](https://skymind.io/contact).
+. Github issues should focus on bug reports and feature requests.
+Please join the community on [Gitter](https://community.konduit.ai), where we field questions about how to install the software and work with neural nets. For support from Skymind, please see our [contact page](https://skymind.io/contact).
 
 ## Installation
 

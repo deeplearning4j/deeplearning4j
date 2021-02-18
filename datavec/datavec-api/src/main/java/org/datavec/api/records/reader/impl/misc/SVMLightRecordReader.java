@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.records.reader.impl.misc;
 
@@ -35,36 +39,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 
-/**
- * Record reader for SVMLight format, which can generally
- * be described as
- *
- * LABEL INDEX:VALUE INDEX:VALUE ...
- *
- * SVMLight format is well-suited to sparse data (e.g.,
- * bag-of-words) because it omits all features with value
- * zero.
- *
- * We support an "extended" version that allows for multiple
- * targets (or labels) separated by a comma, as follows:
- *
- * LABEL1,LABEL2,... INDEX:VALUE INDEX:VALUE ...
- *
- * This can be used to represent either multitask problems or
- * multilabel problems with sparse binary labels (controlled
- * via the "MULTILABEL" configuration option).
- *
- * Like scikit-learn, we support both zero-based and one-based indexing.
- *
- * Further details on the format can be found at<br>
- * - <a href="http://svmlight.joachims.org/">http://svmlight.joachims.org/</a><br>
- * - <a href="http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html">http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/multilabel.html</a><br>
- * - <a href="http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html">http://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_svmlight_file.html</a>
- *
- * @author Adam Gibson     (original)
- * @author Josh Patterson
- * @author dave@skymind.io
- */
 @Slf4j
 public class SVMLightRecordReader extends LineRecordReader {
     /* Configuration options. */

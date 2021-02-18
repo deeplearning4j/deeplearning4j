@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.graph;
 
@@ -25,27 +29,18 @@ import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/** A MergeVertex is used to combine the activations of two or more layers/GraphVertex by means of concatenation/merging.<br>
- * Exactly how this is done depends on the type of input.<br>
- * For 2d (feed forward layer) inputs: {@code MergeVertex([numExamples,layerSize1],[numExamples,layerSize2]) -> [numExamples,layerSize1 + layerSize2]}<br>
- * For 3d (time series) inputs: {@code MergeVertex([numExamples,layerSize1,timeSeriesLength],[numExamples,layerSize2,timeSeriesLength])
- *      -> [numExamples,layerSize1 + layerSize2,timeSeriesLength]}<br>
- * For 4d (convolutional) inputs: {@code MergeVertex([numExamples,depth1,width,height],[numExamples,depth2,width,height])
- *      -> [numExamples,depth1 + depth2,width,height]}<br>
- * @author Alex Black
- */
 @Data
 public class MergeVertex extends GraphVertex {
 
-    @Setter
     protected int mergeAxis = DEFAULT_MERGE_DIM;       //default value for backward compatibility (deserialization of old version JSON) - NCHW and NCW format
-
+    protected boolean modified = false;
 
     public final static int DEFAULT_MERGE_DIM = 1;
 
@@ -94,6 +89,10 @@ public class MergeVertex extends GraphVertex {
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
             return vertexInputs[0];
+
+        InputTypeUtil.convertMultipleTypes(vertexInputs);
+
+
         InputType first = vertexInputs[0];
         if (first.getType() == InputType.Type.CNNFlat) {
             //TODO
@@ -157,17 +156,6 @@ public class MergeVertex extends GraphVertex {
             }
 
             for (int i = 0; i < vertexInputs.length; i++) {
-                if (vertexInputs[i].getType() != first.getType()) {
-                    if(vertexInputs[i].getType() != InputType.Type.FF && vertexInputs[i].getType() != InputType.Type.RNN)
-                        throw new InvalidInputTypeException(
-                                "Invalid input: MergeVertex cannot merge activations of different types:"
-                                        + " first type = " + first.getType() + ", input type " + (i + 1)
-                                        + " = " + vertexInputs[i].getType());
-                    else {
-                        type = InputType.Type.RNN;
-                    }
-                }
-
                 long thisSize = 0;
                 switch (vertexInputs[i].getType()) {
                     case FF:
@@ -185,7 +173,7 @@ public class MergeVertex extends GraphVertex {
                     case RNN:
                         thisSize = ((InputType.InputTypeRecurrent) vertexInputs[i]).getSize();
                         //don't change dimension if it was already modified
-                        if(this.mergeAxis == DEFAULT_MERGE_DIM)
+                        if(!modified)
                             this.mergeAxis = format == RNNFormat.NCW ? 1 : 2;
                         break;
                     default:
@@ -261,6 +249,15 @@ public class MergeVertex extends GraphVertex {
                 this.mergeAxis = format == CNN2DFormat.NCHW ? 1 : 3;
             return InputType.convolutional(fh, fw, depthSum, format);
         }
+    }
+
+    public int getMergeAxis() {
+        return mergeAxis;
+    }
+
+    public void setMergeAxis(int mergeAxis) {
+        this.mergeAxis = mergeAxis;
+        modified = true;
     }
 
     @Override

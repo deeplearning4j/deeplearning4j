@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
@@ -30,22 +34,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
-/**
- * 1D (temporal) subsampling layer. Currently, we just subclass off the
- * SubsamplingLayer and override the preOutput and backpropGradient methods.
- * Specifically, since this layer accepts RNN (not CNN) InputTypes, we
- * need to add a singleton fourth dimension before calling the respective
- * superclass method, then remove it from the result.
- *
- * This approach treats a multivariate time series with L timesteps and
- * P variables as an L x 1 x P image (L rows high, 1 column wide, P
- * channels deep). The kernel should be H<L pixels high and W=1 pixels
- * wide.
- *
- * TODO: We will eventually want to add a 1D-specific im2col method.
- *
- * @author dave@skymind.io
- */
 public class Subsampling1DLayer extends SubsamplingLayer {
     public Subsampling1DLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);

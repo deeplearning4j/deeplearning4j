@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.nd4j.linalg.lossfunctions;
 
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -25,17 +29,6 @@ import org.nd4j.common.primitives.Pair;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * SameDiff loss function.
- *
- * This class can be extended to create Deeplearning4j loss functions by defining one single method only:
- * {@link #defineLoss(SameDiff, SDVariable, SDVariable)}. This method is used to define the loss function on a
- * <i>per example</i> basis - i.e., the output should be an array with shape [minibatch].<br>
- * <br>
- * For example, the mean squared error (MSE) loss function can be defined using:<br>
- * {@code return labels.squaredDifference(layerInput).mean(1);}
- *
- */
 public abstract class SameDiffLoss implements ILossFunction {
     protected transient SameDiff sd;
     protected transient SDVariable scorePerExampleVariable;

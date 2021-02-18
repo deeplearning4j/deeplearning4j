@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops.custom;
 
@@ -31,14 +35,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ScatterUpdate implements CustomOp {
+public class ScatterUpdate extends DynamicCustomOp {
     protected CustomOp op;
 
     // update operation: 0 - add; 1 - sub; 2 - mul; 3 - div; 4 - rsub; 5 - rdiv; 6 - assign
     public enum UpdateOp {
         ADD,
         SUBTRACT,
-        MILTIPLY,
+        MULTIPLY,
         DIVIDE,
         RSUBTRACT,
         RDIVIDE,
@@ -76,6 +80,12 @@ public class ScatterUpdate implements CustomOp {
                 .callInplace(true)
                 .addIntegerArguments(iargs)
                 .build();
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        DynamicCustomOp dynamicCustomOp = (DynamicCustomOp)  op;
+        return dynamicCustomOp.calculateOutputDataTypes(dataTypes);
     }
 
     /**

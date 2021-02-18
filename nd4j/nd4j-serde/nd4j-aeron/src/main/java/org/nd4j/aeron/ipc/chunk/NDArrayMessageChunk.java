@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.aeron.ipc.chunk;
 
@@ -25,30 +29,6 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-/**
- * An NDArrayMessageChunk
- * represents a chunked {@link NDArrayMessage}
- * that needs to be reassembled.
- *
- * This chunking is for large messages
- * that need to be segmented to be sent over the wire.
- *
- * An {@link AeronNDArraySubscriber}
- * would use this information to assemble a contiguous buffer
- * to be used for assembling a large {@link NDArrayMessage}
- *
- * Of note is that this chunk will also contain the needed data
- * for assembling in addition to the desired metadata such as the chunk size.
- *
- * A chunk has an idea which is used to track the chunk
- * across fragmentations, an index fr determining ordering
- * for re assembling, and metadata about the chunk such as
- * the chunk size and number of chunks
- *
- *
- *
- * @author Adam Gibson
- */
 @Data
 @Builder
 public class NDArrayMessageChunk implements Serializable {

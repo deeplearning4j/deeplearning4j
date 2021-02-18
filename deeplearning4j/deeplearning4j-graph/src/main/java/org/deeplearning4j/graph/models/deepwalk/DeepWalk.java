@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.graph.models.deepwalk;
 
@@ -36,16 +40,6 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**Implementation of the DeepWalk graph vectorization model, based on the paper
- * <i>DeepWalk: Online Learning of Social Representations</i> by Perozzi, Al-Rfou & Skiena (2014),
- * <a href="https://arxiv.org/abs/1403.6652">https://arxiv.org/abs/1403.6652</a><br>
- * Similar to word2vec in nature, DeepWalk is an unsupervised learning algorithm that learns a vector representation
- * of each vertex in a graph. Vector representations are learned using walks (usually random walks) on the vertices in
- * the graph.<br>
- * Once learned, these vector representations can then be used for purposes such as classification, clustering, similarity
- * search, etc on the graph<br>
- * @author Alex Black
- */
 public class DeepWalk<V, E> extends GraphVectorsImpl<V, E> {
     public static final int STATUS_UPDATE_FREQUENCY = 1000;
     private Logger log = LoggerFactory.getLogger(DeepWalk.class);

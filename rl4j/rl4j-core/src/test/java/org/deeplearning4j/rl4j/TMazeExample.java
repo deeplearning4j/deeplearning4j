@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.deeplearning4j.rl4j;
 
 import org.apache.commons.lang3.builder.Builder;
@@ -76,7 +96,7 @@ public class TMazeExample {
             }
         };
 
-        //Builder<IAgentLearner<Integer>> builder = setupNStepQLearning(environmentBuilder, transformProcessBuilder, listeners, rnd, isAsync, numThreads);
+//        Builder<IAgentLearner<Integer>> builder = setupNStepQLearning(environmentBuilder, transformProcessBuilder, listeners, rnd);
         Builder<IAgentLearner<Integer>> builder = setupAdvantageActorCritic(environmentBuilder, transformProcessBuilder, listeners, rnd);
 
         ITrainer trainer;
@@ -97,7 +117,7 @@ public class TMazeExample {
         trainer.train();
         long after = System.nanoTime();
 
-        System.out.println(String.format("Total time for %d episodes: %fs", NUM_EPISODES, (after - before) / 1e6));
+        System.out.println(String.format("Total time for %d episodes: %fms", NUM_EPISODES, (after - before) / 1e6));
     }
 
     private static Builder<IAgentLearner<Integer>> setupNStepQLearning(Builder<Environment<Integer>> environmentBuilder,
@@ -180,7 +200,9 @@ public class TMazeExample {
 
         ComputationGraph model = new ComputationGraph(conf);
         model.init();
-        return new QNetwork(model);
+        return QNetwork.builder()
+                .withNetwork(model)
+                .build();
     }
 
     private static ITrainableNeuralNet buildActorCriticNetwork() {
@@ -195,7 +217,9 @@ public class TMazeExample {
         ComputationGraph model = new ComputationGraph(conf);
         model.init();
 
-        return new ActorCriticNetwork(model);
+        return ActorCriticNetwork.builder()
+                .withCombinedNetwork(model)
+                .build();
     }
 
     private static class EpisodeScorePrinter implements AgentListener<Integer> {

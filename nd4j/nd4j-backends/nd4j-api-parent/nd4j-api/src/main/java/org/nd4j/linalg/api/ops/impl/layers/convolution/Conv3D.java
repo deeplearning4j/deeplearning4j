@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
@@ -42,9 +46,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 
-/**
- * Conv3D operation
- */
 @Slf4j
 @Getter
 public class Conv3D extends DynamicCustomOp {
@@ -161,13 +162,13 @@ public class Conv3D extends DynamicCustomOp {
         tfAdapters.put("kH", new NDArrayShapeAdapter(1));
         tfAdapters.put("kW", new NDArrayShapeAdapter(2));
 
-        tfAdapters.put("sD", new IntArrayIntIndexAdpater(1));
-        tfAdapters.put("sH", new IntArrayIntIndexAdpater(2));
-        tfAdapters.put("sW", new IntArrayIntIndexAdpater(3));
+        tfAdapters.put("sD", new IntArrayIntIndexAdapter(1));
+        tfAdapters.put("sH", new IntArrayIntIndexAdapter(2));
+        tfAdapters.put("sW", new IntArrayIntIndexAdapter(3));
 
-        tfAdapters.put("pD", new IntArrayIntIndexAdpater(1));
-        tfAdapters.put("pH", new IntArrayIntIndexAdpater(2));
-        tfAdapters.put("pW", new IntArrayIntIndexAdpater(3));
+        tfAdapters.put("pD", new IntArrayIntIndexAdapter(1));
+        tfAdapters.put("pH", new IntArrayIntIndexAdapter(2));
+        tfAdapters.put("pW", new IntArrayIntIndexAdapter(3));
 
 
         tfAdapters.put("isSameMode", new StringNotEqualsAdapter("VALID"));

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.integration.testcases.dl4j.misc;
 
@@ -30,18 +34,6 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.*;
 
-/**
- * A simple DataSetIterator for use in the GravesLSTMCharModellingExample.
- * Given a text file and a few options, generate feature vectors and labels for training,
- * where we want to predict the next character in the sequence.<br>
- * This is done by randomly choosing a position in the text file, at offsets of 0, exampleLength, 2*exampleLength, etc
- * to start each sequence. Then we convert each character to an index, i.e., a one-hot vector.
- * Then the character 'a' becomes [1,0,0,0,...], 'b' becomes [0,1,0,0,...], etc
- * <p>
- * Feature vectors and labels are both one-hot vectors of same length
- *
- * @author Alex Black
- */
 public class CharacterIterator implements DataSetIterator {
     //Valid characters
     private char[] validCharacters;

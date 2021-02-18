@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.transform.transform.sequence;
 
@@ -29,27 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 
-/**
- * Sequence offset transform takes a sequence, and shifts The values in one or more columns by a specified number of
- * times steps. It has 2 modes of operation (OperationType enum), with respect to the columns it operates on:<br>
- * InPlace: operations may be performed in-place, modifying the values in the specified columns<br>
- * NewColumn: operations may produce new columns, with the original (source) columns remaining unmodified<br>
- * <p>
- * Additionally, there are 2 modes for handling values outside the original sequence (EdgeHandling enum):
- * TrimSequence: the entire sequence is trimmed (start or end) by a specified number of steps<br>
- * SpecifiedValue: for any values outside of the original sequence, they are given a specified value<br>
- * <p>
- * Note 1: When specifying offsets, they are done as follows:
- * Positive offsets: move the values in the specified columns to a later time. Earlier time steps are either be trimmed
- * or Given specified values; the last values in these columns will be truncated/removed.
- * <p>
- * Note 2: Care must be taken when using TrimSequence: for example, if we chain multiple sequence offset transforms on the
- * one dataset, we may end up trimming much more than we want. In this case, it may be better to use SpecifiedValue,
- * (with, for example, NullWritable) and then do a single trim operation (via {@link org.datavec.api.transform.sequence.trim.SequenceTrimTransform})
- * at the end.
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"inputSchema", "columnsToOffsetSet"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data

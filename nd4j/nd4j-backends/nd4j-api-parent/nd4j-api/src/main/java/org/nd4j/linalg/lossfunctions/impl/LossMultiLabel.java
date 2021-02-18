@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.lossfunctions.impl;
 
@@ -27,32 +31,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-/**
- * Multi-Label-Loss Function, maybe more commonly known as BPMLL
- * <p>
- * This Loss function requires that the Labels are given as a multi-hot encoded vector. It doesn't require any special
- * Activation method, i.e. the network output doesn't have to be in any specific range.
- * <p>
- * The loss is calculated based on the classification difference on labels that the examples has, and those that it
- * doesn't have. Assume that each example has a set of labels, these labels are the positive set, the labels that do not
- * belong to the example are in the negative set. This loss function trains the network to produce a higher value for
- * labels that are in the positive set than those that are in the negative set.
- * <p>
- * Notice that in order to learn anything at all, this loss function <b>requires</b> that your example labels are not
- * all 0 or all 1. In these cases the loss gradient will be 0. If you have to work with examples like that, you should
- * try using a ComputationGraph with two LossLayers, one using LossMultiLabel and the other one using LossBinaryXENT.
- * <p>
- * For a more detailed explanation and the actual formulas, read the original paper by Zhang and Zhou. The
- * implementation on scoreArray is based on equation 3, while computeGradient is based on equation 11. The main
- * difference being that -(c_k - c_l) = (c_l - c_k) was used to simplify the calculations.
- * <p>
- * Min-Ling Zhang and Zhi-Hua Zhou, "Multilabel Neural Networks with Applications to Functional Genomics and Text
- * Categorization," in IEEE Transactions on Knowledge and Data Engineering, vol. 18, no. 10, pp. 1338-1351, Oct. 2006.
- * doi: 10.1109/TKDE.2006.162
- * *
- *
- * @author Paul Dubs
- */
 @EqualsAndHashCode
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter

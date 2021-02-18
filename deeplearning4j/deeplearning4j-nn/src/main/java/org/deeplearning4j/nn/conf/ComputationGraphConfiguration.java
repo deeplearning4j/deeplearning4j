@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf;
 
@@ -49,19 +53,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * ComputationGraphConfiguration is a configuration object for neural networks with arbitrary connection structure.
- * It is analogous to {@link MultiLayerConfiguration}, but allows considerably greater flexibility for the network
- * architecture.<br>
- * Specifically, the network architecture is a directed acyclic graph, where each vertex in the graph is a {@link GraphVertex},
- * which may for example be a layer or a vertex/object that defines arbitrary forward and backward pass functionality.<br>
- * Note that the ComputationGraph may have an arbitrary number of inputs (multiple independent inputs, possibly of different
- * types), and an arbitrary number of outputs (for example, multiple {@link OutputLayer} instances.
- * Typical usage:<br>
- * {@code ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()....graphBuilder()...build();}
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"trainingWorkspaceMode", "inferenceWorkspaceMode", "cacheMode", "topologicalOrder", "topologicalOrderStr"})
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -999,7 +990,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * InputType.convolutional(28,28,1)) then the input labelled "a" is a feed forward input, whereas the input labelled "b" in a CNN
          * input, with 28x28x1 images as input.<br>
          * <b>Note</b>: Using setInputTypes is not always necessary, but can be especially helpful for example with CNNs such that
-         * the calculations on input/ouput sizes (width, height, channels, etc) don't need to be done manually.<br>
+         * the calculations on input/output sizes (width, height, channels, etc) don't need to be done manually.<br>
          * <b>Note 2</b>: If a preprocessor is manually added for a given layer, it will not be overridden by the automatic
          * addition of preprocessors.
          * <b>Note 3</b>: If a layer has an nIn set manually, this will not be overridden
@@ -1143,7 +1134,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * first
          * @return A map of activation types for the graph (key: vertex name. value: type of activations out of that vertex)
          */
-        public Map<String,InputType> getLayerActivationTypes(){
+        public Map<String,InputType> getLayerActivationTypes() {
             Preconditions.checkArgument(networkInputs != null && networkInputs.size() > 0,
                     "Cannot calculate activation types if no inputs have been set (use addInputs(String...))");
             Preconditions.checkArgument(networkInputTypes != null && networkInputTypes.size() == networkInputs.size(),

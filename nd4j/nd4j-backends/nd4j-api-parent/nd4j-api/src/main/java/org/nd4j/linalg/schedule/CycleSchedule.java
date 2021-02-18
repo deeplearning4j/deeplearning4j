@@ -1,59 +1,28 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.schedule;
 
 import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Cycle schedule
- *
- *  Based on 1cycle schedule as proposed in https://arxiv.org/abs/1803.09820
- *
- *  Starts at initial learning rate, then linearly increases learning rate until max learning rate is reached,
- *  at that point the learning rate is decreased back to initial learning rate.
- *
- *  When cycleLength - annealingLength is reached, the annealing period starts, and the learning rate starts decaying
- *  below the initial learning rate.
- *
- *  The Learning rate curve Looks something like this:
- *
- * +-----------------------------------------+
- * |               XX                        |
- * |              XX XX                      |
- * |             XX   XX                     |
- * |            XX     XX                    |
- * |           XX       XX                   |
- * |          XX         XX                  |
- * |         XX           XX                 |
- * |        XX             XX                |
- * |       XX               XX               |
- * |      XX                 XX              |
- * |     XX                   XX             |
- * |    XX                     XX            |
- * |   XX                       XX           |
- * |  XX                          XXX        |
- * |                                XXX      |
- * |                                   XXX   |
- * |                                         |
- * +-----------------------------------------+
- *
- * @author Paul Dubs
- */
 @Data
 public class CycleSchedule implements ISchedule {
 

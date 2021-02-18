@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.custom;
 
@@ -92,11 +96,6 @@ import java.util.List;
 import static java.lang.Float.NaN;
 import static org.junit.Assert.*;
 
-/**
- * This class holds various CustomOps tests
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class CustomOpsTests extends BaseNd4jTest {
 
@@ -865,7 +864,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, out);
     }
 
-    @Ignore("AS 11/13/2019 https://github.com/eclipse/deeplearning4j/issues/8374")
     @Test
     public void testAdjustContrastShape(){
         DynamicCustomOp op = DynamicCustomOp.builder("adjust_contrast_v2")
@@ -877,14 +875,13 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
 
-    @Ignore("AS 11/13/2019 https://github.com/eclipse/deeplearning4j/issues/8374")
     @Test
     public void testBitCastShape(){
         INDArray out = Nd4j.createUninitialized(1,10);
         BitCast op = new BitCast(Nd4j.zeros(1,10), DataType.FLOAT.toInt(), out);
         List<LongShapeDescriptor> lsd = op.calculateOutputShape();
         assertEquals(1, lsd.size());
-        assertArrayEquals(new long[]{1,10}, lsd.get(0).getShape());
+        assertArrayEquals(new long[]{1,10,2}, lsd.get(0).getShape());
     }
 
     @Test
@@ -919,7 +916,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, out);
     }
 
-    @Ignore("AS 11/13/2019 https://github.com/eclipse/deeplearning4j/issues/8374")
     @Test
     public void testDrawBoundingBoxesShape() {
         INDArray images = Nd4j.createFromArray(new float[]{0.7788f, 0.8012f, 0.7244f,  0.2309f, 0.7271f,
@@ -945,23 +941,22 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, output);
     }
 
-    @Ignore(" 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8402")
     @Test
+    @Ignore("Failing with results that are close")
     public void testFakeQuantAgainstTF_1() {
-        INDArray x = Nd4j.createFromArray(new float[]{ 0.7788f,    0.8012f,    0.7244f,    0.2309f,    0.7271f,
+        INDArray x = Nd4j.createFromArray(new double[]{ 0.7788f,    0.8012f,    0.7244f,    0.2309f,    0.7271f,
      0.1804f,    0.5056f,    0.8925f,    0.5461f,    0.9234f,
      0.0856f,    0.7938f,    0.6591f,    0.5555f,    0.1596f}).reshape(3,5);
-        INDArray min = Nd4j.createFromArray(new float[]{ -0.2283f,   -0.0719f,   -0.0154f,   -0.5162f,   -0.3567f});
-        INDArray max = Nd4j.createFromArray(new float[]{ 0.9441f,    0.5957f,    0.8669f,    0.3502f,    0.5100f});
+        INDArray min = Nd4j.createFromArray(new double[]{ -0.2283f,   -0.0719f,   -0.0154f,   -0.5162f,   -0.3567f});
+        INDArray max = Nd4j.createFromArray(new double[]{ 0.9441f,    0.5957f,    0.8669f,    0.3502f,    0.5100f});
 
-        INDArray expected = Nd4j.createFromArray(new float[]{0.7801f,    0.5966f,    0.7260f,    0.2320f,    0.5084f,
+        INDArray expected = Nd4j.createFromArray(new double[]{0.7801f,    0.5966f,    0.7260f,    0.2320f,    0.5084f,
              0.1800f,    0.5046f,    0.8684f,    0.3513f,    0.5084f,
              0.0877f,    0.5966f,    0.6600f,    0.3513f,    0.1604f}).reshape(3,5);
 
-        INDArray out = Nd4j.createUninitialized(x.shape());
         val op = new FakeQuantWithMinMaxVarsPerChannel(x,min,max);
-        Nd4j.exec(op);
-        assertEquals(expected, out);
+        INDArray[] output = Nd4j.exec(op);
+        assertEquals(expected, output[0]);
     }
 
     @Test
@@ -974,11 +969,9 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertArrayEquals(new long[]{4,1} , out.shape());
     }
 
-    @Ignore("2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8403")
     @Test
     public void testResizeBilinear1() {
-
-        INDArray x = Nd4j.rand(1, 2,3,4);
+        INDArray x = Nd4j.rand(1, 10,10,4);
         INDArray z = Nd4j.createUninitialized(x.shape());
         boolean align = false;
         val op = new ResizeBilinear(x, z, 10, 10, align, false);
@@ -1088,24 +1081,8 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray distance = Nd4j.scalar(0.f);
 
         Nd4j.exec(new KnnMinDistance(point, lowest, highest, distance));
-//        System.out.println(distance);
     }
 
-    @Ignore("2019/11/15 AS - https://github.com/eclipse/deeplearning4j/issues/8399")
-    @Test
-    public void testCropAndResize() {
-        INDArray image = Nd4j.createUninitialized(DataType.FLOAT, 1, 2, 2, 1);
-        INDArray boxes = Nd4j.createFromArray(new float[]{1,2,3,4}).reshape(1,4);
-        INDArray box_indices = Nd4j.createFromArray(new int[]{1});
-        INDArray crop_size = Nd4j.createFromArray(new int[]{1,2}).reshape(1,2);
-
-        //Output shape mismatch - TF [2, 2, 1, 1] vs SD: [1, 2, 1, 1]
-        INDArray output = Nd4j.create(DataType.FLOAT, 2,2,1,1);
-
-
-        Nd4j.exec(new CropAndResize(image, boxes, box_indices, crop_size, CropAndResize.Method.BILINEAR, 0.5,
-                 output));
-    }
 
     @Test
     public void testLayersDropoutFail() {
@@ -1344,7 +1321,6 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, ret[0]);
     }
 
-    @Ignore("Failure AS 11.28.2019 - https://github.com/eclipse/deeplearning4j/issues/8453")
     @Test
     public void testRoll1() {
         INDArray a = Nd4j.createFromArray(new float[]{0.7788f,    0.8012f,    0.7244f,    0.2309f});
@@ -1352,6 +1328,10 @@ public class CustomOpsTests extends BaseNd4jTest {
         INDArray[] ret = Nd4j.exec(op);
         INDArray expected = Nd4j.createFromArray(new float[]{0.7244f,    0.2309f,    0.7788f,    0.8012f});
         assertEquals(expected, ret[0]);
+        INDArray matrix = Nd4j.create(new double[]{0.7788,0.8012,0.7244,0.2309,0.7271,0.1804,0.5056,0.8925}).reshape(2,4);
+        Roll roll2 = new Roll(matrix,Nd4j.scalar(0),Nd4j.scalar(1));
+        INDArray[] outputs = Nd4j.exec(roll2);
+        System.out.println(outputs[0]);
     }
 
     @Test

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.transform.transform;
 
@@ -34,24 +38,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Base class for multiple column math operations. For example myNewColumn = column1 + column2 + column3.<br>
- * Note: this transform adds a (derived) column (with the specified name) to the end<br>
- * <p/>
- * Note: Certain operations have restrictions on the number of columns used as input<br>
- * Add: 2 or more (a+b+c+...)<br>
- * Subtract: exactly 2 (a-b)<br>
- * Multiply: 2 or more (a*b*c*...)<br>
- * Divide: exactly 2 (a/b)<br>
- * Modulus: exactly 2 (a%b)<br>
- * Other math ops (ReverseSubtract, ReverseDivide, ScalarMin, ScalarMax) are not allowed here.
- * <p/>
- * <p/>
- * <p/>
- * <br><br>
- * <b>See</b>: {@link IntegerMathOpTransform}, {@link DoubleMathOpTransform}, {@link LongMathOpTransform} for operations
- * with a scalar + single column, instea
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"columnIdxs", "inputSchema"})
 @EqualsAndHashCode(exclude = {"columnIdxs", "inputSchema"})

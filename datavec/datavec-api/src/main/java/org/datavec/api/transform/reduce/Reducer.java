@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.transform.reduce;
 
@@ -34,20 +38,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * A Reducer is used to take a set of examples and reduce them.
- * The idea: suppose you have a large number of columns, and you want to combine/reduce the values in each column.<br>
- * Reducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
- * See {@link Builder} and {@link ReduceOp} for the full list.<br>
- * Note this supports executing multipe reducitons per column: simply call the Builder with Xcolumn() repeatedly
- * on the same column, or use {@link Reducer.Builder#multipleOpColmumns(List, String...)}}
- * <p>
- * Uses are:
- * (1) Reducing examples by a key
- * (2) Reduction operations in time series (windowing ops, etc)
- *
- * @author Alex Black
- */
 @Data
 @JsonIgnoreProperties({"schema", "keyColumnsSet"})
 @EqualsAndHashCode(exclude = {"schema", "keyColumnsSet"})

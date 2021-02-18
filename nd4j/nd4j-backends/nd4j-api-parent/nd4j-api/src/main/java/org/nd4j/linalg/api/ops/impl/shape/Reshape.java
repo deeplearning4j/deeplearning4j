@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
@@ -36,11 +40,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Reshape function
- *
- * @author Adam Gibson
- */
 @Slf4j
 @NoArgsConstructor
 public class Reshape extends DynamicCustomOp {
@@ -50,6 +49,11 @@ public class Reshape extends DynamicCustomOp {
     public Reshape(SameDiff sameDiff, SDVariable i_v, long[] shape) {
         super(null, sameDiff, new SDVariable[]{i_v});
         this.shape = shape;
+        //c ordering: see (char) 99 for c ordering and (char) 'f' is 102
+        //note it has to be negative for the long array case only
+        //to flag the difference between an ordering being specified
+        //and a dimension.
+        addIArgument(-99);
         addIArgument(shape);
     }
 
@@ -57,14 +61,19 @@ public class Reshape extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[]{i_v, shape});
     }
 
-    public Reshape(INDArray in, long... shape){
+    public Reshape(INDArray in, long... shape) {
         super(new INDArray[]{in}, null);
         this.shape = shape;
+        //c ordering: see (char) 99 for c ordering and (char) 'f' is 102
+        //note it has to be negative for the long array case only
+        //to flag the difference between an ordering being specified
+        //and a dimension.
+        addIArgument(-99);
         addIArgument(shape);
     }
 
 
-    public Reshape(@NonNull INDArray in, @NonNull INDArray shape, INDArray out){
+    public Reshape(@NonNull INDArray in, @NonNull INDArray shape, INDArray out) {
         super(null, new INDArray[]{in, shape}, wrapOrNull(out), null, (List<Integer>)null);
     }
 

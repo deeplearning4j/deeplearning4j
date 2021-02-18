@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.models.sequencevectors.graph.walkers.impl;
 
@@ -30,14 +34,6 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import java.util.List;
 import java.util.Random;
 
-/**
- * This is vertex weight-based walker for SequenceVectors-based DeepWalk implementation.
- * Instead of random walks, this walker produces walks based on weight of the edges.
- *
- * @author AlexDBlack
- * @author raver119@gmail.com
- * Based on Alex Black WeightedWalkIterator implementation
- */
 public class WeightedWalker<T extends SequenceElement> extends RandomWalker<T> implements GraphWalker<T> {
 
     protected WeightedWalker() {

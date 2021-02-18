@@ -1,36 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.common.collection;
 
 import java.util.*;
 
-/**
- * A {@code List<String>} that stores all contents in a single char[], to avoid the GC load for a large number of String
- * objects.<br>
- * <p>
- * Some restrictions to be aware of with the current implementation:<br>
- * - The list is intended to be write-once (append only), except for clear() operations. That is: new Strings can be added
- *   at the end, but they cannot be replaced or removed.<br>
- * - There is a limit of a maximum of {@link Integer#MAX_VALUE}/2 = 1073741823 Strings<br>
- * - There is a limit of the maximum total characters of {@link Integer#MAX_VALUE} (i.e., 2147483647 chars). This corresponds
- *   to a maximum of approximately 4GB of Strings.<br>
- *
- * @author Alex Black
- */
 public class CompactHeapStringList implements List<String> {
     public static final int DEFAULT_REALLOCATION_BLOCK_SIZE_BYTES = 8 * 1024 * 1024; //8MB
     public static final int DEFAULT_INTEGER_REALLOCATION_BLOCK_SIZE_BYTES = 1024 * 1024; //1MB - 262144 ints, 131k entries

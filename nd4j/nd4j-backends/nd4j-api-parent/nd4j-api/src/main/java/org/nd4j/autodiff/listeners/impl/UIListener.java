@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.nd4j.autodiff.listeners.impl;
 
 import com.google.flatbuffers.Table;
@@ -28,28 +48,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-/**
- * User interface listener for SameDiff<br>
- * <br>
- * <b>Basic usage:</b>
- * <pre>
- * {@code
- * UIListener l = UIListener.builder(f)
- *                  //Plot loss curve, at every iteration (enabled and set to 1 by default)
- *                 .plotLosses(1)
- *                 //Plot the training set evaluation metrics: accuracy and f1 score
- *                 .trainEvaluationMetrics("softmax", 0, Evaluation.Metric.ACCURACY, Evaluation.Metric.F1)
- *                 //Plot the parameter to update:ratios for each parameter, every 10 iterations
- *                 .updateRatios(10)
- *                 .build();
- * }
- * </pre>
- * <br>
- * Note that the UIListener supports continuing with the same network on the same file - but only if the network configuration
- * matches. See {@link FileMode} for configuration/details
- *
- * @author Alex Black
- */
 public class UIListener extends BaseListener {
 
     /**

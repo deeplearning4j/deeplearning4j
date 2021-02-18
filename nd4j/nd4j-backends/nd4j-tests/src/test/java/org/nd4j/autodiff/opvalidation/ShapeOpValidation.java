@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.opvalidation;
 
@@ -563,7 +567,12 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(failed.toString(), 0, failed.size());
     }
 
-    @Test
+    @Override
+    public long getTimeoutMilliseconds() {
+        return Long.MAX_VALUE;
+    }
+
+    @Test()
     public void testStack() {
         Nd4j.getRandom().setSeed(12345);
 
@@ -602,22 +611,22 @@ public class ShapeOpValidation extends BaseOpValidation {
                     }
 
                     INDArray expStack = null;
-                    if(Arrays.equals(new long[]{3,4}, shape)){
+                    if(Arrays.equals(new long[]{3,4}, shape)) {
                         if(axis == 0){
                             INDArray out = Nd4j.create(numInputs, 3, 4);
-                            for( int i=0; i<numInputs; i++ ){
+                            for( int i = 0; i < numInputs; i++) {
                                 out.get(point(i), all(), all()).assign(inArr[i]);
                             }
                             expStack = out;
                         } else if(axis == 1) {
                             INDArray out = Nd4j.create(3, numInputs, 4);
-                            for( int i=0; i<numInputs; i++ ){
+                            for( int i = 0; i<numInputs; i++) {
                                 out.get(all(), point(i), all()).assign(inArr[i]);
                             }
                             expStack = out;
                         } else {
                             INDArray out = Nd4j.create(3, 4, numInputs);
-                            for( int i=0; i<numInputs; i++ ){
+                            for( int i = 0; i < numInputs; i++) {
                                 out.get(all(), all(), point(i)).assign(inArr[i]);
                             }
                             expStack = out;

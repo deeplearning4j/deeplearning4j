@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.graph;
 
@@ -29,16 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * SubsetVertex is used to select a subset of the activations out of another GraphVertex.<br>
- * For example, a subset of the activations out of a layer.<br>
- * Note that this subset is specifying by means of an interval of the original activations.
- * For example, to get the first 10 activations of a layer (or, first 10 features out of a CNN layer) use
- * {@code new SubsetVertex(0,9)}<br>
- * In the case of convolutional (4d) activations, this is done along channels.
- *
- * @author Alex Black
- */
 @Data
 public class SubsetVertex extends GraphVertex {
 

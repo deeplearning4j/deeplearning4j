@@ -1,18 +1,22 @@
-/* ******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
 import lombok.Getter;
@@ -34,32 +38,6 @@ import java.util.List;
 import java.util.Map;
 
 
-/**
- * LSTM layer implemented as a single operation.
- * Implementation of operation for LSTM layer with optional peep hole connections.<br>
- * S. Hochreiter and J. Schmidhuber. "Long Short-Term Memory". Neural Computation and <a href="https://research.google.com/pubs/archive/43905.pdf">https://research.google.com/pubs/archive/43905.pdf</a><br>
- * Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014.<br>
- * See also: <a href="https://arxiv.org/pdf/1503.04069.pdf">https://arxiv.org/pdf/1503.04069.pdf</a><br>
- * Input arrays:<br>
- * 0: input <br>
- * [sL, bS, nIn]  when dataFormat - TNS <br>
- * [bS, sL, nIn]  when dataFormat - NST <br>
- * [bS, nIn, sL]  when dataFormat - NST <br>
- * 1: previous/initial cell state<br>
- * shapes [nIn, 4*nOut] for FWD, BWD  Direction Mode <br>
- * shapes [2, nIn, 4*nOut] BIDIR_SUM, BIDIR_CONCAT and BIDIR_EXTRA_DIM  Direction Mode <br>
- * 2: previous/initial output [bS, numUnits]<br>
- * * shapes [nIn, 4*nOut] for FWD, BWD  Direction Mode <br>
- * * shapes [2, nIn, 4*nOut] BIDIR_SUM, BIDIR_CONCAT and BIDIR_EXTRA_DIM  Direction Mode <br>
- * 3  max sequence length [bS] <br>
- * 4: LSTMLayerWeights - {@link LSTMLayerWeights} <br>
- * 5: LSTMLayerConfig - {@link LSTMLayerConfig}<br>
- * <p>
- * Output arrays:<br>
- * 0: output h  - rank 3 or 4, depends on DirectionMode and dataFormat<br>
- * 1: output at last step hL - rank 3 or 4, depends on DirectionMode and dataFormat<<br>
- * 2: cell state at last step cL  - same shape as in hL<br>
- */
 @NoArgsConstructor
 public class LSTMLayer extends DynamicCustomOp {
 

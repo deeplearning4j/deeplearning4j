@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
@@ -34,20 +38,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
-/**
- * A preprocessor to allow RNN and feed-forward network layers to be used together.<br>
- * For example, GravesLSTM -> OutputLayer or GravesLSTM -> DenseLayer<br>
- * This does two things:<br>
- * (a) Reshapes activations out of RNN layer (which is 3D with shape
- * [miniBatchSize,layerSize,timeSeriesLength]) into 2d activations (with shape
- * [miniBatchSize*timeSeriesLength,layerSize]) suitable for use in feed-forward layers.<br>
- * (b) Reshapes 2d epsilons (weights*deltas from feed forward layer, with shape
- * [miniBatchSize*timeSeriesLength,layerSize]) into 3d epsilons (with shape
- * [miniBatchSize,layerSize,timeSeriesLength]) for use in RNN layer
- *
- * @author Alex Black
- * @see FeedForwardToRnnPreProcessor for opposite case (i.e., DenseLayer -> GravesLSTM etc)
- */
 @Data
 @Slf4j
 @NoArgsConstructor

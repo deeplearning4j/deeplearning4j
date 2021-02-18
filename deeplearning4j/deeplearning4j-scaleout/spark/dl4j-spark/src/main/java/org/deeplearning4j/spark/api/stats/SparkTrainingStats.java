@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.api.stats;
 
@@ -26,21 +30,6 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 
-/**
- * SparkTrainingStats is an interface that is used for accessing training statistics, for multiple {@link org.deeplearning4j.spark.api.TrainingMaster}
- * implementations.
- * <p>
- * The idea is that for debugging purposes, we want to collect a number of statistics related to the training. However, these
- * statistics will vary, depending on which the type of training we are doing. Specifically, both the keys (number/names of stats)
- * and their actual values (types/classes) can vary.
- * <p>
- * The interface here operates essentially as a {@code Map<String,Object>}. Note however that SparkTrainingStats instances
- * may be nested: for example a {@link ParameterAveragingTrainingMasterStats} may have a
- * {@link CommonSparkTrainingStats} instance which may in turn have a {@link ParameterAveragingTrainingWorkerStats}
- * instance.
- *
- * @author Alex Black
- */
 public interface SparkTrainingStats extends Serializable {
 
     /**

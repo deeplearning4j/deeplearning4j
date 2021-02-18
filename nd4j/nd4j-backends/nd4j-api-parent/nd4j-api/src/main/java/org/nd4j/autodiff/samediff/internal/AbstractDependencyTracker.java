@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.nd4j.autodiff.samediff.internal;
 
 import lombok.Getter;
@@ -9,38 +29,21 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
-/**
- * Object dependency tracker.
- * <br>
- * Dependency are denoted by: X -> Y, which means "Y depends on X"<br>
- * In this implementation:<br>
- * - Dependencies may be satisfied, or not satisfied<br>
- * - The implementation tracks when the dependency for an object Y are fully satisfied. This occurs when:<br>
- * 1. No dependencies X->Y exist<br>
- * 2. All dependencies of the form X->Y have been marked as satisfied, via markSatisfied(x)<br>
- * - When a dependency is satisfied, any dependent (Ys) are checked to see if all their dependencies are satisfied<br>
- * - If a dependent has all dependencies satisfied, it is added to the "new all satisfied" queue for processing,
- * which can be accessed via {@link #hasNewAllSatisfied()}, {@link #getNewAllSatisfied()} and {@link #getNewAllSatisfiedList()}<br>
- * <br>
- * Note: Two types of dependencies exist<br>
- * 1. Standard dependencies - i.e., "Y depends on X"<br>
- * 2. "Or" dependencies - i.e., "Y depends on (A or B)".<br>
- * For Or dependencies of the form "(A or B) -> Y", Y will be marked as "all dependencies satisfied" if either A or B is marked as satisfied.
- *
- * @param <T> For a dependency X -> Y, Y has type T
- * @param <D> For a dependency X -> Y, X has type D
- */
 @Slf4j
 public abstract class AbstractDependencyTracker<T, D> {
     @Getter
     private final Map<T, Set<D>> dependencies;                              //Key: the dependent. Value: all things that the key depends on
     @Getter
     private final Map<T, Set<Pair<D, D>>> orDependencies;                    //Key: the dependent. Value: the set of OR dependencies
+    @Getter
     private final Map<D, Set<T>> reverseDependencies = new HashMap<>();     //Key: the dependee. Value: The set of all dependents that depend on this value
+    @Getter
     private final Map<D, Set<T>> reverseOrDependencies = new HashMap<>();
+    @Getter
     private final Set<D> satisfiedDependencies = new HashSet<>();           //Mark the dependency as satisfied. If not in set: assumed to not be satisfied
-
+    @Getter
     private final Set<T> allSatisfied;                                      //Set of all dependent values (Ys) that have all dependencies satisfied
+    @Getter
     private final Queue<T> allSatisfiedQueue = new LinkedList<>();          //Queue for *new* "all satisfied" values. Values are removed using the "new all satisfied" methods
 
 

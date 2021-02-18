@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ops.impl.reduce;
 
@@ -28,11 +32,6 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.List;
 
-/**
- * Matrix multiplication/dot product Backprop
- *
- * @author Paul Dubs
- */
 @EqualsAndHashCode
 public class MmulBp extends DynamicCustomOp {
 
@@ -90,7 +89,7 @@ public class MmulBp extends DynamicCustomOp {
 
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 inputs to matmul_bp op, got %s", dataTypes);
         Preconditions.checkState(dataTypes.get(0).isFPType() && dataTypes.get(1).isFPType() && dataTypes.get(0).isFPType(), "Inputs to matmul_bp op must both be a floating" +
                 "point type: got %s", dataTypes);

@@ -1,26 +1,32 @@
 #!/usr/bin/env bash
 
-################################################################################
-# Copyright (c) 2015-2018 Skymind, Inc.
 #
-# This program and the accompanying materials are made available under the
-# terms of the Apache License, Version 2.0 which is available at
-# https://www.apache.org/licenses/LICENSE-2.0.
+# /* ******************************************************************************
+#  *
+#  *
+#  * This program and the accompanying materials are made available under the
+#  * terms of the Apache License, Version 2.0 which is available at
+#  * https://www.apache.org/licenses/LICENSE-2.0.
+#  *
+#  *  See the NOTICE file distributed with this work for additional
+#  *  information regarding copyright ownership.
+#  * Unless required by applicable law or agreed to in writing, software
+#  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  * License for the specific language governing permissions and limitations
+#  * under the License.
+#  *
+#  * SPDX-License-Identifier: Apache-2.0
+#  ******************************************************************************/
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-#
-# SPDX-License-Identifier: Apache-2.0
-################################################################################
 
-# This shell script is adapted from Apache Flink (in turn, adapted from Apache Spark) some modifications.
+
+
+
 
 set -e
 
-VALID_VERSIONS=( 9.2 10.0 10.1 10.2 11.0 )
+VALID_VERSIONS=( 9.2 10.0 10.1 10.2 11.0 11.1 11.2 )
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <cuda version to be used>
@@ -47,6 +53,14 @@ check_cuda_version() {
 check_cuda_version "$VERSION"
 
 case $VERSION in
+  11.2)
+    VERSION2="8.1"
+    VERSION3="1.5.5-SNAPSHOT"
+    ;;
+  11.1)
+    VERSION2="8.0"
+    VERSION3="1.5.5-SNAPSHOT"
+    ;;
   11.0)
     VERSION2="8.0"
     VERSION3="1.5.4"
