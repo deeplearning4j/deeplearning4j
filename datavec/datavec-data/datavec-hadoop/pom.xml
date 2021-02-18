@@ -37,7 +37,7 @@
 
         <dependency>
             <groupId>io.netty</groupId>
-            <artifactId>netty</artifactId>
+            <artifactId>netty-all</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
