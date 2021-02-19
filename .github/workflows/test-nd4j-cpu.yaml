@@ -1,0 +1,12 @@
+name: nd4j
+on:
+  push:
+    - /*
+  pull_request:
+    paths:
+      - /*
+jobs:
+ linux-x86_64:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: ./.github/actions/build-dl4j-cpu
