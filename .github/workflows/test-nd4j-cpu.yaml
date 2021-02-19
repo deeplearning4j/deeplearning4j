@@ -1,7 +1,8 @@
 name: nd4j
 on:
   push:
-    - /*
+    paths:
+      - /*
   pull_request:
     paths:
       - /*
