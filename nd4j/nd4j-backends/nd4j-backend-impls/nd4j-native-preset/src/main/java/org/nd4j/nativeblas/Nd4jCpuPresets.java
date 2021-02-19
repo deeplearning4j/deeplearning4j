@@ -139,6 +139,13 @@ import java.util.Scanner;
                                               "ops/declarable/headers/loss.h",
                                               "ops/declarable/headers/datatypes.h",
                                               "ops/declarable/headers/third_party.h",
+                                              "openblas_config.h",
+                                              "cblas.h",
+                                              "lapacke_config.h",
+                                              "lapacke_mangling.h",
+                                              "lapack.h",
+                                              "lapacke.h",
+                                              "lapacke_utils.h",
                                               "cnpy/cnpy.h"
                                    },
                                 compiler = {"cpp11", "nowarnings"},
@@ -166,6 +173,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
     public void map(InfoMap infoMap) {
         infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE",
                              "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
+               .put(new Info("openblas_config.h", "cblas.h", "lapacke_config.h", "lapacke_mangling.h", "lapack.h", "lapacke.h", "lapacke_utils.h").skip())
                         .put(new Info("NativeOps.h", "build_info.h").objectify())
                         .put(new Info("OpaqueTadPack").pointerTypes("OpaqueTadPack"))
                         .put(new Info("OpaqueResultWrapper").pointerTypes("OpaqueResultWrapper"))

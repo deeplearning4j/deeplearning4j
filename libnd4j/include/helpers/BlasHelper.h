@@ -23,6 +23,10 @@
 #ifndef LIBND4J_BLAS_HELPER_H
 #define LIBND4J_BLAS_HELPER_H
 
+// work around conflict with OpenBLAS
+struct bfloat16;
+#define BFLOAT16 BFLOAT16
+
 #include <system/pointercast.h>
 #include <types/float16.h>
 #include <cblas.h>
