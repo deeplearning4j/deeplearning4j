@@ -1,11 +1,9 @@
 name: nd4j
 on:
   push:
-    paths:
-      - /*
   pull_request:
-    paths:
-      - /*
+
+
 jobs:
  linux-x86_64:
     runs-on: ubuntu-20.04
