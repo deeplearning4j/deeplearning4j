@@ -27,7 +27,6 @@ RUN apt-get -qqy update && \
     update-java-alternatives --set java-1.8.0-openjdk && \
      apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-ENV M2_HOME=/opt/maven
 
 ENV M2_HOME /opt/maven
 RUN mkdir -p ${M2_HOME} && \
@@ -53,15 +52,5 @@ RUN curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/proto
     rm -rf protobuf-3.5.1
 
 
-ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk \
-    M2_HOME=/opt/maven \
-    MAVEN_HOME=/opt/maven
-
-
-
-RUN mkdir -p .gnupg
-
-ENV PATH=/opt/sbt/bin:/opt/cmake/bin:/opt/protobuf/bin:${MAVEN_HOME}/bin:${PATH} \
-    JAVA_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap ${JAVA_OPTS}"
 
 ENTRYPOINT ["mvn","-Ptestresources","-Ptest-nd4j-native","-Dlibnd4j.chip=cpu","clean","test"]
