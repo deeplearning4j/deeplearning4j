@@ -1,4 +1,5 @@
 ARG BASEIMAGE_VERSION=18.04
+
 FROM ubuntu:${BASEIMAGE_VERSION} AS base_image
 
 FROM base_image AS build_tools
@@ -20,14 +21,14 @@ RUN mkdir -p ${M2_HOME} && \
     curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
         tar -xzC ${M2_HOME} --strip-components=1
 
-RUN curl -fsSL https://cmake.org/files/v3.15/cmake-3.15.5.tar.gz \
+RUN curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
     | tar xz && \
-    cd cmake-3.15.5 && \
+    cd cmake-3.19.0 && \
     ./configure --prefix=/opt/cmake && \
     make -j2 && \
     make install && \
     cd .. && \
-    rm -r cmake-3.15.5
+    rm -r cmake-3.19.0
 
 RUN curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
     | tar xz && \
@@ -64,5 +65,4 @@ RUN mkdir -p .gnupg
 ENV PATH=/opt/sbt/bin:/opt/cmake/bin:/opt/protobuf/bin:${MAVEN_HOME}/bin:${PATH} \
     JAVA_OPTS="-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap ${JAVA_OPTS}"
 
-CMD ["cat"]
-
+ENTRYPOINT["mvn","-Ptestresources","-Ptest-nd4j-native","-Dlibnd4j.chip=cpu","clean","test"]
