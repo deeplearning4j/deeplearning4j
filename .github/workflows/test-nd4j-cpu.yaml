@@ -8,4 +8,5 @@ jobs:
  linux-x86_64:
     runs-on: ubuntu-20.04
     steps:
+      - uses:  actions/checkout@v2
       - uses: ./.github/actions/build-dl4j-cpu
