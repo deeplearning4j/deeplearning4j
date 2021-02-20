@@ -2,4 +2,4 @@ name: 'Build dl4j on cpu'
 description: 'Build dl4j on cpu'
 runs:
   using: "docker"
-  image: "Dockerfile.centos"
+  image: "Dockerfile"
