@@ -28,6 +28,9 @@ RUN apt-get -qqy update && \
      apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV M2_HOME /opt/maven
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-amd64
+ENV PATH $PATH:/opt/cmake/bin:/opt/protobuf/bin:/opt/maven/bin:/usr/bin:/usr/lib/jvm/java-8-openjdk-amd64/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
+
 RUN mkdir -p ${M2_HOME} && \
     curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
         tar -xzC ${M2_HOME} --strip-components=1
@@ -50,6 +53,6 @@ RUN curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/proto
     cd .. && \
     rm -rf protobuf-3.5.1
 
-
+RUN wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip && cd dl4j-test-resources-master && mvn clean install -DskipTests
 
 ENTRYPOINT ["mvn","-Ptestresources","-Ptest-nd4j-native","-Dlibnd4j.chip=cpu","clean","test"]
