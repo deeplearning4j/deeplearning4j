@@ -11,6 +11,7 @@ RUN apt-get -qqy update && \
     apt-get -y --no-install-recommends install \
         wget \
         curl \
+        unzip \
         apt-transport-https gnupg \
         ca-certificates \
         software-properties-common \
