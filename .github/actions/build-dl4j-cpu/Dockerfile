@@ -11,22 +11,21 @@ RUN apt-get -qqy update && \
     apt-get -y --no-install-recommends install \
         wget \
         curl \
+        apt-transport-https gnupg \
         ca-certificates \
         software-properties-common \
         git \
         build-essential \
         gnupg-agent \
         dirmngr \
-        openjdk-8-jdk-headless \
+        openjdk-8-jdk \
         libssl-dev \
          curl \
            ca-certificates \
         # Required for Datavec NativeImageLoader
         libgtk2.0-dev && \
      apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    update-java-alternatives --set java-1.8.0-openjdk && \
      apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 
 ENV M2_HOME /opt/maven
 RUN mkdir -p ${M2_HOME} && \

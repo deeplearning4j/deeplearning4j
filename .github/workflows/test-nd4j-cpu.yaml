@@ -13,6 +13,6 @@ jobs:
         env:
           M2_HOME: /opt/maven
           MAVEN_HOME: /opt/maven
-          JAVA_HOME: /usr/lib/jvm/java-8-openjdk
-          PATH: /opt/cmake/bin:/opt/protobuf/bin:/opt/maven/bin:/usr/bin:/usr/lib/jvm/java-8-openjdk/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
+          JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
+          PATH: /opt/cmake/bin:/opt/protobuf/bin:/opt/maven/bin:/usr/bin:/usr/lib/jvm/java-8-openjdk-amd64/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
           JAVA_OPTS: -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
