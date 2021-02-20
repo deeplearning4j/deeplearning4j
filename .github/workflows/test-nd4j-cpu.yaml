@@ -14,5 +14,5 @@ jobs:
           M2_HOME: /opt/maven
           MAVEN_HOME: /opt/maven
           JAVA_HOME: /usr/lib/jvm/java-8-openjdk
-          PATH: /opt/sbt/bin:/opt/cmake/bin:/opt/protobuf/bin:$MAVEN_HOME/bin:$PATH
+          PATH: /opt/cmake/bin:/opt/protobuf/bin:/opt/maven/bin:/usr/bin:/usr/lib/jvm/java-8-openjdk/bin
           JAVA_OPTS: -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap
