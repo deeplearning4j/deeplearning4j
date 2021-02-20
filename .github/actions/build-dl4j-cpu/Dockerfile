@@ -9,10 +9,23 @@ ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get -qqy update && \
     apt-get -y --no-install-recommends install \
+        wget \
         curl \
         ca-certificates \
-        build-essential && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+        software-properties-common \
+        git \
+        build-essential \
+        gnupg-agent \
+        dirmngr \
+        openjdk-8-jdk-headless \
+        libssl-dev \
+         curl \
+           ca-certificates \
+        # Required for Datavec NativeImageLoader
+        libgtk2.0-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    update-java-alternatives --set java-1.8.0-openjdk &&
+     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV M2_HOME=/opt/maven
 
@@ -44,22 +57,7 @@ ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk \
     M2_HOME=/opt/maven \
     MAVEN_HOME=/opt/maven
 
-RUN apt-get -qqy update && \
-    apt-get -y --no-install-recommends install \
-        wget \
-        curl \
-        ca-certificates \
-        software-properties-common \
-        git \
-        build-essential \
-        gnupg-agent \
-        dirmngr \
-        openjdk-8-jdk-headless \
-        libssl-dev \
-        # Required for Datavec NativeImageLoader
-        libgtk2.0-dev && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    update-java-alternatives --set java-1.8.0-openjdk
+
 
 RUN mkdir -p .gnupg
 
