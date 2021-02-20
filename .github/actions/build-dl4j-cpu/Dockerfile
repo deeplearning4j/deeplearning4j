@@ -38,9 +38,6 @@ RUN curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/proto
     cd .. && \
     rm -rf protobuf-3.5.1
 
-FROM base_image AS base_builder_image
-
-COPY --from=build_tools /opt /opt
 
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk \
     M2_HOME=/opt/maven \
