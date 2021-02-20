@@ -23,8 +23,8 @@ RUN apt-get -qqy update && \
            ca-certificates \
         # Required for Datavec NativeImageLoader
         libgtk2.0-dev && \
-    apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-    update-java-alternatives --set java-1.8.0-openjdk &&
+     apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+    update-java-alternatives --set java-1.8.0-openjdk && \
      apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 ENV M2_HOME=/opt/maven
