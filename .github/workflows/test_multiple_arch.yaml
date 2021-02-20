@@ -1,0 +1,112 @@
+on: [push, pull_request]
+
+jobs:
+  build_job:
+    # The host should always be linux
+    runs-on: ubuntu-18.04
+    name: Build on ${{ matrix.distro }} ${{ matrix.arch }}
+
+    # Run steps on a matrix of 3 arch/distro combinations
+    strategy:
+      matrix:
+        include:
+          - arch: aarch64
+            distro: ubuntu18.04
+          - arch: ppc64le
+            distro: ubuntu18.04
+          - arch: s390x
+            distro: ubuntu18.04
+
+    steps:
+      - uses: actions/checkout@v2.1.0
+      - uses: uraimo/run-on-arch-action@v2.0.5
+        name: Build artifact
+        id: build
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+
+          # Not required, but speeds up builds
+          githubToken: ${{ github.token }}
+
+
+          # Pass some environment variables to the container
+          env: | # YAML, but pipe character is necessary
+            ARCH: ${{ matrix.arch }}
+
+          # The shell to run commands with in the container
+          shell: /bin/sh
+
+          # Install some dependencies in the container. This speeds up builds if
+          # you are also using githubToken. Any dependencies installed here will
+          # be part of the container image that gets cached, so subsequent
+          # builds don't have to re-install them. The image layer is cached
+          # publicly in your project's package repository, so it is vital that
+          # no secrets are present in the container state or logs.
+          install: |
+
+           export DEBIAN_FRONTEND=noninteractive
+            export M2_HOME=/opt/maven
+
+
+            export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+            export PATH="$PATH":/opt/cmake/bin:/opt/protobuf/bin:/opt/maven/bin:/usr/bin:/usr/lib/jvm/java-8/bin:/bin:/usr/sbin:/sbin:/usr/local
+
+    if [[ "$ARCH" == "armv7" ]]; then
+          export JDK_ARCH=armhf
+        elif [[ "$CI_DEPLOY_PLATFORM" == "aarch64" ]]; then
+          export JDK_ARCH=arm64
+        elif [[ "$ARCH" == "ppc64le" ]]; then
+          export JDK_ARCH=ppc64el
+
+        fi
+             apt-get -qqy update && \
+                          apt-get -y --no-install-recommends install \
+                              wget \
+                              curl \
+                              unzip \
+                              apt-transport-https gnupg \
+                              ca-certificates \
+                              software-properties-common \
+                              git \
+                              build-essential \
+                              gnupg-agent \
+                              dirmngr \
+                              openjdk-8-jdk \
+                              libssl-dev \
+                               curl \
+                                 ca-certificates \
+                              # Required for Datavec NativeImageLoader
+                              libgtk2.0-dev && \
+                           apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+                           apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+                      mkdir -p $M2_HOME && \
+                          curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
+                              tar -xzC $M2_HOME --strip-components=1
+
+                      curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
+                          | tar xz && \
+                          cd cmake-3.19.0 && \
+                          ./configure --prefix=/opt/cmake && \
+                          make -j2 && \
+                          make install && \
+                          cd .. && \
+                          rm -r cmake-3.19.0
+
+                      curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
+                          | tar xz && \
+                          cd protobuf-3.5.1 && \
+                          ./configure --prefix=/opt/protobuf && \
+                          make -j2 && \
+                          make install && \
+                          cd .. && \
+                          rm -rf protobuf-3.5.1
+
+                       wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip && cd dl4j-test-resources-master && mvn clean
+
+
+          # Produce a binary artifact and place it in the mounted volume
+          run: |
+            mvn -Ptestresources -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
+
