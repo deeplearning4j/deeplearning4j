@@ -67,9 +67,6 @@ jobs:
 
 
 
-                    echo "/opt/cmake/bin" >> $GITHUB_PATH
-                    echo "/opt/protobuf/bin" >> $GITHUB_PATH
-                    echo "/opt/maven/bin" >> $GITHUB_PATH
 
                     mkdir -p "$M2_HOME" && \
                     curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
@@ -96,6 +93,10 @@ jobs:
                     wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip && cd dl4j-test-resources-master && mvn clean
 
           run: |
+            echo "/opt/cmake/bin" >> $GITHUB_PATH
+            echo "/opt/protobuf/bin" >> $GITHUB_PATH
+            echo "/opt/maven/bin" >> $GITHUB_PATH
+
               echo "RUNNING ARCH ${{ matrix.arch }}"
                        case "${{ matrix.arch }}" in
                          armv7)
