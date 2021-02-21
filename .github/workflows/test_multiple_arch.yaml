@@ -19,7 +19,7 @@ jobs:
             distro: ubuntu18.04
 
     steps:
-      - uses: actions/checkout@v2.1.0
+      - uses: actions/checkout@v2
       - uses: uraimo/run-on-arch-action@v2.0.5
         name: Build and test with ${{ matrix.arch }} ${{ matrix.distro }}
         id: build
