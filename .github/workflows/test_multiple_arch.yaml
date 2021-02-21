@@ -43,54 +43,54 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
-             apt-get -y --no-install-recommends install curl
-            mkdir -p "/opt/maven" && \
-                             curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
-                                               tar -xzC "/opt/maven" --strip-components=1
-            export PATH="/opt/maven/bin:$PATH"
-            mvn --version
-            curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
-                                       | tar xz && \
-                                       cd cmake-3.19.0 && \
-                                       ./configure --prefix=/opt/cmake && \
-                                       make -j2 && \
-                                       make install && \
-                                       cd .. && \
-                                       rm -r cmake-3.19.0
-            export PATH="/opt/cmake/bin:$PATH"
-            cmake --version
+                  apt-get -yq update && apt-get -y --no-install-recommends install curl
+                   mkdir -p "/opt/maven" && \
+                                   curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
+                                                     tar -xzC "/opt/maven" --strip-components=1
+                  export PATH="/opt/maven/bin:$PATH"
+                  mvn --version
+                  curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
+                                             | tar xz && \
+                                             cd cmake-3.19.0 && \
+                                             ./configure --prefix=/opt/cmake && \
+                                             make -j2 && \
+                                             make install && \
+                                             cd .. && \
+                                             rm -r cmake-3.19.0
+                  export PATH="/opt/cmake/bin:$PATH"
+                  cmake --version
 
-            apt-get -yq update && \
-             apt-get -y --no-install-recommends install \
-                                                  wget \
-                                                  curl \
-                                                  unzip \
-                                                  apt-transport-https gnupg \
-                                                  ca-certificates \
-                                                  software-properties-common \
-                                                  git \
-                                                  build-essential \
-                                                  gnupg-agent \
-                                                  dirmngr \
-                                                 default-jre-headless openjdk-8-jdk-headless \
-                                                  libssl-dev \
-                                                   curl \
-                                                     ca-certificates \
-                                                  libgtk2.0-dev
-
-
+                   
+                   apt-get -y --no-install-recommends install \
+                                                        wget \
+                                                        curl \
+                                                        unzip \
+                                                        apt-transport-https gnupg \
+                                                        ca-certificates \
+                                                        software-properties-common \
+                                                        git \
+                                                        build-essential \
+                                                        gnupg-agent \
+                                                        dirmngr \
+                                                       default-jre-headless openjdk-8-jdk-headless \
+                                                        libssl-dev \
+                                                         curl \
+                                                           ca-certificates \
+                                                        libgtk2.0-dev
 
 
-                    curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
-                                  | tar xz && \
-                                  cd protobuf-3.5.1 && \
-                                  ./configure --prefix=/opt/protobuf && \
-                                  make -j2 && \
-                                  make install && \
-                                  cd .. && \
-                                  rm -rf protobuf-3.5.1
 
-                    wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip && cd dl4j-test-resources-master && mvn clean
+
+                          curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
+                                        | tar xz && \
+                                        cd protobuf-3.5.1 && \
+                                        ./configure --prefix=/opt/protobuf && \
+                                        make -j2 && \
+                                        make install && \
+                                        cd .. && \
+                                        rm -rf protobuf-3.5.1
+
+                          wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip && cd dl4j-test-resources-master && mvn clean
 
           run: |
             echo "Begin run"
