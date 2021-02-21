@@ -43,7 +43,6 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
-            echo "APT::Get::Assume-Yes \"true\";" > /etc/apt/apt.conf.d/90assumeyes
             apt-get -yq update && \
             apt-get -y --no-install-recommends install \
                                                   wget \
