@@ -8,16 +8,15 @@ jobs:
       - uses: actions/checkout@v2
       - name: Run tests on linux-x86_64
         shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          M2_HOME: /opt/maven
+          JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64
         run: |
 
-          export DEBIAN_FRONTEND=noninteractive
-          export M2_HOME=/opt/maven
-
-
-           export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-           export PATH="$PATH":/opt/cmake/bin:/opt/protobuf/bin:/opt/maven/bin:/usr/bin:/usr/lib/jvm/java-8/bin:/bin:/usr/sbin:/sbin:/usr/local
-
-
+          echo "/opt/cmake/bin" >> $GITHUB_PATH
+          echo "/opt/protobuf/bin" >> $GITHUB_PATH
+          echo "/opt/maven/bin" >> $GITHUB_PATH
            apt-get -qqy update && \
                              apt-get -y --no-install-recommends install \
                                  wget \

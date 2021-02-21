@@ -43,42 +43,52 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
-                    echo "RUNNING ARCH ${{ matrix.arch }}"
-                    if [[ "${{ matrix.arch }}" == "armv7" ]]; then
-                          export JDK_ARCH=armhf
-                        elif [[ "${{ matrix.arch }}" == "aarch64" ]]; then
-                          export JDK_ARCH=arm64
-                        elif [[ "${{ matrix.arch }}" == "ppc64le" ]]; then
-                          export JDK_ARCH=ppc64el
 
-                        fi
-                    echo "JDK ARCH $JDK_ARCH"
-                    export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-"$JDK_ARCH"
-                    export PATH="$PATH":/opt/cmake/bin:/opt/protobuf/bin:/opt/maven/bin:/usr/bin:/usr/lib/jvm/java-8-openjdk-"$JDK_ARCH"/bin:/bin:/usr/sbin:/sbin:/usr/local
+            apt-get -qqy update && \
+            apt-get -y --no-install-recommends install \
+                                                  wget \
+                                                  curl \
+                                                  unzip \
+                                                  apt-transport-https gnupg \
+                                                  ca-certificates \
+                                                  software-properties-common \
+                                                  git \
+                                                  build-essential \
+                                                  gnupg-agent \
+                                                  dirmngr \
+                                                  openjdk-8-jdk \
+                                                  libssl-dev \
+                                                   curl \
+                                                     ca-certificates \
+                                                  libgtk2.0-dev && \
+                                               apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
+                                               apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-                    apt-get -qqy update && \
-                                      apt-get -y --no-install-recommends install \
-                                          wget \
-                                          curl \
-                                          unzip \
-                                          apt-transport-https gnupg \
-                                          ca-certificates \
-                                          software-properties-common \
-                                          git \
-                                          build-essential \
-                                          gnupg-agent \
-                                          dirmngr \
-                                          openjdk-8-jdk \
-                                          libssl-dev \
-                                           curl \
-                                             ca-certificates \
-                                          libgtk2.0-dev && \
-                                       apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-                                       apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-                    mkdir -p $M2_HOME && \
+
+                  echo "RUNNING ARCH ${{ matrix.arch }}"
+                  case "${{ matrix.arch }}" in
+                    armv7)
+                        echo "{JAVA_HOME}={/usr/lib/jvm/java-8-openjdk-armhf}" >> $GITHUB_ENV
+                        echo "$HOME/.local/bin" >> $GITHUB_PATH
+                        ;;
+                      aarch64)
+                        echo "{JAVA_HOME}={/usr/lib/jvm/java-8-openjdk-arm64}" >> $GITHUB_ENV
+                        echo "$HOME/.local/bin" >> $GITHUB_PATH
+                        ;;
+                    ppc64le)
+                          echo "{JAVA_HOME}={/usr/lib/jvm/java-8-openjdk-ppc64el}" >> $GITHUB_ENV
+
+                        ;;
+                    esac
+
+                    echo "/opt/cmake/bin" >> $GITHUB_PATH
+                    echo "/opt/protobuf/bin" >> $GITHUB_PATH
+                    echo "/opt/maven/bin" >> $GITHUB_PATH
+
+                    mkdir -p "$M2_HOME" && \
                     curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
-                                      tar -xzC $M2_HOME --strip-components=1
+                                      tar -xzC "$M2_HOME" --strip-components=1
 
                     curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
                                   | tar xz && \
