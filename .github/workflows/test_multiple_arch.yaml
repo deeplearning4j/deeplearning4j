@@ -30,7 +30,6 @@ jobs:
 
           # Pass some environment variables to the container
           env: | # YAML, but pipe character is necessary
-            ARCH: ${{ matrix.arch }}
             DEBIAN_FRONTEND: noninteractive
             M2_HOME: /opt/maven
 
@@ -44,7 +43,7 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
-                    echo "RUNNING ARCH $ARCH"
+                    echo "RUNNING ARCH ${{ matrix.arch }}"
                     if [[ "${{ matrix.arch }}" == "armv7" ]]; then
                           export JDK_ARCH=armhf
                         elif [[ "${{ matrix.arch }}" == "aarch64" ]]; then
