@@ -41,7 +41,7 @@ jobs:
            mkdir -p /opt/maven && \
            curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
                              tar -xzC /opt/maven --strip-components=1
-
+           /opt/maven/bin/mvn --version
            curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
                          | tar xz && \
                          cd cmake-3.19.0 && \
@@ -63,7 +63,7 @@ jobs:
            wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
           echo "Extracted test resources"
           echo "Verifying programs on path. Path is $PATH"
-          export PATH="$PATH:/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin"
+          export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
           mvn --version
           cmake --version
