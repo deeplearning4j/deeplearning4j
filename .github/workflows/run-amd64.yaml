@@ -64,7 +64,10 @@ jobs:
           echo "Extracted test resources"
           echo "Verifying programs on path. Path is $PATH"
           export PATH="$PATH:/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin"
-          echo "Path post update is $PATH"
+          echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
+          ls /opt/maven
+          ls /opt/cmake
+          ls /opt/protoc
           mvn --version
           cmake --version
           protoc --version
