@@ -51,13 +51,13 @@ jobs:
                   echo "RUNNING ARCH ${{ matrix.arch }}"
                             case "${{ matrix.arch }}" in
                               armv7)
-                                  export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf/jre
+                                  export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-armhf/jre
                                   ;;
                                 aarch64)
-                                  export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-arm64/jre"
+                                  export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-arm64/jre"
                                   ;;
                               ppc64le)
-                                    export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-ppc64el/jre
+                                    export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-ppc64el/jre
                                   ;;
                   esac
                   mvn --version
@@ -113,13 +113,13 @@ jobs:
               echo "RUNNING ARCH ${{ matrix.arch }}"
                        case "${{ matrix.arch }}" in
                          armv7)
-                             export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf/jre
+                             export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-armhf/jre
                              ;;
                            aarch64)
-                             export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-arm64/jre"
+                             export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-arm64/jre"
                              ;;
                          ppc64le)
-                               export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-ppc64el/jre
+                               export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-ppc64el/jre
                              ;;
                 esac
 
