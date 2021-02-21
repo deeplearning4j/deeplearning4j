@@ -43,6 +43,7 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
+            rm -rf /var/lib/apt/lists/*
             apt-get -qqy update && \
             apt-get -y --no-install-recommends install \
                                                   wget \
