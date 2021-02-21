@@ -43,11 +43,23 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
-                  apt-get -yq update && apt-get -y --no-install-recommends install curl
+                  apt-get -yq update && apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless
                    mkdir -p "/opt/maven" && \
                                    curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
                                                      tar -xzC "/opt/maven" --strip-components=1
                   export PATH="/opt/maven/bin:$PATH"
+                  echo "RUNNING ARCH ${{ matrix.arch }}"
+                            case "${{ matrix.arch }}" in
+                              armv7)
+                                  export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf/jre
+                                  ;;
+                                aarch64)
+                                  export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-arm64/jre"
+                                  ;;
+                              ppc64le)
+                                    export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-ppc64el/jre
+                                  ;;
+                  esac
                   mvn --version
                   curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
                                              | tar xz && \
@@ -60,7 +72,7 @@ jobs:
                   export PATH="/opt/cmake/bin:$PATH"
                   cmake --version
 
-                   
+
                    apt-get -y --no-install-recommends install \
                                                         wget \
                                                         curl \
