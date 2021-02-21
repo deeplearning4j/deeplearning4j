@@ -55,7 +55,7 @@ jobs:
                                                   build-essential \
                                                   gnupg-agent \
                                                   dirmngr \
-                                                  openjdk-8-jdk \
+                                                 default-jre-headless openjdk-8-jdk-headless \
                                                   libssl-dev \
                                                    curl \
                                                      ca-certificates \
@@ -100,13 +100,13 @@ jobs:
               echo "RUNNING ARCH ${{ matrix.arch }}"
                        case "${{ matrix.arch }}" in
                          armv7)
-                             echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf" >> $GITHUB_ENV
+                             echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf/jre" >> $GITHUB_ENV
                              ;;
                            aarch64)
-                             echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-arm64" >> $GITHUB_ENV
+                             echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-arm64/jre" >> $GITHUB_ENV
                              ;;
                          ppc64le)
-                               echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-ppc64el" >> $GITHUB_ENV
+                               echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-ppc64el/jre" >> $GITHUB_ENV
                              ;;
                 esac
                mvn -Ptestresources -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test

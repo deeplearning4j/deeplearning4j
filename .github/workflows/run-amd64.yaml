@@ -29,7 +29,8 @@ jobs:
                                  build-essential \
                                  gnupg-agent \
                                  dirmngr \
-                                 openjdk-8-jdk \
+                                 default-jre-headless \
+                              openjdk-8-jdk-headless \
                                  libssl-dev \
                                   curl \
                                     ca-certificates \
