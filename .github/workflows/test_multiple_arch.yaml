@@ -1,7 +1,8 @@
-on: [push, pull_request]
-
+on:
+  push:
+  pull_request:
 jobs:
-  build_job:
+  build_and_test:
     # The host should always be linux
     runs-on: ubuntu-18.04
     name: Build on ${{ matrix.distro }} ${{ matrix.arch }}
