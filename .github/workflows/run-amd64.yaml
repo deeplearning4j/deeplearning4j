@@ -60,5 +60,11 @@ jobs:
                          cd .. && \
                          rm -rf protobuf-3.5.1
 
-           wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip && cd dl4j-test-resources-master && mvn clean
+           wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
+          echo "Extracted test resources"
+          echo "Verifying programs on path. Path is $PATH"
+          mvn --version
+          cmake --version
+          protoc --version
+          cd dl4j-test-resources-master && mvn clean
            mvn -Ptestresources -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
