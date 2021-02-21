@@ -60,9 +60,7 @@ jobs:
                                                   libssl-dev \
                                                    curl \
                                                      ca-certificates \
-                                                  libgtk2.0-dev && \
-                                               apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && \
-                                               apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+                                                  libgtk2.0-dev
 
 
 

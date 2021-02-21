@@ -17,7 +17,6 @@ jobs:
           echo "/opt/cmake/bin" >> $GITHUB_PATH
           echo "/opt/protobuf/bin" >> $GITHUB_PATH
           echo "/opt/maven/bin" >> $GITHUB_PATH
-          rm -rf /var/lib/apt/lists/*
            apt-get -qqy update && \
                              apt-get -y --no-install-recommends install \
                                  wget \
@@ -35,8 +34,7 @@ jobs:
                                  libssl-dev \
                                   curl \
                                     ca-certificates \
-                                 libgtk2.0-dev && \
-                              apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+                                 libgtk2.0-dev
 
            mkdir -p /opt/maven && \
            curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
