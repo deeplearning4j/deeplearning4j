@@ -43,7 +43,6 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
-
             apt-get -qqy update && \
             apt-get -y --no-install-recommends install \
                                                   wget \
@@ -66,18 +65,7 @@ jobs:
 
 
 
-                  echo "RUNNING ARCH ${{ matrix.arch }}"
-                  case "${{ matrix.arch }}" in
-                    armv7)
-                        echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf" >> $GITHUB_ENV
-                        ;;
-                      aarch64)
-                        echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-arm64" >> $GITHUB_ENV
-                        ;;
-                    ppc64le)
-                          echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-ppc64el" >> $GITHUB_ENV
-                        ;;
-                    esac
+
 
                     echo "/opt/cmake/bin" >> $GITHUB_PATH
                     echo "/opt/protobuf/bin" >> $GITHUB_PATH
@@ -108,5 +96,17 @@ jobs:
                     wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip && cd dl4j-test-resources-master && mvn clean
 
           run: |
+              echo "RUNNING ARCH ${{ matrix.arch }}"
+                       case "${{ matrix.arch }}" in
+                         armv7)
+                             echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-armhf" >> $GITHUB_ENV
+                             ;;
+                           aarch64)
+                             echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-arm64" >> $GITHUB_ENV
+                             ;;
+                         ppc64le)
+                               echo "JAVA_HOME=/usr/lib/jvm/java-8-openjdk-ppc64el" >> $GITHUB_ENV
+                             ;;
+                esac
                mvn -Ptestresources -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
 
