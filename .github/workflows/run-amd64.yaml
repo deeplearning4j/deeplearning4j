@@ -17,8 +17,8 @@ jobs:
           echo "/opt/cmake/bin" >> $GITHUB_PATH
           echo "/opt/protobuf/bin" >> $GITHUB_PATH
           echo "/opt/maven/bin" >> $GITHUB_PATH
-           apt-get -yq update && \
-                             apt-get -y --no-install-recommends install \
+          sudo apt-get -yq update && \
+                             sudo apt-get -y --no-install-recommends install \
                                  wget \
                                  curl \
                                  unzip \
