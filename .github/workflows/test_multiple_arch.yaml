@@ -68,16 +68,13 @@ jobs:
                                                         curl \
                                                         unzip \
                                                         apt-transport-https gnupg \
-                                                        ca-certificates \
                                                         software-properties-common \
                                                         git \
                                                         build-essential \
                                                         gnupg-agent \
                                                         dirmngr \
-                                                       default-jre-headless openjdk-8-jdk-headless \
                                                         libssl-dev \
                                                          curl \
-                                                           ca-certificates \
                                                         libgtk2.0-dev
 
 
