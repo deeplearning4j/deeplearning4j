@@ -10,6 +10,8 @@ jobs:
     strategy:
       matrix:
         include:
+          - arch: amd64
+            distro: ubuntu18.04
           - arch: aarch64
             distro: ubuntu18.04
           - arch: ppc64le
@@ -20,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2.1.0
       - uses: uraimo/run-on-arch-action@v2.0.5
-        name: Build artifact
+        name: Build and test with ${{ matrix.arch }} ${{ matrix.distro }}
         id: build
         with:
           arch: ${{ matrix.arch }}
@@ -60,7 +62,7 @@ jobs:
           export JDK_ARCH=ppc64el
 
         fi
-             apt-get -qqy update && \
+        apt-get -qqy update && \
                           apt-get -y --no-install-recommends install \
                               wget \
                               curl \
