@@ -66,5 +66,5 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
-          cd dl4j-test-resources-master && mvn clean
+          cd dl4j-test-resources-master && mvn clean install -DskipTests && cd..
           mvn -Ptestresources -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test

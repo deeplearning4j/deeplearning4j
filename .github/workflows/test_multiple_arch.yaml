@@ -43,8 +43,8 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
-            sudo apt-get -yq update && \
-            sudo apt-get -y --no-install-recommends install \
+             apt-get -yq update && \
+             apt-get -y --no-install-recommends install \
                                                   wget \
                                                   curl \
                                                   unzip \
