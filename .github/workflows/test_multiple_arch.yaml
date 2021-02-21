@@ -50,7 +50,7 @@ jobs:
                     echo "RUNNING ARCH $ARCH"
                     if [[ "$ARCH" == "armv7" ]]; then
                           export JDK_ARCH=armhf
-                        elif [[ "$CI_DEPLOY_PLATFORM" == "aarch64" ]]; then
+                        elif [[ "$ARCH" == "aarch64" ]]; then
                           export JDK_ARCH=arm64
                         elif [[ "$ARCH" == "ppc64le" ]]; then
                           export JDK_ARCH=ppc64el
