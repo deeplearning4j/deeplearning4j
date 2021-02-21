@@ -3,6 +3,7 @@ on:
   pull_request:
 jobs:
   linux-x86_64:
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/check@v2.1.0
       - name: Run tests on linux-x86_64
