@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: uraimo/run-on-arch-action@v2.0.5
+      - uses: uraimo/run-on-arch-action@v2.0.8
         name: Build and test with ${{ matrix.arch }} ${{ matrix.distro }}
         id: build
         with:
