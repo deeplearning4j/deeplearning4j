@@ -34,6 +34,8 @@ jobs:
           # Pass some environment variables to the container
           env: | # YAML, but pipe character is necessary
             ARCH: ${{ matrix.arch }}
+            DEBIAN_FRONTEND: noninteractive
+            M2_HOME: /opt/maven
 
           # The shell to run commands with in the container
           shell: /bin/sh
@@ -45,14 +47,7 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
-
-                   export DEBIAN_FRONTEND=noninteractive
-                   export M2_HOME=/opt/maven
-
-
-                    export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
-                    export PATH="$PATH":/opt/cmake/bin:/opt/protobuf/bin:/opt/maven/bin:/usr/bin:/usr/lib/jvm/java-8/bin:/bin:/usr/sbin:/sbin:/usr/local
-
+                    echo "RUNNING ARCH $ARCH"
                     if [[ "$ARCH" == "armv7" ]]; then
                           export JDK_ARCH=armhf
                         elif [[ "$CI_DEPLOY_PLATFORM" == "aarch64" ]]; then
@@ -61,6 +56,9 @@ jobs:
                           export JDK_ARCH=ppc64el
 
                         fi
+                    echo "JDK ARCH $JDK_ARCH"
+                    export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-"$JDK_ARCH"
+                    export PATH="$PATH":/opt/cmake/bin:/opt/protobuf/bin:/opt/maven/bin:/usr/bin:/usr/lib/jvm/java-8-openjdk-"$JDK_ARCH"/bin:/bin:/usr/sbin:/sbin:/usr/local
 
                     apt-get -qqy update && \
                                       apt-get -y --no-install-recommends install \

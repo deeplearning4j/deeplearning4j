@@ -23,8 +23,7 @@ jobs:
                  export JDK_ARCH=arm64
                elif [[ "$ARCH" == "ppc64le" ]]; then
                  export JDK_ARCH=ppc64el
-
-               fi
+           fi
 
            apt-get -qqy update && \
                              apt-get -y --no-install-recommends install \
