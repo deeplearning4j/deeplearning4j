@@ -63,6 +63,8 @@ jobs:
            wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
           echo "Extracted test resources"
           echo "Verifying programs on path. Path is $PATH"
+          export PATH="$PATH:/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin"
+          echo "Path post update is $PATH"
           mvn --version
           cmake --version
           protoc --version
