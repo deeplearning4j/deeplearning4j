@@ -144,7 +144,7 @@ jobs:
     runs-on: windows-2019
     steps:
       - name: Install and run tests
-        shell: powershell
+        shell: cmd
         run: |
           echo Installing MSYS2
           C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake make patch gnupg wget"
