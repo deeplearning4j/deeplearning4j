@@ -1,6 +1,5 @@
 on:
   push:
-  pull_request:
 jobs:
   linux-x86_64:
     runs-on: ubuntu-18.04
@@ -147,44 +146,20 @@ jobs:
       - name: Install and run tests
         shell: powershell
         run: |
-            echo Installing MSYS2
-            C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake make patch gnupg"
-            C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-i686-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-i686-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-i686-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-i686-SDL mingw-w64-x86_64-ragel"
-            set "PATH=C:\msys64\usr\bin;%PATH%"
-            echo Installing Windows SDK 8.1
-          (New-Object System.Net.WebClient).DownloadFile('https://go.microsoft.com/fwlink/p/?LinkId=323507' -f $env:JAVA_VERSION, 'sdksetup.exe') ;
-            sdksetup.exe /features OptionId.WindowsDesktopSoftwareDevelopmentKit OptionId.NetFxSoftwareDevelopmentKit /quiet
-            echo Removing broken stuff from WSL and MSYS2
-            rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
-            call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
-            set MSYSTEM=MINGW64
-             set JAVA_VERSION=8.19.0.1-jdk8.0.112
-             set JAVA_MD5=70bbe971a9a6995a9e909b709ae52b3
-             set JAVA_HOME=C:\\zulu${JAVA_VERSION}-win_x64
-             (New-Object System.Net.WebClient).DownloadFile('https://cdn.azul.com/zulu/bin/zulu{0}-win_x64.zip' -f $env:JAVA_VERSION, 'openjdk.zip') ;
-             if ((Get-FileHash openjdk.zip -Algorithm md5).Hash -ne $env:JAVA_MD5) {exit 1} ;
-             Expand-Archive openjdk.zip -DestinationPath C:\ ;
-             $env:PATH = '{0}\bin;{1}' -f $env:JAVA_HOME, $env:PATH ;
-             [Environment]::SetEnvironmentVariable('PATH', $env:PATH, [EnvironmentVariableTarget]::Machine);
-             Remove-Item -Path openjdk.zip
-
-             C:\msys64\usr\bin\pacman.exe -Syu
-             C:\msys64\usr\bin\pacman.exe -Su
-             C:\msys64\usr\bin\pacman.exe -S \
-                 mingw-w64-x86_64-gcc \
-                 mingw-w64-x86_64-cmake \
-                 mingw-w64-x86_64-extra-cmake-modules \
-                 make \
-                 pkg-config \
-                 grep \
-                 sed \
-                 gzip \
-                 tar \
-                 mingw64/mingw-w64-x86_64-openblas \
-                 mingw-w64-x86_64-lz4 \
-                 mingw-w64-x86_64-gdb \
-                 mingw-w64-x86_64-make \
-                 mingw-w64-x86_64-ninja
+          echo Installing MSYS2
+          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake make patch gnupg"
+          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-i686-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-i686-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-i686-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-i686-SDL mingw-w64-x86_64-protobuf mingw-w64-x86_64-ragel"
+          set "PATH=C:\msys64\usr\bin;%PATH%"
+          echo Installing Windows SDK 8.1
+           curl -Lo sdksetup.exe https://go.microsoft.com/fwlink/p/?LinkId=323507
+          sdksetup.exe /features OptionId.WindowsDesktopSoftwareDevelopmentKit OptionId.NetFxSoftwareDevelopmentKit /quiet
+          echo Removing broken stuff from WSL and MSYS2
+          rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
+          call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
+          set MSYSTEM=MINGW64
+          curl -Lo https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
+          echo "Extracted test resources"
+          mvn -Ptestresources-Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
 
 
 

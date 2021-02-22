@@ -1,6 +1,5 @@
 on:
   push:
-  pull_request:
 jobs:
   build_and_test_cross_platform:
     # The host should always be linux
