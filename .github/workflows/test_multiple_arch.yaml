@@ -59,11 +59,8 @@ jobs:
                  apt-get -y --no-install-recommends install \
                                                         wget \
                                                         unzip \
-                                                        software-properties-common \
                                                         git \
                                                         build-essential \
-                                                        gnupg-agent \
-                                                        dirmngr \
-                                                        libgtk2.0-dev
+
 
 
