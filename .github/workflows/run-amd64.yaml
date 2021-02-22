@@ -157,7 +157,8 @@ jobs:
           rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
           call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           set MSYSTEM=MINGW64
-          curl -Lo https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
+          curl -Lo https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip
+          unzip master.zip
           echo "Extracted test resources"
           mvn -Ptestresources-Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
 
