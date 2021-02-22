@@ -9,6 +9,7 @@ jobs:
 
     # Run steps on a matrix of 2 arch/distro combinations
     strategy:
+      max-parallel: 1
       matrix:
         include:
           - arch: aarch64
