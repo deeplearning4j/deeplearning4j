@@ -56,5 +56,17 @@ jobs:
                                   ;;
                   esac
                   mvn --version
+                 apt-get -y --no-install-recommends install \
+                                                        wget \
+                                                        unzip \
+                                                        apt-transport-https gnupg \
+                                                        software-properties-common \
+                                                        git \
+                                                        build-essential \
+                                                        gnupg-agent \
+                                                        dirmngr \
+                                                        libssl-dev \
+                                                         curl \
+                                                        libgtk2.0-dev
 
 
