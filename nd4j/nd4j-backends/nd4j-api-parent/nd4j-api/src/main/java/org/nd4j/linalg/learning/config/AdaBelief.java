@@ -40,7 +40,7 @@ import java.util.Map;
 public class AdaBelief implements IUpdater {
 
     public static final double DEFAULT_LEARNING_RATE = 1e-3;
-    public static final double DEFAULT_EPSILON = 1e-8;
+    public static final double DEFAULT_EPSILON = 1e-14;
     public static final double DEFAULT_BETA1_MEAN_DECAY = 0.9;
     public static final double DEFAULT_BETA2_VAR_DECAY = 0.999;
 
