@@ -35,15 +35,8 @@ jobs:
 
           # The shell to run commands with in the container
           shell: /bin/sh
-
-          # Install some dependencies in the container. This speeds up builds if
-          # you are also using githubToken. Any dependencies installed here will
-          # be part of the container image that gets cached, so subsequent
-          # builds don't have to re-install them. The image layer is cached
-          # publicly in your project's package repository, so it is vital that
-          # no secrets are present in the container state or logs.
-          install: |
-                  apt-get -yq update && apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless
+          run: |
+               apt-get -yq update && apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless apt-utils
                    mkdir -p "/opt/maven" && \
                                    curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
                                                      tar -xzC "/opt/maven" --strip-components=1
@@ -65,7 +58,6 @@ jobs:
 
                    apt-get -y --no-install-recommends install \
                                                         wget \
-                                                        curl \
                                                         unzip \
                                                         apt-transport-https gnupg \
                                                         software-properties-common \
@@ -103,7 +95,7 @@ jobs:
 
                           wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip && cd dl4j-test-resources-master && mvn clean
 
-          run: |
+
             echo "Begin run"
             echo "/opt/cmake/bin" >> $GITHUB_PATH
             echo "/opt/protobuf/bin" >> $GITHUB_PATH
