@@ -56,7 +56,7 @@ jobs:
                                   ;;
                   esac
                   mvn --version
-                 apt-get -y --no-install-recommends install wget unzip git build-essential 
+                 apt-get -yq --no-install-recommends install  build-essential
 
 
 
