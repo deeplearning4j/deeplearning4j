@@ -42,3 +42,19 @@ jobs:
                apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless
                 mkdir -p "/opt/maven"
                curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar -xzC "/opt/maven" --strip-components=1
+               export PATH="/opt/maven/bin:$PATH"
+                   echo "RUNNING ARCH ${{ matrix.arch }}"
+                            case "${{ matrix.arch }}" in
+                              armv7)
+                                  export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-armhf/jre
+                                  ;;
+                                aarch64)
+                                  export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-arm64/jre"
+                                  ;;
+                              ppc64le)
+                                    export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-ppc64el/jre
+                                  ;;
+                  esac
+                  mvn --version
+
+
