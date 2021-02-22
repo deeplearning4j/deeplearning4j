@@ -38,7 +38,9 @@ jobs:
           run: |
                echo "Running install on architecture ${{ matrix.arch }}"
                apt-get -yq  update && apt-get install apt-utils
-               apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless
+            echo "After install on architecture ${{ matrix.arch }}"
+
+            apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless
                    mkdir -p "/opt/maven" && \
                                    curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
                                                      tar -xzC "/opt/maven" --strip-components=1
