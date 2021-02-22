@@ -37,9 +37,9 @@ jobs:
           shell: /bin/sh
           run: |
                echo "Running install on architecture ${{ matrix.arch }}"
-               apt-get -yq  update && apt-get install -y apt-utils
+               apt-get -yq  update && apt-get install -y apt-utils build-essential
                echo "After install on architecture ${{ matrix.arch }}"
-               apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless
+               apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless build-essential
                 mkdir -p "/opt/maven"
                curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar -xzC "/opt/maven" --strip-components=1
                export PATH="/opt/maven/bin:$PATH"
@@ -56,7 +56,6 @@ jobs:
                                   ;;
                   esac
                   mvn --version
-                 apt-get -yq --no-install-recommends install  build-essential
 
 
 
