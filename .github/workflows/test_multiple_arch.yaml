@@ -56,16 +56,10 @@ jobs:
                                   ;;
                   esac
                   mvn --version
-                  curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
-                                                                     | tar xz && \
-                                                                     cd cmake-3.19.0 && \
-                                                                     ./configure --prefix=/opt/cmake && \
-                                                                     make -j2 && \
-                                                                     make install && \
-                                                                     cd .. && \
-                                                                     rm -r cmake-3.19.0
-                         export PATH="/opt/cmake/bin:$PATH"
-                         cmake --version
+                  curl -fsSL http://cmake.org/files/v3.19/cmake-3.19.0.tar.gz | tar xz && cd cmake-3.19.0
+                   ./configure --prefix=/opt/cmake && make -j2 && make install && cd .. && rm -r cmake-3.19.0
+                  export PATH="/opt/cmake/bin:$PATH"
+                  cmake --version
 
 
 
