@@ -147,17 +147,17 @@ jobs:
         shell: powershell
         run: |
           echo Installing MSYS2
-          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake make patch gnupg curl"
+          C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm base-devel git tar pkg-config unzip p7zip zip autoconf autoconf-archive automake make patch gnupg wget"
           C:\msys64\usr\bin\bash -lc "pacman -S --needed --noconfirm mingw-w64-x86_64-nasm mingw-w64-x86_64-toolchain mingw-w64-x86_64-libtool mingw-w64-x86_64-gcc mingw-w64-i686-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-i686-gcc-fortran mingw-w64-x86_64-libwinpthread-git mingw-w64-i686-libwinpthread-git mingw-w64-x86_64-SDL mingw-w64-i686-SDL mingw-w64-x86_64-protobuf mingw-w64-x86_64-ragel"
           set "PATH=C:\msys64\usr\bin;%PATH%"
           echo Installing Windows SDK 8.1
-           curl -Lo sdksetup.exe https://go.microsoft.com/fwlink/p/?LinkId=323507
+          wget -o sdksetup.exe https://go.microsoft.com/fwlink/p/?LinkId=323507
           sdksetup.exe /features OptionId.WindowsDesktopSoftwareDevelopmentKit OptionId.NetFxSoftwareDevelopmentKit /quiet
           echo Removing broken stuff from WSL and MSYS2
           rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
           call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           set MSYSTEM=MINGW64
-          curl -Lo https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip
+          wget  https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip
           unzip master.zip
           echo "Extracted test resources"
           mvn -Ptestresources-Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
