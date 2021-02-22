@@ -154,7 +154,6 @@ jobs:
           wget -O  sdksetup.exe https://go.microsoft.com/fwlink/p/?LinkId=323507
           .\sdksetup.exe /features OptionId.WindowsDesktopSoftwareDevelopmentKit OptionId.NetFxSoftwareDevelopmentKit /quiet
           echo "Removing broken stuff from WSL and MSYS2"
-          rm "C:/WINDOWS/system32/bash.EXE" "C:/msys64/mingw64/bin/cmake.exe" "C:/msys64/usr/bin/link.exe" "C:/msys64/usr/bin/python.exe"
           call "%ProgramFiles(x86)%\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" amd64
           set MSYSTEM=MINGW64
           wget -O master.zip https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip
