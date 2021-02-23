@@ -145,6 +145,29 @@ namespace sd {
 #if NOT_EXCLUDED(OP_adam_updater)
             DECLARE_CONFIGURABLE_OP(adam_updater, 3, 3, true, 0, 0);
 #endif
+            // AdaBelief
+            /* Input arrays :
+            *  0 - input array with gradients.
+            *  1 - gradient state V
+            *  2 - gradient state M
+            * Optional :
+            * 3 - scalar learning rate value
+            * 4 - beta 1 value
+            * 5 - beta 2 value
+            * 6 - epsilon
+            * Optional:
+            * T args
+            * 0 - scalar learning rate value
+            * 1 - beta 1 value
+            * 2 - beta 2 value
+            * 3 - epsilon
+            * Optional:
+            * I args
+            * 0 - iteration
+            */
+#if NOT_EXCLUDED(OP_adabelief_updater)
+            DECLARE_CONFIGURABLE_OP(adabelief_updater, 3, 3, true, 0, 0);
+#endif
          // AdaDelta
          /* Input arrays :
          *  0 - input array with gradients.
