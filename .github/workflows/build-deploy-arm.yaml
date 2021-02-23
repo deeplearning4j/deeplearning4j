@@ -97,7 +97,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: konduitai/run-on-arch-action/@actions
+      - uses: konduitai/run-on-arch-action/
         name: Build and test with ${{ matrix.arch }} ${{ matrix.distro }}
         id: build
         with:
