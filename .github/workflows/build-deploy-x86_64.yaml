@@ -252,7 +252,7 @@ jobs:
           cd dl4j-test-resources-master && mvn clean install -DskipTests && cd ..
           mvn -Ptestresources -Ptest-nd4j-cuda -Dlibnd4j.chip=cuda clean install -DskipTests
 
-    android-x86_64:
+  android-x86_64:
       runs-on: ubuntu-18.04
       steps:
         - uses: actions/checkout@v2
@@ -323,7 +323,7 @@ jobs:
             cd dl4j-test-resources-master && mvn clean install -DskipTests && cd ..
             mvn -Ptestresources-Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
 
-    windows-x86_64:
+  windows-x86_64:
       runs-on: windows-2019
       steps:
         - name: Install and run tests
@@ -354,7 +354,7 @@ jobs:
 
 
 
-    mac-x86_64:
+  mac-x86_64:
       runs-on: macos-10.15
       steps:
         - uses: actions/checkout@v2
