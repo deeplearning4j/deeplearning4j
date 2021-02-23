@@ -347,9 +347,9 @@ jobs:
         - name: Run tests
           shell: cmd
           run: |
-
             set MSYSTEM=MINGW64
             call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+             set "PATH=C:\msys64\usr\bin;%PATH%"
             mvn -Ptestresources-Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
 
   windows-x86_64-cuda-11-2:
@@ -387,12 +387,12 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          set MSYSTEM=MINGW64
           set "CUDA_PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
           set "CUDA_PATH_V11_2=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
-          set "PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\libnvvp;%PATH%"
-          echo CUDA Version 11.2.182>"%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\version.txt"
+          set "PATH=C:\msys64\usr\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\libnvvp;%PATH%"
+          echo "CUDA Version 11.2.182" >"%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\version.txt"
           set PATH="C:\msys64\usr\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin\";%PATH%
-          set MSYSTEM=MINGW64
           mvn -Ptestresources-Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
 
 
@@ -410,5 +410,5 @@ jobs:
             echo "Extracted test resources"
             cd dl4j-test-resources-master && mvn clean install -DskipTests
             cd ..
-            mvn -Ptestresources-Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
+            mvn -Ptestresources-Djavacpp.platform=macosx-x86_64 -libnd4j.platform=macosx-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
 
