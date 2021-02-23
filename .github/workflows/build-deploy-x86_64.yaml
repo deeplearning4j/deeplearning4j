@@ -376,6 +376,13 @@ jobs:
           echo "Removing broken stuff from WSL and MSYS2"
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set MSYSTEM=MINGW64
+          set "CUDA_PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
+          set "CUDA_PATH_V11_2=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
+          set "PATH=C:\msys64\usr\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\libnvvp;%PATH%"
+          echo "CUDA Version 11.2.182" >"%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\version.txt"
+          set PATH="C:\msys64\usr\bin;%CUDA_PATH%\bin\";%PATH%
+          echo "Attempting to use path %PATH%"
+          nvcc --version
           wget -O master.zip https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip
           unzip master.zip
           echo "Extracted test resources"
@@ -392,7 +399,9 @@ jobs:
           set "CUDA_PATH_V11_2=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
           set "PATH=C:\msys64\usr\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\libnvvp;%PATH%"
           echo "CUDA Version 11.2.182" >"%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\version.txt"
-          set PATH="C:\msys64\usr\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin\";%PATH%
+          set PATH="C:\msys64\usr\bin;%CUDA_PATH%\bin\";%PATH%
+          echo "Attempting to use path %PATH%"
+          nvcc --version
           mvn -Ptestresources-Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
 
 
