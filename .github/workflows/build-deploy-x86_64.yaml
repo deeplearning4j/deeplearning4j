@@ -130,26 +130,27 @@ jobs:
           curl -LO https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run
           curl -LO https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-linux-x64-v8.1.0.77.tgz
           curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.0.3_x86_64.txz
-          chmod +x cuda_11.0.3_450.51.06_linux.run && ./cuda_11.0.3_450.51.06_linux.run  --silent --toolkit
-          ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
-          ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
-          tar -hxvf $CUDNN -C /usr/local/
-          tar -hxvf $NCCL --strip-components=1 -C /usr/local/cuda/
-          mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
+          chmod +x cuda_11.0.3_450.51.06_linux.run &&
+          sudo ./cuda_11.0.3_450.51.06_linux.run  --silent --toolkit
+          sudo ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
+         sudo  ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
+         sudo tar -hxvf $CUDNN -C /usr/local/
+         sudo  tar -hxvf $NCCL --strip-components=1 -C /usr/local/cuda/
+          sudo mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
           # Work around issues with CUDA 10.2/11.x
-          mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
-          mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
-          for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f $f.2; done
-          for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f ${f:0:${#f}-1}1; done
-          ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.1
-          ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.2
-          cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so
-          cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so.1
-          cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so
-          cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so.1
+          sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
+          sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
+         sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f $f.2; done
+          sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f ${f:0:${#f}-1}1; done
+         sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.1
+         sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.2
+         sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so
+          sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so.1
+          sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so
+         sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so.1
           # Remove downloaded archives and unused libraries to avoid running out of disk space
-          rm -f *.rpm *.tgz *.txz *.tar.*
-          rm -f $(find /usr/local/cuda/ -name '*.a' -and -not -name libcudart_static.a -and -not -name libcudadevrt.a)
+          sudo rm -f *.rpm *.tgz *.txz *.tar.*
+          sudo rm -f $(find /usr/local/cuda/ -name '*.a' -and -not -name libcudart_static.a -and -not -name libcudadevrt.a)
           echo "Verifying programs on path. Path is $PATH"
           export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:/usr/local/cuda/bin:$PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
@@ -224,9 +225,9 @@ jobs:
           sudo ./cuda_11.2.1_460.32.03_linux.run --silent --toolkit
           sudo ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
           sudo ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
-          sudo tar -hxvf $CUDNN -C /usr/local/
-          sudo tar -hxvf $NCCL --strip-components=1 -C /usr/local/cuda/
-          mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
+          sudo tar -hxvf cudnn-11.2-linux-x64-v8.1.0.77.tgz -C /usr/local/
+          sudo tar -hxvf nccl_2.8.4-1+cuda11.2_x86_64.txz --strip-components=1 -C /usr/local/cuda/
+          sudo mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
           # Work around issues with CUDA 10.2/11.x
           sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
           sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
