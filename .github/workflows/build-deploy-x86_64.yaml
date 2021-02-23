@@ -79,86 +79,85 @@ jobs:
           M2_HOME: /opt/maven
           JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64/jre
         run: |
+              echo "/opt/cmake/bin" >> $GITHUB_PATH
+              echo "/opt/protobuf/bin" >> $GITHUB_PATH
+              echo "/opt/maven/bin" >> $GITHUB_PATH
+              sudo apt-get -yq update && \
+                                 sudo apt-get -y --no-install-recommends install \
+                                     wget \
+                                     curl \
+                                     unzip \
+                                     apt-transport-https gnupg \
+                                     ca-certificates \
+                                     software-properties-common \
+                                     git \
+                                     build-essential \
+                                     gnupg-agent \
+                                     dirmngr \
+                                     default-jre-headless \
+                                  openjdk-8-jdk-headless \
+                                     libssl-dev \
+                                      curl \
+                                        ca-certificates \
+                                     libgtk2.0-dev
 
-          echo "/opt/cmake/bin" >> $GITHUB_PATH
-          echo "/opt/protobuf/bin" >> $GITHUB_PATH
-          echo "/opt/maven/bin" >> $GITHUB_PATH
-          sudo apt-get -yq update && \
-                             sudo apt-get -y --no-install-recommends install \
-                                 wget \
-                                 curl \
-                                 unzip \
-                                 apt-transport-https gnupg \
-                                 ca-certificates \
-                                 software-properties-common \
-                                 git \
-                                 build-essential \
-                                 gnupg-agent \
-                                 dirmngr \
-                                 default-jre-headless \
-                              openjdk-8-jdk-headless \
-                                 libssl-dev \
-                                  curl \
-                                    ca-certificates \
-                                 libgtk2.0-dev
+              mkdir -p /opt/maven && \
+              curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
+                                 tar -xzC /opt/maven --strip-components=1
+               /opt/maven/bin/mvn --version
+              curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
+                             | tar xz && \
+                             cd cmake-3.19.0 && \
+                             ./configure --prefix=/opt/cmake && \
+                             make -j2 && \
+                             make install && \
+                             cd .. && \
+                             rm -r cmake-3.19.0
 
-           mkdir -p /opt/maven && \
-           curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
-                             tar -xzC /opt/maven --strip-components=1
-           /opt/maven/bin/mvn --version
-           curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
-                         | tar xz && \
-                         cd cmake-3.19.0 && \
-                         ./configure --prefix=/opt/cmake && \
-                         make -j2 && \
-                         make install && \
-                         cd .. && \
-                         rm -r cmake-3.19.0
+               curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
+                             | tar xz && \
+                             cd protobuf-3.5.1 && \
+                             ./configure --prefix=/opt/protobuf && \
+                             make -j2 && \
+                             make install && \
+                             cd .. && \
+                             rm -rf protobuf-3.5.1
 
-           curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
-                         | tar xz && \
-                         cd protobuf-3.5.1 && \
-                         ./configure --prefix=/opt/protobuf && \
-                         make -j2 && \
-                         make install && \
-                         cd .. && \
-                         rm -rf protobuf-3.5.1
-
-          wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
-          echo "Extracted test resources"
-           echo Installing CUDA, cuDNN, etc
-          curl -LO https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run
-          curl -LO https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-linux-x64-v8.1.0.77.tgz
-          curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.0.3_x86_64.txz
-          chmod +x cuda_11.0.3_450.51.06_linux.run &&
-          sudo ./cuda_11.0.3_450.51.06_linux.run  --silent --toolkit
-          sudo ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
-         sudo  ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
-         sudo tar -hxvf $CUDNN -C /usr/local/
-         sudo  tar -hxvf $NCCL --strip-components=1 -C /usr/local/cuda/
-          sudo mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
-          # Work around issues with CUDA 10.2/11.x
-          sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
-          sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
-         sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f $f.2; done
-          sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f ${f:0:${#f}-1}1; done
-         sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.1
-         sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.2
-         sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so
-          sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so.1
-          sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so
-         sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so.1
-          # Remove downloaded archives and unused libraries to avoid running out of disk space
-          sudo rm -f *.rpm *.tgz *.txz *.tar.*
-          sudo rm -f $(find /usr/local/cuda/ -name '*.a' -and -not -name libcudart_static.a -and -not -name libcudadevrt.a)
-          echo "Verifying programs on path. Path is $PATH"
-          export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:/usr/local/cuda/bin:$PATH"
-          echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
-          mvn --version
-          cmake --version
-          protoc --version
-          cd dl4j-test-resources-master && mvn clean install -DskipTests && cd ..
-          mvn -Ptestresources -Ptest-nd4j-cuda -Dlibnd4j.chip=cuda clean install -DskipTests
+              wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
+              echo "Extracted test resources"
+              echo Installing CUDA, cuDNN, etc
+              curl -LO https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run
+              curl -LO https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-linux-x64-v8.1.0.77.tgz
+              curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.0.3_x86_64.txz
+              chmod +x cuda_11.0.3_450.51.06_linux.run &&
+              sudo ./cuda_11.0.3_450.51.06_linux.run  --silent --toolkit
+              sudo ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
+              sudo  ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
+              sudo tar -hxvf $CUDNN -C /usr/local/
+              sudo  tar -hxvf $NCCL --strip-components=1 -C /usr/local/cuda/
+              sudo mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
+              # Work around issues with CUDA 10.2/11.x
+              sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
+              sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
+              sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f $f.2; done
+              sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f ${f:0:${#f}-1}1; done
+              sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.1
+              sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.2
+              sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so
+              sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so.1
+              sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so
+              sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so.1
+              # Remove downloaded archives and unused libraries to avoid running out of disk space
+              sudo rm -f *.rpm *.tgz *.txz *.tar.*
+              sudo rm -f $(find /usr/local/cuda/ -name '*.a' -and -not -name libcudart_static.a -and -not -name libcudadevrt.a)
+              echo "Verifying programs on path. Path is $PATH"
+              export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:/usr/local/cuda/bin:$PATH"
+              echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
+              mvn --version
+              cmake --version
+              protoc --version
+              cd dl4j-test-resources-master && mvn clean install -DskipTests && cd ..
+              mvn -Ptestresources -Ptest-nd4j-cuda -Dlibnd4j.chip=cuda clean install -DskipTests
 
   linux-x86_64-cuda-11-2:
     runs-on: ubuntu-18.04
@@ -171,90 +170,89 @@ jobs:
           M2_HOME: /opt/maven
           JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64/jre
         run: |
+              echo "/opt/cmake/bin" >> $GITHUB_PATH
+              echo "/opt/protobuf/bin" >> $GITHUB_PATH
+              echo "/opt/maven/bin" >> $GITHUB_PATH
+              sudo apt-get -yq update && \
+                                 sudo apt-get -y --no-install-recommends install \
+                                     wget \
+                                     curl \
+                                     unzip \
+                                     apt-transport-https gnupg \
+                                     ca-certificates \
+                                     software-properties-common \
+                                     git \
+                                     build-essential \
+                                     gnupg-agent \
+                                     dirmngr \
+                                     default-jre-headless \
+                                  openjdk-8-jdk-headless \
+                                     libssl-dev \
+                                      curl \
+                                        ca-certificates \
+                                     libgtk2.0-dev
 
-          echo "/opt/cmake/bin" >> $GITHUB_PATH
-          echo "/opt/protobuf/bin" >> $GITHUB_PATH
-          echo "/opt/maven/bin" >> $GITHUB_PATH
-          sudo apt-get -yq update && \
-                             sudo apt-get -y --no-install-recommends install \
-                                 wget \
-                                 curl \
-                                 unzip \
-                                 apt-transport-https gnupg \
-                                 ca-certificates \
-                                 software-properties-common \
-                                 git \
-                                 build-essential \
-                                 gnupg-agent \
-                                 dirmngr \
-                                 default-jre-headless \
-                              openjdk-8-jdk-headless \
-                                 libssl-dev \
-                                  curl \
-                                    ca-certificates \
-                                 libgtk2.0-dev
+               mkdir -p /opt/maven && \
+               curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
+                                 tar -xzC /opt/maven --strip-components=1
+               /opt/maven/bin/mvn --version
+               curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
+                             | tar xz && \
+                             cd cmake-3.19.0 && \
+                             ./configure --prefix=/opt/cmake && \
+                             make -j2 && \
+                             make install && \
+                             cd .. && \
+                             rm -r cmake-3.19.0
 
-           mkdir -p /opt/maven && \
-           curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
-                             tar -xzC /opt/maven --strip-components=1
-           /opt/maven/bin/mvn --version
-           curl -fsSL https://cmake.org/files/v3.19/cmake-3.19.0.tar.gz \
-                         | tar xz && \
-                         cd cmake-3.19.0 && \
-                         ./configure --prefix=/opt/cmake && \
-                         make -j2 && \
-                         make install && \
-                         cd .. && \
-                         rm -r cmake-3.19.0
-
-           curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
-                         | tar xz && \
-                         cd protobuf-3.5.1 && \
-                         ./configure --prefix=/opt/protobuf && \
-                         make -j2 && \
-                         make install && \
-                         cd .. && \
-                         rm -rf protobuf-3.5.1
-
-
-          echo "Installing CUDA, cuDNN, etc"
-          curl -LO https://developer.download.nvidia.com/compute/cuda/11.2.1/local_installers/cuda_11.2.1_460.32.03_linux.run
-          curl -LO https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-linux-x64-v8.1.0.77.tgz
-          curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.2_x86_64.txz
-          chmod +x cuda_11.2.1_460.32.03_linux.run
-          sudo ./cuda_11.2.1_460.32.03_linux.run --silent --toolkit
-          sudo ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
-          sudo ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
-          sudo tar -hxvf cudnn-11.2-linux-x64-v8.1.0.77.tgz -C /usr/local/
-          sudo tar -hxvf nccl_2.8.4-1+cuda11.2_x86_64.txz --strip-components=1 -C /usr/local/cuda/
-          sudo mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
-          # Work around issues with CUDA 10.2/11.x
-          sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
-          sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
-          sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f $f.2; done
-          sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f ${f:0:${#f}-1}1; done
-          sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.1
-          sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.2
-          sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so
-          sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so.1
-          sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so
-          sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so.1
-          # Remove downloaded archives and unused libraries to avoid running out of disk space
-          sudo rm -f *.rpm *.tgz *.txz *.tar.*
-          sudo rm -f $(find /usr/local/cuda/ -name '*.a' -and -not -name libcudart_static.a -and -not -name libcudadevrt.a)
+               curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
+                             | tar xz && \
+                             cd protobuf-3.5.1 && \
+                             ./configure --prefix=/opt/protobuf && \
+                             make -j2 && \
+                             make install && \
+                             cd .. && \
+                             rm -rf protobuf-3.5.1
 
 
-          wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
-          echo "Extracted test resources"
-                echo "Verifying programs on path. Path is $PATH"
-          export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin::/usr/local/cuda/bin:$PATH"
-          echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
-          nvcc --version
-          mvn --version
-          cmake --version
-          protoc --version
-          cd dl4j-test-resources-master && mvn clean install -DskipTests && cd ..
-          mvn -Ptestresources -Ptest-nd4j-cuda -Dlibnd4j.chip=cuda clean install -DskipTests
+              echo "Installing CUDA, cuDNN, etc"
+              curl -LO https://developer.download.nvidia.com/compute/cuda/11.2.1/local_installers/cuda_11.2.1_460.32.03_linux.run
+              curl -LO https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-linux-x64-v8.1.0.77.tgz
+              curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.2_x86_64.txz
+              chmod +x cuda_11.2.1_460.32.03_linux.run
+              sudo ./cuda_11.2.1_460.32.03_linux.run --silent --toolkit
+              sudo ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
+              sudo ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
+              sudo tar -hxvf cudnn-11.2-linux-x64-v8.1.0.77.tgz -C /usr/local/
+              sudo tar -hxvf nccl_2.8.4-1+cuda11.2_x86_64.txz --strip-components=1 -C /usr/local/cuda/
+              sudo mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
+              # Work around issues with CUDA 10.2/11.x
+              sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
+              sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
+              sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f $f.2; done
+              sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f ${f:0:${#f}-1}1; done
+              sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.1
+              sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.2
+              sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so
+              sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so.1
+              sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so
+              sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so.1
+              # Remove downloaded archives and unused libraries to avoid running out of disk space
+              sudo rm -f *.rpm *.tgz *.txz *.tar.*
+              sudo rm -f $(find /usr/local/cuda/ -name '*.a' -and -not -name libcudart_static.a -and -not -name libcudadevrt.a)
+
+
+              wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
+              echo "Extracted test resources"
+                    echo "Verifying programs on path. Path is $PATH"
+              export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin::/usr/local/cuda/bin:$PATH"
+              echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
+              nvcc --version
+              mvn --version
+              cmake --version
+              protoc --version
+              cd dl4j-test-resources-master && mvn clean install -DskipTests && cd ..
+              mvn -Ptestresources -Ptest-nd4j-cuda -Dlibnd4j.chip=cuda clean install -DskipTests
 
   android-x86_64:
       runs-on: ubuntu-18.04
