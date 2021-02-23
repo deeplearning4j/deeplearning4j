@@ -1,5 +1,5 @@
 on:
- push: 
+ push:
 jobs:
   linux-x86_64:
     runs-on: ubuntu-18.04
