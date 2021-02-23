@@ -115,7 +115,7 @@ jobs:
           shell: /bin/sh
           run: |
             echo "Running install on architecture ${{ matrix.arch }}"
-            apt-get -yq  update && apt-get install -y apt-utils build-essential unzip libssl-dev
+            apt-get -yq  update && apt-get install -y apt-utils build-essential unzip libssl-dev libssl
             echo "After install on architecture ${{ matrix.arch }}"
             apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless build-essential
              mkdir -p "/opt/maven"
