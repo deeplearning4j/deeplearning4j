@@ -94,7 +94,6 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty</artifactId>
-            <version>${netty.version}</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
