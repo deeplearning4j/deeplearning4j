@@ -215,9 +215,8 @@ jobs:
                          cd .. && \
                          rm -rf protobuf-3.5.1
 
-          wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
-          echo "Extracted test resources"
-           echo Installing CUDA, cuDNN, etc
+
+          echo "Installing CUDA, cuDNN, etc"
           curl -LO https://developer.download.nvidia.com/compute/cuda/11.2.1/local_installers/cuda_11.2.1_460.32.03_linux.run
           curl -LO https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-linux-x64-v8.1.0.77.tgz
           curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.2_x86_64.txz
@@ -241,9 +240,14 @@ jobs:
           # Remove downloaded archives and unused libraries to avoid running out of disk space
           rm -f *.rpm *.tgz *.txz *.tar.*
           rm -f $(find /usr/local/cuda/ -name '*.a' -and -not -name libcudart_static.a -and -not -name libcudadevrt.a)
-          echo "Verifying programs on path. Path is $PATH"
+
+
+          wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
+          echo "Extracted test resources"
+                echo "Verifying programs on path. Path is $PATH"
           export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin::/usr/local/cuda/bin:$PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
+          nvcc --version
           mvn --version
           cmake --version
           protoc --version
