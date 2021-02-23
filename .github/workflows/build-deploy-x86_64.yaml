@@ -1,24 +1,5 @@
 on:
-  workflow_dispatch:
-    inputs:
-      buildWhat:
-        description: 'What to build'
-        required: true
-        default: 'all'
-      os:
-        description: 'Operating systems to build for'
-        required: true
-        default: 'all'
-      deploy:
-        description: 'Whether to deploy'
-        required: true
-        default: false
-
-      chip:
-        description: 'Which chip to build for'
-        required: true
-        default: 'all'
-
+ push: {}
 jobs:
   linux-x86_64:
     runs-on: ubuntu-18.04
