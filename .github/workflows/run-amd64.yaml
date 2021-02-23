@@ -12,7 +12,6 @@ jobs:
           M2_HOME: /opt/maven
           JAVA_HOME: /usr/lib/jvm/java-8-openjdk-amd64/jre
         run: |
-
           echo "/opt/cmake/bin" >> $GITHUB_PATH
           echo "/opt/protobuf/bin" >> $GITHUB_PATH
           echo "/opt/maven/bin" >> $GITHUB_PATH
