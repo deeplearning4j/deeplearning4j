@@ -130,8 +130,7 @@ jobs:
           curl -LO https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run
           curl -LO https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-linux-x64-v8.1.0.77.tgz
           curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.0.3_x86_64.txz
-          rpm -i --force --ignorearch --nodeps $CUDA
-          pushd /var/cuda-repo-rhel8-11-2-local/; rpm -i --force --ignorearch --nodeps cuda*.rpm libc*.rpm libn*.rpm; rm *.rpm; popd
+          chmod +x cuda_11.0.3_450.51.06_linux.run && ./cuda_11.0.3_450.51.06_linux.run  --silent --toolkit
           ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
           ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
           tar -hxvf $CUDNN -C /usr/local/
@@ -152,7 +151,7 @@ jobs:
           rm -f *.rpm *.tgz *.txz *.tar.*
           rm -f $(find /usr/local/cuda/ -name '*.a' -and -not -name libcudart_static.a -and -not -name libcudadevrt.a)
           echo "Verifying programs on path. Path is $PATH"
-          export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
+          export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:/usr/local/cuda/bin:$PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
           mvn --version
           cmake --version
@@ -222,8 +221,7 @@ jobs:
           curl -LO https://developer.download.nvidia.com/compute/cuda/11.2.1/local_installers/cuda_11.2.1_460.32.03_linux.run
           curl -LO https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-linux-x64-v8.1.0.77.tgz
           curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.2_x86_64.txz
-          rpm -i --force --ignorearch --nodeps $CUDA
-          pushd /var/cuda-repo-rhel8-11-2-local/; rpm -i --force --ignorearch --nodeps cuda*.rpm libc*.rpm libn*.rpm; rm *.rpm; popd
+          chmod +x cuda_11.2.1_460.32.03_linux.run && ./cuda_11.2.1_460.32.03_linux.run --silent --toolkit
           ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
           ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
           tar -hxvf $CUDNN -C /usr/local/
@@ -244,7 +242,7 @@ jobs:
           rm -f *.rpm *.tgz *.txz *.tar.*
           rm -f $(find /usr/local/cuda/ -name '*.a' -and -not -name libcudart_static.a -and -not -name libcudadevrt.a)
           echo "Verifying programs on path. Path is $PATH"
-          export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
+          export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin::/usr/local/cuda/bin:$PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
           mvn --version
           cmake --version
