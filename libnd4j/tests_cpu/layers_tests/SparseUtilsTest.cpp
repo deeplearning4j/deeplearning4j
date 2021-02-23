@@ -227,6 +227,7 @@ TEST_F(SparseUtilsTest, RavelIndices_Test) {
     }
 
     shape[2] = 30;
+    delete[] shapeInfoBuffer;
     shapeInfoBuffer = shape::shapeBuffer(rank, sd::DataType::INT64, shape);
 
     try {
