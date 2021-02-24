@@ -350,6 +350,7 @@ jobs:
       - name: Install cuda
         shell: cmd
         run: |
+          set "PATH=C:\msys64\usr\bin;%PATH%"
           echo Installing CUDA, cuDNN, etc
           wget  https://developer.download.nvidia.com/compute/cuda/11.2.1/local_installers/cuda_11.2.1_461.09_win10.exe
           wget  https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-windows-x64-v8.1.0.77.zip
@@ -363,7 +364,6 @@ jobs:
           set "CUDA_PATH_V11_2=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
           set "PATH=C:\msys64\usr\bin;C:\msys64\mingw64\bin;;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\libnvvp;%PATH%"
           echo "CUDA Version 11.2.182" >"%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\version.txt"
-          #set PATH="C:\msys64\usr\bin;C:\msys64\mingw64\bin;%CUDA_PATH%\bin\;C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.28.29333\bin\Hostx64\x64;%PATH%"
           echo "Attempting to use path %PATH%"
           nvcc --version
       - uses: actions/checkout@v2
