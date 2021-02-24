@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
+      - uses: eclipse/deeplearning4j/.github/actions/install-protobuf-linux@actions
       - name: Buildon  linux-x86_64
         shell: bash
         env:
@@ -25,7 +25,7 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@actions
         env:
           cuda: 11.0.167
-      - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
+      - uses: eclipse/deeplearning4j/.github/actions/install-protobuf-linux@actions
       - name: Build cuda
         shell: bash
         env:
@@ -43,7 +43,7 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@actions
         env:
             cuda: 11.2.1_461
-      - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
+      - uses: eclipse/deeplearning4j/.github/actions/install-protobuf-linux@actions
       - name: Run tests on linux-x86_64
         shell: bash
         env:
@@ -59,7 +59,7 @@ jobs:
       runs-on: ubuntu-18.04
       steps:
         - uses: actions/checkout@v2
-        - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
+        - uses: eclipse/deeplearning4j/.github/actions/install-protobuf-linux@actions
         - name: Build on linux-x86_64
           run: |
             curl -s http://dl.google.com/android/repository/android-ndk-r18b-linux-x86_64.zip -o android-ndk-r18b-linux-x86_64.zip && \
