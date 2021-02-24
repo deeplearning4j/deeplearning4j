@@ -11,12 +11,10 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
-          echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
-          mvn --version
-          cmake --version
-          protoc --version
-          mvn  -Dlibnd4j.chip=cpu clean install -DskipTests
+               mvn --version
+              cmake --version
+              protoc --version
+              mvn  -Dlibnd4j.chip=cpu clean install -DskipTests
 
   linux-x86_64-cuda_11-0:
     runs-on: ubuntu-18.04
@@ -34,7 +32,7 @@ jobs:
                mvn --version
                cmake --version
                protoc --version
-                mvn -Dlibnd4j.chip=cuda clean install -DskipTests
+              mvn -Dlibnd4j.chip=cuda clean install -DskipTests
 
   linux-x86_64-cuda-11-2:
     runs-on: ubuntu-18.04
@@ -62,16 +60,16 @@ jobs:
         - uses: ./.github/actions/install-protobuf-linux@actions
         - name: Build on linux-x86_64
           run: |
-            curl -s http://dl.google.com/android/repository/android-ndk-r18b-linux-x86_64.zip -o android-ndk-r18b-linux-x86_64.zip && \
-            unzip -q android-ndk-r18b-linux-x86_64.zip -d /opt && \
-            rm -f android-ndk-r18b-linux-x86_64.zip
-            echo "Verifying programs on path. Path is $PATH"
-            export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
-            echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
-            mvn --version
-            cmake --version
-            protoc --version
-            mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
+                curl -s http://dl.google.com/android/repository/android-ndk-r18b-linux-x86_64.zip -o android-ndk-r18b-linux-x86_64.zip && \
+                unzip -q android-ndk-r18b-linux-x86_64.zip -d /opt && \
+                rm -f android-ndk-r18b-linux-x86_64.zip
+                echo "Verifying programs on path. Path is $PATH"
+                export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
+                echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
+                mvn --version
+                cmake --version
+                protoc --version
+                mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
 
   windows-x86_64:
       runs-on: windows-2019
