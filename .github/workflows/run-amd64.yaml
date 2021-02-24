@@ -10,11 +10,6 @@ jobs:
       - name: Run tests on linux-x86_64
         shell: bash
         run: |
-              wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
-              echo "Extracted test resources"
-              echo "Verifying programs on path. Path is $PATH"
-              export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
-              echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
               mvn --version
               cmake --version
               protoc --version

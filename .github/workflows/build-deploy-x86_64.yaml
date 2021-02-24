@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
           cuda: 11.0.167
       - uses: ./.github/actions/install-protobuf-linux
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@actions
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
             cuda: 11.2.1_461
       - uses: ./.github/actions/install-protobuf-linux
