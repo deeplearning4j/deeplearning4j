@@ -29,9 +29,9 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-               mvn --version
-               cmake --version
-               protoc --version
+              mvn --version
+              cmake --version
+              protoc --version
               mvn -Dlibnd4j.chip=cuda clean install -DskipTests
 
   linux-x86_64-cuda-11-2:
