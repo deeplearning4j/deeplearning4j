@@ -35,7 +35,7 @@ jobs:
             mvn --version
             cmake --version
             protoc --version
-            export CMAKE_ANDROID_NDK="${{ steps.install-ndk.outputs.ndk-path }}"
+            export CMAKE_ANDROID_NDK="/opt/hostedtoolcache/ndk/r18b/x64"
             mvn -Ptestresources-Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
 
 
