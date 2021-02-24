@@ -404,7 +404,7 @@ jobs:
           set "PATH=C:\msys64\usr\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\libnvvp;%PATH%"
           echo "CUDA Version 11.2.182" >"%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\version.txt"
           # See: https://stackoverflow.com/questions/60523153/2020-nvcc-fatal-cannot-find-compiler-cl-exe-in-path
-          set PATH="C:\msys64\usr\bin;%CUDA_PATH%\bin\;C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Tools\MSVC\14.24.28314\bin\Hostx64\x64";%PATH%
+          set PATH="C:\msys64\usr\bin;%CUDA_PATH%\bin\;C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.24.28314\bin\Hostx64\x64";%PATH%
           echo "Attempting to use path %PATH%"
           nvcc --version
           mvn -Ptestresources-Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
