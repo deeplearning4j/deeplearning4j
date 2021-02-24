@@ -137,8 +137,8 @@ jobs:
               sudo  tar -hxvf $NCCL --strip-components=1 -C /usr/local/cuda/
               sudo mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
               # Work around issues with CUDA 10.2/11.x
-              sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
-              sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
+              #sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
+              #sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
               sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f $f.2; done
               sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f ${f:0:${#f}-1}1; done
               sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.1
@@ -227,8 +227,8 @@ jobs:
               sudo tar -hxvf nccl_2.8.4-1+cuda11.2_x86_64.txz --strip-components=1 -C /usr/local/cuda/
               sudo mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
               # Work around issues with CUDA 10.2/11.x
-              sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
-              sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
+              #sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
+              #sudo mv /usr/lib64/libcublas* /usr/lib64/libnvblas* /usr/local/cuda/lib64/ || true
               sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f $f.2; done
               sudo for f in /usr/local/cuda/lib64/*.so.10; do ln -s $f ${f:0:${#f}-1}1; done
               sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.1
