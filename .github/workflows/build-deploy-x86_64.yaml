@@ -55,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: konduitai/cuda-install@master/.github/actions/install-cuda-ubuntu
-          env:
+        env:
             cuda: 11.2.1_461
       - name: Run tests on linux-x86_64
         shell: bash
