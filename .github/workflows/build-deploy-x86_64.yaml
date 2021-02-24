@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install@master/.github/actions/install-cuda-ubuntu@actions
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@actions
         env:
           cuda: 11.0.167
       - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install@master/.github/actions/install-cuda-ubuntu@actions
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@actions
         env:
             cuda: 11.2.1_461
       - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
