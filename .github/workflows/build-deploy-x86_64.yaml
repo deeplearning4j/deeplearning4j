@@ -374,11 +374,13 @@ jobs:
           move cuda\bin\*.dll "%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin"
           move cuda\include\*.h "%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\include"
                 move cuda\lib\x64\*.lib "%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\lib\x64"
+          dir /s *cl.exe*
           echo "Installing Windows SDK 8.1"
           wget -O  sdksetup.exe https://go.microsoft.com/fwlink/p/?LinkId=323507
           .\sdksetup.exe /features OptionId.WindowsDesktopSoftwareDevelopmentKit OptionId.NetFxSoftwareDevelopmentKit /quiet
           echo "Removing broken stuff from WSL and MSYS2"
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          dir /s *cl.exe*
           set MSYSTEM=MINGW64
           set "CUDA_PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
           set "CUDA_PATH_V11_2=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
