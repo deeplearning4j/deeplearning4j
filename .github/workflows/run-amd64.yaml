@@ -41,7 +41,7 @@ jobs:
     runs-on: windows-2019
     steps:
       - uses: ./.github/actions/download-dl4j-test-resources-windows
-      - uses: ./.github/actions/msys2-base-setup@actions
+      - uses: ./.github/actions/msys2-base-setup
       - uses: actions/checkout@v2
       - name: Run tests
         shell: cmd

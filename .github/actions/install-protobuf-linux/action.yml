@@ -3,7 +3,7 @@ runs:
   using: composite
   steps:
     - name: Install protobuf linux
-      shell: cmd
+      shell: bash
       run: |
         curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
                                | tar xz && \
