@@ -76,19 +76,17 @@ jobs:
             access_token: ${{ github.token }}
         - uses: nttld/setup-ndk@v1
           with:
-            ndk-version: r18b
+            ndk-version: r21d
         - uses: actions/checkout@v2
         - uses: ./.github/actions/install-protobuf-linux
         - name: Build on linux-x86_64
           run: |
-                curl -s http://dl.google.com/android/repository/android-ndk-r18b-linux-x86_64.zip -o android-ndk-r18b-linux-x86_64.zip && \
-                unzip -q android-ndk-r18b-linux-x86_64.zip -d /opt && \
-                rm -f android-ndk-r18b-linux-x86_64.zip
-                echo "Verifying programs on path. Path is $PATH"
+                 echo "Verifying programs on path. Path is $PATH"
                 echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
                 mvn --version
                 cmake --version
                 protoc --version
+                export CMAKE_ANDROID_NDK="/opt/hostedtoolcache/ndk/r21d/x64"
                 mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
 
   windows-x86_64:
@@ -136,7 +134,7 @@ jobs:
           with:
             access_token: ${{ github.token }}
         - uses: actions/checkout@v2
-        - name: Install and run tests
+        - name: Build and install
           shell: bash
           run: |
             mvn -Djavacpp.platform=macosx-x86_64 -libnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean install -DskipTests
