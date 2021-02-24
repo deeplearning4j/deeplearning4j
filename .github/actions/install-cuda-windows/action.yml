@@ -1,0 +1,20 @@
+name: Setup cuda for windows
+runs:
+  using: composite
+  steps:
+    - name: Initial install
+      shell: cmd
+      run: |
+                wget  https://developer.download.nvidia.com/compute/cuda/11.2.1/local_installers/cuda_11.2.1_461.09_win10.exe
+                wget  https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-windows-x64-v8.1.0.77.zip
+                cuda_11.2.1_461.09_win10.exe -s
+                unzip cudnn-11.2-windows-x64-v8.1.0.77.zip
+                move cuda\bin\*.dll "%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin"
+                move cuda\include\*.h "%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\include"
+                move cuda\lib\x64\*.lib "%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\lib\x64"
+               echo "CUDA_PATH=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2" >> $GITHUB_ENV
+               echo "CUDA_PATH_V11_2=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2" >> $GITHUB_ENV
+               echo "%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin" >> $GITHUB_PATH
+               echo "%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\libnvvp" >> $GITHUB_PATH
+              echo "CUDA Version 11.2.182" >"%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\version.txt"
+               nvcc --version
