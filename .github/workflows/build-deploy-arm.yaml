@@ -71,10 +71,8 @@ jobs:
                                         cd .. && \
                                         rm -rf protobuf-3.5.1
 
-                  wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip && cd dl4j-test-resources-master && mvn clean install -DskipTests
-                  echo "Begin run"
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
-                  mvn -Ptestresources -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
+                  mvn  -Dlibnd4j.chip=cpu clean install -DskipTests
 
 
 
@@ -149,10 +147,6 @@ jobs:
                                      cd .. && \
                                      rm -rf protobuf-3.5.1
 
-               wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip
-               unzip master.zip && cd dl4j-test-resources-master
-                mvn clean install -DskipTests
-              cd ..
                echo "Begin run"
                export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
-               mvn -Ptestresources -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
+               mvn   -Dlibnd4j.chip=cpu clean install -DskipTests
