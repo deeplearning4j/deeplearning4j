@@ -4,6 +4,10 @@ jobs:
   linux-x86_64:
     runs-on: ubuntu-18.04
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/install-protobuf-linux
       - uses: ./.github/actions/download-dl4j-test-resources-linux
@@ -22,15 +26,12 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/install-protobuf-linux@actions
       - uses: ./.github/actions/download-dl4j-test-resources-linux
+      - uses: nttld/setup-ndk@v1
+          with:
+            ndk-version: r18b
       - name: Run tests on linux-x86_64
         shell: bash
         run: |
-            curl -s http://dl.google.com/android/repository/android-ndk-r18b-linux-x86_64.zip -o android-ndk-r18b-linux-x86_64.zip && \
-            unzip -q android-ndk-r18b-linux-x86_64.zip -d /opt && \
-            rm -f android-ndk-r18b-linux-x86_64.zip
-            echo "Verifying programs on path. Path is $PATH"
-            export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
-            echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
             mvn --version
             cmake --version
             protoc --version
