@@ -27,8 +27,8 @@ jobs:
       - uses: ./.github/actions/install-protobuf-linux@actions
       - uses: ./.github/actions/download-dl4j-test-resources-linux
       - uses: nttld/setup-ndk@v1
-          with:
-            ndk-version: r18b
+        with:
+          ndk-version: r18b
       - name: Run tests on linux-x86_64
         shell: bash
         run: |

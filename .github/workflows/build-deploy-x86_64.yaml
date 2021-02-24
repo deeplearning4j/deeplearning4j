@@ -73,8 +73,8 @@ jobs:
           with:
             access_token: ${{ github.token }}
         - uses: nttld/setup-ndk@v1
-            with:
-              ndk-version: r18b
+          with:
+            ndk-version: r18b
         - uses: actions/checkout@v2
         - uses: ./.github/actions/install-protobuf-linux
         - name: Build on linux-x86_64
