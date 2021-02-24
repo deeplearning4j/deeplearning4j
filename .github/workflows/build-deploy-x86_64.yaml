@@ -141,7 +141,7 @@ jobs:
                 #sudo for f in $(ls /usr/local/cuda/lib64/*.so.10(; do ln -s "$f" "${f:0:${#f}-1}1"; done
                 #sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.1
                 #sudo ln -s libcudart.so.11.0 /usr/local/cuda/lib64/libcudart.so.11.2
-               # sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so
+                # sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so
                 #sudo cp /usr/local/cuda/lib64/stubs/libcuda.so /usr/lib64/libcuda.so.1
                 #sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so
                 #sudo cp /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/lib64/libnvidia-ml.so.1
