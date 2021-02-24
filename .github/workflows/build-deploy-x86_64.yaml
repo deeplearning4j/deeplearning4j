@@ -139,6 +139,5 @@ jobs:
         - name: Install and run tests
           shell: bash
           run: |
-            brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget
-            mvn -Djavacpp.platform=macosx-x86_64 -libnd4j.platform=macosx-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
+            mvn -Djavacpp.platform=macosx-x86_64 -libnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean install -DskipTests
 

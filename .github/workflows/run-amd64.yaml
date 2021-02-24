@@ -60,7 +60,8 @@ jobs:
       - uses: ./.github/actions/download-dl4j-test-resources-linux
       - name: Install and run tests
         shell: bash
+        env:
+          VERBOSE: 1
         run: |
-            brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget
             mvn -Ptestresources-Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
 
