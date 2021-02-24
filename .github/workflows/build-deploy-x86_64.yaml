@@ -31,7 +31,7 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
           cuda: 11.0.167
-          GCC: 9.3.0
+          GCC: 9
       - uses: ./.github/actions/install-protobuf-linux
       - name: Build cuda
         shell: bash
@@ -54,7 +54,7 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
             cuda: 11.2.1_461
-            GCC: 9.3.0
+            GCC: 9
       - uses: ./.github/actions/install-protobuf-linux
       - name: Run tests on linux-x86_64
         shell: bash
@@ -104,6 +104,7 @@ jobs:
           shell: cmd
           run: |
             set MSYSTEM=MINGW64
+            set "PATH=C:\msys64\usr\bin;%PATH%"
             mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu clean install -DskipTests
 
   windows-x86_64-cuda-11-2:
@@ -124,6 +125,7 @@ jobs:
         run: |
           set MSYSTEM=MINGW64
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          set "PATH=C:\msys64\usr\bin;%PATH%"
           mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
 
   mac-x86_64:
