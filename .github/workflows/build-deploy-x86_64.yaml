@@ -11,7 +11,7 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-               mvn --version
+              mvn --version
               cmake --version
               protoc --version
               mvn  -Dlibnd4j.chip=cpu clean install -DskipTests
