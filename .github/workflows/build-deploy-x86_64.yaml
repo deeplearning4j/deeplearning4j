@@ -75,7 +75,7 @@ jobs:
       runs-on: windows-2019
       steps:
         - name: Use existing msys2 to setup environment
-        - uses: ./.github/actions/msys2-base-setup@actions
+          uses: ./.github/actions/msys2-base-setup@actions
         - uses: actions/checkout@v2
         - name: Run tests
           shell: cmd
@@ -97,8 +97,6 @@ jobs:
           set MSYSTEM=MINGW64
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
-
-
 
   mac-x86_64:
       runs-on: macos-10.15
