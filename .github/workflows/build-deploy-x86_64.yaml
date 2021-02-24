@@ -386,7 +386,7 @@ jobs:
           set "CUDA_PATH_V11_2=%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
           set "PATH=C:\msys64\usr\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\libnvvp;%PATH%"
           echo "CUDA Version 11.2.182" >"%ProgramFiles%\NVIDIA GPU Computing Toolkit\CUDA\v11.2\version.txt"
-          set PATH="C:\msys64\usr\bin;%CUDA_PATH%\bin\";%PATH%
+          set PATH="C:\msys64\usr\bin;%CUDA_PATH%\bin\;C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Tools\MSVC\14.28.29333\bin\Hostx64\x64;%PATH%"
           echo "Attempting to use path %PATH%"
           nvcc --version
           wget -O master.zip https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip
