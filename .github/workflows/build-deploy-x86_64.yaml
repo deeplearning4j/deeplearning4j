@@ -80,13 +80,14 @@ jobs:
         - uses: actions/checkout@v2
         - uses: ./.github/actions/install-protobuf-linux
         - name: Build on linux-x86_64
+          env:
+            CMAKE_ANDROID_NDK: "/opt/hostedtoolcache/ndk/r21d/x64"
           run: |
                 echo "Verifying programs on path. Path is $PATH"
                 echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
                 mvn --version
                 cmake --version
                 protoc --version
-                export CMAKE_ANDROID_NDK="/opt/hostedtoolcache/ndk/r21d/x64"
                 mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
 
   windows-x86_64:
@@ -115,8 +116,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Use existing msys2 to setup environment
         uses: ./.github/actions/msys2-base-setup
-      - name: Install cuda on windows
-        uses: ./.github/actions/install-cuda-windows
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
       - uses: actions/checkout@v2
       - name: Run tests
         shell: cmd
