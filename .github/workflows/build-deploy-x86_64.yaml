@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/install-protobuf-linux@actions
+      - uses: ./.github/actions/install-protobuf-linux
       - name: Buildon  linux-x86_64
         shell: bash
         env:
@@ -20,10 +20,10 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@actions
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu
         env:
           cuda: 11.0.167
-      - uses: ./.github/actions/install-protobuf-linux@actions
+      - uses: ./.github/actions/install-protobuf-linux
       - name: Build cuda
         shell: bash
         env:
@@ -41,7 +41,7 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@actions
         env:
             cuda: 11.2.1_461
-      - uses: ./.github/actions/install-protobuf-linux@actions
+      - uses: ./.github/actions/install-protobuf-linux
       - name: Run tests on linux-x86_64
         shell: bash
         env:
@@ -57,7 +57,7 @@ jobs:
       runs-on: ubuntu-18.04
       steps:
         - uses: actions/checkout@v2
-        - uses: ./.github/actions/install-protobuf-linux@actions
+        - uses: ./.github/actions/install-protobuf-linux
         - name: Build on linux-x86_64
           run: |
                 curl -s http://dl.google.com/android/repository/android-ndk-r18b-linux-x86_64.zip -o android-ndk-r18b-linux-x86_64.zip && \
@@ -75,7 +75,7 @@ jobs:
       runs-on: windows-2019
       steps:
         - name: Use existing msys2 to setup environment
-          uses: ./.github/actions/msys2-base-setup@actions
+          uses: ./.github/actions/msys2-base-setup
         - uses: actions/checkout@v2
         - name: Run tests
           shell: cmd
@@ -87,9 +87,9 @@ jobs:
     runs-on: windows-2019
     steps:
       - name: Use existing msys2 to setup environment
-        uses: ./.github/actions/msys2-base-setup@actions
+        uses: ./.github/actions/msys2-base-setup
       - name: Install cuda on windows
-        uses: ./.github/actions/install-cuda-windows@actions
+        uses: ./.github/actions/install-cuda-windows
       - uses: actions/checkout@v2
       - name: Run tests
         shell: cmd

@@ -5,8 +5,8 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/install-protobuf-linux@actions
-      - uses: ./.github/actions/download-dl4j-test-resources-linux@actions
+      - uses: ./.github/actions/install-protobuf-linux
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
       - name: Run tests on linux-x86_64
         shell: bash
         run: |
@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/install-protobuf-linux@actions
-      - uses: ./.github/actions/download-dl4j-test-resources-linux@actions
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
       - name: Run tests on linux-x86_64
         shell: bash
         run: |
@@ -45,7 +45,7 @@ jobs:
   windows-x86_64:
     runs-on: windows-2019
     steps:
-      - uses: ./.github/actions/download-dl4j-test-resources-windows@actions
+      - uses: ./.github/actions/download-dl4j-test-resources-windows
       - uses: ./.github/actions/msys2-base-setup@actions
       - uses: actions/checkout@v2
       - name: Run tests
@@ -60,7 +60,7 @@ jobs:
     runs-on: macos-10.15
     steps:
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/download-dl4j-test-resources-linux@actions
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
       - name: Install and run tests
         shell: bash
         run: |
