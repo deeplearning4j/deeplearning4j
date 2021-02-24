@@ -126,13 +126,13 @@ jobs:
                 echo Installing CUDA, cuDNN, etc
                 curl -LO https://developer.download.nvidia.com/compute/cuda/11.0.3/local_installers/cuda_11.0.3_450.51.06_linux.run
                 curl -LO https://developer.download.nvidia.com/compute/redist/cudnn/v8.1.0/cudnn-11.2-linux-x64-v8.1.0.77.tgz
-                curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.0.3_x86_64.txz
+                curl -LO https://developer.download.nvidia.com/compute/redist/nccl/v2.8/nccl_2.8.4-1+cuda11.2_x86_64.txz
                 chmod +x cuda_11.0.3_450.51.06_linux.run &&
                 sudo ./cuda_11.0.3_450.51.06_linux.run  --silent --toolkit
                 sudo ln -sf /usr/local/cuda/lib64/stubs/libcuda.so /usr/local/cuda/lib64/libcuda.so
                 sudo  ln -sf /usr/local/cuda/lib64/stubs/libnvidia-ml.so /usr/local/cuda/lib64/libnvidia-ml.so
                 sudo tar -hxvf cudnn-11.2-linux-x64-v8.1.0.77.tgz -C /usr/local/
-                sudo  tar -hxvf nccl_2.8.4-1+cuda11.0.3_x86_64.txz --strip-components=1 -C /usr/local/cuda/
+                sudo  tar -hxvf nccl_2.8.4-1+cuda11.2_x86_64.txz --strip-components=1 -C /usr/local/cuda/
                 sudo mv /usr/local/cuda/lib/* /usr/local/cuda/lib64/
                 # Work around issues with CUDA 10.2/11.x
                 sudo mv /usr/include/cublas* /usr/include/nvblas* /usr/local/cuda/include/ || true
