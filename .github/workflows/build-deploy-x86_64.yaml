@@ -5,22 +5,12 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - name: Run tests on linux-x86_64
+      - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
+      - name: Buildon  linux-x86_64
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          echo "/opt/protobuf/bin" >> $GITHUB_PATH
-           curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
-                         | tar xz && \
-                         cd protobuf-3.5.1 && \
-                         ./configure --prefix=/opt/protobuf && \
-                         make -j2 && \
-                         make install && \
-                         cd .. && \
-                         rm -rf protobuf-3.5.1
-
-          echo "Verifying programs on path. Path is $PATH"
           export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
           mvn --version
@@ -32,46 +22,33 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install@master/.github/actions/install-cuda-ubuntu
+      - uses: konduitai/cuda-install@master/.github/actions/install-cuda-ubuntu@actions
         env:
           cuda: 11.0.167
+      - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
       - name: Build cuda
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-                curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
-                               | tar xz && \
-                               cd protobuf-3.5.1 && \
-                               ./configure --prefix=/opt/protobuf && \
-                               make -j2 && \
-                               make install && \
-                               cd .. && \
-                               rm -rf protobuf-3.5.1
+               mvn --version
+               cmake --version
+               protoc --version
                 mvn -Dlibnd4j.chip=cuda clean install -DskipTests
 
   linux-x86_64-cuda-11-2:
     runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install@master/.github/actions/install-cuda-ubuntu
+      - uses: konduitai/cuda-install@master/.github/actions/install-cuda-ubuntu@actions
         env:
             cuda: 11.2.1_461
+      - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
       - name: Run tests on linux-x86_64
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-               curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
-                             | tar xz && \
-                             cd protobuf-3.5.1 && \
-                             ./configure --prefix=/opt/protobuf && \
-                             make -j2 && \
-                             make install && \
-                             cd .. && \
-                             rm -rf protobuf-3.5.1
-
-
               nvcc --version
               mvn --version
               cmake --version
@@ -82,17 +59,9 @@ jobs:
       runs-on: ubuntu-18.04
       steps:
         - uses: actions/checkout@v2
+        - uses: eclipse/deeplearning4j/actions/install-protobuf-linux@actions
         - name: Build on linux-x86_64
           run: |
-             curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
-                           | tar xz && \
-                           cd protobuf-3.5.1 && \
-                           ./configure --prefix=/opt/protobuf && \
-                           make -j2 && \
-                           make install && \
-                           cd .. && \
-                           rm -rf protobuf-3.5.1
-
             curl -s http://dl.google.com/android/repository/android-ndk-r18b-linux-x86_64.zip -o android-ndk-r18b-linux-x86_64.zip && \
             unzip -q android-ndk-r18b-linux-x86_64.zip -d /opt && \
             rm -f android-ndk-r18b-linux-x86_64.zip
