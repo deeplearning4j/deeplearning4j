@@ -33,6 +33,8 @@ jobs:
         shell: bash
         env:
           ANDROID_NDK: /opt/hostedtoolcache/ndk/r21d/x64
+          GNUMAKEFLAGS: "-j1"
+          MAKEFLAGS: "-j1"
         run: |
             mvn --version
             cmake --version

@@ -85,6 +85,8 @@ jobs:
         - name: Build on linux-x86_64
           env:
             ANDROID_NDK: "/opt/hostedtoolcache/ndk/r21d/x64"
+            GNUMAKEFLAGS: "-j1"
+            MAKEFLAGS: "-j1"
           run: |
                 echo "Verifying programs on path. Path is $PATH"
                 echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
