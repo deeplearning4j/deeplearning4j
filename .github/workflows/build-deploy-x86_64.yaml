@@ -18,7 +18,7 @@ jobs:
               mvn --version
               cmake --version
               protoc --version
-              mvn  -Dlibnd4j.chip=cpu clean install -DskipTests
+              mvn  -Dlibnd4j.chip=cpu -Pcpu clean install -DskipTests
 
   linux-x86_64-cuda_11-0:
     runs-on: ubuntu-18.04
@@ -38,6 +38,7 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
+             export PATH="/usr/local/cuda-11.0/bin:$PATH"
               mvn --version
               cmake --version
               protoc --version
@@ -62,6 +63,7 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
+              export PATH="/usr/local/cuda-11.2/bin:$PATH"
               nvcc --version
               mvn --version
               cmake --version
