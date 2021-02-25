@@ -5,6 +5,7 @@ runs:
     - name: Initial install
       shell: cmd
       run: |
+        set "PATH=C:\msys64\usr\bin;%PATH%"
         wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
         cd dl4j-test-resources-master && mvn clean install -DskipTests
         echo "Extracted test resources"
