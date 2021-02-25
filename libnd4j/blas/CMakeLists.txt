@@ -348,12 +348,21 @@ elseif(SD_CPU)
             ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES}
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
+
     if(IOS)
         add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
     else()
         # build shared library by default or when it's explicitly requested
         if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
             add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
+            if(ANDROID)
+              # See: https://www.scivision.dev/cmake-ninja-job-pool-limited-memory/
+              # See: https://cmake.org/cmake/help/v3.0/command/cmake_host_system_information.html
+              cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
+             if(_logical_cores LESS 4)
+               set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
+             endif()
+            endif()
         endif()
 
         if (SD_STATIC_LIB AND SD_SHARED_LIB)

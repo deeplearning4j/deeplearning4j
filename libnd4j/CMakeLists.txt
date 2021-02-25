@@ -136,6 +136,7 @@ endif()
 # -fsanitize=address
 # -fsanitize=leak
 if (SD_ANDROID_BUILD)
+    set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
 elseif (APPLE)
