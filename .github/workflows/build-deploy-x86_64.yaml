@@ -93,7 +93,7 @@ jobs:
                 protoc --version
                 clang++ --version
                 echo "Building android with NDK ${ANDROID_NDK}"
-                mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
+                mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64  -Dlibnd4j.chip=cpu clean install -DskipTests
 
   windows-x86_64:
       runs-on: windows-2019
@@ -124,14 +124,13 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
           cuda: 11.2.1
-      - uses: actions/checkout@v2
       - name: Run tests
         shell: cmd
         run: |
           set MSYSTEM=MINGW64
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set "PATH=C:\msys64\usr\bin;%PATH%"
-          echo "Running cuda build" 
+          echo "Running cuda build"
           mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
 
   mac-x86_64:
