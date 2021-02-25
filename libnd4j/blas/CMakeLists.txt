@@ -348,7 +348,7 @@ elseif(SD_CPU)
 
     if(_physical_cores LESS 3 OR _logical_cores LESS 3)
        message("Detected low resource machine of less than 3 cores or forcing libnd4j limit, limiting resource use for compilation to 1 core")
-      set_target_properties(samediff_obj PROPERTIES JOB_POOL_COMPILE one_jobs)
+      set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
     endif()
 
     add_library(samediff_obj OBJECT ${LEGACY_SOURCES}
