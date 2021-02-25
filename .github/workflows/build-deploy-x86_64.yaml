@@ -114,6 +114,28 @@ jobs:
             set "PATH=C:\msys64\usr\bin;%PATH%"
             mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu clean install -DskipTests
 
+  windows-x86_64-cuda-11-0:
+    runs-on: windows-2019
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - name: Use existing msys2 to setup environment
+        uses: ./.github/actions/msys2-base-setup
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
+        env:
+          cuda: 11.0.167
+      - name: Run tests
+        shell: cmd
+        run: |
+          set MSYSTEM=MINGW64
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          set "PATH=C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\bin;%PATH%"
+          echo "Running cuda build"
+          mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
+
   windows-x86_64-cuda-11-2:
     runs-on: windows-2019
     steps:
@@ -132,7 +154,7 @@ jobs:
         run: |
           set MSYSTEM=MINGW64
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          set "PATH=C:\msys64\usr\bin;%PATH%"
+          set "PATH=C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;%PATH%"
           echo "Running cuda build"
           mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
 
