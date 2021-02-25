@@ -66,5 +66,5 @@ jobs:
         env:
           VERBOSE: 1
         run: |
-            mvn -Dlibnd4j.build="Debug" -Ptestresources -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
+            mvn -Dlibnd4j.build="Debug" -Ptestresources -Djavacpp.platform=macosx-x86_64 -libnd4j.platform=macosx-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
 
