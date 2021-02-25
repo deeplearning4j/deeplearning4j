@@ -122,6 +122,8 @@ jobs:
       - name: Use existing msys2 to setup environment
         uses: ./.github/actions/msys2-base-setup
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
+        env:
+          cuda: 11.2.1_461
       - uses: actions/checkout@v2
       - name: Run tests
         shell: cmd
