@@ -41,6 +41,7 @@ jobs:
               mvn --version
               cmake --version
               protoc --version
+              nvcc --version
               mvn -Dlibnd4j.chip=cuda clean install -DskipTests
 
   linux-x86_64-cuda-11-2:
@@ -88,6 +89,7 @@ jobs:
                 mvn --version
                 cmake --version
                 protoc --version
+                echo "Building android with NDK ${ANDROID_NDK}"
                 mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean install -DskipTests
 
   windows-x86_64:
