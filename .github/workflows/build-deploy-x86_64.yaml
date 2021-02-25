@@ -130,6 +130,7 @@ jobs:
           set MSYSTEM=MINGW64
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set "PATH=C:\msys64\usr\bin;%PATH%"
+          echo "Running cuda build"
           mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
 
   mac-x86_64:
