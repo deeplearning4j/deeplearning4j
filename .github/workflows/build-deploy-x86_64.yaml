@@ -123,7 +123,7 @@ jobs:
         uses: ./.github/actions/msys2-base-setup
       - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
         env:
-          cuda: 11.2.1_461
+          cuda: 11.2.1
       - uses: actions/checkout@v2
       - name: Run tests
         shell: cmd
