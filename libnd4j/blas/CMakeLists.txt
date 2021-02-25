@@ -185,6 +185,22 @@ if(SD_CUDA)
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
         endif()
 
+      if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
+                  set(CMAKE_CUDA_ARCHITECTURES "${COMPUTE}")
+         endif()
+
+        if(WIN32)
+         message("In windows, setting cublas library and cusolver library")
+         if(NOT DEFINED CUDA_cublas_LIBRARY)
+                  set(CUDA_cublas_LIBRARY ${CUDA_HOME}/lib/x64/cublas.lib)
+          endif()
+
+          if(NOT DEFINED CUDA_cusolver_LIBRARY)
+                set(CUDA_cusolver_LIBRARY ${CUDA_HOME}/lib/x64/cusolver.lib)
+          endif()
+        endif()
+
+
         string( TOLOWER "${COMPUTE}" COMPUTE_CMP )
         if ("${COMPUTE_CMP}" STREQUAL "all")
             CUDA_SELECT_NVCC_ARCH_FLAGS(CUDA_ARCH_FLAGS "Common")
@@ -358,6 +374,7 @@ elseif(SD_CPU)
             if(ANDROID)
               # See: https://www.scivision.dev/cmake-ninja-job-pool-limited-memory/
               # See: https://cmake.org/cmake/help/v3.0/command/cmake_host_system_information.html
+              # See: https://cmake.org/cmake/help/latest/prop_gbl/JOB_POOLS.html
               cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
              if(_logical_cores LESS 4)
                set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
