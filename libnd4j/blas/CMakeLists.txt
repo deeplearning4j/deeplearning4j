@@ -286,8 +286,8 @@ if(SD_CUDA)
                   if(NOT DEFINED CUDA_cusolver_LIBRARY)
                         set(CUDA_cusolver_LIBRARY ${CUDA_HOME}/lib/x64/cusolver.lib)
                   endif()
-                endif()
 
+            message("CUDA on Windows: enabling /EHsc")
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
         endif()
 
