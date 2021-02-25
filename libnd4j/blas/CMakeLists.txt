@@ -343,13 +343,6 @@ elseif(SD_CPU)
 
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
-    cmake_host_system_information(RESULT _physical_cores QUERY NUMBER_OF_PHYSICAL_CORES)
-    cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
-
-    if(_physical_cores LESS 3 OR _logical_cores LESS 3)
-       message("Detected low resource machine of less than 3 cores or forcing libnd4j limit, limiting resource use for compilation to 1 core")
-      set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
-    endif()
 
     add_library(samediff_obj OBJECT ${LEGACY_SOURCES}
             ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
