@@ -23,7 +23,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/install-protobuf-linux@actions
+      - uses: ./.github/actions/install-protobuf-linux
       - uses: uraimo/run-on-arch-action@v2.0.8
         name: Build and test with ${{ matrix.arch }} ${{ matrix.distro }}
         id: build
