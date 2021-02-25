@@ -99,7 +99,7 @@ jobs:
                 # see https://github.com/Cretezy/Swap
                 wget https://raw.githubusercontent.com/Cretezy/Swap/master/swap.sh -O swap
                 sh swap 16G ./swap
-                mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64  -Dlibnd4j.chip=cpu clean install -DskipTests
+                mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean install -DskipTests
 
   windows-x86_64:
       runs-on: windows-2019
