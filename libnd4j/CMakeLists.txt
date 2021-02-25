@@ -43,6 +43,11 @@ set(CMAKE_CXX_STANDARD 11)
 # #endif
 #////////////////////////////////////////////////////////////////////////////////
 
+set_property(GLOBAL PROPERTY JOB_POOLS one_jobs=1 two_jobs=2)
+
+
+
+
 function(genCompilation FILE_ITEM)
     get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
 
@@ -404,13 +409,13 @@ elseif(DISTRIBUTION STREQUAL "CentOS")
   else()
     set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
   endif()
-  set(CPACK_PACKAGE_CONTACT "raver119")
+  set(CPACK_PACKAGE_CONTACT "agibsonccc")
   set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
   set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
   set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")
   # Build deps: atlas blas lapack cmake3 devtoolset-4-gcc devtoolset-4-gcc-c++
   set(CPACK_RPM_PACKAGE_REQUIRES "")
-  set(CPACK_RPM_PACKAGE_URL "https://github.com/deeplearning4j/libnd4j")
+  set(CPACK_RPM_PACKAGE_URL "https://github.com/eclipse/deeplearning4j/libnd4j")
   set(CPACK_GENERATOR "RPM")
   set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.fc${RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
   set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst")
