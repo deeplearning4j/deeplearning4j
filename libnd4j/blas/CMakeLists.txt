@@ -185,10 +185,6 @@ if(SD_CUDA)
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
         endif()
 
-      if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-                  set(CMAKE_CUDA_ARCHITECTURES "${COMPUTE}")
-         endif()
-
         if(WIN32)
          message("In windows, setting cublas library and cusolver library")
          if(NOT DEFINED CUDA_cublas_LIBRARY)
