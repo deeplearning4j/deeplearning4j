@@ -278,7 +278,16 @@ if(SD_CUDA)
         set_property(TARGET ${SD_LIBRARY_NAME} PROPERTY MSVC_RUNTIME_LIBRARY "${MSVC_RT_LIB}$<$<CONFIG:Debug>:Debug>")
 
         if(WIN32)
-            message("CUDA on Windows: enabling /EHsc")
+                 message("In windows, setting cublas library and cusolver library")
+                 if(NOT DEFINED CUDA_cublas_LIBRARY)
+                          set(CUDA_cublas_LIBRARY ${CUDA_HOME}/lib/x64/cublas.lib)
+                  endif()
+
+                  if(NOT DEFINED CUDA_cusolver_LIBRARY)
+                        set(CUDA_cusolver_LIBRARY ${CUDA_HOME}/lib/x64/cusolver.lib)
+                  endif()
+                endif()
+
             SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
         endif()
 
