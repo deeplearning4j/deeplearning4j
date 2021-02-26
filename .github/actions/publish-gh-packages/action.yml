@@ -3,10 +3,11 @@ runs:
   using: composite
   steps:
     - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v1
-        with:
+      uses: actions/setup-java@v1
+      with:
           java-version: 1.8
-          - name: Publish to GitHub Packages
-            run: mvn -Pgithub --batch-mode deploy
-            env:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Publish to GitHub Packages
+      run: mvn -Pgithub --batch-mode deploy
+      shell: bash
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
