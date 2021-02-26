@@ -649,7 +649,7 @@
 
     <profiles>
         <profile>
-            <id>githubDistribution</id>
+            <id>github</id>
             <distributionManagement>
                 <repository>
                     <id>github</id>
