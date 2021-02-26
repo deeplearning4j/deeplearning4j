@@ -89,7 +89,6 @@ jobs:
               mvn  -Dlibnd4j.chip=cuda clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
-        shell: bash
         with:
           java-version: 1.8
       - run: mvn -Pgithub --batch-mode deploy
@@ -129,7 +128,6 @@ jobs:
                 mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean install -DskipTests
         - name: Set up Java for publishing to GitHub Packages
           uses: actions/setup-java@v1
-          shell: bash
           with:
               java-version: 1.8
         - run: mvn -Pgithub --batch-mode deploy
@@ -148,7 +146,6 @@ jobs:
         - uses: ./.github/actions/msys2-base-setup
         - name: Set up Java for publishing to GitHub Packages
           uses: actions/setup-java@v1
-          shell: cmd
           with:
             java-version: 1.8
         - run: mvn -Pgithub --batch-mode deploy
@@ -183,7 +180,6 @@ jobs:
           mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
-        shell: bash
         with:
           java-version: 1.8
       - run: mvn -Pgithub --batch-mode deploy
@@ -219,7 +215,6 @@ jobs:
 
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
-        shell: cmd
         with:
           java-version: 1.8
 
@@ -244,7 +239,6 @@ jobs:
 
         - name: Set up Java for publishing to GitHub Packages
           uses: actions/setup-java@v1
-          shell: bash
           with:
             java-version: 1.8
         - run: mvn -Pgithub --batch-mode deploy
