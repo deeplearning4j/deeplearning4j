@@ -92,18 +92,7 @@
         </pluginRepository>
     </pluginRepositories>
 
-    <distributionManagement>
-        <repository>
-            <id>sonatype-nexus-releases</id>
-            <name>Nexus Release Repository</name>
-            <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <name>Sonatype Nexus snapshot repository</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
+
 
     <properties>
         <maven.compiler.source>1.7</maven.compiler.source>
@@ -659,6 +648,34 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>githubDistribution</id>
+            <distributionManagement>
+                <repository>
+                    <id>github</id>
+                    <name>GitHub Packages</name>
+                    <url>https://maven.pkg.github.com/eclipse/deeplearning4j</url>
+                </repository>
+            </distributionManagement>
+        </profile>
+
+        <profile>
+            <id>ossrh</id>
+            <distributionManagement>
+                <repository>
+                    <id>sonatype-nexus-releases</id>
+                    <name>Nexus Release Repository</name>
+                    <url>http://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+
+                <snapshotRepository>
+                    <id>sonatype-nexus-snapshots</id>
+                    <name>Sonatype Nexus snapshot repository</name>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+
         <!-- This controls skipping the test backend choice enforcement below -->
         <profile>
             <id>skipTestCompileAndRun</id>

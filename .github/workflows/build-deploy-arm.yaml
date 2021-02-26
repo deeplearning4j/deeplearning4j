@@ -68,6 +68,7 @@ jobs:
                   cmake --version
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
                   mvn  -Dlibnd4j.chip=cpu clean install -DskipTests
+          - uses: ./github/actions/publish-github-packages/
 
 
 
@@ -108,3 +109,4 @@ jobs:
           run: |
             echo "Running install on architecture ${{ matrix.arch }}"
             mvn   -Dlibnd4j.chip=cpu clean install -DskipTests
+      - uses: ./github/actions/publish-github-packages/

@@ -19,6 +19,7 @@ jobs:
               cmake --version
               protoc --version
               mvn  -Dlibnd4j.chip=cpu -Pcpu clean install -DskipTests
+      - uses: ./github/actions/publish-github-packages/
 
   linux-x86_64-cuda_11-0:
     runs-on: ubuntu-18.04
@@ -44,6 +45,7 @@ jobs:
               protoc --version
               nvcc --version
               mvn -Dlibnd4j.chip=cuda  -Pcuda clean install -DskipTests
+      - uses: ./github/actions/publish-github-packages/
 
   linux-x86_64-cuda-11-2:
     runs-on: ubuntu-18.04
@@ -69,6 +71,7 @@ jobs:
               cmake --version
               protoc --version
               mvn  -Dlibnd4j.chip=cuda clean install -DskipTests
+      - uses: ./github/actions/publish-github-packages/
 
   android-x86_64:
       runs-on: ubuntu-18.04
@@ -100,6 +103,7 @@ jobs:
                 wget https://raw.githubusercontent.com/Cretezy/Swap/master/swap.sh -O swap
                 sh swap 16G ./swap
                 mvn -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean install -DskipTests
+        - uses: ./github/actions/publish-github-packages/
 
   windows-x86_64:
       runs-on: windows-2019
@@ -116,6 +120,7 @@ jobs:
             set MSYSTEM=MINGW64
             set "PATH=C:\msys64\usr\bin;%PATH%"
             mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu clean install -DskipTests
+        - uses: ./github/actions/publish-github-packages/
 
   windows-x86_64-cuda-11-0:
     runs-on: windows-2019
@@ -139,6 +144,7 @@ jobs:
           set "PATH=C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\lib\x64;%PATH%"
           echo "Running cuda build"
           mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
+      - uses: ./github/actions/publish-github-packages/
 
   windows-x86_64-cuda-11-2:
     runs-on: windows-2019
@@ -164,6 +170,7 @@ jobs:
           set "PATH=C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\lib\x64;%PATH%"
           echo "Running cuda build"
           mvn -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
+      - uses: ./github/actions/publish-github-packages/
 
   mac-x86_64:
       runs-on: macos-10.15
@@ -178,4 +185,5 @@ jobs:
           run: |
               brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
               mvn -Djavacpp.platform=macosx-x86_64 -libnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean install -DskipTests
+        - uses: ./github/actions/publish-github-packages/
 
