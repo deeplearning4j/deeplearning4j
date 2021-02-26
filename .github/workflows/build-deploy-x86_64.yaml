@@ -93,7 +93,7 @@ jobs:
           java-version: 1.8
       - run: mvn -Pgithub --batch-mode deploy
         shell: bash
-          env:
+        env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   android-x86_64:
