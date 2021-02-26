@@ -412,7 +412,7 @@ if [ -z "$PACKAGING" ]; then
 fi
 
 if [ -z "$COMPUTE" ]; then
- COMPUTE="all"
+ COMPUTE="5.0 5.2 5.3 6.0 6.2 8.0 8.6"
 fi
 
 if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
