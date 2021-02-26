@@ -68,7 +68,15 @@ jobs:
                   cmake --version
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
                   mvn  -Dlibnd4j.chip=cpu clean install -DskipTests
-      - uses: ./.github/actions/publish-gh-packages/
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        shell: bash
+        with:
+           java-version: 1.8
+      - run: mvn -Pgithub --batch-mode deploy
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
 
@@ -109,4 +117,12 @@ jobs:
           run: |
             echo "Running install on architecture ${{ matrix.arch }}"
             mvn   -Dlibnd4j.chip=cpu clean install -DskipTests
-      - uses: ./.github/actions/publish-gh-packages/
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        shell: bash
+        with:
+          java-version: 1.8
+      - run: mvn -Pgithub --batch-mode deploy
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
