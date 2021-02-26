@@ -21,7 +21,6 @@ jobs:
               mvn  -Dlibnd4j.chip=cpu -Pcpu clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
-        shell: bash
         with:
           java-version: 1.8
       - run: mvn -Pgithub --batch-mode deploy
@@ -55,7 +54,6 @@ jobs:
               mvn -Dlibnd4j.chip=cuda  -Pcuda clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
-        shell: bash
         with:
           java-version: 1.8
       - run: mvn -Pgithub --batch-mode deploy
