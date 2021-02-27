@@ -94,11 +94,7 @@
       <version>${commonsio.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>${lombok.version}</version>
-    </dependency>
+
 
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -111,9 +107,6 @@
       <artifactId>javapoet</artifactId>
       <version>1.11.1</version>
     </dependency>
-
-
-
 
     <dependency>
       <groupId>com.fasterxml.jackson.module</groupId>
@@ -132,8 +125,8 @@
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-api</artifactId>
-      <version>${project.version}</version>
     </dependency>
+
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-common</artifactId>
@@ -144,6 +137,7 @@
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -151,7 +145,6 @@
       <artifactId>nd4j-onnxruntime</artifactId>
       <version>${project.version}</version>
     </dependency>
-
 
   </dependencies>
 
