@@ -10,12 +10,8 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
-      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
-        env:
-          cuda: 11.2.1_461
-          GCC: 10.2
       - uses: ./.github/actions/install-protobuf-linux
-      - name: Run cuda compilation on linux-x86_64
+      - name: Run cuda tests
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
