@@ -1,0 +1,16 @@
+version: 3
+services:
+  self-hosted-runner:
+    image: sanderknape/github-runner
+    environment:
+      GITHUB_OWNER: eclipse
+      GITHUB_REPOSITORY: deeplearning4j
+      GITHUB_PATH: AAIXL4VZI4L3ZVR6JETFWSTAHDLNE
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count:  2
+              capabilities:
+                - gpu

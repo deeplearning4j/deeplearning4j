@@ -50,12 +50,12 @@ jobs:
           dir "%CUDA_PATH%\lib"
           set "PATH=C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.0\lib\x64;%PATH%"
           echo "Running cuda build"
-          mvn -Djavacpp.platform=windows-x86_64  -pl "nd4j-cuda-11.0,deeplearning4j-cuda-11.0,libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
+          mvn -Djavacpp.platform=windows-x86_64  -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - run: mvn -Pgithub -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0"  -pl "nd4j-cuda-11.0,deeplearning4j-cuda-11.0,libnd4j" -Djavacpp.parser.skip=true -DskipTests --batch-mode deploy
+      - run: mvn -Pgithub -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0"  -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j" -Djavacpp.parser.skip=true -DskipTests --batch-mode deploy
         shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

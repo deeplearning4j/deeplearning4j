@@ -67,7 +67,6 @@ jobs:
                   make -j2 && make install && cd .. && rm -r cmake-3.19.0
                   export PATH="/opt/cmake/bin:$PATH"
                   cmake --version
-                  cd ..
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
                   mvn   -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.chip=cpu clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
@@ -116,6 +115,7 @@ jobs:
           # The shell to run commands with in the container
           shell: /bin/sh
           run: |
+            sudo apt -yyq install libssl-dev
             echo "Running install on architecture ${{ matrix.arch }}"
             bash ./change-cuda-versions.sh 10.2
             mvn   -Dlibnd4j.chip=gpu  -pl ":nd4j-cuda-10.2,:libnd4j" clean install -DskipTests
@@ -123,7 +123,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - run: mvn -Pgithub --batch-mode deploy
+      - run: mvn -Pgithub  -Dlibnd4j.chip=gpu  -pl ":nd4j-cuda-10.2,:libnd4j" --batch-mode deploy
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
