@@ -27,7 +27,7 @@ jobs:
           protoc --version
           clang --version
           echo "Building android with NDK ${ANDROID_NDK}"
-          mvn  -pl "nd4j-native,libnd4j" --also-make -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean install -DskipTests
+          mvn  -pl "nd4j-native,libnd4j" --also-make -Djavacpp.platform=android-x86_64 -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:

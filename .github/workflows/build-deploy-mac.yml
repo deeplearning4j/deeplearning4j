@@ -13,7 +13,7 @@ jobs:
         shell: bash
         run: |
           brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
-          mvn -Djavacpp.platform=macosx-x86_64   -pl "nd4j-native,libnd4j" --also-make -libnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean install -DskipTests
+          mvn -Djavacpp.platform=macosx-x86_64   -pl "nd4j-native,libnd4j" --also-make -Dlibnd4j.platform=macosx-x86_64 -Dlibnd4j.chip=cpu clean install -DskipTests
 
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
