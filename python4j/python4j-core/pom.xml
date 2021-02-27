@@ -43,6 +43,12 @@
             <groupId>org.bytedeco</groupId>
             <artifactId>cpython-platform</artifactId>
             <version>${cpython-platform.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>javacpp-platform</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>

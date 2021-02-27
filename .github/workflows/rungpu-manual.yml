@@ -1,5 +1,5 @@
 on:
-  push:
+  workflow_dispatch:
 
 jobs:
   linux-x86_64-cuda-11-2:
