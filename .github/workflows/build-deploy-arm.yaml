@@ -69,12 +69,12 @@ jobs:
                   cmake --version
                   cd ..
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
-                  mvn  -Dlibnd4j.chip=cpu clean install -DskipTests
+                  mvn   -pl "nd4j-native,libnd4j" --also-make -Dlibnd4j.chip=cpu clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
            java-version: 1.8
-      - run: mvn -Pgithub --batch-mode deploy
+      - run: mvn  -Pgithub  -pl "nd4j-native,libnd4j" -Djavacpp.parser.skip=true --batch-mode deploy
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -117,7 +117,8 @@ jobs:
           shell: /bin/sh
           run: |
             echo "Running install on architecture ${{ matrix.arch }}"
-            mvn   -Dlibnd4j.chip=cpu clean install -DskipTests
+            bash /change-cuda-versions.sh 10.2
+            mvn   -Dlibnd4j.chip=gpu  -pl "nd4j-cuda-10.2,libnd4j" clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
