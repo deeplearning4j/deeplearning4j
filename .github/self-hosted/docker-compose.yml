@@ -1,11 +1,18 @@
-version: 3
+version: '3.3'
 services:
   self-hosted-runner:
-    image: sanderknape/github-runner
-    environment:
-      GITHUB_OWNER: eclipse
-      GITHUB_REPOSITORY: deeplearning4j
-      GITHUB_PATH: AAIXL4VZI4L3ZVR6JETFWSTAHDLNE
+    image: nvidia/cuda:11.2.1-cudnn8-runtime-ubuntu18.04
+    volumes:
+      - ./bin/:/root/bin
+      - ./config.sh:/root/config.sh
+      - ./_diag:/root/_diag
+      - ./env.sh:/root/env.sh
+      - ./run.sh:/root/run.sh
+      - ./svc.sh:/root/svc.sh
+      - ./_work:/root/_work
+      - ./externals:/root/externals
+      - ./create-and-start.sh:/root/create-and-start.sh
+    entrypoint: /root/create-and-start.sh
     deploy:
       resources:
         reservations:

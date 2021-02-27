@@ -39,9 +39,8 @@ jobs:
           shell: /bin/sh
           run: |
                echo "Running install on architecture ${{ matrix.arch }}"
-               apt-get -yq  update && apt-get install -y apt-utils build-essential unzip libssl-dev wget
-               echo "After install on architecture ${{ matrix.arch }}"
-               apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless build-essential
+               apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless build-essential git  apt-utils build-essential unzip libssl-dev wget
+                echo "After install on architecture ${{ matrix.arch }}"
                mkdir -p "/opt/maven"
                wget  http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
                tar -xzf apache-maven-3.6.3-bin.tar.gz  -C "/opt/maven" --strip-components=1
@@ -115,7 +114,7 @@ jobs:
           # The shell to run commands with in the container
           shell: /bin/sh
           run: |
-            sudo apt -yyq install libssl-dev
+            sudo apt -yyq install libssl-dev git
             echo "Running install on architecture ${{ matrix.arch }}"
             bash ./change-cuda-versions.sh 10.2
             mvn   -Dlibnd4j.chip=gpu  -pl ":nd4j-cuda-10.2,:libnd4j" clean install -DskipTests

@@ -1,0 +1,37 @@
+on:
+  push:
+jobs:
+
+  linux-x86_64-cuda_11-0:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
+        env:
+          cuda: 11.0.167
+          GCC: 9
+      - uses: ./.github/actions/install-protobuf-linux
+      - name: Build cuda
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          export PATH="/usr/local/cuda-11.0/bin:$PATH"
+           mvn --version
+           cmake --version
+           protoc --version
+           nvcc --version
+           mvn -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Dlibnd4j.chip=cuda -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j"  --also-make  -Pcuda clean install -DskipTests
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+      - run: mvn -Pgithub -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j"  -Djavacpp.parser.skip=true -DskipTests --batch-mode deploy
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
