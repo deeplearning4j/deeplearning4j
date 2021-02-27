@@ -13,7 +13,7 @@ jobs:
       - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
         env:
           cuda: 11.2.1_461
-          GCC: 9
+          GCC: 9.3
       - uses: ./.github/actions/install-protobuf-linux
       - name: Run cuda compilation on linux-x86_64
         shell: bash
