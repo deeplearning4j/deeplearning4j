@@ -60,7 +60,7 @@ jobs:
                   esac
                   mvn --version
 
-                  wget -fsSL http://cmake.org/files/v3.19/cmake-3.19.0.tar.gz
+                  wget  http://cmake.org/files/v3.19/cmake-3.19.0.tar.gz
                   tar xvf cmake-3.19.0.tar.gz
                   cd cmake-3.19.0
                   ./configure --prefix=/opt/cmake

@@ -16,12 +16,12 @@ jobs:
         run: |
           set MSYSTEM=MINGW64
           set "PATH=C:\msys64\usr\bin;%PATH%"
-          mvn -Djavacpp.platform=windows-x86_64  -pl "nd4j-native,libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu clean install -DskipTests
+          mvn -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - run: mvn -Pgithub -Djavacpp.parser.skip=true  -pl "nd4j-native,libnd4j" -DskipTests --batch-mode deploy
+      - run: mvn -Pgithub -Djavacpp.parser.skip=true  -pl ":nd4j-native,:libnd4j" -DskipTests --batch-mode deploy
         shell: cmd
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
