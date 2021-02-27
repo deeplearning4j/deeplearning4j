@@ -31,9 +31,6 @@ jobs:
         with:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
-
-
-
           # Pass some environment variables to the container
           env: | # YAML, but pipe character is necessary
             DEBIAN_FRONTEND: noninteractive

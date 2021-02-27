@@ -60,12 +60,14 @@ jobs:
                   esac
                   mvn --version
 
-                  curl -fsSL http://cmake.org/files/v3.19/cmake-3.19.0.tar.gz
+                  wget -fsSL http://cmake.org/files/v3.19/cmake-3.19.0.tar.gz
+                  tar xvf cmake-3.19.0.tar.gz
                   cd cmake-3.19.0
-                   ./configure --prefix=/opt/cmake
+                  ./configure --prefix=/opt/cmake
                   make -j2 && make install && cd .. && rm -r cmake-3.19.0
                   export PATH="/opt/cmake/bin:$PATH"
                   cmake --version
+                  cd ..
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
                   mvn  -Dlibnd4j.chip=cpu clean install -DskipTests
       - name: Set up Java for publishing to GitHub Packages
