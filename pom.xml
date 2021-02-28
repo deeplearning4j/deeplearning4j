@@ -173,7 +173,7 @@
         <javacpp.platform.sysroot/>   <!-- -Djavacpp.platform.sysroot=$(xcrun -sdk iphoneos -show-sdk-path) -->
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
-
+        <javacpp.platform.additionalIncludePaths />
         <javacpp.version>1.5.4</javacpp.version>
         <javacpp-presets.version>1.5.4</javacpp-presets.version>
         <javacv.version>1.5.4</javacv.version>
