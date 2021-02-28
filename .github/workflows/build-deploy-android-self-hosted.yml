@@ -12,7 +12,6 @@ jobs:
         with:
           ndk-version: r22
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/install-protobuf-linux
       - name: Build on linux-x86_64
         env:
           ANDROID_NDK: "/opt/hostedtoolcache/ndk/r22/x64"
