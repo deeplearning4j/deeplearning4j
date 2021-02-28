@@ -19,7 +19,9 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
-          mvn  -Dlibnd4j.chip=cpu -Pcpu clean install -DskipTests
+          sudo apt-get autoremove
+          sudo apt-get clean
+          mvn  -Dlibnd4j.chip=cpu -Pcpu clean package -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:

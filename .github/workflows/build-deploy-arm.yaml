@@ -39,7 +39,7 @@ jobs:
           shell: /bin/sh
           run: |
                echo "Running install on architecture ${{ matrix.arch }}"
-               apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless build-essential git  apt-utils build-essential unzip libssl-dev wget
+               apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless build-essential git   build-essential unzip libssl-dev wget
                 echo "After install on architecture ${{ matrix.arch }}"
                mkdir -p "/opt/maven"
                wget  http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
@@ -64,10 +64,10 @@ jobs:
                   cd cmake-3.19.0
                   ./configure --prefix=/opt/cmake
                   make -j2 && make install && cd .. && rm -r cmake-3.19.0
-                  export PATH="/opt/cmake/bin:$PATH"
-                  cmake --version
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
-                  mvn   -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.chip=cpu clean install -DskipTests
+                  cmake --version
+                  echo "Running build in ${pwd}"
+                  mvn   -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.chip=cpu clean package -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:

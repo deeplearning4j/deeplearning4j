@@ -2,7 +2,7 @@ on:
   push:
 jobs:
   android-x86_64:
-    runs-on: ubuntu-18.04
+    runs-on: self-hosted
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
@@ -26,8 +26,10 @@ jobs:
           cmake --version
           protoc --version
           clang --version
+          sudo apt-get autoremove
+          sudo apt-get clean
           echo "Building android with NDK ${ANDROID_NDK}"
-          mvn  -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.platform=android-x86_64 -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean install -DskipTests
+          mvn  -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.platform=android-x86_64 -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean package -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
