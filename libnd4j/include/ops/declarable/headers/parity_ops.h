@@ -1912,7 +1912,7 @@ namespace sd {
          *
          * input params:
          *    0 - NDArray (input). Note: last dimension should be divisibly by 8
-         *    1 - 0D Tensor - threshold to compare against. Note: when input and threshold is bool type, the threshold is ignored
+         *    1 - 0D Tensor - threshold to compare against. Note: when input is bool type, the threshold is ignored
          *
          *
          * output:
