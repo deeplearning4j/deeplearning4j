@@ -27,7 +27,7 @@
 #include <ops/ops.h>
 #include <helpers/GradCheck.h>
 #include <loops/random.h>
-
+#include <array/DataType.h>
 
 using namespace sd;
 
@@ -1758,6 +1758,208 @@ TEST_F(DeclarableOpsTests9, prelu_test14) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, compare_and_bitpack_test1) {
+
+    auto x = NDArrayFactory::create<float>('c', {2, 3, 16}, {
+    0.865595f, 0.381197f, 0.911656f, 0.256752f, 0.084921f, 0.070434f, 0.469923f, 0.269935f, 0.510656f, 0.949777f, 0.926772f, 0.622540f, 0.688253f, 0.164974f,
+    0.068558f, 0.031173f, 0.910035f, 0.219362f, 0.731336f, 0.135392f, 0.449875f, 0.020135f, 0.891820f, 0.907567f, 0.114376f, 0.652253f, 0.892939f, 0.698095f,
+    0.423831f, 0.971155f, 0.968733f, 0.194465f, 0.852475f, 0.642962f, 0.417665f, 0.768379f, 0.753035f, 0.738440f, 0.046251f, 0.659487f, 0.486230f, 0.246724f,
+    0.276700f, 0.103631f, 0.843105f, 0.562587f, 0.784459f, 0.109871f, 0.455828f, 0.129641f, 0.002471f, 0.148281f, 0.976162f, 0.603573f, 0.752530f, 0.249840f,
+    0.723716f, 0.658430f, 0.661057f, 0.328042f, 0.338351f, 0.903157f, 0.485580f, 0.405103f, 0.335052f, 0.509858f, 0.764852f, 0.764527f, 0.382572f, 0.962121f,
+    0.296145f, 0.602766f, 0.169683f, 0.750371f, 0.993936f, 0.914704f, 0.199342f, 0.858098f, 0.617198f, 0.219334f, 0.167574f, 0.305204f, 0.960773f, 0.537944f,
+    0.245441f, 0.787276f, 0.968920f, 0.980918f, 0.615237f, 0.355165f, 0.480441f, 0.304282f, 0.961229f, 0.639195f, 0.017776f, 0.836153f
+    });
+    auto threshold = NDArrayFactory::create<float>(0.5f);
+    auto exp = NDArrayFactory::create<uint8_t>('c', {2, 3, 2}, {160, 248, 163, 118, 221, 14, 14, 228, 117, 118, 55, 141});
+
+    sd::ops::compare_and_bitpack op;
+    auto result = op.evaluate({&x, &threshold}, {}, {}, {});
+    auto output = result.at(0);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+}
+
+TEST_F(DeclarableOpsTests9, compare_and_bitpack_test2) {
+
+    auto x = NDArrayFactory::create<bool>('c', {2, 3, 16}, {
+        true, false, true, false, false, false, false, false, true,
+        true, true, true, true, false, false, false, true, false,
+        true, false, false, false, true, true, false, true, true,
+        true, false, true, true, false, true, true, false, true,
+        true, true, false, true, false, false, false, false, true,
+        true, true, false, false, false, false, false, true, true,
+        true, false, true, true, true, false, false, true, false,
+        false, false, true, true, true, false, true, false, true,
+        false, true, true, true, false, true, true, false, false,
+        false, true, true, false, true, true, true, true, false,
+        false, false, true, true, false, true
+    });
+    //threshold is ignored here ,actually
+    auto threshold = NDArrayFactory::create<bool>(true);
+    auto exp = NDArrayFactory::create<uint8_t>('c', {2, 3, 2}, {160, 248, 163, 118, 221, 14, 14, 228, 117, 118, 55, 141});
+
+    sd::ops::compare_and_bitpack op;
+    auto result = op.evaluate({&x, &threshold}, {}, {}, {});
+    auto output = result.at(0);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, compare_and_bitpack_test3) {
+
+    auto x = NDArrayFactory::create<float>('c', {2, 0, 3, 16});
+    auto threshold = NDArrayFactory::create<float>(0.5f);
+    auto exp = NDArrayFactory::create<uint8_t>('c', {2, 0, 3, 2});
+
+    sd::ops::compare_and_bitpack op;
+    auto result = op.evaluate({&x, &threshold}, {}, {}, {});
+    auto output = result.at(0);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+    output->printShapeInfo("output");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, compare_and_bitpack_test4) {
+
+    auto x = NDArrayFactory::create<float>('c', {2, 0, 3, 13});
+    auto threshold = NDArrayFactory::create<float>(0.5f);
+    sd::ops::compare_and_bitpack op; 
+
+    ASSERT_THROW(op.evaluate({&x, &threshold}, {}, {}, {}), std::invalid_argument); 
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, compare_and_bitpack_test5) {
+
+    auto x = NDArrayFactory::create<float>('c', {2, 0, 3, 13});
+    auto threshold = NDArrayFactory::create<float>(0.5f);
+    auto out =  NDArrayFactory::create<uint8_t>('c', {2, 0, 3, 1});
+    sd::ops::compare_and_bitpack op; 
+
+    ASSERT_THROW(op.execute({&x, &threshold}, {&out}, {}, {}), std::invalid_argument); 
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, compare_and_bitpack_test6) {
+
+    auto x = NDArrayFactory::create<float>('c', {2, 0, 3, 8});
+    auto threshold = NDArrayFactory::create<float>(0.5f);
+    auto out =  NDArrayFactory::create<uint8_t>('c', {2, 0, 3, 2});
+    sd::ops::compare_and_bitpack op; 
+    //shape mismatch throws runtime error
+    ASSERT_THROW(op.execute({&x, &threshold}, {&out}, {}, {}), std::runtime_error); 
+
+}
+
+TEST_F(DeclarableOpsTests9, compare_and_bitpack_test7) {
+    constexpr int pp = 32*32*16;
+    constexpr int s1 = 3; 
+    constexpr int t1 = 8;
+    std::vector<Nd4jLong> shape1 = {pp}; 
+    std::vector<Nd4jLong> strides1 = {s1};
+    std::vector<Nd4jLong> shape2 = {pp/8}; 
+    std::vector<Nd4jLong> strides2 = {t1};
+    ShapeDescriptor desc1 (DataType::BOOL, 'c', shape1, strides1, s1);
+    ShapeDescriptor desc2 (DataType::UINT8, 'c', shape2, strides2, t1);
+    auto x = NDArrayFactory::create(desc1);
+    auto output = NDArrayFactory::create(desc2);
+    auto exp =  NDArrayFactory::create(desc2);
+    auto threshold = NDArrayFactory::create<bool>(true);
+    auto buff = x.bufferAsT<bool>();
+	uint8_t *expBuff = exp.bufferAsT<uint8_t>();
+    //generate test
+    for(int l=0;l<pp; l+=8){
+                uint8_t test =  rand() % 255;
+                expBuff[l/8*t1] = test;
+                auto buffP = &(buff[l*s1]);
+                buffP[0] = test & (1<<7);
+                buffP[1*s1] = test & (1<<6);
+                buffP[2*s1] = test & (1<<5);
+                buffP[3*s1] = test & (1<<4);
+                buffP[4*s1] = test & (1<<3);
+                buffP[5*s1] = test & (1<<2);
+                buffP[6*s1] = test & (1<<1);
+                buffP[7*s1] = test & 1;
+    }
+    //explicit sync to device
+    x.tickWriteHost();
+    exp.tickWriteHost();
+    x.syncToDevice();
+    exp.syncToDevice();
+
+    sd::ops::compare_and_bitpack op;
+    auto result = op.execute({&x, &threshold}, {&output}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_TRUE(exp.isSameShape(&output));
+    ASSERT_TRUE(exp.equalsTo(&output));
+
+}
+
+TEST_F(DeclarableOpsTests9, compare_and_bitpack_test8) {
+    constexpr int pp = 32;
+    constexpr int s1 = 2;
+    constexpr int s2 = (s1*pp) + 3;
+    constexpr int s3 = (s2*pp) + 4;
+    constexpr int t1 = 2;
+    constexpr int t2 = (t1*pp/8) + 3;
+    constexpr int t3 = (t2*pp) + 4;
+    std::vector<Nd4jLong> shape1 = {pp,pp,pp}; 
+    std::vector<Nd4jLong> strides1 = {s3 , s2 , s1};
+    std::vector<Nd4jLong> shape2 = {pp,pp,pp/8}; 
+    std::vector<Nd4jLong> strides2 = {t3 , t2 , t1};
+    ShapeDescriptor desc1 (DataType::BOOL, 'c', shape1, strides1, 0);
+    ShapeDescriptor desc2 (DataType::UINT8, 'c', shape2, strides2, 0);
+    auto x = NDArrayFactory::create(desc1);
+    auto output =  NDArrayFactory::create(desc2);
+    auto exp =  NDArrayFactory::create(desc2);
+    auto threshold = NDArrayFactory::create<bool>(true);
+    auto buff = x.bufferAsT<bool>();
+	uint8_t *expBuff = exp.bufferAsT<uint8_t>();
+    //generate test
+    for(int i=0;i<pp;i++){
+        for(int j=0;j<pp;j++){
+            for(int l=0;l<pp; l+=8){
+                uint8_t test =  rand() % 255;
+                expBuff[l/8*t1 + j*t2 + i *t3] = test;
+                auto buffP = &(buff[j*s2 + i *s3 + l*s1]);
+                buffP[0] = test & (1<<7);
+                buffP[1*s1] = test & (1<<6);
+                buffP[2*s1] = test & (1<<5);
+                buffP[3*s1] = test & (1<<4);
+                buffP[4*s1] = test & (1<<3);
+                buffP[5*s1] = test & (1<<2);
+                buffP[6*s1] = test & (1<<1);
+                buffP[7*s1] = test & 1;
+            }
+        }
+    }
+    //explicit sync to device
+    x.tickWriteHost();
+    exp.tickWriteHost();
+    x.syncToDevice();
+    exp.syncToDevice();
+    sd::ops::compare_and_bitpack op;
+    auto result = op.execute({&x, &threshold}, {&output}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_TRUE(exp.isSameShape(&output));
+    ASSERT_TRUE(exp.equalsTo(&output));
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, thresholdedrelu_test1) {
 
     const float theta = 2.f;
@@ -1773,25 +1975,6 @@ TEST_F(DeclarableOpsTests9, thresholdedrelu_test1) {
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, compare_and_bitpack_test1) {
-
-    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {-12.f, -11.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f});
-    auto threshold = NDArrayFactory::create<double>(2.0);
-    auto exp = NDArrayFactory::create<uint8_t>('c', {2, 3, 4}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                                                                                0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1});
-
-    sd::ops::compare_and_bitpack op;
-
-    auto result = op.evaluate({&x, &threshold}, {}, {}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, result.status());
-    auto output = result.at(0);
-//    output->printIndexedBuffer("Packed to uint8");
-    ASSERT_TRUE(exp.isSameShape(output));
-    ASSERT_TRUE(exp.equalsTo(output));
 
 }
 
