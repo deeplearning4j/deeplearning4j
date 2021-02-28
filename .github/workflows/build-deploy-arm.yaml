@@ -13,9 +13,6 @@ jobs:
         include:
           - arch: aarch64
             distro: ubuntu18.04
-          - arch: ppc64le
-            distro: ubuntu18.04
-
 
     steps:
       - name: Cancel Previous Runs
@@ -24,6 +21,10 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/install-protobuf-linux
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
       - uses: uraimo/run-on-arch-action@v2.0.8
         name: Build and test with ${{ matrix.arch }} ${{ matrix.distro }}
         id: build
@@ -34,7 +35,7 @@ jobs:
           env: | # YAML, but pipe character is necessary
             DEBIAN_FRONTEND: noninteractive
             M2_HOME: /opt/maven
-
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # The shell to run commands with in the container
           shell: /bin/sh
           run: |
@@ -53,24 +54,10 @@ jobs:
                         ;;
                   esac
                   mvn --version
-
-
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
                   cmake --version
                   echo "Running build in ${pwd}"
-                  mvn   -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.chip=cpu clean package -DskipTests
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v1
-        with:
-           java-version: 1.8
-      - run: mvn  -Pgithub  -pl ":nd4j-native,:libnd4j" -Djavacpp.parser.skip=true --batch-mode deploy
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-
-
+                  mvn -Djavacpp.platform=linux-arm64 -Pgithub  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.chip=cpu clean --batch-mode deploy -DskipTests
 
   build_cross_platform_cuda:
     # The host should always be linux
@@ -91,6 +78,10 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
       - uses: konduitai/run-on-arch-action@master
         name: Build and test with ${{ matrix.arch }} ${{ matrix.distro }}
         id: build
@@ -101,19 +92,11 @@ jobs:
           env: | # YAML, but pipe character is necessary
             DEBIAN_FRONTEND: noninteractive
             M2_HOME: /opt/maven
-
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # The shell to run commands with in the container
           shell: /bin/sh
           run: |
             sudo apt -yyq install libssl-dev git
             echo "Running install on architecture ${{ matrix.arch }}"
             bash ./change-cuda-versions.sh 10.2
-            mvn   -Dlibnd4j.chip=gpu  -pl ":nd4j-cuda-10.2,:libnd4j" clean install -DskipTests
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - run: mvn -Pgithub  -Dlibnd4j.chip=gpu  -pl ":nd4j-cuda-10.2,:libnd4j" --batch-mode deploy
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            mvn  -Pgithub -DskipTests -Djavacpp.platform=linux-arm64  -Dlibnd4j.chip=gpu  -pl ":nd4j-cuda-10.2,:libnd4j" clean --batch-mode deploy

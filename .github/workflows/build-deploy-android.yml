@@ -13,12 +13,17 @@ jobs:
           ndk-version: r22
       - uses: actions/checkout@v2
       - uses: ./.github/actions/install-protobuf-linux
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
       - name: Build on linux-x86_64
         env:
           ANDROID_NDK: "/opt/hostedtoolcache/ndk/r22/x64"
           GNUMAKEFLAGS: "-j1"
           MAKEFLAGS: "-j1"
           MAKEOPTS: "--jobs=1 --load-average=1"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Verifying programs on path. Path is $PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
@@ -29,13 +34,7 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get clean
           echo "Building android with NDK ${ANDROID_NDK}"
-          mvn  -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.platform=android-x86_64 -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean package -DskipTests
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - run: mvn  -pl ":nd4j-native,:libnd4j" -Pgithub -Djavacpp.platform=android-x86_64 -Djavacpp.parser.skip=true -DskipTests --batch-mode deploy
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          mvn  -Pgithub -Djavacpp.platform=android-x86_64 -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.platform=android-x86_64 -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean --batch-mode deploy -DskipTests
+
+
 
