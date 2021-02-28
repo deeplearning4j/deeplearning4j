@@ -527,6 +527,7 @@
                     </executions>
                     <configuration>
                         <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                       <failOnNoGitDirectory>false</failOnNoGitDirectory>
                         <generateGitPropertiesFilename>
                             ${project.basedir}/target/generated-sources/src/main/resources/org/eclipse/${project.groupId}-${project.artifactId}-git.properties
                         </generateGitPropertiesFilename>
