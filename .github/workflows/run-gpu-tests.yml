@@ -21,5 +21,6 @@ jobs:
           cmake --version
           protoc --version
           bash ./change-cuda-versions.sh 11.2
+          export OMP_NUM_THREADS=1
           mvn  -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0"  -Ptest-nd4j-cuda  --also-make -Dlibnd4j.chip=cuda clean test
 
