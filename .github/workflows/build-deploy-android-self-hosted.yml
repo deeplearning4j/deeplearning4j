@@ -25,7 +25,7 @@ jobs:
           clang --version
 
           echo "Building android with NDK ${ANDROID_NDK}"
-          mvn  -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.platform=android-x86_64 -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean package -DskipTests
+          mvn  -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.platform=android-x86_64 -Djavacpp.platform.compiler="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean package -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
