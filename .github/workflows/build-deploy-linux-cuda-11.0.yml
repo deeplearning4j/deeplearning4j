@@ -39,6 +39,6 @@ jobs:
               nvcc --version
               sudo apt-get autoremove
               sudo apt-get clean
-              mvn -DskipTests -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Dlibnd4j.chip=cuda -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j"  --also-make  -Pcuda clean  --batch-mode deploy
+              mvn -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Dlibnd4j.chip=cuda -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j"  --also-make  -Pcuda clean  --batch-mode deploy  -DskipTests
 
 

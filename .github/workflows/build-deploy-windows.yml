@@ -22,4 +22,4 @@ jobs:
         run: |
           set MSYSTEM=MINGW64
           set "PATH=C:\msys64\usr\bin;%PATH%"
-          mvn -Pgithub -DskipTests -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu --batch-mode deploy
+          mvn -Pgithub  -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu --batch-mode deploy -DskipTests

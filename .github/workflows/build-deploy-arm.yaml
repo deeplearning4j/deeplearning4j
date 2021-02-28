@@ -99,4 +99,4 @@ jobs:
             sudo apt -yyq install libssl-dev git
             echo "Running install on architecture ${{ matrix.arch }}"
             bash ./change-cuda-versions.sh 10.2
-            mvn  -Pgithub -DskipTests -Djavacpp.platform=linux-arm64  -Dlibnd4j.chip=gpu  -pl ":nd4j-cuda-10.2,:libnd4j" clean --batch-mode deploy
+            mvn  -Pgithub  -Djavacpp.platform=linux-arm64  -Dlibnd4j.chip=gpu  -pl ":nd4j-cuda-10.2,:libnd4j" clean --batch-mode deploy -DskipTests

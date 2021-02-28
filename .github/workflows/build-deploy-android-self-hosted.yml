@@ -13,6 +13,10 @@ jobs:
         with:
           ndk-version: r22
       - uses: actions/checkout@v2
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
       - name: Build on linux-x86_64
         env:
           ANDROID_NDK: "/opt/hostedcache/ndk/r22/x64"
@@ -29,11 +33,8 @@ jobs:
            -Djavacpp.additionalIncludePath="sources/cxx-stl/llvm-libc++/include/:sources/cxx-stl/llvm-libc++abi/include/:sources/android/support/include/:sysroot/usr/include/:sysroot/usr/include/x86_64-linux-android/" \
            -Djavacpp.platform=android-x86_64 -Djavacpp.platform.root="${ANDROID_NDK}"  -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
            clean package -DskipTests
-      - name: Set up Java for publishing to GitHub Packages
-        uses: actions/setup-java@v1
-        with:
-          java-version: 1.8
-      - run: mvn  -pl ":nd4j-native,:libnd4j" -Pgithub -Djavacpp.platform=android-x86_64 -Djavacpp.parser.skip=true -DskipTests --batch-mode deploy
+
+      - run: mvn  -pl ":nd4j-native,:libnd4j" -Pgithub -Djavacpp.platform=android-x86_64 -Djavacpp.parser.skip=true -DskipTests --batch-mode deploy -DskipTests
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
