@@ -15,7 +15,7 @@ jobs:
       - uses: ./.github/actions/install-protobuf-linux
       - name: Build on linux-x86_64
         env:
-          ANDROID_NDK: "/opt/hostedtoolcache/ndk/r21e/x64"
+          ANDROID_NDK: "/opt/hostedtoolcache/ndk/r22/x64"
           GNUMAKEFLAGS: "-j1"
           MAKEFLAGS: "-j1"
           MAKEOPTS: "--jobs=1 --load-average=1"
