@@ -16,7 +16,7 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          export PATH="/usr/local/cuda-11.2/bin:$PATH"
+          export PATH="/opt/protobuf/bin:/usr/local/cuda-11.2/bin:$PATH"
           nvcc --version
           mvn --version
           cmake --version
