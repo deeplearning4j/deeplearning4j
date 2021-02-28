@@ -25,7 +25,9 @@ jobs:
           clang --version
           wget https://raw.githubusercontent.com/bytedeco/javacpp/master/src/main/resources/org/bytedeco/javacpp/properties/android-x86_64-clang.properties
           echo "Building android with NDK ${ANDROID_NDK}"
-          mvn  -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.platform.properties="./android-x86_64-clang.properties" -Djavacpp.platform=android-x86_64 -Djavacpp.platform.root="${ANDROID_NDK}"  -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu clean package -DskipTests
+          mvn  -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.platform.properties="./android-x86_64-clang.properties" -Djavacpp.platform=android-x86_64 -Djavacpp.platform.root="${ANDROID_NDK}"  -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.buildhthreads=1 -Dlibnd4j.chip=cpu \
+           -Djavacpp.platform.includepath="/opt/openblas/include"
+           clean package -DskipTests
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
