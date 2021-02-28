@@ -39,7 +39,7 @@ jobs:
           shell: /bin/sh
           run: |
                echo "Running install on architecture ${{ matrix.arch }}"
-               sudo apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless build-essential git   build-essential unzip libssl-dev libssl wget
+                apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless build-essential git   build-essential unzip libssl-dev libssl wget
                 echo "After install on architecture ${{ matrix.arch }}"
                mkdir -p "/opt/maven"
                wget  http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
