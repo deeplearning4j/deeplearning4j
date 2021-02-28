@@ -4,6 +4,7 @@ jobs:
   android-x86_64:
     runs-on: self-hosted
     steps:
+      - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:

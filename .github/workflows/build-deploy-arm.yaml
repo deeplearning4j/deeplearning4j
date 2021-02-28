@@ -39,12 +39,7 @@ jobs:
           shell: /bin/sh
           run: |
                echo "Running install on architecture ${{ matrix.arch }}"
-                apt-get -y --no-install-recommends install curl  default-jre-headless openjdk-8-jdk-headless build-essential git   build-essential unzip libssl-dev libssl wget
-                echo "After install on architecture ${{ matrix.arch }}"
-               mkdir -p "/opt/maven"
-               wget  http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz
-               tar -xzf apache-maven-3.6.3-bin.tar.gz  -C "/opt/maven" --strip-components=1
-               export PATH="/opt/maven/bin:$PATH"
+                export PATH="/opt/maven/bin:$PATH"
                 echo "RUNNING ARCH ${{ matrix.arch }}"
                   case "${{ matrix.arch }}" in
                     armv7)
@@ -59,11 +54,7 @@ jobs:
                   esac
                   mvn --version
 
-                  wget  http://cmake.org/files/v3.19/cmake-3.19.0.tar.gz
-                  tar xvf cmake-3.19.0.tar.gz
-                  cd cmake-3.19.0
-                  ./configure --prefix=/opt/cmake
-                  make -j2 && make install && cd .. && rm -r cmake-3.19.0
+
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
                   cmake --version
                   echo "Running build in ${pwd}"
