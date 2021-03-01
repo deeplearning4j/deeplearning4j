@@ -30,7 +30,7 @@ jobs:
           wget -O android-x86_64.properties https://raw.githubusercontent.com/bytedeco/javacpp/master/src/main/resources/org/bytedeco/javacpp/properties/android-x86_64.properties
           echo "Building android with NDK ${ANDROID_NDK}"
           mvn  -Pgithub -pl ":nd4j-native,:libnd4j" --also-make  \
-          -Djavacpp.platform=android-x86_64  -Dplatform.includepath="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/11.0.5/include/" -Djavacpp.platform.root=${ANDROID_NDK} \
+          -Djavacpp.platform=android-x86_64  -Dplatform.includepath="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/lib64/clang/11.0.5/include/:${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/" -Djavacpp.platform.root=${ANDROID_NDK} \
           -Djavacpp.platform.sysroot=${ANDROID_NDK} -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
           --batch-mode deploy -DskipTests
 
