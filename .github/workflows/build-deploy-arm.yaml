@@ -53,6 +53,9 @@ jobs:
                           export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-ppc64el/jre
                         ;;
                   esac
+                  mkdir -p /opt/maven &&
+                  curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | \
+                  tar -xzC /opt/maven --strip-components=1
                   mvn --version
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
                   cmake --version

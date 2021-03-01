@@ -29,13 +29,9 @@ jobs:
           clang --version
           wget -O android-x86_64-clang.properties https://gist.githubusercontent.com/agibsonccc/f8d12bb33729afc48fee8b691661785e/raw/0d90c40357f4876055c9450750c4649990d8ade7/gistfile1.txt
           echo "Building android with NDK ${ANDROID_NDK}"
-          mvn  -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.compiler="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" \
+          mvn  -Pgithub -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.compiler="${ANDROID_NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang++" \
            -Djavacpp.additionalIncludePath="sources/cxx-stl/llvm-libc++/include/:sources/cxx-stl/llvm-libc++abi/include/:sources/android/support/include/:sysroot/usr/include/:sysroot/usr/include/x86_64-linux-android/" \
            -Djavacpp.platform=android-x86_64 -Djavacpp.platform.root="${ANDROID_NDK}"  -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
-           clean package -DskipTests
+           --batch-mode deploy -DskipTests
 
-      - run: mvn  -pl ":nd4j-native,:libnd4j" -Pgithub -Djavacpp.platform=android-x86_64 -Djavacpp.parser.skip=true -DskipTests --batch-mode deploy -DskipTests
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
