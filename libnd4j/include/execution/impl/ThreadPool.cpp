@@ -151,7 +151,7 @@ namespace samediff {
 
     Ticket* ThreadPool::tryAcquire(int numThreads) {
         //std::vector<BlockingQueue<CallableWithArguments*>*> queues;
-
+        if(numThreads<=0) return nullptr;
         Ticket *t = nullptr;
         // we check for threads availability first
         bool threaded = false;
