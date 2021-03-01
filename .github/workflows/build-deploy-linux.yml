@@ -26,6 +26,6 @@ jobs:
           protoc --version
           sudo apt-get autoremove
           sudo apt-get clean
-          mvn -Pgithub   -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests
+          mvn -Pgithub  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests
 
 
