@@ -34,7 +34,7 @@ jobs:
           sudo apt-get autoremove
           sudo apt-get clean
           echo "Building android with NDK ${ANDROID_NDK}"
-          mvn  -Pgithub -pl ":nd4j-native,:libnd4j" --also-make -Djavacpp.platform.suffix="-clang" \
+          mvn  -Pgithub -pl ":nd4j-native,:libnd4j" --also-make \
           -Djavacpp.platform=android-x86_64 -Djavacpp.platform.root="${ANDROID_NDK}"  -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
           --batch-mode deploy -DskipTests
 
