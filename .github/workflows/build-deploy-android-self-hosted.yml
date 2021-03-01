@@ -27,10 +27,10 @@ jobs:
           cmake --version
           protoc --version
           clang --version
-          wget -O android-x86_64-clang.properties https://gist.githubusercontent.com/agibsonccc/f8d12bb33729afc48fee8b691661785e/raw/0d90c40357f4876055c9450750c4649990d8ade7/gistfile1.txt
+          wget -O android-x86_64.properties https://raw.githubusercontent.com/bytedeco/javacpp/master/src/main/resources/org/bytedeco/javacpp/properties/android-x86_64.properties
           echo "Building android with NDK ${ANDROID_NDK}"
           mvn  -Pgithub -pl ":nd4j-native,:libnd4j" --also-make  \
-          -Djavacpp.platform=android-x86_64   -Djavacpp.platform.root=${ANDROID_NDK} -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
+          -Djavacpp.platform=android-x86_64  -Djavacpp.platform.properties=./android-x86_64.properties -Djavacpp.platform.root=${ANDROID_NDK} -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
           --batch-mode deploy -DskipTests
 
 
