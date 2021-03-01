@@ -1908,15 +1908,15 @@ namespace sd {
         #endif
 
         /**
-         * compare_and_bitpack - compare with greater and pack result with uint8
+         * compare_and_bitpack - Compare values of input to threshold and pack resulting bits into a uint8
          *
          * input params:
-         *    0 - NDArray (input)
-         *    1 - 0D Tensor - threshold
+         *    0 - NDArray (input). Note: last dimension should be divisibly by 8
+         *    1 - 0D Tensor - threshold to compare against. Note: when input is bool type, the threshold is ignored
          *
          *
          * output:
-         *    0 - NDArray with the same shape as input and type uint8
+         *    0 - NDArray with the shape as {input.dim0,...input.dimLast/8} and type uint8
          */
         #if NOT_EXCLUDED(OP_compare_and_bitpack)
         DECLARE_CUSTOM_OP(compare_and_bitpack, 2, 1, false, 0, 0);
