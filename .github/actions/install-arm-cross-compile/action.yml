@@ -6,7 +6,7 @@ runs:
       shell: bash
       run: |
          sudo apt install got gcc-8-aarch64-linux-gnu g++-8-aarch64-linux-gnu libc6-armel-cross libc6-dev-armel-cross binutils-arm-linux-gnueabi libncurses5-dev build-essential bison flex libssl-dev bc \
-             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
-        mkdir -p /opt/raspberrypi && \
-          cd /opt/raspberrypi && \
-          git clone git://github.com/raspberrypi/tools.git
+         gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+         mkdir -p /opt/raspberrypi && \
+         cd /opt/raspberrypi && \
+         git clone git://github.com/raspberrypi/tools.git
