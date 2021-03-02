@@ -20,6 +20,7 @@ jobs:
       - name: Build on linux-x86_64
         env:
           ANDROID_NDK: "/opt/hostedcache/ndk/r22/x64"
+          CPLUS_INCLUDE_PATH: "/opt/hostedcache/ndk/r22/x64/toolchains/llvm/prebuilt/linux-x86_64/sysroot/usr/include/"
         run: |
           echo "Verifying programs on path. Path is $PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
