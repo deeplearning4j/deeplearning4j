@@ -21,7 +21,7 @@ jobs:
         env:
           ANDROID_NDK: "/opt/hostedcache/ndk/r18b/x64"
           OPENBLAS_PATH: "/opt/openblas/"
-          LIBND4J_HOME: "../../../../libnd4j"
+          LIBND4J_HOME: "${GITHUB_WORKSPACE}/libnd4j"
         run: |
           echo "Verifying programs on path. Path is $PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
