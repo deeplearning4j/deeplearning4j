@@ -27,10 +27,7 @@ import org.bytedeco.openblas.global.openblas;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  *
@@ -246,9 +243,14 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                 break;
             }
         }
-        ArrayList<File> files = new ArrayList<File>();
-        ArrayList<String> opTemplates = new ArrayList<String>();
+
+        List<File> files = new ArrayList<>();
+        List<String> opTemplates = new ArrayList<>();
         files.add(file);
+        File parentHeaders = new File(file.getParent(), "headers");
+        if(!parentHeaders.exists()) {
+            throw new IllegalStateException("File " + parentHeaders.getAbsolutePath() + " does not exist!");
+        }
         files.addAll(Arrays.asList(new File(file.getParent(), "headers").listFiles()));
         Collections.sort(files);
         for (File f : files) {
