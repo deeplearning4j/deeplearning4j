@@ -29,7 +29,7 @@ jobs:
           cmake --version
           protoc --version
           clang --version
-          mvn  -V -Dorg.bytedeco.javacpp.logger.debug=true -Pgithub -pl ":nd4j-native,:libnd4j" --also-make  \
+          mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Pgithub -pl ":nd4j-native,:libnd4j" --also-make  \
           -Djavacpp.platform=android-x86_64  \
           -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
           --batch-mode clean deploy -DskipTests
