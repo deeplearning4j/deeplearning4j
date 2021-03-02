@@ -20,6 +20,7 @@ jobs:
       - name: Build on linux-x86_64
         env:
           ANDROID_NDK: "/opt/hostedcache/ndk/r18b/x64"
+          OPENBLAS_PATH: "/opt/openblas/"
         run: |
           echo "Verifying programs on path. Path is $PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
@@ -27,12 +28,9 @@ jobs:
           cmake --version
           protoc --version
           clang --version
-          wget -O android-x86_64.properties https://raw.githubusercontent.com/bytedeco/javacpp/master/src/main/resources/org/bytedeco/javacpp/properties/android-x86_64.properties
-          echo "Building android with NDK ${ANDROID_NDK}"
-          mvn  -Pgithub -pl ":nd4j-native,:libnd4j" --also-make  \
-          -Dorg.bytedeco.javacpp.logger.debug=true \
+          mvn  -V -Dorg.bytedeco.javacpp.logger.debug=true -Pgithub -pl ":nd4j-native,:libnd4j" --also-make  \
           -Djavacpp.platform=android-x86_64  \
           -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
-          --batch-mode deploy -DskipTests
+          --batch-mode clean deploy -DskipTests
 
 
