@@ -4,25 +4,24 @@ jobs:
   android-x86_64:
     runs-on: ubuntu-18.04
     steps:
+      - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
       - uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r22
+          ndk-version: r18b
       - uses: actions/checkout@v2
-      - uses: ./.github/actions/install-protobuf-linux
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
       - name: Build on linux-x86_64
         env:
-          ANDROID_NDK: "/opt/hostedtoolcache/ndk/r22/x64"
-          GNUMAKEFLAGS: "-j1"
-          MAKEFLAGS: "-j1"
-          MAKEOPTS: "--jobs=1 --load-average=1"
+          ANDROID_NDK: "/opt/hostedcache/ndk/r18b/x64"
+          OPENBLAS_PATH: "${USER}/.javacpp/cache/org/bytedeco/openblas-0.3.10-1.5.4/android-x86_64.jar/lib/x86_64"
+          LIBND4J_HOME: "${GITHUB_WORKSPACE}/libnd4j"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "Verifying programs on path. Path is $PATH"
@@ -31,12 +30,9 @@ jobs:
           cmake --version
           protoc --version
           clang --version
-          sudo apt-get autoremove
-          sudo apt-get clean
-          echo "Building android with NDK ${ANDROID_NDK}"
-          mvn  -Pgithub -pl ":nd4j-native,:libnd4j" --also-make \
-          -Djavacpp.platform=android-x86_64 -Djavacpp.platform.root="${ANDROID_NDK}"  -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
-          --batch-mode deploy -DskipTests
-
+          mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Pgithub -pl ":nd4j-native,:libnd4j" --also-make  \
+          -Djavacpp.platform=android-x86_64  \
+          -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
+          --batch-mode clean deploy -DskipTests
 
 
