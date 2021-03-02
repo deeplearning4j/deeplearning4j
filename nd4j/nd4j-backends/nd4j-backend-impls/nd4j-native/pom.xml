@@ -170,6 +170,9 @@
                         <includePath>${libnd4jhome}/include/memory</includePath>
                         <includePath>${libnd4jhome}/include/performance</includePath>
                     </includePaths>
+                    <environmentVariables>
+
+                    </environmentVariables>
                     <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
                     <buildResources>
                         <buildResource>/${javacpp.platform.library.path}/</buildResource>
