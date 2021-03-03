@@ -20,14 +20,14 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEPLOY: 1
+          BUILD_USING_MAVEN: 1
+          TARGET_OS: linux
+          CURRENT_TARGET: arm64
         run: |
            mvn --version
            cmake --version
            protoc --version
-           export BUILD_USING_MAVEN=1
-           export CURRENT_TARGET=arm64
-           export TARGET_OS=linux
-           export DEPLOY=1
            ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
 
