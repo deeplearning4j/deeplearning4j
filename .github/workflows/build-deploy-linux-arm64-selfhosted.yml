@@ -29,6 +29,5 @@ jobs:
            export TARGET_OS=linux
            export DEPLOY=1
            ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
-           mvn -Dmaven.javadoc.skip=true -Dmaven.test.skip=true -Dlibnd4j.cpu.compile.skip=true -Pgithub  -pl ":nd4j-native,:libnd4j,:nd4j-native-preset"   -Dlibnd4j.platform=linux-arm64 -Djavacpp.platform=linux-arm64 -Dlibnd4j.chip=cpu -Pcpu -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER} --batch-mode deploy -DskipTests
 
 
