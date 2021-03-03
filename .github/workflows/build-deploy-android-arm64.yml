@@ -1,7 +1,7 @@
 on:
   push:
 jobs:
-  android-x86_64:
+  android-arm64:
     runs-on: ubuntu-18.04
     steps:
       - uses: AutoModality/action-clean@v1
@@ -12,12 +12,13 @@ jobs:
       - uses: nttld/setup-ndk@v1
         with:
           ndk-version: r18b
+      - uses: ./.github/actions/install-protobuf-linux
       - uses: actions/checkout@v2
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      - name: Build on linux-arm64
+      - name: Build on android-arm64
         env:
           ANDROID_NDK: "/opt/hostedcache/ndk/r18b/x64"
           OPENBLAS_PATH: "${USER}/.javacpp/cache/org/bytedeco/openblas-0.3.10-1.5.4/android-arm64.jar/lib/arm64-v8a"
