@@ -22,14 +22,15 @@
 function message {
 	echo "BUILDER:::: ${@}"
 }
+if [ -z "${BUILD_USING_MAVEN}" ]; then export BUILD_USING_MAVEN=; fi
+if [ -z "${CURRENT_TARGET}" ]; then export  CURRENT_TARGET=arm32; fi
+if [ -z "${HAS_ARMCOMPUTE}" ]; then export  ARMCOMPUTE_DEBUG=1; fi
+if [ -z "${ARMCOMPUTE_DEBUG}" ]; then export  HAS_ARMCOMPUTE=1; fi
+if [ -z "${ARMCOMPUTE_TAG}" ]; then export  ARMCOMPUTE_TAG=v20.05; fi
+if [ -z "${LIBND4J_BUILD_MODE}" ]; then export  LIBND4J_BUILD_MODE=Release; fi
+if [ -z "${ANDROID_VERSION}" ]; then export  ANDROID_VERSION=21; fi
+if [ -z "${HAS_ARMCOMPUTE}" ]; then export  HAS_ARMCOMPUTE=1; fi
 
-BUILD_USING_MAVEN=
-CURRENT_TARGET=arm32
-HAS_ARMCOMPUTE=1
-ARMCOMPUTE_DEBUG=0
-ARMCOMPUTE_TAG=v20.05
-LIBND4J_BUILD_MODE=Release
-export ANDROID_VERSION=21
 OTHER_ARGS=()
 while [[ $# -gt 0 ]]
 do
