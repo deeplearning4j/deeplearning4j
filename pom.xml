@@ -709,6 +709,12 @@
                     <name>GitHub Packages</name>
                     <url>https://maven.pkg.github.com/eclipse/deeplearning4j</url>
                 </repository>
+
+                <snapshotRepository>
+                    <id>github-snapshots</id>
+                    <name>Github snapshots</name>
+                    <url>https://maven.pkg.github.com/eclipse/deeplearning4j</url>
+                </snapshotRepository>
             </distributionManagement>
         </profile>
 
