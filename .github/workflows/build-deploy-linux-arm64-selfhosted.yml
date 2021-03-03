@@ -26,6 +26,6 @@ jobs:
            BUILD_USING_MAVEN=1
            CURRENT_TARGET=arm64
            TARGET_OS=linux
-           ./libnd4j/pi-build.sh
+           ${GITHUB_WORKSPACE}/libnd4j/pi-build.sh
 
 
