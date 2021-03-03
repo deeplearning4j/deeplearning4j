@@ -80,8 +80,8 @@
     </dependencyManagement>
 
     <build>
-        <plugins>
-            <!-- Skip execution of Javadoc since some versions run out of memory -->
+      <!--  <plugins>
+            &lt;!&ndash; Skip execution of Javadoc since some versions run out of memory &ndash;&gt;
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -101,9 +101,23 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>empty-javadoc-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <skip>false</skip>
+                            <classifier>javadoc</classifier>
+                            <classesDirectory>${basedir}/javadoc</classesDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
-
+-->
         <pluginManagement>
             <plugins>
                 <plugin>
