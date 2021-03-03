@@ -20,7 +20,7 @@ jobs:
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN:  ${{ github.token }}
+          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
           DEPLOY: 1
           BUILD_USING_MAVEN: 1
           TARGET_OS: linux
