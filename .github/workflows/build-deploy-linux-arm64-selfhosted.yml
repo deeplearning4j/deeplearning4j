@@ -23,8 +23,6 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
-          sudo apt-get autoremove
-          sudo apt-get clean
           export CROSS_COMPILE=aarch64-linux-gnu
           export PREFIX=aarch64-linux-gnu
           mvn -Pgithub  -pl ":nd4j-native,:libnd4j" --also-make   -Dlibnd4j.platform=linux-arm64 -Djavacpp.platform=linux-arm64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests
