@@ -23,9 +23,6 @@ jobs:
            mvn --version
            cmake --version
            protoc --version
-           sudo apt-get autoremove
-           sudo apt-get clean
-           export CROSS_COMPILE=aarch64-linux-gnu
            BUILD_USING_MAVEN=1
            CURRENT_TARGET=arm64
            TARGET_OS=linux
