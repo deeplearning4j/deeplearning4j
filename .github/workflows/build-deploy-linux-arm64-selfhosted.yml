@@ -10,16 +10,17 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
-      - uses: actions/checkout@v2
+            java-version: 1.8
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build on  linux-x86_64
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN:  ${{ github.token }}
           DEPLOY: 1
           BUILD_USING_MAVEN: 1
           TARGET_OS: linux
