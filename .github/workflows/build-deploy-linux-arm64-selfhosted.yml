@@ -2,8 +2,8 @@ on:
   push:
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
-  linux-x86_64:
-    runs-on: ubuntu-18.04
+  linux-arm64:
+    runs-on: self-hosted
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
