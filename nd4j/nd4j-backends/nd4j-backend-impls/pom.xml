@@ -80,8 +80,8 @@
     </dependencyManagement>
 
     <build>
-      <!--  <plugins>
-            &lt;!&ndash; Skip execution of Javadoc since some versions run out of memory &ndash;&gt;
+        <plugins>
+            <!-- Skip execution of Javadoc since some versions run out of memory -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -117,7 +117,7 @@
                 </executions>
             </plugin>
         </plugins>
--->
+
         <pluginManagement>
             <plugins>
                 <plugin>
