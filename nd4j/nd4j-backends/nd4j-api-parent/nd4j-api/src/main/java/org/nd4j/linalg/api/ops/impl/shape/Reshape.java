@@ -84,7 +84,7 @@ public class Reshape extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        if (!nodeDef.containsAttr("TShape") && nodeDef.getInputCount() == 1) {
+      /*  if (!nodeDef.containsAttr("TShape") && nodeDef.getInputCount() == 1) {
             this.shape = new long[]{};
             return;
         } else if(nodeDef.getInputCount() == 1){
@@ -114,7 +114,7 @@ public class Reshape extends DynamicCustomOp {
             if (this.shape != null) {
                 addIArgument(this.shape);
             }
-        }
+        }*/
     }
 
     @Override
