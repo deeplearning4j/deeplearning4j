@@ -27,5 +27,6 @@ jobs:
            CURRENT_TARGET=arm64
            TARGET_OS=linux
            ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
+           mvn -Pgithub  -pl ":nd4j-native,:libnd4j" --also-make   -Dlibnd4j.platform=linux-arm64 -Djavacpp.platform=linux-arm64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests
 
 
