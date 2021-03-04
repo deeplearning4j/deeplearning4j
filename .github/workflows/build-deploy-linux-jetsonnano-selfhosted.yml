@@ -3,7 +3,7 @@ on:
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   linux-arm64:
-    runs-on: ubuntu-18.04
+    runs-on: self-hosted
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
@@ -25,7 +25,23 @@ jobs:
           BUILD_USING_MAVEN: 1
           TARGET_OS: linux
           CURRENT_TARGET: arm64
+          CROSS_ROOT: ${GITHUB_WORKSPACE}/rootfs-nano
+          CROSS_COMPILE: ${GITHUB_WORKSPACE}/toolchain/gcc-4.8.5-aarch64/bin
+          CC: ${CROSS_COMPILE}/aarch64-unknown-linux-gnu-gcc
+          CXX: ${CROSS_COMPILE}/aarch64-unknown-linux-gnu-g++
+          LD: ${CROSS_COMPILE}/aarch64-unknown-linux-gnu-ld
+          AR: ${CROSS_COMPILE}/aarch64-unknown-linux-gnu-ar
+          AS: ${CROSS_COMPILE}/aarch64-unknown-linux-gnu-as
+          RANLIB: ${CROSS_COMPILE}/aarch64-unknown-linux-gnu-ranlib
+          NVCC: ${GITHUB_WORKSPACE}/cuda-10.2/bin/nvcc
+
         run: |
+           wget https://developer.nvidia.com/embedded/dlc/l4t-gcc-toolchain-64-bit-28-3
+           tar xpvf l4t-gcc-toolchain-64-bit-28-3
+           mv install gcc-4.8.5-aarch64
+           ${GITHUB_WORKSPACE}/change-cuda-versions.sh 10.2
+           wget https://github.com/KonduitAI/deeplearning4j/releases/download/cuda-10.2/cuda-10.2.tar
+           tar xvf cuda-10.2.tar
            mvn --version
            cmake --version
            protoc --version

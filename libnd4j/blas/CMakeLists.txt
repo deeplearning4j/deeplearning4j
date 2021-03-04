@@ -176,6 +176,8 @@ if(SD_CUDA)
             set(EXPM " -D__ND4J_EXPERIMENTAL__=true")
         endif()
 
+
+
         # the only difference for debug mode here is host/device debug symbols
         set(CMAKE_CUDA_FLAGS_DEBUG " -G -g")
 

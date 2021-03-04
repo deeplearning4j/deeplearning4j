@@ -399,6 +399,12 @@ if [ -z "$BUILD" ]; then
 
 fi
 
+if [ -z "$SYS_ROOT" ]; then
+ SYS_ROOT=""
+
+fi
+
+
 if [ -z "$CHIP" ]; then
  CHIP="cpu"
 fi
@@ -411,9 +417,7 @@ if [ -z "$PACKAGING" ]; then
  PACKAGING="none"
 fi
 
-if [ -z "$COMPUTE" ]; then
- COMPUTE="5.0 5.2 5.3 6.0 6.2 8.0"
-fi
+
 
 if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
     CHIP_EXTENSION="avx512"
@@ -428,6 +432,14 @@ fi
 
 if [ -z "$ARCH" ]; then
  ARCH="x86-64"
+fi
+
+if [ -z "$COMPUTE" ]; then
+  if [ "$ARCH" == "x86-64" ]; then
+   COMPUTE="5.0 5.2 5.3 6.0 6.2 8.0"
+  else
+      COMPUTE="5.0 5.2 5.3 6.0 6.2"
+  fi
 fi
 
 OPERATIONS_ARG=
@@ -503,6 +515,13 @@ if [ "$TESTS" == "true" ]; then
     TESTS_ARG="-DSD_BUILD_TESTS=ON"
 fi
 
+
+if [ "$SYS_ROOT" != "" ]; then
+    EXTRA_SYSROOT="-DCMAKE_SYSROOT=$SYS_ROOT"
+  else
+      EXTRA_SYSROOT=""
+fi
+
 ARCH_ARG="-DSD_ARCH=$ARCH -DSD_EXTENSION=$CHIP_EXTENSION"
 
 CUDA_COMPUTE="-DCOMPUTE=\"$COMPUTE\""
@@ -511,6 +530,16 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     case $OS in
         linux*)
         export CUDA_PATH="/usr/local/cuda-$CHIP_VERSION/"
+        # Cross compilation for jetson nano
+        if [ "$ARCH" != "x86-64" ]; then
+                 if [ "$ARCH" == "armv8-a" ]; then
+                       export EXTRA_CUDA_FLAGS="-DCUDA_TARGET_CPU_ARCH=AARCH64"
+                     else
+                        export EXTRA_CUDA_FLAGS="-DCUDA_TARGET_CPU_ARCH=ARM"
+                 fi
+          else
+              export EXTRA_CUDA_FLAGS=""
+        fi
         ;;
         macosx*)
         export CUDA_PATH="/Developer/NVIDIA/CUDA-$CHIP_VERSION/"
@@ -578,6 +607,13 @@ else
   IFS=' '
 fi
 
+LINKER_FLAGS=""
+if [ "$EXTRA_LINK_FLAGS" == "" ]; then
+   LINKER_FLAGS="-DCMAKE_CXX_LINK_FLAGS=$EXTRA_LINK_FLAGS -DCMAKE_EXE_LINKER_FLAGS=$EXTRA_LINK_FLAGS -DCMAKE_CUDA_FLAGS=$EXTRA_LINK_FLAGS"
+fi
+
+
+
 echo PACKAGING  = "${PACKAGING}"
 echo BUILD  = "${BUILD}"
 echo CHIP     = "${CHIP}"
@@ -594,9 +630,12 @@ echo NAME = "${NAME_ARG}"
 echo OPENBLAS_PATH = "$OPENBLAS_PATH"
 echo CHECK_VECTORIZATION = "$CHECK_VECTORIZATION"
 echo HELPERS = "$HELPERS"
+echo EXTRA_LINK_FLAGS = "$EXTRA_LINK_FLAGS"
+echo EXTRA_CUDA_FLAGS = "$EXTRA_CUDA_FLAGS"
+echo EXTRA_SYSROOT = "$EXTRA_SYSROOT"
 mkbuilddir
 pwd
-eval "$CMAKE_COMMAND"  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}"  "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+eval "$CMAKE_COMMAND" "$EXTRA_SYSROOT" "$LINKER_FLAGS" "$EXTRA_CUDA_FLAGS" "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DSD_CHECK_VECTORIZATION="${CHECK_VECTORIZATION}"  "$HELPERS" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
 
 if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
