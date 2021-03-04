@@ -86,6 +86,7 @@ VERBOSE="false"
 VERBOSE_ARG="VERBOSE=1"
 HELPER=
 CHECK_VECTORIZATION="OFF"
+SYS_ROOT=
 NAME=
 while [[ $# -gt 0 ]]
 do
@@ -400,8 +401,7 @@ if [ -z "$BUILD" ]; then
 fi
 
 if [ -z "$SYS_ROOT" ]; then
- SYS_ROOT=""
-
+ export SYS_ROOT=""
 fi
 
 
