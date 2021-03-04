@@ -2,7 +2,7 @@ on:
   push:
 jobs:
   android-x86_64:
-    runs-on: self-hosted
+    runs-on: ubuntu-18.04
     steps:
       - uses: AutoModality/action-clean@v1
       - uses: ./.github/actions/install-protobuf-linux
