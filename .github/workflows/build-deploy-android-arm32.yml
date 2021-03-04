@@ -11,6 +11,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/install-protobuf-linux
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
