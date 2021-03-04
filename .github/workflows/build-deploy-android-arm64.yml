@@ -16,6 +16,12 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
+          server-id: sonatype-nexus-snapshots
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.PACKAGES_GPG_KEY_NAME }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
       - name: Build on android-arm64
         shell: bash
         env:
@@ -25,6 +31,9 @@ jobs:
           BUILD_USING_MAVEN: 1
           TARGET_OS: android
           CURRENT_TARGET: arm64
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
         run: |
           mvn --version
           cmake --version

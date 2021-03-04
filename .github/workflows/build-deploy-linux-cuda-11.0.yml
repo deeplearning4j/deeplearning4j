@@ -26,11 +26,21 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
+          server-id: sonatype-nexus-snapshots
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.PACKAGES_GPG_KEY_NAME }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
       - name: Build cuda
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: ossrh
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
         run: |
               export PATH="/usr/local/cuda-11.0/bin:$PATH"
               mvn --version
@@ -39,6 +49,6 @@ jobs:
               nvcc --version
               sudo apt-get autoremove
               sudo apt-get clean
-              mvn -Pgithub -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Dlibnd4j.chip=cuda -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j"  --also-make  -Pcuda clean  --batch-mode deploy  -DskipTests
+              mvn -Possrh -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Dlibnd4j.chip=cuda -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j"  --also-make  -Pcuda clean  --batch-mode deploy  -DskipTests
 
 

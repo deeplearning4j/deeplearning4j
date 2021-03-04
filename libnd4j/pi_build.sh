@@ -319,7 +319,7 @@ message "lets build jars"
 export DHELPER=" -Dlibnd4j.helper=armcompute "
 if [ "${DEPLOY}" ]; then
   echo "Deploying to maven"
-  mvn  -Pgithub deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER}  -pl ":libnd4j,:nd4j-native" --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+  mvn  -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER}  -pl ":libnd4j,:nd4j-native" --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
  else
      echo "Installing to local repo"
      mvn  install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER}  -pl ":libnd4j" --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true

@@ -529,7 +529,7 @@
                     </executions>
                     <configuration>
                         <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                       <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                        <failOnNoGitDirectory>false</failOnNoGitDirectory>
                         <generateGitPropertiesFilename>
                             ${project.basedir}/target/generated-sources/src/main/resources/org/eclipse/${project.groupId}-${project.artifactId}-git.properties
                         </generateGitPropertiesFilename>
@@ -845,6 +845,12 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
                         <version>${maven-gpg-plugin.version}</version>
+                        <configuration>
+                            <gpgArguments>
+                                <arg>--pinentry-mode</arg>
+                                <arg>loopback</arg>
+                            </gpgArguments>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
