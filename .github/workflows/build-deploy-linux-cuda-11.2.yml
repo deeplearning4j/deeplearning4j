@@ -28,7 +28,7 @@ jobs:
           server-id: sonatype-nexus-snapshots
           server-username: MAVEN_USERNAME
           server-password: MAVEN_PASSWORD
-          gpg-private-key: ${{ secrets.PACKAGES_GPG_KEY_NAME }}
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Run cuda compilation on linux-x86_64
         shell: bash
