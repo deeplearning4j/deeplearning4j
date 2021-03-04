@@ -28,8 +28,7 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
-
         run: |
           set MSYSTEM=MINGW64
           set "PATH=C:\msys64\usr\bin;%PATH%"
-          mvn -Possrh  -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu --batch-mode deploy -DskipTests
+          mvn -Possrh  -Djavacpp.platform=windows-x86_64  -pl ":nd4j-native,:libnd4j" --also-make -Dlibnd4j.platform=windows-x86_64  -Dlibnd4j.chip=cpu  deploy -DskipTests
