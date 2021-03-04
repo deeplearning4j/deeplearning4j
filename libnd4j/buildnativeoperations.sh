@@ -89,6 +89,7 @@ CHECK_VECTORIZATION="OFF"
 SYS_ROOT=
 EXTRA_LINK_FLAGS=
 NAME=
+EXTRA_CUDA_FLAGS=
 while [[ $# -gt 0 ]]
 do
 key="$1"
