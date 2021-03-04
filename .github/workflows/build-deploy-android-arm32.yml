@@ -15,8 +15,7 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build on  linux-arm32
+      - name: Build on  android-arm32
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
