@@ -1,0 +1,9 @@
+name: Publish to github packages
+runs:
+  using: composite
+  steps:
+    - name: Publish to GitHub Packages
+      run: mvn -Pgithub --batch-mode deploy
+      shell: bash
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

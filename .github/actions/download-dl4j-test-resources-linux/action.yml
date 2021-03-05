@@ -1,0 +1,11 @@
+name: Download dl4j test resources
+runs:
+  using: composite
+  steps:
+    - name: Initial install
+      shell: bash
+      run: |
+        wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
+        cd dl4j-test-resources-master
+        mvn clean install -DskipTests
+        echo "Extracted test resources"
