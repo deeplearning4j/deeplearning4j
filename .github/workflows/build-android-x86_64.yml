@@ -19,12 +19,20 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
+          server-id: sonatype-nexus-snapshots
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Build on linux-x86_64
         env:
           ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
           OPENBLAS_PATH: "/opt/openblas/"
           LIBND4J_HOME: "${GITHUB_WORKSPACE}/libnd4j"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
         run: |
           echo "Verifying programs on path. Path is $PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
@@ -32,7 +40,7 @@ jobs:
           cmake --version
           protoc --version
           clang --version
-          mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Pgithub -pl ":nd4j-native,:libnd4j" --also-make  \
+          mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Possrh -pl ":nd4j-native,:libnd4j" --also-make  \
           -Djavacpp.platform=android-x86_64  \
           -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
           --batch-mode clean deploy -DskipTests
