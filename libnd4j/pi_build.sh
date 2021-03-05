@@ -22,14 +22,15 @@
 function message {
 	echo "BUILDER:::: ${@}"
 }
+if [ -z "${BUILD_USING_MAVEN}" ]; then export BUILD_USING_MAVEN=; fi
+if [ -z "${CURRENT_TARGET}" ]; then export  CURRENT_TARGET=arm32; fi
+if [ -z "${HAS_ARMCOMPUTE}" ]; then export  ARMCOMPUTE_DEBUG=1; fi
+if [ -z "${ARMCOMPUTE_DEBUG}" ]; then export  HAS_ARMCOMPUTE=1; fi
+if [ -z "${ARMCOMPUTE_TAG}" ]; then export  ARMCOMPUTE_TAG=v20.05; fi
+if [ -z "${LIBND4J_BUILD_MODE}" ]; then export  LIBND4J_BUILD_MODE=Release; fi
+if [ -z "${ANDROID_VERSION}" ]; then export  ANDROID_VERSION=21; fi
+if [ -z "${HAS_ARMCOMPUTE}" ]; then export  HAS_ARMCOMPUTE=1; fi
 
-BUILD_USING_MAVEN=
-CURRENT_TARGET=arm32
-HAS_ARMCOMPUTE=1
-ARMCOMPUTE_DEBUG=0
-ARMCOMPUTE_TAG=v20.05
-LIBND4J_BUILD_MODE=Release
-export ANDROID_VERSION=21
 OTHER_ARGS=()
 while [[ $# -gt 0 ]]
 do
@@ -88,18 +89,18 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 BASE_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
 
-CROSS_COMPILER_URL=${COMPILER_ARRS[$TARGET_INDEX]}
-CROSS_COMPILER_DIR=${BASE_DIR}/compile_tools/cross_compiler_${COMPILER_DESTDIR[$TARGET_INDEX]}
-COMPILER_DOWNLOAD_CMD=${COMPILER_DOWNLOAD_CMD_LIST[$TARGET_INDEX]}
-DETECT=${DETECT_LIST[$TARGET_INDEX]}
-LIBND4J_PLATFORM_EXT=${LIBND4J_PLATFORM_EXT_LIST[$TARGET_INDEX]}
-BLAS_TARGET_NAME=${OPENBLAS_TARGETS[$TARGET_INDEX]}
-ARMCOMPUTE_TARGET=${ARMCOMPUTE_TARGETS[$TARGET_INDEX]}
-TARGET_OS=${OS_LIST[$TARGET_INDEX]}
-LIBND4J_PLATFORM=${TARGET_OS}-${LIBND4J_PLATFORM_EXT}
-PREFIX=${PREFIXES[$TARGET_INDEX]}
+export CROSS_COMPILER_URL=${COMPILER_ARRS[$TARGET_INDEX]}
+export CROSS_COMPILER_DIR=${BASE_DIR}/compile_tools/cross_compiler_${COMPILER_DESTDIR[$TARGET_INDEX]}
+export COMPILER_DOWNLOAD_CMD=${COMPILER_DOWNLOAD_CMD_LIST[$TARGET_INDEX]}
+export DETECT=${DETECT_LIST[$TARGET_INDEX]}
+export LIBND4J_PLATFORM_EXT=${LIBND4J_PLATFORM_EXT_LIST[$TARGET_INDEX]}
+export BLAS_TARGET_NAME=${OPENBLAS_TARGETS[$TARGET_INDEX]}
+export ARMCOMPUTE_TARGET=${ARMCOMPUTE_TARGETS[$TARGET_INDEX]}
+export TARGET_OS=${OS_LIST[$TARGET_INDEX]}
+export LIBND4J_PLATFORM=${TARGET_OS}-${LIBND4J_PLATFORM_EXT}
+export PREFIX=${PREFIXES[$TARGET_INDEX]}
 
-CMAKE=cmake #/snap/bin/cmake
+export CMAKE=cmake #/snap/bin/cmake
 mkdir -p ${BASE_DIR}/compile_tools/
 
 SCONS_LOCAL_URL=http://prdownloads.sourceforge.net/scons/scons-local-3.1.1.tar.gz
@@ -206,33 +207,33 @@ if [ ! -d ${CROSS_COMPILER_DIR}/folder ]; then
 	rename_top_folder ${CROSS_COMPILER_DIR}
 fi
 
-CROSS_COMPILER_DIR=${CROSS_COMPILER_DIR}/folder
+export CROSS_COMPILER_DIR=${CROSS_COMPILER_DIR}/folder
 
 if [ "${TARGET_OS}" = "android" ];then
-	ANDROID_TOOLCHAIN=${CROSS_COMPILER_DIR}/toolchains/llvm/prebuilt/linux-x86_64
-	COMPILER_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}${ANDROID_VERSION}"
-	TOOLCHAIN_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}"
+	export ANDROID_TOOLCHAIN=${CROSS_COMPILER_DIR}/toolchains/llvm/prebuilt/linux-x86_64
+	export COMPILER_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}${ANDROID_VERSION}"
+	export TOOLCHAIN_PREFIX="${ANDROID_TOOLCHAIN}/bin/${PREFIX}"
 	if [ "$BLAS_TARGET_NAME" = "ARMV7" ];then
 	    BLAS_XTRA="ARM_SOFTFP_ABI=1 "
 		COMPILER_PREFIX="${ANDROID_TOOLCHAIN}/bin/armv7a-linux-androideabi${ANDROID_VERSION}"
 	fi
-	CC_EXE="clang"
-	CXX_EXE="clang++"
-	AR="${TOOLCHAIN_PREFIX}-ar"
-	RANLIB="${TOOLCHAIN_PREFIX}-ranlib"
-	BLAS_XTRA="CC=${COMPILER_PREFIX}-${CC_EXE} AR=${AR} RANLIB=${RANLIB} ${BLAS_XTRA}"
+	export CC_EXE="clang"
+	export CXX_EXE="clang++"
+	export AR="${TOOLCHAIN_PREFIX}-ar"
+	export RANLIB="${TOOLCHAIN_PREFIX}-ranlib"
+	export BLAS_XTRA="CC=${COMPILER_PREFIX}-${CC_EXE} AR=${AR} RANLIB=${RANLIB} ${BLAS_XTRA}"
 else
-	BINUTILS_BIN=${CROSS_COMPILER_DIR}/${PREFIX}/bin
-	COMPILER_PREFIX=${CROSS_COMPILER_DIR}/bin/${PREFIX}
-	TOOLCHAIN_PREFIX=${COMPILER_PREFIX}
-	SYS_ROOT=${CROSS_COMPILER_DIR}/${PREFIX}/libc
+	export BINUTILS_BIN=${CROSS_COMPILER_DIR}/${PREFIX}/bin
+	export COMPILER_PREFIX=${CROSS_COMPILER_DIR}/bin/${PREFIX}
+	export TOOLCHAIN_PREFIX=${COMPILER_PREFIX}
+	export SYS_ROOT=${CROSS_COMPILER_DIR}/${PREFIX}/libc
 	#LD_LIBRARY_PATH=${CROSS_COMPILER_DIR}/lib:$LD_LIBRARY_PATH
-	CC_EXE="gcc"
-	CXX_EXE="g++"
-	RANLIB="${BINUTILS_BIN}/ranlib"
+	export CC_EXE="gcc"
+	export CXX_EXE="g++"
+	export RANLIB="${BINUTILS_BIN}/ranlib"
 	export LD="${BINUTILS_BIN}/ld"
-	AR="${BINUTILS_BIN}/ar"
-	BLAS_XTRA="CC=${COMPILER_PREFIX}-${CC_EXE} AR=${AR} RANLIB=${RANLIB}  CFLAGS=--sysroot=${SYS_ROOT} LDFLAGS=\"-L${SYS_ROOT}/../lib/ -lm\""
+	export AR="${BINUTILS_BIN}/ar"
+	export BLAS_XTRA="CC=${COMPILER_PREFIX}-${CC_EXE} AR=${AR} RANLIB=${RANLIB}  CFLAGS=--sysroot=${SYS_ROOT} LDFLAGS=\"-L${SYS_ROOT}/../lib/ -lm\""
 fi
 
 check_requirements ${CC}
@@ -293,7 +294,7 @@ if [ "${TARGET_OS}" = "android" ];then
 	export ANDROID_NDK=${CROSS_COMPILER_DIR}
 else
     export RPI_BIN=${CROSS_COMPILER_DIR}/bin/${PREFIX}
-	export JAVA_LIBRARY_PATH=${CROSS_COMPILER_DIR}/${PREFIX}/lib
+	  export JAVA_LIBRARY_PATH=${CROSS_COMPILER_DIR}/${PREFIX}/lib
 	fix_pi_linker ${BINUTILS_BIN}
 fi
 
@@ -315,6 +316,13 @@ else
 message "cd $BASE_DIR/.. "
 cd $BASE_DIR/..
 message "lets build jars"
-DHELPER=" -Dlibnd4j.helper=armcompute "
-mvn  install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER} -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+export DHELPER=" -Dlibnd4j.helper=armcompute "
+if [ "${DEPLOY}" ]; then
+  echo "Deploying to maven"
+  mvn  -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER}  -pl ":libnd4j,:nd4j-native" --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+ else
+     echo "Installing to local repo"
+     mvn  install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER}  -pl ":libnd4j" --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+fi
+
 fi
