@@ -27,11 +27,13 @@ import org.nd4j.aeron.ipc.NDArrayMessage;
 import org.nd4j.aeron.util.BufferUtil;
 import org.nd4j.linalg.factory.Nd4j;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+@NotThreadSafe
 public class NDArrayMessageChunkTests extends BaseND4JTest {
 
     @Test

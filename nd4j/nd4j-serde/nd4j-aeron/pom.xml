@@ -39,7 +39,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <sbe.version>1.5.4</sbe.version>
-        <aeron.version>1.4.0</aeron.version>
+        <aeron.version>1.32.0</aeron.version>
     </properties>
 
     <dependencies>
@@ -93,7 +93,7 @@
                         <configuration>
                             <environmentVariables>
                                 <LD_LIBRARY_PATH>
-                                    ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/
+                                    ${env.LD_LIBRARY_PATH}${path.separator}${user.dir}${path.separator}${libnd4jhome}/blasbuild/cpu/blas/${path.separator}${libnd4jhome}/../nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes
                                 </LD_LIBRARY_PATH>
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
@@ -119,7 +119,6 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
-                            <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx8g</argLine>
                         </configuration>
                     </plugin>
                 </plugins>

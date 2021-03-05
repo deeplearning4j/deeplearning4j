@@ -26,8 +26,11 @@ import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import javax.annotation.concurrent.NotThreadSafe;
+
 import static org.junit.Assert.assertEquals;
 
+@NotThreadSafe
 public class NDArrayMessageTest extends BaseND4JTest {
 
     @Test
