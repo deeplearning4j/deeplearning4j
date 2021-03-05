@@ -5,7 +5,6 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
       - uses: AutoModality/action-clean@v1
-      - uses: ./.github/actions/install-protobuf-linux
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.8.0
         with:
@@ -14,6 +13,7 @@ jobs:
         with:
           ndk-version: r18b
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/install-protobuf-linux
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
