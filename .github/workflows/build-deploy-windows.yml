@@ -1,7 +1,7 @@
 on:
   push:
 jobs:
-  
+
   windows-x86_64:
     runs-on: windows-2019
     steps:

@@ -15,12 +15,12 @@ jobs:
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
-            java-version: 1.8
-            server-id: sonatype-nexus-snapshots
-            server-username: MAVEN_USERNAME
-            server-password: MAVEN_PASSWORD
-            gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
-            gpg-passphrase: MAVEN_GPG_PASSPHRASE
+          java-version: 1.8
+          server-id: sonatype-nexus-snapshots
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Build on  linux-arm64
         shell: bash
         env:
@@ -32,9 +32,9 @@ jobs:
           CURRENT_TARGET: arm64
           PUBLISH_TO: ossrh
         run: |
-           mvn --version
-           cmake --version
-           protoc --version
-           ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
+          mvn --version
+          cmake --version
+          protoc --version
+          ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
 
 
