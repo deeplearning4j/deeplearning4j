@@ -10,6 +10,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: nttld/setup-ndk@v1
+        id: setup-ndk
         with:
           ndk-version: r18b
       - uses: actions/checkout@v2
@@ -20,7 +21,7 @@ jobs:
           java-version: 1.8
       - name: Build on linux-x86_64
         env:
-          ANDROID_NDK: "/opt/hostedcache/ndk/r18b/x64"
+          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
           OPENBLAS_PATH: "/opt/openblas/"
           LIBND4J_HOME: "${GITHUB_WORKSPACE}/libnd4j"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
