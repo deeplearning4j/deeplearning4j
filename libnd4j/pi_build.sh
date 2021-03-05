@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 #
 # /* ******************************************************************************
 #  *
@@ -148,10 +148,10 @@ function download_extract_base {
 		message "download"
 		wget --quiet --show-progress -O ${3}_file ${2}
 	fi
- 
+
 	message "extract $@"
     #extract
-	mkdir -p ${3} 
+	mkdir -p ${3}
 	if [ ${1} = "-unzip" ]; then
 		command="unzip -qq ${3}_file -d ${3} "
 	else
@@ -178,12 +178,12 @@ function git_check {
 	#$1 is url #$2 is dir #$3 is tag or branch if optional
 	command=
 	if [ -n "$3" ]; then
-	    command="git clone --quiet --depth 1 --branch ${3} ${1} ${2}"	
-	else 
+	    command="git clone --quiet --depth 1 --branch ${3} ${1} ${2}"
+	else
 	command="git clone --quiet ${1} ${2}"
 	fi
 	message "$command"
-	$command 
+	$command
 	check_requirements "${2}"
 }
 
@@ -195,7 +195,7 @@ function fix_pi_linker {
   fi
   rm -f ${1}/ld
   printf '#!/usr/bin/env bash\n'"${1}/ld.gold --long-plt \$*">${1}/ld
-  chmod +x ${1}/ld 
+  chmod +x ${1}/ld
 }
 
 if [ ! -d ${CROSS_COMPILER_DIR}/folder ]; then
@@ -238,14 +238,14 @@ fi
 check_requirements ${CC}
 
 if [ -z "${BUILD_USING_MAVEN}" ] ;then
-#lets build OpenBlas 
+#lets build OpenBlas
 if [ ! -d "${OPENBLAS_DIR}" ]; then
 	message "download OpenBLAS"
 	git_check "${OPENBLAS_GIT_URL}" "${OPENBLAS_DIR}" "v0.3.10"
 fi
 
 if [ ! -f "${THIRD_PARTY}/lib/libopenblas.so" ]; then
-	message "build and install OpenBLAS" 
+	message "build and install OpenBLAS"
 	cd ${OPENBLAS_DIR}
 
 	command="make TARGET=${BLAS_TARGET_NAME} HOSTCC=gcc  NOFORTRAN=1 ${BLAS_XTRA} "
@@ -271,9 +271,9 @@ if [ ! -d ${SCONS_LOCAL_DIR} ]; then
 fi
 check_requirements ${SCONS_LOCAL_DIR}/scons.py
 
-if [ ! -d "${ARMCOMPUTE_DIR}" ]; then 
-	message "download ArmCompute Source" 
-	git_check ${ARMCOMPUTE_GIT_URL} "${ARMCOMPUTE_DIR}" "${ARMCOMPUTE_TAG}" 
+if [ ! -d "${ARMCOMPUTE_DIR}" ]; then
+	message "download ArmCompute Source"
+	git_check ${ARMCOMPUTE_GIT_URL} "${ARMCOMPUTE_DIR}" "${ARMCOMPUTE_TAG}"
 fi
 
 #build armcompute
@@ -283,7 +283,7 @@ cd ${ARMCOMPUTE_DIR}
 command="CC=${CC_EXE} CXX=${CXX_EXE} python3 ${SCONS_LOCAL_DIR}/scons.py Werror=1 -j$(nproc) toolchain_prefix=${TOOLCHAIN_PREFIX}-  compiler_prefix=${COMPILER_PREFIX}- debug=${ARMCOMPUTE_DEBUG}  neon=1 opencl=0 extra_cxx_flags=-fPIC os=${TARGET_OS} build=cross_compile arch=${ARMCOMPUTE_TARGET} "
 message $command
 eval $command &>/dev/null
-cd ${BASE_DIR} 
+cd ${BASE_DIR}
 fi
 check_requirements "${ARMCOMPUTE_DIR}/build/libarm_compute-static.a" "${ARMCOMPUTE_DIR}/build/libarm_compute_core-static.a"
 
