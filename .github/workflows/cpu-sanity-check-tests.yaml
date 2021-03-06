@@ -21,29 +21,6 @@ jobs:
               export OMP_NUM_THREADS=1
               mvn -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j" -Dlibnd4j.buildthreads=1 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
 
-  android-x86_64:
-    runs-on: ubuntu-18.04
-    steps:
-      - uses: actions/checkout@v2
-      - uses: ./.github/actions/install-protobuf-linux
-      - uses: ./.github/actions/download-dl4j-test-resources-linux
-      - uses: nttld/setup-ndk@v1
-        with:
-          ndk-version:  r18b
-      - name: Run tests on linux-x86_64
-        shell: bash
-        env:
-          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
-          GNUMAKEFLAGS: "-j1"
-          MAKEFLAGS: "-j1"
-        run: |
-            mvn --version
-            cmake --version
-            protoc --version
-            export OMP_NUM_THREADS=1
-            mvn -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j" -Dlibnd4j.build="Debug" -Dlibnd4j.buildthreads=1 -Ptestresources -Djavacpp.platform=android-x86_64 -libnd4j.platform=android-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
-
-
   windows-x86_64:
     runs-on: windows-2019
     steps:
