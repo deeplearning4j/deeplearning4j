@@ -56,12 +56,8 @@ if [ -n "$BUILD_PATH" ]; then
     export PATH="$PATH:$BUILD_PATH"
 fi
 
-unameOut="$(uname -s)"
-if [[ "$unameOut" == *"MINGW"* ]]; then
-  ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests.exe
-  else
-      ../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
-fi
-
+unameOut="$(uname)"
+echo "$OSTYPE"
+../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests.exe
 # Workaround to fix posix path conversion problem on Windows (http://mingw.org/wiki/Posix_path_conversion)
-[ -f "${GTEST_OUTPUT#*:}" ] && cp -a surefire-reports/ ../target && rm -rf surefire-reports/
+#[ -f "${GTEST_OUTPUT#*:}" ] && cp -a surefire-reports/ ../target && rm -rf surefire-reports/
