@@ -1,5 +1,6 @@
 on:
-  push:
+  schedule:
+    - cron: "0 */12 * * *"
 jobs:
   windows-x86_64-cuda-11-0:
     runs-on: windows-2019
