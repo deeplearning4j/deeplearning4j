@@ -176,6 +176,9 @@
         <javacpp.platform.additionalIncludePaths />
         <javacpp.platform.cppincludepath />
         <javacpp.platform.library.path />
+        <!-- Used in nd4j-backend-impls for directory-maven-plugin to assist with finding native libs for tests -->
+        <nd4j.native.basedir />
+        <nd4j.cuda.basedir />
         <javacpp.version>1.5.4</javacpp.version>
         <javacpp-presets.version>1.5.4</javacpp-presets.version>
         <javacv.version>1.5.4</javacv.version>
@@ -315,6 +318,7 @@
         <rxjava.version>2.2.0</rxjava.version>
         <kotlin.version>1.4.30</kotlin.version>
         <junit4git.version>1.3</junit4git.version>
+
     </properties>
 
 
@@ -606,6 +610,27 @@
         </pluginManagement>
 
         <plugins>
+            <plugin>
+                <groupId>org.commonjava.maven.plugins</groupId>
+                <artifactId>directory-maven-plugin</artifactId>
+                <version>0.3.1</version>
+                <executions>
+                    <execution>
+                        <id>native-dir</id>
+                        <goals>
+                            <goal>directory-of</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                        <configuration>
+                            <property>nd4j.basedir</property>
+                            <project>
+                                <groupId>org.nd4j</groupId>
+                                <artifactId>nd4j</artifactId>
+                            </project>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -939,6 +964,8 @@
                 <libnd4jhome>${basedir}/../../../../libnd4j/</libnd4jhome>
             </properties>
         </profile>
+
+
         <!-- For Android: -Dplatform=android-arm -->
         <profile>
             <id>javacpp-platform-default</id>
