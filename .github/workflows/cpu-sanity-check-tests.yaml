@@ -29,11 +29,11 @@ jobs:
       - uses: ./.github/actions/download-dl4j-test-resources-linux
       - uses: nttld/setup-ndk@v1
         with:
-          ndk-version: r21d
+          ndk-version:  r18b
       - name: Run tests on linux-x86_64
         shell: bash
         env:
-          ANDROID_NDK: /opt/hostedtoolcache/ndk/r21d/x64
+          ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
           GNUMAKEFLAGS: "-j1"
           MAKEFLAGS: "-j1"
         run: |
