@@ -66,10 +66,10 @@ public class AeronNDArrayPublisher implements AutoCloseable {
     private void init() {
         channel = channel == null ? "aeron:udp?endpoint=localhost:40123" : channel;
         streamId = streamId == 0 ? 10 : streamId;
-        publishRetryTimeOut = publishRetryTimeOut == 0 ? 3000 : publishRetryTimeOut;
+        publishRetryTimeOut = publishRetryTimeOut == 0 ? 300000 : publishRetryTimeOut;
         ctx = ctx == null ? ctx = new Aeron.Context() : ctx;
         init = true;
-        log.info("Channel publisher" + channel + " and stream " + streamId);
+        log.info("Channel publisher" + channel + " and stream " + streamId + " with time out " + publishRetryTimeOut);
     }
 
     /**
