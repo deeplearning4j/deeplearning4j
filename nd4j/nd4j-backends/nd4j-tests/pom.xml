@@ -362,8 +362,11 @@
                         <configuration>
                             <environmentVariables>
                                 <LD_LIBRARY_PATH>
-                                    ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/
+                                    ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/:${nd4j.native.basedir}/target/classes
                                 </LD_LIBRARY_PATH>
+                                <PATH>
+                                    ${env.PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/:${nd4j.native.basedir}/target/classes
+                                </PATH>
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
