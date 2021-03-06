@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * An in meory ndarray holder
+ * An in memory ndarray holder
  *
  * @author Adam Gibson
  */
