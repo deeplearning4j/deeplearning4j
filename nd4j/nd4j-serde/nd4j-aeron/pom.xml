@@ -20,8 +20,8 @@
   -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
@@ -90,11 +90,17 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <inherited>true</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.nd4j</groupId>
+                                <artifactId>nd4j-native</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
                         <configuration>
                             <environmentVariables>
-                                <LD_LIBRARY_PATH>
-                                    ${env.LD_LIBRARY_PATH}${path.separator}${user.dir}${path.separator}${libnd4jhome}/blasbuild/cpu/blas/${path.separator}${libnd4jhome}/../nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes
-                                </LD_LIBRARY_PATH>
+
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
@@ -119,6 +125,7 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
+                            <argLine>-Dorg.bytedeco.javacpp.logger.debug=true -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes"</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -150,9 +157,6 @@
                         </dependencies>
                         <configuration>
                             <environmentVariables>
-                                <LD_LIBRARY_PATH>
-                                    ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/
-                                </LD_LIBRARY_PATH>
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
@@ -175,7 +179,7 @@
                                 Maximum heap size was set to 6g, as a minimum required value for tests run.
                                 Depending on a build machine, default value is not always enough.
                             -->
-                            <argLine>-Ddtype=float -Xmx6g</argLine>
+                            <argLine>-Dorg.bytedeco.javacpp.logger.debug=true -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
