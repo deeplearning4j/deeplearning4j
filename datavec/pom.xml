@@ -45,7 +45,6 @@
         <module>datavec-data</module>
         <module>datavec-spark</module>
         <module>datavec-local</module>
-        <module>datavec-spark-inference-parent</module>
         <module>datavec-jdbc</module>
         <module>datavec-excel</module>
         <module>datavec-arrow</module>
