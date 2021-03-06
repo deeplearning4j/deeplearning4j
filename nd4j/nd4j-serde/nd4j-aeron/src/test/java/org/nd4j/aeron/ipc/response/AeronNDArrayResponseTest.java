@@ -33,12 +33,14 @@ import org.nd4j.aeron.ipc.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
+@NotThreadSafe
 public class AeronNDArrayResponseTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
 
@@ -51,7 +53,8 @@ public class AeronNDArrayResponseTest extends BaseND4JTest {
     public void before() {
         if(isIntegrationTests()) {
             final MediaDriver.Context ctx =
-                    new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirsDeleteOnStart(true)
+                    new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirDeleteOnShutdown(true)
+                            .dirDeleteOnStart(true)
                             .termBufferSparseFile(false).conductorIdleStrategy(new BusySpinIdleStrategy())
                             .receiverIdleStrategy(new BusySpinIdleStrategy())
                             .senderIdleStrategy(new BusySpinIdleStrategy());
@@ -69,10 +72,10 @@ public class AeronNDArrayResponseTest extends BaseND4JTest {
         int streamId = 10;
         int responderStreamId = 11;
         String host = "127.0.0.1";
-        Aeron.Context ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+        Aeron.Context ctx = new Aeron.Context().driverTimeoutMs(-1)
                         .availableImageHandler(AeronUtil::printAvailableImage)
                         .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(1000)
                         .errorHandler(e -> log.error(e.toString(), e));
 
         int baseSubscriberPort = 40123 + new java.util.Random().nextInt(1000);
