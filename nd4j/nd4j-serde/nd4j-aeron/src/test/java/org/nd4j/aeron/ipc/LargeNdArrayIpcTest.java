@@ -31,11 +31,13 @@ import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertFalse;
 
 @Slf4j
+@NotThreadSafe
 public class LargeNdArrayIpcTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
     private Aeron.Context ctx;
@@ -73,9 +75,10 @@ public class LargeNdArrayIpcTest extends BaseND4JTest {
         int length = (int) 1e7;
         INDArray arr = Nd4j.ones(length);
         AeronNDArrayPublisher publisher;
-        ctx = new Aeron.Context().publicationConnectionTimeout(-1).availableImageHandler(AeronUtil::printAvailableImage)
+        ctx = new Aeron.Context()
+                .driverTimeoutMs(-1).availableImageHandler(AeronUtil::printAvailableImage)
                         .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(10000)
+                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(10000)
                         .errorHandler(err -> err.printStackTrace());
 
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -149,10 +152,10 @@ public class LargeNdArrayIpcTest extends BaseND4JTest {
 
     private Aeron.Context getContext() {
         if (ctx == null)
-            ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+            ctx = new Aeron.Context().driverTimeoutMs(-1)
                             .availableImageHandler(AeronUtil::printAvailableImage)
                             .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(10000)
+                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(10000)
                             .errorHandler(err -> err.printStackTrace());
         return ctx;
     }

@@ -32,12 +32,14 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertFalse;
 
+@NotThreadSafe
 public class NdArrayIpcTest extends BaseND4JTest {
     private MediaDriver mediaDriver;
     private static Logger log = LoggerFactory.getLogger(NdArrayIpcTest.class);
@@ -223,10 +225,10 @@ public class NdArrayIpcTest extends BaseND4JTest {
 
     private Aeron.Context getContext() {
         if (ctx == null)
-            ctx = new Aeron.Context().publicationConnectionTimeout(1000)
+            ctx = new Aeron.Context().driverTimeoutMs(1000)
                             .availableImageHandler(image -> System.out.println(image))
                             .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(1000)
                             .errorHandler(e -> log.error(e.toString(), e));
         return ctx;
     }

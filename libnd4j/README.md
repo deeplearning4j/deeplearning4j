@@ -45,10 +45,9 @@ You can find the same information for the older Toolkit versions [in the CUDA ar
 [Download the NDK](https://developer.android.com/ndk/downloads/), extract it somewhere, and execute the following commands, replacing `android-xxx` with either `android-arm` or `android-x86`:
 
 ```bash
-git clone https://github.com/deeplearning4j/libnd4j
-git clone https://github.com/deeplearning4j/nd4j
+git clone https://github.com/eclipse/deeplearning4j
 export ANDROID_NDK=/path/to/android-ndk/
-cd libnd4j
+cd deeplearning4j/libnd4j
 bash buildnativeoperations.sh -platform android-xxx
 cd ../nd4j
 mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!:nd4j-cuda-9.0,!:nd4j-cuda-9.0-platform,!:nd4j-tests'

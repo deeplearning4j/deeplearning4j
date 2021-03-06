@@ -37,11 +37,7 @@
     <name>datavec-data</name>
 
     <modules>
-        <module>datavec-data-audio</module>
-        <module>datavec-data-codec</module>
         <module>datavec-data-image</module>
-        <module>datavec-data-nlp</module>
-        <module>datavec-geo</module>
     </modules>
 
     <dependencyManagement>

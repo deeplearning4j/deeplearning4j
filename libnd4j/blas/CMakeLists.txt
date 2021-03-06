@@ -176,6 +176,8 @@ if(SD_CUDA)
             set(EXPM " -D__ND4J_EXPERIMENTAL__=true")
         endif()
 
+
+
         # the only difference for debug mode here is host/device debug symbols
         set(CMAKE_CUDA_FLAGS_DEBUG " -G -g")
 
@@ -184,6 +186,18 @@ if(SD_CUDA)
             message("Enabling fPIC...")
             set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=-fPIC")
         endif()
+
+        if(WIN32)
+         message("In windows, setting cublas library and cusolver library")
+         if(NOT DEFINED CUDA_cublas_LIBRARY)
+                  set(CUDA_cublas_LIBRARY ${CUDA_HOME}/lib/x64/cublas.lib)
+          endif()
+
+          if(NOT DEFINED CUDA_cusolver_LIBRARY)
+                set(CUDA_cusolver_LIBRARY ${CUDA_HOME}/lib/x64/cusolver.lib)
+          endif()
+        endif()
+
 
         string( TOLOWER "${COMPUTE}" COMPUTE_CMP )
         if ("${COMPUTE_CMP}" STREQUAL "all")
@@ -343,16 +357,27 @@ elseif(SD_CPU)
 
     message("CPU BLAS")
     add_definitions(-D__CPUBLAS__=true)
+
     add_library(samediff_obj OBJECT ${LEGACY_SOURCES}
             ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_MKLDNN_SOURCES}
             ${CUSTOMOPS_ARMCOMPUTE_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES} ${OPS_SOURCES} ${PERF_SOURCES})
+
     if(IOS)
         add_library(${SD_LIBRARY_NAME} STATIC $<TARGET_OBJECTS:samediff_obj>)
     else()
         # build shared library by default or when it's explicitly requested
         if(NOT SD_STATIC_LIB OR SD_SHARED_LIB)
             add_library(${SD_LIBRARY_NAME} SHARED $<TARGET_OBJECTS:samediff_obj>)
+            if(ANDROID)
+              # See: https://www.scivision.dev/cmake-ninja-job-pool-limited-memory/
+              # See: https://cmake.org/cmake/help/v3.0/command/cmake_host_system_information.html
+              # See: https://cmake.org/cmake/help/latest/prop_gbl/JOB_POOLS.html
+              cmake_host_system_information(RESULT _logical_cores QUERY NUMBER_OF_LOGICAL_CORES)
+             if(_logical_cores LESS 4)
+               set_target_properties(${SD_LIBRARY_NAME} PROPERTIES JOB_POOL_COMPILE one_jobs)
+             endif()
+            endif()
         endif()
 
         if (SD_STATIC_LIB AND SD_SHARED_LIB)
