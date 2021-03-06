@@ -1,0 +1,44 @@
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+jobs:
+  #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
+  linux-arm32:
+    runs-on: ubuntu-18.04
+    steps:
+      - uses: AutoModality/action-clean@v1
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/install-protobuf-linux
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+          server-id: sonatype-nexus-snapshots
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Build on  linux-arm32
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          GITHUB_TOKEN:  ${{ secrets.GITHUB_TOKEN }}
+          DEPLOY: 1
+          BUILD_USING_MAVEN: 1
+          TARGET_OS: linux
+          CURRENT_TARGET: arm32
+          PUBLISH_TO: ossrh
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+        run: |
+          mvn --version
+          cmake --version
+          protoc --version
+          ${GITHUB_WORKSPACE}/libnd4j/pi_build.sh
+
+
