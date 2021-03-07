@@ -730,20 +730,7 @@ public class NDBaseTest extends BaseNd4jTest {
         assertEquals(y_exp, y);
     }
 
-    @Test
-    public void testScatterUpdate() {
-        NDBase base = new NDBase();
 
-        //from testScatterOpGradients.
-        INDArray x = Nd4j.ones(DataType.DOUBLE, 10, 10);
-        INDArray indices = Nd4j.create(new double[]{3, 4, 5, 8, 9}).castTo(DataType.INT32);
-        INDArray updates = Nd4j.ones(DataType.DOUBLE, 5, 10).add(1.0);
-        INDArray y = base.scatterUpdate(x,indices, updates);
-
-        y = y.getColumn(0);
-        INDArray  y_exp = Nd4j.createFromArray(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 1.0, 1.0, 2.0, 2.0);
-        assertEquals(y_exp, y);
-    }
 
     @Test
     public void testSegmentMax() {

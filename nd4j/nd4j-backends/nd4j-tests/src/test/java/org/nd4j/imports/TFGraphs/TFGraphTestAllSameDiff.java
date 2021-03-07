@@ -76,20 +76,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "layers_dropout/rank3_d05_train_mask1",
             "layers_dropout/rank2_d09_train",
             "layers_dropout/rank2_d05_train",*/
-            "reductions/scatter_update_vector",
-            "reductions/scatter_update_scalar",
-            "random_poisson/rank1_float16",
-            "random_poisson/rank1_float16",
-            "matrix_band_part/float64",
-            "emptyArrayTests/scatter_update/rank1_emptyIndices_emptyUpdates",
-            "bincount/rank0_weights",
-            "bincount/rank2_weights",
-            "scatter_nd_add/locking/rank1shape_1indices",
-            "scatter_nd_add/locking/rank2shape_1indices",
-            "scatter_nd_add/locking/rank3shape_1indices",
-            "scatter_nd_sub/locking/rank1shape_1indices",
-            "scatter_nd_sub/locking/rank2shape_1indices",
-            "scatter_nd_sub/locking/rank3shape_1indices"
+
 
     );
 
@@ -97,10 +84,12 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             // Still failing 2020/04/27 java.lang.IllegalStateException: Requested output variable Bincount does not exist in SameDiff instance
             //Invalid test cases. Verified by running graph against actual TF.
-           "compare_and_bitpack/.*",
+            "scatter_nd_sub/locking/rank1shape_1indices",
+            "reductions/scatter_update_vector",
+            "reductions/scatter_update_scalar",
+            "emptyArrayTests/scatter_update/rank1_emptyIndices_emptyUpdates",
+            "bincount/rank2_weights",
             "slogdet/.*",
-            //IGNORE THIS: the TF results from comparing against an actual TF java run compared to this seem to be different.
-            "fused_batch_norm/float16_nhwc",
             //Don't bother to test RNG. We can test subsets of ops with dropout to make sure they are consistent
             //These tests have random uniform and other RNG in them that don't need to be perfectly compatible to be acceptable.
             //We need different test cases here.

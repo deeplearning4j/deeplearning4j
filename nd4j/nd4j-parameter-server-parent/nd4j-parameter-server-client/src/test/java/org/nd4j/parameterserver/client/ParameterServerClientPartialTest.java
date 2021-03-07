@@ -51,7 +51,7 @@ public class ParameterServerClientPartialTest extends BaseND4JTest {
     @BeforeClass
     public static void beforeClass() throws Exception {
         final MediaDriver.Context ctx =
-                        new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirsDeleteOnStart(true)
+                        new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirDeleteOnStart(true)
                                         .termBufferSparseFile(false).conductorIdleStrategy(new BusySpinIdleStrategy())
                                         .receiverIdleStrategy(new BusySpinIdleStrategy())
                                         .senderIdleStrategy(new BusySpinIdleStrategy());
@@ -136,10 +136,10 @@ public class ParameterServerClientPartialTest extends BaseND4JTest {
 
     private static Aeron.Context getContext() {
         if (ctx == null)
-            ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+            ctx = new Aeron.Context().driverTimeoutMs(Long.MAX_VALUE)
                             .availableImageHandler(AeronUtil::printAvailableImage)
                             .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(10000)
+                            .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(10000)
                             .errorHandler(e -> log.error(e.toString(), e));
         return ctx;
     }

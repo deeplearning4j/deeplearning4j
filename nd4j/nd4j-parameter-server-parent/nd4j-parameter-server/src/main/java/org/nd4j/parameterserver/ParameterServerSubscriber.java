@@ -74,7 +74,6 @@ import java.util.concurrent.locks.LockSupport;
 @NoArgsConstructor
 @Data
 @Parameters(separators = ",")
-@Slf4j
 public class ParameterServerSubscriber implements AutoCloseable {
 
     private static Logger log = LoggerFactory.getLogger(ParameterServerSubscriber.class);
@@ -255,9 +254,9 @@ public class ParameterServerSubscriber implements AutoCloseable {
             //Length in bytes for the SO_RCVBUF, 0 means use OS default. This needs to be larger than Receiver Window.
             System.setProperty("aeron.socket.so_rcvbuf", String.valueOf(ipcLength));
             final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context().threadingMode(ThreadingMode.DEDICATED)
-                            .dirsDeleteOnStart(deleteDirectoryOnStart).termBufferSparseFile(false)
+                            .dirDeleteOnStart(deleteDirectoryOnStart).termBufferSparseFile(false)
                             .ipcTermBufferLength(ipcLength).publicationTermBufferLength(ipcLength)
-                            .maxTermBufferLength(ipcLength).conductorIdleStrategy(new BusySpinIdleStrategy())
+                             .conductorIdleStrategy(new BusySpinIdleStrategy())
                             .receiverIdleStrategy(new BusySpinIdleStrategy())
                             .senderIdleStrategy(new BusySpinIdleStrategy());
             AeronUtil.setDaemonizedThreadFactories(mediaDriverCtx);
@@ -380,10 +379,10 @@ public class ParameterServerSubscriber implements AutoCloseable {
 
     //get a context
     public Aeron.Context getContext() {
-        Aeron.Context ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+        Aeron.Context ctx = new Aeron.Context().driverTimeoutMs(Long.MAX_VALUE)
                         .availableImageHandler(AeronUtil::printAvailableImage)
                         .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                        .aeronDirectoryName(mediaDriverDirectoryName).keepAliveInterval(100000)
+                        .aeronDirectoryName(mediaDriverDirectoryName).keepAliveIntervalNs(1000000)
                         .errorHandler(e -> log.error(e.toString(), e));
         AeronUtil.setDaemonizedThreadFactories(ctx);
         return ctx;

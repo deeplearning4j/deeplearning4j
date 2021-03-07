@@ -91,7 +91,7 @@ public class RoutedTransport extends BaseTransport {
 
 
         context = new Aeron.Context().driverTimeoutMs(30000)
-                       .keepAliveInterval(100000000);
+                       .keepAliveIntervalNs(100000000);
         AeronUtil.setDaemonizedThreadFactories(context);
 
         MediaDriver.Context ctx = new MediaDriver.Context();
@@ -120,7 +120,6 @@ public class RoutedTransport extends BaseTransport {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             CloseHelper.quietClose(aeron);
             CloseHelper.quietClose(driver);
-            CloseHelper.quietClose(context);
             CloseHelper.quietClose(subscriptionForClients);
         }));
 

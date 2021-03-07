@@ -131,7 +131,7 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
         splitter = MessageSplitter.getInstance();
 
         context = new Aeron.Context().driverTimeoutMs(30000)
-                .keepAliveInterval(100000000);
+                .keepAliveIntervalNs(100000000);
         AeronUtil.setDaemonizedThreadFactories(context);
 
         final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context();
