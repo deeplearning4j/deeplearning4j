@@ -32,6 +32,7 @@ import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 import org.nd4j.shade.protobuf.TextFormat
 import org.tensorflow.framework.*
+import java.lang.Exception
 import java.nio.charset.Charset
 
 class TensorflowOpDescriptorLoader: OpDescriptorLoader<OpDef> {
@@ -87,7 +88,12 @@ class TensorflowOpDescriptorLoader: OpDescriptorLoader<OpDef> {
         val fileName = System.getProperty(tensorflowRulesetSpecifierProperty, tensorflowMappingRulSetDefaultFile)
         val string = IOUtils.toString(ClassPathResource(fileName).inputStream, Charset.defaultCharset())
         val declarationBuilder = MapperNamespace.MappingDefinitionSet.newBuilder()
-        TextFormat.merge(string,declarationBuilder)
+       try {
+           TextFormat.merge(string,declarationBuilder)
+       } catch(e: Exception) {
+           println("Unable to parse mapper definitions for file file $fileName")
+       }
+
         return declarationBuilder.build()
     }
 

@@ -118,10 +118,10 @@ public class ParameterServerNodeTest extends BaseND4JTest {
 
 
     private static Aeron.Context getContext() {
-        return new Aeron.Context().publicationConnectionTimeout(-1)
+        return new Aeron.Context().driverTimeoutMs(10000)
                         .availableImageHandler(AeronUtil::printAvailableImage)
                         .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(100000)
                         .errorHandler(e -> log.error(e.toString(), e));
     }
 

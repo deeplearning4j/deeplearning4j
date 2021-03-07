@@ -15384,30 +15384,35 @@ mappings {
 }
 mappings {
   frameworkName: "tensorflow"
-  opName: "scatter_upd"
+  opName: "scatter_update"
   inputFrameworkOpName: "ScatterUpdate"
   rule {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "ref"
     inputTensorName: "updates"
-    inputTensorName: "indices"
-    outputTensorName: "input"
+    outputTensorName: "operand"
     outputTensorName: "updates"
-    outputTensorName: "indices"
     inputToOutput {
-      key: "input"
+      key: "operand"
       value: "ref"
     }
     inputToOutput {
       key: "updates"
       value: "updates"
     }
+    ruleType: "tensor"
+    inputFrameworkOpName: "ScatterUpdate"
+  }
+  rule {
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "indices"
     inputToOutput {
       key: "indices"
       value: "indices"
     }
-    ruleType: "tensor"
+    ruleType: "attribute"
     inputFrameworkOpName: "ScatterUpdate"
   }
 }
@@ -15527,30 +15532,35 @@ mappings {
 }
 mappings {
   frameworkName: "tensorflow"
-  opName: "scatter_upd"
+  opName: "scatter_update"
   inputFrameworkOpName: "TensorScatterUpdate"
   rule {
     ruleName: "ndarraymapping"
     functionName: "ndarraymapping"
     inputTensorName: "tensor"
     inputTensorName: "updates"
-    inputTensorName: "indices"
-    outputTensorName: "input"
+    outputTensorName: "operand"
     outputTensorName: "updates"
-    outputTensorName: "indices"
     inputToOutput {
-      key: "input"
+      key: "operand"
       value: "tensor"
     }
     inputToOutput {
       key: "updates"
       value: "updates"
     }
+    ruleType: "tensor"
+    inputFrameworkOpName: "TensorScatterUpdate"
+  }
+  rule {
+    ruleName: "ndarraytointattributevalue"
+    functionName: "ndarraytointattributevalue"
+    outputIntName: "indices"
     inputToOutput {
       key: "indices"
       value: "indices"
     }
-    ruleType: "tensor"
+    ruleType: "attribute"
     inputFrameworkOpName: "TensorScatterUpdate"
   }
 }

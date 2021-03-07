@@ -424,7 +424,6 @@ public abstract class BaseTransport implements Transport {
         CloseHelper.quietClose(subscriptionForShards);
         CloseHelper.quietClose(subscriptionForClients);
         CloseHelper.quietClose(aeron);
-        CloseHelper.quietClose(context);
         CloseHelper.quietClose(driver);
     }
 

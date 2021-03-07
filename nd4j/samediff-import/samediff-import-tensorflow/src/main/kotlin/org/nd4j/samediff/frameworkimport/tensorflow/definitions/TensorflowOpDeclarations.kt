@@ -1860,13 +1860,13 @@ val scatterSub = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterSub"
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
 //TODO: note: TF expects indices, we don't support them?
-val scatterUpdate = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterUpdate"),opName = "scatter_upd",
-        attributeMappingRules = listOf(),
-        tensorNames = mutableMapOf("input" to "ref","updates" to "updates","indices" to "indices"),tensorflowOpRegistry = tensorflowOpRegistry)
+val scatterUpdate = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterUpdate"),opName = "scatter_update",
+        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("indices" to "indices"))),
+        tensorNames = mutableMapOf("operand" to "ref","updates" to "updates"),tensorflowOpRegistry = tensorflowOpRegistry)
 
-val tensorScatterUpdate = multipleNameMapping(inputFrameworkOpNames = listOf("TensorScatterUpdate"),opName = "scatter_upd",
-        attributeMappingRules = listOf(),
-        tensorNames = mutableMapOf("input" to "tensor","updates" to "updates","indices" to "indices"),tensorflowOpRegistry = tensorflowOpRegistry)
+val tensorScatterUpdate = multipleNameMapping(inputFrameworkOpNames = listOf("TensorScatterUpdate"),opName = "scatter_update",
+        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("indices" to "indices"))),
+        tensorNames = mutableMapOf("operand" to "tensor","updates" to "updates"),tensorflowOpRegistry = tensorflowOpRegistry)
 //L2Loss
 val l2Loss = multipleNameMapping(inputFrameworkOpNames = listOf("L2Loss"),opName = "l2_loss",
         attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "T"))),
