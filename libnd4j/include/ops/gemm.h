@@ -23,6 +23,10 @@
 #ifndef LIBND4J_GEMM_H
 #define LIBND4J_GEMM_H
 
+// work around conflict with OpenBLAS
+struct bfloat16;
+#define BFLOAT16 BFLOAT16
+
 #include <cblas.h>
 #include <math/templatemath.h>
 #include <system/op_boilerplate.h>

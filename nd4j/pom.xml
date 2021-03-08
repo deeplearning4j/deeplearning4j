@@ -46,6 +46,7 @@
         <module>nd4j-parameter-server-parent</module>
         <module>nd4j-tensorflow</module>
         <module>nd4j-onnxruntime</module>
+        <module>nd4j-tvm</module>
         <module>nd4j-common-tests</module>
         <module>samediff-import</module>
     </modules>
