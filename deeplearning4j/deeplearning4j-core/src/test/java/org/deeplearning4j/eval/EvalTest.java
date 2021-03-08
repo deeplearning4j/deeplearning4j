@@ -470,7 +470,7 @@ public class EvalTest extends BaseDL4JTest {
 
     @Test
     public void testEvaluativeListenerSimple(){
-        //Sanity check: https://github.com/deeplearning4j/deeplearning4j/issues/5351
+        //Sanity check: https://github.com/eclipse/deeplearning4j/issues/5351
 
         // Network config
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()

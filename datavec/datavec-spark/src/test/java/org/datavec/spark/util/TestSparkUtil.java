@@ -20,6 +20,7 @@
 
 package org.datavec.spark.util;
 
+import com.sun.jna.Platform;
 import org.apache.commons.io.IOUtils;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
@@ -41,7 +42,9 @@ public class TestSparkUtil extends BaseSparkTest {
 
     @Test
     public void testWriteWritablesToFile() throws Exception {
-
+       if(Platform.isWindows()) {
+           return;
+       }
         List<List<Writable>> l = new ArrayList<>();
         l.add(Arrays.<Writable>asList(new Text("abc"), new DoubleWritable(2.0), new IntWritable(-1)));
         l.add(Arrays.<Writable>asList(new Text("def"), new DoubleWritable(4.0), new IntWritable(-2)));

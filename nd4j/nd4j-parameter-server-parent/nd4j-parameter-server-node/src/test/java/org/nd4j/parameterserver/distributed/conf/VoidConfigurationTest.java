@@ -20,6 +20,7 @@
 
 package org.nd4j.parameterserver.distributed.conf;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import static org.junit.Assert.*;
 
+@Ignore
 public class VoidConfigurationTest extends BaseND4JTest {
 
     @Rule
@@ -80,5 +82,10 @@ public class VoidConfigurationTest extends BaseND4JTest {
         configuration.setNetworkMask("0.0.0.0/8");
 
         assertEquals("192.168.1.0/24", configuration.getNetworkMask());
+    }
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return Long.MAX_VALUE;
     }
 }

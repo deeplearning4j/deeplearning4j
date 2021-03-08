@@ -20,6 +20,7 @@
 
 package org.datavec.spark.functions;
 
+import com.sun.jna.Platform;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.input.PortableDataStream;
@@ -50,7 +51,9 @@ public class TestRecordReaderFunction extends BaseSparkTest {
 
     @Test
     public void testRecordReaderFunction() throws Exception {
-
+        if(Platform.isWindows()) {
+            return;
+        }
         File f = testDir.newFolder();
         new ClassPathResource("datavec-spark/imagetest/").copyDirectory(f);
         List<String> labelsList = Arrays.asList("0", "1"); //Need this for Spark: can't infer without init call

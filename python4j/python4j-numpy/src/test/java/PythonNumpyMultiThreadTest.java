@@ -144,58 +144,5 @@ public class PythonNumpyMultiThreadTest {
         }
     }
 
-    @Test
-    public void testMultiThreading3() throws Throwable {
-        try(PythonGIL pythonGIL = PythonGIL.lock()) {
-            PythonContextManager.deleteNonMainContexts();
 
-        }
-
-        String code = "c = a + b";
-        final PythonJob job = new PythonJob("job1", code, false);
-
-        final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
-
-        class JobThread extends Thread {
-            private INDArray a, b, c;
-
-            public JobThread(INDArray a, INDArray b, INDArray c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
-            }
-
-            @Override
-            public void run() {
-                try {
-                    PythonVariable<INDArray> out = new PythonVariable<>("c", NumpyArray.INSTANCE);
-                    job.exec(Arrays.<PythonVariable>asList(new PythonVariable<>("a", NumpyArray.INSTANCE, a),
-                            new PythonVariable<>("b", NumpyArray.INSTANCE, b)),
-                            Collections.<PythonVariable>singletonList(out));
-                    Assert.assertEquals(c, out.getValue());
-                } catch (Exception e) {
-                    exceptions.add(e);
-                }
-
-            }
-        }
-        int numThreads = 10;
-        JobThread[] threads = new JobThread[numThreads];
-        for (int i = 0; i < threads.length; i++) {
-            threads[i] = new JobThread(Nd4j.zeros(dataType, 2, 3).add(i), Nd4j.zeros(dataType, 2, 3).add(i + 3),
-                    Nd4j.zeros(dataType, 2, 3).add(2 * i + 3));
-        }
-
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].start();
-        }
-        Thread.sleep(100);
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].join();
-        }
-
-        if (!exceptions.isEmpty()) {
-            throw (exceptions.get(0));
-        }
-    }
 }

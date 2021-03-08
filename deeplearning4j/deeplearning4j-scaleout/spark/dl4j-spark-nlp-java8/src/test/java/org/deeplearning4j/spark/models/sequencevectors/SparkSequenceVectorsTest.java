@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.models.sequencevectors;
 
+import com.sun.jna.Platform;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -87,6 +88,11 @@ public class SparkSequenceVectorsTest extends BaseDL4JTest {
 
     @Test
     public void testFrequenciesCount() throws Exception {
+
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         JavaRDD<Sequence<VocabWord>> sequences = sc.parallelize(sequencesCyclic);
 
         SparkSequenceVectors<VocabWord> seqVec = new SparkSequenceVectors<>();

@@ -189,7 +189,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
                     }
                 }
 
-                //TODO Temporary workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7102
+                //TODO Temporary workaround for: https://github.com/eclipse/deeplearning4j/issues/7102
                 if(prob.isView())
                     prob = prob.dup();
                 if(label.isView())

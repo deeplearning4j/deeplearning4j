@@ -130,57 +130,6 @@ public class PythonMultiThreadTest {
         }
     }
 
-    @Test
-    public void testMultiThreading3() throws Throwable{
-        try(PythonGIL pythonGIL = PythonGIL.lock()) {
-            PythonContextManager.deleteNonMainContexts();
-
-        }
-        String code = "c = a + b";
-        final PythonJob job = new PythonJob("job1", code, false);
-
-        final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
-
-        class JobThread extends Thread{
-            private int a, b, c;
-            public JobThread(int a, int b, int c){
-                this.a = a;
-                this.b = b;
-                this.c = c;
-            }
-            @Override
-            public void run(){
-                try{
-                    PythonVariable<Long> out = new PythonVariable<>("c", PythonTypes.INT);
-                    job.exec(Arrays.<PythonVariable>asList(new PythonVariable<>("a", PythonTypes.INT, a),
-                            new PythonVariable<>("b", PythonTypes.INT, b)),
-                            Collections.<PythonVariable>singletonList(out));
-                    assertEquals(c, out.getValue().intValue());
-                }catch (Exception e){
-                    exceptions.add(e);
-                }
-
-            }
-        }
-        int numThreads = 10;
-        JobThread[] threads = new JobThread[numThreads];
-        for (int i=0; i < threads.length; i++){
-            threads[i] = new JobThread(i, i + 3, 2 * i +3);
-        }
-
-        for (int i = 0; i < threads.length; i++){
-            threads[i].start();
-        }
-        Thread.sleep(100);
-        for (int i = 0; i < threads.length; i++){
-            threads[i].join();
-        }
-
-        if (!exceptions.isEmpty()){
-            throw(exceptions.get(0));
-        }
-
-    }
 
 
 

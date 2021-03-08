@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.util;
 
+import com.sun.jna.Platform;
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -50,6 +51,10 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioning() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<String> list = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             list.add(String.valueOf(i));
@@ -71,7 +76,10 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioning2() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int[] ns;
         if(isIntegrationTests()){
             ns = new int[]{320, 321, 25600, 25601, 25615};
@@ -133,7 +141,10 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioning3(){
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         //Initial partitions (idx, count) - [(0,29), (1,29), (2,29), (3,34), (4,34), (5,35), (6,34)]
 
         List<Integer> ints = new ArrayList<>();
@@ -194,9 +205,13 @@ public class TestRepartitioning extends BaseSparkTest {
     }
 
     @Test
-    public void testRepartitioning4(){
+    public void testRepartitioning4() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<Integer> ints = new ArrayList<>();
-        for( int i=0; i<7040; i++ ){
+        for( int i = 0; i < 7040; i++) {
             ints.add(i);
         }
 
@@ -230,6 +245,10 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioningApprox() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<String> list = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             list.add(String.valueOf(i));

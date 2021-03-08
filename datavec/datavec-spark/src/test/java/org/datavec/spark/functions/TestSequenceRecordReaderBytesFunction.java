@@ -20,6 +20,7 @@
 
 package org.datavec.spark.functions;
 
+import com.sun.jna.Platform;
 import org.apache.hadoop.io.BytesWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
@@ -56,7 +57,9 @@ public class TestSequenceRecordReaderBytesFunction extends BaseSparkTest {
 
     @Test
     public void testRecordReaderBytesFunction() throws Exception {
-
+        if(Platform.isWindows()) {
+            return;
+        }
         //Local file path
         File f = testDir.newFolder();
         new ClassPathResource("datavec-spark/video/").copyDirectory(f);

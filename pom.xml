@@ -611,6 +611,7 @@
 
         <plugins>
             <plugin>
+                <!-- Note this will not work if you run tests using -rf : and the nd4j module is not present. Ensure -rf: always starts from a point that includes nd4j.-->
                 <groupId>org.commonjava.maven.plugins</groupId>
                 <artifactId>directory-maven-plugin</artifactId>
                 <version>0.3.1</version>
@@ -1143,12 +1144,12 @@
                             <environmentVariables>
                                 <DL4J_INTEGRATION_TESTS>true</DL4J_INTEGRATION_TESTS>
                             </environmentVariables>
-                            <properties>
+                           <!-- <properties>
                                 <property>
                                     <name>listener</name>
                                     <value>org.walkmod.junit4git.junit4.Junit4GitListener</value>
                                 </property>
-                            </properties>
+                            </properties>-->
                         </configuration>
                     </plugin>
                 </plugins>

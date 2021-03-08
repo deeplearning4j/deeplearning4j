@@ -71,7 +71,7 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
             "layers_dropout/.*",
             //"losses/.*",
 
-            //These can't pass until this is fixed: https://github.com/deeplearning4j/deeplearning4j/issues/6465#issuecomment-424209155
+            //These can't pass until this is fixed: https://github.com/eclipse/deeplearning4j/issues/6465#issuecomment-424209155
             //i.e., reduction ops with newFormat/keepDims args
             //"l2_normalize/.*",
             //"norm_tests/.*",
@@ -152,11 +152,11 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
         if(TFGraphTestZooModels.isPPC()){
             /*
             Ugly hack to temporarily disable tests on PPC only on CI
-            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            Issue logged here: https://github.com/eclipse/deeplearning4j/issues/7657
             These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
              */
 
-            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
             OpValidationSuite.ignoreFailing();
         }
 

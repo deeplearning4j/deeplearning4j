@@ -83,4 +83,8 @@ public class CSVLineSequenceRecordReaderTest extends BaseND4JTest {
         }
     }
 
+    @Override
+    public long getTimeoutMilliseconds() {
+        return Long.MAX_VALUE;
+    }
 }

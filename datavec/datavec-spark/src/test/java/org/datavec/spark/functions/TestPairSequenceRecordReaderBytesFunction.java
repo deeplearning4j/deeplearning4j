@@ -20,6 +20,7 @@
 
 package org.datavec.spark.functions;
 
+import com.sun.jna.Platform;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -61,6 +62,9 @@ public class TestPairSequenceRecordReaderBytesFunction extends BaseSparkTest {
     public void test() throws Exception {
         //Goal: combine separate files together into a hadoop sequence file, for later parsing by a SequenceRecordReader
         //For example: use to combine input and labels data from separate files for training a RNN
+        if(Platform.isWindows()) {
+            return;
+        }
         JavaSparkContext sc = getContext();
 
         File f = testDir.newFolder();

@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.util;
 
+import com.sun.jna.Platform;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.util.data.SparkDataValidation;
@@ -46,10 +47,13 @@ public class TestValidation extends BaseSparkTest {
 
     @Test
     public void testDataSetValidation() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         File f = folder.newFolder();
 
-        for( int i=0; i<3; i++ ) {
+        for( int i = 0; i < 3; i++ ) {
             DataSet ds = new DataSet(Nd4j.create(1,10), Nd4j.create(1,10));
             ds.save(new File(f, i + ".bin"));
         }
@@ -110,10 +114,13 @@ public class TestValidation extends BaseSparkTest {
 
     @Test
     public void testMultiDataSetValidation() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         File f = folder.newFolder();
 
-        for( int i=0; i<3; i++ ) {
+        for( int i = 0; i < 3; i++ ) {
             MultiDataSet ds = new MultiDataSet(Nd4j.create(1,10), Nd4j.create(1,10));
             ds.save(new File(f, i + ".bin"));
         }

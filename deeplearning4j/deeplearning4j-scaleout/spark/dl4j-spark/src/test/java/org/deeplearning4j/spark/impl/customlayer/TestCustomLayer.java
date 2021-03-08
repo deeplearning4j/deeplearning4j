@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.impl.customlayer;
 
+import com.sun.jna.Platform;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -44,6 +45,10 @@ public class TestCustomLayer extends BaseSparkTest {
 
     @Test
     public void testSparkWithCustomLayer() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         //Basic test - checks whether exceptions etc are thrown with custom layers + spark
         //Custom layers are tested more extensively in dl4j core
         MultiLayerConfiguration conf =

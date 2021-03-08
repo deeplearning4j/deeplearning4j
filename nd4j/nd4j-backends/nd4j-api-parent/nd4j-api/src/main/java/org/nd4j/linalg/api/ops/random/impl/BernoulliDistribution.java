@@ -118,7 +118,7 @@ public class BernoulliDistribution extends BaseRandomOp {
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes == null || inputDataTypes.isEmpty(), "Expected no input datatypes (no args) for %s, got %s", getClass(), inputDataTypes);
         //Input data type specifies the shape; output data type should be any float
-        //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
+        //TODO MAKE CONFIGUREABLE - https://github.com/eclipse/deeplearning4j/issues/6854
         return Collections.singletonList(dataType);
     }
 }

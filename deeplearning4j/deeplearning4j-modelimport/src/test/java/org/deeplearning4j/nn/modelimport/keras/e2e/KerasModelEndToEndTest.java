@@ -1001,7 +1001,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
 
         for (Layer l : netToTest.getLayers()) {
             // Remove any dropout manually - until this is fixed:
-            // https://github.com/deeplearning4j/deeplearning4j/issues/4368
+            // https://github.com/eclipse/deeplearning4j/issues/4368
              l.conf().getLayer().setIDropout(null);
 
             //Also swap out activation functions... this is a bit of a hack, but should make the net gradient checkable...

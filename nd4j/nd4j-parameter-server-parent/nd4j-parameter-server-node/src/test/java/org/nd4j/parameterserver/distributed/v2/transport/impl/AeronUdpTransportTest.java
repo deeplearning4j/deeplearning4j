@@ -22,6 +22,7 @@ package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -39,10 +40,11 @@ public class AeronUdpTransportTest extends BaseND4JTest {
     }
 
     @Test
-    //@Ignore
+    @Ignore
     public void testBasic_Connection_1() throws Exception {
         // we definitely want to shutdown all transports after test, to avoid issues with shmem
-        try(val transportA = new AeronUdpTransport(IP, ROOT_PORT, IP, ROOT_PORT, VoidConfiguration.builder().build());  val transportB = new AeronUdpTransport(IP, 40782, IP, ROOT_PORT, VoidConfiguration.builder().build())) {
+        try(val transportA = new AeronUdpTransport(IP, ROOT_PORT, IP, ROOT_PORT, VoidConfiguration.builder().build());
+            val transportB = new AeronUdpTransport(IP, 40782, IP, ROOT_PORT, VoidConfiguration.builder().build())) {
             transportA.launchAsMaster();
 
             Thread.sleep(50);
