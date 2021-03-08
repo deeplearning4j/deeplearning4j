@@ -1,0 +1,16 @@
+name: Install protobuf linux
+runs:
+  using: composite
+  steps:
+    - name: Install protobuf linux
+      shell: bash
+      run: |
+        curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
+                               | tar xz && \
+                               cd protobuf-3.5.1 && \
+                               ./configure --prefix=/opt/protobuf && \
+                               make -j2 && \
+                               make install && \
+                               cd .. && \
+                               rm -rf protobuf-3.5.1
+        echo "/opt/protobuf/bin" >> $GITHUB_PATH

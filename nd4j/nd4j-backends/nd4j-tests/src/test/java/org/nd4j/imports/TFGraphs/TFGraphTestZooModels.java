@@ -91,7 +91,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             "text_gen_81",
 
 
-            // 2019/05/20 - Buffer is too big to export? https://github.com/deeplearning4j/deeplearning4j/issues/7760
+            // 2019/05/20 - Buffer is too big to export? https://github.com/eclipse/deeplearning4j/issues/7760
             // File: C:/DL4J/Git/deeplearning4j/libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/flatbuffers.h, Line 668
             //Expression: size() < FLATBUFFERS_MAX_BUFFER_SIZE
             "deeplabv3_pascal_train_aug_2018_01_04"
@@ -245,11 +245,11 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         if(isPPC()){
             /*
             Ugly hack to temporarily disable tests on PPC only on CI
-            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            Issue logged here: https://github.com/eclipse/deeplearning4j/issues/7657
             These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
              */
 
-            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
             OpValidationSuite.ignoreFailing();
         }
 

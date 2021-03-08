@@ -54,6 +54,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
+@Ignore("Times out too often")
 public class TestImageNet extends BaseDL4JTest {
 
     @Override

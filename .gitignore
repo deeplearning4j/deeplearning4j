@@ -79,3 +79,5 @@ libnd4j/cmake*
 
 #vim
 *.swp
+
+*.dll

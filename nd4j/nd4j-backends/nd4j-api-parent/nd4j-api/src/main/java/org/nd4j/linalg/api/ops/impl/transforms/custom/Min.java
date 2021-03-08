@@ -73,7 +73,7 @@ public class Min extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        //TODO Switch to minimum_bp op - https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/broadcastable/minimum.cpp
+        //TODO Switch to minimum_bp op - https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/include/ops/declarable/generic/broadcastable/minimum.cpp
         SDVariable min = outputVariables()[0];
         SDVariable eq1 = sameDiff.eq(larg(), min).castTo(arg(0).dataType());
         SDVariable eq2 = sameDiff.eq(rarg(), min).castTo(arg(1).dataType());

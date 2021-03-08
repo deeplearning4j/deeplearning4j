@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark;
 
+import com.sun.jna.Platform;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -66,6 +67,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
     @Test
     public void testEarlyStoppingIris() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
@@ -114,7 +119,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
     @Test
     public void testBadTuning() {
         //Test poor tuning (high LR): should terminate on MaxScoreIterationTerminationCondition
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -152,7 +160,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
     @Test
     public void testTimeTermination() {
         //test termination after max time
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -197,7 +208,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
     public void testNoImprovementNEpochsTermination() {
         //Idea: terminate training if score (test set loss) does not improve for 5 consecutive epochs
         //Simulate this by setting LR = 0.0
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -235,6 +249,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
     @Test
     public void testListeners() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")

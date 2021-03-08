@@ -32,6 +32,7 @@ import org.deeplearning4j.text.sentenceiterator.labelaware.LabelAwareSentenceIte
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -56,6 +57,7 @@ public class Word2VecDataSetIteratorTest extends BaseDL4JTest {
      * Basically all we want from this test - being able to finish without exceptions.
      */
     @Test
+    @Ignore
     public void testIterator1() throws Exception {
 
         File inputFile = Resources.asFile("big/raw_sentences.txt");

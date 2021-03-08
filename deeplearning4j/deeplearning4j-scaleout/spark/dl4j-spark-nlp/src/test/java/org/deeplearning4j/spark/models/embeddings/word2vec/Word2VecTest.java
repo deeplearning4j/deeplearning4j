@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
+import com.sun.jna.Platform;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -54,6 +55,10 @@ public class Word2VecTest {
 
     @Test
     public void testConcepts() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         // These are all default values for word2vec
         SparkConf sparkConf = new SparkConf().setMaster("local[8]")
                 .set("spark.driver.host", "localhost")

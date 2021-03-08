@@ -362,8 +362,11 @@
                         <configuration>
                             <environmentVariables>
                                 <LD_LIBRARY_PATH>
-                                    ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/
+                                    ${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes
                                 </LD_LIBRARY_PATH>
+                                <PATH>
+                                    ${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes
+                                </PATH>
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
@@ -388,7 +391,7 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
-                            <argLine>-Ddtype=float -Xmx8g</argLine>
+                            <argLine>-Dfile.encoding=UTF-8 -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes"</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -441,8 +444,11 @@
                         <configuration>
                             <environmentVariables>
                                 <LD_LIBRARY_PATH>
-                                    ${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cuda/blas/
+                                    ${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes
                                 </LD_LIBRARY_PATH>
+                                <PATH>
+                                    ${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes
+                                </PATH>
                             </environmentVariables>
                             <testSourceDirectory>src/test/java</testSourceDirectory>
                             <includes>
@@ -465,7 +471,7 @@
                                 Maximum heap size was set to 6g, as a minimum required value for tests run.
                                 Depending on a build machine, default value is not always enough.
                             -->
-                            <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx6g</argLine>
+                            <argLine> -Dfile.encoding=UTF-8  -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
                         </configuration>
                     </plugin>
                 </plugins>

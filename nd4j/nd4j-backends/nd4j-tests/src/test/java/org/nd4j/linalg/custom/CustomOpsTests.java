@@ -56,7 +56,6 @@ import org.nd4j.linalg.api.ops.custom.RgbToHsv;
 import org.nd4j.linalg.api.ops.custom.RgbToYiq;
 import org.nd4j.linalg.api.ops.custom.RgbToYuv;
 import org.nd4j.linalg.api.ops.custom.Roll;
-import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
 import org.nd4j.linalg.api.ops.custom.ToggleBits;
 import org.nd4j.linalg.api.ops.custom.TriangularSolve;
 import org.nd4j.linalg.api.ops.custom.YiqToRgb;
@@ -64,12 +63,11 @@ import org.nd4j.linalg.api.ops.custom.YuvToRgb;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.controlflow.Where;
-import org.nd4j.linalg.api.ops.impl.image.CropAndResize;
 import org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression;
 import org.nd4j.linalg.api.ops.impl.image.ResizeArea;
 import org.nd4j.linalg.api.ops.impl.image.ResizeBilinear;
-import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
+import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.shape.Create;
 import org.nd4j.linalg.api.ops.impl.shape.Linspace;
 import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
@@ -390,51 +388,6 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
 
-    @Test
-    public void testScatterUpdate1() {
-        val matrix = Nd4j.create(5, 5);
-        val updates = Nd4j.create(2, 5).assign(1.0);
-        int[] dims = new int[]{1};
-        int[] indices = new int[]{1, 3};
-
-        val exp0 = Nd4j.create(5).assign(0);
-        val exp1 = Nd4j.create(5).assign(1);
-
-        ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
-        Nd4j.getExecutioner().exec(op);
-
-        assertEquals(exp0, matrix.getRow(0));
-        assertEquals(exp1, matrix.getRow(1));
-        assertEquals(exp0, matrix.getRow(2));
-        assertEquals(exp1, matrix.getRow(3));
-        assertEquals(exp0, matrix.getRow(4));
-    }
-
-    @Test(expected = ND4JIllegalStateException.class)
-    public void testScatterUpdate2() {
-        val matrix = Nd4j.create(5, 5);
-        val updates = Nd4j.create(2, 5).assign(1.0);
-        int[] dims = new int[]{0};
-        int[] indices = new int[]{0, 1};
-
-        val exp0 = Nd4j.create(1, 5).assign(0);
-        val exp1 = Nd4j.create(1, 5).assign(1);
-
-        ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
-    }
-
-    @Test(expected = ND4JIllegalStateException.class)
-    public void testScatterUpdate3() {
-        val matrix = Nd4j.create(5, 5);
-        val updates = Nd4j.create(2, 5).assign(1.0);
-        int[] dims = new int[]{1};
-        int[] indices = new int[]{0, 6};
-
-        val exp0 = Nd4j.create(1, 5).assign(0);
-        val exp1 = Nd4j.create(1, 5).assign(1);
-
-        ScatterUpdate op = new ScatterUpdate(matrix, updates, indices, dims, ScatterUpdate.UpdateOp.ADD);
-    }
 
     @Test
     public void testOpStatus1() {
@@ -917,6 +870,7 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testDrawBoundingBoxesShape() {
         INDArray images = Nd4j.createFromArray(new float[]{0.7788f, 0.8012f, 0.7244f,  0.2309f, 0.7271f,
                         0.1804f,0.5056f,0.8925f,0.5461f,0.9234f,0.0856f,0.7938f,0.6591f,0.5555f,0.1596f,
@@ -1005,17 +959,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         assertEquals(expected, output);
     }
 
-    @Test
-    public void testCompareAndBitpack() {
-        INDArray in = Nd4j.createFromArray(new double[]{-12.f, -11.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f,
-                -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f}).reshape( 2,3,4);
-        INDArray out = Nd4j.createUninitialized(DataType.UBYTE, 2,3,4);
-        INDArray expected = Nd4j.createFromArray(new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}).
-                reshape(2,3,4);
 
-        Nd4j.exec(new CompareAndBitpack(in ,2.0, out));
-        assertArrayEquals(new long[]{2,3,4}, out.shape());
-    }
 
     @Test
     public void testDivideNoNan() {
@@ -1028,6 +972,7 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testDrawBoundingBoxes() {
         INDArray images = Nd4j.linspace(DataType.FLOAT, 1.0f, 1.0f, 2*4*5*3).reshape(2,4,5,3);
         INDArray boxes = Nd4j.createFromArray(new float[]{ 0.0f , 0.0f , 1.0f , 1.0f,

@@ -52,7 +52,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
     @Test
     public void testElementWiseVertexNumParams() {
         /*
-         * https://github.com/deeplearning4j/deeplearning4j/pull/3514#issuecomment-307754386
+         * https://github.com/eclipse/deeplearning4j/pull/3514#issuecomment-307754386
          * from @agibsonccc: check for the basics: like 0 numParams
          */
 

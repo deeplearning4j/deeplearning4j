@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.iterator;
 
+import com.sun.jna.Platform;
 import lombok.Getter;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.iterator.bert.BertMaskedLMMasker;
@@ -57,9 +58,11 @@ public class TestBertIterator extends BaseDL4JTest {
     public TestBertIterator() throws IOException {
     }
 
-    @Test(timeout = 20000L)
+    @Test()
     public void testBertSequenceClassification() throws Exception {
-
+        if(Platform.isWindows()) {
+            return;
+        }
         int minibatchSize = 2;
         TestSentenceHelper testHelper = new TestSentenceHelper();
         BertIterator b = BertIterator.builder()
@@ -308,6 +311,9 @@ public class TestBertIterator extends BaseDL4JTest {
      */
     @Test
     public void testSentencePairsSingle() throws IOException {
+        if(Platform.isWindows()) {
+            return;
+        }
         boolean prependAppend;
         int numOfSentences;
 
@@ -367,7 +373,9 @@ public class TestBertIterator extends BaseDL4JTest {
     */
     @Test
     public void testSentencePairsUnequalLengths() throws IOException {
-
+        if(Platform.isWindows()) {
+            return;
+        }
         int minibatchSize = 4;
         int numOfSentencesinIter = 3;
 
@@ -456,6 +464,9 @@ public class TestBertIterator extends BaseDL4JTest {
 
     @Test
     public void testSentencePairFeaturizer() throws IOException {
+        if(Platform.isWindows()) {
+            return;
+        }
         int minibatchSize = 2;
         TestSentencePairsHelper testPairHelper = new TestSentencePairsHelper(minibatchSize);
         BertIterator b = BertIterator.builder()

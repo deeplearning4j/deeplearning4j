@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.parameterserver.accumulation;
 
+import com.sun.jna.Platform;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,6 +34,10 @@ public class SharedTrainingAccumulationFunctionTest {
 
     @Test
     public void testAccumulation1() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         INDArray updates1 = Nd4j.create(1000).assign(1.0);
         INDArray updates2 = Nd4j.create(1000).assign(2.0);
         INDArray expUpdates = Nd4j.create(1000).assign(3.0);

@@ -61,10 +61,10 @@ public class ExecutionTests extends BaseNd4jTest {
         if(TFGraphTestZooModels.isPPC()){
             /*
             Ugly hack to temporarily disable tests on PPC only on CI
-            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            Issue logged here: https://github.com/eclipse/deeplearning4j/issues/7657
             These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
              */
-            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
             OpValidationSuite.ignoreFailing();
         }
 

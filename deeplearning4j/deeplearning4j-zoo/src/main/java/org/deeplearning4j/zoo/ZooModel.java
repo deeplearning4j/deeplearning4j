@@ -72,7 +72,7 @@ public abstract class ZooModel<T> implements InstantiableModel {
 
         if (!cachedFile.exists()) {
             log.info("Downloading model to " + cachedFile.toString());
-            FileUtils.copyURLToFile(new URL(remoteUrl), cachedFile);
+            FileUtils.copyURLToFile(new URL(remoteUrl), cachedFile,Integer.MAX_VALUE,Integer.MAX_VALUE);
         } else {
             log.info("Using cached model at " + cachedFile.toString());
         }
@@ -89,7 +89,7 @@ public abstract class ZooModel<T> implements InstantiableModel {
                 log.error("Checksums do not match. Cleaning up files and failing...");
                 cachedFile.delete();
                 throw new IllegalStateException(
-                                "Pretrained model file failed checksum. If this error persists, please open an issue at https://github.com/deeplearning4j/deeplearning4j.");
+                                "Pretrained model file failed checksum. If this error persists, please open an issue at https://github.com/eclipse/deeplearning4j.");
             }
         }
 

@@ -91,28 +91,28 @@ public class Linspace extends BaseRandomOp {
 
     @Override
     public INDArray x(){
-        //Workaround/hack for: https://github.com/deeplearning4j/deeplearning4j/issues/6723
+        //Workaround/hack for: https://github.com/eclipse/deeplearning4j/issues/6723
         //If x or y is present, can't execute this op properly (wrong signature is used)
         return null;
     }
 
     @Override
     public INDArray y(){
-        //Workaround/hack for: https://github.com/deeplearning4j/deeplearning4j/issues/6723
+        //Workaround/hack for: https://github.com/eclipse/deeplearning4j/issues/6723
         //If x or y is present, can't execute this op properly (wrong signature is used)
         return null;
     }
 
     @Override
     public void setX(INDArray x){
-        //Workaround/hack for: https://github.com/deeplearning4j/deeplearning4j/issues/6723
+        //Workaround/hack for: https://github.com/eclipse/deeplearning4j/issues/6723
         //If x or y is present, can't execute this op properly (wrong signature is used)
         this.x = null;
     }
 
     @Override
     public void setY(INDArray y){
-        //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/6723
+        //Workaround for: https://github.com/eclipse/deeplearning4j/issues/6723
         //If x or y is present, can't execute this op properly (wrong signature is used)
         this.y = null;
     }

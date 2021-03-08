@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.datavec;
 
+import com.sun.jna.Platform;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.api.java.JavaRDD;
@@ -44,6 +45,10 @@ public class TestExport extends BaseSparkTest {
 
     @Test
     public void testBatchAndExportDataSetsFunction() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         String baseDir = System.getProperty("java.io.tmpdir");
         baseDir = FilenameUtils.concat(baseDir, "dl4j_spark_testBatchAndExport/");
         baseDir = baseDir.replaceAll("\\\\", "/");
@@ -102,6 +107,10 @@ public class TestExport extends BaseSparkTest {
 
     @Test
     public void testBatchAndExportMultiDataSetsFunction() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         String baseDir = System.getProperty("java.io.tmpdir");
         baseDir = FilenameUtils.concat(baseDir, "dl4j_spark_testBatchAndExportMDS/");
         baseDir = baseDir.replaceAll("\\\\", "/");

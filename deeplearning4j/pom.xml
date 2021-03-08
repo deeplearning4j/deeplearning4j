@@ -36,7 +36,6 @@
     <packaging>pom</packaging>
 
     <name>DeepLearning4j</name>
-    <url>http://deeplearning4j.org/</url>
     <description>DeepLearning for java</description>
 
 
@@ -59,9 +58,7 @@
         <module>deeplearning4j-modelimport</module>
         <module>deeplearning4j-modelexport-solr</module>
         <module>deeplearning4j-zoo</module>
-        <module>deeplearning4j-nearestneighbors-parent</module>
         <module>deeplearning4j-data</module>
-        <module>deeplearning4j-manifold</module>
         <module>dl4j-integration-tests</module>
         <module>deeplearning4j-common</module>
         <module>deeplearning4j-common-tests</module>
@@ -233,7 +230,7 @@
                          -->
                         <useSystemClassLoader>true</useSystemClassLoader>
                         <useManifestOnlyJar>false</useManifestOnlyJar>
-                        <argLine>-Ddtype=float -Dfile.encoding=UTF-8 -Xmx8g</argLine>
+                        <argLine> -Dfile.encoding=UTF-8 -Xmx8g -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes"</argLine>
                         <includes>
                             <!-- Default setting only runs tests that start/end with "Test" -->
                             <include>*.java</include>
@@ -294,6 +291,51 @@
                     <scope>test</scope>
                 </dependency>
             </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <inherited>true</inherited>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.nd4j</groupId>
+                                <artifactId>nd4j-native</artifactId>
+                                <version>${project.version}</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <environmentVariables>
+
+                            </environmentVariables>
+                            <testSourceDirectory>src/test/java</testSourceDirectory>
+                            <includes>
+                                <include>*.java</include>
+                                <include>**/*.java</include>
+                                <include>**/Test*.java</include>
+                                <include>**/*Test.java</include>
+                                <include>**/*TestCase.java</include>
+                            </includes>
+                            <junitArtifactName>junit:junit</junitArtifactName>
+                            <systemPropertyVariables>
+                                <org.nd4j.linalg.defaultbackend>
+                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                </org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>
+                                    org.nd4j.linalg.cpu.nativecpu.CpuBackend
+                                </org.nd4j.linalg.tests.backendstorun>
+                            </systemPropertyVariables>
+                            <!--
+                                Maximum heap size was set to 8g, as a minimum required value for tests run.
+                                Depending on a build machine, default value is not always enough.
+
+                                For testing large zoo models, this may not be enough (so comment it out).
+                            -->
+                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes"</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <!-- For running unit tests with nd4j-cuda-8.0: "mvn clean test -P test-nd4j-cuda-8.0" -->
         <profile>
@@ -316,6 +358,47 @@
                 </dependency>
             </dependencies>
             <!-- Default to ALL modules here, unlike nd4j-native -->
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-junit47</artifactId>
+                                <version>2.19.1</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <environmentVariables>
+                            </environmentVariables>
+                            <testSourceDirectory>src/test/java</testSourceDirectory>
+                            <includes>
+                                <include>*.java</include>
+                                <include>**/*.java</include>
+                                <include>**/Test*.java</include>
+                                <include>**/*Test.java</include>
+                                <include>**/*TestCase.java</include>
+                            </includes>
+                            <junitArtifactName>junit:junit</junitArtifactName>
+                            <systemPropertyVariables>
+                                <org.nd4j.linalg.defaultbackend>
+                                    org.nd4j.linalg.jcublas.JCublasBackend
+                                </org.nd4j.linalg.defaultbackend>
+                                <org.nd4j.linalg.tests.backendstorun>
+                                    org.nd4j.linalg.jcublas.JCublasBackend
+                                </org.nd4j.linalg.tests.backendstorun>
+                            </systemPropertyVariables>
+                            <!--
+                                Maximum heap size was set to 6g, as a minimum required value for tests run.
+                                Depending on a build machine, default value is not always enough.
+                            -->
+                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

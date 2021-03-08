@@ -370,7 +370,7 @@ public class NetworkUtils {
         final String message;
         if (model.getClass().getName().startsWith("org.deeplearning4j")) {
             message = model.getClass().getName() + " models are not yet supported and " +
-                    "pull requests are welcome: https://github.com/deeplearning4j/deeplearning4j";
+                    "pull requests are welcome: https://github.com/eclipse/deeplearning4j";
         } else {
             message = model.getClass().getName() + " models are unsupported.";
         }

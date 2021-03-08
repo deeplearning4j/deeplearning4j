@@ -101,7 +101,8 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
                 <configuration>
-                    <argLine>-Ddtype=double</argLine>
+                    <argLine>-Ddtype=double  -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
+
                     <!--
                      By default: Surefire will set the classpath based on the manifest. Because tests are not included
                      in the JAR, any tests that rely on class path scanning for resources in the tests directory will not

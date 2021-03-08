@@ -26,7 +26,7 @@
 #include <ops/declarable/helpers/helpers.h>
 #include <helpers/helper_random.h>
 #include <graph/RandomGenerator.h>
-
+#include <graph/Context.h>
 namespace sd    {
 namespace ops     {
 namespace helpers {
@@ -84,6 +84,8 @@ namespace helpers {
 	void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps);
 
 	void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis);
+
+	void compareAndBitpack(graph::Context& block, const NDArray& input, const NDArray& threshold, NDArray& output);
 }
 }
 }

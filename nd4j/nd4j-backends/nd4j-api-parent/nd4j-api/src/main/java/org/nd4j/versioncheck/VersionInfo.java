@@ -80,7 +80,7 @@ public class VersionInfo {
 
     public VersionInfo(URI uri) throws IOException {
         //Can't use new File(uri).getPath() for URIs pointing to resources in JARs
-        //But URI.toString() returns "%2520" instead of spaces in path - https://github.com/deeplearning4j/deeplearning4j/issues/6056
+        //But URI.toString() returns "%2520" instead of spaces in path - https://github.com/eclipse/deeplearning4j/issues/6056
         String path = uri.toString().replaceAll(HTML_SPACE, " ");
         int idxOf = path.lastIndexOf('/');
         idxOf = Math.max(idxOf, path.lastIndexOf('\\'));

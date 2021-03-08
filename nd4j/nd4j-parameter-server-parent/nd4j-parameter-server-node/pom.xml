@@ -107,13 +107,12 @@
                                 <include>*.java</include>
                                 <include>**/*.java</include>
                             </includes>
-                            <argLine>-Ddtype=float -Xmx8g</argLine>
+                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes"</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
             </build>
         </profile>
-        <!-- *** AB 2020/04/25 - SKIPPING CUDA TESTS - SEE https://github.com/eclipse/deeplearning4j/issues/8878 *** -->
         <profile>
             <id>nd4j-tests-cuda</id>
             <activation>
@@ -132,7 +131,7 @@
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
-                            <skipTests>true</skipTests>
+                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
                         </configuration>
                     </plugin>
                 </plugins>

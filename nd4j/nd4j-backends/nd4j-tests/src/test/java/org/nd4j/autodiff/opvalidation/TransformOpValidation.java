@@ -326,7 +326,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testBatchToSpace() {
-        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/deeplearning4j/deeplearning4j/issues/6863
+        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/eclipse/deeplearning4j/issues/6863
         Nd4j.getRandom().setSeed(1337);
 
         int miniBatch = 4;
@@ -363,7 +363,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testSpaceToBatch() {
-        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/deeplearning4j/deeplearning4j/issues/6863
+        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/eclipse/deeplearning4j/issues/6863
 
         Nd4j.getRandom().setSeed(7331);
 
@@ -1281,7 +1281,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     out = sd.math().isInfinite(in);
                     break;
                 case 2:
-                    //TODO: IsMax supports both bool and float out: https://github.com/deeplearning4j/deeplearning4j/issues/6872
+                    //TODO: IsMax supports both bool and float out: https://github.com/eclipse/deeplearning4j/issues/6872
                     inArr = Nd4j.create(new double[]{-3, 5, 0, 2});
                     exp = Nd4j.create(new boolean[]{false, true, false, false});
                     out = sd.math().isMax(in);

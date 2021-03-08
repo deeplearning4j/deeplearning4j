@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.impl.multilayer;
 
+import com.sun.jna.Platform;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.JavaRDD;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
@@ -69,6 +70,10 @@ public class TestSparkDl4jMultiLayer extends BaseSparkTest {
 
     @Test
     public void testEvaluationSimple() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Nd4j.getRandom().setSeed(12345);
 
         for( int evalWorkers : new int[]{1, 4, 8}) {

@@ -80,7 +80,7 @@ public abstract class CacheableExtractableDataSetFetcher implements CacheableDat
                 log.error("Checksums do not match. Cleaning up files and failing...");
                 tmpFile.delete();
                 throw new IllegalStateException( "Dataset file failed checksum: " + tmpFile + " - expected checksum " + expectedChecksum(set)
-                + " vs. actual checksum " + localChecksum + ". If this error persists, please open an issue at https://github.com/deeplearning4j/deeplearning4j.");
+                + " vs. actual checksum " + localChecksum + ". If this error persists, please open an issue at https://github.com/eclipse/deeplearning4j.");
             }
         }
 

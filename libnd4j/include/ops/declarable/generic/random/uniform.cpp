@@ -40,7 +40,7 @@ namespace sd {
          * TArgs[0] - min for rng
          * TArgs[1] - max for rng
          */
-        CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -1) {
+        CUSTOM_OP_IMPL(randomuniform, -1, 1, true, 0, -2) {
             // uniform distribution
             auto rng = block.randomGenerator();
             auto dtype = DataType::FLOAT32;

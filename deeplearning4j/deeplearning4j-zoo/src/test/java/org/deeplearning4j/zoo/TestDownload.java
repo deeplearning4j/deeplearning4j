@@ -44,6 +44,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 @Slf4j
+@Ignore("Times out too often")
 public class TestDownload extends BaseDL4JTest {
 
     @Override

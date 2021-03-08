@@ -1,0 +1,52 @@
+on:
+  push:
+jobs:
+  linux-x86_64:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/install-protobuf-linux
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
+      - name: Run tests on linux-x86_64
+        shell: bash
+        run: |
+              mvn --version
+              cmake --version
+              protoc --version
+              cd dl4j-test-resources-master && mvn clean install -DskipTests && cd ..
+              export OMP_NUM_THREADS=1
+              mvn  -Pintegration-tests -Ptestresources -Dlibnd4j.buildthreads=1 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
+
+  windows-x86_64:
+    runs-on: windows-2019
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/msys2-base-setup
+      - uses: ./.github/actions/download-dl4j-test-resources-windows
+      - name: Run tests
+        shell: cmd
+        run: |
+              set "PATH=C:\msys64\usr\bin;%PATH%"
+              export OMP_NUM_THREADS=1
+              mvn -Pintegration-tests -Ptestresources -Dlibnd4j.buildthreads=1 -Dlibnd4j.build="Debug" -Djavacpp.platform=windows-x86_64 -libnd4j.platform=windows-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
+
+
+
+  mac-x86_64:
+    runs-on: macos-10.15
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
+      - name: Install and run tests
+        shell: bash
+        env:
+          VERBOSE: 1
+        run: |
+            brew install unzip  ccache gcc swig autoconf-archive automake cmake libomp libtool libusb ant maven nasm xz pkg-config sdl gpg1 bison flex perl ragel binutils gradle gmp isl libmpc mpfr wget python
+            export OMP_NUM_THREADS=1
+            mvn -Pintegration-tests -Dlibnd4j.build="Debug" -Dlibnd4j.buildthreads=1 -Ptestresources -Djavacpp.platform=macosx-x86_64 -libnd4j.platform=macosx-x86_64 -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
+

@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.datavec;
 
+import com.sun.jna.Platform;
 import lombok.val;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.io.Text;
@@ -68,6 +69,10 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
     @Test
     public void testDataVecDataSetFunction() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         JavaSparkContext sc = getContext();
 
         File f = testDir.newFolder();
@@ -178,6 +183,10 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
     @Test
     public void testDataVecSequenceDataSetFunction() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         JavaSparkContext sc = getContext();
         //Test Spark record reader functionality vs. local
         File dir = testDir.newFolder();
@@ -236,6 +245,10 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
 
     @Test
     public void testDataVecSequencePairDataSetFunction() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         JavaSparkContext sc = getContext();
 
         File f = testDir.newFolder();
@@ -332,7 +345,10 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     @Test
     public void testDataVecSequencePairDataSetFunctionVariableLength() throws Exception {
         //Same sort of test as testDataVecSequencePairDataSetFunction() but with variable length time series (labels shorter, align end)
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         File dirFeatures = testDir.newFolder();
         ClassPathResource cpr = new ClassPathResource("dl4j-spark/csvsequence/");
         cpr.copyDirectory(dirFeatures);

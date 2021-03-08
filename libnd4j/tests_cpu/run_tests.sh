@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 #
 # /* ******************************************************************************
@@ -36,7 +36,7 @@ do
         # unknown option
         ;;
     esac
-    
+
     if [[ $# > 0 ]]; then
         shift # past argument or value
     fi
@@ -56,7 +56,9 @@ if [ -n "$BUILD_PATH" ]; then
     export PATH="$PATH:$BUILD_PATH"
 fi
 
-../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
+unameOut="$(uname)"
+echo "$OSTYPE"
 
+../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests
 # Workaround to fix posix path conversion problem on Windows (http://mingw.org/wiki/Posix_path_conversion)
 [ -f "${GTEST_OUTPUT#*:}" ] && cp -a surefire-reports/ ../target && rm -rf surefire-reports/

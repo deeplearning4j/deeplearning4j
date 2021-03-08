@@ -2004,7 +2004,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testCastEmpty(){
         INDArray emptyLong = Nd4j.empty(DataType.LONG);
-        int dtype = 9;  //INT = 9 - https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/array/DataType.h
+        int dtype = 9;  //INT = 9 - https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/include/array/DataType.h
         DynamicCustomOp op = DynamicCustomOp.builder("cast")
                 .addInputs(emptyLong)
                 .addIntegerArguments(dtype)

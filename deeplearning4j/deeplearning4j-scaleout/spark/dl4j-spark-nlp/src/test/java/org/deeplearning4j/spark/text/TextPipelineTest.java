@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.text;
 
+import com.sun.jna.Platform;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -94,6 +95,10 @@ public class TextPipelineTest extends BaseSparkTest {
 
     @Test
     public void testTokenizer() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         JavaSparkContext sc = getContext();
         JavaRDD<String> corpusRDD = getCorpusRDD(sc);
         Broadcast<Map<String, Object>> broadcastTokenizerVarMap = sc.broadcast(word2vec.getTokenizerVarMap());

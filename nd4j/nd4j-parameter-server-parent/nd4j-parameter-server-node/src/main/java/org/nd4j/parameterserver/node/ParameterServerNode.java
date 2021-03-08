@@ -184,7 +184,7 @@ public class ParameterServerNode implements AutoCloseable {
         return new Aeron.Context()
                         .availableImageHandler(AeronUtil::printAvailableImage)
                         .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveInterval(1000)
+                        .aeronDirectoryName(mediaDriver.aeronDirectoryName()).keepAliveIntervalNs(100000)
                         .errorHandler(e -> log.error(e.toString(), e));
     }
 

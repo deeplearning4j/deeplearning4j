@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.PrimaryCapsules;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitDistribution;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.ActivationSoftmax;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -45,6 +46,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 
 import java.util.Random;
 
+@Ignore
 public class CapsnetGradientCheckTest extends BaseDL4JTest {
 
     @Override
