@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,9 +61,10 @@ public class WritableTest extends BaseND4JTest {
     public void testBytesWritableIndexing() {
         byte[] doubleWrite = new byte[16];
         ByteBuffer wrapped = ByteBuffer.wrap(doubleWrite);
+        Buffer buffer = (Buffer) wrapped;
         wrapped.putDouble(1.0);
         wrapped.putDouble(2.0);
-        wrapped.rewind();
+        buffer.rewind();
         BytesWritable byteWritable = new BytesWritable(doubleWrite);
         assertEquals(2,byteWritable.getDouble(1),1e-1);
         DataBuffer dataBuffer = Nd4j.createBuffer(new double[] {1,2});

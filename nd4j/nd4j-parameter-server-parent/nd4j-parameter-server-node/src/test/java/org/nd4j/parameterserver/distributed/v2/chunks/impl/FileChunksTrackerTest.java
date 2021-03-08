@@ -22,6 +22,7 @@ package org.nd4j.parameterserver.distributed.v2.chunks.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import static org.junit.Assert.*;
 
 @Slf4j
+@Ignore
 public class FileChunksTrackerTest extends BaseND4JTest {
     @Test
     public void testTracker_1() throws Exception {

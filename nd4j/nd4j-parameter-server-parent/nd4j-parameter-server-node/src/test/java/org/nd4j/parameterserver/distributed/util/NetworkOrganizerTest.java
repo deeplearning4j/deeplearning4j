@@ -31,6 +31,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 @Slf4j
+@Ignore
 public class NetworkOrganizerTest extends BaseND4JTest {
     @Before
     public void setUp() throws Exception {

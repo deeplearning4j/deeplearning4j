@@ -20,6 +20,7 @@
 
 package org.datavec.spark.storage;
 
+import com.sun.jna.Platform;
 import org.nd4j.shade.guava.io.Files;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -41,6 +42,9 @@ public class TestSparkStorageUtils extends BaseSparkTest {
 
     @Test
     public void testSaveRestoreMapFile() {
+        if(Platform.isWindows()) {
+            return;
+        }
         List<List<Writable>> l = new ArrayList<>();
         l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0),
                         new DoubleWritable(0), new NDArrayWritable(Nd4j.valueArrayOf(10, 0.0))));
@@ -83,6 +87,9 @@ public class TestSparkStorageUtils extends BaseSparkTest {
 
     @Test
     public void testSaveRestoreMapFileSequences() {
+        if(Platform.isWindows()) {
+            return;
+        }
         List<List<List<Writable>>> l = new ArrayList<>();
         l.add(Arrays.asList(
                         Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0),

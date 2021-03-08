@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.parameterserver.modelimport.elephas;
 
+import com.sun.jna.Platform;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
@@ -40,6 +41,10 @@ public class TestElephasImport extends BaseSparkTest {
 
     @Test
     public void testElephasSequentialImport() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         String modelPath = "modelimport/elephas/elephas_sequential.h5";
         SparkDl4jMultiLayer model = importElephasSequential(sc, modelPath);
         // System.out.println(model.getNetwork().summary());
@@ -48,7 +53,11 @@ public class TestElephasImport extends BaseSparkTest {
 
     @Test
     public void testElephasSequentialImportAsync() throws Exception {
-        String modelPath = "modelimport/elephas/elephas_sequential_async.h5";
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
+       String modelPath = "modelimport/elephas/elephas_sequential_async.h5";
         SparkDl4jMultiLayer model = importElephasSequential(sc, modelPath);
         // System.out.println(model.getNetwork().summary());
         assertTrue(model.getTrainingMaster() instanceof SharedTrainingMaster);

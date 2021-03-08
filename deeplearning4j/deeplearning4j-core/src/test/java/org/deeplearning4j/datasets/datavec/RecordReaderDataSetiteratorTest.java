@@ -1259,7 +1259,7 @@ public class RecordReaderDataSetiteratorTest extends BaseDL4JTest {
 
     @Test
     public void testNormalizerPrefetchReset() throws Exception {
-        //Check NPE fix for: https://github.com/deeplearning4j/deeplearning4j/issues/4214
+        //Check NPE fix for: https://github.com/eclipse/deeplearning4j/issues/4214
         RecordReader csv = new CSVRecordReader();
         csv.initialize(new FileSplit(Resources.asFile("iris.txt")));
 

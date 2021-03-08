@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.parameterserver.iterators;
 
+import com.sun.jna.Platform;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,6 +37,10 @@ public class VirtualIteratorTest {
 
     @Test
     public void testIteration1() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<Integer> integers = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             integers.add(i);

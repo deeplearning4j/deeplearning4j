@@ -170,6 +170,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Slf4j
+@Ignore
 public class DTypeTests extends BaseDL4JTest {
 
     protected static Set<Class<?>> seenLayers = new HashSet<>();

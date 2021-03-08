@@ -25,6 +25,7 @@ import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.observation.Observation;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -52,6 +53,7 @@ public class AdvantageActorCriticUpdateAlgorithmTest {
     IActorCritic mockActorCritic;
 
     @Test
+    @Ignore
     public void refac_calcGradient_non_terminal() {
         // Arrange
         int[] observationShape = new int[]{5};

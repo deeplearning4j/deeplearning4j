@@ -881,7 +881,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             for (int i = 0; i < outShape.size(); i++) {
                 LongShapeDescriptor reqShape = outShape.get(i);
 
-                //Issue: many ops have multiple valid output datatypes, and output shape calc can't at present know which: https://github.com/deeplearning4j/deeplearning4j/issues/6872
+                //Issue: many ops have multiple valid output datatypes, and output shape calc can't at present know which: https://github.com/eclipse/deeplearning4j/issues/6872
                 //As a workaround, we'll use the output variable datatype instead.
                 DataType dt = sameDiff.getVariable(outNames[i]).dataType();
                 DataType currDT = reqShape.dataType();

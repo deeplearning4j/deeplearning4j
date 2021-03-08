@@ -21,6 +21,7 @@
 package org.nd4j.parameterserver.distributed.v2.chunks.impl;
 
 import lombok.val;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,6 +35,7 @@ import static org.junit.Assert.*;
 
 public class InmemoryChunksTrackerTest extends BaseND4JTest {
     @Test
+    @Ignore
     public void testTracker_1() throws Exception {
         val array = Nd4j.linspace(1, 100000, 10000).reshape(-1, 1000);
         val splitter = MessageSplitter.getInstance();

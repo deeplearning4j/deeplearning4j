@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.impl.stats;
 
+import com.sun.jna.Platform;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
@@ -56,6 +57,10 @@ public class TestTrainingStatsCollection extends BaseSparkTest {
 
     @Test
     public void testStatsCollection() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int nWorkers = numExecutors();
 
         JavaSparkContext sc = getContext();

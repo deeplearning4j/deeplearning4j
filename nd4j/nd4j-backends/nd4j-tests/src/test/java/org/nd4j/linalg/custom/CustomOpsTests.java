@@ -870,6 +870,7 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testDrawBoundingBoxesShape() {
         INDArray images = Nd4j.createFromArray(new float[]{0.7788f, 0.8012f, 0.7244f,  0.2309f, 0.7271f,
                         0.1804f,0.5056f,0.8925f,0.5461f,0.9234f,0.0856f,0.7938f,0.6591f,0.5555f,0.1596f,
@@ -971,6 +972,7 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testDrawBoundingBoxes() {
         INDArray images = Nd4j.linspace(DataType.FLOAT, 1.0f, 1.0f, 2*4*5*3).reshape(2,4,5,3);
         INDArray boxes = Nd4j.createFromArray(new float[]{ 0.0f , 0.0f , 1.0f , 1.0f,

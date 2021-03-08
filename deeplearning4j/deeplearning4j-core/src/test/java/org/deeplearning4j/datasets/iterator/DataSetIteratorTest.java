@@ -214,7 +214,7 @@ public class DataSetIteratorTest extends BaseDL4JTest {
     }
 
 
-    @Test @Ignore   //Ignored for now - CIFAR iterator needs work - https://github.com/deeplearning4j/deeplearning4j/issues/4673
+    @Test @Ignore   //Ignored for now - CIFAR iterator needs work - https://github.com/eclipse/deeplearning4j/issues/4673
     public void testCifarModel() throws Exception {
         // Streaming
         runCifar(false);

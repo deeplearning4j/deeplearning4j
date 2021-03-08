@@ -36,7 +36,7 @@ do
         # unknown option
         ;;
     esac
-    
+
     if [[ $# > 0 ]]; then
         shift # past argument or value
     fi

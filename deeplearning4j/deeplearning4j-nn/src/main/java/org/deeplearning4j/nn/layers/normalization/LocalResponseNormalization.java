@@ -71,7 +71,7 @@ public class LocalResponseNormalization
                     dataType);
             log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
         }
-        //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/deeplearning4j/deeplearning4j/issues/7272
+        //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/eclipse/deeplearning4j/issues/7272
 //        else if("CPU".equalsIgnoreCase(backend)){
 //            helper = new MKLDNNLocalResponseNormalizationHelper();
 //            log.debug("Created MKLDNNLocalResponseNormalizationHelper");

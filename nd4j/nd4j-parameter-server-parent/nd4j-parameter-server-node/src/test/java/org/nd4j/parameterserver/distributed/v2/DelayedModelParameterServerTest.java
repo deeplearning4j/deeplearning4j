@@ -26,6 +26,7 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -53,6 +54,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
+@Ignore
 public class DelayedModelParameterServerTest extends BaseND4JTest {
     private static final String rootId = "ROOT_NODE";
 

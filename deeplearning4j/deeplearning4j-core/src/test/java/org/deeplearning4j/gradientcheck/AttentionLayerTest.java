@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -46,6 +47,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
+@Ignore
 public class AttentionLayerTest extends BaseDL4JTest {
     @Rule
     public ExpectedException exceptionRule = ExpectedException.none();

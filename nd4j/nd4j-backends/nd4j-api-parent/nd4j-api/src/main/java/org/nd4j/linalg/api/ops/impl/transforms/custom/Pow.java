@@ -56,7 +56,7 @@ public class Pow extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        //TODO: replace this with discrete op once available: https://github.com/deeplearning4j/deeplearning4j/issues/7461
+        //TODO: replace this with discrete op once available: https://github.com/eclipse/deeplearning4j/issues/7461
         //If y=a^b, then:
         //dL/da = b*a^(b-1) * dL/dy
         //dL/db = a^b * log(a) * dL/dy

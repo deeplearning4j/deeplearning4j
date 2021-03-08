@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.ui;
 
+import com.sun.jna.Platform;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.core.storage.Persistable;
@@ -52,7 +53,10 @@ public class TestListeners extends BaseSparkTest {
 
     @Test
     public void testStatsCollection() {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         JavaSparkContext sc = getContext();
         int nExecutors = numExecutors();
 

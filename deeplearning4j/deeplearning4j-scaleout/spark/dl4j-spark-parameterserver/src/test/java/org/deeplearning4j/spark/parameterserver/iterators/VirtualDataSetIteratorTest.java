@@ -20,6 +20,7 @@
 
 package org.deeplearning4j.spark.parameterserver.iterators;
 
+import com.sun.jna.Platform;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,6 +40,10 @@ public class VirtualDataSetIteratorTest {
 
     @Test
     public void testSimple1() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<Iterator<DataSet>> iterators = new ArrayList<>();
 
         List<DataSet> first = new ArrayList<>();

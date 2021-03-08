@@ -480,7 +480,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
                 dLdInExpected_1.putColumn(i, prod_1);
             }
             dLdInExpected_1.divi(preReduceInput);
-            dLdInExpected_1.muliColumnVector(dLdOut_1.reshape(3, 1));    //Reshape is a hack around https://github.com/deeplearning4j/deeplearning4j/issues/5530
+            dLdInExpected_1.muliColumnVector(dLdOut_1.reshape(3, 1));    //Reshape is a hack around https://github.com/eclipse/deeplearning4j/issues/5530
             //System.out.println(dLdInExpected_1);
             /*
             [[   24.0000,   12.0000,    8.0000,    6.0000],

@@ -90,6 +90,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "emptyArrayTests/scatter_update/rank1_emptyIndices_emptyUpdates",
             "bincount/rank2_weights",
             "slogdet/.*",
+            "fused_batch_norm/float16_nhwc",
             //Don't bother to test RNG. We can test subsets of ops with dropout to make sure they are consistent
             //These tests have random uniform and other RNG in them that don't need to be perfectly compatible to be acceptable.
             //We need different test cases here.
@@ -197,11 +198,11 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         if(TFGraphTestZooModels.isPPC()) {
             /*
             Ugly hack to temporarily disable tests on PPC only on CI
-            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            Issue logged here: https://github.com/eclipse/deeplearning4j/issues/7657
             These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
              */
 
-            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
             OpValidationSuite.ignoreFailing();
         }
 

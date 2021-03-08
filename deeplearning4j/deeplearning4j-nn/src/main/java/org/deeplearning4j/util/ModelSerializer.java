@@ -953,7 +953,7 @@ public class ModelSerializer {
 
 
     private static void checkInputStream(InputStream inputStream) throws IOException {
-        //available method can return 0 in some cases: https://github.com/deeplearning4j/deeplearning4j/issues/4887
+        //available method can return 0 in some cases: https://github.com/eclipse/deeplearning4j/issues/4887
         int available;
         try{
             //InputStream.available(): A subclass' implementation of this method may choose to throw an IOException

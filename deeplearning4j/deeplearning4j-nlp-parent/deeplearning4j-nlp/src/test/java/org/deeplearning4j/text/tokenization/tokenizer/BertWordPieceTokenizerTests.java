@@ -42,6 +42,7 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 @Slf4j
+@Ignore
 public class BertWordPieceTokenizerTests extends BaseDL4JTest {
 
     private File pathToVocab =  Resources.asFile("other/vocab.txt");
