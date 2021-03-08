@@ -30,11 +30,11 @@ import java.util.Map;
 public abstract class SameDiffLambdaLayer extends SameDiffLayer {
 
     /**
-     * The defineLayer method is used to define the foward pass for the layer
+     * The defineLayer method is used to define the forward pass for the layer
      *
      * @param sameDiff   SameDiff instance to use to define the vertex
      * @param layerInput Layer input variable
-     * @return The output variable (orresponding to the output activations for the layer)
+     * @return The output variable (corresponding to the output activations for the layer)
      */
     public abstract SDVariable defineLayer(SameDiff sameDiff, SDVariable layerInput);
 
