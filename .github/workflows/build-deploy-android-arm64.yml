@@ -2,10 +2,11 @@ on:
   schedule:
     - cron: "0 */12 * * *"
   workflow_dispatch:
+  push:
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   android-arm64:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-16.04
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
