@@ -255,7 +255,7 @@
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCuda</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
-                            <outputDirectory>${project.build.directory}</outputDirectory>
+                            <outputDirectory>${project.build.directory}/classes/org/nd4j/nativeblas/${javacpp.platform}</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
