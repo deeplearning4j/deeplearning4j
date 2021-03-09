@@ -166,6 +166,9 @@
                                         org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/*
                                     </exclude>
                                     <exclude>lib/**</exclude>
+                                    <exclude>*.dll</exclude>
+                                    <exclude>*.dylib</exclude>
+                                    <exclude>*.so</exclude>
                                     <exclude>META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</exclude>
                                 </excludes>
                             </configuration>
