@@ -186,7 +186,7 @@
         <nd4j.cuda.basedir />
 
 
-        <python.version>3.9.1</python.version>
+        <python.version>3.9.2</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
         <numpy.version>1.20.1</numpy.version>
         <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>

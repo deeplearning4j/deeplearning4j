@@ -33,7 +33,6 @@ import org.nd4j.ir.TensorNamespace
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4j.nativeblas.Nd4jCpu.FLOAT32
 import org.nd4j.samediff.frameworkimport.opdefs.OpDescriptorLoaderHolder
 import org.nd4j.shade.protobuf.ByteString
 import java.lang.IllegalArgumentException

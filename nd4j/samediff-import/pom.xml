@@ -69,8 +69,6 @@
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
     </dependency>
     <!-- Test Dependencies -->
     <dependency>
@@ -89,13 +87,10 @@
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
       <artifactId>kotlin-stdlib-jdk8</artifactId>
-      <version>${kotlin.version}</version>
     </dependency>
     <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
       <artifactId>kotlin-test</artifactId>
-      <version>${kotlin.version}</version>
-      <scope>test</scope>
     </dependency>
   </dependencies>
 
@@ -158,54 +153,6 @@
         <plugin>
           <groupId>org.jetbrains.kotlin</groupId>
           <artifactId>kotlin-maven-plugin</artifactId>
-          <version>${kotlin.version}</version>
-          <configuration>
-            <args>
-              <arg>-Xjsr305=strict</arg>
-            </args>
-            <compilerPlugins>
-              <plugin>spring</plugin>
-              <plugin>jpa</plugin>
-            </compilerPlugins>
-          </configuration>
-          <dependencies>
-            <dependency>
-              <groupId>org.jetbrains.kotlin</groupId>
-              <artifactId>kotlin-maven-allopen</artifactId>
-              <version>1.4.30-M1</version>
-            </dependency>
-            <dependency>
-              <groupId>org.jetbrains.kotlin</groupId>
-              <artifactId>kotlin-maven-noarg</artifactId>
-              <version>1.4.30-M1</version>
-            </dependency>
-          </dependencies>
-          <executions>
-            <execution>
-              <id>compile</id>
-              <goals> <goal>compile</goal> </goals>
-              <configuration>
-                <sourceDirs>
-                  <sourceDir>${project.basedir}/src/main/stubs</sourceDir>
-                  <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
-                  <sourceDir>${project.basedir}/src/main/java</sourceDir>
-                  <sourceDir>${project.basedir}/src/main/ops</sourceDir>
-                </sourceDirs>
-              </configuration>
-            </execution>
-            <execution>
-              <id>test-compile</id>
-              <goals> <goal>test-compile</goal> </goals>
-              <configuration>
-                <sourceDirs>
-                  <sourceDir>${project.basedir}/src/test/stubs</sourceDir>
-                  <sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
-                  <sourceDir>${project.basedir}/src/test/java</sourceDir>
-                  <sourceDir>${project.basedir}/src/test/ops</sourceDir>
-                </sourceDirs>
-              </configuration>
-            </execution>
-          </executions>
         </plugin>
 
         <!-- https://kotlinlang.org/docs/reference/using-maven.html -->
