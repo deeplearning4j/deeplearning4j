@@ -93,7 +93,7 @@
                         <configuration>
                             <skipMain>${javacpp.parser.skip}</skipMain>
                             <includes>
-                                <include>org/nd4j/nativeblas/**.java</include>
+                                <include>org/nd4j/nativeblas/*.java</include>
                             </includes>
                         </configuration>
                     </execution>
@@ -219,14 +219,12 @@
                             <classOrPackageName>org.nd4j.nativeblas.Nd4jCpu</classOrPackageName>
                             <copyLibs>true</copyLibs>
                             <configDirectory>${project.build.directory}/classes/META-INF/native-image/${javacpp.platform}${javacpp.platform.extension}/</configDirectory>
-                            <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                            <outputDirectory>${project.build.directory}/classes/org/nd4j/nativeblas/${javacpp.platform}</outputDirectory>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <artifactId>maven-jar-plugin</artifactId>
-            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -261,6 +259,43 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>none</phase>
+                    </execution>
+
+                    <execution>
+                        <id>java-classes</id>
+                        <phase>deploy</phase>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <groupId>${project.groupId}</groupId>
+                            <version>${project.version}</version>
+                            <sources>${project.build.directory}/nd4j-native-${project.version}.jar</sources>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>native-deps</id>
+                        <phase>deploy</phase>
+                        <configuration>
+                            <packaging>jar</packaging>
+                            <artifactId>${project.artifactId}</artifactId>
+                            <groupId>${project.groupId}</groupId>
+                            <version>${project.version}</version>
+                            <classifier>${javacpp.platform}</classifier>
+                            <sources>${project.build.directory}/nd4j-native-${project.version}-${javacpp.platform}.jar</sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 

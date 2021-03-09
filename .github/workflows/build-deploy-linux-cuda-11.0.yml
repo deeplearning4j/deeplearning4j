@@ -1,6 +1,7 @@
 on:
   schedule:
     - cron: "0 */12 * * *"
+  workflow_dispatch:
 jobs:
 
   linux-x86_64-cuda_11-0:

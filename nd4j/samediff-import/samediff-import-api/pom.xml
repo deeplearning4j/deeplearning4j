@@ -94,11 +94,7 @@
       <version>${commonsio.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <version>${lombok.version}</version>
-    </dependency>
+
 
     <dependency>
       <groupId>org.apache.commons</groupId>
@@ -132,7 +128,6 @@
     <dependency>
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-api</artifactId>
-      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.nd4j</groupId>
@@ -144,6 +139,7 @@
       <groupId>org.nd4j</groupId>
       <artifactId>nd4j-native</artifactId>
       <version>${project.version}</version>
+       <scope>test</scope>
     </dependency>
 
     <dependency>
