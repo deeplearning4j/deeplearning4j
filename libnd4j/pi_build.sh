@@ -345,8 +345,8 @@ else
 	 	message  "jetson cuda build "
 		cuda_cross_setup ${CUDA_VER}
 		XTRA_ARGS="${XTRA_ARGS} -c cuda  -h cudnn  "
-		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda  "
-		XTRA_MVN_ARGS="${XTRA_MVN_ARGS}  -Dlibnd4j.helper=cudnn "
+		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -Djavacpp.version=1.5.3 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
+		XTRA_MVN_ARGS="${XTRA_MVN_ARGS}  -Dlibnd4j.helper=cudnn  "
 		export SYSROOT=${CROSS_COMPILER_DIR}/${PREFIX}/libc
 	else
 		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl \":libnd4j,:nd4j-native\" "
