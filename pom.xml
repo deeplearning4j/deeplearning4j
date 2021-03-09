@@ -194,7 +194,7 @@
         <openblas.version>0.3.13</openblas.version>
         <mkl.version>2021.1</mkl.version>
         <opencv.version>4.5.1</opencv.version>
-        <ffmpeg.version>4.3.1</ffmpeg.version>
+        <ffmpeg.version>4.3.2</ffmpeg.version>
         <leptonica.version>1.80.0</leptonica.version>
         <hdf5.version>1.12.0</hdf5.version>
         <ale.version>0.6.1</ale.version>

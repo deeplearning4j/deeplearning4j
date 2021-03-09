@@ -1,6 +1,7 @@
 on:
   schedule:
     - cron: "0 */12 * * *"
+  workflow_dispatch:
 jobs:
   #Note: no -pl here because we publish everything from this branch and use this as the basis for all uploads.
   linux-x86_64:

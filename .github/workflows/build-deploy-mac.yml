@@ -1,6 +1,7 @@
 on:
   schedule:
     - cron: "0 */12 * * *"
+  workflow_dispatch:
 jobs:
   mac-x86_64:
     runs-on: macos-10.15

@@ -1,6 +1,7 @@
 on:
   schedule:
     - cron: "0 */12 * * *"
+  workflow_dispatch:
 jobs:
   android-x86_64:
     runs-on: ubuntu-18.04
