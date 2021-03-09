@@ -24,12 +24,12 @@ function message {
 }
 if [ -z "${BUILD_USING_MAVEN}" ]; then export BUILD_USING_MAVEN=; fi
 if [ -z "${CURRENT_TARGET}" ]; then export  CURRENT_TARGET=arm32; fi
-if [ -z "${HAS_ARMCOMPUTE}" ]; then export  ARMCOMPUTE_DEBUG=1; fi
-if [ -z "${ARMCOMPUTE_DEBUG}" ]; then export  HAS_ARMCOMPUTE=1; fi
+if [ -z "${ARMCOMPUTE_DEBUG}" ]; then export  ARMCOMPUTE_DEBUG=1; fi
+if [ -z "${HAS_ARMCOMPUTE}" ]; then export  HAS_ARMCOMPUTE=1; fi
 if [ -z "${ARMCOMPUTE_TAG}" ]; then export  ARMCOMPUTE_TAG=v20.05; fi
 if [ -z "${LIBND4J_BUILD_MODE}" ]; then export  LIBND4J_BUILD_MODE=Release; fi
 if [ -z "${ANDROID_VERSION}" ]; then export  ANDROID_VERSION=21; fi
-if [ -z "${HAS_ARMCOMPUTE}" ]; then export  HAS_ARMCOMPUTE=1; fi
+if [ -z "${CUDA_VER}" ]; then export  CUDA_VER=10.2; fi
 
 OTHER_ARGS=()
 while [[ $# -gt 0 ]]
@@ -56,16 +56,17 @@ done
 CC_URL32="https://developer.arm.com/-/media/Files/downloads/gnu-a/8.3-2019.03/binrel/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf.tar.xz?revision=e09a1c45-0ed3-4a8e-b06b-db3978fd8d56&la=en&hash=93ED4444B8B3A812B893373B490B90BBB28FD2E3"
 CC_URL64="https://developer.arm.com/-/media/Files/downloads/gnu-a/8.3-2019.03/binrel/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu.tar.xz?revision=2e88a73f-d233-4f96-b1f4-d8b36e9bb0b9&la=en&hash=167687FADA00B73D20EED2A67D0939A197504ACD"
 CC_ANDROID="https://dl.google.com/android/repository/android-ndk-r21d-linux-x86_64.zip"
-TARGET_ARRS=( arm32 arm64 android-arm android-arm64 )
-COMPILER_ARRS=( "${CC_URL32}" "${CC_URL64}" "${CC_ANDROID}" "${CC_ANDROID}" )
-COMPILER_DOWNLOAD_CMD_LIST=( download_extract_xz download_extract_xz download_extract_unzip download_extract_unzip )
-COMPILER_DESTDIR=( "arm32" "arm64" "android" "android" )
+CC_L4T64="https://developer.nvidia.com/embedded/dlc/l4t-gcc-7-3-1-toolchain-64-bit"
+TARGET_ARRS=( arm32 arm64 android-arm android-arm64 android-x86 android-x86_64 jetson_arm64)
+COMPILER_ARRS=( "${CC_URL32}" "${CC_URL64}" "${CC_ANDROID}" "${CC_ANDROID}" "${CC_ANDROID}" "${CC_ANDROID}" "${CC_L4T64}" )
+COMPILER_DOWNLOAD_CMD_LIST=( download_extract_xz download_extract_xz download_extract_unzip download_extract_unzip download_extract_unzip download_extract_unzip download_extract_xz)
+COMPILER_DESTDIR=( "arm32" "arm64" "android" "android" "android" "android" "l4t" )
 
-OPENBLAS_TARGETS=( ARMV7 ARMV8 ARMV7 ARMV8)
-ARMCOMPUTE_TARGETS=( armv7a arm64-v8a armv7a arm64-v8a)
-OS_LIST=( linux linux android android)
-LIBND4J_PLATFORM_EXT_LIST=( armhf arm64 arm arm64 )
-PREFIXES=( arm-linux-gnueabihf aarch64-linux-gnu arm-linux-androideabi aarch64-linux-android )
+OPENBLAS_TARGETS=( ARMV7 ARMV8 ARMV7 ARMV8 ATOM ATOM ARMV8)
+ARMCOMPUTE_TARGETS=( armv7a arm64-v8a armv7a arm64-v8a None None None)
+OS_LIST=( linux linux android android android android linux)
+LIBND4J_PLATFORM_EXT_LIST=( armhf arm64 arm arm64 x86 x86_64 arm64)
+PREFIXES=( arm-linux-gnueabihf aarch64-linux-gnu arm-linux-androideabi aarch64-linux-android  i686-linux-android x86_64-linux-android aarch64-linux-gnu)
 TARGET_INDEX=-1
 
 for i in "${!TARGET_ARRS[@]}"; do
@@ -144,23 +145,27 @@ function rename_top_folder {
 }
 
 function download_extract_base {
-	#$1 is url #2 is dir $3 is extract argument
-	if [ ! -f ${3}_file ]; then
-		message "download"
-		wget --quiet --show-progress -O ${3}_file ${2}
+	#$1 is extract arg, $2 is url, $3 is dir
+	xtract_arg=${1}
+	down_url=${2}
+	down_dir=$(dirname "${3}/__")
+	down_file="${down_dir}_file"
+	if [ ! -f ${down_file} ]; then
+		message "download ${down_url}"
+		wget --quiet --show-progress -O ${down_file} ${down_url}
 	fi
  
 	message "extract $@"
     #extract
-	mkdir -p ${3} 
-	if [ ${1} = "-unzip" ]; then
-		command="unzip -qq ${3}_file -d ${3} "
+	mkdir -p ${down_dir} 
+	if [ ${xtract_arg} = "-unzip" ]; then
+		command="unzip -qq ${down_file} -d ${down_dir} "
 	else
-		command="tar ${1}  ${3}_file --directory=${3} "
+		command="tar ${xtract_arg} ${down_file} --directory=${down_dir} "
 	fi
 	message $command
 	$command
-	check_requirements "${3}"
+	check_requirements "${down_dir}"
 }
 
 function download_extract {
@@ -197,6 +202,36 @@ function fix_pi_linker {
   rm -f ${1}/ld
   printf '#!/usr/bin/env bash\n'"${1}/ld.gold --long-plt \$*">${1}/ld
   chmod +x ${1}/ld 
+}
+
+function cuda_cross_setup {
+		# $1 is local  cuda toolkit version
+		# $2 the folder where cross cuda toolkit will be
+		loc_VER=${1-10.2}
+		loc_DIR=${2-/tmp}
+		CUDA_DIR=${CUDA_DIR-/usr/local/cuda-${loc_VER}}
+		CUDA_TARGET_STUBS=${loc_DIR}/target_stub${loc_VER}
+		CUDA_TARGET_STUB_URL=https://github.com/quickwritereader/temp_jars/releases/download/1.2/aarch64_linux_cuda_${loc_VER}_cudnn8.tar.gz
+		download_extract ${CUDA_TARGET_STUB_URL} ${CUDA_TARGET_STUBS}
+		message "lets setup cuda toolkit by combining local cuda-${loc_VER} and target ${CUDA_TARGET_STUBS}"
+		message "cuda cross folder: ${loc_DIR}"
+		check_requirements ${CUDA_DIR} ${CUDA_TARGET_STUBS}/aarch64-linux/
+		if [ ! -d ${loc_DIR}/cuda/bin ];then
+			mkdir -p ${loc_DIR}/cuda/bin
+			cd ${CUDA_DIR}/bin/
+			# we are obliged to symlink inner files and folders to avoid errors happening 
+			# when  relative folders are used from symlinks 
+			for i in $(find . -maxdepth 1)
+			do 
+				ln -s ${CUDA_DIR}/bin/${i} ${loc_DIR}/cuda/bin/${i}
+			done
+			cd -
+			ln -s ${CUDA_DIR}/nvvm ${loc_DIR}/cuda/nvvm
+			ln -s ${CUDA_TARGET_STUBS} ${loc_DIR}/cuda/targets
+		fi
+		export CUDACXX=${loc_DIR}/cuda/bin/nvcc
+		export CUDNN_ROOT_DIR=${CUDA_TARGET_STUBS}/aarch64-linux
+		export CUDA_TOOLKIT_ROOT=${loc_DIR}/cuda
 }
 
 if [ ! -d ${CROSS_COMPILER_DIR}/folder ]; then
@@ -265,6 +300,15 @@ export OPENBLAS_PATH=${THIRD_PARTY}
 
 fi # end if [ -z "${BUILD_USING_MAVEN}"];then
 
+
+XTRA_ARGS=""
+XTRA_MVN_ARGS=""
+
+if [ "${ARMCOMPUTE_TARGET}" != "None" ];then
+message "~~~ARMCOMPUTE~~~"
+XTRA_ARGS=" -h armcompute "
+XTRA_MVN_ARGS=" -Dlibnd4j.helper=armcompute "
+
 if [ ! -d ${SCONS_LOCAL_DIR} ]; then
 	#out file
 	message "download Scons local"
@@ -290,11 +334,25 @@ check_requirements "${ARMCOMPUTE_DIR}/build/libarm_compute-static.a" "${ARMCOMPU
 
 export ARMCOMPUTE_ROOT="${ARMCOMPUTE_DIR}"
 
+fi #if armcompute
+
+
 if [ "${TARGET_OS}" = "android" ];then
 	export ANDROID_NDK=${CROSS_COMPILER_DIR}
+	XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl \":libnd4j,:nd4j-native\" "
 else
-    export RPI_BIN=${CROSS_COMPILER_DIR}/bin/${PREFIX}
-	  export JAVA_LIBRARY_PATH=${CROSS_COMPILER_DIR}/${PREFIX}/lib
+	 if [ "${CURRENT_TARGET}" == "jetson_arm64" ];then
+	 	message  "jetson cuda build "
+		cuda_cross_setup ${CUDA_VER}
+		XTRA_ARGS="${XTRA_ARGS} -c cuda  -h cudnn  "
+		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -Djavacpp.version=1.5.3 -Dcuda.version=${CUDA_VER} -Dlibnd4j.cuda=${CUDA_VER} -Dlibnd4j.chip=cuda -Dlibnd4j.compute=5.3 "
+		XTRA_MVN_ARGS="${XTRA_MVN_ARGS}  -Dlibnd4j.helper=cudnn  "
+		export SYSROOT=${CROSS_COMPILER_DIR}/${PREFIX}/libc
+	else
+		XTRA_MVN_ARGS="${XTRA_MVN_ARGS} -pl \":libnd4j,:nd4j-native\" "
+	fi
+	export RPI_BIN=${CROSS_COMPILER_DIR}/bin/${PREFIX}
+	export JAVA_LIBRARY_PATH=${CROSS_COMPILER_DIR}/${PREFIX}/lib
 	fix_pi_linker ${BINUTILS_BIN}
 fi
 
@@ -310,19 +368,17 @@ fi
 
 if [ -z "${BUILD_USING_MAVEN}" ] ;then
 message "lets build just library"
-DHELPER="  -h armcompute "
-bash ./buildnativeoperations.sh -o ${LIBND4J_PLATFORM} -t ${DHELPER} -j $(nproc)
+bash ./buildnativeoperations.sh -o ${LIBND4J_PLATFORM} -t -j $(nproc) ${XTRA_ARGS} 
 else
 message "cd $BASE_DIR/.. "
 cd $BASE_DIR/..
 message "lets build jars"
-export DHELPER=" -Dlibnd4j.helper=armcompute "
-if [ "${DEPLOY}" ]; then
-  echo "Deploying to maven"
-  mvn  -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER}  -pl ":libnd4j,:nd4j-native" --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
- else
-     echo "Installing to local repo"
-     mvn  install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH} ${DHELPER}  -pl ":libnd4j" --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+if [ "${DEPLOY-}" != "" ]; then
+  message "Deploying to maven"
+  mvn  -P"${PUBLISH_TO}" deploy  --batch-mode  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM} ${XTRA_MVN_ARGS} -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
+else
+  message "Installing to local repo"
+  mvn  install  -Dlibnd4j.platform=${LIBND4J_PLATFORM} -Djavacpp.platform=${LIBND4J_PLATFORM}  ${XTRA_MVN_ARGS}  -DprotocCommand=protoc -Djavacpp.platform.compiler=${COMPILER_PREFIX}-${CC_EXE} -Djava.library.path=${JAVA_LIBRARY_PATH}  --also-make -DskipTests -Dmaven.test.skip=true -Dmaven.javadoc.skip=true
 fi
 
 fi
