@@ -37,8 +37,10 @@ jobs:
           shell: /bin/sh
           run: |
                echo "Running install on architecture ${{ matrix.arch }}"
-               apt-get -yq  update && apt-get install -y build-essential unzip libssl-dev
+               apt-get -yq  update && apt-get install -y build-essential unzip libssl-dev curl
                echo "After install on architecture ${{ matrix.arch }}"
+               mkdir -p "/opt/maven"
+               curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar -xzC "/opt/maven" --strip-components=1
                export PATH="/opt/maven/bin:$PATH"
                    echo "RUNNING ARCH ${{ matrix.arch }}"
                             case "${{ matrix.arch }}" in
