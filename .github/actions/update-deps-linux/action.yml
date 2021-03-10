@@ -1,0 +1,8 @@
+name: Install protobuf linux
+runs:
+  using: composite
+  steps:
+    - name: Install protobuf linux
+      shell: bash
+      run: |
+        apt-get update && apt-get upgrade

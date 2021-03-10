@@ -14,6 +14,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/update-deps-linux
       - uses: ./.github/actions/install-protobuf-linux
       - uses: ./.github/actions/install-cmake-linux
       - name: Set up Java for publishing to GitHub Packages

@@ -23,6 +23,7 @@ jobs:
         env:
           cuda: 11.2.1_461
           GCC: 9
+      - uses: ./.github/actions/update-deps-linux
       - uses: ./.github/actions/install-protobuf-linux
       - uses: ./.github/actions/install-cmake-linux
       - name: Set up Java for publishing to GitHub Packages
