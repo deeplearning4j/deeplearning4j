@@ -438,9 +438,9 @@ fi
 
 if [ -z "$COMPUTE" ]; then
   if [ "$ARCH" == "x86-64" ]; then
-   COMPUTE="5.0 5.2 5.3 6.0 6.2 8.0"
+   COMPUTE="5.0 5.2 5.3 6.0 8.0"
   else
-      COMPUTE="5.0 5.2 5.3 6.0 6.2"
+      COMPUTE="5.0 5.2 5.3 6.0"
   fi
 fi
 
