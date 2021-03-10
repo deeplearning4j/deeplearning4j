@@ -5,4 +5,4 @@ runs:
     - name: Install protobuf linux
       shell: bash
       run: |
-        apt-get update && apt-get upgrade
+        sudo apt-get update && apt-get upgrade
