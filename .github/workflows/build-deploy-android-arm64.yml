@@ -37,6 +37,7 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          DEPLOY_TO: ossrh
         run: |
           mvn --version
           cmake --version
