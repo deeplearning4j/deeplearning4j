@@ -10,6 +10,7 @@ jobs:
         uses: styfle/cancel-workflow-action@0.8.0
         with:
           access_token: ${{ github.token }}
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
       - uses: actions/checkout@v2
       - name: Run cuda tests
         shell: bash
