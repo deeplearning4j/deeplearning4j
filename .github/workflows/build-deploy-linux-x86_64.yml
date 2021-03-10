@@ -14,6 +14,7 @@ jobs:
           access_token: ${{ github.token }}
       - uses: actions/checkout@v2
       - uses: ./.github/actions/install-protobuf-linux
+      - uses: ./.github/actions/install-cmake-linux
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
@@ -38,6 +39,6 @@ jobs:
           protoc --version
           sudo apt-get autoremove
           sudo apt-get clean
-          mvn  -X -Possrh  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode deploy -DskipTests
+          mvn  -X -Possrh -pl :nd4j-tests  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode clean test -Dtest=org.nd4j.smoketests.SmokeTest
 
 
