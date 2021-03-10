@@ -56,7 +56,7 @@ jobs:
                   export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
                   cmake --version
                   echo "Running build in ${pwd}"
-                  mvn -Ptestresources -Ptest-nd4j-native -Dlibnd4j.chip=cpu clean test
+                   mvn  -X -Possrh -pl :nd4j-tests  -Djavacpp.platform=linux-x86_64 -Dlibnd4j.chip=cpu -Pcpu --batch-mode clean test -Dtest=org.nd4j.smoketests.SmokeTest
 
 
 
