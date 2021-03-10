@@ -3,7 +3,19 @@ on:
     - cron: "0 */12 * * *"
   workflow_dispatch:
 jobs:
+  # Wait for up to a minute for previous run to complete, abort if not done by then
+  pre-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   windows-x86_64-cuda-11-2:
+    needs: pre-ci
     runs-on: windows-2019
     steps:
       - name: Cancel Previous Runs

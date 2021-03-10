@@ -1,7 +1,19 @@
 on:
   push:
 jobs:
+  # Wait for up to a minute for previous run to complete, abort if not done by then
+  pre-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   linux-x86_64:
+    needs: pre-ci
     runs-on: ubuntu-18.04
     steps:
       - name: Cancel Previous Runs
