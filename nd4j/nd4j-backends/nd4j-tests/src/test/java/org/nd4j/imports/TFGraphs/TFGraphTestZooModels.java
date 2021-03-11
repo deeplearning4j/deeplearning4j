@@ -24,10 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -53,6 +50,7 @@ import java.util.Map;
 
 @RunWith(Parameterized.class)
 @Slf4j
+@Ignore
 public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     @ClassRule
@@ -176,7 +174,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                         } else {
                             //Multiple files... try to find "frozen_inference_graph.pb"
                             for(String str : pbFiles){
-                                if(str.endsWith("frozen_inference_graph.pb")){
+                                if(str.endsWith("frozen_inference_graph.pb")) {
                                     toExtract = str;
                                 }
                             }

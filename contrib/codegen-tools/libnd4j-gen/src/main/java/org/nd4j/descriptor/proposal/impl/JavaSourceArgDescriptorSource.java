@@ -551,6 +551,18 @@ public class JavaSourceArgDescriptorSource implements ArgDescriptorSource {
                 }
             }
 
+            if(name.contains("scatter_update")) {
+                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                        .sourceOfProposal("java")
+                        .proposalWeight(Double.MAX_VALUE)
+                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                .setName("indices")
+                                .setIsArray(false)
+                                .setArgIndex(2)
+                                .build()).build());
+
+            }
 
 
             if(name.contains("fill")) {

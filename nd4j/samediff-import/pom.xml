@@ -37,11 +37,7 @@
   <packaging>pom</packaging>
 
 
-  <profiles>
-    <profile>
-      <id>testresources</id>
-    </profile>
-  </profiles>
+
 
   <modules>
     <module>samediff-import-api</module>

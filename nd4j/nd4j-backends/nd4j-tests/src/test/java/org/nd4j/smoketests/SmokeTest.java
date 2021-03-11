@@ -47,6 +47,9 @@ public class SmokeTest {
         INDArray arr = Nd4j.randn(2,2);
         INDArray arr2 = Nd4j.randn(2,2);
         for(DataType dataType : DataType.values()) {
+            if(!dataType.isFPType()) {
+                continue;
+            }
             log.info("Testing matrix multiply on data type {}",dataType);
             INDArray casted = arr.castTo(dataType);
             INDArray casted2 = arr2.castTo(dataType);

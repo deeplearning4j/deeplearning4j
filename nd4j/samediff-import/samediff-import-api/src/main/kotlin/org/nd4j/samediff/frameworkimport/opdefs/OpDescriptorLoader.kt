@@ -26,7 +26,7 @@ import org.nd4j.samediff.frameworkimport.registry.OpMappingRegistry
 import org.nd4j.shade.protobuf.GeneratedMessageV3
 import org.nd4j.shade.protobuf.ProtocolMessageEnum
 
-val nd4jFileNameTextDefault = "nd4j-op-def.pbtxt"
+val nd4jFileNameTextDefault = "/nd4j-op-def.pbtxt"
 val nd4jFileSpecifierProperty = "samediff.import.nd4jdescriptors"
 
 interface OpDescriptorLoader<OP_DEF_TYPE: GeneratedMessageV3> {

@@ -20,6 +20,7 @@
 package org.nd4j.samediff.frameworkimport.tensorflow.opdefs
 
 import org.apache.commons.io.IOUtils
+import org.nd4j.common.config.ND4JClassLoading
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.ir.MapperNamespace
 import org.nd4j.ir.OpNamespace
@@ -37,10 +38,10 @@ import java.nio.charset.Charset
 
 class TensorflowOpDescriptorLoader: OpDescriptorLoader<OpDef> {
 
-    val tensorflowFileNameTextDefault = "tensorflow-op-def.pbtxt"
+    val tensorflowFileNameTextDefault = "/tensorflow-op-def.pbtxt"
     val tensorflowFileSpecifierProperty = "samediff.import.tensorflowdescriptors"
 
-    val tensorflowMappingRulSetDefaultFile = "tensorflow-mapping-ruleset.pbtxt"
+    val tensorflowMappingRulSetDefaultFile = "/tensorflow-mapping-ruleset.pbtxt"
     val tensorflowRulesetSpecifierProperty = "samediff.import.tensorflowmappingrules"
     val nd4jOpDescriptors = nd4jOpList()
     var mapperDefSet: MapperNamespace.MappingDefinitionSet? = mappingProcessDefinitionSet()
@@ -51,7 +52,7 @@ class TensorflowOpDescriptorLoader: OpDescriptorLoader<OpDef> {
 
     override fun nd4jOpList(): OpNamespace.OpDescriptorList {
         val fileName = System.getProperty(nd4jFileSpecifierProperty, nd4jFileNameTextDefault)
-        val nd4jOpDescriptorResourceStream = ClassPathResource(fileName).inputStream
+        val nd4jOpDescriptorResourceStream = ClassPathResource(fileName,ND4JClassLoading.getNd4jClassloader()).inputStream
         val resourceString = IOUtils.toString(nd4jOpDescriptorResourceStream, Charset.defaultCharset())
         val descriptorListBuilder = OpNamespace.OpDescriptorList.newBuilder()
         TextFormat.merge(resourceString,descriptorListBuilder)
@@ -69,7 +70,7 @@ class TensorflowOpDescriptorLoader: OpDescriptorLoader<OpDef> {
             return cachedOpList!!
         }
         val fileName = System.getProperty(tensorflowFileSpecifierProperty, tensorflowFileNameTextDefault)
-        val string = IOUtils.toString(ClassPathResource(fileName).inputStream, Charset.defaultCharset())
+        val string = IOUtils.toString(ClassPathResource(fileName,ND4JClassLoading.getNd4jClassloader()).inputStream, Charset.defaultCharset())
         val tfListBuilder = OpList.newBuilder()
         TextFormat.merge(string, tfListBuilder)
         val ret = HashMap<String,OpDef>()
@@ -86,7 +87,7 @@ class TensorflowOpDescriptorLoader: OpDescriptorLoader<OpDef> {
         if(mapperDefSet != null)
             return mapperDefSet!!
         val fileName = System.getProperty(tensorflowRulesetSpecifierProperty, tensorflowMappingRulSetDefaultFile)
-        val string = IOUtils.toString(ClassPathResource(fileName).inputStream, Charset.defaultCharset())
+        val string = IOUtils.toString(ClassPathResource(fileName,ND4JClassLoading.getNd4jClassloader()).inputStream, Charset.defaultCharset())
         val declarationBuilder = MapperNamespace.MappingDefinitionSet.newBuilder()
        try {
            TextFormat.merge(string,declarationBuilder)
