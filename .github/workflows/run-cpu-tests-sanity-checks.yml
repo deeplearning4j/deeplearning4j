@@ -12,7 +12,7 @@ jobs:
           poll-interval-seconds: 10
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  linux-x86_64-cuda-11-2:
+  linux-x86_64:
     needs: pre-ci
     runs-on: [self-hosted]
     steps:
@@ -23,7 +23,7 @@ jobs:
           access_token: ${{ github.token }}
       - uses: ./.github/actions/download-dl4j-test-resources-linux
       - uses: actions/checkout@v2
-      - name: Run cuda tests
+      - name: Run cpu tests
         shell: bash
         env:
           DEBIAN_FRONTEND: noninteractive
@@ -34,5 +34,5 @@ jobs:
           cmake --version
           protoc --version
           export OMP_NUM_THREADS=1
-          mvn  - -DskipTestResourceEnforcement=true -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j" -Dlibnd4j.compute="5.0 5.2 5.3 6.0  8.0"  -Ptest-nd4j-cpu --also-make  clean test
+          mvn   -DskipTestResourceEnforcement=true -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j"  -Ptest-nd4j-native --also-make  clean test
 
