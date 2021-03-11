@@ -1461,7 +1461,7 @@ val nonMaxSuppressionV1 = multipleNameMapping(inputFrameworkOpNames = listOf("No
                                 argIndex = 1
                         }
                 )),
-                valueMapping(mutableMapOf("overlayThreshold" to "iou_threshold")),
+                valueMapping(mutableMapOf("iouThreshold" to "iou_threshold")),
                 convertNDArrayInputToNumericalAttr(mutableMapOf("maxOutputSize" to "max_output_size")))
         ,tensorflowOpRegistry = tensorflowOpRegistry)
 
@@ -1470,7 +1470,7 @@ val nonMaxSuppressionV1 = multipleNameMapping(inputFrameworkOpNames = listOf("No
 val nonMaxSuppressionV2 = multipleNameMapping(inputFrameworkOpNames = listOf("NonMaxSuppressionV2"),
         opName = "non_max_suppression",
         tensorNames = mutableMapOf("boxes" to "boxes","scales" to "scores",
-                "overlayThreshold" to "iou_threshold","maxOutputSize" to "max_output_size"),
+                "iouThreshold" to "iou_threshold","maxOutputSize" to "max_output_size"),
         attributeMappingRules = listOf(
                 argDescriptorConstant(listOf(
                         ArgDescriptor {
@@ -1763,7 +1763,7 @@ val resizeBiCubic = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBi
         tensorNames = mutableMapOf("image" to "images","size" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeBiLinear = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeBilinear"),opName = "resize_bilinear",
-        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenters" to "half_pixel_centers"))),
+        attributeMappingRules = listOf(valueMapping(mutableMapOf("alignCorners" to "align_corners","halfPixelCenter" to "half_pixel_centers"))),
         tensorNames = mutableMapOf("image" to "images","newImageSize" to "size"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val resizeNearestNeighbor = multipleNameMapping(inputFrameworkOpNames = listOf("ResizeNearestNeighbor"),opName = "resize_nearest_neighbor",
@@ -1861,12 +1861,12 @@ val scatterSub = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterSub"
 
 //TODO: note: TF expects indices, we don't support them?
 val scatterUpdate = multipleNameMapping(inputFrameworkOpNames = listOf("ScatterUpdate"),opName = "scatter_update",
-        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("indices" to "indices"))),
-        tensorNames = mutableMapOf("operand" to "ref","updates" to "updates"),tensorflowOpRegistry = tensorflowOpRegistry)
+        attributeMappingRules = listOf(),
+        tensorNames = mutableMapOf("operand" to "ref","updates" to "updates","indices" to "indices"),tensorflowOpRegistry = tensorflowOpRegistry)
 
 val tensorScatterUpdate = multipleNameMapping(inputFrameworkOpNames = listOf("TensorScatterUpdate"),opName = "scatter_update",
-        attributeMappingRules = listOf(ndarrayToIntList(mutableMapOf("indices" to "indices"))),
-        tensorNames = mutableMapOf("operand" to "tensor","updates" to "updates"),tensorflowOpRegistry = tensorflowOpRegistry)
+        attributeMappingRules = listOf(),
+        tensorNames = mutableMapOf("operand" to "tensor","updates" to "updates","indices" to "indices"),tensorflowOpRegistry = tensorflowOpRegistry)
 //L2Loss
 val l2Loss = multipleNameMapping(inputFrameworkOpNames = listOf("L2Loss"),opName = "l2_loss",
         attributeMappingRules = listOf(valueMapping(mutableMapOf("dtype" to "T"))),

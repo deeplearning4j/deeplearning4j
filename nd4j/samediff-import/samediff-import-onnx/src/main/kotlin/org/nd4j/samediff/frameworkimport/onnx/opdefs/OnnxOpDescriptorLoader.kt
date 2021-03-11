@@ -21,6 +21,7 @@ package org.nd4j.samediff.frameworkimport.onnx.opdefs
 
 import onnx.Onnx
 import org.apache.commons.io.IOUtils
+import org.nd4j.common.config.ND4JClassLoading
 import org.nd4j.common.io.ClassPathResource
 import org.nd4j.ir.MapperNamespace
 import org.nd4j.ir.OpNamespace
@@ -37,11 +38,11 @@ import java.nio.charset.Charset
 class OnnxOpDescriptorLoader: OpDescriptorLoader<Onnx.NodeProto> {
 
 
-    val onnxFileNameTextDefault = "onnx-op-defs.pb"
+    val onnxFileNameTextDefault = "/onnx-op-defs.pb"
     val onnxFileSpecifierProperty = "samediff.import.onnxdescriptors"
 
 
-    val onnxMappingRulSetDefaultFile = "onnx-mapping-ruleset.pbtxt"
+    val onnxMappingRulSetDefaultFile = "/onnx-mapping-ruleset.pbtxt"
     val onnxRulesetSpecifierProperty = "samediff.import.onnxmappingrules"
     val nd4jOpDescriptors = nd4jOpList()
     var mapperDefSet: MapperNamespace.MappingDefinitionSet? = mappingProcessDefinitionSet()
@@ -55,7 +56,7 @@ class OnnxOpDescriptorLoader: OpDescriptorLoader<Onnx.NodeProto> {
 
     override fun nd4jOpList(): OpNamespace.OpDescriptorList {
         val fileName = System.getProperty(nd4jFileSpecifierProperty, nd4jFileNameTextDefault)
-        val nd4jOpDescriptorResourceStream = ClassPathResource(fileName).inputStream
+        val nd4jOpDescriptorResourceStream = ClassPathResource(fileName, ND4JClassLoading.getNd4jClassloader()).inputStream
         val resourceString = IOUtils.toString(nd4jOpDescriptorResourceStream, Charset.defaultCharset())
         val descriptorListBuilder = OpNamespace.OpDescriptorList.newBuilder()
         TextFormat.merge(resourceString,descriptorListBuilder)
@@ -72,7 +73,7 @@ class OnnxOpDescriptorLoader: OpDescriptorLoader<Onnx.NodeProto> {
         if(cachedOpDefs != null)
             return cachedOpDefs!!
         val fileName = System.getProperty(onnxFileSpecifierProperty, onnxFileNameTextDefault)
-        val stream = ClassPathResource(fileName).inputStream
+        val stream = ClassPathResource(fileName,ND4JClassLoading.getNd4jClassloader()).inputStream
         val ret = HashMap<String,Onnx.NodeProto>()
         val graphProto = Onnx.GraphProto.parseFrom(stream)
 
@@ -88,7 +89,7 @@ class OnnxOpDescriptorLoader: OpDescriptorLoader<Onnx.NodeProto> {
         if(mapperDefSet != null)
             return mapperDefSet!!
         val fileName = System.getProperty(onnxRulesetSpecifierProperty, onnxMappingRulSetDefaultFile)
-        val string = IOUtils.toString(ClassPathResource(fileName).inputStream, Charset.defaultCharset())
+        val string = IOUtils.toString(ClassPathResource(fileName,ND4JClassLoading.getNd4jClassloader()).inputStream, Charset.defaultCharset())
         val declarationBuilder = MapperNamespace.MappingDefinitionSet.newBuilder()
         TextFormat.merge(string,declarationBuilder)
         val ret =  declarationBuilder.build()

@@ -91,6 +91,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "bincount/rank2_weights",
             "slogdet/.*",
             "fused_batch_norm/float16_nhwc",
+            "emptyArrayTests/scatter_update/rank2_emptyIndices_emptyUpdates",
             //Don't bother to test RNG. We can test subsets of ops with dropout to make sure they are consistent
             //These tests have random uniform and other RNG in them that don't need to be perfectly compatible to be acceptable.
             //We need different test cases here.

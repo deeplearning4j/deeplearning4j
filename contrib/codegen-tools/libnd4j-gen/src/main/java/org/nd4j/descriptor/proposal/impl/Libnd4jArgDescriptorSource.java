@@ -913,6 +913,8 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                             }
 
 
+
+
                             if(name.equals("lin_space")) {
                                 argDescriptorProposals.add(ArgDescriptorProposal.builder()
                                         .sourceOfProposal("start")
@@ -1222,6 +1224,19 @@ public class Libnd4jArgDescriptorSource implements ArgDescriptorSource {
                                                 .build())
                                         .sourceOfProposal("cpp").proposalWeight(999999.0)
                                         .build());
+                            }
+
+                            if(name.contains("scatter_update")) {
+                                argDescriptorProposals.add(ArgDescriptorProposal.builder()
+                                        .sourceOfProposal("cpp")
+                                        .proposalWeight(Double.MAX_VALUE)
+                                        .descriptor(OpNamespace.ArgDescriptor.newBuilder()
+                                                .setArgType(OpNamespace.ArgDescriptor.ArgType.INPUT_TENSOR)
+                                                .setName("indices")
+                                                .setIsArray(false)
+                                                .setArgIndex(2)
+                                                .build()).build());
+
                             }
 
                         } else if(line.contains(REDUCTION_OP_IMPL)) {

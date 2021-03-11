@@ -1706,6 +1706,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -1951,6 +1952,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -2084,6 +2086,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -2372,10 +2375,10 @@ mappings {
   rule {
     ruleName: "valuemapping"
     functionName: "valuemapping"
+    outputIntName: "fullUV"
     inputBooleanName: "compute_uv"
     inputBooleanName: "full_matrices"
     outputBooleanName: "computeUv"
-    outputBooleanName: "fullUV"
     inputToOutput {
       key: "computeUv"
       value: "compute_uv"
@@ -2391,9 +2394,9 @@ mappings {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
     outputIntName: "calcUV"
+    outputIntName: "fullUV"
     inputBooleanName: "compute_uv"
     inputBooleanName: "full_matrices"
-    outputBooleanName: "fullUV"
     inputToOutput {
       key: "calcUV"
       value: "compute_uv"
@@ -4823,6 +4826,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "axis"
@@ -5298,7 +5302,7 @@ mappings {
     functionName: "stringequals"
     inputStringAttrName: "padding"
     inputStringAttrName: "padding"
-    outputBooleanName: "isSameMode"
+    outputIntName: "isSameMode"
     inputToOutput {
       key: "isSameMode"
       value: "padding"
@@ -6140,10 +6144,10 @@ mappings {
   rule {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
+    outputIntName: "exclusive"
+    outputIntName: "reverse"
     inputBooleanName: "exclusive"
     inputBooleanName: "reverse"
-    outputBooleanName: "exclusive"
-    outputBooleanName: "reverse"
     inputToOutput {
       key: "exclusive"
       value: "exclusive"
@@ -6815,6 +6819,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -7065,6 +7070,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "start"
     outputDoubleName: "stop"
     inputToOutput {
       key: "start"
@@ -7227,6 +7233,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -8895,7 +8902,7 @@ mappings {
     inputTensorName: "max_output_size"
     outputTensorName: "boxes"
     outputTensorName: "scales"
-    outputTensorName: "overlayThreshold"
+    outputTensorName: "iouThreshold"
     outputTensorName: "maxOutputSize"
     inputToOutput {
       key: "boxes"
@@ -8906,7 +8913,7 @@ mappings {
       value: "scores"
     }
     inputToOutput {
-      key: "overlayThreshold"
+      key: "iouThreshold"
       value: "iou_threshold"
     }
     inputToOutput {
@@ -8935,6 +8942,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "maxOutputSize"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -9014,6 +9022,9 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "depth"
+    outputDoubleName: "on"
+    outputDoubleName: "off"
     inputToOutput {
       key: "on"
       value: "on_value"
@@ -9226,6 +9237,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "numSegments"
     inputToOutput {
       key: "numSegments"
       value: "num_segments"
@@ -9285,13 +9297,13 @@ mappings {
     inputBooleanName: "align_corners"
     inputBooleanName: "half_pixel_centers"
     outputBooleanName: "alignCorners"
-    outputBooleanName: "halfPixelCenters"
+    outputBooleanName: "halfPixelCenter"
     inputToOutput {
       key: "alignCorners"
       value: "align_corners"
     }
     inputToOutput {
-      key: "halfPixelCenters"
+      key: "halfPixelCenter"
       value: "half_pixel_centers"
     }
     ruleType: "attribute"
@@ -9689,7 +9701,7 @@ mappings {
     functionName: "valuemapping"
     inputFloatName: "iou_threshold"
     inputToOutput {
-      key: "overlayThreshold"
+      key: "iouThreshold"
       value: "iou_threshold"
     }
     ruleType: "attribute"
@@ -9698,6 +9710,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "maxOutputSize"
     inputToOutput {
       key: "maxOutputSize"
       value: "max_output_size"
@@ -9923,6 +9936,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -10163,6 +10177,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -10323,6 +10338,8 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputDoubleName: "min"
+    outputDoubleName: "max"
     inputToOutput {
       key: "min"
       value: "minval"
@@ -11779,6 +11796,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -12463,6 +12481,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "concat_dim"
@@ -12958,8 +12977,8 @@ mappings {
   rule {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
+    outputIntName: "reverse"
     inputBooleanName: "reverse"
-    outputBooleanName: "reverse"
     inputToOutput {
       key: "reverse"
       value: "reverse"
@@ -13194,6 +13213,9 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "from"
+    outputIntName: "to"
+    outputIntName: "step"
     inputToOutput {
       key: "from"
       value: "start"
@@ -14358,6 +14380,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -14580,6 +14603,7 @@ mappings {
   rule {
     ruleName: "ndarrayinputtonumericalattribute"
     functionName: "ndarrayinputtonumericalattribute"
+    outputIntName: "concatDimension"
     inputToOutput {
       key: "concatDimension"
       value: "axis"
@@ -14689,6 +14713,7 @@ mappings {
   rule {
     ruleName: "ndarraytointattributevalue"
     functionName: "ndarraytointattributevalue"
+    outputIntName: "dimensions"
     inputToOutput {
       key: "dimensions"
       value: "reduction_indices"
@@ -15391,8 +15416,10 @@ mappings {
     functionName: "ndarraymapping"
     inputTensorName: "ref"
     inputTensorName: "updates"
+    inputTensorName: "indices"
     outputTensorName: "operand"
     outputTensorName: "updates"
+    outputTensorName: "indices"
     inputToOutput {
       key: "operand"
       value: "ref"
@@ -15401,18 +15428,11 @@ mappings {
       key: "updates"
       value: "updates"
     }
-    ruleType: "tensor"
-    inputFrameworkOpName: "ScatterUpdate"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "indices"
     inputToOutput {
       key: "indices"
       value: "indices"
     }
-    ruleType: "attribute"
+    ruleType: "tensor"
     inputFrameworkOpName: "ScatterUpdate"
   }
 }
@@ -15539,8 +15559,10 @@ mappings {
     functionName: "ndarraymapping"
     inputTensorName: "tensor"
     inputTensorName: "updates"
+    inputTensorName: "indices"
     outputTensorName: "operand"
     outputTensorName: "updates"
+    outputTensorName: "indices"
     inputToOutput {
       key: "operand"
       value: "tensor"
@@ -15549,18 +15571,11 @@ mappings {
       key: "updates"
       value: "updates"
     }
-    ruleType: "tensor"
-    inputFrameworkOpName: "TensorScatterUpdate"
-  }
-  rule {
-    ruleName: "ndarraytointattributevalue"
-    functionName: "ndarraytointattributevalue"
-    outputIntName: "indices"
     inputToOutput {
       key: "indices"
       value: "indices"
     }
-    ruleType: "attribute"
+    ruleType: "tensor"
     inputFrameworkOpName: "TensorScatterUpdate"
   }
 }
@@ -15647,10 +15662,10 @@ mappings {
   rule {
     ruleName: "invertbooleannumber"
     functionName: "invertbooleannumber"
+    outputIntName: "exclusive"
+    outputIntName: "reverse"
     inputBooleanName: "exclusive"
     inputBooleanName: "reverse"
-    outputBooleanName: "exclusive"
-    outputBooleanName: "reverse"
     inputToOutput {
       key: "exclusive"
       value: "exclusive"
