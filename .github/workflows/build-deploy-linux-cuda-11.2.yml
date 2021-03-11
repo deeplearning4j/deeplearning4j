@@ -2,11 +2,10 @@ on:
   schedule:
     - cron: "0 */12 * * *"
   workflow_dispatch:
-  push:
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-16.04
     timeout-minutes: 1
     steps:
       - name: 'Block Concurrent Executions'
