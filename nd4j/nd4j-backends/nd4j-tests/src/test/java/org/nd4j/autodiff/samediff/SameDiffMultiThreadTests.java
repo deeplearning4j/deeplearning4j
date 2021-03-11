@@ -50,7 +50,7 @@ public class SameDiffMultiThreadTests extends BaseND4JTest {
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 60000L;
+        return Long.MAX_VALUE;
     }
 
     @Test

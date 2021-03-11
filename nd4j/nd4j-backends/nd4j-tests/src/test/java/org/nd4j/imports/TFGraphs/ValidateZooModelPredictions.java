@@ -23,6 +23,7 @@ package org.nd4j.imports.tfgraphs;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -43,6 +44,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @Slf4j
+@Ignore
 public class ValidateZooModelPredictions extends BaseNd4jTest {
 
     public ValidateZooModelPredictions(Nd4jBackend backend) {

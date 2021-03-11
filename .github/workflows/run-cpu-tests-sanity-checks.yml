@@ -33,7 +33,6 @@ jobs:
           mvn --version
           cmake --version
           protoc --version
-          bash ./change-cuda-versions.sh 11.2
           export OMP_NUM_THREADS=1
-          mvn  -DskipTestResourceEnforcement=true -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-cuda-11.2,:samediff-import,:libnd4j" -Dlibnd4j.compute="5.0 5.2 5.3 6.0  8.0"  -Ptest-nd4j-cuda  --also-make -Dlibnd4j.chip=cuda clean test
+          mvn  - -DskipTestResourceEnforcement=true -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j" -Dlibnd4j.compute="5.0 5.2 5.3 6.0  8.0"  -Ptest-nd4j-cpu --also-make  clean test
 
