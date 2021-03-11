@@ -1,0 +1,92 @@
+on:
+  push:
+jobs:
+  # Wait for up to a minute for previous run to complete, abort if not done by then
+  pre-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  build_and_test_cross_platform:
+    needs: pre-ci
+    # The host should always be linux
+    runs-on: ubuntu-16.04
+    name: Build on ${{ matrix.distro }} ${{ matrix.arch }}
+
+    # Run steps on a matrix of 2 arch/distro combinations
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            distro: ubuntu16.04
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
+      - uses: ./.github/actions/install-protobuf-linux
+      - uses: uraimo/run-on-arch-action@v2.0.8
+        name: Build and test with ${{ matrix.arch }} ${{ matrix.distro }}
+        id: build
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          # Pass some environment variables to the container
+          env: | # YAML, but pipe character is necessary
+            DEBIAN_FRONTEND: noninteractive
+            M2_HOME: /opt/maven
+
+          # The shell to run commands with in the container
+          shell: /bin/sh
+          run: |
+               echo "Running install on architecture ${{ matrix.arch }}"
+               apt-get -yq  update && apt-get install -y build-essential unzip libssl-dev curl openjdk-8-jdk-headless
+               echo "After install on architecture ${{ matrix.arch }}"
+               mkdir -p "/opt/maven"
+               curl -fsSL http://apache.osuosl.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz | tar -xzC "/opt/maven" --strip-components=1
+               apt-get -yq  update && apt-get install -y build-essential unzip libssl-dev
+               curl -fsSL http://cmake.org/files/v3.19/cmake-3.19.0.tar.gz | tar xz && cd cmake-3.19.0
+                                 ./configure --prefix=/opt/cmake && make -j2 && make install && cd .. && rm -r cmake-3.19.0
+               export PATH="/opt/maven/bin:$PATH"
+                   echo "RUNNING ARCH ${{ matrix.arch }}"
+                            case "${{ matrix.arch }}" in
+                              armv7)
+                                  export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-armhf/jre
+                                  ;;
+                                aarch64)
+                                  export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-arm64/jre"
+                                  ;;
+                              ppc64le)
+                                    export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-ppc64el/jre
+                                  ;;
+                  esac
+                  mvn --version
+                  export PATH="/opt/cmake/bin:/opt/maven/bin:/opt/protobuf/bin:$PATH"
+                  cmake --version
+                  wget https://github.com/KonduitAI/dl4j-test-resources/archive/master.zip && unzip master.zip
+                  cd dl4j-test-resources-master
+                  mvn clean install -DskipTests
+                  echo "Extracted test resources"
+                  echo "Running build in ${pwd}"
+                  curl -fsSL https://github.com/google/protobuf/releases/download/v3.5.1/protobuf-cpp-3.5.1.tar.gz \
+                                       | tar xz && \
+                                       cd protobuf-3.5.1 && \
+                                       ./configure --prefix=/opt/protobuf && \
+                                       make -j2 && \
+                                       make install && \
+                                       cd .. && \
+                                       rm -rf protobuf-3.5.1
+                  echo "/opt/protobuf/bin" >> $GITHUB_PATH
+                  mvn  -X -Possrh -pl :nd4j-tests  -Djavacpp.platform=linux-${{matrix.arch}} -Dlibnd4j.chip=cpu -Pcpu --batch-mode clean test -Dtest=org.nd4j.smoketests.SmokeTest
+
+
+
+

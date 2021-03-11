@@ -3,8 +3,20 @@ on:
     - cron: "0 */12 * * *"
   workflow_dispatch:
 jobs:
+  # Wait for up to a minute for previous run to complete, abort if not done by then
+  pre-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   android-x86_64:
-    runs-on: ubuntu-18.04
+    needs: pre-ci
+    runs-on: ubuntu-16.04
     steps:
       - uses: AutoModality/action-clean@v1
       - name: Cancel Previous Runs
@@ -16,7 +28,9 @@ jobs:
         with:
           ndk-version: r18b
       - uses: actions/checkout@v2
+      - uses: ./.github/actions/update-deps-linux
       - uses: ./.github/actions/install-protobuf-linux
+      - uses: ./.github/actions/install-cmake-linux
       - name: Set up Java for publishing to GitHub Packages
         uses: actions/setup-java@v1
         with:
@@ -29,11 +43,13 @@ jobs:
       - name: Build on linux-x86_64
         env:
           ANDROID_NDK: ${{ steps.setup-ndk.outputs.ndk-path }}
-          LIBND4J_HOME: "${GITHUB_WORKSPACE}/libnd4j"
+          LIBND4J_HOME: ${GITHUB_WORKSPACE}/libnd4j
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
           MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+          OPENBLAS_PATH: ${HOME}/.javacpp/cache/openblas-0.3.13-1.5.5-android-x86_64.jar/lib/
+          DEPLOY_TO: ossrh
         run: |
           echo "Verifying programs on path. Path is $PATH"
           echo "Path post update is $PATH. Maven is at `which mvn` cmake is at `which cmake` protoc is at `which protoc`"
@@ -41,6 +57,8 @@ jobs:
           cmake --version
           protoc --version
           clang --version
+          export LIBND4J_HOME=${GITHUB_WORKSPACE}/libnd4j
+          export OPENBLAS_PATH=${HOME}/.javacpp/cache/openblas-0.3.13-1.5.5-android-x86_64.jar/lib/
           mvn  -X -Dorg.bytedeco.javacpp.logger.debug=true -Possrh -pl ":nd4j-native,:libnd4j" --also-make  \
           -Djavacpp.platform=android-x86_64  \
           -Dlibnd4j.platform=android-x86_64 -Dlibnd4j.chip=cpu \
