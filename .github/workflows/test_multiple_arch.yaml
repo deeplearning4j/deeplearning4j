@@ -85,7 +85,7 @@ jobs:
                                        cd .. && \
                                        rm -rf protobuf-3.5.1
                   echo "/opt/protobuf/bin" >> $GITHUB_PATH
-                  mvn  -X -Possrh -pl :nd4j-tests  -Djavacpp.platform=linux-${{matrix.arch}} -Dlibnd4j.chip=cpu -Pcpu --batch-mode clean test -Dtest=org.nd4j.smoketests.SmokeTest
+                  mvn  -X  -DskipTestResourceEnforcement=true -Possrh -pl :nd4j-tests  -Djavacpp.platform=linux-${{matrix.arch}} -Dlibnd4j.chip=cpu -Pcpu --batch-mode clean test -Dtest=org.nd4j.smoketests.SmokeTest
 
 
 
