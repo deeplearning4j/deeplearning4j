@@ -2,7 +2,6 @@ on:
   schedule:
     - cron: "0 */12 * * *"
   workflow_dispatch:
-  push:
 jobs:
   # Wait for up to a minute for previous run to complete, abort if not done by then
   pre-ci:
