@@ -28,7 +28,6 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.tvm.*;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.tvm.util.TVMUtils;
 
 import static org.bytedeco.tvm.global.tvm_runtime.*;
 import static org.nd4j.tvm.util.TVMUtils.*;
@@ -36,12 +35,12 @@ import static org.nd4j.tvm.util.TVMUtils.*;
 @Slf4j
 public class TvmRunner implements Closeable  {
     private static DLContext ctx;
-    private Module modFactory;
+    private  org.bytedeco.tvm.Module modFactory;
     private TVMValue values;
     private IntPointer codes;
     private TVMArgsSetter setter;
     private TVMRetValue rv;
-    private Module gmod;
+    private org.bytedeco.tvm.Module gmod;
     private PackedFunc getNumInputs;
     private PackedFunc getNumOutputs;
     private PackedFunc setInput;
@@ -57,7 +56,7 @@ public class TvmRunner implements Closeable  {
 
         // create the runtime module
         try (PointerScope scope = new PointerScope()) {
-            modFactory = Module.LoadFromFile(modelUri);
+            modFactory = org.bytedeco.tvm.Module.LoadFromFile(modelUri);
             values = new TVMValue(2);
             codes = new IntPointer(2);
             setter = new TVMArgsSetter(values, codes);
