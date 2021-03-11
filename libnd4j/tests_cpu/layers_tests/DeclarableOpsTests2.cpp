@@ -21,8 +21,7 @@
 #include <helpers/helper_hash.h>
 #include <array/NDArray.h>
 #include <array/NDArrayList.h>
-
-
+#include <numeric>
 using namespace sd;
 using namespace sd::graph;
 
@@ -127,7 +126,7 @@ TEST_F(DeclarableOpsTests2, gather_5) {
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -167,7 +166,7 @@ TEST_F(DeclarableOpsTests2, gather_7) {
 
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -233,7 +232,7 @@ TEST_F(DeclarableOpsTests2, gather_11) {
 
     ASSERT_TRUE(e.isSameShape(z));
     ASSERT_TRUE(e.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -251,7 +250,7 @@ TEST_F(DeclarableOpsTests2, gather_12) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -284,7 +283,7 @@ TEST_F(DeclarableOpsTests2, gather_13) {
 
     ASSERT_TRUE(expected.isSameShapeStrict(*output));
     ASSERT_TRUE(expected.equalsTo(output));
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -321,7 +320,7 @@ TEST_F(DeclarableOpsTests2, BroadcastGradientArgs_1) {
     auto result = op.evaluate({&input, &indices}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_KERNEL_FAILURE, result.status());
-    
+
 }
 
 TEST_F(DeclarableOpsTests2, NLP_Cbow_Test_1) {
@@ -373,7 +372,7 @@ TEST_F(DeclarableOpsTests2, NLP_Cbow_Test_1) {
     ASSERT_EQ(exp1, row_s1_4);
     ASSERT_EQ(exp1, row_s1_5);
     ASSERT_EQ(exp2, row_s1_6);
-    
+
 }
 
 TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
@@ -390,7 +389,7 @@ TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 
@@ -408,7 +407,7 @@ TEST_F(DeclarableOpsTests2, Test_Squeeze_2) {
 
     ASSERT_TRUE(exp->isSameShape(z));
     ASSERT_TRUE(exp->equalsTo(z));
-    
+
     delete exp;
 }
 
@@ -426,7 +425,7 @@ TEST_F(DeclarableOpsTests2, Test_FloorMod_1) {
     ASSERT_TRUE(exp.isSameShape(z));
 
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
 }
 
 TEST_F(DeclarableOpsTests2, Test_FloorDiv_1) {
@@ -718,7 +717,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_8) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 0.f);
 
-    
+
 
 }
 
@@ -743,7 +742,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_9) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 60.);
 
-    
+
 
 }
 
@@ -768,7 +767,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_10) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 60.f);
 
-    
+
 
 }
 
@@ -793,7 +792,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_11) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 1.f);
 
-    
+
 
 }
 
@@ -818,7 +817,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_12) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 0.f);
 
-    
+
 
 }
 
@@ -843,7 +842,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_13) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 1.f);
 
-    
+
 
 }
 
@@ -870,7 +869,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_14) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 1.f);
 
-    
+
 
 }
 
@@ -895,7 +894,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_15) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 2.f);
 
-    
+
 
 }
 
@@ -924,7 +923,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_16) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 2.01667, 1e-5);
 
-    
+
 
 }
 
@@ -957,7 +956,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_17) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<float>(0), 1.93333, 1e-5);
 
-    
+
 
 }
 
@@ -990,7 +989,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_18) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<float>(0), 1.93333f, 1e-5);
 
-    
+
 
 }
 
@@ -1016,7 +1015,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_19) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<double>(0) == 1.);
 
-    
+
 
 }
 
@@ -1041,7 +1040,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_20) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<double>(0) == 1.);
 
-    
+
 
 }
 
@@ -1066,7 +1065,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_21) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 1.f);
 
-    
+
 
 }
 
@@ -1091,7 +1090,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_22) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == 0.);
 
-    
+
 
 }
 
@@ -1128,7 +1127,7 @@ TEST_F(DeclarableOpsTests2, absolute_difference_loss_test_23) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.965517, 1e-5);
 
-    
+
 
 }
 
@@ -1154,7 +1153,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 
 }
 
@@ -1180,7 +1179,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test2) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 
 }
 
@@ -1207,7 +1206,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test3) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -1232,7 +1231,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test4) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 
@@ -1257,7 +1256,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test5) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<double>(0) == -71.);
 
-    
+
 
 }
 
@@ -1282,7 +1281,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test6) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == -71.f);
 
-    
+
 
 }
 
@@ -1307,7 +1306,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test7) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == -69.f);
 
-    
+
 
 }
 
@@ -1332,7 +1331,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test8) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<float>(0) == -24.f);
 
-    
+
 
 }
 
@@ -1357,7 +1356,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test9) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<double>(0) == -24.);
 
-    
+
 
 }
 
@@ -1384,7 +1383,7 @@ TEST_F(DeclarableOpsTests2, cosine_distance_loss_test10) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<double>(0) == -32.);
 
-    
+
 
 }
 
@@ -1410,7 +1409,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1435,7 +1434,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test2) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1460,7 +1459,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test3) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1484,7 +1483,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test4) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<double>(0) == 83.);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1508,7 +1507,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test5) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<double>(0) == 83.);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1532,7 +1531,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test6) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<double>(0) == 83.);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1556,7 +1555,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test7) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 6.91667, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1580,7 +1579,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test8) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 6.91667, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1604,7 +1603,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test9) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 6.91667, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1628,7 +1627,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test10) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 3.45833, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1652,7 +1651,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test11) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 3.45833, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1680,7 +1679,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test12) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 3.975, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1704,7 +1703,7 @@ TEST_F(DeclarableOpsTests2, hinge_loss_test13) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_TRUE(result->e<double>(0) == 0.);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1729,7 +1728,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1754,7 +1753,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test2) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1779,7 +1778,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test3) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1803,7 +1802,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test4) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 13.44, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1827,7 +1826,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test5) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 13.44, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1851,7 +1850,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test6) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 1.12, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1875,7 +1874,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test7) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 1.12, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1903,7 +1902,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test8) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 1.3, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1927,7 +1926,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test9) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.56, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1951,7 +1950,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test10) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.56, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -1979,7 +1978,7 @@ TEST_F(DeclarableOpsTests2, huber_loss_test11) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.65, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2004,7 +2003,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2029,7 +2028,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test2) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2054,7 +2053,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test3) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2078,7 +2077,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test4) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -113.886429, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2102,7 +2101,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test5) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -113.886429, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2126,7 +2125,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test6) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -113.886429, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2150,7 +2149,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test7) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -9.490536, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2174,7 +2173,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test8) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -9.490536, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2198,7 +2197,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test9) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -9.490536, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2226,7 +2225,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test10) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -12.443609, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2250,7 +2249,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test11) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -4.745268, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2274,7 +2273,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test12) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -4.745268, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2302,7 +2301,7 @@ TEST_F(DeclarableOpsTests2, log_loss_test13) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -6.221805, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2322,7 +2321,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2342,7 +2341,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test2) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2362,7 +2361,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test3) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2381,7 +2380,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test4) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 60.74394998193965, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2400,7 +2399,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test5) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 15.189082270182983, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2419,7 +2418,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test6) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 13.568564090650312, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2438,7 +2437,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test7) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 198.318201904499, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2457,7 +2456,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test8) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 10.709003499121707, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2476,7 +2475,7 @@ TEST_F(DeclarableOpsTests2, mean_pairwssqerr_loss_test9) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 17.686067864414472, 1e-5);
 
-    
+
 }
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test1) {
@@ -2500,7 +2499,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2525,7 +2524,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test2) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2550,7 +2549,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test3) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2579,7 +2578,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test4) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2603,7 +2602,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test5) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 612.5, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2627,7 +2626,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test6) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 612.5, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2651,7 +2650,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test7) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 612.5, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2679,7 +2678,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test8) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 608.75, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2703,7 +2702,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test9) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 51.041668, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2727,7 +2726,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test10) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 51.041668, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2751,7 +2750,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test11) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 51.041668, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2778,7 +2777,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test12) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 88.541664, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2802,7 +2801,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test13) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 25.520834, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2826,7 +2825,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test14) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 25.520834, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2850,7 +2849,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test15) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 25.520834, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2877,7 +2876,7 @@ TEST_F(DeclarableOpsTests2, mean_sqerr_loss_test16) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 44.270832, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2901,7 +2900,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2925,7 +2924,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test2) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2949,7 +2948,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test3) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2973,7 +2972,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test4) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -2996,7 +2995,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test5) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 11.2187976837, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3019,7 +3018,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test6) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 11.2187976837, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3042,7 +3041,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test7) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 11.2187976837, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3065,7 +3064,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test8) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 10.2187976837, 1e-5);
 
-    
+
 }
 
 
@@ -3092,7 +3091,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test9) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 6.06840181351, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3115,7 +3114,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test10) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.934899806976, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3138,7 +3137,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test11) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.934899806976, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3161,7 +3160,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test12) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.851566493511, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3187,7 +3186,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test13) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 1.01140034199, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3210,7 +3209,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test14) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.467449903488, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3233,7 +3232,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test15) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.467449903488, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3256,7 +3255,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test16) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.425783246756, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3282,7 +3281,7 @@ TEST_F(DeclarableOpsTests2, sigm_cross_entropy_loss_test17) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 0.505700170994, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3305,7 +3304,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3329,7 +3328,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test2) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3353,7 +3352,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test3) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3377,7 +3376,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test4) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3401,7 +3400,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test5) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3424,7 +3423,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test6) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), 8.55521392822, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3447,7 +3446,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test7) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -6.37014198303, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3470,7 +3469,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test8) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -6.37014198303, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3493,7 +3492,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test9) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -6.37014198303, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3516,7 +3515,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test10) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -2.12338066101, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3539,7 +3538,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test11) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -1.06169033051, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3562,7 +3561,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test12) {
     ASSERT_TRUE(result->isScalar());
     ASSERT_NEAR(result->e<double>(0), -2.18880319595, 1e-5);
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3586,7 +3585,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test13) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 
@@ -3612,7 +3611,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test14) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3636,7 +3635,7 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test15) {
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3681,7 +3680,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test1) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3726,7 +3725,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test2) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3771,7 +3770,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test3) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3816,7 +3815,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test4) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3861,7 +3860,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test5) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3906,7 +3905,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test6) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -3951,7 +3950,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test7) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 
@@ -3997,7 +3996,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test8) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct,1e-4));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -4042,7 +4041,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test9) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -4087,7 +4086,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test10) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -4132,7 +4131,7 @@ TEST_F(DeclarableOpsTests2, lstmCell_test11) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -4177,5 +4176,210 @@ TEST_F(DeclarableOpsTests2, lstmCell_test12) {
     ASSERT_TRUE(expCt.isSameShape(ct));
     ASSERT_TRUE(expCt.equalsTo(ct));
 
-    
+
 }
+
+#if !defined(__CUDABLAS__) || defined(HAVE_CUDNN)
+TEST_F(DeclarableOpsTests2, ctc_loss_test1) {
+    constexpr int FRAME_LEN = 6 ;
+    constexpr int CLASS_LEN = 5 ;
+    constexpr int BATCH_LEN = 4  ;
+    constexpr int MIN_TARGET_LEN = 2;
+    constexpr int MAX_TARGET_LEN = 4;
+
+#if defined(HAVE_CUDNN)
+//cudnn blankindex should be 0
+    constexpr int BLANK_INDEX=0;
+#else
+    constexpr int BLANK_INDEX=CLASS_LEN-1;
+#endif
+    //logits were generated using numpy random and applying log softmax
+    //[ctc_loss.py](https://gist.github.com/quickwritereader/ca9858be201fd857348826a56e2bebc4)
+    auto logits =  NDArrayFactory::create<float>('c', {BATCH_LEN, FRAME_LEN, CLASS_LEN },
+      {-1.52900087f, -1.7423916f, -1.79369985f, -1.68980741f, -1.35771429f,
+       -2.08261997f, -1.65483307f, -1.31878488f, -1.38940393f, -1.78624192f,
+       -1.83125744f, -1.28989651f, -1.86882736f, -1.51760877f, -1.65575026f,
+       -1.59030191f, -2.09045484f, -2.01113821f, -1.31159853f, -1.3120046f,
+       -1.45263472f, -1.52268525f, -1.6567962f,  -2.06986454f, -1.46546941f,
+       -1.25549694f, -1.86336982f, -1.64691575f, -1.69584239f, -1.69374889f,
+       -1.62384788f, -1.53256338f, -1.47943003f, -1.9953089f,  -1.49995189f,
+       -1.58914748f, -2.14294273f, -1.89989005f, -1.26397295f, -1.40048678f,
+       -1.52242117f, -1.79940303f, -1.86987214f, -1.41871056f, -1.51299132f,
+       -1.41772259f, -1.27648263f, -1.87029582f, -1.71325761f, -1.93542947f,
+       -1.4372372f,  -1.72814911f, -1.18767571f, -1.85569031f, -2.09127332f,
+       -1.99591619f, -1.17070749f, -1.91569048f, -1.66127429f, -1.52865783f,
+       -1.39319926f, -2.19674832f, -1.69619098f, -1.37916537f, -1.58285964f,
+       -1.85456282f, -1.91027747f, -1.35265643f, -1.76707679f, -1.32405154f,
+       -1.70063352f, -1.82894304f, -1.81275811f, -1.76677183f, -1.13084056f,
+       -2.01507311f, -1.50622804f, -1.55902412f, -1.4076143f,  -1.66137954f,
+       -1.72469437f, -1.74285619f, -1.72109242f, -1.54947478f, -1.36444454f,
+       -1.78795939f, -1.62871901f, -1.43244094f, -1.83058005f, -1.43770547f,
+       -1.3577647f,  -1.81454222f, -1.58227661f, -1.89836191f, -1.49373763f,
+       -1.52027507f, -1.41807732f, -1.54481537f, -1.86538837f, -1.76619851f,
+       -1.64547283f, -1.58328753f, -1.58442673f, -1.65941447f, -1.57762943f,
+       -1.54091641f, -1.76747862f, -1.56063854f, -1.76235545f, -1.45495771f,
+       -1.37294933f, -1.75871646f, -1.38392315f, -1.62238305f, -2.06866473f,
+       -1.98087487f, -1.49880371f, -2.14268396f, -1.22969736f, -1.47432277f
+       });
+
+    auto logits_length = NDArrayFactory::create<int>('c', {BATCH_LEN}, {FRAME_LEN,FRAME_LEN,FRAME_LEN,FRAME_LEN});
+    std::vector<int> target ={2, 2, 2, 0, 1, 1, 0, 0, 1, 2, 2, 3, 0, 2, 1, 2};
+#if defined(HAVE_CUDNN)
+    //for cudnn blank index is -. therefore our targets cant be 0
+    for(int i=0;i<target.size();i++){
+        target[i]=target[i]+1;
+    }
+#endif
+    auto labels = NDArrayFactory::create<int>('c',{BATCH_LEN, MAX_TARGET_LEN}, target );
+
+    auto labels_len =  NDArrayFactory::create<int>('c', {BATCH_LEN}, {MIN_TARGET_LEN,MIN_TARGET_LEN +1, MAX_TARGET_LEN, MIN_TARGET_LEN +1});
+
+#if defined(HAVE_CUDNN)
+    auto expected = NDArrayFactory::create<float>('c', {BATCH_LEN}, {6.088762f,  5.9546056f, 7.5806675f, 5.5532417f});
+#else
+    auto expected = NDArrayFactory::create<float>('c', {BATCH_LEN}, {6.0661564f, 6.4285727f, 7.7180986f, 4.936057f});
+#endif
+    sd::ops::ctc_loss op;
+
+    //logits.printIndexedBuffer("logits");
+    //labels.printIndexedBuffer("labels");
+
+    auto results = op.evaluate({&labels, &logits, &labels_len, &logits_length}, {}, {BLANK_INDEX});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto *loss = results.at(0);
+
+    //loss->printIndexedBuffer("loss");
+
+    ASSERT_TRUE(expected.isSameShape(loss));
+    ASSERT_TRUE(expected.equalsTo(loss));
+
+}
+
+
+TEST_F(DeclarableOpsTests2, ctc_loss_grad_test1) {
+    constexpr int FRAME_LEN = 6 ;
+    constexpr int CLASS_LEN = 5 ;
+    constexpr int BATCH_LEN = 4  ;
+    constexpr int MAX_TARGET_LEN = 4;
+    constexpr int MIN_TARGET_LEN = 2;
+#if defined(HAVE_CUDNN)
+//cudnn blankindex should be 0
+    constexpr int BLANK_INDEX=0;
+#else
+    constexpr int BLANK_INDEX=CLASS_LEN-1;
+#endif
+    //logits were generated using numpy random and applying log softmax
+    //[ctc_loss.py](https://gist.github.com/quickwritereader/ca9858be201fd857348826a56e2bebc4)
+    auto logits =  NDArrayFactory::create<float>('c', {BATCH_LEN, FRAME_LEN, CLASS_LEN },
+      {-1.52900087f, -1.7423916f, -1.79369985f, -1.68980741f, -1.35771429f,
+       -2.08261997f, -1.65483307f, -1.31878488f, -1.38940393f, -1.78624192f,
+       -1.83125744f, -1.28989651f, -1.86882736f, -1.51760877f, -1.65575026f,
+       -1.59030191f, -2.09045484f, -2.01113821f, -1.31159853f, -1.3120046f,
+       -1.45263472f, -1.52268525f, -1.6567962f,  -2.06986454f, -1.46546941f,
+       -1.25549694f, -1.86336982f, -1.64691575f, -1.69584239f, -1.69374889f,
+       -1.62384788f, -1.53256338f, -1.47943003f, -1.9953089f,  -1.49995189f,
+       -1.58914748f, -2.14294273f, -1.89989005f, -1.26397295f, -1.40048678f,
+       -1.52242117f, -1.79940303f, -1.86987214f, -1.41871056f, -1.51299132f,
+       -1.41772259f, -1.27648263f, -1.87029582f, -1.71325761f, -1.93542947f,
+       -1.4372372f,  -1.72814911f, -1.18767571f, -1.85569031f, -2.09127332f,
+       -1.99591619f, -1.17070749f, -1.91569048f, -1.66127429f, -1.52865783f,
+       -1.39319926f, -2.19674832f, -1.69619098f, -1.37916537f, -1.58285964f,
+       -1.85456282f, -1.91027747f, -1.35265643f, -1.76707679f, -1.32405154f,
+       -1.70063352f, -1.82894304f, -1.81275811f, -1.76677183f, -1.13084056f,
+       -2.01507311f, -1.50622804f, -1.55902412f, -1.4076143f,  -1.66137954f,
+       -1.72469437f, -1.74285619f, -1.72109242f, -1.54947478f, -1.36444454f,
+       -1.78795939f, -1.62871901f, -1.43244094f, -1.83058005f, -1.43770547f,
+       -1.3577647f,  -1.81454222f, -1.58227661f, -1.89836191f, -1.49373763f,
+       -1.52027507f, -1.41807732f, -1.54481537f, -1.86538837f, -1.76619851f,
+       -1.64547283f, -1.58328753f, -1.58442673f, -1.65941447f, -1.57762943f,
+       -1.54091641f, -1.76747862f, -1.56063854f, -1.76235545f, -1.45495771f,
+       -1.37294933f, -1.75871646f, -1.38392315f, -1.62238305f, -2.06866473f,
+       -1.98087487f, -1.49880371f, -2.14268396f, -1.22969736f, -1.47432277f
+       });
+
+    auto logits_length = NDArrayFactory::create<int>('c', {BATCH_LEN}, {FRAME_LEN,FRAME_LEN,FRAME_LEN,FRAME_LEN});
+    std::vector<int> target ={2, 2, 2, 0, 1, 1, 0, 0, 1, 2, 2, 3, 0, 2, 1, 2};
+#if defined(HAVE_CUDNN)
+    //for cudnn blank index is 0. therefore our targets cant be 0
+    for(int i=0;i<target.size();i++){
+        target[i]=target[i]+1;
+    }
+#endif
+    auto labels = NDArrayFactory::create<int>('c',{BATCH_LEN, MAX_TARGET_LEN}, target );
+    auto labels_len =  NDArrayFactory::create<int>('c', {BATCH_LEN}, {MIN_TARGET_LEN, MIN_TARGET_LEN +1, MAX_TARGET_LEN, MIN_TARGET_LEN +1});
+#if defined(HAVE_CUDNN)
+//results for blank Index=0
+    auto expected =  NDArrayFactory::create<float>('c', {BATCH_LEN, FRAME_LEN, CLASS_LEN},
+    {
+       -0.2673936f,   0.17510113f,  0.16634358f, -0.33129925f, 0.2572481f,
+       -0.17626494f,  0.19112396f,  0.2674601f,  -0.44990796f, 0.1675888f,
+       -0.33695614f,  0.27529928f,  0.1543045f,  -0.28359637f, 0.19094874f,
+       -0.26243734f,  0.1236309f,   0.13383625f, -0.26430953f, 0.26927972f,
+       -0.33964074f,  0.21812534f,  0.1907491f,  -0.3002034f,  0.23096953f,
+       -0.200618f,    0.15514892f,  0.19264314f, -0.3310032f,  0.18382908f,
+       -0.04921098f,  0.21598133f, -0.52588296f,  0.13597165f, 0.22314091f,
+       -0.38300496f,  0.11730913f, -0.2633105f,   0.2825293f,  0.24647695f,
+       -0.34686768f,  0.16539758f, -0.280806f,    0.24202588f, 0.22025016f,
+       -0.21347934f,  0.19306758f, -0.304228f,    0.18027757f, 0.14436226f,
+        0.02692442f, -0.08318196f, -0.2236172f,   0.15634498f, 0.12352975f,
+        0.03155032f, -0.5855137f,   0.14724013f,  0.18989684f, 0.2168265f,
+        0.10374172f,  0.11116405f, -0.67208123f,  0.25178862f, 0.20538692f,
+        0.09189357f,  0.14803931f,  0.00725803f, -0.5132462f,  0.2660552f,
+       -0.4309733f,   0.16058321f,  0.16320339f, -0.21557501f, 0.32276183f,
+       -0.32850766f,  0.2217448f,   0.21034124f, -0.2934553f,  0.18987685f,
+        0.06212101f,  0.1750198f,   0.17887063f, -0.38780046f, -0.02821094f,
+        0.05002825f,  0.19618073f,  0.23872548f,  0.16032055f, -0.64525515f,
+       -0.19972575f, -0.38012666f,  0.20550671f,  0.14981383f, 0.22453187f,
+       -0.02966774f, -0.34505254f,  0.21335125f, -0.00961271f, 0.17098173f,
+       -0.04058227f, -0.03726651f,  0.16733989f, -0.295955f,   0.20646395f,
+       -0.05670565f,  0.12657055f, -0.00966609f, -0.2936089f,  0.23341022f,
+       -0.01142454f,  0.17226583f, -0.2727364f,  -0.01445916f, 0.12635438f,
+       -0.23244353f,  0.22339724f, -0.5122685f,   0.29238105f, 0.2289337f
+    });
+#else
+    auto expected = NDArrayFactory::create<float>('c', {BATCH_LEN, FRAME_LEN, CLASS_LEN},
+    {
+        0.21675213f,  0.17510113f, -0.27113008f,  0.18455505f, -0.30527824f,
+        0.12460334f,  0.19112396f, -0.44803357f,  0.24922381f, -0.11691755f,
+        0.16021198f,  0.27529928f, -0.28298444f,  0.21923551f, -0.37176234f,
+        0.20386407f,  0.1236309f,  -0.15528734f,  0.2693891f,  -0.44159663f,
+        0.23395306f,  0.21812534f, -0.36457074f,  0.12620285f, -0.21371071f,
+        0.28493422f,  0.15514892f, -0.4384392f,   0.18344463f, -0.18508859f,
+        0.19713868f, -0.61835873f,  0.22776747f,  0.13597165f,  0.05748086f,
+        0.20409954f, -0.17006806f,  0.14958507f,  0.2825293f,  -0.46614605f,
+        0.218183f,   -0.28762838f,  0.15414338f,  0.24202588f, -0.32672384f,
+        0.09618269f, -0.40792802f,  0.15407808f,  0.18027757f, -0.02261038f,
+       -0.40063405f, -0.04311697f,  0.3049292f,   0.15634498f, -0.01752307f,
+       -0.43639395f,  0.31014743f,  0.14724013f,  0.18989684f, -0.21089047f,
+        0.24827974f, -0.8280775f,   0.1833807f,   0.25178862f,  0.1446285f,
+        0.15652135f,  0.05439584f, -0.5887033f,   0.17083165f,  0.20695446f,
+        0.1825678f,   0.1605832f,  -0.04697506f,  0.17088373f, -0.4670597f,
+        0.13331066f,  0.2217448f,  -0.46589473f,  0.24472642f, -0.13388708f,
+        0.17822751f,  0.1750198f,  -0.27072078f, -0.15830047f,  0.07577389f,
+        0.16730122f,  0.19618073f,  0.23872548f, -0.618405f,    0.01619747f,
+       -0.41614607f,  0.16291247f,  0.20550671f,  0.14981383f, -0.10208681f,
+       -0.32300252f,  0.2421792f,  -0.01448151f,  0.15483606f, -0.05953133f,
+       -0.03524604f,  0.1660878f,  -0.24423766f,  0.19025035f, -0.07685445f,
+        0.1546654f,   0.00699046f, -0.26606354f,  0.17164008f, -0.06723261f,
+        0.2533586f,  -0.31069174f, -0.07983261f,  0.19742766f, -0.06026195f,
+        0.1379485f,  -0.47723943f,  0.11733948f,  0.29238105f, -0.07042958
+    });
+#endif
+    sd::ops::ctc_loss_grad op;
+
+    auto results = op.evaluate({&labels, &logits, &labels_len, &logits_length}, {}, {BLANK_INDEX});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results.status());
+
+    auto *gradient = results.at(0);
+
+    //gradient->printIndexedBuffer("gradient");
+
+    ASSERT_TRUE(expected.isSameShape(gradient));
+    ASSERT_TRUE(expected.equalsTo(gradient, 1.e-06));
+
+}
+
+#endif

@@ -60,6 +60,9 @@ namespace platforms {
     DECLARE_PLATFORM(maxpool3dnew, ENGINE_CUDA);
     DECLARE_PLATFORM(maxpool3dnew_bp, ENGINE_CUDA);
 
+    DECLARE_PLATFORM(ctc_loss, ENGINE_CUDA);
+    DECLARE_PLATFORM(ctc_loss_grad, ENGINE_CUDA);
+
 //////////////////////////////////////////////////////////////////////////
 FORCEINLINE cudnnDataType_t cudnnDataType(sd::DataType dataType) {
     switch (dataType) {

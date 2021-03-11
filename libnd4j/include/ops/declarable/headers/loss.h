@@ -360,6 +360,27 @@ namespace ops {
         DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 0, 0);
         #endif
 
+      /**
+       * Implementation of CTC loss function
+       *
+       * Input arrays:
+       *    0: labels - labels NDArray {BATCH_LEN, MAX_TARGET_LEN}, type integer
+       *    1: logits - logits NDArray {BATCH_LEN, FRAME_LEN, CLASS_LEN }. log softmax of  rnn output. It should include a blank label as well, type float
+       *    2: targetLabelLengths - Length of label sequence in labels NDArray {BATCH_LEN}, type integer
+       *    3: logitsLengths - Length of input sequence in logits NDArray {BATCH_LEN}, type integer
+       *
+       *
+       *  Input integer arguments:
+       *    0: blank index - index of the blank label in logits
+       *
+       * Output array:
+       *    0: loss values, type float. NDArray {BATCH_LEN} negative log probabilities of loss
+       */
+        #if NOT_EXCLUDED(OP_ctc_loss)
+        DECLARE_CUSTOM_OP(ctc_loss, 4, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(ctc_loss_grad,  4, 1, false, 0, 1);
+        #endif
+
 
 }
 }

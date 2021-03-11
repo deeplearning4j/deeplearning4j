@@ -114,7 +114,7 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
-                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes"</argLine>
+                            <argLine> "</argLine>
                         </configuration>
                     </plugin>
                 </plugins>
