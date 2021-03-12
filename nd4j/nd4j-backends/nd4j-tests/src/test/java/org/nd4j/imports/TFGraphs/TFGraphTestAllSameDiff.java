@@ -40,6 +40,7 @@ import java.util.*;
 
 @Slf4j
 @RunWith(Parameterized.class)
+@Ignore
 public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     @Rule
