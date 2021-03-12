@@ -17,7 +17,7 @@
  // @author AbdelRauf
  //
 
-#include "cudnnUtils.h"
+#include <ops/declarable/platform/cudnn/cudnnUtils.h>
 #include <array/NDArrayFactory.h>
 #include <vector>
 
