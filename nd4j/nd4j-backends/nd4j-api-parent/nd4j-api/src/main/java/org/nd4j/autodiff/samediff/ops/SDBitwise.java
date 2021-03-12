@@ -1,22 +1,20 @@
-/*
- *  ******************************************************************************
- *  *
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Apache License, Version 2.0 which is available at
- *  * https://www.apache.org/licenses/LICENSE-2.0.
- *  *
- *  *  See the NOTICE file distributed with this work for additional
- *  *  information regarding copyright ownership.
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  * License for the specific language governing permissions and limitations
- *  * under the License.
- *  *
- *  * SPDX-License-Identifier: Apache-2.0
- *  *****************************************************************************
- */
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
 
 package org.nd4j.autodiff.samediff.ops;
 
@@ -250,7 +248,7 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise left cyclical shift operation. Supports broadcasting.<br>
-   * Unlike {@link #leftShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":<br>
    * {@code leftShiftCyclic(01110000, 2) -> 11000001}<br>
    *
    * @param x Input to be bit shifted (INT type)
@@ -265,7 +263,7 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise left cyclical shift operation. Supports broadcasting.<br>
-   * Unlike {@link #leftShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":<br>
    * {@code leftShiftCyclic(01110000, 2) -> 11000001}<br>
    *
    * @param name name May be null. Name for the output variable
@@ -348,7 +346,7 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise right cyclical shift operation. Supports broadcasting.<br>
-   * Unlike {@link #rightShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":<br>
    * {@code rightShiftCyclic(00001110, 2) -> 10000011}<br>
    *
    * @param x Input to be bit shifted (INT type)
@@ -363,7 +361,7 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise right cyclical shift operation. Supports broadcasting.<br>
-   * Unlike {@link #rightShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":<br>
    * {@code rightShiftCyclic(00001110, 2) -> 10000011}<br>
    *
    * @param name name May be null. Name for the output variable
