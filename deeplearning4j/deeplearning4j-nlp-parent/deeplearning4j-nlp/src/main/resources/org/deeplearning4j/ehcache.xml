@@ -248,7 +248,7 @@
         This is the size to allocate the DiskStore for a spool buffer. Writes are made
         to this area and then asynchronously written to disk. The default size is 30MB.
         Each spool buffer is used only by its cache. If you get OutOfMemory errors consider
-        lowering this value. To improve DiskStore performance consider increasing it. Trace level
+        lowering this value. To improve DiskStore performance consider increasing it. INFO level
         logging in the DiskStore will show if put back ups are occurring.
 
         clearOnFlush:

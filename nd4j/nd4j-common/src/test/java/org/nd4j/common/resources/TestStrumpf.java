@@ -23,6 +23,7 @@ package org.nd4j.common.resources;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -38,13 +39,13 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
+@Ignore
 public class TestStrumpf {
 
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Test
+/*    @Test
     public void testResolvingReference() throws Exception {
 
         File f = Resources.asFile("big/raw_sentences.txt");
@@ -57,7 +58,7 @@ public class TestStrumpf {
                 System.out.println("LINE " + i + ": " + iter.next());
             }
         }
-    }
+    }*/
 
     @Test
     public void testResolvingActual() throws Exception {
