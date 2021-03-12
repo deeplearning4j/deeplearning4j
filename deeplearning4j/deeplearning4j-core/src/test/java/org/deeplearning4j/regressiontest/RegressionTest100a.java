@@ -56,6 +56,7 @@ import java.io.FileInputStream;
 import static org.junit.Assert.*;
 
 @Slf4j
+@Ignore
 public class RegressionTest100a extends BaseDL4JTest {
 
     @Override

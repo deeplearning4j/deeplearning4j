@@ -77,6 +77,7 @@ import static org.junit.Assert.*;
  * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
+@Ignore
 public class KerasModelEndToEndTest extends BaseDL4JTest {
     private static final String GROUP_ATTR_INPUTS = "inputs";
     private static final String GROUP_ATTR_OUTPUTS = "outputs";

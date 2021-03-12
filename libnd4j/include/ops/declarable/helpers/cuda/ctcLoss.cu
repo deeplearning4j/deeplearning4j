@@ -13,11 +13,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  *******************************************************************************/
-
 //
 // @author AbdelRauf
 //
-
 #include <type_traits>
 #include <cmath>
 #include <stdexcept>

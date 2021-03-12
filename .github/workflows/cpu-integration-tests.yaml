@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./.github/actions/msys2-base-setup
       - uses: ./.github/actions/download-dl4j-test-resources-windows
-      - name: Run tests
+      - name: Run testsLossOpValidation
         shell: cmd
         run: |
               set "PATH=C:\msys64\usr\bin;%PATH%"

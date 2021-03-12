@@ -531,11 +531,9 @@ namespace sd {
 //                } else {
 //                    newShape = ConstantShapeHelper::getInstance().scalarShapeInfo(ArrayOptions::dataType(inShape));
 //                }
-                nd4j_printf("Returning new shape %d\n",0);
                 return SHAPELIST(newShape);
             }
 
-            nd4j_printf("Returning empty shape info %d\n",0);
             return SHAPELIST(ConstantShapeHelper::getInstance().emptyShapeInfo(ArrayOptions::dataType(inShape)));
         }
 

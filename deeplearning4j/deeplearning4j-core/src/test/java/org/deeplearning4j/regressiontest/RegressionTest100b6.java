@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.deeplearning4j.regressiontest.customlayer100a.CustomLayer;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -52,7 +53,7 @@ import java.io.File;
 import java.io.FileInputStream;
 
 import static org.junit.Assert.*;
-
+@Ignore
 public class RegressionTest100b6 extends BaseDL4JTest {
 
     @Override
