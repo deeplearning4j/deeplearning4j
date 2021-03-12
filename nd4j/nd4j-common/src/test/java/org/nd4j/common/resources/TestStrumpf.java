@@ -45,7 +45,7 @@ public class TestStrumpf {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
-    @Test
+/*    @Test
     public void testResolvingReference() throws Exception {
 
         File f = Resources.asFile("big/raw_sentences.txt");
@@ -58,7 +58,7 @@ public class TestStrumpf {
                 System.out.println("LINE " + i + ": " + iter.next());
             }
         }
-    }
+    }*/
 
     @Test
     public void testResolvingActual() throws Exception {
