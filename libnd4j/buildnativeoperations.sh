@@ -430,9 +430,9 @@ fi
 
 if [ -z "$COMPUTE" ]; then
   if [ "$ARCH" == "x86-64" ]; then
-   COMPUTE="5.0 5.2 5.3 6.0 8.0"
+   COMPUTE="all"
   else
-      COMPUTE="5.0 5.2 5.3 6.0"
+      COMPUTE="all"
   fi
 fi
 
