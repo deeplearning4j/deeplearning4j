@@ -20,17 +20,17 @@
 
 package org.nd4j.linalg.api.ops.impl.loss.bp;
 
-import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.List;
 
-public class CtcLossBp extends BaseLossBp {
+public class CtcLossBp extends DynamicCustomOp {
 
 
-    public CtcLossBp(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels){
-        super(sameDiff, lossReduce, predictions, weights, labels);
+    public CtcLossBp(SameDiff sameDiff, SDVariable targetLabels,SDVariable logitInputs,SDVariable targetLabelLengths,SDVariable logitInputLengths){
+        super(sameDiff,new SDVariable[]{targetLabels,logitInputs,targetLabelLengths,logitInputLengths});
     }
 
     public CtcLossBp(){ }

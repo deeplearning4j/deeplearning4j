@@ -47,6 +47,23 @@ fun SDLoss() =  Namespace("Loss"){
         }
     }
 
+
+    Op("ctcLoss") {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.loss"
+        javaOpClass = "CtcLoss"
+        Input(NUMERIC, "targetLabels") { description = "Label array" }
+        Input(NUMERIC, "logitInput") { description = "Inputs" }
+        Input(NUMERIC, "targetLabelLengths") { description = "Length of the target label" }
+        Input(NUMERIC, "logitInputLengths") { description = "Length of the input"}
+        Output(NUMERIC, "output"){ description = "Ctc loss " }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+                CTC Loss: Connectionist Temporal Classification Loss. See:
+                https://dl.acm.org/citation.cfm?id=1143891
+            """.trimIndent()
+        }
+    }
+
     Op("cosineDistance") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.loss"
         javaOpClass = "CosineDistanceLoss"

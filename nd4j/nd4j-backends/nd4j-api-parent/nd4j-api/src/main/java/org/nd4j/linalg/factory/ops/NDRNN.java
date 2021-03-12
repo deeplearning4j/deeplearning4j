@@ -1,24 +1,24 @@
-/*
- *  ******************************************************************************
- *  *
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Apache License, Version 2.0 which is available at
- *  * https://www.apache.org/licenses/LICENSE-2.0.
- *  *
- *  *  See the NOTICE file distributed with this work for additional
- *  *  information regarding copyright ownership.
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  * License for the specific language governing permissions and limitations
- *  * under the License.
- *  *
- *  * SPDX-License-Identifier: Apache-2.0
- *  *****************************************************************************
- */
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
 
 package org.nd4j.linalg.factory.ops;
+
+import static org.nd4j.linalg.factory.NDValidation.isSameType;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
@@ -85,22 +85,22 @@ public class NDRNN {
 
   /**
    * Long Short-Term Memory layer - Hochreiter 1997.<br>
-   * SUPPORTS following data formats:\n<br>
-   * for unidirectional: \n" +<br>
-   * TNS: shapes [timeLength, numExamples, inOutSize]\n<br>
-   * NST: shapes [numExamples, inOutSize, timeLength]\n<br>
+   * SUPPORTS following data formats:<br>
+   * for unidirectional:<br>
+   * TNS: shapes [timeLength, numExamples, inOutSize]<br>
+   * NST: shapes [numExamples, inOutSize, timeLength]<br>
    * NTS: shapes [numExamples, timeLength, inOutSize]<br>
-   * for bidirectional:\n<br>
-   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)\n<br>
-   * SUPPORTS following direction modes:\n<br>
+   * for bidirectional:<br>
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)<br>
+   * SUPPORTS following direction modes:<br>
    * FWD: forward<br>
    * BWD: backward<br>
-   * BIDIR_SUM: bidirectional sum\n<br>
-   * BIDIR_CONCAT: bidirectional concat\n" +<br>
-   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)"<br>
+   * BIDIR_SUM: bidirectional sum<br>
+   * BIDIR_CONCAT: bidirectional concat<br>
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)<br>
    * You may use different gate configurations:<br>
-   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum\n<br>
-   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")\n<br>
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum<br>
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")<br>
    * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
    *
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)
@@ -121,22 +121,22 @@ public class NDRNN {
 
   /**
    * Long Short-Term Memory layer - Hochreiter 1997.<br>
-   * SUPPORTS following data formats:\n<br>
-   * for unidirectional: \n" +<br>
-   * TNS: shapes [timeLength, numExamples, inOutSize]\n<br>
-   * NST: shapes [numExamples, inOutSize, timeLength]\n<br>
+   * SUPPORTS following data formats:<br>
+   * for unidirectional:<br>
+   * TNS: shapes [timeLength, numExamples, inOutSize]<br>
+   * NST: shapes [numExamples, inOutSize, timeLength]<br>
    * NTS: shapes [numExamples, timeLength, inOutSize]<br>
-   * for bidirectional:\n<br>
-   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)\n<br>
-   * SUPPORTS following direction modes:\n<br>
+   * for bidirectional:<br>
+   * T2NS: shapes [timeLength, 2, numExamples, inOutSize] (for ONNX)<br>
+   * SUPPORTS following direction modes:<br>
    * FWD: forward<br>
    * BWD: backward<br>
-   * BIDIR_SUM: bidirectional sum\n<br>
-   * BIDIR_CONCAT: bidirectional concat\n" +<br>
-   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)"<br>
+   * BIDIR_SUM: bidirectional sum<br>
+   * BIDIR_CONCAT: bidirectional concat<br>
+   * BIDIR_EXTRA_DIM: bidirectional extra output dim (in conjunction with format dataFormat - T2NS)<br>
    * You may use different gate configurations:<br>
-   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum\n<br>
-   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")\n<br>
+   * specify gate/cell/out aplha/beta and numbers of activations for gate/cell/out described in activations enum<br>
+   * ("RELU","SIGMOID","AFFINE","LEAKY_RELU","THRESHHOLD_RELU","SCALED_TAHN","HARD_SIGMOID","ELU","SOFTSIGN","SOFTPLUS")<br>
    * Also this layer supports MKLDNN (DNNL) and cuDNN acceleration<br>
    *
    * @param x  Input, with shape dependent on the data format (in config). (NUMERIC type)

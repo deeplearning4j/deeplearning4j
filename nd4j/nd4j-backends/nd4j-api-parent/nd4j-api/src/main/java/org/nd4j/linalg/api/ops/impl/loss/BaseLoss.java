@@ -50,7 +50,7 @@ public abstract class BaseLoss extends DynamicCustomOp {
         addArgs();
     }
 
-    protected static INDArray getWeights(INDArray weights, INDArray predictions){
+    protected static INDArray getWeights(INDArray weights, INDArray predictions) {
         return (weights != null) ? weights : Nd4j.scalar(predictions.dataType(), 1.0);
     }
 

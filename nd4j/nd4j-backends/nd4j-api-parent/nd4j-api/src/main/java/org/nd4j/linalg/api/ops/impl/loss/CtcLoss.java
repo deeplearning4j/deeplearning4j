@@ -20,29 +20,20 @@
 
 package org.nd4j.linalg.api.ops.impl.loss;
 
-import org.nd4j.autodiff.loss.LossReduce;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.loss.bp.AbsoluteDifferenceLossBp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.loss.bp.CtcLossBp;
 
 import java.util.List;
 
-public class CtcLoss extends BaseLoss {
+public class CtcLoss extends DynamicCustomOp {
 
 
-    public CtcLoss(SameDiff sameDiff, LossReduce lossReduce, SDVariable predictions, SDVariable weights, SDVariable labels){
-        super(sameDiff, lossReduce, predictions, weights, labels);
+    public CtcLoss(SameDiff sameDiff, SDVariable targetLabels,SDVariable logitInputs,SDVariable targetLabelLengths,SDVariable logitInputLengths){
+        super(sameDiff,new SDVariable[]{targetLabels,logitInputs,targetLabelLengths,logitInputLengths});
     }
 
-    public CtcLoss(SameDiff sameDiff, SDVariable label, SDVariable predictions, SDVariable weights,
-                   LossReduce lossReduce) {
-        this(sameDiff, lossReduce, predictions, weights, label);
-    }
-
-    public CtcLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce){
-        super(lossReduce, predictions, weights, labels);
-    }
 
     public CtcLoss(){ }
 
@@ -52,9 +43,9 @@ public class CtcLoss extends BaseLoss {
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> grad){
+    public List<SDVariable> doDiff(List<SDVariable> grad) {
         //No external gradient
         //Args are: predictions, weights, label
-        return new AbsoluteDifferenceLossBp(sameDiff, lossReduce, arg(0), arg(1), arg(2)).outputs();
+        return new CtcLossBp(sameDiff,  arg(0), arg(1), arg(2),arg(3)).outputs();
     }
 }

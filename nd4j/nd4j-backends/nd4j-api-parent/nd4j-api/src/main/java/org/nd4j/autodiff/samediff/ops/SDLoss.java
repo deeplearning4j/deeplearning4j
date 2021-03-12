@@ -1,24 +1,24 @@
-/*
- *  ******************************************************************************
- *  *
- *  *
- *  * This program and the accompanying materials are made available under the
- *  * terms of the Apache License, Version 2.0 which is available at
- *  * https://www.apache.org/licenses/LICENSE-2.0.
- *  *
- *  *  See the NOTICE file distributed with this work for additional
- *  *  information regarding copyright ownership.
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *  * License for the specific language governing permissions and limitations
- *  * under the License.
- *  *
- *  * SPDX-License-Identifier: Apache-2.0
- *  *****************************************************************************
- */
+/*******************************************************************************
+ * Copyright (c) 2019-2020 Konduit K.K.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//================== GENERATED CODE - DO NOT MODIFY THIS FILE ==================
 
 package org.nd4j.autodiff.samediff.ops;
+
+import static org.nd4j.autodiff.samediff.ops.SDValidation.isSameType;
 
 import java.lang.String;
 import org.nd4j.autodiff.loss.LossReduce;
@@ -36,7 +36,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @return output loss variable (NUMERIC type)
    */
   public SDVariable absoluteDifference(SDVariable label, SDVariable predictions, SDVariable weights,
@@ -56,7 +56,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @return output loss variable (NUMERIC type)
    */
   public SDVariable absoluteDifference(String name, SDVariable label, SDVariable predictions,
@@ -116,7 +116,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is use (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param dimension Dimension to perform the cosine distance over
    * @return output Cosine distance loss  (NUMERIC type)
    */
@@ -141,7 +141,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is use (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param dimension Dimension to perform the cosine distance over
    * @return output Cosine distance loss  (NUMERIC type)
    */
@@ -203,6 +203,49 @@ public class SDLoss extends SDOps {
   }
 
   /**
+   * CTC Loss: Connectionist Temporal Classification Loss. See:<br>
+   * https://dl.acm.org/citation.cfm?id=1143891<br>
+   *
+   * @param targetLabels Label array (NUMERIC type)
+   * @param logitInput Inputs (NUMERIC type)
+   * @param targetLabelLengths Length of the target label (NUMERIC type)
+   * @param logitInputLengths Length of the input (NUMERIC type)
+   * @return output Ctc loss  (NUMERIC type)
+   */
+  public SDVariable ctcLoss(SDVariable targetLabels, SDVariable logitInput,
+      SDVariable targetLabelLengths, SDVariable logitInputLengths) {
+    SDValidation.validateNumerical("ctcLoss", "targetLabels", targetLabels);
+    SDValidation.validateNumerical("ctcLoss", "logitInput", logitInput);
+    SDValidation.validateNumerical("ctcLoss", "targetLabelLengths", targetLabelLengths);
+    SDValidation.validateNumerical("ctcLoss", "logitInputLengths", logitInputLengths);
+    SDVariable out = new org.nd4j.linalg.api.ops.impl.loss.CtcLoss(sd,targetLabels, logitInput, targetLabelLengths, logitInputLengths).outputVariable();
+    out.markAsLoss();
+    return out;
+  }
+
+  /**
+   * CTC Loss: Connectionist Temporal Classification Loss. See:<br>
+   * https://dl.acm.org/citation.cfm?id=1143891<br>
+   *
+   * @param name name May be null. Name for the output variable
+   * @param targetLabels Label array (NUMERIC type)
+   * @param logitInput Inputs (NUMERIC type)
+   * @param targetLabelLengths Length of the target label (NUMERIC type)
+   * @param logitInputLengths Length of the input (NUMERIC type)
+   * @return output Ctc loss  (NUMERIC type)
+   */
+  public SDVariable ctcLoss(String name, SDVariable targetLabels, SDVariable logitInput,
+      SDVariable targetLabelLengths, SDVariable logitInputLengths) {
+    SDValidation.validateNumerical("ctcLoss", "targetLabels", targetLabels);
+    SDValidation.validateNumerical("ctcLoss", "logitInput", logitInput);
+    SDValidation.validateNumerical("ctcLoss", "targetLabelLengths", targetLabelLengths);
+    SDValidation.validateNumerical("ctcLoss", "logitInputLengths", logitInputLengths);
+    SDVariable out =  new org.nd4j.linalg.api.ops.impl.loss.CtcLoss(sd,targetLabels, logitInput, targetLabelLengths, logitInputLengths).outputVariable();
+    out.markAsLoss();
+    return sd.updateVariableNameAndReference(out, name);
+  }
+
+  /**
    * Hinge loss: a loss function used for training classifiers.<br>
    * Implements {@code L = max(0, 1 - t * predictions)} where t is the label values after internally converting to {-1,1}<br>
    * from the user specified {0,1}. Note that Labels should be provided with values {0,1}.<br>
@@ -210,7 +253,7 @@ public class SDLoss extends SDOps {
    * @param label Label array. Each value should be 0.0 or 1.0 (internally -1 to 1 is used) (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @return output Loss variable (NUMERIC type)
    */
   public SDVariable hingeLoss(SDVariable label, SDVariable predictions, SDVariable weights,
@@ -232,7 +275,7 @@ public class SDLoss extends SDOps {
    * @param label Label array. Each value should be 0.0 or 1.0 (internally -1 to 1 is used) (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @return output Loss variable (NUMERIC type)
    */
   public SDVariable hingeLoss(String name, SDVariable label, SDVariable predictions,
@@ -297,7 +340,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param delta Loss function delta value
    * @return output Huber loss (NUMERIC type)
    */
@@ -324,7 +367,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param delta Loss function delta value
    * @return output Huber loss (NUMERIC type)
    */
@@ -423,7 +466,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param epsilon epsilon
    * @return output Log loss  (NUMERIC type)
    */
@@ -445,7 +488,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param epsilon epsilon
    * @return output Log loss  (NUMERIC type)
    */
@@ -499,7 +542,7 @@ public class SDLoss extends SDOps {
    * @param label Label array. Each value should be 0.0 or 1.0 (NUMERIC type)
    * @param predictions Predictions array (has to be log(x) of actual predictions) (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param full Boolean flag. true for logPoissonFull, false for logPoisson
    * @return output Loss variable (NUMERIC type)
    */
@@ -521,7 +564,7 @@ public class SDLoss extends SDOps {
    * @param label Label array. Each value should be 0.0 or 1.0 (NUMERIC type)
    * @param predictions Predictions array (has to be log(x) of actual predictions) (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param full Boolean flag. true for logPoissonFull, false for logPoisson
    * @return output Loss variable (NUMERIC type)
    */
@@ -585,7 +628,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used. Must be either null, scalar, or have shape [batchSize] (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @return output Loss variable, scalar output (NUMERIC type)
    */
   public SDVariable meanPairwiseSquaredError(SDVariable label, SDVariable predictions,
@@ -608,7 +651,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used. Must be either null, scalar, or have shape [batchSize] (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @return output Loss variable, scalar output (NUMERIC type)
    */
   public SDVariable meanPairwiseSquaredError(String name, SDVariable label, SDVariable predictions,
@@ -666,13 +709,13 @@ public class SDLoss extends SDOps {
 
   /**
    * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.<br>
-   * When averaged (using {@link LossReduce#MEAN_BY_WEIGHT} or {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT} (the default))<br>
+   * When averaged (using LossReduce#MEAN_BY_WEIGHT or LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT (the default))<br>
    * this is the mean squared error loss function.<br>
    *
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @return output Loss variable (NUMERIC type)
    */
   public SDVariable meanSquaredError(SDVariable label, SDVariable predictions, SDVariable weights,
@@ -687,14 +730,14 @@ public class SDLoss extends SDOps {
 
   /**
    * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.<br>
-   * When averaged (using {@link LossReduce#MEAN_BY_WEIGHT} or {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT} (the default))<br>
+   * When averaged (using LossReduce#MEAN_BY_WEIGHT or LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT (the default))<br>
    * this is the mean squared error loss function.<br>
    *
    * @param name name May be null. Name for the output variable
    * @param label Label array (NUMERIC type)
    * @param predictions Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @return output Loss variable (NUMERIC type)
    */
   public SDVariable meanSquaredError(String name, SDVariable label, SDVariable predictions,
@@ -709,7 +752,7 @@ public class SDLoss extends SDOps {
 
   /**
    * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.<br>
-   * When averaged (using {@link LossReduce#MEAN_BY_WEIGHT} or {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT} (the default))<br>
+   * When averaged (using LossReduce#MEAN_BY_WEIGHT or LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT (the default))<br>
    * this is the mean squared error loss function.<br>
    *
    * @param label Label array (NUMERIC type)
@@ -728,7 +771,7 @@ public class SDLoss extends SDOps {
 
   /**
    * Mean squared error loss function. Implements {@code (label[i] - prediction[i])^2} - i.e., squared error on a per-element basis.<br>
-   * When averaged (using {@link LossReduce#MEAN_BY_WEIGHT} or {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT} (the default))<br>
+   * When averaged (using LossReduce#MEAN_BY_WEIGHT or LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT (the default))<br>
    * this is the mean squared error loss function.<br>
    *
    * @param name name May be null. Name for the output variable
@@ -764,7 +807,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictionLogits Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param labelSmoothing Label smoothing value. Default value: 0
    * @return output Loss variable (NUMERIC type)
    */
@@ -796,7 +839,7 @@ public class SDLoss extends SDOps {
    * @param label Label array (NUMERIC type)
    * @param predictionLogits Predictions array (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param labelSmoothing Label smoothing value. Default value: 0
    * @return output Loss variable (NUMERIC type)
    */
@@ -872,7 +915,7 @@ public class SDLoss extends SDOps {
   /**
    * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
    * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
-   * If {@link LossReduce#NONE} is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
+   * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
    * otherwise, the output is a scalar.<br>
    * <p><br>
    * When label smoothing is > 0, the following label smoothing is used:<br>
@@ -884,7 +927,7 @@ public class SDLoss extends SDOps {
    * @param oneHotLabels Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut]) (NUMERIC type)
    * @param logitPredictions Predictions array (pre-softmax) (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param labelSmoothing Label smoothing value. Default value: 0
    * @return output Loss variable (NUMERIC type)
    */
@@ -901,7 +944,7 @@ public class SDLoss extends SDOps {
   /**
    * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
    * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
-   * If {@link LossReduce#NONE} is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
+   * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
    * otherwise, the output is a scalar.<br>
    * <p><br>
    * When label smoothing is > 0, the following label smoothing is used:<br>
@@ -914,7 +957,7 @@ public class SDLoss extends SDOps {
    * @param oneHotLabels Label array. Should be one-hot per example and same shape as predictions (for example, [mb, nOut]) (NUMERIC type)
    * @param logitPredictions Predictions array (pre-softmax) (NUMERIC type)
    * @param weights Weights array. May be null. If null, a weight of 1.0 is used (NUMERIC type)
-   * @param lossReduce Reduction type for the loss. See {@link LossReduce} for more details. Default: {@link LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT}
+   * @param lossReduce Reduction type for the loss. See LossReduce for more details. Default: LossReduce#MEAN_BY_NONZERO_WEIGHT_COUNT
    * @param labelSmoothing Label smoothing value. Default value: 0
    * @return output Loss variable (NUMERIC type)
    */
@@ -932,7 +975,7 @@ public class SDLoss extends SDOps {
   /**
    * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
    * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
-   * If {@link LossReduce#NONE} is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
+   * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
    * otherwise, the output is a scalar.<br>
    * <p><br>
    * When label smoothing is > 0, the following label smoothing is used:<br>
@@ -959,7 +1002,7 @@ public class SDLoss extends SDOps {
   /**
    * Applies the softmax activation function to the input, then implement multi-class cross entropy:<br>
    * {@code -sum_classes label[i] * log(p[c])} where {@code p = softmax(logits)}<br>
-   * If {@link LossReduce#NONE} is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
+   * If LossReduce#NONE is used, returned shape is [numExamples] out for [numExamples, numClasses] predicitons/labels;<br>
    * otherwise, the output is a scalar.<br>
    * <p><br>
    * When label smoothing is > 0, the following label smoothing is used:<br>
