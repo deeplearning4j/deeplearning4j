@@ -2246,7 +2246,7 @@ TEST_F(HelpersTests1, lstmLayerCell_1) {
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, lstmLayerCell_2) {
+/*TEST_F(HelpersTests1, lstmLayerCell_2) {
 
     const int bS   = 2;
     const int nIn  = 10;
@@ -2294,10 +2294,10 @@ TEST_F(HelpersTests1, lstmLayerCell_2) {
     ASSERT_TRUE(expH.equalsTo(h));
     ASSERT_TRUE(expC.isSameShape(c));
     ASSERT_TRUE(expC.equalsTo(c));
-}
+}*/
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(HelpersTests1, lstmLayerCell_3) {
+/*TEST_F(HelpersTests1, lstmLayerCell_3) {
 
     const int nIn  = 10;
     const int nOut = 4;
@@ -2344,4 +2344,4 @@ TEST_F(HelpersTests1, lstmLayerCell_3) {
     ASSERT_TRUE(expH.equalsTo(h));
     ASSERT_TRUE(expC.isSameShape(c));
     ASSERT_TRUE(expC.equalsTo(c));
-}
+}*/

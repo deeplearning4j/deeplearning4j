@@ -1203,7 +1203,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyBroadcast_test1) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_F(MultiDataTypeTests, ndarray_applyBroadcast_test2) {
+/*TEST_F(MultiDataTypeTests, ndarray_applyBroadcast_test2) {
 
     NDArray x1('c', {2,3}, {10, 20, 30, 40, 50, 60}, sd::DataType::INT32);
     NDArray x2('c', {2},   {10, 60}, sd::DataType::INT32);
@@ -1220,7 +1220,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyBroadcast_test2) {
 
     x4.applyBroadcast(sd::broadcast::EqualTo, {0}, x5, x3);
     ASSERT_EQ(x3, exp2);
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, ndarray_applyTrueBroadcast_test1) {
@@ -1343,6 +1343,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyScalar_test1) {
 }
 
 //////////////////////////////////////////////////////////////////////////////
+/*
 TEST_F(MultiDataTypeTests, ndarray_applyScalar_test2) {
 
     NDArray x1('c', {2,2}, {0, 1, 2, 3}, sd::DataType::INT64);
@@ -1364,6 +1365,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyScalar_test2) {
     ASSERT_EQ(x4, exp2);
 
 }
+*/
 
 #ifndef __CUDABLAS__
 //////////////////////////////////////////////////////////////////////////////
@@ -1587,6 +1589,7 @@ TEST_F(MultiDataTypeTests, ndarray_applyTriplewiseLambda_test1) {
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+/*
 TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
 
     NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, sd::DataType::DOUBLE);
@@ -1603,9 +1606,10 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test1) {
     NDArray vec2 = x1.applyIndexReduce(sd::indexreduce::IndexMax, {0});
     ASSERT_EQ(vec2, exp3);
 }
+*/
 
 //////////////////////////////////////////////////////////////////////////////
-TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
+/*TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
 
     NDArray x1('c', {2,3}, {0, 1, 2, 3, 4, 5}, sd::DataType::DOUBLE);
     NDArray scalar('c', {}, std::vector<double>{5}, sd::DataType::INT64);
@@ -1623,10 +1627,10 @@ TEST_F(MultiDataTypeTests, ndarray_applyIndexReduce_test2) {
 
     x1.applyIndexReduce(sd::indexreduce::IndexMax, vec2, {0});
     ASSERT_EQ(vec2, exp3);
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(MultiDataTypeTests, applyReduce3_test1) {
+/*TEST_F(MultiDataTypeTests, applyReduce3_test1) {
 
     NDArray x1('c', {2,2}, {1,2,3,4}, sd::DataType::INT32);
     NDArray x2('c', {2,2}, {-1,-2,-3,-4}, sd::DataType::INT32);
@@ -1640,10 +1644,10 @@ TEST_F(MultiDataTypeTests, applyReduce3_test1) {
 
     result = x3.applyReduce3(reduce3::Dot, x4);
     ASSERT_EQ(result, exp2);
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(MultiDataTypeTests, applyReduce3_test2) {
+/*TEST_F(MultiDataTypeTests, applyReduce3_test2) {
 
     NDArray x1('c', {2,2}, {1,2,3,4}, sd::DataType::INT32);
     NDArray x2('c', {2,2}, {-1,-2,-3,-4}, sd::DataType::INT32);
@@ -1678,7 +1682,7 @@ TEST_F(MultiDataTypeTests, applyReduce3_test2) {
 
     result = x8.applyReduce3(reduce3::Dot, x7, std::vector<int>({1}));
     ASSERT_EQ(result, exp6);
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(MultiDataTypeTests, applyAllReduce3_test1) {
@@ -1806,7 +1810,7 @@ TEST_F(MultiDataTypeTests, tile_test1) {
 */
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(MultiDataTypeTests, asT_test1) {
+/*TEST_F(MultiDataTypeTests, asT_test1) {
 
     NDArray x1('c', {2}, {1.5, 2.5}, sd::DataType::FLOAT32);
 
@@ -1828,9 +1832,10 @@ TEST_F(MultiDataTypeTests, asT_test1) {
     result = new NDArray(x1.asT(sd::DataType::DOUBLE));
     ASSERT_EQ(*result, exp2);
     delete result;
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////
+/*
 TEST_F(MultiDataTypeTests, assign_test2) {
 
     NDArray x1('c', {2,3}, {1.5,2.5,3.5,4.5,5.5,6.5}, sd::DataType::FLOAT32);
@@ -1852,6 +1857,7 @@ TEST_F(MultiDataTypeTests, assign_test2) {
     x4.assign(x5);
     ASSERT_EQ(x4, exp3);
 }
+*/
 
 TEST_F(MultiDataTypeTests, Test_Cast_1) {
     auto first = NDArrayFactory::create<float>('c', {10});
