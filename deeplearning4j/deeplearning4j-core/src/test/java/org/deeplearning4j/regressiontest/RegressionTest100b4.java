@@ -71,7 +71,7 @@ import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.lossfunctions.impl.LossMAE;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.common.resources.Resources;
-
+@Ignore
 public class RegressionTest100b4 extends BaseDL4JTest {
 
     @Override

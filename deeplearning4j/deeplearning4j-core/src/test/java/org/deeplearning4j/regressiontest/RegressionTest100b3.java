@@ -51,7 +51,7 @@ import java.io.FileInputStream;
 import java.util.List;
 
 import static org.junit.Assert.*;
-
+@Ignore
 public class RegressionTest100b3 extends BaseDL4JTest {
 
     @Override
