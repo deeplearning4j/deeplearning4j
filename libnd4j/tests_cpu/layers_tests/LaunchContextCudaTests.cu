@@ -55,73 +55,73 @@ void acquireContext(int threadId, int &deviceId) {
     nd4j_printf("reductionPtr: [%p]; stream: [%p];\n", lc->getReductionPointer(), lc->getCudaStream());
 }
 
-TEST_F(LaunchContextCudaTests, basic_test_1) {
-    int deviceA, deviceB;
-    std::thread threadA(acquireContext, 0, std::ref(deviceA));
-    std::thread threadB(acquireContext, 1, std::ref(deviceB));
-
-    threadA.join();
-    threadB.join();
-    nd4j_printf("All threads joined\n","");
-
-    if (AffinityManager::numberOfDevices() > 1)
-        ASSERT_NE(deviceA, deviceB);
-}
-
-void fillArray(int tid, std::vector<NDArray*> &arrays) {
-    auto array = NDArrayFactory::create_<int>('c', {3, 10});
-    nd4j_printf("Array created on device [%i]\n", AffinityManager::currentDeviceId());
-    array->assign(tid);
-    arrays[tid] = array;
-}
-
-TEST_F(LaunchContextCudaTests, basic_test_2) {
-    std::vector<NDArray*> arrays(2);
-
-    std::thread threadA(fillArray, 0, std::ref(arrays));
-    std::thread threadB(fillArray, 1, std::ref(arrays));
-
-    threadA.join();
-    threadB.join();
-
-    for (int e = 0; e < 2; e++) {
-        auto array = arrays[e];
-        ASSERT_EQ(e, array->e<int>(0));
-
-        delete array;
-    }
-}
-
-void initAffinity(int tid, std::vector<int> &aff) {
-    auto affinity = AffinityManager::currentDeviceId();
-    aff[tid] = affinity;
-    nd4j_printf("Thread [%i] affined with device [%i]\n", tid, affinity);
-}
-
-TEST_F(LaunchContextCudaTests, basic_test_3) {
-    auto totalThreads = AffinityManager::numberOfDevices() * 4;
-    nd4j_printf("Total threads: %i\n", totalThreads);
-    std::vector<int> affinities(totalThreads);
-
-    for (int e = 0; e < totalThreads; e++) {
-        std::thread thread(initAffinity, e, std::ref(affinities));
-
-        thread.join();
-    }
-
-    std::vector<int> hits(AffinityManager::numberOfDevices());
-    std::fill(hits.begin(), hits.end(), 0);
-
-    // we need to make sure all threads were attached to "valid" devices
-    for (int e = 0; e < totalThreads; e++) {
-        auto aff = affinities[e];
-        ASSERT_TRUE(aff >= 0 && aff < AffinityManager::numberOfDevices());
-
-        hits[aff]++;
-    }
-
-    // now we check if all devices got some threads
-    for (int e = 0; e < AffinityManager::numberOfDevices(); e++) {
-        ASSERT_GT(hits[e], 0);
-    }
-}
+//TEST_F(LaunchContextCudaTests, basic_test_1) {
+//    int deviceA, deviceB;
+//    std::thread threadA(acquireContext, 0, std::ref(deviceA));
+//    std::thread threadB(acquireContext, 1, std::ref(deviceB));
+//
+//    threadA.join();
+//    threadB.join();
+//    nd4j_printf("All threads joined\n","");
+//
+//    if (AffinityManager::numberOfDevices() > 1)
+//        ASSERT_NE(deviceA, deviceB);
+//}
+//
+//void fillArray(int tid, std::vector<NDArray*> &arrays) {
+//    auto array = NDArrayFactory::create_<int>('c', {3, 10});
+//    nd4j_printf("Array created on device [%i]\n", AffinityManager::currentDeviceId());
+//    array->assign(tid);
+//    arrays[tid] = array;
+//}
+//
+//TEST_F(LaunchContextCudaTests, basic_test_2) {
+//    std::vector<NDArray*> arrays(2);
+//
+//    std::thread threadA(fillArray, 0, std::ref(arrays));
+//    std::thread threadB(fillArray, 1, std::ref(arrays));
+//
+//    threadA.join();
+//    threadB.join();
+//
+//    for (int e = 0; e < 2; e++) {
+//        auto array = arrays[e];
+//        ASSERT_EQ(e, array->e<int>(0));
+//
+//        delete array;
+//    }
+//}
+//
+//void initAffinity(int tid, std::vector<int> &aff) {
+//    auto affinity = AffinityManager::currentDeviceId();
+//    aff[tid] = affinity;
+//    nd4j_printf("Thread [%i] affined with device [%i]\n", tid, affinity);
+//}
+//
+//TEST_F(LaunchContextCudaTests, basic_test_3) {
+//    auto totalThreads = AffinityManager::numberOfDevices() * 4;
+//    nd4j_printf("Total threads: %i\n", totalThreads);
+//    std::vector<int> affinities(totalThreads);
+//
+//    for (int e = 0; e < totalThreads; e++) {
+//        std::thread thread(initAffinity, e, std::ref(affinities));
+//
+//        thread.join();
+//    }
+//
+//    std::vector<int> hits(AffinityManager::numberOfDevices());
+//    std::fill(hits.begin(), hits.end(), 0);
+//
+//    // we need to make sure all threads were attached to "valid" devices
+//    for (int e = 0; e < totalThreads; e++) {
+//        auto aff = affinities[e];
+//        ASSERT_TRUE(aff >= 0 && aff < AffinityManager::numberOfDevices());
+//
+//        hits[aff]++;
+//    }
+//
+//    // now we check if all devices got some threads
+//    for (int e = 0; e < AffinityManager::numberOfDevices(); e++) {
+//        ASSERT_GT(hits[e], 0);
+//    }
+//}
