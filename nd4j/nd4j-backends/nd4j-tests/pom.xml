@@ -39,7 +39,7 @@
         <kotlin.version>1.4.30-M1</kotlin.version>
         <kotlin.compiler.jvmTarget>1.8</kotlin.compiler.jvmTarget>
         <kotlin.compiler.incremental>true</kotlin.compiler.incremental>
-        <junit.version>4.12</junit.version>
+        <junit.version>4.13</junit.version>
         <junit-jupiter.version>5.4.2</junit-jupiter.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
