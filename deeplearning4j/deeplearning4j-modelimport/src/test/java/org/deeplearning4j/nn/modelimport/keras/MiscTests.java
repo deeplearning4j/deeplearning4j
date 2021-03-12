@@ -24,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.utils.DL4JKerasModelValidator;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -41,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
+@Ignore
 public class MiscTests extends BaseDL4JTest {
 
     @Rule
