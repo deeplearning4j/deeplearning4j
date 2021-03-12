@@ -447,6 +447,8 @@
                                     <javaLangAsFQN>skip</javaLangAsFQN>
                                 </formatPreferences>
                                 <verbose>true</verbose>
+                                <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
+                                <addOutputDirectory>false</addOutputDirectory>
                             </configuration>
                         </execution>
                         <execution>
@@ -643,10 +645,6 @@
         </pluginManagement>
 
         <plugins>
-            <plugin>
-                <groupId>org.projectlombok</groupId>
-                <artifactId>lombok-maven-plugin</artifactId>
-            </plugin>
             <plugin>
                 <!-- Note this will not work if you run tests using -rf : and the nd4j module is not present. Ensure -rf: always starts from a point that includes nd4j.-->
                 <groupId>org.commonjava.maven.plugins</groupId>

@@ -31,7 +31,6 @@ import org.nd4j.linalg.util.ConvConfigUtil;
 
 @Data
 @Builder
-@NoArgsConstructor
 public class Conv2DConfig extends BaseConvolutionConfig {
     public static final String NCHW = "NCHW";
     public static final String NHWC = "NHWC";
@@ -58,8 +57,11 @@ public class Conv2DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private WeightsFormat weightsFormat = WeightsFormat.YXIO;
 
+    public Conv2DConfig() {
+    }
+
     public Conv2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, long dH, long dW, boolean isSameMode,
-            String dataFormat, WeightsFormat weightsFormat) {
+                        String dataFormat, WeightsFormat weightsFormat) {
 
         this.kH = kH;
         this.kW = kW;

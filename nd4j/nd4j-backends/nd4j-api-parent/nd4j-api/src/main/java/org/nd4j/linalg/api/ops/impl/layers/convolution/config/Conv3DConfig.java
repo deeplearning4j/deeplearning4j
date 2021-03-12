@@ -31,7 +31,6 @@ import org.nd4j.linalg.util.ConvConfigUtil;
 
 @Data
 @Builder
-@NoArgsConstructor
 public class Conv3DConfig extends BaseConvolutionConfig {
     public static final String NDHWC = "NDHWC";
     public static final String NCDHW = "NCDHW";
@@ -75,8 +74,11 @@ public class Conv3DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private String dataFormat = NDHWC;
 
+    public Conv3DConfig() {
+    }
+
     public Conv3DConfig(long kD, long kW, long kH, long sD, long sW, long sH, long pD, long pW, long pH, long dD,
-            long dW, long dH, boolean biasUsed, boolean isSameMode, String dataFormat) {
+                        long dW, long dH, boolean biasUsed, boolean isSameMode, String dataFormat) {
         this.kD = kD;
         this.kW = kW;
         this.kH = kH;

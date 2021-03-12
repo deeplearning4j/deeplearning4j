@@ -32,7 +32,6 @@ import org.nd4j.linalg.util.ConvConfigUtil;
 
 @Data
 @Builder
-@NoArgsConstructor
 public class Pooling2DConfig extends BaseConvolutionConfig {
 
     @Builder.Default private long kH = -1, kW = -1;
@@ -56,8 +55,11 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private boolean isNHWC = false;
 
+    public Pooling2DConfig() {
+    }
+
     public Pooling2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, double extra, Pooling2DType type,
-            Divisor divisor, boolean isSameMode, long dH, long dW, boolean isNHWC) {
+                           Divisor divisor, boolean isSameMode, long dH, long dW, boolean isNHWC) {
         this.kH = kH;
         this.kW = kW;
         this.sH = sH;

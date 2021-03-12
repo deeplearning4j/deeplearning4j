@@ -33,6 +33,9 @@ public abstract class BaseConvolutionConfig {
 
     public abstract Map<String, Object> toProperties();
 
+    public BaseConvolutionConfig() {
+    }
+
     /**
      * Get the value for a given property
      * for this function

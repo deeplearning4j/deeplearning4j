@@ -29,11 +29,13 @@ import org.nd4j.linalg.util.ConvConfigUtil;
 
 @Data
 @Builder
-@NoArgsConstructor
 public class LocalResponseNormalizationConfig extends BaseConvolutionConfig {
 
     private double alpha, beta, bias;
     private int depth;
+
+    public LocalResponseNormalizationConfig() {
+    }
 
     public LocalResponseNormalizationConfig(double alpha, double beta, double bias, int depth) {
         this.alpha = alpha;

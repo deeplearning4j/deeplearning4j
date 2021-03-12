@@ -30,7 +30,6 @@ import org.nd4j.linalg.util.ConvConfigUtil;
 
 @Data
 @Builder
-@NoArgsConstructor
 public class DeConv2DConfig extends BaseConvolutionConfig {
     public static final String NCHW = "NCHW";
     public static final String NHWC = "NHWC";
@@ -47,8 +46,11 @@ public class DeConv2DConfig extends BaseConvolutionConfig {
     @Builder.Default private boolean isSameMode = false;
     @Builder.Default private String dataFormat = NCHW;
 
+    public DeConv2DConfig() {
+    }
+
     public DeConv2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, long dH, long dW, boolean isSameMode,
-            String dataFormat) {
+                          String dataFormat) {
         this.kH = kH;
         this.kW = kW;
         this.sH = sH;

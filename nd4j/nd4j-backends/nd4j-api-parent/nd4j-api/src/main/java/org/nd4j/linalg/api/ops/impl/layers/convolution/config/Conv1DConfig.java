@@ -31,7 +31,6 @@ import org.nd4j.linalg.util.ConvConfigUtil;
 
 @Data
 @Builder
-@NoArgsConstructor
 public class Conv1DConfig extends BaseConvolutionConfig {
     public static final String NCW = "NCW";
     public static final String NWC = "NWC";
@@ -47,6 +46,9 @@ public class Conv1DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private String dataFormat = NCW;
     private PaddingMode paddingMode;
+
+    public Conv1DConfig() {
+    }
 
     public Conv1DConfig(long k, long s, long p, long d, String dataFormat, @NonNull PaddingMode paddingMode) {
         this.k = k;

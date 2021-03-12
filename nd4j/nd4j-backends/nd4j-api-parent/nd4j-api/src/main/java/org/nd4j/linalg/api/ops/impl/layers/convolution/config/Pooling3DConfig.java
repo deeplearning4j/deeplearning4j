@@ -31,7 +31,6 @@ import org.nd4j.linalg.util.ConvConfigUtil;
 
 @Data
 @Builder
-@NoArgsConstructor
 public class Pooling3DConfig extends BaseConvolutionConfig {
     @Builder.Default private long kD = -1, kW = -1, kH = -1; // kernel
     @Builder.Default private long sD = 1, sW = 1, sH = 1; // strides
@@ -48,8 +47,11 @@ public class Pooling3DConfig extends BaseConvolutionConfig {
     private boolean isSameMode;
     @Builder.Default private boolean isNCDHW = true;
 
+    public Pooling3DConfig() {
+    }
+
     public Pooling3DConfig(long kD, long kW, long kH, long sD, long sW, long sH, long pD, long pW, long pH, long dD,
-            long dW, long dH, Pooling3DType type, boolean isSameMode, boolean isNCDHW) {
+                           long dW, long dH, Pooling3DType type, boolean isSameMode, boolean isNCDHW) {
         this.kD = kD;
         this.kW = kW;
         this.kH = kH;
