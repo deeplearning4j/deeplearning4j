@@ -58,6 +58,11 @@ public class Split extends DynamicCustomOp {
         super(null, new INDArray[]{in}, wrapOrNull(out), null, (List<Integer>)null);
     }
 
+    public Split(INDArray input, int numSplit, int splitDim) {
+        super(null,input,null,Collections.emptyList(),new int[0]);
+        addIArgument(numSplit,splitDim);
+    }
+
 
     @Override
     public String opName() {

@@ -1801,6 +1801,18 @@ public class NDBase {
   }
 
   /**
+   * Split a value in to a list of ndarrays.<br>
+   *
+   * @param input Input to split (NUMERIC type)
+   * @param numSplit Number of splits
+   * @param splitDim The dimension to split on
+   */
+  public INDArray[] split(INDArray input, int numSplit, int splitDim) {
+    NDValidation.validateNumerical("split", "input", input);
+    return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.shape.Split(input, numSplit, splitDim));
+  }
+
+  /**
    * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>

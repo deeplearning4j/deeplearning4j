@@ -3800,6 +3800,32 @@ public class SDBaseOps {
   }
 
   /**
+   * Split a value in to a list of ndarrays.<br>
+   *
+   * @param input Input to split (NUMERIC type)
+   * @param numSplit Number of splits
+   * @param splitDim The dimension to split on
+   */
+  public SDVariable[] split(SDVariable input, int numSplit, int splitDim) {
+    SDValidation.validateNumerical("split", "input", input);
+    return new org.nd4j.linalg.api.ops.impl.shape.Split(sd,input, numSplit, splitDim).outputVariables();
+  }
+
+  /**
+   * Split a value in to a list of ndarrays.<br>
+   *
+   * @param names names May be null. Arrays of names for the output variables.
+   * @param input Input to split (NUMERIC type)
+   * @param numSplit Number of splits
+   * @param splitDim The dimension to split on
+   */
+  public SDVariable[] split(String[] names, SDVariable input, int numSplit, int splitDim) {
+    SDValidation.validateNumerical("split", "input", input);
+    SDVariable[] out =  new org.nd4j.linalg.api.ops.impl.shape.Split(sd,input, numSplit, splitDim).outputVariables();
+    return sd.updateVariableNamesAndReferences(out, names);
+  }
+
+  /**
    * Squared L2 norm: see norm2(String, SDVariable, boolean, int...)<br>
    *
    * Note that if keepDims = true, the output variable has the same rank as the input variable,<br>

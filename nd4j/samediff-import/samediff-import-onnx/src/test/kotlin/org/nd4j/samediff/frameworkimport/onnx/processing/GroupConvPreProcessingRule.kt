@@ -69,7 +69,7 @@ class GroupConvPreProcessingRule: PreImportHook {
         val listOfFunctions = ArrayList<DifferentialFunction>()
         val weights = sd.getVariable(op.inputsToOp[1])
         //for onnx, this is the number of ops
-        val split = sd.split(op.name + "_split",weights,numSizeSplits.toInt(),1)
+        val split = sd.split(listOf(op.name + "_split").toTypedArray(),weights,numSizeSplits.toInt(),1)
         val resultMap = HashMap<String,List<SDVariable>>()
         /**
          * NOTE: Need to look in to how to wire up inputs and outputs properly.

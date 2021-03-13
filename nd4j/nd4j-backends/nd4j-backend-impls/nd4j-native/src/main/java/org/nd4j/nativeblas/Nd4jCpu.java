@@ -25870,6 +25870,61 @@ public static final double TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+      /**
+       * Implementation of CTC loss function
+       *
+       * Input arrays:
+       *    0: labels - labels NDArray {BATCH_LEN, MAX_TARGET_LEN}, type integer
+       *    1: logits - logits NDArray {BATCH_LEN, FRAME_LEN, CLASS_LEN }. log softmax of  rnn output. It should include a blank label as well, type float
+       *    2: targetLabelLengths - Length of label sequence in labels NDArray {BATCH_LEN}, type integer
+       *    3: logitsLengths - Length of input sequence in logits NDArray {BATCH_LEN}, type integer
+       *
+       *
+       *  Input integer arguments:
+       *    0: blank index - index of the blank label in logits
+       *
+       * Output array:
+       *    0: loss values, type float. NDArray {BATCH_LEN} negative log probabilities of loss
+       */
+//         #if NOT_EXCLUDED(OP_ctc_loss)
+        @Namespace("sd::ops") public static class ctc_loss extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public ctc_loss(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public ctc_loss(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public ctc_loss position(long position) {
+                return (ctc_loss)super.position(position);
+            }
+            @Override public ctc_loss getPointer(long i) {
+                return new ctc_loss((Pointer)this).position(position + i);
+            }
+        
+                                                                                    public ctc_loss() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+        @Namespace("sd::ops") public static class ctc_loss_grad extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public ctc_loss_grad(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public ctc_loss_grad(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public ctc_loss_grad position(long position) {
+                return (ctc_loss_grad)super.position(position);
+            }
+            @Override public ctc_loss_grad getPointer(long i) {
+                return new ctc_loss_grad((Pointer)this).position(position + i);
+            }
+        
+                                                                                    public ctc_loss_grad() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
 
 
 

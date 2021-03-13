@@ -5411,14 +5411,12 @@ public final class TensorNamespace {
      * Serializations can either use one of the fields above, or use this
      * raw bytes field. The only exception is the string case, where one is
      * required to store the content in the repeated bytes string_data field.
-     *
      * When this raw_data field is used to store tensor value, elements MUST
      * be stored in as fixed-width, little-endian order.
      * Floating-point data types MUST be stored in IEEE 754 format.
      * Complex64 elements must be written as two consecutive FLOAT values, real component first.
      * Complex128 elements must be written as two consecutive DOUBLE values, real component first.
      * Boolean type MUST be written one byte per tensor element (00000001 for true, 00000000 for false).
-     *
      * Note: the advantage of specific field rather than the raw_data field is
      * that in some cases (e.g. int data), protobuf does a better packing via
      * variable length storage, and may lead to smaller binary footprint.
@@ -5657,7 +5655,6 @@ public final class TensorNamespace {
   /**
    * <pre>
    * Tensors
-   *
    * A serialized tensor value.
    * </pre>
    *
@@ -7013,14 +7010,12 @@ public final class TensorNamespace {
      * Serializations can either use one of the fields above, or use this
      * raw bytes field. The only exception is the string case, where one is
      * required to store the content in the repeated bytes string_data field.
-     *
      * When this raw_data field is used to store tensor value, elements MUST
      * be stored in as fixed-width, little-endian order.
      * Floating-point data types MUST be stored in IEEE 754 format.
      * Complex64 elements must be written as two consecutive FLOAT values, real component first.
      * Complex128 elements must be written as two consecutive DOUBLE values, real component first.
      * Boolean type MUST be written one byte per tensor element (00000001 for true, 00000000 for false).
-     *
      * Note: the advantage of specific field rather than the raw_data field is
      * that in some cases (e.g. int data), protobuf does a better packing via
      * variable length storage, and may lead to smaller binary footprint.
@@ -7771,7 +7766,6 @@ public final class TensorNamespace {
     /**
      * <pre>
      * Tensors
-     *
      * A serialized tensor value.
      * </pre>
      *
@@ -9086,14 +9080,12 @@ public final class TensorNamespace {
        * Serializations can either use one of the fields above, or use this
        * raw bytes field. The only exception is the string case, where one is
        * required to store the content in the repeated bytes string_data field.
-       *
        * When this raw_data field is used to store tensor value, elements MUST
        * be stored in as fixed-width, little-endian order.
        * Floating-point data types MUST be stored in IEEE 754 format.
        * Complex64 elements must be written as two consecutive FLOAT values, real component first.
        * Complex128 elements must be written as two consecutive DOUBLE values, real component first.
        * Boolean type MUST be written one byte per tensor element (00000001 for true, 00000000 for false).
-       *
        * Note: the advantage of specific field rather than the raw_data field is
        * that in some cases (e.g. int data), protobuf does a better packing via
        * variable length storage, and may lead to smaller binary footprint.
@@ -9110,14 +9102,12 @@ public final class TensorNamespace {
        * Serializations can either use one of the fields above, or use this
        * raw bytes field. The only exception is the string case, where one is
        * required to store the content in the repeated bytes string_data field.
-       *
        * When this raw_data field is used to store tensor value, elements MUST
        * be stored in as fixed-width, little-endian order.
        * Floating-point data types MUST be stored in IEEE 754 format.
        * Complex64 elements must be written as two consecutive FLOAT values, real component first.
        * Complex128 elements must be written as two consecutive DOUBLE values, real component first.
        * Boolean type MUST be written one byte per tensor element (00000001 for true, 00000000 for false).
-       *
        * Note: the advantage of specific field rather than the raw_data field is
        * that in some cases (e.g. int data), protobuf does a better packing via
        * variable length storage, and may lead to smaller binary footprint.
@@ -9140,14 +9130,12 @@ public final class TensorNamespace {
        * Serializations can either use one of the fields above, or use this
        * raw bytes field. The only exception is the string case, where one is
        * required to store the content in the repeated bytes string_data field.
-       *
        * When this raw_data field is used to store tensor value, elements MUST
        * be stored in as fixed-width, little-endian order.
        * Floating-point data types MUST be stored in IEEE 754 format.
        * Complex64 elements must be written as two consecutive FLOAT values, real component first.
        * Complex128 elements must be written as two consecutive DOUBLE values, real component first.
        * Boolean type MUST be written one byte per tensor element (00000001 for true, 00000000 for false).
-       *
        * Note: the advantage of specific field rather than the raw_data field is
        * that in some cases (e.g. int data), protobuf does a better packing via
        * variable length storage, and may lead to smaller binary footprint.

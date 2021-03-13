@@ -29,7 +29,6 @@ import org.nd4j.codegen.api.doc.DocScope
 import org.nd4j.codegen.dsl.*
 import org.nd4j.codegen.api.DataType.*
 import org.nd4j.codegen.mixins.*
-import org.nd4j.linalg.api.buffer.DataType
 import java.lang.Boolean.FALSE
 
 fun SDBaseOps() =  Namespace("BaseOps"){
@@ -594,7 +593,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         legacy = true
         Input(NUMERIC, "x") { description = "Input variable" }
         Arg(BOOL, "keepDims") { description = "If true: keep the dimensions that are reduced on (as size 1). False: remove the reduction dimensions"
-        ; defaultValue=FALSE }
+            ; defaultValue=FALSE }
         Arg(INT, "dimensions") { count = AtLeast(0); description = "Dimensions to reduce over. If dimensions are not specified, full array reduction is performed" }
         Output(NUMERIC, "output"){ description = "Reduced array of rank (input rank - num dimensions)" }
         Doc(Language.ANY, DocScope.ALL){
@@ -773,6 +772,19 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         useMixin(keepDimsDoc)
     }
 
+    Op("split")  {
+        javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
+        javaOpClass = "Split"
+        Input(NUMERIC,"input") {description = "Input to split"}
+        Arg(INT, "numSplit") { description = "Number of splits" }
+        Arg(INT, "splitDim") { description = "The dimension to split on" }
+        Doc(Language.ANY, DocScope.ALL){
+            """
+               Split a value in to a list of ndarrays.
+            """.trimIndent()
+        }
+    }
+
     Op("oneHot") {
         javaPackage = "org.nd4j.linalg.api.ops.impl.shape"
         Input(NUMERIC, "indices") { description = "Indices - value 0 to depth-1" }
@@ -780,7 +792,7 @@ fun SDBaseOps() =  Namespace("BaseOps"){
         Arg(INT, "axis") { description = "" }
         Arg(NUMERIC, "on") { description = "" }
         Arg(NUMERIC, "off") { description = "" }
-        Arg(DATA_TYPE, "dataType") { description = "Output data type"; defaultValue = DataType.FLOAT }
+        Arg(DATA_TYPE, "dataType") { description = "Output data type"; defaultValue = org.nd4j.linalg.api.buffer.DataType.FLOAT }
         Output(NUMERIC, "output"){ description = "Output variable" }
 
         Doc(Language.ANY, DocScope.ALL){

@@ -197,7 +197,6 @@
                         <directory>deeplearning4j-modelimport</directory>
                         <directory>deeplearning4j-modelexport-solr</directory>
                         <directory>deeplearning4j-zoo</directory>
-                        <directory>deeplearning4j-nearestneighbors-parent</directory>
                     </directories>
                 </configuration>
             </plugin>

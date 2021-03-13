@@ -2123,7 +2123,7 @@ public class TransformOpValidation extends BaseOpValidation {
         //TODO: Methods failed ResizeLanczos5, ResizeMitchelcubic, ResizeArea
 
         for (ImageResizeMethod method : ImageResizeMethod.values()) {
-                if (method==ImageResizeMethod.ResizeLanczos5 || method==ImageResizeMethod.ResizeArea || method==ImageResizeMethod.ResizeMitchellcubic)
+                if (method==ImageResizeMethod.ResizeLanczos5 || method==ImageResizeMethod.ResizeArea || method == ImageResizeMethod.ResizeMitchelcubic)
                 {continue;}
 
                 log.info("Trying {}", method);
