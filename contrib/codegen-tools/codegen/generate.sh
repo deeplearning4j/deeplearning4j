@@ -7,5 +7,5 @@ if test "$#" -eq 0; then
     echo "Usage example 2 (all namespaces):        ./generate.sh all"
 else
     mvn clean package -DskipTests
-    java -cp target/codegen-1.0.0-SNAPSHOT-shaded.jar org.nd4j.codegen.cli.CLI -dir ../../ -namespaces "$@"
+    java -cp target/codegen-1.0.0-SNAPSHOT-shaded.jar org.nd4j.codegen.cli.CLI -dir ../../../ -namespaces "$@"
 fi
