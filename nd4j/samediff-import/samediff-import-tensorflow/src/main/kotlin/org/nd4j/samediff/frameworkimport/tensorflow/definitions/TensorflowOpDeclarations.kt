@@ -419,6 +419,16 @@ val checkNumerics = TensorflowMappingProcess(
         tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("input" to "tensor")))
 )
 
+val ctcLoss = TensorflowMappingProcess(
+        opName = "ctc_loss",
+        inputFrameworkOpName = "CTCLoss",
+        opMappingRegistry = tensorflowOpRegistry,
+        attributeMappingRules = listOf(),
+        tensorMappingRules = listOf(mappingNDArrayInputs(mutableMapOf("logitInput" to "inputs","targetLabels" to "labels_values",
+                "targetLabelLengths" to "labels_indices","logitInputLengths" to "sequence_length")))
+)
+
+
 //only exists in tf2, tf-java can't run it
 
 val checkNumericsV2 = TensorflowMappingProcess(
