@@ -10309,6 +10309,41 @@ mappings {
 }
 mappings {
   frameworkName: "tensorflow"
+  opName: "ctc_loss"
+  inputFrameworkOpName: "CTCLoss"
+  rule {
+    ruleName: "ndarraymapping"
+    functionName: "ndarraymapping"
+    inputTensorName: "inputs"
+    inputTensorName: "labels_values"
+    inputTensorName: "labels_indices"
+    inputTensorName: "sequence_length"
+    outputTensorName: "logitInput"
+    outputTensorName: "targetLabels"
+    outputTensorName: "targetLabelLengths"
+    outputTensorName: "logitInputLengths"
+    inputToOutput {
+      key: "logitInput"
+      value: "inputs"
+    }
+    inputToOutput {
+      key: "targetLabels"
+      value: "labels_values"
+    }
+    inputToOutput {
+      key: "targetLabelLengths"
+      value: "labels_indices"
+    }
+    inputToOutput {
+      key: "logitInputLengths"
+      value: "sequence_length"
+    }
+    ruleType: "tensor"
+    inputFrameworkOpName: "CTCLoss"
+  }
+}
+mappings {
+  frameworkName: "tensorflow"
   opName: "randomuniform"
   inputFrameworkOpName: "RandomUniformInt"
   rule {

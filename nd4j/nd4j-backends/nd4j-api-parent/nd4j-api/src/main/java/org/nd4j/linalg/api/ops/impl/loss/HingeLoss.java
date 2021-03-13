@@ -40,7 +40,7 @@ public class HingeLoss extends BaseLoss {
         this(sameDiff, lossReduce, predictions, weights, labels);
     }
 
-    public HingeLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce){
+    public HingeLoss(INDArray labels, INDArray predictions, INDArray weights, LossReduce lossReduce) {
         super(lossReduce, predictions, weights, labels);
     }
 

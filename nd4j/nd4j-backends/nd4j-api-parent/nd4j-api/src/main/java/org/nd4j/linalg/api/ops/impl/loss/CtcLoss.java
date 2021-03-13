@@ -22,12 +22,18 @@ package org.nd4j.linalg.api.ops.impl.loss;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.loss.bp.CtcLossBp;
 
 import java.util.List;
 
 public class CtcLoss extends DynamicCustomOp {
+
+
+    public CtcLoss(INDArray targetLabels, INDArray logitInputs, INDArray targetLabelLengths, INDArray logitInputLengths) {
+        super(new INDArray[]{targetLabels,logitInputs,targetLabelLengths,logitInputLengths},null);
+    }
 
 
     public CtcLoss(SameDiff sameDiff, SDVariable targetLabels,SDVariable logitInputs,SDVariable targetLabelLengths,SDVariable logitInputLengths){
