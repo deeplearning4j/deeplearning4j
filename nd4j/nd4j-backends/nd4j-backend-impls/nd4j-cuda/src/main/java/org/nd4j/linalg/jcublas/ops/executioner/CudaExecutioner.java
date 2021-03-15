@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.jcublas.ops.executioner;
 
@@ -43,7 +47,6 @@ import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.CopyOp;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.ops.random.BaseRandomOp;
 import org.nd4j.linalg.api.rng.Random;
@@ -53,7 +56,6 @@ import org.nd4j.linalg.api.shape.TadPack;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.cache.TADManager;
-import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -65,15 +67,7 @@ import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.common.primitives.AtomicBoolean;
 import org.nd4j.common.primitives.Pair;
 import org.nd4j.common.util.ArrayUtil;
-import org.nd4j.nativeblas.LongPointerWrapper;
-import org.nd4j.nativeblas.NativeOps;
-import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.Nd4jCuda;
-import org.nd4j.nativeblas.OpaqueConstantDataBuffer;
-import org.nd4j.nativeblas.OpaqueShapeList;
-import org.nd4j.nativeblas.OpaqueTadPack;
-import org.nd4j.nativeblas.OpaqueVariable;
-import org.nd4j.nativeblas.OpaqueVariablesSet;
+import org.nd4j.nativeblas.*;
 
 import java.util.*;
 
@@ -2157,6 +2151,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             throw new RuntimeException(nativeOps.lastErrorMessage());
 
         val dbf = nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
+        val result = new CudaLongDataBuffer(nativeOps.getConstantShapeBufferPrimary(dbf), nativeOps.getConstantShapeBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
+
+        nativeOps.deleteConstantShapeBuffer(dbf);
+
+        return result;
+    }
+
+    @Override
+    public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, long extras) {
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
+        val dbf = nativeOps.shapeBufferEx(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, extras);
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());

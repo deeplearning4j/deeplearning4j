@@ -1,21 +1,26 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.util;
 
+import com.sun.jna.Platform;
 import org.apache.spark.Partitioner;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -37,9 +42,6 @@ import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 03/07/2016.
- */
 public class TestRepartitioning extends BaseSparkTest {
 
     @Override
@@ -49,6 +51,10 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioning() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<String> list = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             list.add(String.valueOf(i));
@@ -70,7 +76,10 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioning2() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int[] ns;
         if(isIntegrationTests()){
             ns = new int[]{320, 321, 25600, 25601, 25615};
@@ -132,7 +141,10 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioning3(){
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         //Initial partitions (idx, count) - [(0,29), (1,29), (2,29), (3,34), (4,34), (5,35), (6,34)]
 
         List<Integer> ints = new ArrayList<>();
@@ -193,9 +205,13 @@ public class TestRepartitioning extends BaseSparkTest {
     }
 
     @Test
-    public void testRepartitioning4(){
+    public void testRepartitioning4() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<Integer> ints = new ArrayList<>();
-        for( int i=0; i<7040; i++ ){
+        for( int i = 0; i < 7040; i++) {
             ints.add(i);
         }
 
@@ -229,6 +245,10 @@ public class TestRepartitioning extends BaseSparkTest {
 
     @Test
     public void testRepartitioningApprox() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<String> list = new ArrayList<>();
         for (int i = 0; i < 1000; i++) {
             list.add(String.valueOf(i));

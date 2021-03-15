@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.samediff;
 
@@ -45,7 +49,12 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.enums.WeightsFormat;
 import org.nd4j.evaluation.IEvaluation;
-import org.nd4j.evaluation.classification.*;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.EvaluationBinary;
+import org.nd4j.evaluation.classification.EvaluationCalibration;
+import org.nd4j.evaluation.classification.ROC;
+import org.nd4j.evaluation.classification.ROCBinary;
+import org.nd4j.evaluation.classification.ROCMultiClass;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.activations.Activation;
@@ -80,9 +89,6 @@ import org.nd4j.common.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.weightinit.impl.UniformInitScheme;
 
-/**
- * Created by agibsonccc on 4/11/17.
- */
 @Slf4j
 public class SameDiffTests extends BaseNd4jTest {
 
@@ -2809,9 +2815,9 @@ public class SameDiffTests extends BaseNd4jTest {
         out.markAsLoss();
         out.eval();
 
-        out.eval();
-        sd.grad("a").eval();
-
+        INDArray outEvaled = out.eval();
+        INDArray gradOutput = sd.grad("a").eval();
+        INDArray bOutputEval = sd.grad("b").eval();
         String err = OpValidation.validate(new TestCase(sd)
                 .testFlatBufferSerialization(TestCase.TestSerialization.BOTH)
                 .gradientCheck(true));
@@ -3486,42 +3492,42 @@ public class SameDiffTests extends BaseNd4jTest {
     }
     
     @Test
-	public void testConcatVariableGrad() {
-		SameDiff sd = SameDiff.create();
-		SDVariable label = sd.var("label", DataType.FLOAT, 3, 4);
-		SDVariable a = sd.var("a", DataType.FLOAT, 3, 2);
-		SDVariable b = sd.var("b", DataType.FLOAT, 3, 2);
-		INDArray inputArr = Nd4j.rand(3,4);
-		INDArray labelArr =  Nd4j.rand(3,4);
-		SDVariable c = sd.concat("concat", 1, a, b);
-		SDVariable loss = sd.math().pow(c.sub(label), 2);
-		sd.setLossVariables(loss);
-		sd.associateArrayWithVariable(labelArr, label);
-		sd.associateArrayWithVariable(inputArr.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 2)), a);
-		sd.associateArrayWithVariable(inputArr.get(NDArrayIndex.all(), NDArrayIndex.interval(2, 4)), b);
-		Map<String, INDArray> map = sd.calculateGradients(null, "a", "b", "concat");
-		INDArray concatArray = Nd4j.hstack(map.get("a"), map.get("b"));
-		assertEquals(concatArray, map.get("concat"));
+    public void testConcatVariableGrad() {
+        SameDiff sd = SameDiff.create();
+        SDVariable label = sd.var("label", DataType.FLOAT, 3, 4);
+        SDVariable a = sd.var("a", DataType.FLOAT, 3, 2);
+        SDVariable b = sd.var("b", DataType.FLOAT, 3, 2);
+        INDArray inputArr = Nd4j.rand(3,4);
+        INDArray labelArr =  Nd4j.rand(3,4);
+        SDVariable c = sd.concat("concat", 1, a, b);
+        SDVariable loss = sd.math().pow(c.sub(label), 2);
+        sd.setLossVariables(loss);
+        sd.associateArrayWithVariable(labelArr, label);
+        sd.associateArrayWithVariable(inputArr.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 2)), a);
+        sd.associateArrayWithVariable(inputArr.get(NDArrayIndex.all(), NDArrayIndex.interval(2, 4)), b);
+        Map<String, INDArray> map = sd.calculateGradients(null, "a", "b", "concat");
+        INDArray concatArray = Nd4j.hstack(map.get("a"), map.get("b"));
+        assertEquals(concatArray, map.get("concat"));
 
-	}
+    }
 
-	@Test
-	public void testSliceVariableGrad() {
-		SameDiff sd = SameDiff.create();
-		SDVariable label = sd.var("label", DataType.FLOAT, 3, 4);
-		SDVariable input = sd.var("input", DataType.FLOAT, 3, 4);
-		INDArray inputArr =  Nd4j.rand(3,4);
-		INDArray labelArr =  Nd4j.rand(3,4);
-		SDVariable a = input.get(SDIndex.all(), SDIndex.interval(0, 2));
-		SDVariable b = input.get(SDIndex.all(), SDIndex.interval(2, 4));
-		SDVariable c = sd.concat("concat", 1, a, b);
-		SDVariable loss = sd.math().pow(c.sub(label), 2);
-		sd.setLossVariables(loss);
-		sd.associateArrayWithVariable(labelArr, label);
-		sd.associateArrayWithVariable(inputArr, input);
-		Map<String, INDArray> map = sd.calculateGradients(null,"input", "concat");
-		assertEquals(map.get("input"), map.get("concat"));
-	}
+    @Test
+    public void testSliceVariableGrad() {
+        SameDiff sd = SameDiff.create();
+        SDVariable label = sd.var("label", DataType.FLOAT, 3, 4);
+        SDVariable input = sd.var("input", DataType.FLOAT, 3, 4);
+        INDArray inputArr =  Nd4j.rand(3,4);
+        INDArray labelArr =  Nd4j.rand(3,4);
+        SDVariable a = input.get(SDIndex.all(), SDIndex.interval(0, 2));
+        SDVariable b = input.get(SDIndex.all(), SDIndex.interval(2, 4));
+        SDVariable c = sd.concat("concat", 1, a, b);
+        SDVariable loss = sd.math().pow(c.sub(label), 2);
+        sd.setLossVariables(loss);
+        sd.associateArrayWithVariable(labelArr, label);
+        sd.associateArrayWithVariable(inputArr, input);
+        Map<String, INDArray> map = sd.calculateGradients(null,"input", "concat");
+        assertEquals(map.get("input"), map.get("concat"));
+    }
 
     @Test
     public void testTrainingConfigJson(){

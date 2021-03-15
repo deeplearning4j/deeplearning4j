@@ -1,23 +1,28 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.convolution;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -31,6 +36,7 @@ import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -48,11 +54,6 @@ import org.nd4j.common.util.OneTimeLogger;
 import java.util.Arrays;
 
 
-/**
- * Convolution layer
- *
- * @author Adam Gibson (original impl), Alex Black (current version)
- */
 @Slf4j
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
 
@@ -60,7 +61,6 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     protected ConvolutionHelper helper = null;
     protected int helperCountFail = 0;
     protected ConvolutionMode convolutionMode;
-
     protected transient INDArray dummyBias;     //Used only when: hasBias == false AND helpers are used
     protected transient INDArray dummyBiasGrad; //As above
 
@@ -73,26 +73,19 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.convolution.CudnnConvolutionHelper")
-                        .asSubclass(ConvolutionHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnConvolutionHelper successfully initialized");
-                if (!helper.checkSupported()) {
-                    helper = null;
-                }
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnConvolutionHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.convolution.CudnnConvolutionHelper",
+                    ConvolutionHelper.class,
+                    dataType);
+            log.debug("CudnnConvolutionHelper successfully initialized");
+            if (!helper.checkSupported()) {
+                helper = null;
             }
         } else if("CPU".equalsIgnoreCase(backend)){
             helper = new MKLDNNConvHelper(dataType);
             log.trace("Created MKLDNNConvHelper, layer {}", layerConf().getLayerName());
         }
+
         if (helper != null && !helper.checkSupported()) {
             log.debug("Removed helper {} as not supported", helper.getClass());
             helper = null;
@@ -116,7 +109,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray origInput = input;
         INDArray origEps = epsilon;
-        if(layerConf().getCnn2dDataFormat() != CNN2DFormat.NCHW){
+        if(layerConf().getCnn2dDataFormat() != CNN2DFormat.NCHW) {
             input = input.permute(0,3,1,2); //NHWC to NCHW
             epsilon = epsilon.permute(0,3,1,2); //NHWC to NCHW
         }
@@ -151,7 +144,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY); //4d, c order. Shape: [outDepth,inDepth,kH,kW]
         INDArray weightGradView2df = Shape
-                        .newShapeNoCopy(weightGradView, new long[]{outDepth, inDepth * kH * kW}, false).transpose();
+                .newShapeNoCopy(weightGradView, new long[]{outDepth, inDepth * kH * kW}, false).transpose();
 
 
 
@@ -191,7 +184,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 throw e;    //NaN panic etc for debugging
             } catch (Exception e){
                 if(e.getMessage().contains("Failed to allocate")){
-                   //This is a memory exception - don't fallback to built-in implementation
+                    //This is a memory exception - don't fallback to built-in implementation
                     throw e;
                 }
 
@@ -230,7 +223,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             INDArray col = Nd4j.createUninitialized(dataType, new long[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
             INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
             Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                            convolutionMode == ConvolutionMode.Same, col2);
+                    convolutionMode == ConvolutionMode.Same, col2);
             //Shape im2col to 2d. Due to the permuting above, this should be a zero-copy reshape
             im2col2d = col.reshape('c', miniBatch * outH * outW, inDepth * kH * kW);
         }
@@ -346,10 +339,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray input = this.input.castTo(dataType);
         INDArray inputOrig = input;
-        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC){
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC) {
             input = input.permute(0,3,1,2).dup(); //NHWC to NCHW
         }
-
 
         long miniBatch = input.size(0);
         long outDepth = weights.size(0);
@@ -359,22 +351,54 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         long kH = weights.size(2);
         long kW = weights.size(3);
 
+
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
 
+
+
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation, CNN2DFormat.NCHW); //Note: hardcoded to NCHW due to permute earlier in this method
+            outSize = ConvolutionUtils.getOutputSize(
+                    input,
+                    kernel,
+                    strides,
+                    null,
+                    convolutionMode,
+                    dilation,
+                    CNN2DFormat.NCHW); //Note: hardcoded to NCHW due to permute earlier in this method
 
             if (input.size(2) > Integer.MAX_VALUE ||  input.size(3) > Integer.MAX_VALUE)
                 throw new ND4JArraySizeException();
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int) input.size(2), (int) input.size(3)}, kernel,
-                            strides, dilation );
+            int[] inWidthHeight;
+            //  if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NCHW)
+            //TODO: Switch hardcoded state later. For now, convolution is implemented as
+            //switch to NCHW then permute back for NWHC
+            inWidthHeight =  new int[] {(int) input.size(2), (int) input.size(3)};
+
+       /*     else if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC) {
+                inWidthHeight =  new int[] {(int) input.size(1), (int) input.size(2)};
+            }
+            else
+                 throw new IllegalStateException("No data format configured!");*/
+            pad = ConvolutionUtils.getSameModeTopLeftPadding(
+                    outSize,
+                    inWidthHeight,
+                    kernel,
+                    strides,
+                    dilation);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, CNN2DFormat.NCHW); //Note: hardcoded to NCHW due to permute earlier in this method
+            outSize = ConvolutionUtils.getOutputSize(
+                    input,
+                    kernel,
+                    strides,
+                    pad,
+                    convolutionMode,
+                    dilation,
+                    CNN2DFormat.NCHW); //Note: hardcoded to NCHW due to permute earlier in this method
         }
 
         int outH = outSize[0];
@@ -408,9 +432,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                     throw e;
                 }
 
-                if(layerConf().isCudnnAllowFallback()){
+                if(layerConf().isCudnnAllowFallback()) {
                     helperCountFail++;
-                    if(helper instanceof MKLDNNConvHelper){
+                    if(helper instanceof MKLDNNConvHelper) {
                         log.warn("MKL-DNN execution failed - falling back on built-in implementation",e);
                     } else {
                         log.warn("CuDNN execution failed - falling back on built-in implementation",e);
@@ -433,12 +457,21 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //to get old order from required order: permute(0,3,4,5,1,2)
         //Post reshaping: rows are such that minibatch varies slowest, outW fastest as we step through the rows post-reshape
         INDArray col = Nd4j.createUninitialized(weights.dataType(), new long[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
-        INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
+        int[] permute =  new int[]{0, 3, 4, 5, 1, 2};
+        INDArray col2 = col.permute(permute);
         INDArray im2ColIn = input.castTo(col2.dataType());      //No op if already (for example) float
         if (kH > Integer.MAX_VALUE || kW > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
-        Convolution.im2col(im2ColIn, (int)kH, (int)kW, strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                        convolutionMode == ConvolutionMode.Same, col2);
+        Convolution.im2col(
+                im2ColIn,
+                (int)kH,
+                (int)kW,
+                strides[0], strides[1],
+                pad[0], pad[1],
+                dilation[0], dilation[1],
+                convolutionMode == ConvolutionMode.Same,
+                col2);
+
 
         INDArray im2col2d = Shape.newShapeNoCopy(col, new long[] {miniBatch * outH * outW, inDepth * kH * kW}, false);
 
@@ -457,7 +490,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             z.addiRowVector(bias);
         }
 
-        //Now, reshape to [outW,outH,miniBatch,outDepth], and permute to have correct output order: [miniBath,outDepth,outH,outW];
+        //Now, reshape to [outW,outH,miniBatch,outDepth], and permute to have correct output order: [miniBatch,outDepth,outH,outW];
         z = Shape.newShapeNoCopy(z, new long[] {outW, outH, miniBatch, outDepth}, true);
         z = z.permute(2, 3, 1, 0);
 
@@ -467,7 +500,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             }
         }
 
-        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC){
+        if(layerConf().getCnn2dDataFormat() == CNN2DFormat.NHWC) {
             z = z.permute(0,2,3,1); //NCHW to NHWC
             z = workspaceMgr.dup(ArrayType.ACTIVATIONS, z);
         }

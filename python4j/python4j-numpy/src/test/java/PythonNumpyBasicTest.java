@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 
 import org.nd4j.python4j.*;
@@ -80,72 +84,83 @@ public class PythonNumpyBasicTest {
 
     @Test
     public void testConversion(){
-        INDArray arr = Nd4j.zeros(dataType, shape);
-        PythonObject npArr = PythonTypes.convert(arr);
-        INDArray arr2 = PythonTypes.<INDArray>getPythonTypeForPythonObject(npArr).toJava(npArr);
-        if (dataType == DataType.BFLOAT16){
-            arr = arr.castTo(DataType.FLOAT);
-        }
-        Assert.assertEquals(arr,arr2);
-    }
-
-
-    @Test
-    public void testExecution(){
-        List<PythonVariable> inputs = new ArrayList<>();
-        INDArray x = Nd4j.ones(dataType, shape);
-        INDArray y = Nd4j.zeros(dataType, shape);
-        INDArray z = (dataType == DataType.BOOL)?x:x.mul(y.add(2));
-        z = (dataType == DataType.BFLOAT16)? z.castTo(DataType.FLOAT): z;
-        PythonType<INDArray> arrType = PythonTypes.get("numpy.ndarray");
-        inputs.add(new PythonVariable<>("x", arrType, x));
-        inputs.add(new PythonVariable<>("y", arrType, y));
-        List<PythonVariable> outputs = new ArrayList<>();
-        PythonVariable<INDArray> output = new PythonVariable<>("z", arrType);
-        outputs.add(output);
-        String code = (dataType == DataType.BOOL)?"z = x":"z = x * (y + 2)";
-        if (shape.length == 0){ // scalar special case
-            code += "\nimport numpy as np\nz = np.asarray(float(z), dtype=x.dtype)";
-        }
-        PythonExecutioner.exec(code, inputs, outputs);
-        INDArray z2 = output.getValue();
-
-        Assert.assertEquals(z.dataType(), z2.dataType());
-        Assert.assertEquals(z, z2);
+      try(PythonGIL pythonGIL = PythonGIL.lock()) {
+          INDArray arr = Nd4j.zeros(dataType, shape);
+          PythonObject npArr = PythonTypes.convert(arr);
+          INDArray arr2 = PythonTypes.<INDArray>getPythonTypeForPythonObject(npArr).toJava(npArr);
+          if (dataType == DataType.BFLOAT16){
+              arr = arr.castTo(DataType.FLOAT);
+          }
+          Assert.assertEquals(arr,arr2);
+      }
 
     }
 
 
     @Test
-    public void testInplaceExecution(){
-        if (dataType == DataType.BOOL || dataType == DataType.BFLOAT16)return;
-        if (shape.length == 0) return;
-        List<PythonVariable> inputs = new ArrayList<>();
-        INDArray x = Nd4j.ones(dataType, shape);
-        INDArray y = Nd4j.zeros(dataType, shape);
-        INDArray z = x.mul(y.add(2));
-       // Nd4j.getAffinityManager().ensureLocation(z, AffinityManager.Location.HOST);
-        PythonType<INDArray> arrType = PythonTypes.get("numpy.ndarray");
-        inputs.add(new PythonVariable<>("x", arrType, x));
-        inputs.add(new PythonVariable<>("y", arrType, y));
-        List<PythonVariable> outputs = new ArrayList<>();
-        PythonVariable<INDArray> output = new PythonVariable<>("x", arrType);
-        outputs.add(output);
-        String code = "x *= y + 2";
-        PythonExecutioner.exec(code, inputs, outputs);
-        INDArray z2 = output.getValue();
-        Assert.assertEquals(x.dataType(), z2.dataType());
-        Assert.assertEquals(z.dataType(), z2.dataType());
-        Assert.assertEquals(x, z2);
-        Assert.assertEquals(z, z2);
-        Assert.assertEquals(x.data().pointer().address(), z2.data().pointer().address());
-        if("CUDA".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"))){
-            Assert.assertEquals(getDeviceAddress(x), getDeviceAddress(z2));
+    public void testExecution() {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            List<PythonVariable> inputs = new ArrayList<>();
+            INDArray x = Nd4j.ones(dataType, shape);
+            INDArray y = Nd4j.zeros(dataType, shape);
+            INDArray z = (dataType == DataType.BOOL)?x:x.mul(y.add(2));
+            z = (dataType == DataType.BFLOAT16)? z.castTo(DataType.FLOAT): z;
+            PythonType<INDArray> arrType = PythonTypes.get("numpy.ndarray");
+            inputs.add(new PythonVariable<>("x", arrType, x));
+            inputs.add(new PythonVariable<>("y", arrType, y));
+            List<PythonVariable> outputs = new ArrayList<>();
+            PythonVariable<INDArray> output = new PythonVariable<>("z", arrType);
+            outputs.add(output);
+            String code = (dataType == DataType.BOOL)?"z = x":"z = x * (y + 2)";
+            if (shape.length == 0){ // scalar special case
+                code += "\nimport numpy as np\nz = np.asarray(float(z), dtype=x.dtype)";
+            }
+            PythonExecutioner.exec(code, inputs, outputs);
+            INDArray z2 = output.getValue();
+
+            Assert.assertEquals(z.dataType(), z2.dataType());
+            Assert.assertEquals(z, z2);
         }
 
 
     }
-    private static long getDeviceAddress(INDArray array){
+
+
+    @Test
+    public void testInplaceExecution() {
+        try(PythonGIL pythonGIL = PythonGIL.lock()) {
+            if (dataType == DataType.BOOL || dataType == DataType.BFLOAT16)return;
+            if (shape.length == 0) return;
+            List<PythonVariable> inputs = new ArrayList<>();
+            INDArray x = Nd4j.ones(dataType, shape);
+            INDArray y = Nd4j.zeros(dataType, shape);
+            INDArray z = x.mul(y.add(2));
+            // Nd4j.getAffinityManager().ensureLocation(z, AffinityManager.Location.HOST);
+            PythonType<INDArray> arrType = PythonTypes.get("numpy.ndarray");
+            inputs.add(new PythonVariable<>("x", arrType, x));
+            inputs.add(new PythonVariable<>("y", arrType, y));
+            List<PythonVariable> outputs = new ArrayList<>();
+            PythonVariable<INDArray> output = new PythonVariable<>("x", arrType);
+            outputs.add(output);
+            String code = "x *= y + 2";
+            PythonExecutioner.exec(code, inputs, outputs);
+            INDArray z2 = output.getValue();
+            Assert.assertEquals(x.dataType(), z2.dataType());
+            Assert.assertEquals(z.dataType(), z2.dataType());
+            Assert.assertEquals(x, z2);
+            Assert.assertEquals(z, z2);
+            Assert.assertEquals(x.data().pointer().address(), z2.data().pointer().address());
+            if("CUDA".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"))){
+                Assert.assertEquals(getDeviceAddress(x), getDeviceAddress(z2));
+            }
+
+        }
+
+
+    }
+
+
+    private static long getDeviceAddress(INDArray array) {
         if(!"CUDA".equalsIgnoreCase(Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend"))){
             throw new IllegalStateException("Cannot ge device pointer for non-CUDA device");
         }

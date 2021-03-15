@@ -5,7 +5,7 @@ Native operations for nd4j. Build using cmake
 ## Prerequisites
 
 * GCC 4.9+
-* CUDA 8.0 or 9.0 (if desired)
+* CUDA Toolkit Versions 10 or 11
 * CMake 3.8 (as of Nov 2017, in near future will require 3.9)
 
 ### Additional build arguments
@@ -22,9 +22,20 @@ There's few additional arguments for `buildnativeoperations.sh` script you could
 
 [More about AutoVectorization report](auto_vectorization/AutoVectorization.md)  
 
-You can find the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus).
+You can provide the compute capability for your card [on the NVIDIA website here](https://developer.nvidia.com/cuda-gpus) or use auto.  
+Please also check your Cuda Toolkit Release notes for supported and dropped features.  
+Here is [the latest CUDA Toolkit Release note](https://docs.nvidia.com/cuda/cuda-toolkit-release-notes/index.html#deprecated-features).  
+You can find the same information for the older Toolkit versions [in the CUDA archives](https://docs.nvidia.com/cuda/archive/).  
 
-For example, a GTX 1080 has compute capability 6.1, for which you would use ```-cc 61``` (note no decimal point).
+
+| -cc and --compute option examples | description | 
+| -------- | --------  |
+|-cc all | builds for common GPUs|
+|-cc auto |tries to detect automatically  |
+|-cc Maxwell | GPU microarchitecture codename |
+|-cc 75|compute capability 7.5 without a dot|
+|-cc 7.5|compute capability 7.5 with a dot|
+|-cc "Maxwell 6.0 7.5"| space-separated multiple arguments within quotes (note: numbers only with a dot)| 
 
 
 ## OS Specific Requirements
@@ -34,10 +45,9 @@ For example, a GTX 1080 has compute capability 6.1, for which you would use ```-
 [Download the NDK](https://developer.android.com/ndk/downloads/), extract it somewhere, and execute the following commands, replacing `android-xxx` with either `android-arm` or `android-x86`:
 
 ```bash
-git clone https://github.com/deeplearning4j/libnd4j
-git clone https://github.com/deeplearning4j/nd4j
+git clone https://github.com/eclipse/deeplearning4j
 export ANDROID_NDK=/path/to/android-ndk/
-cd libnd4j
+cd deeplearning4j/libnd4j
 bash buildnativeoperations.sh -platform android-xxx
 cd ../nd4j
 mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!:nd4j-cuda-9.0,!:nd4j-cuda-9.0-platform,!:nd4j-tests'
@@ -208,3 +218,19 @@ To run tests using CUDA backend it's pretty much similar process:
     2. ./blasbuild/cuda/tests_cpu/layers_tests/runtests (.exe on Windows)
 
 
+## Development
+
+In order to extend and update libnd4j, understanding libnd4j's various
+cmake flags is the key. Many of them are in buildnativeoperations.sh.
+The pom.xml is used to integrate and auto configure the project
+for building with deeplearning4j.
+
+At a minimum, you will want to enable tests. An example default set of flags
+for running tests and getting cpu builds working is as follows:
+```bash
+-DSD_CPU=true -DBLAS=TRUE -DSD_ARCH=x86-64 -DSD_EXTENSION= -DSD_LIBRARY_NAME=nd4jcpu -DSD_CHECK_VECTORIZATION=OFF  -DSD_SHARED_LIB=ON -DSD_STATIC_LIB=OFF -DSD_BUILD_MINIFIER=false -DSD_ALL_OPS=true -DCMAKE_BUILD_TYPE=Release -DPACKAGING=none  -DSD_BUILD_TESTS=OFF -DCOMPUTE=all -DOPENBLAS_PATH=C:/Users/agibs/.javacpp/cache/openblas-0.3.10-1.5.4-windows-x86_64.jar/org/bytedeco/openblas/windows-x86_64 -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE -DSD_BUILD_TESTS=YES
+```
+
+The way the main build script works, it dynamically generates a set of flags
+suitable for use for building the projects. Understanding the build script
+will go a long way in to configuring cmake for your particular IDE.

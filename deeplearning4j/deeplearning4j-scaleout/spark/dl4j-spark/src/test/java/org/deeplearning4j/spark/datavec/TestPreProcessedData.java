@@ -1,21 +1,26 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.datavec;
 
+import com.sun.jna.Platform;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -54,14 +59,15 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 03/07/2016.
- */
 public class TestPreProcessedData extends BaseSparkTest {
 
     @Test
     public void testPreprocessedData() {
         //Test _loading_ of preprocessed data
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int dataSetObjSize = 5;
         int batchSizePerExecutor = 10;
 
@@ -108,6 +114,10 @@ public class TestPreProcessedData extends BaseSparkTest {
     @Test
     public void testPreprocessedDataCompGraphDataSet() {
         //Test _loading_ of preprocessed DataSet data
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int dataSetObjSize = 5;
         int batchSizePerExecutor = 10;
 
@@ -156,6 +166,10 @@ public class TestPreProcessedData extends BaseSparkTest {
     @Test
     public void testPreprocessedDataCompGraphMultiDataSet() throws IOException {
         //Test _loading_ of preprocessed MultiDataSet data
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int dataSetObjSize = 5;
         int batchSizePerExecutor = 10;
 
@@ -205,6 +219,10 @@ public class TestPreProcessedData extends BaseSparkTest {
 
     @Test
     public void testCsvPreprocessedDataGeneration() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<String> list = new ArrayList<>();
         DataSetIterator iter = new IrisDataSetIterator(1, 150);
         while (iter.hasNext()) {
@@ -291,6 +309,10 @@ public class TestPreProcessedData extends BaseSparkTest {
     @Test
     public void testCsvPreprocessedDataGenerationNoLabel() throws Exception {
         //Same as above test, but without any labels (in which case: input and output arrays are the same)
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<String> list = new ArrayList<>();
         DataSetIterator iter = new IrisDataSetIterator(1, 150);
         while (iter.hasNext()) {

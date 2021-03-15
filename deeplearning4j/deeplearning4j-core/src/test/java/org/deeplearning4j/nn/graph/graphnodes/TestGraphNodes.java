@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.graph.graphnodes;
 
@@ -21,16 +25,14 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
-import org.deeplearning4j.nn.conf.layers.GravesLSTM;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -571,12 +573,12 @@ public class TestGraphNodes extends BaseDL4JTest {
                 .weightInit(WeightInit.XAVIER)
                 .graphBuilder()
                 .addInputs("rr")
-                .setInputTypes(InputType.recurrent(30))
-                .addLayer("1", new GravesLSTM.Builder().activation(Activation.TANH).nIn(numInputs).nOut(lstmLayerSize).dropOut(0.9).build(), "rr")
+                .addLayer("1", new LSTM.Builder().activation(Activation.TANH).nIn(numInputs).nOut(lstmLayerSize).dropOut(0.9).build(), "rr")
                 .addLayer("2", new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
                         .activation(Activation.SOFTMAX).nOut(numLabelClasses).build(), "1")
 
                 .setOutputs("2")
+                .setInputTypes(InputType.recurrent(numInputs,16, RNNFormat.NCW))
                 .build();
 
 

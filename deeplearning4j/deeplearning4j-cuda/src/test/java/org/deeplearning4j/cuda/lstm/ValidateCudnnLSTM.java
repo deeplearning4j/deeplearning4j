@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.cuda.lstm;
 
@@ -29,6 +33,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -269,7 +274,7 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
         assertTrue(f.get(l0) instanceof CudnnLSTMHelper);
         assertTrue(f.get(l1) instanceof CudnnLSTMHelper);
 
-        Random r = new Random(12345);
+        Random r = new Random(123456);
         for (int x = 0; x < 1; x++) {
             INDArray input = Nd4j.rand(new int[] {minibatch, inputSize, timeSeriesLength});
             INDArray labels = Nd4j.zeros(minibatch, nOut, timeSeriesLength);
@@ -283,7 +288,6 @@ public class ValidateCudnnLSTM extends BaseDL4JTest {
             mln1.fit(ds);
             mln2.fit(ds);
         }
-
 
         assertEquals(mln1.params(), mln2.params());
     }

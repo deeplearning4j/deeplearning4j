@@ -1,0 +1,63 @@
+name: Install protobuf linux
+runs:
+  using: composite
+  steps:
+    - name: Install protobuf linux
+      shell: bash
+      run: |
+        sudo apt-get install build-essential make zlib1g-dev wget
+        wget https://www.gnupg.org/ftp/gcrypt/libgpg-error/libgpg-error-1.36.tar.bz2
+        tar jxf libgpg-error-1.36.tar.bz2
+        cd libgpg-error-1.36
+        ./configure
+        make
+        sudo make install
+        cd ..
+        wget https://www.gnupg.org/ftp/gcrypt/libgcrypt/libgcrypt-1.8.4.tar.bz2
+        tar jxf libgcrypt-1.8.4.tar.bz2
+        cd libgcrypt-1.8.4
+        ./configure
+        make
+        sudo make install
+        cd ..
+        wget https://www.gnupg.org/ftp/gcrypt/libksba/libksba-1.3.5.tar.bz2
+        tar jxf libksba-1.3.5.tar.bz2
+        cd libksba-1.3.5
+        ./configure
+        make
+        sudo make install
+        cd ..
+        wget https://www.gnupg.org/ftp/gcrypt/libassuan/libassuan-2.5.3.tar.bz2
+        tar jxf libassuan-2.5.3.tar.bz2
+        cd libassuan-2.5.3
+        ./configure
+        make
+        sudo make install
+        cd ..
+        wget https://www.gnupg.org/ftp/gcrypt/ntbtls/ntbtls-0.1.2.tar.bz2
+        tar jxf ntbtls-0.1.2.tar.bz2
+        cd ntbtls-0.1.2
+        ./configure
+        make
+        sudo make install
+        cd ..
+        wget https://www.gnupg.org/ftp/gcrypt/npth/npth-1.6.tar.bz2
+        tar jxf npth-1.6.tar.bz2
+        cd npth-1.6
+        ./configure
+        make
+        sudo make install
+        cd ..
+        echo 'include /usr/local/lib/' | sudo tee -a /etc/ld.so.conf
+        sudo ldconfig -v
+        wget https://www.gnupg.org/ftp/gcrypt/gnupg/gnupg-2.2.17.tar.bz2
+        tar jxf gnupg-2.2.17.tar.bz2
+        cd gnupg-2.2.17/
+        ./configure
+        make
+        sudo make install
+        cd ..
+        sudo apt-get install pinentry-curses
+        #echo 'pinentry-program /usr/bin/pinentry-curses' | tee -a ~/.gnupg/gpg-agent.conf
+        #gpg-connect-agent reloadagent /bye
+        sudo apt-get install ca-certificates

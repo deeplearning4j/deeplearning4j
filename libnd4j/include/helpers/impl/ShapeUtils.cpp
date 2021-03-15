@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -987,6 +989,7 @@ std::vector<Nd4jLong> ShapeUtils::evalDimsWithoutUnities(const Nd4jLong* shapeIn
 void ShapeUtils::updateStridesAndType(Nd4jLong* dest, const Nd4jLong* source, const char order) {
 
     shape::updateStrides(dest, order);
+    dest[2 * dest[0] +1] = 0; //zero extra
     ArrayOptions::copyDataType(dest, source);
 }
 
@@ -1060,6 +1063,17 @@ bool ShapeUtils::areShapesEqual(const Nd4jLong* shapeInfo, const std::vector<Nd4
             return false;
 
     return true;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+std::vector<int> ShapeUtils::evalDimsForReduceOp(const int rank, const std::vector<int>& dimsToExclude) {
+
+    std::vector<int> output = ShapeUtils::evalDimsToExclude(rank, dimsToExclude);
+
+    for(uint j = 0; j < dimsToExclude.size(); ++j)
+        output.emplace_back(dimsToExclude[j]);
+
+    return output;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

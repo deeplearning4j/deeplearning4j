@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.objdetect;
 
@@ -54,36 +58,6 @@ import java.util.List;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
-/**
- * Output (loss) layer for YOLOv2 object detection model, based on the papers:
- * YOLO9000: Better, Faster, Stronger - Redmon & Farhadi (2016) - <a href="https://arxiv.org/abs/1612.08242">https://arxiv.org/abs/1612.08242</a><br>
- * and<br>
- * You Only Look Once: Unified, Real-Time Object Detection - Redmon et al. (2016) -
- * <a href="http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf">http://www.cv-foundation.org/openaccess/content_cvpr_2016/papers/Redmon_You_Only_Look_CVPR_2016_paper.pdf</a>
- * <br>
- * This loss function implementation is based on the YOLOv2 version of the paper. However, note that it doesn't
- * currently support simultaneous training on both detection and classification datasets as described in the
- * YOlO9000 paper.<br>
- * <br>
- * Label format: [minibatch, 4+C, H, W]<br>
- * Order for labels depth: [x1,y1,x2,y2,(class labels)]<br>
- * x1 = box top left position<br>
- * y1 = as above, y axis<br>
- * x2 = box bottom right position<br>
- * y2 = as above y axis<br>
- * Note: labels are represented as a multiple of grid size - for a 13x13 grid, (0,0) is top left, (13,13) is bottom right<br>
- * <br>
- * Input format: [minibatch, B*(5+C), H, W]    ->      Reshape to [minibatch, B, 5+C, H, W]<br>
- * B = number of bounding boxes (determined by config)<br>
- * C = number of classes<br>
- * H = output/label height<br>
- * W = output/label width<br>
- * <br>
- * Note that mask arrays are not required - this implementation infers the presence or absence of objects in each grid
- * cell from the class labels (which should be 1-hot if an object is present, or all 0s otherwise).
- *
- * @author Alex Black
- */
 public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.objdetect.Yolo2OutputLayer> implements Serializable, IOutputLayer {
     private static final Gradient EMPTY_GRADIENT = new DefaultGradient();
 

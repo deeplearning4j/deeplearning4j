@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.io;
 
@@ -22,6 +26,7 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -79,12 +84,12 @@ public final class WritableUtils {
         byte[] bytes = readCompressedByteArray(in);
         if (bytes == null)
             return null;
-        return new String(bytes, "UTF-8");
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
 
     public static int writeCompressedString(DataOutput out, String s) throws IOException {
-        return writeCompressedByteArray(out, (s != null) ? s.getBytes("UTF-8") : null);
+        return writeCompressedByteArray(out, (s != null) ? s.getBytes(StandardCharsets.UTF_8) : null);
     }
 
     /*
@@ -96,7 +101,7 @@ public final class WritableUtils {
      */
     public static void writeString(DataOutput out, String s) throws IOException {
         if (s != null) {
-            byte[] buffer = s.getBytes("UTF-8");
+            byte[] buffer = s.getBytes(StandardCharsets.UTF_8);
             int len = buffer.length;
             out.writeInt(len);
             out.write(buffer, 0, len);
@@ -117,7 +122,7 @@ public final class WritableUtils {
             return null;
         byte[] buffer = new byte[length];
         in.readFully(buffer); // could/should use readFully(buffer,0,length)?
-        return new String(buffer, "UTF-8");
+        return new String(buffer, StandardCharsets.UTF_8);
     }
 
 

@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -47,7 +49,7 @@ CUSTOM_OP_IMPL(maxpool3dnew, 1, 1, false, 0, 14) {
     int dH = INT_ARG(10);                                                       // dilations height
     int dW = INT_ARG(11);                                                       // dilations width
     int isSameMode = INT_ARG(12);                                               // 1-SAME,  0-VALID
-    // int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
+    int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
     int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW
 
     REQUIRE_TRUE(input->rankOf() == 5, 0, "MAXPOOL3DNEW OP: rank of input array must be equal to 5, but got %i instead !", input->rankOf());
@@ -166,7 +168,7 @@ CUSTOM_OP_IMPL(maxpool3dnew_bp, 2, 1, false, 0, 14) {
     const int dH = INT_ARG(10);                                                 // dilations height
     const int dW = INT_ARG(11);                                                 // dilations width
     const int isSameMode = INT_ARG(12);                                         // 1-SAME,  0-VALID
-    // int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
+    int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
     int isNCDHW  = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW
 
     REQUIRE_TRUE(input->rankOf() == 5, 0, "MAXPOOL3DNEW_BP op: input should have rank of 5, but got %i instead", input->rankOf());

@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.nd4j.autodiff.samediff.internal.memory;
 
 import lombok.NonNull;
@@ -17,20 +37,6 @@ import org.nd4j.common.primitives.Pair;
 
 import java.util.*;
 
-/**
- * A {@link SessionMemMgr} that wraps an existing memory manager, to ensure that:<br>
- * - All arrays that are supposed to be closed, have been closed<br>
- * - Arrays are only passed to the close method exactly one (unless they are requested outputs)<br>
- * - Arrays that are passed to the close method were originally allocated by the session memory manager<br>
- * <br>
- * How to use:<br>
- * 1. Perform an inference or training iteration, as normal<br>
- * 2. Call {@link #assertAllReleasedExcept(Collection)} with the output arrays<br>
- * <p>
- * NOTE: This is intended for debugging and testing only
- *
- * @author Alex Black
- */
 @Slf4j
 public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
 

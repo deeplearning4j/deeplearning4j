@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.datasets.fetchers;
 
@@ -26,18 +30,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
-/**
- * The Street View House Numbers (SVHN) Dataset is a real-world image dataset for developing machine learning
- * and object recognition algorithms with minimal requirement on data preprocessing and formatting.
- *
- * The SVHN datasets contain 10 classes (digits) with 73257 digits for training, 26032 digits for testing, and 531131 extra.
- *
- * Datasets in "Format 1: Full Numbers" are fetched.
- *
- * See: <a href="http://ufldl.stanford.edu/housenumbers/">http://ufldl.stanford.edu/housenumbers/</a>
- *
- * @author saudet
- */
 public class SvhnDataFetcher extends CacheableExtractableDataSetFetcher {
 
     private static String BASE_URL = "http://ufldl.stanford.edu/";

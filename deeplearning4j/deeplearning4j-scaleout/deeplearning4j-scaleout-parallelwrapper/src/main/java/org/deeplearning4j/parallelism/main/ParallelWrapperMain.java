@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.parallelism.main;
 
@@ -21,6 +25,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.nn.api.Model;
@@ -33,15 +38,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.io.File;
 
-/**
- * Parallelwrapper main class.
- * Configure a {@link ParallelWrapper}
- * instance from the command line.
- *
- *
- *
- * @author Adam Gibson
- */
 @Data
 @Slf4j
 public class ParallelWrapperMain {
@@ -126,48 +122,44 @@ public class ParallelWrapperMain {
                         .build();
 
         if (dataSetIteratorFactoryClazz != null) {
-            DataSetIteratorProviderFactory dataSetIteratorProviderFactory =
-                            (DataSetIteratorProviderFactory) Class.forName(dataSetIteratorFactoryClazz).newInstance();
+            DataSetIteratorProviderFactory dataSetIteratorProviderFactory = DL4JClassLoading
+                    .createNewInstance(dataSetIteratorFactoryClazz);
+
             DataSetIterator dataSetIterator = dataSetIteratorProviderFactory.create();
             if (uiUrl != null) {
                 // it's important that the UI can report results from parallel training
                 // there's potential for StatsListener to fail if certain properties aren't set in the model
                 StatsStorageRouter remoteUIRouter = new RemoteUIStatsStorageRouter("http://" + uiUrl);
-                TrainingListener l;
-                try {
-                    l = (TrainingListener) Class.forName("org.deeplearning4j.ui.model.stats.StatsListener").getConstructor(StatsStorageRouter.class)
-                            .newInstance(new Object[]{null});
-                } catch (ClassNotFoundException e){
-                    throw new IllegalStateException("deeplearning4j-ui module must be on the classpath to use ParallelWrapperMain with the UI", e);
-                }
-                wrapper.setListeners(remoteUIRouter, l);
+                TrainingListener trainingListener = DL4JClassLoading.createNewInstance(
+                        "org.deeplearning4j.ui.model.stats.StatsListener",
+                        StatsStorageRouter.class,
+                        new Class[] { StatsStorageRouter.class },
+                        new Object[] { null });
+                wrapper.setListeners(remoteUIRouter, trainingListener);
 
             }
             wrapper.fit(dataSetIterator);
             ModelSerializer.writeModel(model, new File(modelOutputPath), true);
-
-
         } else if (multiDataSetIteratorFactoryClazz != null) {
-            MultiDataSetProviderFactory multiDataSetProviderFactory =
-                            (MultiDataSetProviderFactory) Class.forName(multiDataSetIteratorFactoryClazz).newInstance();
+            MultiDataSetProviderFactory multiDataSetProviderFactory = DL4JClassLoading
+                    .createNewInstance(multiDataSetIteratorFactoryClazz);
+
             MultiDataSetIterator iterator = multiDataSetProviderFactory.create();
             if (uiUrl != null) {
                 // it's important that the UI can report results from parallel training
                 // there's potential for StatsListener to fail if certain properties aren't set in the model
                 remoteUIRouter = new RemoteUIStatsStorageRouter("http://" + uiUrl);
-                TrainingListener l;
-                try {
-                    l = (TrainingListener) Class.forName("org.deeplearning4j.ui.model.stats.StatsListener").getConstructor(StatsStorageRouter.class)
-                            .newInstance(new Object[]{null});
-                } catch (ClassNotFoundException e){
-                    throw new IllegalStateException("deeplearning4j-ui module must be on the classpath to use ParallelWrapperMain with the UI", e);
-                }
-                wrapper.setListeners(remoteUIRouter, l);
+                TrainingListener trainingListener = DL4JClassLoading
+                        .createNewInstance(
+                                "org.deeplearning4j.ui.model.stats.StatsListener",
+                                TrainingListener.class,
+                                new Class[]{ StatsStorageRouter.class },
+                                new Object[]{ null });
+                wrapper.setListeners(remoteUIRouter, trainingListener);
 
             }
             wrapper.fit(iterator);
             ModelSerializer.writeModel(model, new File(modelOutputPath), true);
-
         } else {
             throw new IllegalStateException("Please provide a datasetiteraator or multi datasetiterator class");
         }

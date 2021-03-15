@@ -1,28 +1,33 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.converters.ImportClassMapping;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -30,10 +35,36 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.api.ops.compat.CompatSparseToDense;
 import org.nd4j.linalg.api.ops.compat.CompatStringSplit;
-import org.nd4j.linalg.api.ops.custom.*;
-import org.nd4j.linalg.api.ops.impl.broadcast.*;
-import org.nd4j.linalg.api.ops.impl.broadcast.bool.*;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
+import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
+import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
+import org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize;
+import org.nd4j.linalg.api.ops.custom.KnnMinDistance;
+import org.nd4j.linalg.api.ops.custom.SpTreeCell;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMax;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAMin;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastGradientArgs;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMax;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMin;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastRDivOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastRSubOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThan;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastNotEqual;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.LoopCond;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.grid.FreeGridOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
@@ -59,7 +90,15 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.BinaryRelativeError;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.CopyOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.PowPairwise;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RealDivOp;
-import org.nd4j.linalg.api.ops.impl.updaters.*;
+import org.nd4j.linalg.api.ops.impl.updaters.AdaDeltaUpdater;
+import org.nd4j.linalg.api.ops.impl.updaters.AdaGradUpdater;
+import org.nd4j.linalg.api.ops.impl.updaters.AdaMaxUpdater;
+import org.nd4j.linalg.api.ops.impl.updaters.AdamUpdater;
+import org.nd4j.linalg.api.ops.impl.updaters.AmsGradUpdater;
+import org.nd4j.linalg.api.ops.impl.updaters.NadamUpdater;
+import org.nd4j.linalg.api.ops.impl.updaters.NesterovsUpdater;
+import org.nd4j.linalg.api.ops.impl.updaters.RmsPropUpdater;
+import org.nd4j.linalg.api.ops.impl.updaters.SgdUpdater;
 import org.nd4j.linalg.api.ops.persistence.RestoreV2;
 import org.nd4j.linalg.api.ops.persistence.SaveV2;
 import org.nd4j.linalg.api.ops.util.PrintAffinity;
@@ -71,13 +110,18 @@ import org.reflections.Reflections;
 import java.io.File;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
+@Ignore("No longer relevant after model import rewrite.")
 public class TestOpMapping extends BaseNd4jTest {
 
     Set<Class<? extends DifferentialFunction>> subTypes;
@@ -108,7 +152,7 @@ public class TestOpMapping extends BaseNd4jTest {
         Map<String, DifferentialFunction> onnxOpNameMapping = ImportClassMapping.getOnnxOpMappingFunctions();
 
 
-        for(Class<? extends DifferentialFunction> c : subTypes){
+        for(Class<? extends DifferentialFunction> c : subTypes) {
 
             if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers()) || ILossFunction.class.isAssignableFrom(c))
                 continue;
@@ -308,9 +352,6 @@ public class TestOpMapping extends BaseNd4jTest {
         s.add(PrintVariable.class);
         s.add(PrintAffinity.class);
         s.add(Assign.class);
-
-
-
     }
 
     @Test @Ignore

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.ndarray;
 
@@ -45,8 +49,6 @@ import org.nd4j.linalg.api.ops.impl.reduce3.EqualsWithEps;
 import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
-import org.nd4j.linalg.api.ops.impl.reduce.same.Max;
-import org.nd4j.linalg.api.ops.impl.reduce.same.Min;
 import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.controlflow.Where;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
@@ -89,23 +91,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.nd4j.linalg.factory.Nd4j.*;
 
 
-/**
- * NDArray: (think numpy)
- * <p/>
- * A few things of note.
- * <p/>
- * An NDArray can have any number of dimensions.
- * <p/>
- * An NDArray is accessed via strides.
- * <p/>
- * Strides are how to index over
- * a contiguous block of data.
- * <p/>
- * This block of data has 2 orders(as of right now):
- * fortran and c
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseNDArray implements INDArray, Iterable {
 
@@ -339,6 +324,40 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this(Nd4j.createBuffer(type, shape.length == 0 ? 1 : ArrayUtil.prodLong(shape), initialize, workspace), type, shape, stride, offset, ordering);
     }
 
+    public BaseNDArray(DataType type, long[] shape, long[] paddings, long[] paddingOffsets, char ordering, MemoryWorkspace workspace) {
+
+        //calculate strides with paddings
+        int rank = shape.length;
+        if(paddings == null || paddings.length != rank ) throw new IllegalArgumentException("The length of Padding should be equal to the length of Shape");
+        long [] paddedShape = new long[rank];
+        boolean empty = false; 
+        boolean zeroOffset = paddingOffsets == null || paddingOffsets.length == 0; 
+        boolean paddingOffsetsInvalid = paddingOffsets != null && paddingOffsets.length != rank ;
+        long ews = 1;
+        if(!paddingOffsetsInvalid){
+            for(int i=0; i<rank; i++){
+                paddedShape[i] = shape[i] + paddings[i];
+                if(paddings[i] != 0) ews = 0;
+                if(shape[i] == 0) empty = true;
+                if(paddingOffsets[i]>paddings[i]){
+                    paddingOffsetsInvalid = true;
+                    break;
+                }
+            }   
+        }
+        if(!zeroOffset && paddingOffsetsInvalid) throw new IllegalArgumentException("If PaddingOffsets is not empty or zero length then its length should match the length of Paddings and also its elements should not be greater");
+
+        long[] paddedStride = ordering == 'c' ? ArrayUtil.calcStrides(paddedShape,1): ArrayUtil.calcStridesFortran(paddedShape,1);
+        long paddedAllocSize = ordering == 'c' ? paddedShape[0] * paddedStride[0] : paddedShape[rank-1] * paddedStride[rank-1];
+
+        long offset = (empty || ews == 1 || zeroOffset) ? 0 :  ArrayUtil.calcOffset(paddedShape, paddingOffsets, paddedStride);
+        DataBuffer buffer = Nd4j.createBuffer(type, paddedAllocSize, false, workspace);
+        this.data = offset > 0 ? Nd4j.createBuffer(buffer, offset, paddedAllocSize - offset) : buffer ;
+        long extras  = ArrayOptionsHelper.setOptionBit(0, type);
+        if(empty) extras = ArrayOptionsHelper.setOptionBit(extras, ArrayOptionsHelper.ATYPE_EMPTY_BIT);
+        else if(ews!=1) extras = ArrayOptionsHelper.setOptionBit(extras, ArrayOptionsHelper.HAS_PADDED_BUFFER);
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, paddedStride, ews, ordering, extras));
+    }
 
     /**
      * Create the ndarray with
@@ -3763,7 +3782,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         long prod = ArrayUtil.prodLong(shape);
 
-        if (prod != this.length()){
+        if (prod != this.length()) {
             throw new ND4JIllegalStateException("New shape length doesn't match original length: [" + prod + "] vs [" + this.length() + "]. Original shape: "+Arrays.toString(this.shape())+" New Shape: "+Arrays.toString(newShape));
         }
 
@@ -4946,7 +4965,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
     @Override
-    public String toString(@NonNull NDArrayStrings options){
+    public String toString(@NonNull NDArrayStrings options) {
         if(wasClosed())
             return "<Closed NDArray, id=" + getId() + ", dtype=" + dataType() + ", shape=" + Arrays.toString(shape()) + ">";
         if (!isCompressed() && !preventUnpack)

@@ -2,10 +2,15 @@
  *
  * Copyright (c) 2019 Konduit K.K.
  *
+/* ******************************************************************************
+ *
+ *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -36,7 +41,10 @@ namespace sd {
 #define unlikely(x)  (x)
 #endif
 
-	using zip_size_t = std::pair<size_t, size_t>;
+	struct zip_size_t{
+		Nd4jLong first;
+		Nd4jLong second;
+	};
 
 	template<size_t Index>
 	struct CoordsState :CoordsState<Index - 1> {
@@ -91,7 +99,7 @@ namespace sd {
 #define ZIP_OF_ADJUST2(x,index)  ((x).::sd::ZipCoordsState<(index)>::adjust2)
 
 
-	FORCEINLINE void   index2coords_C(Nd4jLong index, const Nd4jLong rank, const Nd4jLong* bases, Nd4jLong* coords) {
+	_CUDA_HD FORCEINLINE void   index2coords_C(Nd4jLong index, const Nd4jLong rank, const Nd4jLong* bases, Nd4jLong* coords) {
 		for (size_t i = rank - 1; i > 0; --i) {
 			coords[i] = index % bases[i];
 			index /= bases[i];
@@ -99,7 +107,7 @@ namespace sd {
 		coords[0] = index;      // last iteration 
 	}
 
-	FORCEINLINE void   index2coords_F(Nd4jLong index, const Nd4jLong rank, const Nd4jLong* bases, Nd4jLong* coords) {
+	_CUDA_HD FORCEINLINE void   index2coords_F(Nd4jLong index, const Nd4jLong rank, const Nd4jLong* bases, Nd4jLong* coords) {
 
 		for (size_t i = 0; i < rank - 1; i++) {
 			coords[i] = index % bases[i];
@@ -108,7 +116,7 @@ namespace sd {
 		coords[rank - 1] = index;      // last iteration
 	}
 
-	FORCEINLINE size_t offset_from_coords(const Nd4jLong* strides, const Nd4jLong* coords, const  Nd4jLong& rank) {
+	_CUDA_HD FORCEINLINE size_t offset_from_coords(const Nd4jLong* strides, const Nd4jLong* coords, const  Nd4jLong& rank) {
 
 		size_t offset = 0;
 		size_t rank_4 = rank & -4;
@@ -126,7 +134,7 @@ namespace sd {
 	}
 
 
-	FORCEINLINE zip_size_t offset_from_coords(const Nd4jLong* x_strides, const Nd4jLong* z_strides, const Nd4jLong* coords, const Nd4jLong& rank) {
+	_CUDA_HD FORCEINLINE zip_size_t offset_from_coords(const Nd4jLong* x_strides, const Nd4jLong* z_strides, const Nd4jLong* coords, const Nd4jLong& rank) {
 
 		zip_size_t offset = { 0,0 };
 		size_t rank_4 = rank & -4;
@@ -155,7 +163,7 @@ namespace sd {
 	}
 
 	template<size_t Rank, size_t Index, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 == Index), size_t>::type
 		coord_inc_n(CoordsState<Rank - 1>& cbs, size_t last_offset) {
 
@@ -173,7 +181,7 @@ namespace sd {
 	}
 
 	template<size_t Rank, size_t Index, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 != Index), size_t >::type
 		coord_inc_n(CoordsState<Rank - 1>& cbs, size_t last_offset) {
 
@@ -195,13 +203,13 @@ namespace sd {
 	}
 
 	template<size_t Rank, size_t Index = 0, bool Last_Index_Faster = true>
-	FORCEINLINE size_t inc_coords(CoordsState<Rank - 1>& cbs, size_t last_offset) {
+	_CUDA_HD FORCEINLINE size_t inc_coords(CoordsState<Rank - 1>& cbs, size_t last_offset) {
 
 		return coord_inc_n<Rank, Index, Last_Index_Faster>(cbs,/* 1,*/ last_offset/*, 0*/);
 	}
 
 	template<size_t Rank, size_t rankIndex = 0, bool Last_Index_Faster = true>
-	FORCEINLINE size_t inc_coords_ews(CoordsState<Rank - 1>& cbs, size_t last_offset, size_t ews) {
+	_CUDA_HD FORCEINLINE size_t inc_coords_ews(CoordsState<Rank - 1>& cbs, size_t last_offset, size_t ews) {
 		if (ews == 1) {
 			constexpr size_t Ind = StridesOrderInd<Rank, rankIndex, Last_Index_Faster>();
 			return last_offset + STRIDE(cbs, Ind);
@@ -210,7 +218,7 @@ namespace sd {
 	}
 
 	template<size_t Rank, size_t rankIndex, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 == rankIndex), zip_size_t>::type
 		coord_inc_n(ZipCoordsState<Rank - 1>& cbs, zip_size_t last_offset) {
 
@@ -229,7 +237,7 @@ namespace sd {
 	}
 
 	template<size_t Rank, size_t rankIndex, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 != rankIndex), zip_size_t >::type
 		coord_inc_n(ZipCoordsState<Rank - 1>& cbs, zip_size_t last_offset) {
 
@@ -254,14 +262,14 @@ namespace sd {
 	}
 
 	template<size_t Rank, size_t rankIndex = 0, bool Last_Index_Faster = true>
-	FORCEINLINE zip_size_t inc_coords(ZipCoordsState<Rank - 1>& cbs, zip_size_t last_offset) {
+	_CUDA_HD FORCEINLINE zip_size_t inc_coords(ZipCoordsState<Rank - 1>& cbs, zip_size_t last_offset) {
 
 		return coord_inc_n<Rank, rankIndex, Last_Index_Faster>(cbs, last_offset);
 	}
 
 
 	template<size_t Rank, size_t rankIndex = 0, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 == rankIndex), size_t>::type
 		init_coords(CoordsState<Rank - 1>& cbs, const Nd4jLong index, const Nd4jLong* bases, const Nd4jLong* strides, size_t offset = 0) {
 		constexpr size_t Ind = StridesOrderInd<Rank, rankIndex, Last_Index_Faster>();
@@ -276,7 +284,7 @@ namespace sd {
 
 
 	template<size_t Rank, size_t rankIndex = 0, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 != rankIndex), size_t>::type
 		init_coords(CoordsState<Rank - 1>& cbs, const Nd4jLong index, const Nd4jLong* bases, const Nd4jLong* strides, size_t offset = 0) {
 		constexpr size_t Ind = StridesOrderInd<Rank, rankIndex, Last_Index_Faster>();
@@ -292,14 +300,14 @@ namespace sd {
 
 
 	template<size_t Rank, size_t rankIndex = 0, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 == rankIndex), bool>::type
 		eq_coords(CoordsState<Rank - 1>& cbs, const Nd4jLong* coords) {
 		return COORDS(cbs, rankIndex) == coords[rankIndex];
 	}
 
 	template<size_t Rank, size_t rankIndex = 0>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 != rankIndex), bool>::type
 		eq_coords(CoordsState<Rank - 1>& cbs, const Nd4jLong* coords) {
 		return COORDS(cbs, rankIndex) == coords[rankIndex] && eq_coords<Rank, rankIndex + 1>(cbs, coords);
@@ -307,21 +315,21 @@ namespace sd {
 
 
 	template<size_t Rank, size_t rankIndex = 0, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 == rankIndex), bool>::type
 		eq_zip_coords(ZipCoordsState<Rank - 1>& cbs, const Nd4jLong* coords) {
 		return ZIP_COORDS(cbs, rankIndex) == coords[rankIndex];
 	}
 
 	template<size_t Rank, size_t rankIndex = 0>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 != rankIndex), bool>::type
 		eq_zip_coords(ZipCoordsState<Rank - 1>& cbs, const Nd4jLong* coords) {
 		return ZIP_COORDS(cbs, rankIndex) == coords[rankIndex] && eq_zip_coords<Rank, rankIndex + 1>(cbs, coords);
 	}
 
 	template<size_t Rank, size_t rankIndex = 0, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 == rankIndex), zip_size_t>::type
 		init_coords(ZipCoordsState<Rank - 1>& cbs, const Nd4jLong index, const Nd4jLong* bases, const Nd4jLong* x_strides, const Nd4jLong* z_strides, zip_size_t offset = {}) {
 		constexpr size_t Ind = StridesOrderInd<Rank, rankIndex, Last_Index_Faster>();
@@ -337,7 +345,7 @@ namespace sd {
 	}
 
 	template<size_t Rank, size_t rankIndex = 0, bool Last_Index_Faster = true>
-	FORCEINLINE
+	_CUDA_HD FORCEINLINE
 		typename std::enable_if<(Rank - 1 != rankIndex), zip_size_t>::type
 		init_coords(ZipCoordsState<Rank - 1>& cbs, const Nd4jLong index, const Nd4jLong* bases, const Nd4jLong* x_strides, const Nd4jLong* z_strides, zip_size_t offset = {}) {
 		constexpr size_t Ind = StridesOrderInd<Rank, rankIndex, Last_Index_Faster>();
@@ -355,7 +363,7 @@ namespace sd {
 
 	//inc coords for non constant Ranks
 	template<bool Last_Index_Faster = true>
-	FORCEINLINE size_t inc_coords(const Nd4jLong* bases, const Nd4jLong* strides, Nd4jLong* coords, size_t last_offset, const size_t rank, const size_t skip = 0) {
+	_CUDA_HD FORCEINLINE size_t inc_coords(const Nd4jLong* bases, const Nd4jLong* strides, Nd4jLong* coords, size_t last_offset, const size_t rank, const size_t skip = 0) {
 
 		Nd4jLong  val;
 		for (int i = rank - skip - 1; i >= 0; i--) {
@@ -374,7 +382,7 @@ namespace sd {
 	}
 
 	template<>
-	FORCEINLINE size_t inc_coords<false>(const Nd4jLong* bases, const Nd4jLong* strides, Nd4jLong* coords, size_t last_offset, const size_t rank, const size_t skip) {
+	_CUDA_HD FORCEINLINE size_t inc_coords<false>(const Nd4jLong* bases, const Nd4jLong* strides, Nd4jLong* coords, size_t last_offset, const size_t rank, const size_t skip) {
 
 		Nd4jLong  val;
 		for (int i = skip; i < rank; i++) {
@@ -394,7 +402,7 @@ namespace sd {
 
 
 	template<bool Last_Index_Faster = true>
-	FORCEINLINE zip_size_t inc_coords(const Nd4jLong* bases, const Nd4jLong* x_strides, const  Nd4jLong* z_strides, Nd4jLong* coords, zip_size_t last_offset, const size_t rank, const size_t skip = 0) {
+	_CUDA_HD FORCEINLINE zip_size_t inc_coords(const Nd4jLong* bases, const Nd4jLong* x_strides, const  Nd4jLong* z_strides, Nd4jLong* coords, zip_size_t last_offset, const size_t rank, const size_t skip = 0) {
 
 		Nd4jLong  val = 0;
 		for (int i = rank - skip - 1; i >= 0; i--) {
@@ -415,7 +423,7 @@ namespace sd {
 	}
 
 	template<>
-	FORCEINLINE zip_size_t inc_coords<false>(const Nd4jLong* bases, const Nd4jLong* x_strides, const  Nd4jLong* z_strides, Nd4jLong* coords, zip_size_t last_offset, const size_t rank, const size_t skip) {
+	_CUDA_HD FORCEINLINE zip_size_t inc_coords<false>(const Nd4jLong* bases, const Nd4jLong* x_strides, const  Nd4jLong* z_strides, Nd4jLong* coords, zip_size_t last_offset, const size_t rank, const size_t skip) {
 
 		Nd4jLong  val = 0;
 		for (int i = skip; i < rank; i++) {
@@ -445,7 +453,7 @@ namespace sd {
 
 
 	template<bool Last_Index_Faster = true>
-	FORCEINLINE triple_size_t inc_coords(const Nd4jLong* bases, const Nd4jLong* x_strides, const  Nd4jLong* y_strides, const  Nd4jLong* z_strides, Nd4jLong* coords, triple_size_t last_offset, const size_t rank, const size_t skip = 0) {
+	_CUDA_HD FORCEINLINE triple_size_t inc_coords(const Nd4jLong* bases, const Nd4jLong* x_strides, const  Nd4jLong* y_strides, const  Nd4jLong* z_strides, Nd4jLong* coords, triple_size_t last_offset, const size_t rank, const size_t skip = 0) {
 
 		Nd4jLong  val = 0;
 		for (int i = rank - skip - 1; i >= 0; i--) {
@@ -468,7 +476,7 @@ namespace sd {
 	}
 
 	template<>
-	FORCEINLINE triple_size_t inc_coords<false>(const Nd4jLong* bases, const Nd4jLong* x_strides, const  Nd4jLong* y_strides, const  Nd4jLong* z_strides, Nd4jLong* coords, triple_size_t last_offset, const size_t rank, const size_t skip) {
+	_CUDA_HD FORCEINLINE triple_size_t inc_coords<false>(const Nd4jLong* bases, const Nd4jLong* x_strides, const  Nd4jLong* y_strides, const  Nd4jLong* z_strides, Nd4jLong* coords, triple_size_t last_offset, const size_t rank, const size_t skip) {
 
 		Nd4jLong  val = 0;
 		for (int i = skip; i < rank; i++) {
@@ -491,7 +499,7 @@ namespace sd {
 		return last_offset;
 	}
 
-	FORCEINLINE triple_size_t offset_from_coords(const Nd4jLong* x_strides, const  Nd4jLong* y_strides, const  Nd4jLong* z_strides, const Nd4jLong* coords, const Nd4jLong& rank) {
+	_CUDA_HD FORCEINLINE triple_size_t offset_from_coords(const Nd4jLong* x_strides, const  Nd4jLong* y_strides, const  Nd4jLong* z_strides, const Nd4jLong* coords, const Nd4jLong& rank) {
 
 		triple_size_t offset = { 0,0 ,0 };
 		size_t rank_4 = rank & -4;
@@ -522,7 +530,7 @@ namespace sd {
 
 
 	template<bool Last_Index_Faster = true>
-	FORCEINLINE Nd4jLong getLength(const Nd4jLong* bases, int rank, int skip = 0)
+	_CUDA_HD FORCEINLINE Nd4jLong getLength(const Nd4jLong* bases, int rank, int skip = 0)
 	{
 		if (skip < 0 || skip >= rank) skip = 0;
 		Nd4jLong total = 1;
@@ -534,7 +542,7 @@ namespace sd {
 
 
 	template<>
-	FORCEINLINE Nd4jLong getLength<false>(const Nd4jLong* bases, int rank, int skip)
+	_CUDA_HD FORCEINLINE Nd4jLong getLength<false>(const Nd4jLong* bases, int rank, int skip)
 	{
 		if (skip < 0 || skip >= rank) skip = 0;
 		Nd4jLong total = 1;
@@ -547,7 +555,7 @@ namespace sd {
 
 
 	template<bool Last_Index_Faster = true>
-	FORCEINLINE Nd4jLong getLength(const Nd4jLong* bases, int rank, int skip, Nd4jLong& outSkippedLength)
+	_CUDA_HD FORCEINLINE Nd4jLong getLength(const Nd4jLong* bases, int rank, int skip, Nd4jLong& outSkippedLength)
 	{
 		if (skip < 0 || skip >= rank) skip = 0;
 		Nd4jLong total = 1;
@@ -568,7 +576,7 @@ namespace sd {
 
 
 	template<>
-	FORCEINLINE Nd4jLong getLength<false>(const Nd4jLong* bases, int rank, int skip, Nd4jLong& outSkippedLength)
+	_CUDA_HD FORCEINLINE Nd4jLong getLength<false>(const Nd4jLong* bases, int rank, int skip, Nd4jLong& outSkippedLength)
 	{
 		if (skip < 0 || skip >= rank) skip = 0;
 		if (skip > 0) {
@@ -597,7 +605,7 @@ namespace sd {
 	if squash is True then  it will attempt to minimize the output ( for both orders) and the tail
 */
 
-	FORCEINLINE void rePartition(char order, const std::vector<int>& dimensions, const size_t rank, const Nd4jLong* bases, const Nd4jLong* strides, Nd4jLong(&new_bases)[MAX_RANK], Nd4jLong(&new_strides)[MAX_RANK], int& first_begin, int& first_end, int& second_begin, int& second_end, bool first_squash = false, bool second_squash = true) {
+	_CUDA_HD FORCEINLINE void rePartition(char order, const std::vector<int>& dimensions, const size_t rank, const Nd4jLong* bases, const Nd4jLong* strides, Nd4jLong(&new_bases)[MAX_RANK], Nd4jLong(&new_strides)[MAX_RANK], int& first_begin, int& first_end, int& second_begin, int& second_end, bool first_squash = false, bool second_squash = true) {
 
 		bool indices[MAX_RANK] = {};
 		int ind = 0;

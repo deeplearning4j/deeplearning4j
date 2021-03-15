@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.graph;
 
@@ -20,6 +24,7 @@ import lombok.Data;
 import lombok.val;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.layers.InputTypeUtil;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -27,15 +32,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
- * For example, the activations may be combined by addition, subtraction, multiplication (product), average or by
- * selecting the maximum.<br>
- * Addition, Average, Max and Product may use an arbitrary number of input arrays. Note that in the case of subtraction,
- * only two inputs may be used.
- *
- * @author Alex Black
- */
 @Data
 public class ElementWiseVertex extends GraphVertex {
 
@@ -125,6 +121,8 @@ public class ElementWiseVertex extends GraphVertex {
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         if (vertexInputs.length == 1)
             return vertexInputs[0];
+        InputTypeUtil.convertMultipleTypes(vertexInputs);
+
         InputType first = vertexInputs[0];
         if (first.getType() != InputType.Type.CNN) {
             //FF, RNN or flat CNN data inputs
@@ -166,6 +164,58 @@ public class ElementWiseVertex extends GraphVertex {
                 }
             }
         }
+
+        if(vertexInputs.length < 2)
+            return vertexInputs[0];
+
+        if(first.getType() == InputType.Type.FF) {
+            //could be 1s and a higher value. broadcast to the higher value where possible
+            InputType.InputTypeFeedForward maxInputType = null;
+            for(int i = 0 ; i < vertexInputs.length; i++) {
+                InputType.InputTypeFeedForward feedForward = (InputType.InputTypeFeedForward) vertexInputs[i];
+                if(maxInputType == null)
+                    maxInputType = feedForward;
+                else {
+                    if(maxInputType.getSize() < feedForward.getSize()) {
+                        maxInputType = feedForward;
+                    }
+                }
+            }
+
+            return maxInputType;
+        } else if(first.getType() == InputType.Type.CNNFlat) {
+            //could be 1s and a higher value. broadcast to the higher value where possible
+            InputType.InputTypeConvolutionalFlat maxInputType = null;
+            for(int i = 0 ; i < vertexInputs.length; i++) {
+                InputType.InputTypeConvolutionalFlat feedForward = (InputType.InputTypeConvolutionalFlat) vertexInputs[i];
+                if(maxInputType == null)
+                    maxInputType = feedForward;
+                else {
+                    if(maxInputType.getFlattenedSize() < feedForward.getFlattenedSize()) {
+                        maxInputType = feedForward;
+                    }
+                }
+            }
+
+            return maxInputType;
+        } else if(first.getType() == InputType.Type.RNN) {
+            //could be 1s and a higher value. broadcast to the higher value where possible
+            InputType.InputTypeRecurrent maxInputType = null;
+            for(int i = 0 ; i < vertexInputs.length; i++) {
+                InputType.InputTypeRecurrent feedForward = (InputType.InputTypeRecurrent) vertexInputs[i];
+                if(maxInputType == null)
+                    maxInputType = feedForward;
+                else {
+                    if(maxInputType.getTimeSeriesLength() < feedForward.getTimeSeriesLength()) {
+                        maxInputType = feedForward;
+                    }
+                }
+            }
+
+            return maxInputType;
+        }
+
+
         return first; //Same output shape/size as
     }
 

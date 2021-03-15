@@ -1,19 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 //  @author raver119@gmail.com
@@ -30,13 +33,11 @@ using namespace sd;
 
 class RNGTests : public testing::Test {
 private:
-    //Nd4jLong *_bufferA;
-    //Nd4jLong *_bufferB;
+
 
 public:
     long _seed = 119L;
-    //sd::random::RandomBuffer *_rngA;
-    //sd::random::RandomBuffer *_rngB;
+
     sd::graph::RandomGenerator _rngA;
     sd::graph::RandomGenerator _rngB;
 
@@ -45,10 +46,7 @@ public:
     NDArray* nexp2 = NDArrayFactory::create_<float>('c', {10, 10});
 
     RNGTests() {
-        //_bufferA = new Nd4jLong[100000];
-        //_bufferB = new Nd4jLong[100000];
-        //_rngA = (sd::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
-        //_rngB = (sd::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferB);
+
         _rngA.setStates(_seed * 0xDEADBEEF * 13, _seed * 0xDEADBEEF * 7);
         _rngB.setStates(_seed * 0xDEADBEEF * 13, _seed * 0xDEADBEEF * 7);
         nexp0->assign(-1.0f);
@@ -57,10 +55,6 @@ public:
     }
 
     ~RNGTests() {
-        //destroyRandom(_rngA);
-        //destroyRandom(_rngB);
-        //delete[] _bufferA;
-        //delete[] _bufferB;
 
         delete nexp0;
         delete nexp1;
@@ -103,7 +97,6 @@ TEST_F(RNGTests, TestGenerator_SGA_1) {
         array.r<float>(idx) = x;
     }
     auto minimum = array.reduceNumber(reduce::AMin);
-    minimum.printBuffer("Randomly float min on 1M array");
     ASSERT_EQ(123, generator.rootState());
     ASSERT_EQ(456, generator.nodeState());
 }
@@ -118,13 +111,11 @@ TEST_F(RNGTests, Test_Dropout_1) {
 
     float prob[] = {0.5f};
 
-    //x0.applyRandom(random::DropOut, _rngA, nullptr, &x0, prob);
-    //x1.applyRandom(random::DropOut, _rngB, nullptr, &x1, prob);
+
     RandomLauncher::applyDropOut(LaunchContext::defaultContext(), _rngA, &x0, 0.5);
     RandomLauncher::applyDropOut(LaunchContext::defaultContext(), _rngB, &x1, 0.5);
     ASSERT_TRUE(x0.equalsTo(&x1));
-    //x0.printIndexedBuffer("Dropout");
-    // this check is required to ensure we're calling wrong signature
+
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
     ASSERT_FALSE(x0.equalsTo(nexp2));
@@ -139,13 +130,11 @@ TEST_F(RNGTests, Test_DropoutInverted_1) {
 
     float prob[] = {0.5f};
 
-    //x0.template applyRandom<randomOps::DropOutInverted<float>>(_rngA, nullptr, &x0, prob);
-    //x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
+
     RandomLauncher::applyInvertedDropOut(LaunchContext::defaultContext(), _rngA, &x0, 0.5);
     RandomLauncher::applyInvertedDropOut(LaunchContext::defaultContext(), _rngB, &x1, 0.5);
     ASSERT_TRUE(x0.equalsTo(&x1));
-    //x0.printIndexedBuffer("DropoutInverted");
-    // this check is required to ensure we're calling wrong signature
+
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
     ASSERT_FALSE(x0.equalsTo(nexp2));
@@ -189,7 +178,6 @@ TEST_F(RNGTests, Test_Launcher_3) {
     RandomLauncher::applyAlphaDropOut(LaunchContext::defaultContext(), _rngA, &x0, 0.5f, 0.2f, 0.1f, 0.3f);
     RandomLauncher::applyAlphaDropOut(LaunchContext::defaultContext(), _rngB, &x1, 0.5f, 0.2f, 0.1f, 0.3f);
 
-    //x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
@@ -204,9 +192,6 @@ TEST_F(RNGTests, Test_Uniform_1) {
     RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
-    x0.printLinearBuffer();
-    x1.printLinearBuffer();
-
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
@@ -215,7 +200,6 @@ TEST_F(RNGTests, Test_Uniform_1) {
 
     for (int e = 0; e < x0.lengthOf(); e++) {
         float v = x0.e<float>(e);
-        nd4j_printf("%f\n", v);
         ASSERT_TRUE(v >= 1.0f && v <= 2.0f);
     }
 }
@@ -253,8 +237,6 @@ TEST_F(RNGTests, Test_Uniform_11) {
     if (v > max)
       max = v;
   }
-
-  nd4j_printf("Max value: %i\n", (int) max);
 }
 
 TEST_F(RNGTests, Test_Uniform_12) {
@@ -269,7 +251,6 @@ TEST_F(RNGTests, Test_Uniform_12) {
       min = v;
   }
 
-  nd4j_printf("Max value: %.8f; Min value: %.8f\n", (float) max, (float) min);
   ASSERT_LT(max, 1.0f);
   ASSERT_GE(min, 0.0);
 }
@@ -286,7 +267,6 @@ TEST_F(RNGTests, Test_Uniform_13) {
       min = v;
   }
 
-  nd4j_printf("Max value: %.8f; Min value: %.8f\n", (float) max, (float) min);
   ASSERT_LT(max, 1.0);
   ASSERT_GE(min, 0.0);
 }
@@ -323,8 +303,6 @@ TEST_F(RNGTests, Test_Gaussian_1) {
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngA, &x0, 1.0f, 2.0f);
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
-    //x0.printIndexedBuffer("x0");
-    //x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
@@ -339,8 +317,6 @@ TEST_F(RNGTests, Test_Gaussian_21) {
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngA, &x0, 0.0f, 1.0f);
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 0.0f, 1.0f);
 
-//    x0.printIndexedBuffer("x0");
-//    x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
@@ -348,14 +324,9 @@ TEST_F(RNGTests, Test_Gaussian_21) {
     ASSERT_FALSE(x0.equalsTo(nexp2));
     sd::ops::moments op;
     auto result = op.evaluate({&x0}, {}, {});
-    //x0.printIndexedBuffer("X0 Normal");
-    //x1.printIndexedBuffer("X1 Normal");
     ASSERT_TRUE(result.status() == Status::OK());
     auto mean = result.at(0);
     auto variance = result.at(1);
-
-    // mean->printIndexedBuffer("Mean");
-    // variance->printIndexedBuffer("Variance");
 
     ASSERT_NEAR(sd::math::nd4j_abs(mean->e<float>(0)), 0.f, 0.2f);
     ASSERT_NEAR(variance->e<float>(0), 1.0f, 0.2f);
@@ -371,8 +342,6 @@ TEST_F(RNGTests, Test_Gaussian_22) {
     RandomLauncher::fillGaussian(sd::LaunchContext::defaultContext(), _rngA, &x0, 0.0f, 1.0f);
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 0.0f, 1.0f);
 
-    //x0.printIndexedBuffer("x0");
-    //x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
@@ -380,14 +349,11 @@ TEST_F(RNGTests, Test_Gaussian_22) {
     ASSERT_FALSE(x0.equalsTo(nexp2));
     sd::ops::moments op;
     auto result = op.evaluate({&x0}, {}, {});
-    //x0.printIndexedBuffer("X0 Normal");
-    //x1.printIndexedBuffer("X1 Normal");
+
     ASSERT_TRUE(result.status() == Status::OK());
     auto mean0 = result.at(0);
     auto variance0 = result.at(1);
 
-    //mean0->printIndexedBuffer("Mean");
-    //variance0->printIndexedBuffer("Variance");
     ASSERT_NEAR(sd::math::nd4j_abs(mean0->e<float>(0)), 0.f, 1.0e-3f);
     ASSERT_NEAR(variance0->e<float>(0), 1.0f, 1.e-3f);
 
@@ -398,8 +364,8 @@ TEST_F(RNGTests, Test_Gaussian_3) {
 
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngA, &x0, 0.0, 1.0);
 
-    auto mean = x0.meanNumber(); //.e<double>(0);
-    auto stdev = x0.varianceNumber(sd::variance::SummaryStatsStandardDeviation, false);//.e<double>(0);
+    auto mean = x0.meanNumber();
+    auto stdev = x0.varianceNumber(sd::variance::SummaryStatsStandardDeviation, false);
     auto meanExp = NDArrayFactory::create<double>(0.);
     auto devExp = NDArrayFactory::create<double>(1.);
     ASSERT_TRUE(meanExp.equalsTo(mean, 1.e-3));
@@ -435,15 +401,11 @@ TEST_F(RNGTests, Test_Truncated_1) {
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    // mean.printIndexedBuffer("Mean 1.0");
     auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    //deviation /= (double)x1.lengthOf();
-    // deviation.printIndexedBuffer("Deviation should be 2.0");
-    // x1.printIndexedBuffer("Distribution TN");
-
 }
+
 TEST_F(RNGTests, Test_Truncated_2) {
     auto x0 = NDArrayFactory::create<float>('c', {1000, 1000});
     auto x1 = NDArrayFactory::create<float>('c', {1000, 1000});
@@ -452,20 +414,10 @@ TEST_F(RNGTests, Test_Truncated_2) {
     RandomLauncher::fillTruncatedNormal(LaunchContext::defaultContext(), _rngB, &x1, 1.0f, 2.0f);
 
     ASSERT_TRUE(x0.equalsTo(&x1));
-
-    //ASSERT_FALSE(x0.equalsTo(nexp0));
-    //ASSERT_FALSE(x0.equalsTo(nexp1));
-    //ASSERT_FALSE(x0.equalsTo(nexp2));
-
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    // mean.printIndexedBuffer("Mean 1.0");
-    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    //deviation /= (double)x1.lengthOf();
-    // deviation.printIndexedBuffer("Deviation should be 2.0");
-    //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.5);
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.5);
 }
@@ -480,40 +432,24 @@ TEST_F(RNGTests, Test_Truncated_21) {
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     auto mean0 = x0.reduceNumber(reduce::Mean);
-    // mean0.printIndexedBuffer("0Mean 1.0");
-    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation0 = x0.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    // deviation0.printIndexedBuffer("0Deviation should be 2.0");
-
-    //ASSERT_FALSE(x0.equalsTo(nexp0));
-    //ASSERT_FALSE(x0.equalsTo(nexp1));
-    //ASSERT_FALSE(x0.equalsTo(nexp2));
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    // mean.printIndexedBuffer("Mean 1.0");
-    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    //deviation /= (double)x1.lengthOf();
-    // deviation.printIndexedBuffer("Deviation should be 2.0");
-    //x1.printIndexedBuffer("Distribution TN");
+
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.002);
     ASSERT_NEAR(deviation.e<float>(0), 2.f, 0.5);
     sd::ops::moments op;
     auto result = op.evaluate({&x0}, {}, {}, {}, {}, false);
-
-    // result.at(0)->printBuffer("MEAN");
-    // result.at(1)->printBuffer("VARIANCE");
 
     sd::ops::reduce_min minOp;
     sd::ops::reduce_max maxOp;
 
     auto minRes = minOp.evaluate({&x1}, {}, {}, {});
     auto maxRes = maxOp.evaluate({&x0}, {}, {}, {});
-    // minRes->at(0)->printBuffer("MIN for Truncated");
-    // maxRes->at(0)->printBuffer("MAX for Truncated");
 }
 
 TEST_F(RNGTests, Test_Truncated_22) {
@@ -526,25 +462,13 @@ TEST_F(RNGTests, Test_Truncated_22) {
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     auto mean0 = x0.reduceNumber(reduce::Mean);
-    // mean0.printIndexedBuffer("0Mean 2.0");
-    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation0 = x0.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    // deviation0.printIndexedBuffer("0Deviation should be 4.0");
-
-    //ASSERT_FALSE(x0.equalsTo(nexp0));
-    //ASSERT_FALSE(x0.equalsTo(nexp1));
-    //ASSERT_FALSE(x0.equalsTo(nexp2));
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    // mean.printIndexedBuffer("Mean 2.0");
-    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    //deviation /= (double)x1.lengthOf();
-    // deviation.printIndexedBuffer("Deviation should be 4.0");
-    //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 2.f, 0.01);
     ASSERT_NEAR(deviation.e<float>(0), 4.f, 0.52);
     sd::ops::moments op;
@@ -555,9 +479,6 @@ TEST_F(RNGTests, Test_Truncated_22) {
 
     auto minRes = minOp.evaluate({&x1}, {}, {}, {});
     auto maxRes = maxOp.evaluate({&x0}, {}, {}, {});
-    // minRes->at(0)->printBuffer("MIN for Truncated2");
-    // maxRes->at(0)->printBuffer("MAX for Truncated2");
-
 }
 
 TEST_F(RNGTests, Test_Truncated_23) {
@@ -570,38 +491,22 @@ TEST_F(RNGTests, Test_Truncated_23) {
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     auto mean0 = x0.reduceNumber(reduce::Mean);
-    // mean0.printIndexedBuffer("0Mean 2.0");
-    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation0 = x0.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    // deviation0.printIndexedBuffer("0Deviation should be 4.0");
-
-    //ASSERT_FALSE(x0.equalsTo(nexp0));
-    //ASSERT_FALSE(x0.equalsTo(nexp1));
-    //ASSERT_FALSE(x0.equalsTo(nexp2));
 
     /* Check up distribution */
     auto mean = x1.reduceNumber(reduce::Mean);
-    // mean.printIndexedBuffer("Mean 2.0");
-    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
-    //deviation /= (double)x1.lengthOf();
-    // deviation.printIndexedBuffer("Deviation should be 4.0");
-    //x1.printIndexedBuffer("Distribution TN");
     ASSERT_NEAR(mean.e<float>(0), 0.f, 0.01);
     ASSERT_NEAR(deviation.e<float>(0), 1.f, 0.5);
     sd::ops::moments op;
     auto result = op.evaluate({&x0});
-    // result->at(0)->printBuffer("MEAN");
-    // result->at(1)->printBuffer("VARIANCE");
     sd::ops::reduce_min minOp;
     sd::ops::reduce_max maxOp;
 
     auto minRes = minOp.evaluate({&x1}, {}, {}, {});
     auto maxRes = maxOp.evaluate({&x0}, {}, {}, {});
-    // minRes->at(0)->printBuffer("MIN for Truncated3");
-    // maxRes->at(0)->printBuffer("MAX for Truncated3");
 
 }
 
@@ -616,8 +521,6 @@ TEST_F(RNGTests, Test_Truncated_3) {
 
     // Check up distribution
     auto mean = x1.reduceNumber(reduce::Mean);
-    // mean.printIndexedBuffer("Mean 1.0");
-    //auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     ASSERT_NEAR(mean.e<float>(0), 1.f, 0.001);
@@ -633,9 +536,6 @@ TEST_F(RNGTests, Test_Binomial_1) {
     RandomLauncher::fillBinomial(LaunchContext::defaultContext(), _rngB, &x1, 3, 2.0f);
 
     ASSERT_TRUE(x0.equalsTo(&x1));
-
-    //nexp2->printIndexedBuffer("nexp2");
-    //x0.printIndexedBuffer("x0");
 
     ASSERT_FALSE(x0.equalsTo(nexp0));
     ASSERT_FALSE(x0.equalsTo(nexp1));
@@ -669,7 +569,6 @@ TEST_F(RNGTests, Test_Uniform_SGA_3) {
 
     RandomLauncher::fillUniform(LaunchContext::defaultContext(), _rngB, &x1, -sd::DataTypeUtils::template max<float>(), sd::DataTypeUtils::template max<float>());
     auto minimumU = x1.reduceNumber(reduce::AMin);
-    minimumU.printBuffer("\nMinimum");
 }
 
 TEST_F(RNGTests, Test_Gaussian_2) {
@@ -827,17 +726,14 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1) {
     auto z = result.at(0);
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
-    //
-    z->printBuffer("\nExponential1");
+
     auto mean = z->reduceNumber(reduce::Mean);
     auto variance = z->varianceNumber(variance::SummaryStatsVariance, false);
-    mean.printBuffer("Mean for exponential with param 0.25 (4 exp) is");
-    variance.printBuffer("Variance for exponential with param 0.25 (16 exp) is");
+
     ASSERT_FALSE(nexp0->equalsTo(z));
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
 
-//    delete result;
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_1_SGA) {
@@ -852,12 +748,10 @@ TEST_F(RNGTests, Test_ExponentialDistribution_1_SGA) {
     auto z = result.at(0);
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
-    //
-    z->printBuffer("\nExponential2");
+
     auto mean = z->reduceNumber(reduce::Mean);
     auto variance = z->varianceNumber(variance::SummaryStatsVariance, false);
-    mean.printBuffer("Mean for exponential with param 1.0 (1 exp) is");
-    variance.printBuffer("Variance for exponential with param 1. (1 exp) is");
+
     ASSERT_FALSE(nexp0->equalsTo(z));
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
@@ -878,60 +772,16 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2_SGA) {
     auto z = result.at(0);
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
-    //
-//    z->printBuffer("\nExponential2+");
+
     auto mean = z->reduceNumber(reduce::Mean);
     auto variance = z->varianceNumber(variance::SummaryStatsVariance, false);
-    mean.printBuffer("Mean for exponential with param 1.0 (1 exp) is");
-    variance.printBuffer("Variance for exponential with param 1. (1 exp) is");
+
     ASSERT_FALSE(nexp0->equalsTo(z));
     ASSERT_FALSE(nexp1->equalsTo(z));
     ASSERT_FALSE(nexp2->equalsTo(z));
     mean = exp0.reduceNumber(reduce::Mean);
     variance = exp0.varianceNumber(variance::SummaryStatsVariance, false);
-    mean.printBuffer("Mean for exponential with param 2.0 (1/2 exp) is");
-    variance.printBuffer("Variance for exponential with param 2. (1/2 exp) is");
-}
 
-TEST_F(RNGTests, Test_ExponentialDistribution_3_SGA) {
-    auto x = NDArrayFactory::create<Nd4jLong>('c', {2}, {1000, 1000});
-    auto exp0 = NDArrayFactory::create<double>('c', {1000, 1000});
-    RandomGenerator oc(2716049175077475646L, -6182841917129177862L);
-    auto expMean = NDArrayFactory::create<double>(0.5f);
-    auto expVar = NDArrayFactory::create<double>(0.25f);
-    sd::ops::random_exponential op;
-    RandomLauncher::fillExponential(exp0.getContext(), oc, &exp0, 2.f);
-
-    auto result = op.evaluate({&x}, {1.});
-    ASSERT_EQ(Status::OK(), result.status());
-
-    auto z = result.at(0);
-    //ASSERT_TRUE(exp0.isSameShape(z));
-    //ASSERT_FALSE(exp0.equalsTo(z));
-    //
-//    z->printBuffer("\nExponential2+");
-   auto mean = z->reduceNumber(reduce::Mean);
-   auto variance = z->varianceNumber(variance::SummaryStatsVariance, false);
-   mean.printBuffer("Mean");
-   variance.printBuffer("Variance");
-    ASSERT_NEAR(mean.e<double>(0), 1.f, 1.e-2f);
-    ASSERT_NEAR(variance.e<double>(0), 1.f, 1.e-2f);
-//    mean.printBuffer("Mean for exponential with param 1.0 (1 exp) is");
-//    variance.printBuffer("Variance for exponential with param 1. (1 exp) is");
-//    ASSERT_FALSE(nexp0->equalsTo(z));
-//    ASSERT_FALSE(nexp1->equalsTo(z));
-//    ASSERT_FALSE(nexp2->equalsTo(z));
-    mean = exp0.reduceNumber(reduce::Mean);
-    variance = exp0.varianceNumber(variance::SummaryStatsVariance, false);
-    mean.printBuffer("Mean for exponential with param 2.0 (1/2 exp) is");
-    variance.printBuffer("Variance for exponential with param 2. (1/4 exp) is");
-    ASSERT_TRUE(mean.equalsTo(expMean, 1.e-3));
-    ASSERT_TRUE(variance.equalsTo(expVar, 1.e-3));
-    RandomLauncher::fillExponential(exp0.getContext(), oc, &exp0, 1.f);
-    mean = exp0.reduceNumber(reduce::Mean);
-    variance = exp0.varianceNumber(variance::SummaryStatsVariance, false);
-    mean.printBuffer("Mean for exponential with param 1.0 (1 exp) is");
-    variance.printBuffer("Variance for exponential with param 1.0 (1 exp) is");
 }
 
 TEST_F(RNGTests, Test_ExponentialDistribution_2) {
@@ -971,11 +821,8 @@ TEST_F(RNGTests, Test_PoissonDistribution_1) {
     ASSERT_EQ(Status::OK(), result.status());
 
     auto z = result.at(0);
-//    z->printIndexedBuffer("Poisson distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
-
-
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_1) {
@@ -991,11 +838,9 @@ TEST_F(RNGTests, Test_GammaDistribution_1) {
     ASSERT_EQ(Status::OK(), result.status());
 
     auto z = result.at(0);
-//    z->printIndexedBuffer("Gamma distribution");
+
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
-
-
 }
 
 TEST_F(RNGTests, Test_GammaDistribution_2) {
@@ -1012,7 +857,7 @@ TEST_F(RNGTests, Test_GammaDistribution_2) {
     ASSERT_EQ(Status::OK(), result.status());
 
     auto z = result.at(0);
-//    z->printIndexedBuffer("Gamma distribution");
+
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 }
@@ -1031,7 +876,6 @@ TEST_F(RNGTests, Test_GammaDistribution_3) {
     ASSERT_EQ(Status::OK(), result.status());
 
     auto z = result.at(0);
-//    z->printIndexedBuffer("Gamma distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
@@ -1127,7 +971,6 @@ TEST_F(RNGTests, Test_UniformDistribution_05) {
 
     sd::ops::reduce_max checkOp;
     auto checkResult = checkOp.evaluate({z});
-    checkResult[0]->printIndexedBuffer("Max on uniform with 0 to 1 on 100M cases is");
 }
 
 namespace sd {
@@ -1168,7 +1011,6 @@ TEST_F(RNGTests, Test_Reproducibility_1) {
 
             bool t = arrayE->equalsTo(arrayT);
             if (!t) {
-                // nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
                 ASSERT_TRUE(false);
             }
 
@@ -1200,19 +1042,15 @@ TEST_F(RNGTests, Test_Reproducibility_2) {
 
             bool t = arrayE->equalsTo(arrayT);
             if (!t) {
-                // nd4j_printf("Failed at iteration [%i] for array [%i]\n", e, a);
 
                 for (Nd4jLong f = 0; f < arrayE->lengthOf(); f++) {
                     double x = arrayE->e<double>(f);
                     double y = arrayT->e<double>(f);
 
                     if (sd::math::nd4j_re(x, y) > 0.1) {
-                        // nd4j_printf("E[%lld] %f != T[%lld] %f\n", (long long) f, (float) x, (long long) f, (float) y);
                         throw std::runtime_error("boom");
                     }
                 }
-
-                // just breaker, since test failed
                 ASSERT_TRUE(false);
             }
 
@@ -1235,8 +1073,6 @@ TEST_F(RNGTests, Test_Uniform_4) {
     auto sumA = x1 - mean; //.reduceNumber(reduce::Sum);
 
     auto deviation = x1.varianceNumber(variance::SummaryStatsVariance, false);
-    //deviation /= (double)x1.lengthOf();
-    // deviation.printIndexedBuffer("Deviation should be 1/12 (0.083333)");
 
     ASSERT_NEAR(mean.e<double>(0), 1.5, 1e-3);
     ASSERT_NEAR(1/12., deviation.e<double>(0), 1e-3);
@@ -1250,8 +1086,6 @@ TEST_F(RNGTests, test_choice_1) {
 
     RandomGenerator rng(119, 256);
     NativeOpExecutioner::execRandom(sd::LaunchContext ::defaultContext(), random::Choice, &rng, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), prob->buffer(), prob->shapeInfo(), prob->specialBuffer(), prob->specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr);
-
-    // z.printIndexedBuffer("z");
 
     delete x;
     delete prob;
@@ -1367,7 +1201,7 @@ TEST_F(RNGTests, test_multinomial_5) {
     ASSERT_EQ(Status::OK(), op.execute(rng, { &probs, &samples }, { &output }, {}, { 1 }, {}, {}, false));
     auto deviation = output.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     auto mean = output.meanNumber();
-    // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
+
     // theoretical values for binomial
     ASSERT_NEAR(0.5, deviation.e<double>(0), 4e-3); // 1000000 3e-3);
     ASSERT_NEAR(0.5, mean.e<double>(0), 4e-3); // 1000000 3e-3);
@@ -1383,7 +1217,7 @@ TEST_F(RNGTests, test_multinomial_5) {
 
     deviation = outputR->varianceNumber(variance::SummaryStatsStandardDeviation, false);
     mean = outputR->meanNumber();
-    // printf("Random seed - Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
+
     ASSERT_NEAR(0.5, deviation.e<double>(0), 45e-3); // 1000000 35e-3);
     ASSERT_NEAR(0.5, mean.e<double>(0), 45e-3); // 1000000 35e-3);
 
@@ -1425,13 +1259,13 @@ TEST_F(RNGTests, test_multinomial_6) {
     for (int i = 0; i < countsR.lengthOf(); i++) {
         auto c = countsR.e<double>(i);
         auto p = probExpect.e<double>(i);
-        // printf("Get freq : %f  Expect freq: %f \n", c / Samples, p);
+
         ASSERT_NEAR((c / Samples), p, 45e-3); // 1000000 35e-3);
     }
 
     auto deviation = outputR->varianceNumber(variance::SummaryStatsStandardDeviation, false);
     auto mean = outputR->meanNumber();
-    // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
+
     ASSERT_NEAR(1.2175, deviation.e<double>(0), 45e-3); // 1000000 35e-3);
     ASSERT_NEAR(2.906, mean.e<double>(0), 45e-3); // 1000000 35e-3);
 
@@ -1454,13 +1288,12 @@ TEST_F(RNGTests, test_multinomial_6) {
     for (int i = 0; i < counts.lengthOf(); i++) {
         auto c = counts.e<double>(i);
         auto p = probExpect.e<double>(i);
-        // printf("Get freq : %f  Expect freq: %f \n", c / Samples, p);
+
         ASSERT_NEAR((c / Samples), p, 4e-3); // 1000000 3e-3);
     }
 
     deviation = output.varianceNumber(variance::SummaryStatsStandardDeviation, false);
     mean = output.meanNumber();
-    // printf("Var: %f  Mean: %f \n", deviation.e<double>(0), mean.e<double>(0));
     ASSERT_NEAR(1.2175, deviation.e<double>(0), 5e-3); // 1000000 3e-3);
     ASSERT_NEAR(2.906, mean.e<double>(0), 5e-3); // 1000000 3e-3);
 }

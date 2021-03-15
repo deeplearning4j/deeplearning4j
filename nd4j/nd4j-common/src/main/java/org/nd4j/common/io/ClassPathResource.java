@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.common.io;
 
@@ -20,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.config.ND4JClassLoading;
 
 import java.io.*;
 import java.net.MalformedURLException;
@@ -31,12 +36,6 @@ import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- * A slightly upgraded version of spring's
- * classpath resource
- *
- *
- */
 public class ClassPathResource extends AbstractFileResolvingResource {
 
     private final String path;
@@ -55,7 +54,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
         }
 
         this.path = pathToUse;
-        this.classLoader = classLoader != null ? classLoader : ClassUtils.getDefaultClassLoader();
+        this.classLoader = classLoader != null ? classLoader : ND4JClassLoading.getNd4jClassloader();
     }
 
     public ClassPathResource(String path, Class<?> clazz) {
@@ -283,7 +282,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
         StringBuilder builder = new StringBuilder("class path resource [");
         String pathToUse = this.path;
         if (this.clazz != null && !pathToUse.startsWith("/")) {
-            builder.append(ClassUtils.classPackageAsResourcePath(this.clazz));
+            builder.append(ResourceUtils.classPackageAsResourcePath(this.clazz));
             builder.append('/');
         }
 
@@ -320,7 +319,7 @@ public class ClassPathResource extends AbstractFileResolvingResource {
     private URL getUrl() {
         ClassLoader loader = null;
         try {
-            loader = Thread.currentThread().getContextClassLoader();
+            loader = ND4JClassLoading.getNd4jClassloader();
         } catch (Exception e) {
             // do nothing
         }

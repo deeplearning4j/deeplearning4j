@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -120,12 +122,11 @@ namespace functions {
 
         template <typename X, typename Z>
         template <typename OpType>
-        __device__ void IndexReduce<X, Z>::aggregatePartials(IndexValue<X> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *vextraParams) {
+        __device__ void IndexReduce<X, Z>::aggregatePartials(IndexValue<X> *sPartials, Nd4jLong tid, Nd4jLong numElements, void *vextraParams) {
             // start the shared memory loop on the next power of 2 less
             // than the block size.  If block size is not a power of 2,
             // accumulate the intermediate sums in the remainder range.
             auto extraParams = static_cast<X*>(vextraParams);
-            IndexValue<X> *sPartials = *sPartialsRef;
             Nd4jLong floorPow2 = blockDim.x;
 
             if (floorPow2 & (floorPow2 - 1)) {
@@ -191,12 +192,7 @@ namespace functions {
             __shared__ volatile bool resultScalar;
 
             //shared memory space for storing intermediate results
-            __shared__ IndexValue<X>* sPartials;
-            if(threadIdx.x == 0) {
-                extern __shared__ unsigned char shmem[];
-                sPartials = reinterpret_cast<IndexValue<X>*>(shmem);
-            }
-            __syncthreads();
+            __shared__ IndexValue<X> sPartials[CUDA_BLOCK_SIZE];
 
             sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
@@ -261,7 +257,7 @@ namespace functions {
                         }
 
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
+                        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
@@ -282,7 +278,7 @@ namespace functions {
                         }
 
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
+                        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, tadLength),extraParams);
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
@@ -313,7 +309,7 @@ namespace functions {
                 sPartials[threadIdx.x] = reduction;
                 __syncthreads();
 
-                aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, (int) n),extraParams);
+                aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(blockDim.x, (int) n),extraParams);
                 __syncthreads();
 
                 if (gridDim.x > 1) {
@@ -345,7 +341,7 @@ namespace functions {
                         }
 
                         __syncthreads();
-                        aggregatePartials<OpType>(&sPartials, threadIdx.x, sd::math::nd4j_min<int>(gridDim.x, blockDim.x),extraParams);
+                        aggregatePartials<OpType>(sPartials, threadIdx.x, sd::math::nd4j_min<int>(gridDim.x, blockDim.x),extraParams);
 
                         __syncthreads();
                         if (tid == 0) {

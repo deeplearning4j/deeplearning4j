@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -192,7 +194,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
 				dLdw->assign(E.reduceNumber(reduce::Sum));
 			else if(weights != weightsBroad) {
 				std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-				E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
+				E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
 			}
 			else
 				dLdw->assign(E);
@@ -219,7 +221,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
 					*dLdw = 0.;
 				else if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-					((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
+					((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum)).reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
 				}
 				else
 					dLdw->assign((E * sum - (E * *weightsBroad).reduceNumber(reduce::Sum)) / (sum*sum));
@@ -247,7 +249,7 @@ CUSTOM_OP_IMPL(mean_sqerr_loss_grad, 3, 3, false, 0, 1) {
 					dLdw->assign(E.reduceNumber(reduce::Sum) / double(numOfNonZeroWeights));
 				else if(weights != weightsBroad) {
 					std::vector<int> axesToReduceAlong = ShapeUtils::evalBroadcastBackwardAxis(weights->shapeInfo(), weightsBroad->shapeInfo());
-					E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true, false, false);
+					E.reduceAlongDimension(reduce::Sum, *dLdw, axesToReduceAlong, true);
 					*dLdw /= numOfNonZeroWeightsScalar;
 				}
 				else

@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -22,7 +24,7 @@
 
 #ifndef INDEXREDUCE_H_
 #define INDEXREDUCE_H_
-#include "../helpers/shape.h"
+#include <helpers/shape.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -63,7 +65,7 @@ namespace functions {
                                      const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset);
 
     template<typename OpType>
-	static __device__ void aggregatePartials(IndexValue<X> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *extraParams);
+	static __device__ void aggregatePartials(IndexValue<X> *sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *extraParams);
 
 
     template<typename OpType>

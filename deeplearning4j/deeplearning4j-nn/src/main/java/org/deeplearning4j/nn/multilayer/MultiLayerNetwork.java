@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.multilayer;
 
@@ -34,7 +38,9 @@ import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -51,10 +57,7 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
-import org.deeplearning4j.util.CrashReportingUtil;
-import org.deeplearning4j.util.ModelSerializer;
-import org.deeplearning4j.util.NetworkUtils;
-import org.deeplearning4j.util.OutputLayerUtil;
+import org.deeplearning4j.util.*;
 import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
@@ -99,14 +102,6 @@ import java.util.*;
 ;
 
 
-/**
- * MultiLayerNetwork is a neural network with multiple layers in a stack, and usually an output layer.<br>
- * For neural networks with a more complex connection architecture, use {@link org.deeplearning4j.nn.graph.ComputationGraph}
- * which allows for an arbitrary directed acyclic graph connection structure between layers.
- * MultiLayerNetwork is trainable via backprop, with optional unsupervised layerwise training, depending on the type of layers it contains.
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class MultiLayerNetwork implements Serializable, Classifier, Layer, NeuralNetwork {
 
@@ -998,8 +993,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return List of activations (including the input), detached from any workspace
      */
     protected synchronized List<INDArray> ffToLayerActivationsDetached(boolean train, @NonNull FwdPassType fwdPassType,
-                                                          boolean storeLastForTBPTT, int layerIndex, @NonNull INDArray input,
-                                                          INDArray fMask, INDArray lMask, boolean clearInputs){
+                                                                       boolean storeLastForTBPTT, int layerIndex, @NonNull INDArray input,
+                                                                       INDArray fMask, INDArray lMask, boolean clearInputs){
         setInput(input);
         setLayerMaskArrays(fMask, lMask);
 
@@ -1089,7 +1084,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @return
      */
     protected synchronized List<INDArray> ffToLayerActivationsInWs(int layerIndex, @NonNull FwdPassType fwdPassType, boolean storeLastForTBPTT,
-                                                      @NonNull INDArray input, INDArray fMask, INDArray lMask){
+                                                                   @NonNull INDArray input, INDArray fMask, INDArray lMask){
         setInput(input);
         setLayerMaskArrays(fMask, lMask);
 
@@ -1125,7 +1120,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         boolean traceLog = log.isTraceEnabled();
 
-        for( int i=0; i<=layerIndex; i++ ){
+        for( int i = 0; i <=layerIndex; i++) {
             try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
                 if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
                     input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
@@ -1307,7 +1302,40 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                     if (fwdPassType == FwdPassType.STANDARD) {
                         //Standard feed-forward case
-                        input = layers[i].activate(input, train, mgr);
+                        if(i > 0 && ConvolutionUtils.layerHasConvolutionLayout(layers[i - 1].conf().getLayer())
+                                && ConvolutionUtils.layerHasConvolutionLayout(layers[i].conf().getLayer())) {
+
+                            CNN2DFormat preLayerFormat = ConvolutionUtils.getFormatForLayer(layers[i - 1].conf().getLayer());
+                            CNN2DFormat currLayerFormat = ConvolutionUtils.getFormatForLayer(layers[i].conf().getLayer());
+                            if(preLayerFormat != currLayerFormat) {
+                                //NHWC case
+                                if(preLayerFormat == CNN2DFormat.NCHW) {
+                                    input = input.permute(0,3,1,2);
+                                }
+                                //NCHW case
+                                else if(preLayerFormat == CNN2DFormat.NHWC) {
+                                    input = input.permute(0,2,3,1);
+
+                                }
+                                else
+                                    throw new IllegalStateException("No CNN2DDataFormat type found for previous layer!");
+                            }
+
+                            input = layers[i].activate(input, train, mgr);
+                        } else if(i > 0 && Convolution1DUtils.hasRnnDataFormat(layers[i - 1].conf().getLayer())
+                                && Convolution1DUtils.hasRnnDataFormat(layers[i].conf().getLayer())) {
+                            RNNFormat preLayerFormat = Convolution1DUtils.getRnnFormatFromLayer(layers[i - 1].conf().getLayer());
+                            RNNFormat currLayerFormat = Convolution1DUtils.getRnnFormatFromLayer(layers[i].conf().getLayer());
+                            //permute for next layer
+                            if(preLayerFormat != currLayerFormat) {
+                                input = input.permute(0,2,1);
+                            }
+
+                            input = layers[i].activate(input, train, mgr);
+
+
+                        } else
+                            input = layers[i].activate(input, train, mgr);
                     } else if (fwdPassType == FwdPassType.RNN_TIMESTEP) {
                         //rnnTimeStep case
                         if (layers[i] instanceof RecurrentLayer) {
@@ -2275,7 +2303,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     }
 
     private void fitHelper(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask){
-        if(numParams() == 0){
+        if(numParams() == 0) {
             //No op: can't fit a network with 0 parameters
             return;
         }
@@ -2495,9 +2523,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         "different minibatches have different output array ranks - first minibatch shape %s, last minibatch shape %s", firstOutputShape, currShape);
                 for( int i=1; i<currShape.length; i++ ){    //Skip checking minibatch dimension, fine if this varies
                     Preconditions.checkState(firstOutputShape[i] == currShape[i], "Current output shape does not match first" +
-                            " output array shape at position %s: all dimensions must match other than the first dimension.\n" +
-                            " For variable length output size/length use cases such as for RNNs with multiple sequence lengths," +
-                            " use one of the other (non iterator) output methods. First batch output shape: %s, current batch output shape: %s",
+                                    " output array shape at position %s: all dimensions must match other than the first dimension.\n" +
+                                    " For variable length output size/length use cases such as for RNNs with multiple sequence lengths," +
+                                    " use one of the other (non iterator) output methods. First batch output shape: %s, current batch output shape: %s",
                             i, firstOutputShape, currShape);
                 }
             }

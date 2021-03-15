@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -2115,6 +2117,34 @@ TEST_F(DeclarableOpsTests14, Reshape2) {
     delete y;
     delete block;
     delete variableSpace;
+}
+
+TEST_F(DeclarableOpsTests14, Flatten2d1) {
+    auto x = NDArrayFactory::create<float>('c', { 3, 4, 5 });
+    auto zAssertion = NDArrayFactory::create<float>('c', { 3, 20 });
+
+    sd::ops::flatten_2d op;
+    auto result = op.evaluate({ &x }, {}, { 1 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(result.at(0)->isSameShape(zAssertion));
+}
+
+TEST_F(DeclarableOpsTests14, Flatten2d2) {
+    auto x = NDArrayFactory::create<float>('c', { 2,3, 4, 5 });
+    auto zAssertion = NDArrayFactory::create<float>('c', { 6, 20 });
+
+    sd::ops::flatten_2d op;
+    auto result = op.evaluate({ &x }, {}, { -2 });
+
+    ASSERT_EQ(ND4J_STATUS_OK, result.status());
+
+    auto z = result.at(0);
+
+    ASSERT_TRUE(result.at(0)->isSameShape(zAssertion));
 }
 
 TEST_F(DeclarableOpsTests14, Reshape3) {

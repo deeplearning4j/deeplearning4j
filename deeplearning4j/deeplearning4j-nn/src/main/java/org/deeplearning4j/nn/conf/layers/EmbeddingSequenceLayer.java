@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.layers;
 
@@ -38,18 +42,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * Embedding layer for sequences: feed-forward layer that expects fixed-length number (inputLength) of integers/indices
- * per example as input, ranged from 0 to numClasses - 1. This input thus has shape [numExamples, inputLength] or shape
- * [numExamples, 1, inputLength].<br> The output of this layer is 3D (sequence/time series), namely of shape
- * [numExamples, nOut, inputLength].
- * <b>Note</b>: can only be used as the first layer for a network<br>
- * <b>Note 2</b>: For a given example index i, the output is activationFunction(weights.getRow(i) + bias), hence the
- * weight rows can be considered a vector/embedding of each index.<br> Note also that embedding layer has an activation
- * function (set to IDENTITY to disable) and optional bias (which is disabled by default)
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
@@ -136,7 +128,14 @@ public class EmbeddingSequenceLayer extends FeedForwardLayer {
                 InputType.InputTypeRecurrent f = (InputType.InputTypeRecurrent) inputType;
                 this.nIn = f.getSize();
             }
-        } else {
+        } else if(inputType.getType() == InputType.Type.FF) {
+            if(nIn <= 0 || override) {
+                InputType.InputTypeFeedForward feedForward = (InputType.InputTypeFeedForward) inputType;
+                this.nIn = feedForward.getSize();
+                this.inferInputLength = true;
+            }
+
+        }  else {
             super.setNIn(inputType, override);
         }
 

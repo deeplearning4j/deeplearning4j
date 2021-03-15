@@ -1,0 +1,61 @@
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
+jobs:
+  # Wait for up to a minute for previous run to complete, abort if not done by then
+  pre-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  windows-x86_64-cuda-11-2:
+    needs: pre-ci
+    runs-on: windows-2019
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v2
+      - name: Use existing msys2 to setup environment
+        uses: ./.github/actions/msys2-base-setup
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-windows@master
+        env:
+          cuda: 11.2.1
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+          server-id: sonatype-nexus-snapshots
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name:  Run cuda build
+        shell: cmd
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: ossrh
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+        run: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          set MSYSTEM=MINGW64
+          set "CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2"
+          dir "%CUDA_PATH%"
+          dir "%CUDA_PATH%\lib"
+          which cmake
+          set "PATH=C:\msys64\usr\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.2\lib\x64;%PATH%"
+          echo "Running cuda build"
+          bash ./change-cuda-versions.sh 11.2
+          sudo apt-get autoremove
+          sudo apt-get clean
+          mvn  -Possrh -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Djavacpp.platform=windows-x86_64   -pl ":nd4j-cuda-11.2,:libnd4j,:deeplearning4j-cuda-11.2" --also-make -Dlibnd4j.platform=windows-x86_64 -Pcuda -Dlibnd4j.chip=cuda -Pcuda clean --batch-mode deploy -DskipTests
+

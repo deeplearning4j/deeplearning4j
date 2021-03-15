@@ -1,13 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>nd4j-shade</artifactId>
         <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-shade</artifactId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
-    <modelVersion>4.0.0</modelVersion>
 
     <artifactId>protobuf</artifactId>
 
@@ -19,14 +41,14 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.8.0</version>
+            <version>${google.protobuf.version}</version>
             <!-- Without optional=true, users will still be able to import this dependency and compile, yet will get a NoClassDefFoundError at runtime -->
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java-util</artifactId>
-            <version>3.8.0</version>
+            <version>${google.protobuf.version}</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
@@ -38,26 +60,25 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>26.0-android</version>
+            <version>${guava.android.version}</version>
             <optional>true</optional>
         </dependency>
     </dependencies>
 
-
     <profiles>
         <profile>
             <id>custom-lifecycle</id>
-
             <activation>
-                <property><name>!skip.custom.lifecycle</name></property>
+                <property>
+                    <name>!skip.custom.lifecycle</name>
+                </property>
             </activation>
             <build>
                 <plugins>
-
                     <plugin>
                         <groupId>org.apache.portals.jetspeed-2</groupId>
                         <artifactId>jetspeed-mvn-maven-plugin</artifactId>
-                        <version>2.3.1</version>
+                        <version>${jetspeed-mvn-maven-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>compile-and-pack</id>
@@ -71,12 +92,11 @@
                             <dependency>
                                 <groupId>org.apache.maven.shared</groupId>
                                 <artifactId>maven-invoker</artifactId>
-                                <version>2.2</version>
+                                <version>${maven-invoker-plugin.version}</version>
                             </dependency>
                         </dependencies>
                         <configuration>
                             <targets combine.children="merge">
-
                                 <target>
                                     <id>create-shaded-jars</id>
                                     <dir>@rootdir@/nd4j/nd4j-shade/protobuf/</dir>
@@ -85,12 +105,10 @@
                                         <skip.custom.lifecycle>true</skip.custom.lifecycle>
                                     </properties>
                                 </target>
-
                             </targets>
                             <defaultTarget>create-shaded-jars</defaultTarget>
                         </configuration>
                     </plugin>
-
                 </plugins>
             </build>
         </profile>
@@ -98,12 +116,10 @@
 
     <build>
         <plugins>
-
             <!-- Disable Maven Lint plugin in this module. For some reason it chokes on this module (internal NPE) and we don't need it anyway here -->
             <plugin>
                 <groupId>com.lewisd</groupId>
                 <artifactId>lint-maven-plugin</artifactId>
-                <version>0.0.11</version>
                 <executions>
                     <execution>
                         <id>pom-lint</id>
@@ -111,8 +127,6 @@
                     </execution>
                 </executions>
             </plugin>
-
-
             <!--
             Use Maven Shade plugin to add a shaded version of the Protobuf dependencies, that can be imported by
             including this module (org.nd4j.protobuf) as a dependency.
@@ -122,25 +136,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>${maven-shade-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>reference.conf</resource>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-
                 <configuration>
                     <!--
                     Important configuration options here:
@@ -160,7 +155,6 @@
                     <shadedArtifactAttached>false</shadedArtifactAttached>
                     <createDependencyReducedPom>true</createDependencyReducedPom>
                     <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
-
                     <artifactSet>
                         <includes>
                             <include>com.google.protobuf:*</include>
@@ -168,7 +162,6 @@
                             <include>com.google.guava:*</include>
                         </includes>
                     </artifactSet>
-
                     <relocations>
                         <!-- Protobuf dependencies -->
                         <relocation>
@@ -181,69 +174,16 @@
                             <shadedPattern>org.nd4j.shade.protobuf.common</shadedPattern>
                         </relocation>
                     </relocations>
-
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <forceCreation>true</forceCreation>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>empty-javadoc-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>javadoc</classifier>
-                            <classesDirectory>${basedir}/javadoc</classesDirectory>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>empty-sources-jar</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>sources</classifier>
-                            <classesDirectory>${basedir}/src</classesDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.0.0</version>
-                <executions>
-                    <execution>
-                        <id>unpack</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>unpack</goal>
-                        </goals>
-                        <configuration>
-                            <artifactItems>
-                                <artifactItem>
-                                    <groupId>org.nd4j</groupId>
-                                    <artifactId>protobuf</artifactId>
-                                    <version>${project.version}</version>
-                                    <type>jar</type>
-                                    <overWrite>false</overWrite>
-                                    <outputDirectory>${project.build.directory}/classes/</outputDirectory>
-                                    <includes>**/*.class,**/*.xml</includes>
-                                </artifactItem>
-                            </artifactItems>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
-
 </project>

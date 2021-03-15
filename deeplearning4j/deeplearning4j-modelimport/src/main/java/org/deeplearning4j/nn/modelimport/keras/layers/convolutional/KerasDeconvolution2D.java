@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
@@ -36,11 +40,6 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getH
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
 
-/**
- * Imports a 2D Deconvolution layer from Keras.
- *
- * @author Max Pumperla
- */
 @Slf4j
 @Data
 @EqualsAndHashCode(callSuper = false)
@@ -96,6 +95,7 @@ public class KerasDeconvolution2D extends KerasConvolution {
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
                 .weightInit(init)
+                .dataFormat(KerasConvolutionUtils.getDataFormatFromConfig(layerConfig,conf))
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
@@ -113,6 +113,8 @@ public class KerasDeconvolution2D extends KerasConvolution {
         if (weightConstraint != null)
             builder.constrainWeights(weightConstraint);
         this.layer = builder.build();
+        Deconvolution2D deconvolution2D = (Deconvolution2D) layer;
+        deconvolution2D.setDefaultValueOverriden(true);
     }
 
     /**

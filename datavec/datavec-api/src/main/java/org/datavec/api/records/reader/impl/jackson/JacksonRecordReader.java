@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.records.reader.impl.jackson;
 
@@ -28,40 +32,15 @@ import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
-import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.core.type.TypeReference;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/**
- * RecordReader using Jackson.<br>
- * <b>Design for this record reader</b>:<br>
- * - Support for JSON, XML and YAML: <i>one record per file only</i>, via Jackson ObjectMapper:<br>
- * <ul style="list-style-type:none">
- * <li>- JSON: new ObjectMapper(new JsonFactory())</li>
- * <li>- YAML: new ObjectMapper(new YAMLFactory()) (requires jackson-dataformat-yaml dependency)</li>
- * <li>- XML: new ObjectMapper(new XmlFactory()) (requires jackson-dataformat-xml dependency)</li>
- * </ul>
- * - User provides a list of fields to load, using {@link FieldSelection}. This complicates configuration for simple structures
- * (user has to specify every field to load), however this allows us to parse files where:
- * <ul style="list-style-type:none">
- * <li>- The fields in the json/xml/yaml is not in a consistent order (for example, JSON makes no guarantees about order).
- *     The order of output fields is provided via the FieldSelection object.</li>
- * <li>- Fields may be missing in some files (output will include an (optionally) specified writable for the missing value,
- *     defined again in FieldSelection)</li>
- * <li>- The fields in the json/yaml/xml files may have arbitrary nested structure: For example, {@code a: b: c: d: someValue}</li>
- * </ul>
- * - Optional support for appending a label based on the path of the file, using {@link PathLabelGenerator}<br>
- * - Support for shuffling of records (with an optional RNG seed)<br>
- *
- * @author Alex Black
- */
 public class JacksonRecordReader extends BaseRecordReader {
 
     private static final TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {};

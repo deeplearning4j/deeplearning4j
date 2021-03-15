@@ -1,34 +1,36 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg;
-
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.nd4j.common.config.ND4JClassLoading;
+import org.nd4j.common.io.ReflectionUtils;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.util.*;
-
-import static org.junit.Assume.assumeTrue;
-
 
 /**
  * Base Nd4j test
@@ -37,6 +39,18 @@ import static org.junit.Assume.assumeTrue;
 @RunWith(Parameterized.class)
 @Slf4j
 public abstract class BaseNd4jTest extends BaseND4JTest {
+    private static List<Nd4jBackend> BACKENDS = new ArrayList<>();
+    static {
+        List<String> backendsToRun = Nd4jTestSuite.backendsToRun();
+
+        ServiceLoader<Nd4jBackend> loadedBackends = ND4JClassLoading.loadService(Nd4jBackend.class);
+        for (Nd4jBackend backend : loadedBackends) {
+            if (backend.canRun() && backendsToRun.contains(backend.getClass().getName())
+                    || backendsToRun.isEmpty()) {
+                BACKENDS.add(backend);
+            }
+        }
+    }
 
     protected Nd4jBackend backend;
     protected String name;
@@ -59,24 +73,10 @@ public abstract class BaseNd4jTest extends BaseND4JTest {
         this(backend.getClass().getName() + UUID.randomUUID().toString(), backend);
     }
 
-    private static List<Nd4jBackend> backends;
-    static {
-        ServiceLoader<Nd4jBackend> loadedBackends = ServiceLoader.load(Nd4jBackend.class);
-        Iterator<Nd4jBackend> backendIterator = loadedBackends.iterator();
-        backends = new ArrayList<>();
-        List<String> backendsToRun = Nd4jTestSuite.backendsToRun();
-
-        while (backendIterator.hasNext()) {
-            Nd4jBackend backend = backendIterator.next();
-            if (backend.canRun() && backendsToRun.contains(backend.getClass().getName()) || backendsToRun.isEmpty())
-                backends.add(backend);
-        }
-    }
-
     @Parameterized.Parameters(name = "{index}: backend({0})={1}")
     public static Collection<Object[]> configs() {
         List<Object[]> ret = new ArrayList<>();
-        for (Nd4jBackend backend : backends)
+        for (Nd4jBackend backend : BACKENDS)
             ret.add(new Object[] {backend});
         return ret;
     }
@@ -95,16 +95,11 @@ public abstract class BaseNd4jTest extends BaseND4JTest {
      */
     public static Nd4jBackend getDefaultBackend() {
         String cpuBackend = "org.nd4j.linalg.cpu.nativecpu.CpuBackend";
-        //String cpuBackend = "org.nd4j.linalg.cpu.CpuBackend";
-        String gpuBackend = "org.nd4j.linalg.jcublas.JCublasBackend";
-        String clazz = System.getProperty(DEFAULT_BACKEND, cpuBackend);
-        try {
-            return (Nd4jBackend) Class.forName(clazz).newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
+        String defaultBackendClass = System.getProperty(DEFAULT_BACKEND, cpuBackend);
 
+        Class<Nd4jBackend> backendClass = ND4JClassLoading.loadClassByName(defaultBackendClass);
+        return ReflectionUtils.newInstance(backendClass);
+    }
 
     /**
      * The ordering for this test

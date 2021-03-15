@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.lossfunctions;
 
@@ -28,15 +32,21 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.lossfunctions.impl.*;
+import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossL1;
+import org.nd4j.linalg.lossfunctions.impl.LossL2;
+import org.nd4j.linalg.lossfunctions.impl.LossMAE;
+import org.nd4j.linalg.lossfunctions.impl.LossMAPE;
+import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.lossfunctions.impl.LossMSLE;
+import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
+import org.nd4j.linalg.lossfunctions.impl.LossSparseMCXENT;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 09/09/2016.
- */
 public class LossFunctionTest extends BaseNd4jTest {
 
     public LossFunctionTest(Nd4jBackend backend) {

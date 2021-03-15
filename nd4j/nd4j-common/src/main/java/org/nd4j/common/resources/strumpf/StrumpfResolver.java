@@ -1,6 +1,27 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.nd4j.common.resources.strumpf;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.common.config.ND4JSystemProperties;
@@ -14,25 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Resource resources based on Strumpf resource files, or standard files<br>
- * https://github.com/deeplearning4j/strumpf
- * <br>
- * Note that resource files (those with path ending with {@link #REF}) point to remote files, that will be downloaded,
- * decompressed and cached locally.<br>
- * The default cache location is {@link #DEFAULT_CACHE_DIR}; this can be overridden by setting the ND4JSystemProperties#RESOURCES_CACHE_DIR
- * system property.<br>
- * <br>
- * <br>
- * Two resolution methods are supported:<br>
- * 1. Resolving from the classpath<br>
- * 2. Resolving from one of any specified directories<br>
- * <br>
- * Resolving from specified directories: You can point this to one or more local directories (rather than relying on
- * classpath) when resolving resources. This can be done by setting the {@link ND4JSystemProperties#RESOURCES_LOCAL_DIRS}
- *
- * @author Alex Black
- */
+@Slf4j
 public class StrumpfResolver implements Resolver {
     public static final String DEFAULT_CACHE_DIR = new File(System.getProperty("user.home"), ".cache/nd4j/test_resources").getAbsolutePath();
     public static final String REF = ".resource_reference";
@@ -169,8 +172,8 @@ public class StrumpfResolver implements Resolver {
 
     @Override
     public InputStream asStream(String resourcePath) {
-
         File f = asFile(resourcePath);
+        log.debug("Resolved resource " + resourcePath + " as file at absolute path " + f.getAbsolutePath());
         try {
             return new BufferedInputStream(new FileInputStream(f));
         } catch (FileNotFoundException e) {

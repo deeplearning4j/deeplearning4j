@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -24,6 +26,7 @@
 #include <helpers/ShapeBuilders.h>
 #include <execution/AffinityManager.h>
 #include <helpers/ConstantHelper.h>
+#include <helpers/ShapeUtils.h>
 #include <array/PrimaryPointerDeallocator.h>
 #include <array/CudaPointerDeallocator.h>
 
@@ -142,7 +145,7 @@ ConstantShapeBuffer&  ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcas
     ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(maxShapeInfo)), Nd4jLong);
 
     newShapeInfo[0] = shape::rank(maxShapeInfo);
-
+    newShapeInfo[2*shape::rank(maxShapeInfo)+1] = 0;
     sd::ArrayOptions::copyDataType(newShapeInfo, minShapeInfo);                     // type
     newShapeInfo[2 * newShapeInfo[0] + 2] = shape::elementWiseStride(minShapeInfo); // ews
     newShapeInfo[2 * newShapeInfo[0] + 3] = shape::order(minShapeInfo);             // order
@@ -186,5 +189,39 @@ ConstantShapeBuffer&  ConstantShapeHelper::createShapeInfoWithUnitiesForBroadcas
 
     return bufferForShapeInfo(descriptor);
 }
+
+////////////////////////////////////////////////////////////////////////
+ConstantShapeBuffer& ConstantShapeHelper::createShapeInfoWithNoUnitiesForReduce(const Nd4jLong* inShapeInfo, const std::vector<int> &dimsWithUnities, sd::memory::Workspace* workspace) {
+
+    Nd4jLong* newShapeInfo = nullptr;
+    ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(shape::rank(inShapeInfo) - dimsWithUnities.size()), Nd4jLong);
+
+    int temp;
+    if(dimsWithUnities.size() == 1 && shape::isCommonVector(inShapeInfo, temp) && temp == dimsWithUnities[0]) {
+        auto dims = ShapeUtils::evalDimsToExclude(shape::rank(inShapeInfo), {temp});
+        shape::excludeUnitiesFromShapeInfo(inShapeInfo, dims.data(), dims.size(), newShapeInfo);
+    } else {
+        shape::excludeUnitiesFromShapeInfo(inShapeInfo, dimsWithUnities.data(), dimsWithUnities.size(), newShapeInfo);
+    }
+
+    ShapeDescriptor descriptor(newShapeInfo);
+
+    RELEASE(newShapeInfo, workspace);
+
+    return bufferForShapeInfo(descriptor);
+}
+
+////////////////////////////////////////////////////////////////////////
+ConstantShapeBuffer& ConstantShapeHelper::createSubArrShapeInfo(const Nd4jLong* inShapeInfo, const int* dims, const int dimsSize, sd::memory::Workspace* workspace) {
+
+    Nd4jLong* newShapeInfo = ShapeBuilders::createSubArrShapeInfo(inShapeInfo, dims, dimsSize, workspace);
+
+    ShapeDescriptor descriptor(newShapeInfo);
+
+    RELEASE(newShapeInfo, workspace);
+
+    return bufferForShapeInfo(descriptor);
+}
+
 
 }

@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -75,15 +77,28 @@ namespace sd {
 
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
+                    const Nd4jLong* zShapeInfoH = z->shapeInfo();
+                    const Nd4jLong* zShapeInfoD = z->specialShapeInfo();
 
-                    auto pTadShape = Environment::getInstance().isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-                    auto pTadOffsets = Environment::getInstance().isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+                    if(x->rankOf() - dims.size() != z->rankOf()) {
+                        auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), dims, z->getContext()->getWorkspace());
+                        zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+                        zShapeInfoD = reinterpret_cast<Nd4jLong const*>(zPack.special());
+                    }
 
-                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
-                            extras.argumentsAsT(x->dataType()),
-                            z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
-                            dims.data(), (int) dims.size(), reinterpret_cast<Nd4jLong const*>(pTadShape), reinterpret_cast<Nd4jLong const*>(pTadOffsets));
+                    std::vector<int> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
+                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD, dims2.data(), dims2.size());
+
+
+                    // auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
+
+                    // auto pTadShape = Environment::getInstance().isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    // auto pTadOffsets = Environment::getInstance().isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+                    // NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
+                    //         extras.argumentsAsT(x->dataType()),
+                    //         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(),
+                    //         dims.data(), (int) dims.size(), reinterpret_cast<Nd4jLong const*>(pTadShape), reinterpret_cast<Nd4jLong const*>(pTadOffsets));
                 }
 
                 STORE_RESULT(*z);
@@ -111,13 +126,25 @@ namespace sd {
 
                     REQUIRE_TRUE(dims.size() > 0, 0, "Some dimensions required for reduction!");
 
-                    auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
+                    const Nd4jLong* zShapeInfoH = z->shapeInfo();
+                    const Nd4jLong* zShapeInfoD = z->specialShapeInfo();
 
-                    auto pTadShape = Environment::getInstance().isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-                    auto pTadOffsets = Environment::getInstance().isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+                    if(x->rankOf() - dims.size() != z->rankOf()) {
+                        auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(z->shapeInfo(), dims, z->getContext()->getWorkspace());
+                        zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+                        zShapeInfoD = reinterpret_cast<Nd4jLong const*>(zPack.special());
+                    }
 
-                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()),
-                            z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), (int) dims.size(), pTadShape, pTadOffsets);
+                    std::vector<int> dims2 = ShapeUtils::evalDimsForReduceOp(x->rankOf(), dims);
+                    NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), nullptr, z->buffer(), zShapeInfoH, z->specialBuffer(), zShapeInfoD, dims2.data(), dims2.size());
+
+                    // auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(x->shapeInfo(), dims);
+
+                    // auto pTadShape = Environment::getInstance().isCPU() ? packX.primaryShapeInfo() : packX.specialShapeInfo(); //(Nd4jLong *) manager.replicatePointer(tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
+                    // auto pTadOffsets = Environment::getInstance().isCPU() ? packX.primaryOffsets() : packX.specialOffsets(); //(Nd4jLong *) manager.replicatePointer(tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
+
+                    // NativeOpExecutioner::execReduceBool(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()),
+                    //         z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo(), dims.data(), (int) dims.size(), pTadShape, pTadOffsets);
                 }
             }
 

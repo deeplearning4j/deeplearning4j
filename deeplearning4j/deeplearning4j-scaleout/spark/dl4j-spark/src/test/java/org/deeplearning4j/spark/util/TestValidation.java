@@ -1,21 +1,26 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.util;
 
+import com.sun.jna.Platform;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.spark.BaseSparkTest;
 import org.deeplearning4j.spark.util.data.SparkDataValidation;
@@ -42,10 +47,13 @@ public class TestValidation extends BaseSparkTest {
 
     @Test
     public void testDataSetValidation() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         File f = folder.newFolder();
 
-        for( int i=0; i<3; i++ ) {
+        for( int i = 0; i < 3; i++ ) {
             DataSet ds = new DataSet(Nd4j.create(1,10), Nd4j.create(1,10));
             ds.save(new File(f, i + ".bin"));
         }
@@ -106,10 +114,13 @@ public class TestValidation extends BaseSparkTest {
 
     @Test
     public void testMultiDataSetValidation() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         File f = folder.newFolder();
 
-        for( int i=0; i<3; i++ ) {
+        for( int i = 0; i < 3; i++ ) {
             MultiDataSet ds = new MultiDataSet(Nd4j.create(1,10), Nd4j.create(1,10));
             ds.save(new File(f, i + ".bin"));
         }

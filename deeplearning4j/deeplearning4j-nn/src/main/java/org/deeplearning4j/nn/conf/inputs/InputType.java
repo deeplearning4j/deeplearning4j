@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.inputs;
 
@@ -20,10 +24,13 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.DataFormat;
 import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
+import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
@@ -33,16 +40,9 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import java.io.Serializable;
 import java.util.Arrays;
 
-/**
- * The InputType class is used to track and define the types of activations etc used in a ComputationGraph.
- * This is most useful for automatically adding preprocessors between layers, and automatically setting nIn values.
- * See: {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder#setInputTypes(InputType...)} and
- * {@link org.deeplearning4j.nn.conf.ComputationGraphConfiguration#addPreProcessors(InputType...)}
- *
- * @author Alex Black
- */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@Slf4j
 public abstract class InputType implements Serializable {
 
     /**
@@ -57,6 +57,15 @@ public abstract class InputType implements Serializable {
         FF, RNN, CNN, CNNFlat, CNN3D
     }
 
+    public static CNN2DFormat getDefaultCNN2DFormat() {
+        return defaultCNN2DFormat;
+    }
+
+    public static void setDefaultCNN2DFormat(CNN2DFormat defaultCNN2DFormat) {
+        InputType.defaultCNN2DFormat = defaultCNN2DFormat;
+    }
+
+    private static CNN2DFormat defaultCNN2DFormat = CNN2DFormat.NCHW;
 
     @JsonIgnore
     public abstract Type getType();
@@ -137,7 +146,7 @@ public abstract class InputType implements Serializable {
      * @return InputTypeConvolutional
      */
     public static InputType convolutional(long height, long width, long depth) {
-        return convolutional(height, width, depth, CNN2DFormat.NCHW);
+        return convolutional(height, width, depth, getDefaultCNN2DFormat());
     }
 
     public static InputType convolutional(long height, long width, long depth, CNN2DFormat format){
@@ -198,6 +207,9 @@ public abstract class InputType implements Serializable {
         private DataFormat timeDistributedFormat;
 
         public InputTypeFeedForward(@JsonProperty("size") long size, @JsonProperty("timeDistributedFormat") DataFormat timeDistributedFormat) {
+            if(size <= 0) {
+                OneTimeLogger.warn(log,"Assigning a size of zero. This is normally only valid in model import cases with unknown dimensions.");
+            }
             this.size = size;
             this.timeDistributedFormat = timeDistributedFormat;
         }
@@ -275,7 +287,7 @@ public abstract class InputType implements Serializable {
         @Override
         public long[] getShape(boolean includeBatchDim) {
             if (includeBatchDim){
-                if (format == RNNFormat.NCW){
+                if (format == RNNFormat.NCW) {
                     return new long[]{-1, size, timeSeriesLength};
                 }
                 else{
@@ -284,7 +296,7 @@ public abstract class InputType implements Serializable {
 
             }
             else{
-                if (format == RNNFormat.NCW){
+                if (format == RNNFormat.NCW) {
                     return new long[]{size, timeSeriesLength};
                 }
                 else{
@@ -305,6 +317,27 @@ public abstract class InputType implements Serializable {
 
         public InputTypeConvolutional(@JsonProperty("height") long height, @JsonProperty("width") long width,
                                       @JsonProperty("channels") long channels, @JsonProperty("format") CNN2DFormat format) {
+            if(height <= 0) {
+                OneTimeLogger.warn(log,"Assigning height of 0. Normally this is not valid. Exceptions for this are generally related" +
+                        "to model import and unknown dimensions");
+            }
+
+            if(width <= 0) {
+                OneTimeLogger.warn(log,"Assigning height of 0. Normally this is not valid. Exceptions for this are generally related" +
+                        "to model import and unknown dimensions");
+            }
+
+            if(width <= 0) {
+                OneTimeLogger.warn(log,"Assigning width of 0. Normally this is not valid. Exceptions for this are generally related" +
+                        "to model import and unknown dimensions");
+            }
+
+            if(channels <= 0) {
+                OneTimeLogger.warn(log,"Assigning width of 0. Normally this is not valid. Exceptions for this are generally related" +
+                        "to model import and unknown dimensions");
+            }
+
+
             this.height = height;
             this.width = width;
             this.channels = channels;

@@ -1,30 +1,30 @@
-/* ******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
-package org.nd4j.imports.TFGraphs;
+package org.nd4j.imports.tfgraphs;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -50,13 +50,13 @@ import java.util.Map;
 
 @RunWith(Parameterized.class)
 @Slf4j
+@Ignore
 public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we need no-arg constructor for parameterized tests
 
     @ClassRule
     public static TemporaryFolder classTestDir = new TemporaryFolder();
 
     public static final String[] IGNORE_REGEXES = {
-
             //2019/07/22 - Result value failure
             "xlnet_cased_L-24_H-1024_A-16",
 
@@ -82,13 +82,14 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
             // Graph wasn't topsorted for all Keras RNNs (possible TF's too)
             // https://github.com/eclipse/deeplearning4j/issues/7974
+            //Alexnet takes too long
             "PorV-RNN",
             "temperature_bidirectional_63",
             "temperature_stacked_63",
             "text_gen_81",
 
 
-            // 2019/05/20 - Buffer is too big to export? https://github.com/deeplearning4j/deeplearning4j/issues/7760
+            // 2019/05/20 - Buffer is too big to export? https://github.com/eclipse/deeplearning4j/issues/7760
             // File: C:/DL4J/Git/deeplearning4j/libnd4j/blasbuild/cpu/flatbuffers-src/include/flatbuffers/flatbuffers.h, Line 668
             //Expression: size() < FLATBUFFERS_MAX_BUFFER_SIZE
             "deeplabv3_pascal_train_aug_2018_01_04"
@@ -173,7 +174,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                         } else {
                             //Multiple files... try to find "frozen_inference_graph.pb"
                             for(String str : pbFiles){
-                                if(str.endsWith("frozen_inference_graph.pb")){
+                                if(str.endsWith("frozen_inference_graph.pb")) {
                                     toExtract = str;
                                 }
                             }
@@ -193,7 +194,10 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
                     throw new IllegalStateException("Unknown format: " + filename);
                 }
 
-                return TFGraphTestAllHelper.LOADER.apply(modelFile, name);
+                SameDiff apply = TFGraphTestAllHelper.LOADER.apply(modelFile, name);
+                //"suggest" a GC before running the model to mitigate OOM
+                System.gc();
+                return apply;
             } catch (IOException e){
                 throw new RuntimeException(e);
             }
@@ -239,11 +243,11 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         if(isPPC()){
             /*
             Ugly hack to temporarily disable tests on PPC only on CI
-            Issue logged here: https://github.com/deeplearning4j/deeplearning4j/issues/7657
+            Issue logged here: https://github.com/eclipse/deeplearning4j/issues/7657
             These will be re-enabled for PPC once fixed - in the mean time, remaining tests will be used to detect and prevent regressions
              */
 
-            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/deeplearning4j/deeplearning4j/issues/7657");
+            log.warn("TEMPORARILY SKIPPING TEST ON PPC ARCHITECTURE DUE TO KNOWN JVM CRASH ISSUES - SEE https://github.com/eclipse/deeplearning4j/issues/7657");
             OpValidationSuite.ignoreFailing();
         }
 

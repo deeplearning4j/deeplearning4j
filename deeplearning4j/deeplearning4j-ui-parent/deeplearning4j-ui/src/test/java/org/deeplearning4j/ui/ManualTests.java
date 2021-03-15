@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.ui;
 
@@ -38,7 +42,6 @@ import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
-import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
@@ -76,18 +79,10 @@ import java.util.UUID;
 
 import static org.junit.Assert.fail;
 
-/**
- * Test environment for building/debugging UI.
- *
- * Please, do NOT remove @Ignore annotation
- *
- * @author raver119@gmail.com
- */
 @Ignore
 @Slf4j
 public class ManualTests {
 
-    private static Logger log = LoggerFactory.getLogger(ManualTests.class);
 
     @Test
     public void testLaunch() throws Exception {
@@ -103,33 +98,7 @@ public class ManualTests {
     }
 
 
-    @Test(timeout = 300000)
-    public void testTsne() throws Exception {
-        DataTypeUtil.setDTypeForContext(DataType.DOUBLE);
-        Nd4j.getRandom().setSeed(123);
-        BarnesHutTsne b = new BarnesHutTsne.Builder().stopLyingIteration(10).setMaxIter(10).theta(0.5).learningRate(500)
-                        .useAdaGrad(true).build();
 
-        File f = Resources.asFile("/deeplearning4j-core/mnist2500_X.txt");
-        INDArray data = Nd4j.readNumpy(f.getAbsolutePath(), "   ").get(NDArrayIndex.interval(0, 100),
-                        NDArrayIndex.interval(0, 784));
-
-
-
-        ClassPathResource labels = new ClassPathResource("mnist2500_labels.txt");
-        List<String> labelsList = IOUtils.readLines(labels.getInputStream()).subList(0, 100);
-        b.fit(data);
-        File save = new File(System.getProperty("java.io.tmpdir"), "labels-" + UUID.randomUUID().toString());
-        System.out.println("Saved to " + save.getAbsolutePath());
-        save.deleteOnExit();
-        b.saveAsFile(labelsList, save.getAbsolutePath());
-
-        INDArray output = b.getData();
-        System.out.println("Coordinates");
-
-        UIServer server = UIServer.getInstance();
-        Thread.sleep(10000000000L);
-    }
 
     /**
      * This test is for manual execution only, since it's here just to get working CNN and visualize it's layers

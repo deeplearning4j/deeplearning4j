@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.datasets.mnist;
 
@@ -24,24 +28,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 
-/**
- * <p>
- * Utility class for working with the MNIST database.
- * <p>
- * Provides methods for traversing the images and labels data files separately,
- * as well as simultaneously.
- * <p>
- * Provides also method for exporting an image by writing it as a PPM file.
- * <p> 
- * Example usage:
- * <pre>
- *  MnistManager m = new MnistManager("t10k-images.idx3-ubyte", "t10k-labels.idx1-ubyte");
- *  m.setCurrent(10); //index of the image that we are interested in
- *  int[][] image = m.readImage();
- *  System.out.println("Label:" + m.readLabel());
- *  MnistManager.writeImageToPpm(image, "10.ppm");
- * </pre>
- */
 public class MnistManager {
     MnistImageFile images;
     private MnistLabelFile labels;

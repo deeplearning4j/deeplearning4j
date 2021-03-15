@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -24,7 +26,7 @@
 #include <ops/declarable/helpers/helpers.h>
 #include <helpers/helper_random.h>
 #include <graph/RandomGenerator.h>
-
+#include <graph/Context.h>
 namespace sd    {
 namespace ops     {
 namespace helpers {
@@ -82,6 +84,8 @@ namespace helpers {
 	void tileBP(sd::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps);
 
 	void split(sd::LaunchContext* context, const NDArray& input, std::vector<NDArray*>& outArrs, const int axis);
+
+	void compareAndBitpack(graph::Context& block, const NDArray& input, const NDArray& threshold, NDArray& output);
 }
 }
 }

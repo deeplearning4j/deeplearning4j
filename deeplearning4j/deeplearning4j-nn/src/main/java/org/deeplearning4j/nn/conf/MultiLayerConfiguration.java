@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 
 package org.deeplearning4j.nn.conf;
@@ -48,11 +52,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
-/**
- * Configuration for a multi layer network
- *
- * @author Adam Gibson
- */
 @Data
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor
@@ -479,6 +478,21 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected boolean validateOutputConfig = true;
         protected boolean validateTbpttConfig = true;
         protected DataType dataType;
+        protected boolean overrideNinUponBuild = true;
+
+
+        /**
+         * Whether to over ride the nIn
+         * configuration forcibly upon construction.
+         * Default value is true
+         * @param overrideNinUponBuild Whether to over ride the nIn
+         *           configuration forcibly upon construction.
+         * @return builder pattern
+         */
+        public Builder overrideNinUponBuild(boolean overrideNinUponBuild) {
+            this.overrideNinUponBuild = overrideNinUponBuild;
+            return this;
+        }
 
         /**
          * Specify the processors.
@@ -638,9 +652,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                         " settings will only take effect if backprop type is set to BackpropType.TruncatedBPTT");
             }
 
-            if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig){
+            if(backpropType == BackpropType.TruncatedBPTT && validateTbpttConfig) {
                 //Check for invalid combination - tbptt plus LastTimeStepLayer or
-                for( int i=0; i<confs.size(); i++ ){
+                for( int i = 0; i < confs.size(); i++) {
                     Layer l = confs.get(i).getLayer();
                     if(l instanceof LastTimeStep || l instanceof GlobalPoolingLayer){
                         throw new IllegalStateException("Invalid network configuration detected: Truncated backpropagation through time (TBPTT)" +
@@ -698,7 +712,28 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                     if (inputPreProcessor != null) {
                         currentInputType = inputPreProcessor.getOutputType(currentInputType);
                     }
-                    l.setNIn(currentInputType, false); //Don't override the nIn setting, if it's manually set by the user
+                    if(i > 0) {
+                        Layer layer = confs.get(i - 1).getLayer();
+                        //convolution 1d is an edge case where it has rnn input type but the filters
+                        //should be the output
+                        if(layer instanceof Convolution1DLayer) {
+                            if(l instanceof DenseLayer && inputType instanceof InputType.InputTypeRecurrent) {
+                                FeedForwardLayer feedForwardLayer = (FeedForwardLayer) l;
+                                 if(inputType instanceof InputType.InputTypeRecurrent) {
+                                    InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                                    feedForwardLayer.setNIn(recurrent.getTimeSeriesLength());
+                                }
+                            }
+                            else
+                                l.setNIn(currentInputType, overrideNinUponBuild); //Don't override the nIn setting, if it's manually set by the user
+                        }
+                        else
+                            l.setNIn(currentInputType, overrideNinUponBuild); //Don't override the nIn setting, if it's manually set by the user
+
+                    }
+                    else
+                        l.setNIn(currentInputType, overrideNinUponBuild); //Don't override the nIn setting, if it's manually set by the user
+
 
                     currentInputType = l.getOutputType(i, currentInputType);
                 }

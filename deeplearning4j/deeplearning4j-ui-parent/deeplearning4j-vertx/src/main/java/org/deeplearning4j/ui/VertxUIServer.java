@@ -1,18 +1,22 @@
-    /* ******************************************************************************
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+    /*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.ui;
 
@@ -32,32 +36,42 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
+import org.deeplearning4j.common.config.DL4JClassLoading;
+import org.deeplearning4j.common.config.DL4JSystemProperties;
+import org.deeplearning4j.common.util.DL4JFileUtils;
 import org.deeplearning4j.core.storage.StatsStorage;
 import org.deeplearning4j.core.storage.StatsStorageEvent;
 import org.deeplearning4j.core.storage.StatsStorageListener;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
-import org.deeplearning4j.common.config.DL4JSystemProperties;
 import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.i18n.I18NProvider;
+import org.deeplearning4j.ui.model.storage.FileStatsStorage;
+import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
+import org.deeplearning4j.ui.model.storage.impl.QueueStatsStorageListener;
 import org.deeplearning4j.ui.module.SameDiffModule;
 import org.deeplearning4j.ui.module.convolutional.ConvolutionalListenerModule;
 import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
 import org.deeplearning4j.ui.module.remote.RemoteReceiverModule;
 import org.deeplearning4j.ui.module.train.TrainModule;
 import org.deeplearning4j.ui.module.tsne.TsneModule;
-import org.deeplearning4j.ui.model.storage.FileStatsStorage;
-import org.deeplearning4j.ui.model.storage.InMemoryStatsStorage;
-import org.deeplearning4j.ui.model.storage.impl.QueueStatsStorageListener;
-import org.deeplearning4j.common.util.DL4JFileUtils;
 import org.nd4j.common.function.Function;
 import org.nd4j.common.primitives.Pair;
 
 import java.io.File;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
@@ -75,7 +89,8 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     private static Function<String, StatsStorage> statsStorageProvider;
 
     private static Integer instancePort;
-    private static Thread autoStopThread;
+    @Getter
+    private static Thread shutdownHook;
 
     /**
      * Get (and, initialize if necessary) the UI server. This synchronous function will wait until the server started.
@@ -188,19 +203,17 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         Vertx vertx = Vertx.vertx();
         vertx.deployVerticle(VertxUIServer.class.getName(), promise);
 
-        Thread currentThread = Thread.currentThread();
-        VertxUIServer.autoStopThread = new Thread(() -> {
-            try {
-                currentThread.join();
-                if (VertxUIServer.instance != null && !VertxUIServer.instance.isStopped()) {
-                    log.info("Deeplearning4j UI server is auto-stopping after thread (name: {}) died.",
-                            currentThread.getName());
+        VertxUIServer.shutdownHook = new Thread(() -> {
+            if (VertxUIServer.instance != null && !VertxUIServer.instance.isStopped()) {
+                log.info("Deeplearning4j UI server is auto-stopping in shutdown hook.");
+                try {
                     instance.stop();
+                } catch (InterruptedException e) {
+                    log.error("Interrupted stopping of Deeplearning4j UI server in shutdown hook.", e);
                 }
-            } catch (InterruptedException e) {
-                log.error("Deeplearning4j UI server auto-stop thread was interrupted.", e);
             }
         });
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
 
@@ -360,13 +373,17 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
 
         //Check port property
         int port = instancePort == null ? DEFAULT_UI_PORT : instancePort;
-        String portProp = System.getenv(DL4JSystemProperties.UI_SERVER_PORT_PROPERTY);
+        String portProp = System.getProperty(DL4JSystemProperties.UI_SERVER_PORT_PROPERTY);
         if(portProp != null && !portProp.isEmpty()){
             try{
                 port = Integer.parseInt(portProp);
             } catch (NumberFormatException e){
                 log.warn("Error parsing port property {}={}", DL4JSystemProperties.UI_SERVER_PORT_PROPERTY, portProp);
             }
+        }
+
+	if (port < 0 || port > 0xFFFF) {
+            throw new IllegalStateException("Valid port range is 0 <= port <= 65535. The given port was " + port);
         }
 
         uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
@@ -385,7 +402,6 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
                                 + server.actualPort(), result.cause()));
                     }
                 });
-        VertxUIServer.autoStopThread.start();
     }
 
     private List<String> extractArgsFromRoute(String path, RoutingContext rc) {
@@ -404,8 +420,7 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
     }
 
     private void modulesViaServiceLoader(List<UIModule> uiModules) {
-
-        ServiceLoader<UIModule> sl = ServiceLoader.load(UIModule.class);
+        ServiceLoader<UIModule> sl = DL4JClassLoading.loadService(UIModule.class);
         Iterator<UIModule> iter = sl.iterator();
 
         if (!iter.hasNext()) {
@@ -413,19 +428,19 @@ public class VertxUIServer extends AbstractVerticle implements UIServer {
         }
 
         while (iter.hasNext()) {
-            UIModule m = iter.next();
-            Class<?> c = m.getClass();
+            UIModule module = iter.next();
+            Class<?> moduleClass = module.getClass();
             boolean foundExisting = false;
             for (UIModule mExisting : uiModules) {
-                if (mExisting.getClass() == c) {
+                if (mExisting.getClass() == moduleClass) {
                     foundExisting = true;
                     break;
                 }
             }
 
             if (!foundExisting) {
-                log.debug("Loaded UI module via service loader: {}", m.getClass());
-                uiModules.add(m);
+                log.debug("Loaded UI module via service loader: {}", module.getClass());
+                uiModules.add(module);
             }
         }
     }

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.graph.rnn;
 
@@ -28,18 +32,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * DuplicateToTimeSeriesVertex is a vertex that goes from 2d activations to a 3d time series activations, by means of
- * duplication. That is, given a 2d input with shape [numExamples,nIn] duplicate each row to give output of
- * [numExamples,nIn,timeSeriesLength], where the activations are the same for all time steps.<br>
- * This method is used for example in sequence to sequence models.<br>
- * <b>Note</b>: The length of the output time series (number of time steps) is determined by means of referencing one of the
- * inputs in the ComputationGraph. That is: Because the length of the time series may differ at runtime, we generally want the number
- * of time steps to match some other input; here, we are specifying the length of the output time series to be the same as
- * one of the input time series<br>
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(callSuper = false)
 public class DuplicateToTimeSeriesVertex extends GraphVertex {

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.models.embeddings.inmemory;
 
@@ -25,7 +29,6 @@ import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
-import org.deeplearning4j.plot.BarnesHutTsne;
 import org.deeplearning4j.core.ui.UiConnectionInfo;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -150,122 +153,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         initNegative();
     }
 
-    private List<String> fitTnseAndGetLabels(final BarnesHutTsne tsne, final int numWords) {
-        INDArray array = Nd4j.create(numWords, vectorLength);
-        List<String> labels = new ArrayList<>();
-        for (int i = 0; i < numWords && i < vocab.numWords(); i++) {
-            labels.add(vocab.wordAtIndex(i));
-            array.putRow(i, syn0.slice(i));
-        }
-        tsne.fit(array);
-        return labels;
-    }
 
-
-    @Override
-    public void plotVocab(BarnesHutTsne tsne, int numWords, File file) {
-        final List<String> labels = fitTnseAndGetLabels(tsne, numWords);
-        try {
-            tsne.saveAsFile(labels, file.getAbsolutePath());
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Render the words via tsne
-     */
-    @Override
-    public void plotVocab(int numWords, File file) {
-        BarnesHutTsne tsne = new BarnesHutTsne.Builder().normalize(false).setFinalMomentum(0.8f).numDimension(2)
-                        .setMaxIter(1000).build();
-        plotVocab(tsne, numWords, file);
-    }
-
-    /**
-     * Render the words via tsne
-     */
-    @Override
-    public void plotVocab(int numWords, UiConnectionInfo connectionInfo) {
-        BarnesHutTsne tsne = new BarnesHutTsne.Builder().normalize(false).setFinalMomentum(0.8f).numDimension(2)
-                        .setMaxIter(1000).build();
-        plotVocab(tsne, numWords, connectionInfo);
-    }
-
-    /**
-     * Render the words via TSNE
-     *
-     * @param tsne           the tsne to use
-     * @param numWords
-     * @param connectionInfo
-     */
-    @Override
-    public void plotVocab(BarnesHutTsne tsne, int numWords, UiConnectionInfo connectionInfo) {
-        try {
-            final List<String> labels = fitTnseAndGetLabels(tsne, numWords);
-            final INDArray reducedData = tsne.getData();
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < reducedData.rows() && i < numWords; i++) {
-                String word = labels.get(i);
-                INDArray wordVector = reducedData.getRow(i);
-                for (int j = 0; j < wordVector.length(); j++) {
-                    sb.append(String.valueOf(wordVector.getDouble(j))).append(",");
-                }
-                sb.append(word);
-            }
-
-            String address = connectionInfo.getFirstPart() + "/tsne/post/" + connectionInfo.getSessionId();
-            //            System.out.println("ADDRESS: " + address);
-            URI uri = new URI(address);
-
-            HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0");
-            //            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=-----TSNE-POST-DATA-----");
-            connection.setDoOutput(true);
-
-            final OutputStream outputStream = connection.getOutputStream();
-            final PrintWriter writer = new PrintWriter(outputStream);
-            writer.println("-------TSNE-POST-DATA-----");
-            writer.println("Content-Disposition: form-data; name=\"fileupload\"; filename=\"tsne.csv\"");
-            writer.println("Content-Type: text/plain; charset=UTF-16");
-            writer.println("Content-Transfer-Encoding: binary");
-            writer.println();
-            writer.flush();
-
-            DataOutputStream dos = new DataOutputStream(outputStream);
-            dos.writeBytes(sb.toString());
-            dos.flush();
-            writer.println();
-            writer.flush();
-            dos.close();
-            outputStream.close();
-
-            try {
-                int responseCode = connection.getResponseCode();
-                System.out.println("RESPONSE CODE: " + responseCode);
-
-                if (responseCode != 200) {
-                    BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    String inputLine;
-                    StringBuilder response = new StringBuilder();
-
-                    while ((inputLine = in.readLine()) != null) {
-                        response.append(inputLine);
-                    }
-                    in.close();
-
-                    log.warn("Error posting to remote UI - received response code {}\tContent: {}", response,
-                                    response.toString());
-                }
-            } catch (IOException e) {
-                log.warn("Error posting to remote UI at {}", uri, e);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     /**
      * @param codeIndex

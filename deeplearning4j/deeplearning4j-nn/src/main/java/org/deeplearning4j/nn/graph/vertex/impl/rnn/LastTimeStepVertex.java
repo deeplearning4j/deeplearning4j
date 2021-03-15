@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.graph.vertex.impl.rnn;
 
@@ -32,15 +36,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
-/** LastTimeStepVertex is used in the context of recurrent neural network activations, to go from 3d (time series)
- * activations to 2d activations, by extracting out the last time step of activations for each example.<br>
- * This can be used for example in sequence to sequence architectures, and potentially for sequence classification.
- * <b>NOTE</b>: Because RNNs may have masking arrays (to allow for examples/time series of different lengths in the same
- * minibatch), it is necessary to provide the same of the network input that has the corresponding mask array. If this
- * input does not have a mask array, the last time step of the input will be used for all examples; otherwise, the time
- * step of the last non-zero entry in the mask array (for each example separately) will be used.
- * @author Alex Black
- */
 public class LastTimeStepVertex extends BaseGraphVertex {
 
     private String inputName;

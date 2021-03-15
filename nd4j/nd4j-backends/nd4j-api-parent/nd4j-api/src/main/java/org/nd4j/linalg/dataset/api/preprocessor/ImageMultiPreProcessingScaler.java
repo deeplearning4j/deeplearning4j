@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
@@ -21,16 +25,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerType;
 
-/**
- * A preprocessor specifically for images that applies min max scaling to one or more of the feature arrays
- * in a MultiDataSet.<br>
- * Can take a range, so pixel values can be scaled from 0->255 to minRange->maxRange
- * default minRange = 0 and maxRange = 1;
- * If pixel values are not 8 bits, you can specify the number of bits as the third argument in the constructor
- * For values that are already floating point, specify the number of bits as 1
- *
- * @author Alex Black (MultiDataSet version), Susan Eraly (original ImagePreProcessingScaler)
- */
 public class ImageMultiPreProcessingScaler implements MultiDataNormalization {
 
 

@@ -1,21 +1,26 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark;
 
+import com.sun.jna.Platform;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -62,6 +67,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
     @Test
     public void testEarlyStoppingIris() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")
@@ -110,7 +119,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
     @Test
     public void testBadTuning() {
         //Test poor tuning (high LR): should terminate on MaxScoreIterationTerminationCondition
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -148,7 +160,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
     @Test
     public void testTimeTermination() {
         //test termination after max time
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -193,7 +208,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
     public void testNoImprovementNEpochsTermination() {
         //Idea: terminate training if score (test set loss) does not improve for 5 consecutive epochs
         //Simulate this by setting LR = 0.0
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -231,6 +249,10 @@ public class TestEarlyStoppingSparkCompGraph extends BaseSparkTest {
 
     @Test
     public void testListeners() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .updater(new Sgd()).weightInit(WeightInit.XAVIER).graphBuilder().addInputs("in")

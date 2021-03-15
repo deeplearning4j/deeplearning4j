@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.zoo.model;
 
@@ -37,20 +41,6 @@ import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-/**
- * U-Net
- *
- * An implementation of U-Net, a deep learning network for image segmentation in Deeplearning4j.
- * The u-net is convolutional network architecture for fast and precise segmentation of images.
- * Up to now it has outperformed the prior best method (a sliding-window convolutional network) on the ISBI challenge for
- * segmentation of neuronal structures in electron microscopic stacks.
- *
- * <p>Paper: <a href="https://arxiv.org/abs/1505.04597">https://arxiv.org/abs/1505.04597</a></p>
- * <p>Weights are available for image segmentation trained on a synthetic dataset</p>
- *
- * @author Justin Long (crockpotveggies)
- *
- */
 @AllArgsConstructor
 @Builder
 public class UNet extends ZooModel {

@@ -1,24 +1,29 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.ui.model.stats;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.Pointer;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.core.storage.StatsStorageRouter;
 import org.deeplearning4j.core.storage.StorageMetaData;
 import org.deeplearning4j.core.storage.listener.RoutingIterationListener;
@@ -50,13 +55,6 @@ import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Constructor;
 import java.util.*;
 
-/**
- * BaseStatsListener: a general purpose listener for collecting and reporting system and model information.
- * <p>
- * Serves as a base for different ways of storing the collected data
- *
- * @author Alex Black
- */
 @Slf4j
 public abstract class BaseStatsListener implements RoutingIterationListener {
     public static final String TYPE_ID = "StatsListener";
@@ -696,11 +694,14 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
             return devPointers.get(device);
         }
         try {
-            Class<?> c = Class.forName("org.nd4j.jita.allocator.pointers.CudaPointer");
-            Constructor<?> constructor = c.getConstructor(long.class);
-            Pointer p = (Pointer) constructor.newInstance((long) device);
-            devPointers.put(device, p);
-            return p;
+            Pointer pointer = DL4JClassLoading.createNewInstance(
+                    "org.nd4j.jita.allocator.pointers.CudaPointer",
+                    Pointer.class,
+                    new Class[] { long.class },
+                    (long) device);
+
+            devPointers.put(device, pointer);
+            return pointer;
         } catch (Throwable t) {
             devPointers.put(device, null); //Stops attempting the failure again later...
             return null;
@@ -711,9 +712,9 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         ModelInfo modelInfo = getModelInfo(model);
         int examplesThisMinibatch = 0;
         if (model instanceof MultiLayerNetwork) {
-            examplesThisMinibatch = ((MultiLayerNetwork) model).batchSize();
+            examplesThisMinibatch = model.batchSize();
         } else if (model instanceof ComputationGraph) {
-            examplesThisMinibatch = ((ComputationGraph) model).batchSize();
+            examplesThisMinibatch = model.batchSize();
         } else if (model instanceof Layer) {
             examplesThisMinibatch = ((Layer) model).getInputMiniBatchSize();
         }

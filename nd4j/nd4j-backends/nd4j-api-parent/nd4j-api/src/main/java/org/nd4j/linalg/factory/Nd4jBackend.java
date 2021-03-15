@@ -1,23 +1,27 @@
-/* ******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.factory;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.common.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
@@ -25,41 +29,10 @@ import org.nd4j.common.io.Resource;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLClassLoader;
 import java.security.PrivilegedActionException;
 import java.util.*;
 
-/**
- * An ND4j backend.
- *
- * A "backend" is also described here: https://deeplearning4j.konduit.ai/nd4j/backend
- *
- * A backend also has 2  variables to be aware of.
- * 1 is the environment variable, ND4J_DYNAMIC_LOAD_CLASSPATH
- * This will define a uri path separated by ; where jars will be
- * loaded from the path and dynamically loaded.
- *
- * The other is the system property:
- * org.nd4j.backend.dynamicbackend
- *
- * This has the same use case but is for system properties.
- * Of note here is that the system property takes loading precedence over
- * the environment variable. If you want to just use the environment variable,
- * don't define the system property.
- *
- * Both of these variables are for dynamically loading a backend relative to a path.
- * The main idea here is for distributed environments like spark where
- * you have multiple worker nodes with some having gpus and others not.
- *
- * When you define an environment variable on the server, you can
- * have a hardware jar file load with respect to the node nd4j is installed on.
- * The system property is mainly for flexibility and probably shouldn't be
- * used in practice.
- *
- * @author eronwright
- * @author Adam Gibson
- * @author saudet
- *
- */
 @Slf4j
 public abstract class Nd4jBackend {
 
@@ -146,6 +119,10 @@ public abstract class Nd4jBackend {
 
     public abstract Environment getEnvironment();
 
+    /**
+     * Get the build information of the backend
+     */
+    public abstract String buildInfo();
 
     /**
      * Loads the best available backend.
@@ -156,14 +133,12 @@ public abstract class Nd4jBackend {
         String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
         boolean logInit = Boolean.parseBoolean(logInitProperty);
 
-        List<Nd4jBackend> backends = new ArrayList<>(1);
-        ServiceLoader<Nd4jBackend> loader = ServiceLoader.load(Nd4jBackend.class);
+        List<Nd4jBackend> backends = new ArrayList<>();
+        ServiceLoader<Nd4jBackend> loader = ND4JClassLoading.loadService(Nd4jBackend.class);
         try {
-
-            Iterator<Nd4jBackend> backendIterator = loader.iterator();
-            while (backendIterator.hasNext())
-                backends.add(backendIterator.next());
-
+            for (Nd4jBackend nd4jBackend : loader) {
+                backends.add(nd4jBackend);
+            }
         } catch (ServiceConfigurationError serviceError) {
             // a fatal error due to a syntax or provider construction error.
             // backends mustn't throw an exception during construction.
@@ -240,7 +215,7 @@ public abstract class Nd4jBackend {
     public static synchronized void loadLibrary(File jar) throws NoAvailableBackendException {
         try {
             /*We are using reflection here to circumvent encapsulation; addURL is not public*/
-            java.net.URLClassLoader loader = (java.net.URLClassLoader) ClassLoader.getSystemClassLoader();
+            java.net.URLClassLoader loader = (URLClassLoader) ND4JClassLoading.getNd4jClassloader();
             java.net.URL url = jar.toURI().toURL();
             /*Disallow if already loaded*/
             for (java.net.URL it : java.util.Arrays.asList(loader.getURLs())) {

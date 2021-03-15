@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.layers;
 
@@ -25,9 +29,6 @@ import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 
-/**
- * Created by jeffreytang on 7/21/15.
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
@@ -59,7 +60,7 @@ public abstract class FeedForwardLayer extends BaseLayer {
     @Override
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || (inputType.getType() != InputType.Type.FF
-                        && inputType.getType() != InputType.Type.CNNFlat)) {
+                        && inputType.getType() != InputType.Type.CNNFlat && inputType.getType() != InputType.Type.RNN)) {
             throw new IllegalStateException("Invalid input type (layer name=\"" + getLayerName()
                             + "\"): expected FeedForward input type. Got: " + inputType);
         }
@@ -68,6 +69,9 @@ public abstract class FeedForwardLayer extends BaseLayer {
             if (inputType.getType() == InputType.Type.FF) {
                 InputType.InputTypeFeedForward f = (InputType.InputTypeFeedForward) inputType;
                 this.nIn = f.getSize();
+            } else if(inputType.getType() == InputType.Type.RNN) {
+                InputType.InputTypeRecurrent recurrent = (InputType.InputTypeRecurrent) inputType;
+                this.nIn = recurrent.getSize() * recurrent.getTimeSeriesLength();
             } else {
                 InputType.InputTypeConvolutionalFlat f = (InputType.InputTypeConvolutionalFlat) inputType;
                 this.nIn = f.getFlattenedSize();

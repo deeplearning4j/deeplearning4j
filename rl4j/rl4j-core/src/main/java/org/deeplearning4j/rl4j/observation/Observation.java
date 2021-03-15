@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.rl4j.observation;
 
@@ -30,25 +34,48 @@ public class Observation implements Encodable {
     /**
      * A singleton representing a skipped observation
      */
-    public static Observation SkippedObservation = new Observation(null);
+    public static Observation SkippedObservation = new Observation();
 
     /**
      * @return A INDArray containing the data of the observation
      */
     @Getter
-    private final INDArray data;
+    private final INDArray[] channelsData;
 
+    public INDArray getChannelData(int channelIdx) {
+        return channelsData[channelIdx];
+    }
+
+    // TODO: Remove once Encodable is removed
     @Override
     public double[] toArray() {
-        return data.data().asDouble();
+        return channelsData[0].data().asDouble();
     }
 
     public boolean isSkipped() {
-        return data == null;
+        return channelsData == null;
     }
 
+    private Observation() {
+        this.channelsData = null;
+    }
+
+    // TODO: Remove when legacy code is gone
     public Observation(INDArray data) {
-        this.data = data;
+        this.channelsData = new INDArray[] { data };
+    }
+
+    public Observation(INDArray[] channelsData) {
+        this.channelsData = channelsData;
+    }
+
+    // TODO: Remove when legacy code is gone
+    public INDArray getData() {
+        return channelsData[0];
+    }
+
+    public int numChannels() {
+        return channelsData.length;
     }
 
     /**
@@ -56,10 +83,14 @@ public class Observation implements Encodable {
      * @return
      */
     public Observation dup() {
-        if(data == null) {
+        if(channelsData == null) {
             return SkippedObservation;
         }
 
-        return new Observation(data.dup());
+        INDArray[] duplicated = new INDArray[channelsData.length];
+        for(int i = 0; i < channelsData.length; ++i) {
+            duplicated[i] = channelsData[i].dup();
+        }
+        return new Observation(duplicated);
     }
 }

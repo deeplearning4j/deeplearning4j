@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.layers;
 
@@ -20,6 +24,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.RNNFormat;
@@ -34,11 +39,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * 1D (temporal) convolutional layer. This layer accepts RNN InputTypes instead of CNN InputTypes
- *
- * @author dave@skymind.io
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
@@ -67,7 +67,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex, getNIn(), getNOut());
 
         org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf, networkDataType);
+                new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -81,8 +81,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex
-                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
-                            + inputType);
+                    + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                    + inputType);
         }
         InputType.InputTypeRecurrent it = (InputType.InputTypeRecurrent) inputType;
         long inputTsLength = it.getTimeSeriesLength();
@@ -92,7 +92,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
             outLength = -1;
         } else {
             outLength = Convolution1DUtils.getOutputSize(inputTsLength, kernelSize[0], stride[0], padding[0],
-                            convolutionMode, dilation[0]);
+                    convolutionMode, dilation[0]);
         }
 
         return InputType.recurrent(nOut, outLength, rnnDataFormat);
@@ -102,21 +102,25 @@ public class Convolution1DLayer extends ConvolutionLayer {
     public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
             throw new IllegalStateException("Invalid input for 1D CNN layer (layer name = \"" + getLayerName()
-                            + "\"): expect RNN input type with size > 0. Got: " + inputType);
+                    + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
         InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
         if (nIn <= 0 || override) {
             this.nIn = r.getSize();
         }
-        this.rnnDataFormat = r.getFormat();
+        if(this.rnnDataFormat == null || override)
+            this.rnnDataFormat = r.getFormat();
+
+        if(this.cnn2dDataFormat == null || override)
+            this.cnn2dDataFormat = rnnDataFormat == RNNFormat.NCW ? CNN2DFormat.NCHW : CNN2DFormat.NHWC;
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Convolution1D layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
 
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, rnnDataFormat,getLayerName());
@@ -137,7 +141,7 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
 
-        public Builder rnnDataFormat(RNNFormat rnnDataFormat){
+        public Builder rnnDataFormat(RNNFormat rnnDataFormat) {
             this.rnnDataFormat = rnnDataFormat;
             return this;
         }

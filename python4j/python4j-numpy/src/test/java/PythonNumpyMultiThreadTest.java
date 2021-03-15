@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 import org.nd4j.python4j.*;
 import org.junit.Assert;
@@ -140,55 +144,5 @@ public class PythonNumpyMultiThreadTest {
         }
     }
 
-    @Test
-    public void testMultiThreading3() throws Throwable {
-        PythonContextManager.deleteNonMainContexts();
 
-        String code = "c = a + b";
-        final PythonJob job = new PythonJob("job1", code, false);
-
-        final List<Throwable> exceptions = Collections.synchronizedList(new ArrayList<Throwable>());
-
-        class JobThread extends Thread {
-            private INDArray a, b, c;
-
-            public JobThread(INDArray a, INDArray b, INDArray c) {
-                this.a = a;
-                this.b = b;
-                this.c = c;
-            }
-
-            @Override
-            public void run() {
-                try {
-                    PythonVariable<INDArray> out = new PythonVariable<>("c", NumpyArray.INSTANCE);
-                    job.exec(Arrays.<PythonVariable>asList(new PythonVariable<>("a", NumpyArray.INSTANCE, a),
-                            new PythonVariable<>("b", NumpyArray.INSTANCE, b)),
-                            Collections.<PythonVariable>singletonList(out));
-                    Assert.assertEquals(c, out.getValue());
-                } catch (Exception e) {
-                    exceptions.add(e);
-                }
-
-            }
-        }
-        int numThreads = 10;
-        JobThread[] threads = new JobThread[numThreads];
-        for (int i = 0; i < threads.length; i++) {
-            threads[i] = new JobThread(Nd4j.zeros(dataType, 2, 3).add(i), Nd4j.zeros(dataType, 2, 3).add(i + 3),
-                    Nd4j.zeros(dataType, 2, 3).add(2 * i + 3));
-        }
-
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].start();
-        }
-        Thread.sleep(100);
-        for (int i = 0; i < threads.length; i++) {
-            threads[i].join();
-        }
-
-        if (!exceptions.isEmpty()) {
-            throw (exceptions.get(0));
-        }
-    }
 }

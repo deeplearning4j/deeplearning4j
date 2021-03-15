@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.samediff;
 
@@ -22,7 +26,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.graph.*;
+import org.nd4j.graph.FlatConfiguration;
+import org.nd4j.graph.FlatGraph;
+import org.nd4j.graph.FlatNode;
+import org.nd4j.graph.FlatVariable;
+import org.nd4j.graph.IntPair;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,7 +39,17 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.GradientUpdater;
-import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.learning.config.AMSGrad;
+import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.AdaMax;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.Nadam;
+import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.learning.config.RmsProp;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;

@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -117,6 +119,35 @@ TYPED_TEST(TypedDeclarableOpsTests4, avgpool2d_3) {
 
 
 }
+
+//auto padding{top,right, bottom, left} matching arm_compute
+std::tuple<int, int, int, int> getSpecialAutoPadding(int rank) {
+    auto extra_pad_x = rank < 1 ? 0 : 32;
+    auto pad_x = rank < 1 ? 0 : 4;
+    auto pad_y = rank < 2 ? 0 : 4;
+    return std::tuple<int, int, int, int>{ pad_y, pad_x + extra_pad_x, pad_y, pad_x };
+}
+
+TYPED_TEST(TypedDeclarableOpsTests4, avgpool2d_padded_buffer) {
+
+    int top, right, bottom, left;
+    std::tie(top, right, bottom, left) = getSpecialAutoPadding(4);
+
+    auto input = NDArrayFactory::create('c', {2, 5, 5, 2}, DataTypeUtils::fromT<TypeParam>(), {0, 0, top + bottom, left + right}, {0, 0, top, left} );
+    auto output = NDArrayFactory::create('c', {2, 3, 3, 2}, DataTypeUtils::fromT<TypeParam>(), {0, 0, top + bottom, left + right}, {0, 0, top, left} ); 
+    auto exp = NDArrayFactory::create<TypeParam>('c', {2, 3, 3, 2}, {7.f,    8.f,   11.f,   12.f,   14.f,   15.f,   27.f,   28.f,   31.f,   32.f,   34.f,   35.f, 42.f,   43.f,   46.f,   47.f,   49.f,   50.f,   57.f,   58.f,   61.f,   62.f,   64.f,   65.f, 77.f,   78.f,   81.f,   82.f,   84.f,   85.f,   92.f,   93.f,   96.f,   97.f,   99.f,  100.f,});
+
+    input.linspace(1);
+
+    sd::ops::avgpool2d op;
+    auto status = op.execute({&input}, {&output}, {}, {2, 2, 2, 2, 0, 0, 1, 1, 1, 0, 1});
+
+    ASSERT_EQ(Status::OK(), status);
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+}
+
 
 //////////////////////////////////////////////////////////////////////
 TYPED_TEST(TypedDeclarableOpsTests4, avgpool2d_4) {

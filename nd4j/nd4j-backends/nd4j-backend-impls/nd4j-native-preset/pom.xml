@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ /* ******************************************************************************
+  ~  *
+  ~  *
+  ~  * This program and the accompanying materials are made available under the
+  ~  * terms of the Apache License, Version 2.0 which is available at
+  ~  * https://www.apache.org/licenses/LICENSE-2.0.
+  ~  *
+  ~  *  See the NOTICE file distributed with this work for additional
+  ~  *  information regarding copyright ownership.
+  ~  * Unless required by applicable law or agreed to in writing, software
+  ~  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+  ~  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+  ~  * License for the specific language governing permissions and limitations
+  ~  * under the License.
+  ~  *
+  ~  * SPDX-License-Identifier: Apache-2.0
+  ~  ******************************************************************************/
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-backend-impls</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>nd4j-native-preset</artifactId>
+
+    <name>nd4j-native-preset</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>${dependency.groupId}</groupId>
+            <artifactId>${dependency.artifactId}</artifactId>
+            <version>${dependency.version}</version>
+            <type>${dependency.packaging}</type>
+            <classifier>${dependency.classifier}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <classifier>${dependency.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}-${javacpp-presets.version}</version>
+            <classifier>${dependency.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-native-api</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>javacpp-parser</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <skipMain>${javacpp.parser.skip}</skipMain>
+                            <includes>
+                                <include>org/nd4j/nativeblas/**.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-jar-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>libnd4j-checks</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireProperty>
+                                    <property>libnd4jhome</property>
+                                    <message>You must set the LIBND4J_HOME environment variable!
+                                    </message>
+                                    <regex>.*/.*</regex>
+                                    <regexMessage>!!! LIBND4J_HOME must be a valid unix path!
+                                    </regexMessage>
+                                </requireProperty>
+                                <requireFilesExist>
+                                    <files>
+                                        <file>${libnd4jhome}/include/legacy/NativeOps.h</file>
+                                        <file>${libnd4jhome}/blasbuild/cpu/blas</file>
+                                    </files>
+                                    <message>!!! You have to compile libnd4j with cpu support
+                                        first!
+                                    </message>
+                                </requireFilesExist>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>mkl</id>
+            <activation>
+                <property>
+                    <name>os.arch</name>
+                    <value>x86_64</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>mkl</artifactId>
+                    <version>${mkl.version}-${javacpp-presets.version}</version>
+                    <classifier>${dependency.platform2}</classifier>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>testresources</id>
+        </profile>
+        <profile>
+            <id>avx2</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>avx2</value>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform.extension>-avx2</javacpp.platform.extension>
+            </properties>
+        </profile>
+        <profile>
+            <id>avx512</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>avx512</value>
+                </property>
+            </activation>
+            <properties>
+                <javacpp.platform.extension>-avx512</javacpp.platform.extension>
+            </properties>
+        </profile>
+        <profile>
+            <id>mingw</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+                <property>
+                    <name>!javacpp.platform</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <properties>${javacpp.platform}-mingw</properties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>mingw-windows-platform</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+                <property>
+                    <name>javacpp.platform</name>
+                    <value>windows-x86_64</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <properties>${javacpp.platform}-mingw</properties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>libnd4j-assembly</id>
+            <activation>
+                <property>
+                    <name>libnd4j-assembly</name>
+                </property>
+            </activation>
+            <properties>
+                <libnd4jhome>${project.build.directory}/libnd4j/</libnd4jhome>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>libnd4j</artifactId>
+                    <version>${project.version}</version>
+                    <type>zip</type>
+                    <classifier>${javacpp.platform}${javacpp.platform.extension}</classifier>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>libnd4j-checks</id>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>3.1.2</version>
+                        <executions>
+                            <execution>
+                                <id>unpack</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>org.nd4j</groupId>
+                                            <artifactId>libnd4j</artifactId>
+                                            <version>${project.version}</version>
+                                            <type>zip</type>
+                                            <classifier>
+                                                ${javacpp.platform}${javacpp.platform.extension}
+                                            </classifier>
+                                            <overWrite>true</overWrite>
+                                            <outputDirectory>${project.build.directory}
+                                            </outputDirectory>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+</project>

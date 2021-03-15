@@ -1,0 +1,11 @@
+name: Install protobuf linux
+runs:
+  using: composite
+  steps:
+    - name: Install protobuf linux
+      shell: bash
+      run: |
+        apt-get -yq  update && apt-get install -y build-essential unzip libssl-dev
+        curl -fsSL http://cmake.org/files/v3.19/cmake-3.19.0.tar.gz | tar xz && cd cmake-3.19.0
+                          ./configure --prefix=/opt/cmake && make -j2 && make install && cd .. && rm -r cmake-3.19.0
+        echo "/opt/cmake/bin" >> $GITHUB_PATH

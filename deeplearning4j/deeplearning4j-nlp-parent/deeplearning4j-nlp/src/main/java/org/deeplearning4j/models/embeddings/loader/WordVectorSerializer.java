@@ -1,60 +1,39 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.models.embeddings.loader;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipInputStream;
-import java.util.zip.ZipOutputStream;
-
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.io.output.CloseShieldOutputStream;
+import org.apache.commons.lang3.StringUtils;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.common.util.DL4JFileUtils;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
@@ -94,94 +73,38 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.storage.CompressedRamStorage;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
-/**
- * This is utility class, providing various methods for WordVectors serialization
- *
- * List of available serialization methods (please keep this list consistent with source code):
- *
- * <ul>
- * <li>Serializers for Word2Vec:</li>
- * {@link #writeWordVectors(WeightLookupTable, File)}
- * {@link #writeWordVectors(WeightLookupTable, OutputStream)}
- * {@link #writeWord2VecModel(Word2Vec, File)}
- * {@link #writeWord2VecModel(Word2Vec, String)}
- * {@link #writeWord2VecModel(Word2Vec, OutputStream)}
- *
- * <li>Deserializers for Word2Vec:</li>
- * {@link #readWord2VecModel(String)}
- * {@link #readWord2VecModel(String, boolean)}
- * {@link #readWord2VecModel(File)}
- * {@link #readWord2VecModel(File, boolean)}
- * {@link #readAsBinaryNoLineBreaks(File)}
- * {@link #readAsBinaryNoLineBreaks(InputStream)}
- * {@link #readAsBinary(File)}
- * {@link #readAsBinary(InputStream)}
- * {@link #readAsCsv(File)}
- * {@link #readAsCsv(InputStream)}
- * {@link #readBinaryModel(InputStream, boolean, boolean)}
- * {@link #readWord2VecFromText(File, File, File, File, VectorsConfiguration)}
- * {@link #readWord2Vec(String, boolean)}
- * {@link #readWord2Vec(File, boolean)}
- * {@link #readWord2Vec(InputStream, boolean)}
- *
- * <li>Serializers for ParaVec:</li>
- * {@link #writeParagraphVectors(ParagraphVectors, File)}
- * {@link #writeParagraphVectors(ParagraphVectors, String)}
- * {@link #writeParagraphVectors(ParagraphVectors, OutputStream)}
- *
- * <li>Deserializers for ParaVec:</li>
- * {@link #readParagraphVectors(File)}
- * {@link #readParagraphVectors(String)}
- * {@link #readParagraphVectors(InputStream)}
- *
- *
- * <li>Adapters</li>
- * {@link #fromTableAndVocab(WeightLookupTable, VocabCache)}
- * {@link #fromPair(Pair)}
- * {@link #loadTxt(File)}
- * {@link #loadTxt(InputStream)}
- *
- * <li>Serializers to tSNE format</li>
- * {@link #writeTsneFormat(Word2Vec, INDArray, File)}
- *
- * <li>FastText serializer:</li>
- * {@link #writeWordVectors(FastText, File)}
- *
- * <li>FastText deserializer:</li>
- * {@link #readWordVectors(File)}
- *
- * <li>SequenceVectors serializers:</li>
- * {@link #writeSequenceVectors(SequenceVectors, OutputStream)}
- * {@link #writeSequenceVectors(SequenceVectors, SequenceElementFactory, File)}
- * {@link #writeSequenceVectors(SequenceVectors, SequenceElementFactory, String)}
- * {@link #writeSequenceVectors(SequenceVectors, SequenceElementFactory, OutputStream)}
- * {@link #writeLookupTable(WeightLookupTable, File)}
- * {@link #writeVocabCache(VocabCache, File)}
- * {@link #writeVocabCache(VocabCache, OutputStream)}
- *
- * <li>SequenceVectors deserializers:</li>
- * {@link #readSequenceVectors(File, boolean)}
- * {@link #readSequenceVectors(String, boolean)}
- * {@link #readSequenceVectors(SequenceElementFactory, File)}
- * {@link #readSequenceVectors(InputStream, boolean)}
- * {@link #readSequenceVectors(SequenceElementFactory, InputStream)}
- * {@link #readLookupTable(File)}
- * {@link #readLookupTable(InputStream)}
- *
- * </ul>
- *
- * @author Adam Gibson
- * @author raver119
- * @author alexander@skymind.io
- * @author Alexei KLENIN
- */
 @Slf4j
 public class WordVectorSerializer {
     private static final int MAX_SIZE = 50;
@@ -2676,26 +2599,23 @@ public class WordVectorSerializer {
     }
 
     protected static TokenizerFactory getTokenizerFactory(VectorsConfiguration configuration) {
-        if (configuration == null)
+        if (configuration == null) {
             return null;
-
-        if (configuration.getTokenizerFactory() != null && !configuration.getTokenizerFactory().isEmpty()) {
-            try {
-                TokenizerFactory factory =
-                                (TokenizerFactory) Class.forName(configuration.getTokenizerFactory()).newInstance();
-
-                if (configuration.getTokenPreProcessor() != null && !configuration.getTokenPreProcessor().isEmpty()) {
-                    TokenPreProcess preProcessor =
-                                    (TokenPreProcess) Class.forName(configuration.getTokenPreProcessor()).newInstance();
-                    factory.setTokenPreProcessor(preProcessor);
-                }
-
-                return factory;
-
-            } catch (Exception e) {
-                log.error("Can't instantiate saved TokenizerFactory: {}", configuration.getTokenizerFactory());
-            }
         }
+
+        String tokenizerFactoryClassName = configuration.getTokenizerFactory();
+        if (StringUtils.isNotEmpty(tokenizerFactoryClassName)) {
+            TokenizerFactory factory = DL4JClassLoading.createNewInstance(tokenizerFactoryClassName);
+
+            String tokenPreProcessorClassName = configuration.getTokenPreProcessor();
+            if (StringUtils.isNotEmpty(tokenPreProcessorClassName)) {
+                TokenPreProcess preProcessor = DL4JClassLoading.createNewInstance(tokenizerFactoryClassName);
+                factory.setTokenPreProcessor(preProcessor);
+            }
+
+            return factory;
+        }
+
         return null;
     }
 

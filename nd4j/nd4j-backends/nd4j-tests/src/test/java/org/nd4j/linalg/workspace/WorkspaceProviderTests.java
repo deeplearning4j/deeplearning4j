@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.workspace;
 
@@ -27,7 +31,11 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.*;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -42,9 +50,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.Assert.*;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class WorkspaceProviderTests extends BaseNd4jTest {
@@ -239,15 +244,15 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             INDArray array3 = null;
 
             long reqMem = 5 * Nd4j.sizeOfDataType(DataType.DOUBLE);
-            assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
+            assertEquals(reqMem + reqMem % 16, ws1.getPrimaryOffset());
             try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")
                             .notifyScopeEntered()) {
 
                 INDArray array2 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
 
                 reqMem = 5 * Nd4j.sizeOfDataType(DataType.DOUBLE);
-                assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
-                assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
+                assertEquals(reqMem + reqMem % 16, ws1.getPrimaryOffset());
+                assertEquals(reqMem + reqMem % 16, ws2.getPrimaryOffset());
 
                 try (Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
                                 .notifyScopeBorrowed()) {
@@ -256,15 +261,15 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
                     array3 = array2.unsafeDuplication();
                     assertTrue(ws1 == array3.data().getParentWorkspace());
-                    assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
-                    assertEquals((reqMem + reqMem % 8) * 2, ws1.getPrimaryOffset());
+                    assertEquals(reqMem + reqMem % 16, ws2.getPrimaryOffset());
+                    assertEquals((reqMem + reqMem % 16) * 2, ws1.getPrimaryOffset());
                 }
 
                 log.info("Current workspace: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
                 assertTrue(ws2 == Nd4j.getMemoryManager().getCurrentWorkspace());
 
-                assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
-                assertEquals((reqMem + reqMem % 8) * 2, ws1.getPrimaryOffset());
+                assertEquals(reqMem + reqMem % 16, ws2.getPrimaryOffset());
+                assertEquals((reqMem + reqMem % 16) * 2, ws1.getPrimaryOffset());
 
                 assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
             }
@@ -279,20 +284,18 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     public void testNestedWorkspacesOverlap1() {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
-        try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
-                        .notifyScopeEntered()) {
+        try (Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeEntered()) {
             INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
             long reqMem = 5 * Nd4j.sizeOfDataType();
-            assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
-            try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")
-                            .notifyScopeEntered()) {
+            assertEquals(reqMem + (Nd4jWorkspace.alignmentBase - reqMem % Nd4jWorkspace.alignmentBase), ws1.getPrimaryOffset());
+            try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").notifyScopeEntered()) {
 
                 INDArray array2 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
                 reqMem = 5 * Nd4j.sizeOfDataType();
-                assertEquals(reqMem + reqMem % 8, ws1.getPrimaryOffset());
-                assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
+                assertEquals(reqMem + (Nd4jWorkspace.alignmentBase - reqMem % Nd4jWorkspace.alignmentBase), ws1.getPrimaryOffset());
+                assertEquals(reqMem + (Nd4jWorkspace.alignmentBase - reqMem % Nd4jWorkspace.alignmentBase), ws2.getPrimaryOffset());
 
                 try (Nd4jWorkspace ws3 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1")
                                 .notifyScopeBorrowed()) {
@@ -300,8 +303,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
                     INDArray array3 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
-                    assertEquals(reqMem + reqMem % 8, ws2.getPrimaryOffset());
-                    assertEquals((reqMem + reqMem % 8) * 2, ws1.getPrimaryOffset());
+                    assertEquals(reqMem + (Nd4jWorkspace.alignmentBase - reqMem % Nd4jWorkspace.alignmentBase), ws2.getPrimaryOffset());
+                    assertEquals((reqMem + (Nd4jWorkspace.alignmentBase - reqMem % Nd4jWorkspace.alignmentBase)) * 2, ws1.getPrimaryOffset());
                 }
             }
         }
@@ -901,21 +904,18 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             assertEquals(100 * Nd4j.sizeOfDataType(), ws1.getPrimaryOffset());
 
             for (int x = 1; x <= 100; x++) {
-                try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager()
-                                .getWorkspaceForCurrentThread(loopConfiguration, "WS2").notifyScopeEntered()) {
+                try (Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(loopConfiguration, "WS2").notifyScopeEntered()) {
                     INDArray array2 = Nd4j.create(x);
                 }
 
                 Nd4jWorkspace ws2 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2");
                 long reqMemory = x * Nd4j.sizeOfDataType();
-                assertEquals(reqMemory + reqMemory % 8, ws2.getLastCycleAllocations());
+                assertEquals(reqMemory + reqMemory % 16, ws2.getLastCycleAllocations());
             }
 
             Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").initializeWorkspace();
 
-            assertEquals(100 * Nd4j.sizeOfDataType(),
-                            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2")
-                                            .getCurrentSize());
+            assertEquals(100 * Nd4j.sizeOfDataType(), Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS2").getCurrentSize());
         }
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());

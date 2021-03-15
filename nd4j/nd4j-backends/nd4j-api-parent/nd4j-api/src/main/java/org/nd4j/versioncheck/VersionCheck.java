@@ -1,39 +1,48 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.versioncheck;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.config.ND4JSystemProperties;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
-import java.nio.file.*;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-/**
- * A runtime version check utility that does 2 things:<br>
- * (a) validates the versions of ND4J, DL4J, DataVec, RL4J, Arbiter on the class path, logging a warning if
- * incompatible versions are found<br>
- * (b) allows users to get version information for the above projects at runtime.
- *
- * @author Alex Black
- */
 @Slf4j
 public class VersionCheck {
 
@@ -92,14 +101,14 @@ public class VersionCheck {
             return;
         }
 
-        if(classExists(ND4J_JBLAS_CLASS)) {
+        if(ND4JClassLoading.classPresentOnClasspath(ND4J_JBLAS_CLASS)) {
             //nd4j-jblas is ancient and incompatible
             log.error("Found incompatible/obsolete backend and version (nd4j-jblas) on classpath. ND4J is unlikely to"
                     + " function correctly with nd4j-jblas on the classpath. JVM will now exit.");
             System.exit(1);
         }
 
-        if(classExists(CANOVA_CLASS)) {
+        if(ND4JClassLoading.classPresentOnClasspath(CANOVA_CLASS)) {
             //Canova is ancient and likely to pull in incompatible dependencies
             log.error("Found incompatible/obsolete library Canova on classpath. ND4J is unlikely to"
                     + " function correctly with this library on the classpath. JVM will now exit.");
@@ -281,29 +290,19 @@ public class VersionCheck {
             }
         }
 
-        if(classExists(ND4J_JBLAS_CLASS)){
+        if(ND4JClassLoading.classPresentOnClasspath(ND4J_JBLAS_CLASS)){
             //nd4j-jblas is ancient and incompatible
             log.error("Found incompatible/obsolete backend and version (nd4j-jblas) on classpath. ND4J is unlikely to"
                     + " function correctly with nd4j-jblas on the classpath.");
         }
 
-        if(classExists(CANOVA_CLASS)){
+        if(ND4JClassLoading.classPresentOnClasspath(CANOVA_CLASS)){
             //Canova is anchient and likely to pull in incompatible
             log.error("Found incompatible/obsolete library Canova on classpath. ND4J is unlikely to"
                     + " function correctly with this library on the classpath.");
         }
 
         return repState;
-    }
-
-    private static boolean classExists(String className){
-        try{
-            Class.forName(className);
-            return true;
-        } catch (ClassNotFoundException e ){
-            //OK - not found
-        }
-        return false;
     }
 
     /**

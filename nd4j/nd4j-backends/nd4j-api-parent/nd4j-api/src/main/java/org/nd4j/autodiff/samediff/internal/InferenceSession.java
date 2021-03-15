@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.samediff.internal;
 
@@ -51,20 +55,8 @@ import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
-/**
- * InferenceSession: Performs inference (forward pass) on a SameDiff instance to get the outputs of the requested nodes.<br>
- * Dynamically (in AbstractSession) calculates the required subgraph to execute to get the required outputs.<br>
- * Note that while AbstractSession handles the graph structure component, InferenceSession handles only op execution
- * and memory management<br>
- * <br>
- * For INDArray memory management - i.e., tracking and releasing memory manually, as soon as possible, to
- * minimize memory use - this is implemented using a {@link SessionMemMgr} instance (for allocations/deallocations) and
- * also {@link IdentityDependencyTracker} to track where arrays are actually used. The IdentityDependencyTracker tells
- * us when the array is no longer needed (i.e., has been "fully consumed" by all ops depending on it) accounting for the
- * fact that some operations, such as identity, enter, exit, etc, are "zero copy" for performance reasons.
- *
- * @author Alex Black
- */
+import static org.nd4j.imports.VariableUtils.stripVarSuffix;
+
 @Slf4j
 public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,OpContext>> {
     private static final String SCOPE_PANIC_MSG = "If required, arrays in workspaces can be detached using INDArray.detach() before being passed to the SameDiff instance.\n" +
@@ -680,6 +672,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             if (tArr == null && allIterInputs != null) {
                 tArr = lookup(inTensorArray.name(), allIterInputs, false);
             }
+
             List<INDArray> l = tensorArrays.get(tArr);
             Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
 
@@ -711,6 +704,14 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 if (valuesArr.rank() == 1 && get.rank() > 0) {
                     get = get.reshape();
                 }
+
+                //reflect the expanded storage
+                if(outIdx >= l.size()) {
+                    while(l.size() <= outIdx) {
+                        l.add(null);
+                    }
+                }
+
                 l.set(outIdx, get);
 
                 //Add dependency for values array until end of execution
@@ -807,9 +808,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //Might be due to repeated inputs
                 Set<String> uniqueArgNames = new HashSet<>();
                 Collections.addAll(uniqueArgNames, argNames);
-                Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters),
+             /*   Preconditions.checkState(uniqueArgNames.size() == (numNonConstIns + numConstPhIns + numNonConstInsAllIters),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
-                        opName, uniqueArgNames, opInputs, constAndPhInputs);
+                        opName, uniqueArgNames, opInputs, constAndPhInputs);*/
             } else {
                 Preconditions.checkState(numArgs == (numNonConstIns + numConstPhIns),
                         "Different number of arg names as op inputs for op %s (%s): arg names %s vs. op inputs %s+%s", df.getClass().getSimpleName(),
@@ -880,7 +881,7 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
             for (int i = 0; i < outShape.size(); i++) {
                 LongShapeDescriptor reqShape = outShape.get(i);
 
-                //Issue: many ops have multiple valid output datatypes, and output shape calc can't at present know which: https://github.com/deeplearning4j/deeplearning4j/issues/6872
+                //Issue: many ops have multiple valid output datatypes, and output shape calc can't at present know which: https://github.com/eclipse/deeplearning4j/issues/6872
                 //As a workaround, we'll use the output variable datatype instead.
                 DataType dt = sameDiff.getVariable(outNames[i]).dataType();
                 DataType currDT = reqShape.dataType();
@@ -891,6 +892,9 @@ public class InferenceSession extends AbstractSession<INDArray, Pair<SameDiffOp,
                 //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
                 boolean isOutput = allReqVariables.contains(outNames[i]);
                 INDArray out = mmgr.allocate(isOutput, reqShape);
+                if(reqShape.isEmpty() && !out.isEmpty()) {
+                    throw new IllegalStateException("Output shape was empty, but created array was not.");
+                }
                 oc.setOutputArray(i, out);
             }
 

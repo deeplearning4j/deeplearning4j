@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.workspace;
 
@@ -29,7 +33,12 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.*;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.LocationPolicy;
+import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -42,9 +51,6 @@ import java.io.File;
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.api.buffer.DataType.DOUBLE;
 
-/**
- * @author raver119@gmail.com
- */
 @Slf4j
 @RunWith(Parameterized.class)
 public class BasicWorkspaceTests extends BaseNd4jTest {
@@ -221,11 +227,11 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 INDArray array2 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
 
                 long reqMemory = 5 * Nd4j.sizeOfDataType(DOUBLE);
-                assertEquals(reqMemory + reqMemory % 8, wsOne.getPrimaryOffset());
+                assertEquals(reqMemory + reqMemory % 16, wsOne.getPrimaryOffset());
 
                 array2.leverageTo("EXT");
 
-                assertEquals((reqMemory + reqMemory % 8) * 2, wsOne.getPrimaryOffset());
+                assertEquals((reqMemory + reqMemory % 16) * 2, wsOne.getPrimaryOffset());
             }
         }
     }
@@ -237,7 +243,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             INDArray array1 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
 
             long reqMemory = 5 * Nd4j.sizeOfDataType(array1.dataType());
-            assertEquals(reqMemory + reqMemory % 8, wsOne.getPrimaryOffset());
+            assertEquals(reqMemory + reqMemory % 16, wsOne.getPrimaryOffset());
 
             INDArray array2;
 
@@ -252,7 +258,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             INDArray array3 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
 
             reqMemory = 5 * Nd4j.sizeOfDataType(array3.dataType());
-            assertEquals((reqMemory + reqMemory % 8) * 2, wsOne.getPrimaryOffset());
+            assertEquals((reqMemory + reqMemory % 16) * 2, wsOne.getPrimaryOffset());
 
             array1.addi(array2);
 
@@ -275,12 +281,12 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 assertEquals(0, wsOne.getPrimaryOffset());
 
                 long reqMemory = 5 * Nd4j.sizeOfDataType(array.dataType());
-                assertEquals(reqMemory + reqMemory % 8, wsTwo.getPrimaryOffset());
+                assertEquals(reqMemory + reqMemory % 16, wsTwo.getPrimaryOffset());
 
                 INDArray copy = array.leverage();
 
-                assertEquals(reqMemory + reqMemory % 8, wsTwo.getPrimaryOffset());
-                assertEquals(reqMemory + reqMemory % 8, wsOne.getPrimaryOffset());
+                assertEquals(reqMemory + reqMemory % 16, wsTwo.getPrimaryOffset());
+                assertEquals(reqMemory + reqMemory % 16, wsOne.getPrimaryOffset());
 
                 assertNotEquals(null, copy);
 
@@ -324,7 +330,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             array2.assign(array1);
 
             long reqMemory = 5 * Nd4j.sizeOfDataType(array1.dataType());
-            assertEquals(reqMemory + reqMemory % 8, wsI.getPrimaryOffset());
+            assertEquals(reqMemory + reqMemory % 16, wsI.getPrimaryOffset());
             assertEquals(array1, array2);
 
             INDArray array3 = Nd4j.createUninitializedDetached(DataType.FLOAT, new long[0]);
@@ -348,17 +354,17 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             assertTrue(array.isAttached());
 
             long reqMemory = 5 * Nd4j.sizeOfDataType(array.dataType());
-            assertEquals(reqMemory + reqMemory % 8, wsI.getPrimaryOffset());
+            assertEquals(reqMemory + reqMemory % 16, wsI.getPrimaryOffset());
 
             copy = array.detach();
 
             assertTrue(array.isInScope());
             assertTrue(array.isAttached());
-            assertEquals(reqMemory + reqMemory % 8, wsI.getPrimaryOffset());
+            assertEquals(reqMemory + reqMemory % 16, wsI.getPrimaryOffset());
 
             assertFalse(copy.isAttached());
             assertTrue(copy.isInScope());
-            assertEquals(reqMemory + reqMemory % 8, wsI.getPrimaryOffset());
+            assertEquals(reqMemory + reqMemory % 16, wsI.getPrimaryOffset());
         }
 
         assertEquals(15.0f, copy.sumNumber().floatValue(), 0.01f);
@@ -685,7 +691,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         workspace.initializeWorkspace();
         long reqMemory = 11 * Nd4j.sizeOfDataType(arrayCold.dataType());
-        assertEquals(reqMemory + reqMemory % 8, workspace.getCurrentSize());
+        assertEquals(reqMemory + reqMemory % 16, workspace.getCurrentSize());
 
 
         log.info("-----------------------");
@@ -700,11 +706,11 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
             long reqMem = 10 * Nd4j.sizeOfDataType(array.dataType());
 
-            assertEquals(reqMem + reqMem % 8, workspace.getPrimaryOffset());
+            assertEquals(reqMem + reqMem % 16, workspace.getPrimaryOffset());
 
             array.addi(1.0);
 
-            assertEquals(reqMem + reqMem % 8, workspace.getPrimaryOffset());
+            assertEquals(reqMem + reqMem % 16, workspace.getPrimaryOffset());
 
             assertEquals("Failed on iteration " + x, 10, array.sumNumber().doubleValue(), 0.01);
 
@@ -752,13 +758,13 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         // checking if allocation actually happened
         long reqMemory = 5 * Nd4j.sizeOfDataType(DOUBLE);
-        assertEquals(reqMemory + reqMemory % 8, workspace.getPrimaryOffset());
+        assertEquals(reqMemory + reqMemory % 16, workspace.getPrimaryOffset());
 
         array.assign(1.0f);
 
         INDArray dup = array.dup();
 
-        assertEquals((reqMemory + reqMemory % 8) * 2, workspace.getPrimaryOffset());
+        assertEquals((reqMemory + reqMemory % 16) * 2, workspace.getPrimaryOffset());
 
         assertEquals(5, dup.sumNumber().doubleValue(), 0.01);
 
@@ -786,7 +792,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         // checking if allocation actually happened
         long reqMem = 5 * Nd4j.sizeOfDataType(array.dataType());
-        assertEquals(reqMem + reqMem % 8, workspace.getPrimaryOffset());
+        assertEquals(reqMem + reqMem % 16, workspace.getPrimaryOffset());
 
         try {
             INDArray array2 = Nd4j.create(DOUBLE, 10000000);
@@ -795,11 +801,11 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             assertTrue(true);
         }
 
-        assertEquals(reqMem + reqMem % 8, workspace.getPrimaryOffset());
+        assertEquals(reqMem + reqMem % 16, workspace.getPrimaryOffset());
 
         INDArray array2 = Nd4j.create(DOUBLE, new long[] {1, 5}, 'c');
 
-        assertEquals((reqMem + reqMem % 8) * 2, workspace.getPrimaryOffset());
+        assertEquals((reqMem + reqMem % 16) * 2, workspace.getPrimaryOffset());
     }
 
     @Test
@@ -817,7 +823,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         // checking if allocation actually happened
         long reqMem = 5 * Nd4j.sizeOfDataType(array.dataType());
-        assertEquals(reqMem + reqMem % 8, workspace.getPrimaryOffset());
+        assertEquals(reqMem + reqMem % 16, workspace.getPrimaryOffset());
 
         array.assign(1.0f);
 
@@ -841,7 +847,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         // checking if allocation actually happened
         long reqMem = 5 * Nd4j.sizeOfDataType(array.dataType());
-        assertEquals(reqMem + reqMem % 8, workspace.getPrimaryOffset());
+        assertEquals(reqMem + reqMem % 16, workspace.getPrimaryOffset());
 
         array.assign(1.0f);
 
@@ -870,7 +876,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         // checking if allocation actually happened
         long reqMem = 5 * Nd4j.sizeOfDataType(array.dataType());
-        assertEquals(reqMem + reqMem % 8, workspace.getPrimaryOffset());
+        assertEquals(reqMem + reqMem % 16, workspace.getPrimaryOffset());
 
 
         assertEquals(exp, array);

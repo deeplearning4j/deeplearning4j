@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.common.io;
 
@@ -21,6 +25,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 public abstract class ReflectionUtils {
@@ -395,6 +400,40 @@ public abstract class ReflectionUtils {
                     field.set(dest, srcValue);
                 }
             }, COPYABLE_FIELDS);
+        }
+    }
+
+    /**
+     * Create a new instance of the specified {@link Class} by invoking
+     * the constructor whose argument list matches the types of the supplied
+     * arguments.
+     *
+     * <p>Provided class must have a public constructor.</p>
+     *
+     * @param clazz the class to instantiate; never {@code null}
+     * @param args the arguments to pass to the constructor, none of which may
+     *             be {@code null}
+     * @return the new instance; never {@code null}
+     */
+    public static <T> T newInstance(Class<T> clazz, Object... args) {
+        Objects.requireNonNull(clazz, "Class must not be null");
+        Objects.requireNonNull(args, "Argument array must not be null");
+        if (Arrays.asList(args).contains(null)) {
+            throw new RuntimeException("Individual arguments must not be null");
+        }
+
+        try {
+            Class<?>[] parameterTypes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
+            Constructor<T> constructor = clazz.getDeclaredConstructor(parameterTypes);
+
+            if (!Modifier.isPublic(constructor.getModifiers())) {
+                throw new IllegalArgumentException(String.format(
+                        "Class [%s] must have public constructor in order to be instantiated.", clazz.getName()));
+            }
+
+            return constructor.newInstance(args);
+        } catch (Throwable instantiationException) {
+            throw new RuntimeException(instantiationException);
         }
     }
 

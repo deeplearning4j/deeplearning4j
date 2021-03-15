@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -240,4 +242,110 @@ TEST_F(ConstantShapeHelperTests, ShapeDescriptor_1) {
     ShapeDescriptor descr2(shapeInfo2);
 
     ASSERT_FALSE(descr1 == descr2);
+}
+
+TEST_F(ConstantShapeHelperTests, ShapeDescriptor_validation) {
+
+    //for c order
+    std::vector<Nd4jLong> shape{ 2,3,4,5 };
+    std::vector<Nd4jLong> incorrectStride1{ 20,20,5,1 };
+    std::vector<Nd4jLong> incorrectStride2{ 60,20,5,5 };
+    std::vector<Nd4jLong> correctStride1{ 60,20,5,1 };
+    std::vector<Nd4jLong> correctStride2{ 300,100,25,5 };
+    std::vector<Nd4jLong> correctStride3{ 800, 200, 40, 5 }; 
+
+    auto shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, incorrectStride1, 1);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_STRIDES);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride1, 1);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, incorrectStride2, 1);
+    ASSERT_TRUE(shapeDesc.validate() == (SHAPE_DESC_INCORRECT_STRIDES | SHAPE_DESC_INCORRECT_EWS));
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride2, 1);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_EWS);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride2, 5);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride3, 1);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_EWS);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'c', shape, correctStride3, 0);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
+
+    //order f
+    std::reverse(std::begin(shape), std::end(shape));
+    std::reverse(std::begin(incorrectStride1), std::end(incorrectStride1));
+    std::reverse(std::begin(incorrectStride2), std::end(incorrectStride2));
+    std::reverse(std::begin(correctStride1), std::end(correctStride1));
+    std::reverse(std::begin(correctStride2), std::end(correctStride2));
+    std::reverse(std::begin(correctStride3), std::end(correctStride3));
+
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, incorrectStride1, 1);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_STRIDES);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride1, 1);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, incorrectStride2, 1);
+    ASSERT_TRUE(shapeDesc.validate() == (SHAPE_DESC_INCORRECT_STRIDES | SHAPE_DESC_INCORRECT_EWS));
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride2, 1);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_EWS);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride2, 5);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride3, 1);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_INCORRECT_EWS);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape, correctStride3, 0);
+    ASSERT_TRUE(shapeDesc.validate() == SHAPE_DESC_OK);
+
+    std::vector<Nd4jLong> shape1;
+    shape1.resize(MAX_RANK+1);
+    shapeDesc = ShapeDescriptor(DataType::FLOAT32, 'f', shape1, correctStride3, 0);
+    ASSERT_TRUE( (shapeDesc.validate() & SHAPE_DESC_INCORRECT_RANK) == SHAPE_DESC_INCORRECT_RANK);
+
+}
+
+TEST_F(ConstantShapeHelperTests, ShapeDescriptor_paddedBuffer) {
+
+    constexpr int n = 2;
+    constexpr int c = 3;
+    constexpr int h = 4;
+    constexpr int w = 5;
+    constexpr int n_pad = 2;
+    constexpr int c_pad = 3;
+    constexpr int h_pad = 4;
+    constexpr int w_pad = 5;
+    char orders[] = { 'c', 'f' };
+
+    for (auto& order : orders) {
+        auto shapeDesc1 = ShapeDescriptor::paddedBufferDescriptor(DataType::FLOAT32, order, { n, c, h, w }, { n_pad, c_pad, h_pad, w_pad });
+        auto shapeDesc2 = ShapeDescriptor(DataType::FLOAT32, order, { n + n_pad, c + c_pad, h + h_pad, w + w_pad });
+        auto shapeDesc3 = ShapeDescriptor::paddedBufferDescriptor(DataType::FLOAT32, order, { n, c, h, w }, { n_pad, c_pad });
+        auto shapeDesc4 = ShapeDescriptor(DataType::FLOAT32, order, { n + n_pad, c + c_pad, h, w });
+        auto shapeDesc5 = ShapeDescriptor::paddedBufferDescriptor(DataType::FLOAT32, order, { n, c, h, w }, { 0, 0, h_pad, w_pad });
+        auto shapeDesc6 = ShapeDescriptor(DataType::FLOAT32, order, { n, c , h + h_pad, w + w_pad });
+
+        ASSERT_TRUE(shapeDesc1.validate() == SHAPE_DESC_OK);
+        ASSERT_TRUE(shapeDesc2.validate() == SHAPE_DESC_OK);
+        ASSERT_TRUE(shapeDesc3.validate() == SHAPE_DESC_OK);
+        ASSERT_TRUE(shapeDesc4.validate() == SHAPE_DESC_OK);
+        ASSERT_TRUE(shapeDesc5.validate() == SHAPE_DESC_OK);
+        ASSERT_TRUE(shapeDesc6.validate() == SHAPE_DESC_OK);
+
+        ASSERT_TRUE(shapeDesc1.allocLength() == shapeDesc2.allocLength());
+        ASSERT_TRUE(shapeDesc3.allocLength() == shapeDesc4.allocLength());
+        ASSERT_TRUE(shapeDesc5.allocLength() == shapeDesc6.allocLength());
+
+        const auto& v1 = shapeDesc1.strides();
+        const auto& v2 = shapeDesc2.strides();
+        const auto& v3 = shapeDesc3.strides();
+        const auto& v4 = shapeDesc4.strides();
+        const auto& v5 = shapeDesc5.strides();
+        const auto& v6 = shapeDesc6.strides();
+
+        for (int i = 0; i < v1.size(); i++) {
+            ASSERT_TRUE(v1[i] == v2[i]);
+        }
+        for (int i = 0; i < v3.size(); i++) {
+            ASSERT_TRUE(v3[i] == v4[i]);
+        }
+        for (int i = 0; i < v5.size(); i++) {
+            ASSERT_TRUE(v5[i] == v6[i]);
+        }
+	}
+
 }

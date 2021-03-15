@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.opvalidation;
 
@@ -24,7 +28,17 @@ import org.nd4j.autodiff.validation.OpTestCase;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.reduce.bp.*;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.CumSumBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.MaxBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.MeanBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.MinBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.Norm1Bp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.Norm2Bp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.NormMaxBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.ProdBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.StandardDeviationBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.SumBp;
+import org.nd4j.linalg.api.ops.impl.reduce.bp.VarianceBp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -466,7 +480,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
                 dLdInExpected_1.putColumn(i, prod_1);
             }
             dLdInExpected_1.divi(preReduceInput);
-            dLdInExpected_1.muliColumnVector(dLdOut_1.reshape(3, 1));    //Reshape is a hack around https://github.com/deeplearning4j/deeplearning4j/issues/5530
+            dLdInExpected_1.muliColumnVector(dLdOut_1.reshape(3, 1));    //Reshape is a hack around https://github.com/eclipse/deeplearning4j/issues/5530
             //System.out.println(dLdInExpected_1);
             /*
             [[   24.0000,   12.0000,    8.0000,    6.0000],

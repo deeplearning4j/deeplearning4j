@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -49,9 +51,10 @@ namespace ops {
                 if (shift < 0) {
                     shift -= input->sizeAt(i) * (shift / inputLen - 1);
                 }
-                else {
+                else if(shift != 0) {
                     shift %= input->sizeAt(i);
                 }
+
                 shifts[i] = shift;
             }
 
@@ -62,7 +65,7 @@ namespace ops {
                 // convert shift to positive value between 1 and inputLen - 1
                 shift -= inputLen * (shift / inputLen - 1);
             }
-            else
+            else if(shift != 0)
                 // cut shift to value between 1 and inputLen - 1
                 shift %= inputLen;
             axes.resize(block.getIArguments()->size() - 1);
@@ -85,6 +88,21 @@ namespace ops {
         if (block.isInplace()) output = input;
 
         shiftIsLinear = (axes.size() == 0) || (input->rankOf() == 1);
+        nd4j_debug("Roll: Shift is linear %d Shift is %d, first dimension is %d\n",shiftIsLinear,shifts[0],axes[0]);
+        bool shiftsSumZero = false;
+        auto shiftSum = 0;
+        for (auto& s: shifts) {
+           shiftSum += s;
+           nd4j_debug("Roll: Shift  is %d\n",s);
+        }
+        //all zeros is no op
+        if(shiftSum < 1) {
+            nd4j_debug("Roll: No shift needed. Shift total was %d\n",shiftSum);
+            if(!block.isInplace()) {
+                output->assign(input);
+            }
+            return Status::OK();
+        }
 
         if (shiftIsLinear) {
             helpers::rollFunctorLinear(block.launchContext(), input, output, shifts[0], block.isInplace());

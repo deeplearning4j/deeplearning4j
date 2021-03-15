@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.transform.serde;
 
@@ -24,24 +28,12 @@ import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.sequence.SequenceComparator;
 import org.datavec.api.transform.sequence.SequenceSplit;
-import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
-import org.nd4j.shade.jackson.annotation.PropertyAccessor;
-import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.core.type.TypeReference;
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
-import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Abstract serializer for mapping Transforms, Conditions, Filters, DataActions etc to/from JSON.<br>
- * Also: lists and arrays of these.
- *
- * @author Alex Black
- */
 public abstract class BaseSerializer {
 
     public abstract ObjectMapper getObjectMapper();

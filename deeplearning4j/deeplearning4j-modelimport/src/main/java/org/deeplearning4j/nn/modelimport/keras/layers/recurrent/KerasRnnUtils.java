@@ -1,34 +1,50 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
+import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 
 import java.util.Map;
 
-/**
- * Utility functions for Keras RNN layers
- *
- * @author Max Pumperla
- */
 public class KerasRnnUtils {
+
+    /**
+     * Returns true if the given layer is an
+     * {@link KerasLSTM}, {@link KerasSimpleRnn},
+     * {@link KerasBidirectional}
+     * @param kerasLayer the input layer
+     * @return
+     */
+    public static boolean isRnnLayer(KerasLayer kerasLayer) {
+        return kerasLayer instanceof KerasLSTM ||
+                kerasLayer instanceof KerasSimpleRnn ||
+                kerasLayer instanceof KerasBidirectional ||
+                kerasLayer instanceof KerasEmbedding;
+    }
 
     /**
      * Get unroll parameter to decide whether to unroll RNN with BPTT or not.

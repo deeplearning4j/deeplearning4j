@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.opvalidation;
 
@@ -48,10 +52,26 @@ import org.nd4j.linalg.api.ops.impl.shape.MergeMax;
 import org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.EmbeddingLookup;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByAvgNorm;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.CReLU;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Min;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.ASinh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Erf;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Erfc;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.HardSigmoid;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoid;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.SELU;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.Swish;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -306,7 +326,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testBatchToSpace() {
-        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/deeplearning4j/deeplearning4j/issues/6863
+        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/eclipse/deeplearning4j/issues/6863
         Nd4j.getRandom().setSeed(1337);
 
         int miniBatch = 4;
@@ -343,7 +363,7 @@ public class TransformOpValidation extends BaseOpValidation {
 
     @Test
     public void testSpaceToBatch() {
-        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/deeplearning4j/deeplearning4j/issues/6863
+        //OpValidationSuite.ignoreFailing();          //TODO: https://github.com/eclipse/deeplearning4j/issues/6863
 
         Nd4j.getRandom().setSeed(7331);
 
@@ -1261,7 +1281,7 @@ public class TransformOpValidation extends BaseOpValidation {
                     out = sd.math().isInfinite(in);
                     break;
                 case 2:
-                    //TODO: IsMax supports both bool and float out: https://github.com/deeplearning4j/deeplearning4j/issues/6872
+                    //TODO: IsMax supports both bool and float out: https://github.com/eclipse/deeplearning4j/issues/6872
                     inArr = Nd4j.create(new double[]{-3, 5, 0, 2});
                     exp = Nd4j.create(new boolean[]{false, true, false, false});
                     out = sd.math().isMax(in);
@@ -2061,9 +2081,6 @@ public class TransformOpValidation extends BaseOpValidation {
         );
 
         assertNull(err);
-
-
-
     }
 
     @Test
@@ -2087,7 +2104,6 @@ public class TransformOpValidation extends BaseOpValidation {
 
     }
 
-
     @Test
     public void testEmbeddingLookup() {
 
@@ -2107,7 +2123,7 @@ public class TransformOpValidation extends BaseOpValidation {
         //TODO: Methods failed ResizeLanczos5, ResizeMitchelcubic, ResizeArea
 
         for (ImageResizeMethod method : ImageResizeMethod.values()) {
-                if (method==ImageResizeMethod.ResizeLanczos5 || method==ImageResizeMethod.ResizeArea || method==ImageResizeMethod.ResizeMitchellcubic)
+                if (method==ImageResizeMethod.ResizeLanczos5 || method==ImageResizeMethod.ResizeArea || method == ImageResizeMethod.ResizeMitchelcubic)
                 {continue;}
 
                 log.info("Trying {}", method);
@@ -2245,11 +2261,5 @@ public class TransformOpValidation extends BaseOpValidation {
                     .gradientCheck(true));
             assertNull(err);
         }
-
-
     }
-
-
-
-    }
-
+}

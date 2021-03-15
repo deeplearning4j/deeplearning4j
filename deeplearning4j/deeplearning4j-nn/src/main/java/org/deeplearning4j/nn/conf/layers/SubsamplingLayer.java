@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.layers;
 
@@ -32,17 +36,10 @@ import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 
 import java.util.Collection;
 import java.util.Map;
-
-/**
- * Subsampling layer also referred to as pooling in convolution neural nets
- *
- * Supports the following pooling types: MAX, AVG, SUM, PNORM
- *
- * @author Adam Gibson
- */
 
 @Data
 @NoArgsConstructor
@@ -59,7 +56,12 @@ public class SubsamplingLayer extends NoParamLayer {
     protected int pnorm;
     protected double eps;
     protected boolean cudnnAllowFallback = true;
-    protected CNN2DFormat cnn2dDataFormat = CNN2DFormat.NCHW;
+    protected CNN2DFormat cnn2dDataFormat = CNN2DFormat.NCHW; //default value for legacy reasons
+    public final static CNN2DFormat DEFAULT_FORMAT = CNN2DFormat.NCHW;
+    @JsonIgnore
+    @EqualsAndHashCode.Exclude
+    private boolean defaultValueOverridden = false;
+
     /*
     Default here for JSON deserialization of 1.0.0-beta4 and earlier models. New models default to false via builder.
     This impacts average pooling only - whether the divisor should include or exclude padding along image edges.
@@ -100,6 +102,7 @@ public class SubsamplingLayer extends NoParamLayer {
         this.convolutionMode = builder.convolutionMode;
         if (builder instanceof Builder) {
             this.dilation = ((Builder) builder).dilation;
+            this.cnn2dDataFormat = ((Builder) builder).dataFormat;
         }
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
@@ -132,7 +135,7 @@ public class SubsamplingLayer extends NoParamLayer {
                                                        Collection<TrainingListener> trainingListeners, int layerIndex, INDArray layerParamsView,
                                                        boolean initializeParams, DataType networkDataType) {
         org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer ret =
-                        new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf, networkDataType);
+                new org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer(conf, networkDataType);
         ret.setListeners(trainingListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -151,25 +154,28 @@ public class SubsamplingLayer extends NoParamLayer {
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.CNN) {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                            + "\"): Expected CNN input, got " + inputType);
+                    + "\"): Expected CNN input, got " + inputType);
         }
 
         return InputTypeUtil.getOutputTypeCnnLayers(inputType, kernelSize, stride, padding, dilation, convolutionMode,
-                        ((InputType.InputTypeConvolutional) inputType).getChannels(), layerIndex, getLayerName(),
-                        cnn2dDataFormat, SubsamplingLayer.class);
+                ((InputType.InputTypeConvolutional) inputType).getChannels(), layerIndex, getLayerName(),
+                cnn2dDataFormat, SubsamplingLayer.class);
     }
 
     @Override
     public void setNIn(InputType inputType, boolean override) {
         //No op: subsampling layer doesn't have nIn value
-        this.cnn2dDataFormat = ((InputType.InputTypeConvolutional)inputType).getFormat();
+        if(!defaultValueOverridden || override) {
+            this.cnn2dDataFormat = ((InputType.InputTypeConvolutional) inputType).getFormat();
+            defaultValueOverridden = true;
+        }
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         if (inputType == null) {
             throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
-                            + "\"): input is null");
+                    + "\"): input is null");
         }
 
         return InputTypeUtil.getPreProcessorForInputTypeCnnLayers(inputType, getLayerName());
@@ -190,7 +196,7 @@ public class SubsamplingLayer extends NoParamLayer {
 
         //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         val im2colSizePerEx = c.getChannels() * outputType.getHeight() * outputType.getWidth() * kernelSize[0]
-                        * kernelSize[1];
+                * kernelSize[1];
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         long trainingWorkingSizePerEx = im2colSizePerEx;
@@ -200,10 +206,10 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         return new LayerMemoryReport.Builder(layerName, SubsamplingLayer.class, inputType, outputType)
-                        .standardMemory(0, 0) //No params
-                        .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
-                        .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
-                        .build();
+                .standardMemory(0, 0) //No params
+                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     public int getPnorm() {
@@ -252,7 +258,7 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize, int[] stride,
-                        int[] padding) {
+                       int[] padding) {
             super(poolingType, kernelSize, stride, padding);
         }
 
@@ -347,7 +353,7 @@ public class SubsamplingLayer extends NoParamLayer {
         public SubsamplingLayer build() {
             if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0) {
                 throw new IllegalStateException(
-                                "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+                        "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
             }
             ConvolutionUtils.validateConvolutionModePadding(convolutionMode, padding);
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
@@ -384,10 +390,10 @@ public class SubsamplingLayer extends NoParamLayer {
     @Getter
     @Setter
     protected static abstract class BaseSubsamplingBuilder<T extends BaseSubsamplingBuilder<T>>
-                    extends Layer.Builder<T> {
+            extends Layer.Builder<T> {
 
         protected org.deeplearning4j.nn.conf.layers.PoolingType poolingType =
-                        org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+                org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
 
         protected int[] kernelSize = new int[] {1, 1}; // Same as filter size from the last conv layer
         protected int[] stride = new int[] {2, 2}; // Default is 2. Down-sample by a factor of 2
@@ -436,7 +442,7 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         protected BaseSubsamplingBuilder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int[] kernelSize,
-                        int[] stride, int[] padding) {
+                                         int[] stride, int[] padding) {
             this.setPoolingType(poolingType);
             this.setKernelSize(kernelSize);
             this.setStride(stride);

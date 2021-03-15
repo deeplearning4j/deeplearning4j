@@ -1,20 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.rng;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.common.base.Preconditions;
+import org.nd4j.common.util.ArrayUtil;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,19 +41,26 @@ import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
-import org.nd4j.linalg.api.ops.random.impl.*;
+import org.nd4j.linalg.api.ops.random.impl.AlphaDropOut;
+import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
+import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
+import org.nd4j.linalg.api.ops.random.impl.Choice;
+import org.nd4j.linalg.api.ops.random.impl.DropOut;
+import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
+import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
+import org.nd4j.linalg.api.ops.random.impl.Linspace;
+import org.nd4j.linalg.api.ops.random.impl.LogNormalDistribution;
+import org.nd4j.linalg.api.ops.random.impl.ProbablisticMerge;
+import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
+import org.nd4j.linalg.api.ops.random.impl.UniformDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.common.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 @Slf4j
 public class RngValidationTests extends BaseNd4jTest {
@@ -408,8 +423,6 @@ public class RngValidationTests extends BaseNd4jTest {
                 double alpha = alphaDropoutA(tc.prop("p"));
                 double beta = alphaDropoutB(tc.prop("p"));
                 return new AlphaDropOut(Nd4j.ones(tc.getDataType(), tc.shape), tc.arr(), tc.prop("p"), alpha, ALPHA_PRIME, beta);
-
-
             case "distributionuniform":
                 INDArray shape = tc.getShape().length == 0 ? Nd4j.empty(DataType.LONG) : Nd4j.create(ArrayUtil.toDouble(tc.shape)).castTo(DataType.LONG);
                 return new DistributionUniform(shape, tc.arr(), tc.prop("min"), tc.prop("max"));
@@ -437,7 +450,6 @@ public class RngValidationTests extends BaseNd4jTest {
     private static double relError(double x, double y){
         return Math.abs(x-y) / (Math.abs(x) + Math.abs(y));
     }
-
 
     public static final double DEFAULT_ALPHA =  1.6732632423543772;
     public static final double DEFAULT_LAMBDA = 1.0507009873554804;

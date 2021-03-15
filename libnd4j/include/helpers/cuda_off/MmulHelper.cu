@@ -1,19 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 // @author raver119@gmail.com
@@ -571,17 +574,17 @@ static __global__ void batchedCudaGemm(const void* vA, const Nd4jLong* aShapeInf
         // calculate index of current batch
         Nd4jLong batchInd;
         if(cBatchDims != nullptr)
-            batchInd = shape::coords2index(cShapeInfo, cCoords, cRank - 2, cBatchDims);
+            batchInd = shape::coords2index(cShapeInfo, cBatchDims, cRank - 2, cCoords);
 
         // evaluate A coordinates
         if(aBatchDims != nullptr)
-            shape::index2coords(batchInd, aShapeInfo, aCoords, aRank - 2, aBatchDims);
+            shape::index2coords(batchInd, aShapeInfo, aBatchDims, aRank - 2, aCoords);
         aCoords[aMaxis] = cCoords[cMaxis];
         aCoords[aKaxis] = 0;
 
         // evaluate B coordinates
         if(bBatchDims != nullptr)
-            shape::index2coords(batchInd, bShapeInfo, bCoords, bRank - 2, bBatchDims);
+            shape::index2coords(batchInd, bShapeInfo, bBatchDims, bRank - 2, bCoords);
         bCoords[bKaxis] = 0;
         bCoords[bNaxis] = cCoords[cNaxis];
 

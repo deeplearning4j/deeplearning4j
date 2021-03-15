@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.imports.tensorflow;
 
@@ -36,22 +40,6 @@ import java.util.*;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipFile;
 
-/**
- * A simple utility that analyzes TensorFlow graphs and reports details about the models:<br>
- * - The path of the model file(s)<br>
- * - The path of the model(s) that can't be imported due to missing ops<br>
- * - The path of model files that couldn't be read for some reason (corrupt file?)<br>
- * - The total number of ops in all graphs<br>
- * - The number of unique ops in all graphs<br>
- * - The (unique) names of all ops encountered in all graphs<br>
- * - The (unique) names of all ops that were encountered, and can be imported, in all graphs<br>
- * - The (unique) names of all ops that were encountered, and can NOT be imported (lacking import mapping)<br>
- *<br>
- * Note that an op is considered to be importable if has an import mapping specified for that op name in SameDiff.<br>
- * This alone does not guarantee that the op can be imported successfully.
- *
- * @author Alex Black
- */
 @Slf4j
 public class TensorFlowImportValidator {
 

@@ -1,19 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 /*
  * templatemath.h
@@ -1297,7 +1300,7 @@ inline __device__ uint64_t nd4j_atomicAdd<uint64_t>(uint64_t* address, uint64_t 
 
 template <>
 inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)  {
-#if __CUDA_ARCH__ >= 700 && defined(CUDA_10)
+#if __CUDA_ARCH__ >= 700 && CUDA_VERSION_MAJOR >=10
     atomicAdd(reinterpret_cast<__half*>(address), val.data);
 #else
 	auto address_as_ull = (int*) address;

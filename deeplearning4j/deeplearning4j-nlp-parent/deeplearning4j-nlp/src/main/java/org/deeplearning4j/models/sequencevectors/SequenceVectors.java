@@ -1,21 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.models.sequencevectors;
 
+import org.apache.commons.lang3.StringUtils;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import lombok.Getter;
@@ -63,12 +69,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * SequenceVectors implements abstract features extraction for Sequences and SequenceElements, using SkipGram, CBOW or DBOW (for Sequence features extraction).
- *
- *
- * @author raver119@gmail.com
- */
 public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<T> implements WordVectors {
     private static final long serialVersionUID = 78249242142L;
 
@@ -494,15 +494,17 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             this.useHierarchicSoftmax = configuration.isUseHierarchicSoftmax();
             this.preciseMode = configuration.isPreciseMode();
 
-            if (configuration.getModelUtils() != null && !configuration.getModelUtils().isEmpty()) {
-
+            String modelUtilsClassName = configuration.getModelUtils();
+            if (StringUtils.isNotEmpty(modelUtilsClassName)) {
                 try {
-                    this.modelUtils = (ModelUtils<T>) Class.forName(configuration.getModelUtils()).newInstance();
-                } catch (Exception e) {
-                    log.error("Got {} trying to instantiate ModelUtils, falling back to BasicModelUtils instead");
+                    this.modelUtils = DL4JClassLoading.createNewInstance(modelUtilsClassName);
+                } catch (Exception instantiationException) {
+                    log.error(
+                            "Got '{}' trying to instantiate ModelUtils, falling back to BasicModelUtils instead",
+                            instantiationException.getMessage(),
+                            instantiationException);
                     this.modelUtils = new BasicModelUtils<>();
                 }
-
             }
 
             if (configuration.getElementsLearningAlgorithm() != null
@@ -551,12 +553,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @return
          */
         public Builder<T> sequenceLearningAlgorithm(@NonNull String algoName) {
-            try {
-                Class clazz = Class.forName(algoName);
-                sequenceLearningAlgorithm = (SequenceLearningAlgorithm<T>) clazz.newInstance();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            this.sequenceLearningAlgorithm = DL4JClassLoading.createNewInstance(algoName);
             return this;
         }
 
@@ -578,13 +575,9 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
          * @return
          */
         public Builder<T> elementsLearningAlgorithm(@NonNull String algoName) {
-            try {
-                Class clazz = Class.forName(algoName);
-                elementsLearningAlgorithm = (ElementsLearningAlgorithm<T>) clazz.newInstance();
-                this.configuration.setElementsLearningAlgorithm(elementsLearningAlgorithm.getClass().getCanonicalName());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            this.elementsLearningAlgorithm = DL4JClassLoading.createNewInstance(algoName);
+            this.configuration.setElementsLearningAlgorithm(elementsLearningAlgorithm.getClass().getCanonicalName());
+
             return this;
         }
 
@@ -943,31 +936,23 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                                 .lr(learningRate).seed(seed).build();
             }
 
-            if (this.configuration.getElementsLearningAlgorithm() != null) {
-                try {
-                    elementsLearningAlgorithm = (ElementsLearningAlgorithm<T>) Class
-                                    .forName(this.configuration.getElementsLearningAlgorithm()).newInstance();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+            String elementsLearningAlgorithm = this.configuration.getElementsLearningAlgorithm();
+            if (StringUtils.isNotEmpty(elementsLearningAlgorithm)) {
+                this.elementsLearningAlgorithm = DL4JClassLoading.createNewInstance(elementsLearningAlgorithm);
             }
 
-            if (this.configuration.getSequenceLearningAlgorithm() != null) {
-                try {
-                    sequenceLearningAlgorithm = (SequenceLearningAlgorithm<T>) Class
-                                    .forName(this.configuration.getSequenceLearningAlgorithm()).newInstance();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+            String sequenceLearningAlgorithm = this.configuration.getSequenceLearningAlgorithm();
+            if (StringUtils.isNotEmpty(sequenceLearningAlgorithm)) {
+                this.sequenceLearningAlgorithm = DL4JClassLoading.createNewInstance(sequenceLearningAlgorithm);
             }
 
-            if (trainElementsVectors && elementsLearningAlgorithm == null) {
+            if (trainElementsVectors && this.elementsLearningAlgorithm == null) {
                 // create default implementation of ElementsLearningAlgorithm
-                elementsLearningAlgorithm = new SkipGram<>();
+                this.elementsLearningAlgorithm = new SkipGram<>();
             }
 
-            if (trainSequenceVectors && sequenceLearningAlgorithm == null) {
-                sequenceLearningAlgorithm = new DBOW<>();
+            if (trainSequenceVectors && this.sequenceLearningAlgorithm == null) {
+                this.sequenceLearningAlgorithm = new DBOW<>();
             }
 
             this.modelUtils.init(lookupTable);

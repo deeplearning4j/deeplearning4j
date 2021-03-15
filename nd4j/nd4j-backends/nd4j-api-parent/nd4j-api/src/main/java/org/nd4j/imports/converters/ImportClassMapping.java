@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.imports.converters;
 
@@ -25,14 +29,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A simple helper class for defining the following mappings:
- * - Op name to op
- * - Tensorflow op name to op (for import)
- * - Onnx op name to op (for import)
- *
- * @author Alex Black
- */
 @Slf4j
 public class ImportClassMapping {
 
@@ -88,6 +84,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.controlflow.Where.class,
             org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter.class,
+            org.nd4j.linalg.api.ops.impl.controlflow.compat.While.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.LoopCond.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge.class,
@@ -100,6 +97,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.image.ImageResize.class,
             org.nd4j.linalg.api.ops.impl.image.NonMaxSuppression.class,
             org.nd4j.linalg.api.ops.impl.image.NonMaxSuppressionV3.class,
+            org.nd4j.linalg.api.ops.impl.image.NonMaxSuppressionWithOverlaps.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeBilinear.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeBicubic.class,
             org.nd4j.linalg.api.ops.impl.image.ResizeNearestNeighbor.class,
@@ -300,6 +298,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.shape.DiagPart.class,
             org.nd4j.linalg.api.ops.impl.shape.ExpandDims.class,
             org.nd4j.linalg.api.ops.impl.shape.Eye.class,
+            org.nd4j.linalg.api.ops.impl.shape.Flatten2D.class,
             org.nd4j.linalg.api.ops.impl.shape.Gather.class,
             org.nd4j.linalg.api.ops.impl.shape.GatherNd.class,
             org.nd4j.linalg.api.ops.impl.shape.Linspace.class,

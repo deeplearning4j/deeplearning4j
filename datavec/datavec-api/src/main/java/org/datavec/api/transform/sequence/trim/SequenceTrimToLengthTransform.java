@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.datavec.api.transform.sequence.trim;
 
 import lombok.Data;
@@ -12,15 +32,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Trim or pad the sequence to the specified length (number of sequence steps). It supports 2 modes:<br>
- * TRIM: Sequences longer than the specified maximum will be trimmed to exactly the maximum. Shorter sequences will not be modified.<br>
- * TRIM_OR_PAD: Sequences longer than the specified maximum will be trimmed to exactly the maximum. Shorter sequences will be
- * padded with as many copies of the "pad" array to make the sequence length equal the specified maximum.<br>
- * Note that the 'pad' list (i.e., values to pad when using TRIM_OR_PAD mode) must be equal in length to the number of columns (values per time step)
- *
- * @author Alex Black
- */
 @JsonIgnoreProperties({"schema"})
 @EqualsAndHashCode(exclude = {"schema"})
 @Data

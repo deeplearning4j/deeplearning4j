@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelimport.keras.weights;
 
@@ -46,6 +50,11 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
     @Rule
     public final TemporaryFolder testDir = new TemporaryFolder();
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 9999999L;
+    }
 
     @Test
     public void testSimpleLayersWithWeights() throws Exception {
@@ -224,7 +233,12 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
         INDArray input = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(input);
-        assertArrayEquals(new long[]{mb, inputLength - kernel + 1,  nOut}, output.shape());     //NWC
+        if(modelPath.contains("tensorflow"))
+            assertArrayEquals(new long[]{mb, inputLength - kernel + 1,  nOut}, output.shape());     //NWC
+        else if(modelPath.contains("theano")) {
+            assertArrayEquals(new long[]{mb, nOut,inputLength - kernel + 1}, output.shape());     //NCW
+
+        }
         logSuccess(modelPath);
     }
 
@@ -305,7 +319,11 @@ public class KerasWeightSettingTests extends BaseDL4JTest {
 
         INDArray inEmbedding = Nd4j.zeros(mb, inputLength);
         INDArray output = model.output(inEmbedding);
-        assertArrayEquals(new long[]{mb, inputLength - kernel + 1, nOut}, output.shape());      //NWC
+        if(modelPath.contains("tensorflow"))
+            assertArrayEquals(new long[]{mb, inputLength - kernel + 1, nOut}, output.shape());      //NWC
+        else if(modelPath.contains("theano"))
+            assertArrayEquals(new long[]{mb, nOut,inputLength - kernel + 1}, output.shape());      //NCC
+
         logSuccess(modelPath);
     }
 

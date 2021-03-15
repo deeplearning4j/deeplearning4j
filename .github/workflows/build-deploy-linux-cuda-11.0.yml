@@ -1,0 +1,69 @@
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+  workflow_dispatch:
+jobs:
+  # Wait for up to a minute for previous run to complete, abort if not done by then
+  pre-ci:
+    runs-on: ubuntu-16.04
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  linux-x86_64-cuda_11-0:
+    needs: pre-ci
+    runs-on: ubuntu-16.04
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 8192
+          remove-dotnet: 'true'
+          remove-haskell: 'true'
+      - uses: actions/checkout@v2
+      - uses: konduitai/cuda-install/.github/actions/install-cuda-ubuntu@master
+        env:
+          cuda: 11.0.167
+          GCC: 9
+      - uses: ./.github/actions/update-deps-linux
+      - uses: ./.github/actions/install-protobuf-linux
+      - uses: ./.github/actions/install-cmake-linux
+      - name: Set up Java for publishing to GitHub Packages
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+          server-id: sonatype-nexus-snapshots
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_GPG_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Build cuda
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_TO: ossrh
+          MAVEN_USERNAME: ${{ secrets.SONATYPE_USER_1 }}
+          MAVEN_PASSWORD: ${{ secrets.SONATYPE_USER1_PASS }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.PACKAGES_GPG_PASS }}
+        run: |
+          export PATH="/usr/local/cuda-11.0/bin:$PATH"
+          mvn --version
+          cmake --version
+          protoc --version
+          nvcc --version
+          sudo apt-get autoremove
+          sudo apt-get clean
+          mvn -Possrh -Djavacpp.platform=linux-x86_64 -Dlibnd4j.compute="5.0 5.2 5.3 6.0 6.2 8.0" -Dlibnd4j.chip=cuda -pl ":nd4j-cuda-11.0,:deeplearning4j-cuda-11.0,:libnd4j"  --also-make  -Pcuda clean  --batch-mode deploy  -DskipTests
+
+

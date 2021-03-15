@@ -1,22 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.parameterserver.distributed.training;
 
 import lombok.NonNull;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.logic.Storage;
@@ -28,9 +33,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 
-/**
- * @author raver119@gmail.com
- */
 @Deprecated
 public class TrainerProvider {
     private static final TrainerProvider INSTANCE = new TrainerProvider();
@@ -52,13 +54,14 @@ public class TrainerProvider {
     }
 
     protected void loadProviders(){
-        ServiceLoader<TrainingDriver> serviceLoader = ServiceLoader.load(TrainingDriver.class);
-        for(TrainingDriver d : serviceLoader){
-            trainers.put(d.targetMessageClass(), d);
+        ServiceLoader<TrainingDriver> serviceLoader = ND4JClassLoading.loadService(TrainingDriver.class);
+        for (TrainingDriver trainingDriver : serviceLoader){
+            trainers.put(trainingDriver.targetMessageClass(), trainingDriver);
         }
 
-        if (trainers.size() < 1)
+        if (trainers.isEmpty()) {
             throw new ND4JIllegalStateException("No TrainingDrivers were found via ServiceLoader mechanism");
+        }
     }
 
     public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport,
@@ -72,8 +75,6 @@ public class TrainerProvider {
             trainer.init(voidConfiguration, transport, storage, clipboard);
         }
     }
-
-
 
     @SuppressWarnings("unchecked")
     protected <T extends TrainingMessage> TrainingDriver<T> getTrainer(T message) {

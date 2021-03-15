@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.indexing;
 
@@ -26,7 +30,13 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.*;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.IntervalIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndexAll;
+import org.nd4j.linalg.indexing.NewAxis;
+import org.nd4j.linalg.indexing.PointIndex;
+import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.common.util.ArrayUtil;
 
@@ -76,8 +86,6 @@ public class IndexingTestsC extends BaseNd4jTest {
 
         final INDArray aBad = col.broadcast(2, 2);
         final INDArray aGood = col.dup().broadcast(2, 2);
-//        System.out.println(aBad);
-//        System.out.println(aGood);
         assertTrue(Transforms.abs(aGood.sub(aBad).div(aGood)).maxNumber().doubleValue() < 0.01);
     }
 
@@ -447,12 +455,6 @@ public class IndexingTestsC extends BaseNd4jTest {
                         msg = "Test case: rank = " + rank + ", order = " + order + ", inShape = " + Arrays.toString(inShape) +
                                 ", outShape = " + Arrays.toString(expShape) +
                                 ", indexes = " + Arrays.toString(indexes) + ", newAxisTest=" + newAxisTestCase;
-//                        System.out.println(msg);
-
-//                        System.out.println(arr);
-//                        System.out.println(sub);
-//                        System.out.println();
-
 
                         NdIndexIterator posIter = new NdIndexIterator(expShape);
                         while (posIter.hasNext()) {
@@ -468,7 +470,6 @@ public class IndexingTestsC extends BaseNd4jTest {
             }
         }
 
-//        System.out.println("TOTAL TEST CASES: " + totalTestCaseCount);
         assertTrue(String.valueOf(totalTestCaseCount), totalTestCaseCount > 5000);
     }
 
@@ -557,13 +558,7 @@ public class IndexingTestsC extends BaseNd4jTest {
         char order = 'c';
         INDArray arr = Nd4j.linspace(DataType.FLOAT, 1, prod, prod).reshape('c', inShape).dup(order);
         INDArray sub = arr.get(indexes);
-
-//        System.out.println(Arrays.toString(indexes));
-//        System.out.println(arr);
-//        System.out.println();
-//        System.out.println(sub);
     }
-
 
     @Override
     public char ordering() {

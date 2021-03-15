@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.datasets.iterator;
 
@@ -30,15 +34,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-/**
- * This dataset iterator combines multiple DataSetIterators into 1 MultiDataSetIterator.
- * Values from each iterator are joined on a per-example basis - i.e., the values from each DataSet are combined
- * as different feature arrays for a multi-input neural network.
- * Labels can come from either one of the underlying DataSetIteartors only (if 'outcome' is >= 0) or from all
- * iterators (if outcome is < 0)
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 @NoArgsConstructor
 @AllArgsConstructor

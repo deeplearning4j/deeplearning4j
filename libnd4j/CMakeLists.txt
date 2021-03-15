@@ -1,8 +1,11 @@
 cmake_minimum_required(VERSION 3.15)
 project(libnd4j)
-set(CMAKE_VERBOSE_MAKEFILE OFF)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+message("CMAKE MODULE PATH ${CMAKE_MODULE_PATH}")
+
 #ensure we create lib files
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
@@ -18,8 +21,99 @@ set(FLATBUFFERS_BUILD_FLATC "OFF" CACHE STRING "Hack to disable flatc build" FOR
 
 set(CMAKE_CXX_STANDARD 11)
 
+#///////////////////////////////////////////////////////////////////////////////
+# genCompilation: Generates cpp, cu files
+# INPUT:
+# $FILE_ITEM template-configuration that utilizes libnd4j type, macros helpers
+# defined inside { include/types/types.h, include/system/type_boilerplate.h}
+# OUTPUT:
+# $CUSTOMOPS_GENERIC_SOURCES  generated files will be added into this List
+#////////////////////////////////////////////////////////////////////////////////
+#  A simple template-configuration file example:
+# // hints and defines what types will be generated
+# #cmakedefine LIBND4J_TYPE_GEN
+# #cmakedefine FLOAT_TYPE_GEN
+# // below if defines blocks are needed for correctly handling multiple types
+# #if  defined(LIBND4J_TYPE_GEN)
+#  BUILD_DOUBLE_TEMPLATE(template void someFunc, (arg_list,..),
+#                          LIBND4J_TYPES_@FL_TYPE_INDEX@, INDEXING_TYPES);
+# #endif
+# #if defined(FLOAT_TYPE_GEN)
+#  BUILD_SINGLE_TEMPLATE(template class SomeClass,, FLOAT_TYPES_@FL_TYPE_INDEX@);
+# #endif
+#////////////////////////////////////////////////////////////////////////////////
 
-include(GenCompilation)
+set_property(GLOBAL PROPERTY JOB_POOLS one_jobs=1 two_jobs=2)
+
+
+
+
+function(genCompilation FILE_ITEM)
+    get_filename_component(FILE_ITEM_WE ${FL_ITEM} NAME_WE)
+
+    set(EXTENSION "cpp")
+
+    if(FL_ITEM MATCHES "cu.in$")
+         set(EXTENSION "cu")
+    endif()
+
+    file(READ ${FL_ITEM} CONTENT_FL)
+    #check content for types
+
+    #set all to false
+    set (FLOAT_TYPE_GEN     0)
+    set (INT_TYPE_GEN       0)
+    set (LIBND4J_TYPE_GEN   0)
+    set (PAIRWISE_TYPE_GEN  0)
+    set (RANGE_STOP         -1)
+
+    string(REGEX MATCHALL "#cmakedefine[ \t]+[^_]+_TYPE_GEN" TYPE_MATCHES ${CONTENT_FL})
+
+    foreach(TYPEX ${TYPE_MATCHES})
+        set(STOP -1)
+        if(TYPEX MATCHES "INT_TYPE_GEN$")
+           set (INT_TYPE_GEN  1)
+           set(STOP 7)
+        endif()
+        if(TYPEX MATCHES "LIBND4J_TYPE_GEN$")
+           set (LIBND4J_TYPE_GEN 1)
+           set(STOP 9)
+        endif()
+        if(TYPEX MATCHES "FLOAT_TYPE_GEN$")
+           set (FLOAT_TYPE_GEN 1)
+           set(STOP 3)
+        endif()
+        if(TYPEX MATCHES "PAIRWISE_TYPE_GEN$")
+           set (PAIRWISE_TYPE_GEN  1)
+           set(STOP 12)
+        endif()
+        if(STOP GREATER RANGE_STOP)
+           set(RANGE_STOP ${STOP})
+        endif()
+
+    endforeach()
+
+    if(RANGE_STOP GREATER -1)
+        foreach(FL_TYPE_INDEX RANGE 0 ${RANGE_STOP})
+            # set OFF if the index is above
+            if(FL_TYPE_INDEX GREATER 3)
+                 set (FLOAT_TYPE_GEN     0)
+            endif()
+            if(FL_TYPE_INDEX GREATER 7)
+                 set (INT_TYPE_GEN     0)
+            endif()
+            if(FL_TYPE_INDEX GREATER 9)
+                 set (LIBND4J_TYPE_GEN   0)
+            endif()
+            set(GENERATED_SOURCE  "${CMAKE_BINARY_DIR}/compilation_units/${FILE_ITEM_WE}_${FL_TYPE_INDEX}.${EXTENSION}")
+            configure_file(  "${FL_ITEM}" "${GENERATED_SOURCE}" @ONLY)
+            LIST(APPEND CUSTOMOPS_GENERIC_SOURCES ${GENERATED_SOURCE} )
+        endforeach()
+    endif()
+
+    set(CUSTOMOPS_GENERIC_SOURCES ${CUSTOMOPS_GENERIC_SOURCES} PARENT_SCOPE)
+endfunction()
+
 
 if (SD_CUDA)
     enable_language(CUDA)
@@ -42,6 +136,7 @@ endif()
 # -fsanitize=address
 # -fsanitize=leak
 if (SD_ANDROID_BUILD)
+    set_property(GLOBAL PROPERTY JOB_POOLS one_job=1 two_jobs=2)
     set(CMAKE_CXX_FLAGS_RELEASE  "${CMAKE_CXX_FLAGS_RELEASE} -O3 -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  "${CMAKE_CXX_FLAGS_DEBUG} -O0 -g -fPIC -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else")
 elseif (APPLE)
@@ -52,15 +147,17 @@ elseif(WIN32)
     if (SD_CUDA)
         set(CMAKE_CXX_FLAGS_RELEASE  "-D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  "  /FS /EHsc")
+        set(CMAKE_CUDA_STANDARD 14)
     else()
         set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  " -g -O2 -fPIC")
+        set(CMAKE_CUDA_STANDARD 14)
     endif()
 else()
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -g -O0 -fPIC")
 
-    if (SD_CPU)
+    if (SD_CPU AND SD_SANITIZE)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
     endif()
 endif()
@@ -131,23 +228,31 @@ if(NOT SD_CUDA)
     endif()
 endif()
 
+
 #arm-compute entry
 if(${HELPERS_armcompute})
  find_package(ARMCOMPUTE REQUIRED)
+ execute_process(COMMAND ${CMAKE_C_COMPILER} -fuse-ld=gold -Wl,--version ERROR_QUIET OUTPUT_VARIABLE ld_version)
+ if ("${ld_version}" MATCHES "GNU gold")
+   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=gold ")
+   if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_link_options("-Wl,--long-plt")
+   endif()
+ endif()
 
  if(ARMCOMPUTE_FOUND)
     message("Found ARMCOMPUTE: ${ARMCOMPUTE_LIBRARIES}")
     set(HAVE_ARMCOMPUTE 1)
     # Add preprocessor definition for ARM Compute NEON 
     add_definitions(-DARMCOMPUTENEON_ENABLED)
-    #build our library with neon support
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfpu=neon")
     include_directories(${ARMCOMPUTE_INCLUDE})
     message("----${ARMCOMPUTE_INCLUDE}---")
  endif()
 
+
 endif()
- 
+
+
 
 # new mkl-dnn entry
 if (${HELPERS_mkldnn})
@@ -259,8 +364,8 @@ set (CMAKE_INSTALL_PREFIX $ENV{ND4J_HOME}/nd4j-native-parent/nd4j-native/src/mai
 # Set package information
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Native operations for nd4j.")
 set(CPACK_PACKAGE_RELEASE 1)
-set(CPACK_PACKAGE_CONTACT "raver119 <raver119@skymind.io>")
-set(CPACK_PACKAGE_VENDOR "Skymind")
+set(CPACK_PACKAGE_CONTACT "agibsonccc <adam@skymind.global>")
+set(CPACK_PACKAGE_VENDOR "Eclipse")
 set(CPACK_SETDESTDIR "false")
 set(CPACK_PACKAGING_INSTALL_PREFIX "/usr/local/lib")
 set(CPACK_PACKAGE_NAME "libnd4j")
@@ -291,7 +396,7 @@ if(DISTRIBUTION STREQUAL "Ubuntu")
   # For Ubuntu <= 12, libatlas3gf-base, liblapack3gf
   # Build deps: libatlas3-base liblapack3 libopenblas-dev libatlas-dev liblapack-dev gcc-5 g++-5
   set(CPACK_DEBIAN_PACKAGE_DEPENDS "")
-  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/deeplearning4j/libnd4j")
+  set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/eclipse/deeplearning4j")
   set(CPACK_GENERATOR "DEB")
   set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}_${CPACK_PACKAGE_VERSION}-${RELEASE}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
   set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst;${CMAKE_CURRENT_SOURCE_DIR}/cmake/postrm;" )
@@ -305,13 +410,13 @@ elseif(DISTRIBUTION STREQUAL "CentOS")
   else()
     set(CPACK_RPM_PACKAGE_ARCHITECTURE "i686")
   endif()
-  set(CPACK_PACKAGE_CONTACT "raver119")
+  set(CPACK_PACKAGE_CONTACT "agibsonccc")
   set(CPACK_RPM_PACKAGE_GROUP "Development/Tools")
   set(CPACK_RPM_PACKAGE_LICENSE "Apache-2.0")
   set(CPACK_RPM_PACKAGE_SUGGESTS "cuda")
   # Build deps: atlas blas lapack cmake3 devtoolset-4-gcc devtoolset-4-gcc-c++
   set(CPACK_RPM_PACKAGE_REQUIRES "")
-  set(CPACK_RPM_PACKAGE_URL "https://github.com/deeplearning4j/libnd4j")
+  set(CPACK_RPM_PACKAGE_URL "https://github.com/eclipse/deeplearning4j/libnd4j")
   set(CPACK_GENERATOR "RPM")
   set(CPACK_PACKAGE_FILE_NAME ${CPACK_PACKAGE_NAME}-${CPACK_PACKAGE_VERSION}.fc${RELEASE}.${CPACK_RPM_PACKAGE_ARCHITECTURE})
   set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/postinst")

@@ -1,21 +1,26 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.parameterserver.iterators;
 
+import com.sun.jna.Platform;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -28,9 +33,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * @author raver119@gmail.com
- */
 public class VirtualDataSetIteratorTest {
     @Before
     public void setUp() throws Exception {}
@@ -38,6 +40,10 @@ public class VirtualDataSetIteratorTest {
 
     @Test
     public void testSimple1() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         List<Iterator<DataSet>> iterators = new ArrayList<>();
 
         List<DataSet> first = new ArrayList<>();

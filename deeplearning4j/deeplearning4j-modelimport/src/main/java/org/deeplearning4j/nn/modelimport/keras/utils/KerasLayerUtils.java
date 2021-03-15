@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelimport.keras.utils;
 
@@ -30,6 +34,7 @@ import org.deeplearning4j.nn.modelimport.keras.layers.KerasTFOpLayer;
 import org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.*;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.*;
+import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.Keras2DEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.modelimport.keras.layers.local.KerasLocallyConnected1D;
 import org.deeplearning4j.nn.modelimport.keras.layers.noise.KerasAlphaDropout;
@@ -43,20 +48,13 @@ import org.deeplearning4j.nn.modelimport.keras.layers.pooling.KerasPooling3D;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasLSTM;
 import org.deeplearning4j.nn.modelimport.keras.layers.recurrent.KerasSimpleRnn;
 import org.deeplearning4j.nn.modelimport.keras.layers.wrappers.KerasBidirectional;
+import org.nd4j.common.primitives.Counter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.common.primitives.Pair;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-/**
- * Utility functionality to import keras models
- *
- * @author Max Pumperla
- */
 @Slf4j
 public class KerasLayerUtils {
 
@@ -191,7 +189,6 @@ public class KerasLayerUtils {
             layerConfig = getTimeDistributedLayerConfig(layerConfig, conf);
             layerClassName = getClassNameFromConfig(layerConfig, conf);
         }
-
         KerasLayer layer = null;
         if (layerClassName.equals(conf.getLAYER_CLASS_NAME_ACTIVATION())) {
             layer = new KerasActivation(layerConfig, enforceTrainingConfig);
@@ -280,6 +277,9 @@ public class KerasLayerUtils {
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MULTIPLY()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_MULTIPLY())) {
             layer = new KerasMerge(layerConfig, ElementWiseVertex.Op.Product, enforceTrainingConfig);
+        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_MAXIMUM()) ||
+                layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_MAXIMUM())) {
+            layer = new KerasMerge(layerConfig, ElementWiseVertex.Op.Max, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CONCATENATE()) ||
                 layerClassName.equals(conf.getLAYER_CLASS_NAME_FUNCTIONAL_CONCATENATE())) {
             layer = new KerasMerge(layerConfig, null, enforceTrainingConfig);
@@ -297,7 +297,9 @@ public class KerasLayerUtils {
             layer = new KerasUpsampling1D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_2D())) {
             layer = new KerasUpsampling2D(layerConfig, enforceTrainingConfig);
-        } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_3D())) {
+        }else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_UPSAMPLING_2D())) {
+            layer = new KerasUpsampling3D(layerConfig, enforceTrainingConfig);
+        }  else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_3D())) {
             layer = new KerasCropping3D(layerConfig, enforceTrainingConfig);
         } else if (layerClassName.equals(conf.getLAYER_CLASS_NAME_CROPPING_2D())) {
             layer = new KerasCropping2D(layerConfig, enforceTrainingConfig);
@@ -310,6 +312,7 @@ public class KerasLayerUtils {
                         "layer " + lambdaLayerName + ". You can register a SameDiff Lambda layer using KerasLayer." +
                         "registerLambdaLayer(lambdaLayerName, sameDiffLambdaLayer);");
             }
+
             SameDiffLambdaLayer lambdaLayer = lambdaLayers.get(lambdaLayerName);
             if (lambdaLayer != null){
                 layer = new KerasLambda(layerConfig, enforceTrainingConfig, lambdaLayer);
@@ -325,10 +328,10 @@ public class KerasLayerUtils {
         } else if (conf instanceof Keras2LayerConfiguration){
             Keras2LayerConfiguration k2conf = (Keras2LayerConfiguration)conf;
             if (layerClassName.equals(k2conf.getTENSORFLOW_OP_LAYER())){
-              layer = new KerasTFOpLayer(layerConfig, enforceTrainingConfig);
+                layer = new KerasTFOpLayer(layerConfig, enforceTrainingConfig);
             }
         }
-        if (layer == null){
+        if (layer == null) {
             Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
             if (customConfig == null)
                 throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
@@ -336,7 +339,8 @@ public class KerasLayerUtils {
                 Constructor constructor = customConfig.getConstructor(Map.class);
                 layer = (KerasLayer) constructor.newInstance(layerConfig);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("The keras custom class " + layerClassName + " needs to have a constructor with only Map<String,Object> as the argument. Please ensure this is defined."
+                        ,e);
             }
         }
         return layer;
@@ -492,15 +496,43 @@ public class KerasLayerUtils {
         List<String> inboundLayerNames = new ArrayList<>();
         if (layerConfig.containsKey(conf.getLAYER_FIELD_INBOUND_NODES())) {
             List<Object> inboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_INBOUND_NODES());
-            if (!inboundNodes.isEmpty()) {
-                inboundNodes = (List<Object>) inboundNodes.get(0);
-                for (Object o : inboundNodes) {
+            if(!inboundNodes.isEmpty()) {
+                for(Object nodeName : inboundNodes) {
+                    List<Object> list = (List<Object>) nodeName;
+                    for(Object o : list) {
+                        List<Object> list2 = (List<Object>) o;
+                        inboundLayerNames.add(list2.get(0).toString());
+
+                    }
+                }
+
+
+            }
+
+
+        }
+        return inboundLayerNames;
+    }
+
+    /**
+     * Get list of inbound layers from Keras layer configuration.
+     *
+     * @param layerConfig dictionary containing Keras layer configuration
+     * @return List of inbound layer names
+     */
+    public static List<String> getOutboundLayerNamesFromConfig(Map<String, Object> layerConfig, KerasLayerConfiguration conf) {
+        List<String> outputLayerNames = new ArrayList<>();
+        if (layerConfig.containsKey(conf.getLAYER_FIELD_OUTBOUND_NODES())) {
+            List<Object> outboundNodes = (List<Object>) layerConfig.get(conf.getLAYER_FIELD_OUTBOUND_NODES());
+            if (!outboundNodes.isEmpty()) {
+                outboundNodes = (List<Object>) outboundNodes.get(0);
+                for (Object o : outboundNodes) {
                     String nodeName = (String) ((List<Object>) o).get(0);
-                    inboundLayerNames.add(nodeName);
+                    outputLayerNames.add(nodeName);
                 }
             }
         }
-        return inboundLayerNames;
+        return outputLayerNames;
     }
 
     /**

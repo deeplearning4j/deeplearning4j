@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.graph.iterator;
 
@@ -27,15 +31,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
 
-/**Given a graph, iterate through random walks on that graph of a specified length.
- * Unlike {@link RandomWalkIterator}, the {@code WeightedRandomWalkIterator} uses the values associated with each edge
- * to determine probabilities. Weights on each edge need not be normalized.<br>
- * Because the edge values are used to determine the probabilities of selecting an edge, the {@code WeightedRandomWalkIterator}
- * can only be used on graphs with an edge type that extends the {@link java.lang.Number} class (i.e., Integer, Double, etc)<br>
- * Random walks are generated starting at every node in the graph exactly once, though the order of the starting nodes
- * is randomized.
- * @author Alex Black
- */
 public class WeightedRandomWalkIterator<V> implements GraphWalkIterator<V> {
 
     private final IGraph<V, ? extends Number> graph;

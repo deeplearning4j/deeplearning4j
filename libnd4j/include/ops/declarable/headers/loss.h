@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -356,6 +358,27 @@ namespace ops {
         #if NOT_EXCLUDED(OP_sparse_softmax_cross_entropy_loss_with_logits)
         DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits, 2, 1, false, 0, 0);
         DECLARE_CUSTOM_OP(sparse_softmax_cross_entropy_loss_with_logits_grad, 2, 1, false, 0, 0);
+        #endif
+
+      /**
+       * Implementation of CTC loss function
+       *
+       * Input arrays:
+       *    0: labels - labels NDArray {BATCH_LEN, MAX_TARGET_LEN}, type integer
+       *    1: logits - logits NDArray {BATCH_LEN, FRAME_LEN, CLASS_LEN }. log softmax of  rnn output. It should include a blank label as well, type float
+       *    2: targetLabelLengths - Length of label sequence in labels NDArray {BATCH_LEN}, type integer
+       *    3: logitsLengths - Length of input sequence in logits NDArray {BATCH_LEN}, type integer
+       *
+       *
+       *  Input integer arguments:
+       *    0: blank index - index of the blank label in logits
+       *
+       * Output array:
+       *    0: loss values, type float. NDArray {BATCH_LEN} negative log probabilities of loss
+       */
+        #if NOT_EXCLUDED(OP_ctc_loss)
+        DECLARE_CUSTOM_OP(ctc_loss, 4, 1, false, 0, 1);
+        DECLARE_CUSTOM_OP(ctc_loss_grad,  4, 1, false, 0, 1);
         #endif
 
 

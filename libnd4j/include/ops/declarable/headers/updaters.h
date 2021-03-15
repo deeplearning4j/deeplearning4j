@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2019-2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
  //
  // @author Oleh Semeniv (oleg.semeniv@gmail.com)
@@ -140,6 +144,29 @@ namespace sd {
             */
 #if NOT_EXCLUDED(OP_adam_updater)
             DECLARE_CONFIGURABLE_OP(adam_updater, 3, 3, true, 0, 0);
+#endif
+            // AdaBelief
+            /* Input arrays :
+            *  0 - input array with gradients.
+            *  1 - gradient state V
+            *  2 - gradient state M
+            * Optional :
+            * 3 - scalar learning rate value
+            * 4 - beta 1 value
+            * 5 - beta 2 value
+            * 6 - epsilon
+            * Optional:
+            * T args
+            * 0 - scalar learning rate value
+            * 1 - beta 1 value
+            * 2 - beta 2 value
+            * 3 - epsilon
+            * Optional:
+            * I args
+            * 0 - iteration
+            */
+#if NOT_EXCLUDED(OP_adabelief_updater)
+            DECLARE_CONFIGURABLE_OP(adabelief_updater, 3, 3, true, 0, 0);
 #endif
          // AdaDelta
          /* Input arrays :

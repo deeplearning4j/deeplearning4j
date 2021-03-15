@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.layers;
 
@@ -33,24 +37,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.*;
 
-/**
- * 2D Separable convolution layer configuration.
- *
- * Separable convolutions split a regular convolution operation into two simpler operations, which are usually
- * computationally more efficient.
- *
- * The first step in a separable convolution is a channels-wise convolution, which operates on each of the input maps
- * separately. A channels multiplier is used to specify the number of outputs per input map in this step. This
- * convolution is carried out with the specified kernel sizes, stride and padding values.
- *
- * The second step is a point-wise operation, in which the intermediary outputs of the channels-wise convolution are
- * mapped to the desired number of feature maps, by using a 1x1 convolution.
- *
- * The result of chaining these two operations will result in a tensor of the same shape as that for a standard conv2d
- * operation.
- *
- * @author Max Pumperla
- */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
@@ -172,7 +158,7 @@ public class SeparableConvolution2D extends ConvolutionLayer {
          *
          */
         protected int depthMultiplier = 1;
-        protected CNN2DFormat dataFormat = CNN2DFormat.NCHW;
+        protected CNN2DFormat dataFormat;
 
         public Builder(int[] kernelSize, int[] stride, int[] padding) {
             super(kernelSize, stride, padding);

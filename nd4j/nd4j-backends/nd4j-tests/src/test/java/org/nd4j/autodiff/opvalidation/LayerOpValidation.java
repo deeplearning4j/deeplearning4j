@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.opvalidation;
 
@@ -22,9 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.validation.OpValidation;
@@ -37,7 +39,15 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.PaddingMode;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.GRU;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMActivations;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMDataFormat;
@@ -333,7 +343,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testIm2Col() {
-        //OpValidationSuite.ignoreFailing();      //TEMPORARY DUE TO JVM CRASH: https://github.com/deeplearning4j/deeplearning4j/issues/6873
+        //OpValidationSuite.ignoreFailing();      //TEMPORARY DUE TO JVM CRASH: https://github.com/eclipse/deeplearning4j/issues/6873
         Nd4j.getRandom().setSeed(12345);
 
         int[][] inputSizes = new int[][]{{1, 3, 8, 8}, {3, 6, 12, 12}};

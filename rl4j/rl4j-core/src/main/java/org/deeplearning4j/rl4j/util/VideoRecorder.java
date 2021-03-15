@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.rl4j.util;
 
@@ -20,35 +24,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
 import org.datavec.image.loader.NativeImageLoader;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import static org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_ID_H264;
-import static org.bytedeco.ffmpeg.global.avcodec.AV_CODEC_ID_MPEG4;
-import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_RGB0;
-import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_RGB24;
-import static org.bytedeco.ffmpeg.global.avutil.AV_PIX_FMT_RGB8;
 
-/**
- * VideoRecorder is used to create a video from a sequence of INDArray frames. INDArrays are assumed to be in CHW format where C=3 and pixels are RGB encoded<br>
- * Example:<br>
- * <pre>
- * {@code
- *        VideoRecorder recorder = VideoRecorder.builder(160, 100)
- *             .numChannels(3)
- *             .isRGBOrder(true)
- *             .build();
- *         recorder.startRecording("myVideo.mp4");
- *         while(...) {
- *             INDArray chwData = Nd4j.create()
- *             recorder.record(chwData);
- *         }
- *         recorder.stopRecording();
- * }
- * </pre>
- *
- * @author Alexandre Boulanger
- */
 @Slf4j
 public class VideoRecorder implements AutoCloseable {
 

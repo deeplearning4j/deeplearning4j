@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.activations;
 
@@ -21,7 +25,21 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
-import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.activations.impl.ActivationCube;
+import org.nd4j.linalg.activations.impl.ActivationELU;
+import org.nd4j.linalg.activations.impl.ActivationGELU;
+import org.nd4j.linalg.activations.impl.ActivationHardSigmoid;
+import org.nd4j.linalg.activations.impl.ActivationHardTanH;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.activations.impl.ActivationRReLU;
+import org.nd4j.linalg.activations.impl.ActivationRationalTanh;
+import org.nd4j.linalg.activations.impl.ActivationReLU;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
+import org.nd4j.linalg.activations.impl.ActivationSoftPlus;
+import org.nd4j.linalg.activations.impl.ActivationSoftSign;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,9 +55,6 @@ import java.util.List;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by Alex on 30/12/2016.
- */
 @RunWith(Parameterized.class)
 public class TestActivation extends BaseNd4jTest {
 
@@ -74,7 +89,6 @@ public class TestActivation extends BaseNd4jTest {
         double[] dIn = in.data().asDouble();
 
         for( int i=0; i<max.length; i++ ){
-//            System.out.println("i = " + i);
             ActivationReLU r = new ActivationReLU(max[i], threshold[i], negativeSlope[i]);
             INDArray out = r.getActivation(in.dup(), true);
             double[] exp = new double[dIn.length];
@@ -146,7 +160,6 @@ public class TestActivation extends BaseNd4jTest {
 
         for (int i = 0; i < activations.length; i++) {
             String asJson = mapper.writeValueAsString(activations[i]);
-//            System.out.println(asJson);
 
             JsonNode node = mapper.readTree(asJson);
 

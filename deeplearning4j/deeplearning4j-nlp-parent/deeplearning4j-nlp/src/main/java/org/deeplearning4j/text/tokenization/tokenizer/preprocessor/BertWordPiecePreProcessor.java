@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.deeplearning4j.text.tokenization.tokenizer.preprocessor;
 
 import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
@@ -8,14 +28,6 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A preprocessor for cleaning/normaling text. Does the following:
- * 1. Optionally converts all characters to lower case
- * 2. Optionally strips accents off characters
- * 3. Strips all control characters
- * 4. Replaces whitespace characters with space ' ' (this includes newline and tab)
- * 5. Appends spaces before/after Chinese characters
- */
 public class BertWordPiecePreProcessor implements TokenPreProcess {
 
     public static final char REPLACEMENT_CHAR = 0xfffd;

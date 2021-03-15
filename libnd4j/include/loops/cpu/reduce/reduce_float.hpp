@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -26,11 +28,13 @@
 #include <helpers/OmpLaunchHelper.h>
 #include <helpers/Loops.h>
 #include <helpers/ConstantTadHelper.h>
+#include <helpers/ShapeBuilders.h>
 
 using namespace simdOps;
 
 namespace functions {
-    namespace reduce {
+namespace reduce    {
+
         template <typename X, typename Z>
         template <typename OpType>
         void _CUDA_H ReduceFloatFunction<X,Z>::execScalar(const void *vx, const Nd4jLong *xShapeInfo,
@@ -133,86 +137,6 @@ namespace functions {
             DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo), REDUCE_FLOAT_OPS);
         }
 
-        template <typename X, typename Y>
-        void ReduceFloatFunction<X, Y>::exec(const int opNum,
-                                             const void *x, const Nd4jLong *xShapeInfo,
-                                             void *extraParams,
-                                             void *z, const Nd4jLong *zShapeInfo,
-                                             int *dimension, int dimensionLength,
-                                             const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
-                                             int64_t start, int64_t stop) {
-                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
-                                               xShapeInfo,
-                                               extraParams,
-                                               z,
-                                               zShapeInfo,
-                                               dimension,
-                                               dimensionLength,
-                                               tadShapeInfo,
-                                               tadOffset, start, stop),
-                                  REDUCE_FLOAT_OPS);
-        }
-
-        template <typename X, typename Z>
-        template <typename OpType>
-        void _CUDA_H ReduceFloatFunction<X,Z>::exec(const void *vx, const Nd4jLong *xShapeInfo,
-                                                    void *vextraParams,
-                                                    void *vresult, const Nd4jLong *zShapeInfo,
-                                                    int *dimension, int dimensionLength,
-                                                    const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffset,
-                                                    int64_t start, int64_t stop) {
-
-                auto x = reinterpret_cast<const X *>(vx);
-                auto z = reinterpret_cast<Z *>(vresult);
-                auto extraParams = reinterpret_cast<Z *>(vextraParams);
-
-                auto resultLength = shape::length(zShapeInfo);
-
-                if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
-                    if(sd::ArrayOptions::arrayType(zShapeInfo) == sd::ArrayType::EMPTY)
-                        return;
-                    const auto startingVal = std::is_same<OpType, simdOps::Mean<X,Z>>::value ? sd::DataTypeUtils::nanOrZero<Z>() : static_cast<Z>(OpType::startingValue(x));
-
-                    for (Nd4jLong i = 0; i < resultLength; i++)
-                        z[i] = startingVal;
-                    return;
-                }
-
-                //pre squeezed: this is for keeping the pointer to the original
-                //shape information for tad offset
-                //the squeezed information doesn't render the right strides for
-                //tad offset
-                // || tad.wholeThing
-                if (resultLength == 1 || dimension == nullptr || dimensionLength == shape::rank(xShapeInfo)) {
-                    z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
-                    return;
-                }
-
-                if (OpType::requiresSpecialAccumulation) {
-                    OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset);
-                    return;
-                }
-
-                auto tadOnlyShapeInfo = tadShapeInfo;
-                auto tadOffsets = tadOffset;
-
-                if (tadOnlyShapeInfo == nullptr || tadOffsets == nullptr) {
-                    if (dimensionLength < 0)
-                        return;
-
-                    auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(xShapeInfo, dimension, dimensionLength);
-                    tadOnlyShapeInfo = tadPack.primaryShapeInfo();
-                    tadOffsets = tadPack.primaryOffsets();
-                }
-
-#ifdef INLINE_LOOPS
-                sd::ReductionLoops<X,Z,Z>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
-#else
-                sd::ReductionFloatLoops<X,Z>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
-#endif
-            }
-
-
         template <typename X, typename Z>
         template<typename OpType>
         void _CUDA_H ReduceFloatFunction<X,Z>::exec(const void *x, const Nd4jLong *xShapeInfo,
@@ -255,5 +179,54 @@ namespace functions {
             // return result
             return OpType::postProcess(intermediate[0], length, extraParams);
         }
+
+
+////////////////////////////////////////////////////////////////////////
+template <typename X, typename Z>
+template<typename OpType>
+void _CUDA_H ReduceFloatFunction<X, Z>::exec(sd::memory::Workspace* workspace, const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams, void *vz, const Nd4jLong *zShapeInfo, const int* dims) {
+
+    const X* x = reinterpret_cast<const X*>(vx);
+          Z* z = reinterpret_cast<Z*>(vz);
+          Z* extraParams = reinterpret_cast<Z*>(vextraParams);
+
+    const int xRank = shape::rank(xShapeInfo);
+    const int zRank = shape::rank(zShapeInfo);
+
+     if(sd::ArrayOptions::arrayType(xShapeInfo) == sd::ArrayType::EMPTY) {
+
+        const auto startingVal = std::is_same<OpType, simdOps::Mean<X,Z>>::value ? sd::DataTypeUtils::nanOrZero<Z>() : static_cast<Z>(OpType::startingValue(x));
+        const auto zLen = shape::length(zShapeInfo);
+
+        for (Nd4jLong i = 0; i < zLen; i++)
+            z[i] = startingVal;
+        return;
     }
+
+    if (shape::length(zShapeInfo) == 1) {
+        z[0] = execScalar<OpType>(x, xShapeInfo, extraParams);
+        return;
+    }
+
+    if (OpType::requiresSpecialAccumulation) {
+        OpType::execSpecial(x, xShapeInfo, extraParams, z, zShapeInfo, const_cast<int*>(dims)+zRank, xRank-zRank, nullptr, nullptr);
+        return;
+    }
+
+#ifdef INLINE_LOOPS
+    sd::ReductionLoops<X,Z,Z>::template loopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
+#else
+    sd::ReductionFloatLoops<X,Z>::template innerloopReduce<OpType>(workspace, x, xShapeInfo, z, zShapeInfo, dims, extraParams);
+#endif
+
+}
+
+////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y>
+void ReduceFloatFunction<X, Y>::exec(const int opNum, sd::memory::Workspace* workspace, const void *vx, const Nd4jLong *xShapeInfo, void *vextraParams, void *vz, const Nd4jLong *zShapeInfo, const int *dims) {
+
+    DISPATCH_BY_OPNUM_TT(exec, PARAMS(workspace, vx, xShapeInfo, vextraParams, vz, zShapeInfo, dims), REDUCE_FLOAT_OPS);
+}
+
+}
 }

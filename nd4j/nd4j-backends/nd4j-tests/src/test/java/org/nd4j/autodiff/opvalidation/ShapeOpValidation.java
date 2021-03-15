@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.autodiff.opvalidation;
 
@@ -35,7 +39,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.Tri;
 import org.nd4j.linalg.api.ops.custom.Triu;
-import org.nd4j.linalg.api.ops.impl.shape.*;
+import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
+import org.nd4j.linalg.api.ops.impl.shape.MergeMaxIndex;
+import org.nd4j.linalg.api.ops.impl.shape.Permute;
+import org.nd4j.linalg.api.ops.impl.shape.SequenceMask;
+import org.nd4j.linalg.api.ops.impl.shape.SizeAt;
+import org.nd4j.linalg.api.ops.impl.shape.Transpose;
+import org.nd4j.linalg.api.ops.impl.shape.Unstack;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -53,7 +63,6 @@ import org.nd4j.common.util.ArrayUtil;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertArrayEquals;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
 @Slf4j
@@ -558,7 +567,12 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(failed.toString(), 0, failed.size());
     }
 
-    @Test
+    @Override
+    public long getTimeoutMilliseconds() {
+        return Long.MAX_VALUE;
+    }
+
+    @Test()
     public void testStack() {
         Nd4j.getRandom().setSeed(12345);
 
@@ -597,22 +611,22 @@ public class ShapeOpValidation extends BaseOpValidation {
                     }
 
                     INDArray expStack = null;
-                    if(Arrays.equals(new long[]{3,4}, shape)){
+                    if(Arrays.equals(new long[]{3,4}, shape)) {
                         if(axis == 0){
                             INDArray out = Nd4j.create(numInputs, 3, 4);
-                            for( int i=0; i<numInputs; i++ ){
+                            for( int i = 0; i < numInputs; i++) {
                                 out.get(point(i), all(), all()).assign(inArr[i]);
                             }
                             expStack = out;
                         } else if(axis == 1) {
                             INDArray out = Nd4j.create(3, numInputs, 4);
-                            for( int i=0; i<numInputs; i++ ){
+                            for( int i = 0; i<numInputs; i++) {
                                 out.get(all(), point(i), all()).assign(inArr[i]);
                             }
                             expStack = out;
                         } else {
                             INDArray out = Nd4j.create(3, 4, numInputs);
-                            for( int i=0; i<numInputs; i++ ){
+                            for( int i = 0; i < numInputs; i++) {
                                 out.get(all(), all(), point(i)).assign(inArr[i]);
                             }
                             expStack = out;
@@ -1990,7 +2004,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testCastEmpty(){
         INDArray emptyLong = Nd4j.empty(DataType.LONG);
-        int dtype = 9;  //INT = 9 - https://github.com/deeplearning4j/deeplearning4j/blob/master/libnd4j/include/array/DataType.h
+        int dtype = 9;  //INT = 9 - https://github.com/eclipse/deeplearning4j/blob/master/libnd4j/include/array/DataType.h
         DynamicCustomOp op = DynamicCustomOp.builder("cast")
                 .addInputs(emptyLong)
                 .addIntegerArguments(dtype)

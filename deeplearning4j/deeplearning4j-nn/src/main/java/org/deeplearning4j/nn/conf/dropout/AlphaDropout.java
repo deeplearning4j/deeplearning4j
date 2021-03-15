@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.dropout;
 
@@ -31,26 +35,6 @@ import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * AlphaDropout is a dropout technique proposed by Klaumbauer et al. 2017 - Self-Normalizing Neural Networks
- * <a href="https://arxiv.org/abs/1706.02515">https://arxiv.org/abs/1706.02515</a> <br>
- * <br>
- * This dropout technique was designed specifically for self-normalizing neural networks - i.e., networks using
- * {@link org.nd4j.linalg.activations.impl.ActivationSELU} / {@link org.nd4j.linalg.activations.Activation#SELU}
- * activation function, combined with the N(0,stdev=1/sqrt(fanIn)) "SNN" weight initialization,
- * {@link org.deeplearning4j.nn.weights.WeightInit#NORMAL}<br>
- * <br>
- * In conjuction with the aforementioned activation function and weight initialization, AlphaDropout attempts to keep
- * both the mean and variance of the post-dropout activations to the same (in expectation) as before alpha
- * dropout was applied.<br>
- * Specifically, AlphaDropout implements a * (x * d + alphaPrime * (1-d)) + b, where d ~ Bernoulli(p), i.e., d \in {0,1}.
- * Where x is the input activations, a, b, alphaPrime are constants determined from the SELU alpha/lambda parameters.
- * Users should use the default alpha/lambda values in virtually all cases.<br>
- * <br>
- * Dropout schedules (i.e., varying probability p as a function of iteration/epoch) are also supported.<br>
- *
- * @author Alex Black
- */
 @Data
 @EqualsAndHashCode(exclude = {"lastPValue","alphaPrime","a","b", "mask"})
 @ToString(exclude = {"lastPValue","alphaPrime","a","b"})

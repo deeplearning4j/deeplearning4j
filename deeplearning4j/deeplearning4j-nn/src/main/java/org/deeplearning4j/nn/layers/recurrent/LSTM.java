@@ -1,22 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -33,16 +38,6 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.common.util.OneTimeLogger;
 
-/**
- * LSTM layer implementation.
- *
- * See also for full/vectorized equations (and a comparison to other LSTM variants):
- * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "no peephole" variant in said paper
- * <a href="https://arxiv.org/pdf/1503.04069.pdf">https://arxiv.org/pdf/1503.04069.pdf</a>
- *
- * @author Alex Black
- * @see GravesLSTM GravesLSTM class, for the version with peephole connections
- */
 @Slf4j
 public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
@@ -58,21 +53,13 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.recurrent.CudnnLSTMHelper")
-                        .asSubclass(LSTMHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnLSTMHelper successfully initialized");
-                if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
-                    helper = null;
-                }
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnLSTMHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.recurrent.CudnnLSTMHelper",
+                    LSTMHelper.class,
+                    dataType);
+            log.debug("CudnnLSTMHelper successfully initialized");
+            if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
+                helper = null;
             }
         }
         /*

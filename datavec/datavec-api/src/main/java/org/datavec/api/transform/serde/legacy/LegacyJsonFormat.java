@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.datavec.api.transform.serde.legacy;
 
 import lombok.AccessLevel;
@@ -60,14 +80,6 @@ import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
-/**
- * This class defines a set of Jackson Mixins - which are a way of using a proxy class with annotations to override
- * the existing annotations.
- * In 1.0.0-beta, we switched how subtypes were handled in JSON ser/de: from "wrapper object" to "@class field".
- * We use these mixins to allow us to still load the old format
- *
- * @author Alex Black
- */
 public class LegacyJsonFormat {
 
     private LegacyJsonFormat(){ }

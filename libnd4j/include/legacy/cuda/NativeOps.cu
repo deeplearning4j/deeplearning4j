@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -454,17 +456,24 @@ void execReduceSame2(Nd4jPointer *extraPointers,
         auto dimension = reinterpret_cast<int *>(dbDimension->primary());
         int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo,
-                                                                                dimension,
-                                                                                shape::length(hDimensionShape));
+        const auto zLen = shape::length(hZShapeInfo);
 
+        std::vector<int> dimensions(dimension, dimension + dimensionLength);
+
+        const Nd4jLong* zShapeInfoH = hZShapeInfo;
+
+        if(shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
+            auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+            zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+        }
+
+        std::vector<int> dims = (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
         LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
         NativeOpExecutioner::execReduceSame(&lc, opNum,
                 dbX->primary(), hXShapeInfo, dbX->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo).special(),
                 extraParams,
-                dbZ->primary(), hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo).special(),
-                dimension, dimensionLength,
-                tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                dbZ->primary(), zShapeInfoH, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH).special(),
+                dims.data(), dims.size());
 
         InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
     } catch (std::exception &e) {
@@ -487,17 +496,25 @@ void execReduceLong2(Nd4jPointer *extraPointers,
         auto dimension = reinterpret_cast<int *>(dbDimension->primary());
         int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo,
-                                                                                dimension,
-                                                                                shape::length(hDimensionShape));
+        const auto zLen = shape::length(hZShapeInfo);
+
+        std::vector<int> dimensions(dimension, dimension + dimensionLength);
+
+        const Nd4jLong* zShapeInfoH = hZShapeInfo;
+
+        if(shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
+            auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+            zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+        }
+
+        std::vector<int> dims = (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
 
         LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
         NativeOpExecutioner::execReduceLong(&lc, opNum,
                 dbX->primary(), hXShapeInfo, dbX->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo).special(),
                 extraParams,
-                dbZ->primary(), hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo).special(),
-                dimension, dimensionLength,
-                tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                dbZ->primary(), zShapeInfoH, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH).special(),
+                dims.data(), dims.size());
 
         InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
     } catch (std::exception &e) {
@@ -562,17 +579,25 @@ void execReduceBool2(Nd4jPointer *extraPointers,
         auto dimension = reinterpret_cast<int *>(dbDimension->primary());
         int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo,
-                                                                                dimension,
-                                                                                shape::length(hDimensionShape));
+        const auto zLen = shape::length(hZShapeInfo);
+
+        std::vector<int> dimensions(dimension, dimension + dimensionLength);
+
+        const Nd4jLong* zShapeInfoH = hZShapeInfo;
+
+        if(shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
+            auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+            zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+        }
+
+        std::vector<int> dims = (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
 
         LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
         NativeOpExecutioner::execReduceBool(&lc, opNum,
                 dbX->primary(), hXShapeInfo, dbX->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo).special(),
                 extraParams,
-                dbZ->primary(), hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo).special(),
-                dimension, dimensionLength,
-                tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                dbZ->primary(), zShapeInfoH, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH).special(),
+                dims.data(), dims.size());
 
         InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
     } catch (std::exception &e) {
@@ -690,17 +715,25 @@ void execReduceFloat2(Nd4jPointer *extraPointers,
         auto dimension = reinterpret_cast<int *>(dbDimension->primary());
         int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-        auto tadPack = sd::ConstantTadHelper::getInstance().tadForDimensions(hXShapeInfo,
-                                                                                dimension,
-                                                                                shape::length(hDimensionShape));
+        const auto zLen = shape::length(hZShapeInfo);
+
+        std::vector<int> dimensions(dimension, dimension + dimensionLength);
+
+        const Nd4jLong* zShapeInfoH = hZShapeInfo;
+
+        if(shape::rank(hXShapeInfo) - dimensionLength != shape::rank(hZShapeInfo) && zLen != 1) {
+            auto zPack = ConstantShapeHelper::getInstance().createShapeInfoWithNoUnitiesForReduce(hZShapeInfo, dimensions);
+            zShapeInfoH = reinterpret_cast<Nd4jLong const*>(zPack.primary());
+        }
+
+        std::vector<int> dims = (zLen != 1) ? ShapeUtils::evalDimsForReduceOp(shape::rank(hXShapeInfo), dimensions) : std::vector<int>();
 
         LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
         NativeOpExecutioner::execReduceFloat(&lc, opNum,
                 dbX->primary(), hXShapeInfo, dbX->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hXShapeInfo).special(),
                 extraParams,
-                dbZ->primary(), hZShapeInfo, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(hZShapeInfo).special(),
-                dimension, dimensionLength,
-                tadPack.specialShapeInfo(), tadPack.specialOffsets());
+                dbZ->primary(), zShapeInfoH, dbZ->special(), ConstantShapeHelper::getInstance().bufferForShapeInfo(zShapeInfoH).special(),
+                dims.data(), dims.size());
 
         InteropDataBuffer::registerSpecialUse({dbZ}, {dbX});
     } catch (std::exception &e) {
@@ -2529,9 +2562,18 @@ void sortTad(Nd4jPointer *extraPointers,
     }
 }
 
-void sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, void *values, Nd4jLong length, int rank) {
+void sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, void *values, Nd4jLong length, const Nd4jLong *xShapeInfo) {
 	throw std::runtime_error("sortCooIndices:: Not implemented yet");
 }
+
+void ravelMultiIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo, int mode) {
+    throw std::runtime_error("ravelMultiIndex:: Not implemented yet");
+}
+
+void unravelIndex(Nd4jPointer *extraPointers, Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo) {
+    throw std::runtime_error("unravelIndex:: Not implemented yet");
+}
+
 
 Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length) {
 	return nullptr;
@@ -3378,10 +3420,14 @@ int dataTypeFromNpyHeader(void *header) {
 }
 
 OpaqueConstantShapeBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, sd::DataType dtype, char order, Nd4jLong ews, bool empty) {
+    return shapeBufferEx(rank, shape, strides, dtype, order, ews, empty ? ARRAY_EMPTY : 0);
+}
+
+OpaqueConstantShapeBuffer* shapeBufferEx(int rank, Nd4jLong *shape, Nd4jLong *strides, sd::DataType dtype, char order, Nd4jLong ews, Nd4jLong extras) {
     try {
         auto buffer = new ConstantShapeBuffer();
         *buffer = sd::ConstantShapeHelper::getInstance().bufferForShapeInfo(
-                ShapeDescriptor(dtype, order, shape, strides, rank, ews, empty));
+                ShapeDescriptor(dtype, order, shape, strides, rank, ews, extras));
         return buffer;
     } catch (std::exception &e) {
         sd::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
@@ -3440,11 +3486,11 @@ Nd4jLong getConstantDataBufferSizeOf(sd::ConstantDataBuffer* dbf) {
     return dbf->sizeOf();
 }
 
-Nd4jPointer getConstantShapeBufferPrimary(sd::ConstantShapeBuffer* dbf) {
+Nd4jPointer getConstantShapeBufferPrimary(OpaqueConstantShapeBuffer* dbf) {
   return const_cast<Nd4jLong*>(dbf->primary());
 }
 
-Nd4jPointer getConstantShapeBufferSpecial(sd::ConstantShapeBuffer* dbf) {
+Nd4jPointer getConstantShapeBufferSpecial(OpaqueConstantShapeBuffer* dbf) {
   return const_cast<Nd4jLong*>(dbf->special());
 }
 

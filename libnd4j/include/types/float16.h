@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -30,7 +32,7 @@ struct bfloat16;
 #ifdef __CUDACC__
 #include <cuda_fp16.h>
 
-#ifndef CUDA_8
+#if CUDA_VERSION_MAJOR != 8
 // CUDA_9 and above
 
 struct ihalf : public __half {
@@ -271,7 +273,7 @@ struct float16 {
             auto t = __float2half_rn(rhs);
             auto b = *(data.getXP());
 
-            #ifdef CUDA_8
+            #if CUDA_VERSION_MAJOR == 8
             *(data.getXP()) = t;
             #else
             data.assign(t);
@@ -361,7 +363,7 @@ struct float16 {
         local_def friend float16 operator*(const float16& a, const float16& b) { return __hmul(a.data, b.data); }
 
         local_def friend float16 operator/(const float16& a, const float16& b) {
-            #ifdef CUDA_8
+            #if CUDA_VERSION_MAJOR == 8
                 return hdiv(a.data, b.data);
             #else
                 return __hdiv(a.data, b.data);

@@ -1,19 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.iterator;
 
@@ -41,92 +44,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-/**
- * BertIterator is a MultiDataSetIterator for training BERT (Transformer) models in the following way:<br>
- * (a) Unsupervised - Masked language model task (no sentence matching task is implemented thus far)<br>
- * (b) Supervised - For sequence classification (i.e., 1 label per sequence, typically used for fine tuning)<br>
- * The task can be specified using {@link Task}.
- * <br>
- * <b>Example for unsupervised training:</b><br>
- * <pre>
- * {@code
- *          BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
- *          BertIterator b = BertIterator.builder()
- *              .tokenizer(t)
- *              .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
- *              .minibatchSize(2)
- *              .sentenceProvider(<sentence provider here>)
- *              .featureArrays(BertIterator.FeatureArrays.INDICES_MASK)
- *              .vocabMap(t.getVocab())
- *              .task(BertIterator.Task.UNSUPERVISED)
- *              .masker(new BertMaskedLMMasker(new Random(12345), 0.2, 0.5, 0.5))
- *              .unsupervisedLabelFormat(BertIterator.UnsupervisedLabelFormat.RANK2_IDX)
- *              .maskToken("[MASK]")
- *              .build();
- * }
- * </pre>
- * <br>
- * <b>Example for supervised (sequence classification - one label per sequence) training:</b><br>
- * <pre>
- * {@code
- *          BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab);
- *          BertIterator b = BertIterator.builder()
- *              .tokenizer(t)
- *              .lengthHandling(BertIterator.LengthHandling.FIXED_LENGTH, 16)
- *              .minibatchSize(2)
- *              .sentenceProvider(new TestSentenceProvider())
- *              .featureArrays(BertIterator.FeatureArrays.INDICES_MASK)
- *              .vocabMap(t.getVocab())
- *              .task(BertIterator.Task.SEQ_CLASSIFICATION)
- *              .build();
- * }
- * </pre>
- * <br>
- * <b>Example to use an instantiated iterator for inference:</b><br>
- * <pre>
- * {@code
- *          BertIterator b;
- *          Pair<INDArray[],INDArray[]> featuresAndMask;
- *          INDArray[] features;
- *          INDArray[] featureMasks;
- *
- *          //With sentences
- *          List<String> forInference;
- *          featuresAndMask = b.featurizeSentences(forInference);
- *
- *          //OR with sentence pairs
- *          List<Pair<String, String>> forInferencePair};
- *          featuresAndMask = b.featurizeSentencePairs(forInference);
- *
- *          features = featuresAndMask.getFirst();
- *          featureMasks = featuresAndMask.getSecond();
- * }
- * </pre>
- * This iterator supports numerous ways of configuring the behaviour with respect to the sequence lengths and data layout.<br>
- * <br>
- * <u><b>{@link LengthHandling} configuration:</b></u><br>
- * Determines how to handle variable-length sequence situations.<br>
- * <b>FIXED_LENGTH</b>: Always trim longer sequences to the specified length, and always pad shorter sequences to the specified length.<br>
- * <b>ANY_LENGTH</b>: Output length is determined by the length of the longest sequence in the minibatch. Shorter sequences within the
- * minibatch are zero padded and masked.<br>
- * <b>CLIP_ONLY</b>: For any sequences longer than the specified maximum, clip them. If the maximum sequence length in
- * a minibatch is shorter than the specified maximum, no padding will occur. For sequences that are shorter than the
- * maximum (within the current minibatch) they will be zero padded and masked.<br>
- * <br><br>
- * <u><b>{@link FeatureArrays} configuration:</b></u><br>
- * Determines what arrays should be included.<br>
- * <b>INDICES_MASK</b>: Indices array and mask array only, no segment ID array. Returns 1 feature array, 1 feature mask array (plus labels).<br>
- * <b>INDICES_MASK_SEGMENTID</b>: Indices array, mask array and segment ID array (which is all 0s for single segment tasks). Returns
- * 2 feature arrays (indices, segment ID) and 1 feature mask array (plus labels)<br>
- * <br>
- * <u><b>{@link UnsupervisedLabelFormat} configuration:</b></u><br>
- * Only relevant when the task is set to {@link Task#UNSUPERVISED}. Determine the format of the labels:<br>
- * <b>RANK2_IDX</b>: return int32 [minibatch, numTokens] array with entries being class numbers. Example use case: with sparse softmax loss functions.<br>
- * <b>RANK3_NCL</b>: return float32 [minibatch, numClasses, numTokens] array with 1-hot entries along dimension 1. Example use case: RnnOutputLayer, RnnLossLayer<br>
- * <b>RANK3_LNC</b>: return float32 [numTokens, minibatch, numClasses] array with 1-hot entries along dimension 2. This format is occasionally
- * used for some RNN layers in libraries such as TensorFlow, for example<br>
- * <br>
- */
 public class BertIterator implements MultiDataSetIterator {
 
     public enum Task {UNSUPERVISED, SEQ_CLASSIFICATION}

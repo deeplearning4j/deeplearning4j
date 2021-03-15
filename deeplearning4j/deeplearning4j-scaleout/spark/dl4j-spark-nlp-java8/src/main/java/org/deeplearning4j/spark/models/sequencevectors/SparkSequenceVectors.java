@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.models.sequencevectors;
 
@@ -25,6 +29,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.storage.StorageLevel;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.models.embeddings.loader.VectorsConfiguration;
 import org.deeplearning4j.models.sequencevectors.SequenceVectors;
@@ -53,11 +58,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Generic SequenceVectors implementation for dl4j-spark-nlp
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVectors<T> {
     protected Accumulator<Counter<Long>> elementsFreqAccum;
@@ -161,14 +161,9 @@ public class SparkSequenceVectors<T extends SequenceElement> extends SequenceVec
         validateConfiguration();
 
         if (ela == null) {
-            try {
-                ela = (SparkElementsLearningAlgorithm) Class.forName(configuration.getElementsLearningAlgorithm())
-                                .newInstance();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            String className = configuration.getElementsLearningAlgorithm();
+            ela = DL4JClassLoading.createNewInstance(className);
         }
-
 
         if (workers > 1) {
             log.info("Repartitioning corpus to {} parts...", workers);

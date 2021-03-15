@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -28,6 +30,7 @@
 #include <ops/specials_sparse.h>
 #include <execution/LaunchContext.h>
 #include <array/ArrayOptions.h>
+#include <helpers/shape.h>
 
 /**
  * Native op executioner:
@@ -470,8 +473,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                 void *extraParams,
                                 void *hZ, const Nd4jLong *hZShapeInfo,
                                 void *dZ, const Nd4jLong *dZShapeInfo,
-                                int *dimension, int dimensionLength,
-                                const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
+                                int *dimension, int dimensionLength);
 
     static void execReduceSame(sd::LaunchContext  *lc,
                                int opNum,
@@ -480,8 +482,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                void *extraParams,
                                void *hZ, const Nd4jLong *hZShapeInfo,
                                void *dZ, const Nd4jLong *dZShapeInfo,
-                               int *dimension, int dimensionLength,
-                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
+                               int *dimension, int dimensionLength);
 
     static void execReduceBool(sd::LaunchContext  *lc,
                                int opNum,
@@ -490,8 +491,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                void *extraParams,
                                void *hZ, const Nd4jLong *hZShapeInfo,
                                void *dZ, const Nd4jLong *dZShapeInfo,
-                               int *dimension, int dimensionLength,
-                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
+                               int *dimension, int dimensionLength);
 
     static void execReduceLong(sd::LaunchContext  *lc,
                                int opNum,
@@ -500,8 +500,7 @@ static void execTransformBool(sd::LaunchContext  *lc,
                                void *extraParams,
                                void *hZ, const Nd4jLong *hZShapeInfo,
                                void *dZ, const Nd4jLong *dZShapeInfo,
-                               int *dimension, int dimensionLength,
-                               const Nd4jLong *tadShapeInfo, const Nd4jLong *tadOffsets);
+                               int *dimension, int dimensionLength);
 
     /**
      *
@@ -656,10 +655,20 @@ static void execTransformBool(sd::LaunchContext  *lc,
         BUILD_SINGLE_SELECTOR(xType, sd::SpecialMethods, ::sortTadGeneric(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);
     }
 
-    inline static void execSortCooIndices(Nd4jLong *indices, void *values, Nd4jLong length, int rank) {
-        sd::sparse::SparseUtils<Nd4jLong>::sortCooIndicesGeneric(indices, reinterpret_cast<Nd4jLong *>(values), length, rank);
+    inline static void execSortCooIndices(Nd4jLong *indices, void *x, Nd4jLong length, const Nd4jLong *xShapeInfo) {
+        auto xType = sd::ArrayOptions::dataType(xShapeInfo);
+        int rank = shape::rank(xShapeInfo);
+
+        BUILD_SINGLE_SELECTOR(xType, sd::sparse::SparseUtils, ::sortCooIndicesGeneric(indices, x, length, rank), LIBND4J_TYPES);
     }
 
+    inline static void execRavelMultiIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo, int mode) {
+        sd::sparse::IndexUtils::ravelMultiIndex(indices, flatIndices, length, shapeInfo, mode);
+    }
+
+    inline static void execUnravelIndex(Nd4jLong *indices, Nd4jLong *flatIndices, Nd4jLong length,  Nd4jLong *shapeInfo) {
+        sd::sparse::IndexUtils::unravelIndex(indices, flatIndices, length, shapeInfo);
+    }
 
     inline static Nd4jLong encodeBitmap(void *dx, const Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
         auto xType = sd::ArrayOptions::dataType(xShapeInfo);

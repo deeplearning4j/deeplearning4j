@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.records.reader.impl.csv;
 
@@ -30,14 +34,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
-/**
- * A sliding window of variable size across an entire CSV.
- *
- * In practice the sliding window size starts at 1, then linearly increase to maxLinesPer sequence, then
- * linearly decrease back to 1.
- *
- * @author Justin Long (crockpotveggies)
- */
 public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implements SequenceRecordReader {
 
     public static final String LINES_PER_SEQUENCE = NAME_SPACE + ".nlinespersequence";
@@ -128,9 +124,7 @@ public class CSVVariableSlidingWindowRecordReader extends CSVRecordReader implem
         }
 
         List<List<Writable>> sequence = new ArrayList<>();
-        for(List<Writable> line : queue) {
-            sequence.add(line);
-        }
+        sequence.addAll(queue);
 
         if(exhausted && queue.size()==1)
             queue.pollLast();

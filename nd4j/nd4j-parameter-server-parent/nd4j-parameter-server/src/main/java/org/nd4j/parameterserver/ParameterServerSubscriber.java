@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.parameterserver;
 
@@ -21,6 +25,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JClassLoading;
+import org.nd4j.common.io.ReflectionUtils;
 import org.nd4j.shade.guava.primitives.Ints;
 
 import org.nd4j.shade.jackson.databind.ObjectMapper;
@@ -65,17 +71,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 
-/**
- * Subscriber main class for
- * the parameter
- * averaging server
- *
- * @author Adam Gibson
- */
 @NoArgsConstructor
 @Data
 @Parameters(separators = ",")
-@Slf4j
 public class ParameterServerSubscriber implements AutoCloseable {
 
     private static Logger log = LoggerFactory.getLogger(ParameterServerSubscriber.class);
@@ -256,9 +254,9 @@ public class ParameterServerSubscriber implements AutoCloseable {
             //Length in bytes for the SO_RCVBUF, 0 means use OS default. This needs to be larger than Receiver Window.
             System.setProperty("aeron.socket.so_rcvbuf", String.valueOf(ipcLength));
             final MediaDriver.Context mediaDriverCtx = new MediaDriver.Context().threadingMode(ThreadingMode.DEDICATED)
-                            .dirsDeleteOnStart(deleteDirectoryOnStart).termBufferSparseFile(false)
+                            .dirDeleteOnStart(deleteDirectoryOnStart).termBufferSparseFile(false)
                             .ipcTermBufferLength(ipcLength).publicationTermBufferLength(ipcLength)
-                            .maxTermBufferLength(ipcLength).conductorIdleStrategy(new BusySpinIdleStrategy())
+                             .conductorIdleStrategy(new BusySpinIdleStrategy())
                             .receiverIdleStrategy(new BusySpinIdleStrategy())
                             .senderIdleStrategy(new BusySpinIdleStrategy());
             AeronUtil.setDaemonizedThreadFactories(mediaDriverCtx);
@@ -290,12 +288,10 @@ public class ParameterServerSubscriber implements AutoCloseable {
                     case TIME_DELAYED:
                         break;
                     case CUSTOM:
-                        try {
-                            updater = (ParameterServerUpdater) Class.forName(System.getProperty(CUSTOM_UPDATE_TYPE))
-                                            .newInstance();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
+                        String parameterServerUpdateType = System.getProperty(CUSTOM_UPDATE_TYPE);
+                        Class<ParameterServerUpdater> updaterClass = ND4JClassLoading
+                                .loadClassByName(parameterServerUpdateType);
+                        updater = ReflectionUtils.newInstance(updaterClass);
                         break;
                     default:
                         throw new IllegalStateException("Illegal opType of updater");
@@ -383,10 +379,10 @@ public class ParameterServerSubscriber implements AutoCloseable {
 
     //get a context
     public Aeron.Context getContext() {
-        Aeron.Context ctx = new Aeron.Context().publicationConnectionTimeout(-1)
+        Aeron.Context ctx = new Aeron.Context().driverTimeoutMs(Long.MAX_VALUE)
                         .availableImageHandler(AeronUtil::printAvailableImage)
                         .unavailableImageHandler(AeronUtil::printUnavailableImage)
-                        .aeronDirectoryName(mediaDriverDirectoryName).keepAliveInterval(100000)
+                        .aeronDirectoryName(mediaDriverDirectoryName).keepAliveIntervalNs(1000000)
                         .errorHandler(e -> log.error(e.toString(), e));
         AeronUtil.setDaemonizedThreadFactories(ctx);
         return ctx;

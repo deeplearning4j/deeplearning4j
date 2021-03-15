@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -462,7 +464,7 @@ TEST_F(NDArrayTest, TestTranspose2) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest, TestSumAlongDimension1) {
+TEST_F(NDArrayTest, TestReduceAlongDimension1) {
 
     NDArray array('c', {2,2}, {1,2,3,4}, sd::DataType::FLOAT32);
 
@@ -475,23 +477,7 @@ TEST_F(NDArrayTest, TestSumAlongDimension1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest, TestSumAlongDimension2) {
-    float *c = new float[4] {1, 2, 3, 4};
-    auto array = new NDArray(c, cShape);
-
-    auto res = array->reduceAlongDimension(reduce::Sum, {1});
-
-    ASSERT_EQ(2, res.lengthOf());
-
-    ASSERT_EQ(3.0f, res.e<float>(0));
-    ASSERT_EQ(7.0f, res.e<float>(1));
-
-    delete[] c;
-    delete array;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(NDArrayTest, TestReduceAlongDimension1) {
+TEST_F(NDArrayTest, TestReduceAlongDimension2) {
     float *c = new float[4] {1, 2, 3, 4};
     auto array = new NDArray(c, cShape);
 

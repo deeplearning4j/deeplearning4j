@@ -1,19 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.rl4j.network.ac;
 
@@ -26,20 +29,22 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.recurrent.RnnOutputLayer;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.agent.learning.update.Features;
+import org.deeplearning4j.rl4j.agent.learning.update.FeaturesLabels;
+import org.deeplearning4j.rl4j.agent.learning.update.Gradients;
+import org.deeplearning4j.rl4j.network.CommonGradientNames;
+import org.deeplearning4j.rl4j.network.CommonLabelNames;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
+import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.api.DataSet;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/9/16.
- *
- * Standard implementation of ActorCriticCompGraph
- */
+@Deprecated
 public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> {
 
     final protected ComputationGraph cg;
@@ -84,14 +89,53 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
     }
 
     @Override
-    public void fit(DataSet featuresLabels) {
-        fit(featuresLabels.getFeatures(), new INDArray[] { featuresLabels.getLabels() });
+    public void fit(FeaturesLabels featuresLabels) {
+        INDArray[] features = new INDArray[] { featuresLabels.getFeatures().get(0) };
+        INDArray[] labels = new INDArray[] { featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy) };
+        cg.fit(features, labels);
     }
 
-    public void copy(ActorCriticCompGraph from) {
+    @Override
+    public Gradients computeGradients(FeaturesLabels featuresLabels) {
+        cg.setInput(0, featuresLabels.getFeatures().get(0));
+        cg.setLabels(featuresLabels.getLabels(CommonLabelNames.ActorCritic.Value), featuresLabels.getLabels(CommonLabelNames.ActorCritic.Policy));
+        cg.computeGradientAndScore();
+        Collection<TrainingListener> iterationListeners = cg.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (TrainingListener l : iterationListeners) {
+                l.onGradientCalculation(cg);
+            }
+        }
+
+        Gradients result = new Gradients(featuresLabels.getBatchSize());
+        result.putGradient(CommonGradientNames.ActorCritic.Combined, cg.gradient());
+
+        return result;
+    }
+
+    @Override
+    public void applyGradients(Gradients gradients) {
+        ComputationGraphConfiguration cgConf = cg.getConfiguration();
+        int iterationCount = cgConf.getIterationCount();
+        int epochCount = cgConf.getEpochCount();
+
+        Gradient gradient = gradients.getGradient(CommonGradientNames.ActorCritic.Combined);
+        cg.getUpdater().update(gradient, iterationCount, epochCount, (int)gradients.getBatchSize(), LayerWorkspaceMgr.noWorkspaces());
+        cg.params().subi(gradient.gradient());
+        Collection<TrainingListener> iterationListeners = cg.getListeners();
+        if (iterationListeners != null && iterationListeners.size() > 0) {
+            for (TrainingListener listener : iterationListeners) {
+                listener.iterationDone(cg, iterationCount, epochCount);
+            }
+        }
+        cgConf.setIterationCount(iterationCount + 1);
+    }
+
+    public void copyFrom(ActorCriticCompGraph from) {
         cg.setParams(from.cg.params());
     }
 
+    @Deprecated
     public Gradient[] gradient(INDArray input, INDArray[] labels) {
         cg.setInput(0, input);
         cg.setLabels(labels);
@@ -147,17 +191,32 @@ public class ActorCriticCompGraph implements IActorCritic<ActorCriticCompGraph> 
     }
 
     @Override
-    public INDArray output(Observation observation) {
-        // TODO: signature of output() will change to return a class that has named outputs to support network like
-        // this one (output from the value-network and another output for the policy-network
-        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    public NeuralNetOutput output(Observation observation) {
+        if(!isRecurrent()) {
+            return output(observation.getChannelData(0));
+        }
+
+        INDArray[] cgOutput = cg.rnnTimeStep(observation.getChannelData(0));
+        return packageResult(cgOutput[0], cgOutput[1]);
     }
 
     @Override
-    public INDArray output(INDArray batch) {
-        // TODO: signature of output() will change to return a class that has named outputs to support network like
-        // this one (output from the value-network and another output for the policy-network
-        throw new NotImplementedException("Not implemented: will be done with AgentLearner async support");
+    public NeuralNetOutput output(INDArray batch) {
+        INDArray[] cgOutput = cg.output(batch);
+        return packageResult(cgOutput[0], cgOutput[1]);
+    }
+
+    @Override
+    public NeuralNetOutput output(Features features) {
+        throw new NotImplementedException("Not implemented in legacy classes");
+    }
+
+    private NeuralNetOutput packageResult(INDArray value, INDArray policy) {
+        NeuralNetOutput result = new NeuralNetOutput();
+        result.put(CommonOutputNames.ActorCritic.Value, value);
+        result.put(CommonOutputNames.ActorCritic.Policy, policy);
+
+        return result;
     }
 }
 

@@ -1,38 +1,45 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Utility functionality for Keras convolution layers.
- *
- * @author Max Pumperla
- */
 public class KerasConvolutionUtils {
+
+
+
 
     /**
      * Get (convolution) stride from Keras layer configuration.
@@ -52,7 +59,7 @@ public class KerasConvolutionUtils {
             List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_CONVOLUTION_STRIDES());
             strides = ArrayUtil.toArray(stridesList);
         } else if (innerConfig.containsKey(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH()) && dimension == 1) {
-           /* 1D Convolutional layers. */
+            /* 1D Convolutional layers. */
             if ((int) layerConfig.get("keras_version") == 2) {
                 @SuppressWarnings("unchecked")
                 List<Integer> stridesList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_SUBSAMPLE_LENGTH());
@@ -125,6 +132,28 @@ public class KerasConvolutionUtils {
 
     }
 
+
+    /**
+     * Return the {@link CNN2DFormat}
+     * from the configuration .
+     * If the value is {@link KerasLayerConfiguration#getDIM_ORDERING_TENSORFLOW()}
+     * then the value is {@link CNN2DFormat#NHWC}
+     * else it's {@link KerasLayerConfiguration#getDIM_ORDERING_THEANO()}
+     * which is {@link CNN2DFormat#NCHW}
+     * @param layerConfig the layer configuration to get the values from
+     * @param layerConfiguration the keras configuration used for retrieving
+     *                           values from the configuration
+     * @return the {@link CNN2DFormat} given the configuration
+     * @throws InvalidKerasConfigurationException
+     */
+    public static CNN2DFormat getDataFormatFromConfig(Map<String,Object> layerConfig,KerasLayerConfiguration layerConfiguration) throws InvalidKerasConfigurationException {
+        Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig,layerConfiguration);
+        String dataFormat = innerConfig.containsKey(layerConfiguration.getLAYER_FIELD_DIM_ORDERING()) ?
+                innerConfig.get(layerConfiguration.getLAYER_FIELD_DIM_ORDERING()).toString() : "channels_last";
+        return dataFormat.equals("channels_last") ? CNN2DFormat.NHWC : CNN2DFormat.NCHW;
+
+    }
+
     /**
      * Get upsampling size from Keras layer configuration.
      *
@@ -134,7 +163,7 @@ public class KerasConvolutionUtils {
      * @throws InvalidKerasConfigurationException Invalid Keras configuration
      */
     static int[] getUpsamplingSizeFromConfig(Map<String, Object> layerConfig, int dimension,
-                                                    KerasLayerConfiguration conf)
+                                             KerasLayerConfiguration conf)
             throws InvalidKerasConfigurationException {
         Map<String, Object> innerConfig = KerasLayerUtils.getInnerLayerConfigFromConfig(layerConfig, conf);
         int[] size;
@@ -171,7 +200,7 @@ public class KerasConvolutionUtils {
         if (kerasMajorVersion != 2) {
             if (innerConfig.containsKey(conf.getLAYER_FIELD_NB_ROW()) && dimension == 2
                     && innerConfig.containsKey(conf.getLAYER_FIELD_NB_COL())) {
-            /* 2D Convolutional layers. */
+                /* 2D Convolutional layers. */
                 List<Integer> kernelSizeList = new ArrayList<>();
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_ROW()));
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_NB_COL()));
@@ -179,23 +208,23 @@ public class KerasConvolutionUtils {
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_1()) && dimension == 3
                     && innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_2())
                     && innerConfig.containsKey(conf.getLAYER_FIELD_3D_KERNEL_3())) {
-            /* 3D Convolutional layers. */
+                /* 3D Convolutional layers. */
                 List<Integer> kernelSizeList = new ArrayList<>();
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_1()));
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_2()));
                 kernelSizeList.add((Integer) innerConfig.get(conf.getLAYER_FIELD_3D_KERNEL_3()));
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_FILTER_LENGTH()) && dimension == 1) {
-            /* 1D Convolutional layers. */
+                /* 1D Convolutional layers. */
                 int filterLength = (int) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
                 kernelSize = new int[]{filterLength};
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE()) && dimension >= 2) {
-            /* 2D/3D Pooling layers. */
+                /* 2D/3D Pooling layers. */
                 @SuppressWarnings("unchecked")
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_1D_SIZE()) && dimension == 1) {
-            /* 1D Pooling layers. */
+                /* 1D Pooling layers. */
                 int poolSize1D = (int) innerConfig.get(conf.getLAYER_FIELD_POOL_1D_SIZE());
                 kernelSize = new int[]{poolSize1D};
             } else {
@@ -213,17 +242,17 @@ public class KerasConvolutionUtils {
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_KERNEL_SIZE());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_FILTER_LENGTH()) && dimension == 1) {
-            /* 1D Convolutional layers. */
+                /* 1D Convolutional layers. */
                 @SuppressWarnings("unchecked")
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_FILTER_LENGTH());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_SIZE()) && dimension >= 2) {
-            /* 2D Pooling layers. */
+                /* 2D Pooling layers. */
                 @SuppressWarnings("unchecked")
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_SIZE());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
             } else if (innerConfig.containsKey(conf.getLAYER_FIELD_POOL_1D_SIZE()) && dimension == 1) {
-            /* 1D Pooling layers. */
+                /* 1D Pooling layers. */
                 @SuppressWarnings("unchecked")
                 List<Integer> kernelSizeList = (List<Integer>) innerConfig.get(conf.getLAYER_FIELD_POOL_1D_SIZE());
                 kernelSize = ArrayUtil.toArray(kernelSizeList);
@@ -335,16 +364,17 @@ public class KerasConvolutionUtils {
                 }
 
                 if ((paddingNoCast.size() == dimension) && !isNested) {
-                    for (int i=0; i < dimension; i++)
+                    for (int i = 0; i < dimension; i++)
                         paddingList.add((int) paddingNoCast.get(i));
                     padding = ArrayUtil.toArray(paddingList);
                 } else if ((paddingNoCast.size() == dimension) && isNested) {
-                    for (int j=0; j < dimension; j++) {
+                    for (int j = 0; j < dimension; j++) {
                         @SuppressWarnings("unchecked")
-                        List<Integer> item = (List<Integer>) paddingNoCast.get(0);
+                        List<Integer> item = (List<Integer>) paddingNoCast.get(j);
                         paddingList.add((item.get(0)));
                         paddingList.add((item.get(1)));
                     }
+
                     padding = ArrayUtil.toArray(paddingList);
                 } else {
                     throw new InvalidKerasConfigurationException("Found Keras ZeroPadding" + dimension

@@ -14,7 +14,6 @@ Please search for the latest version on search.maven.org.
 Or use the versions displayed in:
 https://github.com/eclipse/deeplearning4j-examples/blob/master/pom.xml
 
-
 ---
 ## Main Features
 
@@ -47,6 +46,29 @@ To install ND4J, there are a couple of approaches, and more information can be f
 #### Clone from the GitHub Repo
 
 https://deeplearning4j.org/docs/latest/deeplearning4j-build-from-source 
+
+#### Build from sources
+
+To build `ND4J` from sources launch from the present directory:
+
+```shell script
+$ mvn clean install -DskipTests=true
+``` 
+
+To run tests using CPU or CUDA backend run the following.
+
+For CPU:
+
+```shell script
+$ mvn clean test -P testresources -P nd4j-testresources -P nd4j-tests-cpu -P nd4j-tf-cpu
+```
+
+For CUDA:
+
+```shell script
+$ mvn clean test -P testresources -P nd4j-testresources -P nd4j-tests-cuda -P nd4j-tf-gpu
+```
+
 ## Contribute
 
 1. Check for open issues, or open a new issue to start a discussion around a feature idea or a bug.
@@ -58,7 +80,7 @@ https://deeplearning4j.org/docs/latest/deeplearning4j-build-from-source
    with two modifications: 120-char column wrap and 4-spaces indentation. You
    can format your code to this format by typing `mvn formatter:format` in the
    subproject you work on, by using the `contrib/formatter.xml` at the root of
-   the repository to configure the Eclipse formatter, or by [using the INtellij
+   the repository to configure the Eclipse formatter, or by [using the IntelliJ
    plugin](https://github.com/HPI-Information-Systems/Metanome/wiki/Installing-the-google-styleguide-settings-in-intellij-and-eclipse).
 
 6. Send a pull request, and bug us on Gitter until it gets merged and published.

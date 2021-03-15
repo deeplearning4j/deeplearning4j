@@ -1,22 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.spark.impl.paramavg;
 
 
+import com.sun.jna.Platform;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
@@ -79,9 +84,6 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 
-/**
- * Created by agibsonccc on 1/18/15.
- */
 public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     public static class TestFn implements Function<LabeledPoint, LabeledPoint>{
@@ -112,6 +114,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testFromSvmLightBackprop() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         JavaRDD<LabeledPoint> data = MLUtils
                         .loadLibSVMFile(sc.sc(),
                                         new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive()
@@ -144,6 +150,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testFromSvmLight() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         JavaRDD<LabeledPoint> data = MLUtils
                         .loadLibSVMFile(sc.sc(),
                                         new ClassPathResource("svmLight/iris_svmLight_0.txt").getTempFileFromArchive()
@@ -174,7 +184,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testRunIteration() {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         DataSet dataSet = new IrisDataSetIterator(5, 5).next();
         List<DataSet> list = dataSet.asList();
         JavaRDD<DataSet> data = sc.parallelize(list);
@@ -194,6 +207,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testUpdaters() {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         SparkDl4jMultiLayer sparkNet = getBasicNetwork();
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
@@ -216,7 +233,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testEvaluation() {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         SparkDl4jMultiLayer sparkNet = getBasicNetwork();
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
@@ -249,7 +269,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     public void testSmallAmountOfData() {
         //Idea: Test spark training where some executors don't get any data
         //in this case: by having fewer examples (2 DataSets) than executors (local[*])
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.DenseLayer.Builder().nIn(nIn).nOut(3)
@@ -352,6 +375,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testParameterAveragingMultipleExamplesPerDataSet() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int dataSetObjSize = 5;
         int batchSizePerExecutor = 25;
         List<DataSet> list = new ArrayList<>();
@@ -401,7 +428,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testFitViaStringPaths() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Path tempDir = testDir.newFolder("DL4J-testFitViaStringPaths").toPath();
         File tempDirF = tempDir.toFile();
         tempDirF.deleteOnExit();
@@ -465,7 +495,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testFitViaStringPathsSize1() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Path tempDir = testDir.newFolder("DL4J-testFitViaStringPathsSize1").toPath();
         File tempDirF = tempDir.toFile();
         tempDirF.deleteOnExit();
@@ -546,7 +579,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testFitViaStringPathsCompGraph() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         Path tempDir = testDir.newFolder("DL4J-testFitViaStringPathsCG").toPath();
         Path tempDir2 = testDir.newFolder("DL4J-testFitViaStringPathsCG-MDS").toPath();
         File tempDirF = tempDir.toFile();
@@ -642,7 +678,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     @Test
     @Ignore("AB 2019/05/23 - Failing on CI only - passing locally. Possible precision or threading issue")
     public void testSeedRepeatability() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(new RmsProp())
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .weightInit(WeightInit.XAVIER).list()
@@ -714,6 +753,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testIterationCounts() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int dataSetObjSize = 5;
         int batchSizePerExecutor = 25;
         List<DataSet> list = new ArrayList<>();
@@ -760,6 +803,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test
     public void testIterationCountsGraph() throws Exception {
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         int dataSetObjSize = 5;
         int batchSizePerExecutor = 25;
         List<DataSet> list = new ArrayList<>();
@@ -805,7 +852,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
 
     @Test
-    @Ignore   //Ignored 2019/04/09 - low priority: https://github.com/deeplearning4j/deeplearning4j/issues/6656
+    @Ignore   //Ignored 2019/04/09 - low priority: https://github.com/eclipse/deeplearning4j/issues/6656
     public void testVaePretrainSimple() {
         //Simple sanity check on pretraining
         int nIn = 8;
@@ -841,7 +888,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
     }
 
     @Test
-    @Ignore    //Ignored 2019/04/09 - low priority: https://github.com/deeplearning4j/deeplearning4j/issues/6656
+    @Ignore    //Ignored 2019/04/09 - low priority: https://github.com/eclipse/deeplearning4j/issues/6656
     public void testVaePretrainSimpleCG() {
         //Simple sanity check on pretraining
         int nIn = 8;
@@ -991,7 +1038,10 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
     @Test(timeout = 120000L)
     public void testEpochCounter() throws Exception {
-
+        if(Platform.isWindows()) {
+            //Spark tests don't run on windows
+            return;
+        }
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .list()
                 .layer(new OutputLayer.Builder().nIn(4).nOut(3).build())

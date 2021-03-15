@@ -1,0 +1,38 @@
+on:
+  workflow_dispatch:
+jobs:
+  # Wait for up to a minute for previous run to complete, abort if not done by then
+  pre-ci:
+    runs-on: self-hosted
+    timeout-minutes: 1
+    steps:
+      - name: 'Block Concurrent Executions'
+        uses: softprops/turnstyle@v1
+        with:
+          poll-interval-seconds: 10
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  linux-x86_64:
+    needs: pre-ci
+    runs-on: [self-hosted]
+    steps:
+      - uses: AutoModality/action-clean@v1
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.8.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: ./.github/actions/download-dl4j-test-resources-linux
+      - uses: actions/checkout@v2
+      - name: Run cpu tests
+        shell: bash
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          export PATH="/opt/protobuf/bin:/usr/local/cuda-11.2/bin:$PATH"
+          nvcc --version
+          mvn --version
+          cmake --version
+          protoc --version
+          export OMP_NUM_THREADS=1
+          mvn   -DskipTestResourceEnforcement=true -Ptestresources -pl ":deeplearning4j-modelimport,:deeplearning4j-core,:nd4j-native,:samediff-import,:libnd4j"  -Ptest-nd4j-native --also-make  clean test
+

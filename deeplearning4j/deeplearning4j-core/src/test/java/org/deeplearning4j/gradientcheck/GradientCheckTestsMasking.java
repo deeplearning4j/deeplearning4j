@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.gradientcheck;
 
@@ -22,6 +26,7 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -46,8 +51,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.nd4j.linalg.indexing.NDArrayIndex.*;
 
-/**Gradient checking tests with masking (i.e., variable length time series inputs, one-to-many and many-to-one etc)
- */
 public class GradientCheckTestsMasking extends BaseDL4JTest {
 
     private static final boolean PRINT_RESULTS = true;
@@ -343,6 +346,7 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 .layer(1, new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build())
                                 .validateOutputLayerConfig(false)
+                                 .setInputType(InputType.recurrent(nIn,tsLength, RNNFormat.NCW))
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -370,11 +374,13 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
                                 .dataType(DataType.DOUBLE)
                                 .dist(new NormalDistribution(0, 2)).seed(12345)
                                 .graphBuilder().addInputs("in")
-                                .addLayer("0", new SimpleRnn.Builder().nIn(nIn).nOut(layerSize)
+                                .addLayer("0", new SimpleRnn.Builder().nOut(layerSize)
                                                 .activation(Activation.TANH).build(), "in")
                                 .addLayer("1", new RnnOutputLayer.Builder().nIn(layerSize).nOut(nOut).lossFunction(lf)
                                                 .activation(a).build(), "0")
-                                .setOutputs("1").validateOutputLayerConfig(false).build();
+                                .setOutputs("1").validateOutputLayerConfig(false)
+                        .setInputTypes(InputType.recurrent(nIn,tsLength,RNNFormat.NCW))
+                        .build();
 
                 ComputationGraph graph = new ComputationGraph(cg);
                 graph.init();

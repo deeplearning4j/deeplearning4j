@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -30,13 +32,7 @@ namespace sd {
                 auto y = reinterpret_cast<const X*>(vy);
                 auto z = reinterpret_cast<Z*>(vz);
 
-                __shared__ Nd4jLong *shared;
-
-                if (threadIdx.x == 0) {
-                    extern __shared__ unsigned char shmem[];
-                    shared = reinterpret_cast<Nd4jLong*>(shmem);
-                }
-                __syncthreads();
+                __shared__ Nd4jLong shared[CUDA_BLOCK_SIZE];
 
                 // we want to nullify temporary memory before accumulating intermediate results
                 shared[threadIdx.x] = 0;
@@ -82,7 +78,7 @@ namespace sd {
 
             template <typename X, typename Z>
             static void _hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &z) {
-                _hammingKernel<X, Z><<<256, 256, 256 * sizeof(Nd4jLong) + 256, *context->getCudaStream()>>>(x.specialBuffer(), x.specialShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.specialBuffer(), nullptr, x.lengthOf());
+                _hammingKernel<X, Z><<<256, CUDA_BLOCK_SIZE, 1024, *context->getCudaStream()>>>(x.specialBuffer(), x.specialShapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.specialBuffer(), nullptr, x.lengthOf());
             }
 
             void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output) {

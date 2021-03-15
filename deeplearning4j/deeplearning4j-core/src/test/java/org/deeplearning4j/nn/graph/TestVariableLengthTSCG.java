@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.graph;
 
@@ -20,7 +24,9 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.RNNFormat;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
@@ -63,13 +69,14 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             Nd4j.getRandom().setSeed(12345);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                            .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
-                            .addLayer("0", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
-                                            "in")
-                            .addLayer("1", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                                            .nIn(2).nOut(1).activation(Activation.TANH).build(), "0")
-                            .setOutputs("1").build();
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
+                    .addLayer("0", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
+                            "in")
+                    .addLayer("1", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                            .nIn(2).nOut(1).activation(Activation.TANH).build(), "0")
+                    .setInputTypes(InputType.recurrent(2,5,RNNFormat.NCW))
+                    .setOutputs("1").build();
 
             ComputationGraph net = new ComputationGraph(conf);
             net.init();
@@ -77,14 +84,14 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             INDArray in1 = Nd4j.rand(new int[] {nExamples, 2, 4});
             INDArray in2 = Nd4j.rand(new int[] {nExamples, 2, 5});
             in2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true)},
-                            in1);
+                    in1);
 
             assertEquals(in1, in2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
 
             INDArray labels1 = Nd4j.rand(new int[] {nExamples, 1, 4});
             INDArray labels2 = Nd4j.create(nExamples, 1, 5);
             labels2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true)},
-                            labels1);
+                    labels1);
             assertEquals(labels1, labels2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
 
             INDArray labelMask = Nd4j.ones(nExamples, 5);
@@ -152,19 +159,21 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             Nd4j.getRandom().setSeed(12345);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                            .weightInit(new NormalDistribution(0,2))
-                            .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
-                            .addLayer("0", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
-                                            "in")
-                            .addLayer("1", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
-                                            "0")
-                            .addLayer("2", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
-                                            "1")
-                            .addLayer("3", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
-                                            .nIn(2).nOut(1).activation(Activation.TANH).build(), "2")
-                            .setOutputs("3").inputPreProcessor("0", new RnnToFeedForwardPreProcessor())
-                            .inputPreProcessor("2", new FeedForwardToRnnPreProcessor()).build();
+                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                    .weightInit(new NormalDistribution(0,2))
+                    .updater(new Sgd(0.1)).seed(12345).graphBuilder().addInputs("in")
+                    .addLayer("0", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
+                            "in")
+                    .addLayer("1", new DenseLayer.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
+                            "0")
+                    .addLayer("2", new GravesLSTM.Builder().activation(Activation.TANH).nIn(2).nOut(2).build(),
+                            "1")
+                    .addLayer("3", new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE)
+                            .nIn(2).nOut(1).activation(Activation.TANH).build(), "2")
+                    .setOutputs("3").inputPreProcessor("0", new RnnToFeedForwardPreProcessor())
+                    .inputPreProcessor("2", new FeedForwardToRnnPreProcessor())
+                    .setInputTypes(InputType.recurrent(2,5, RNNFormat.NCW))
+                    .build();
 
             ComputationGraph net = new ComputationGraph(conf);
             net.init();
@@ -172,14 +181,14 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
             INDArray in1 = Nd4j.rand(new int[] {nExamples, 2, 4});
             INDArray in2 = Nd4j.rand(new int[] {nExamples, 2, 5});
             in2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true)},
-                            in1);
+                    in1);
 
             assertEquals(in1, in2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
 
             INDArray labels1 = Nd4j.rand(new int[] {nExamples, 1, 4});
             INDArray labels2 = Nd4j.create(nExamples, 1, 5);
             labels2.put(new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 3, true)},
-                            labels1);
+                    labels1);
             assertEquals(labels1, labels2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0, 4)));
 
             INDArray inputMask = Nd4j.ones(nExamples, 5);
@@ -291,23 +300,25 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                         INDArray labels = Nd4j.ones(miniBatch, nOut, tsLength);
 
                         ComputationGraphConfiguration conf =
-                                        new NeuralNetConfiguration.Builder().seed(12345L)
-                                                        .graphBuilder()
-                                                        .addInputs("in").addLayer("0",
-                                                                        new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                new NeuralNetConfiguration.Builder().seed(12345L)
+                                        .graphBuilder()
+                                        .addInputs("in").addLayer("0",
+                                        new GravesLSTM.Builder().nIn(nIn).nOut(5)
 
-                                                                                        .dist(new NormalDistribution(0,
-                                                                                                        1))
-                                                                                        .updater(new NoOp()).build(),
-                                                                        "in")
-                                                        .addLayer("1", new RnnOutputLayer.Builder(
-                                                                        LossFunctions.LossFunction.MSE)
-                                                                                        .activation(Activation.IDENTITY)
-                                                                                        .nIn(5).nOut(nOut)
-                                                                                        .weightInit(WeightInit.ZERO)
-                                                                                        .updater(new NoOp()).build(),
-                                                                        "0")
-                                                        .setOutputs("1").build();
+                                                .dist(new NormalDistribution(0,
+                                                        1))
+                                                .updater(new NoOp()).build(),
+                                        "in")
+                                        .addLayer("1", new RnnOutputLayer.Builder(
+                                                        LossFunctions.LossFunction.MSE)
+                                                        .activation(Activation.IDENTITY)
+                                                        .nIn(5).nOut(nOut)
+                                                        .weightInit(WeightInit.ZERO)
+                                                        .updater(new NoOp()).build(),
+                                                "0")
+                                        .setOutputs("1")
+                                        .setInputTypes(InputType.recurrent(nIn,tsLength,RNNFormat.NCW))
+                                        .build();
                         ComputationGraph net = new ComputationGraph(conf);
                         net.init();
 
@@ -359,44 +370,44 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                         INDArray input = Nd4j.rand(new int[] {miniBatch, nIn, tsLength});
 
                         ComputationGraphConfiguration conf =
-                                        new NeuralNetConfiguration.Builder().seed(12345L)
-                                                        .graphBuilder()
-                                                        .addInputs("in").addLayer("0",
-                                                                        new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                new NeuralNetConfiguration.Builder().seed(12345L)
+                                        .graphBuilder()
+                                        .addInputs("in").addLayer("0",
+                                        new GravesLSTM.Builder().nIn(nIn).nOut(5)
 
-                                                                                        .dist(new NormalDistribution(0,
-                                                                                                        1))
-                                                                                        .updater(new NoOp()).build(),
-                                                                        "in")
-                                                        .addLayer("1", new RnnOutputLayer.Builder(
-                                                                        LossFunctions.LossFunction.MSE)
-                                                                                        .activation(Activation.IDENTITY)
-                                                                                        .nIn(5).nOut(nOut)
-                                                                                        .weightInit(WeightInit.XAVIER)
-                                                                                        .updater(new NoOp()).build(),
-                                                                        "0")
-                                                        .setOutputs("1").build();
+                                                .dist(new NormalDistribution(0,
+                                                        1))
+                                                .updater(new NoOp()).build(),
+                                        "in")
+                                        .addLayer("1", new RnnOutputLayer.Builder(
+                                                        LossFunctions.LossFunction.MSE)
+                                                        .activation(Activation.IDENTITY)
+                                                        .nIn(5).nOut(nOut)
+                                                        .weightInit(WeightInit.XAVIER)
+                                                        .updater(new NoOp()).build(),
+                                                "0")
+                                        .setOutputs("1").build();
                         ComputationGraph net = new ComputationGraph(conf);
                         net.init();
 
                         ComputationGraphConfiguration conf2 =
-                                        new NeuralNetConfiguration.Builder().seed(12345L)
-                                                        .graphBuilder()
-                                                        .addInputs("in").addLayer("0",
-                                                                        new GravesLSTM.Builder().nIn(nIn).nOut(5)
+                                new NeuralNetConfiguration.Builder().seed(12345L)
+                                        .graphBuilder()
+                                        .addInputs("in").addLayer("0",
+                                        new GravesLSTM.Builder().nIn(nIn).nOut(5)
 
-                                                                                        .dist(new NormalDistribution(0,
-                                                                                                        1))
-                                                                                        .updater(new NoOp()).build(),
-                                                                        "in")
-                                                        .addLayer("1", new RnnOutputLayer.Builder(
-                                                                        LossFunctions.LossFunction.XENT)
-                                                                                        .activation(Activation.SIGMOID)
-                                                                                        .nIn(5).nOut(nOut)
-                                                                                        .weightInit(WeightInit.XAVIER)
-                                                                                        .updater(new NoOp()).build(),
-                                                                        "0")
-                                                        .setOutputs("1").build();
+                                                .dist(new NormalDistribution(0,
+                                                        1))
+                                                .updater(new NoOp()).build(),
+                                        "in")
+                                        .addLayer("1", new RnnOutputLayer.Builder(
+                                                        LossFunctions.LossFunction.XENT)
+                                                        .activation(Activation.SIGMOID)
+                                                        .nIn(5).nOut(nOut)
+                                                        .weightInit(WeightInit.XAVIER)
+                                                        .updater(new NoOp()).build(),
+                                                "0")
+                                        .setOutputs("1").build();
                         ComputationGraph net2 = new ComputationGraph(conf2);
                         net2.init();
 
@@ -412,9 +423,9 @@ public class TestVariableLengthTSCG extends BaseDL4JTest {
                                 if (m == 0.0) {
                                     //Expect outputs to be exactly 0.0
                                     INDArray outRow = out.get(NDArrayIndex.point(i), NDArrayIndex.all(),
-                                                    NDArrayIndex.point(j));
+                                            NDArrayIndex.point(j));
                                     INDArray outRow2 = out2.get(NDArrayIndex.point(i), NDArrayIndex.all(),
-                                                    NDArrayIndex.point(j));
+                                            NDArrayIndex.point(j));
                                     for (int k = 0; k < nOut; k++) {
                                         assertEquals(0.0, outRow.getDouble(k), 0.0);
                                         assertEquals(0.0, outRow2.getDouble(k), 0.0);

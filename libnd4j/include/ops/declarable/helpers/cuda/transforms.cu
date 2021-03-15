@@ -1,19 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 //
 // @author Yurii Shyrma (iuriish@yahoo.com), created on 20.04.2018
@@ -92,15 +95,11 @@ __global__ static void traceCuda(const void* vx, const Nd4jLong* xShapeInfo, voi
     const auto x = reinterpret_cast<const T*>(vx);
           auto z = reinterpret_cast<T*>(vz);
 
-    __shared__ T* sharedMem;
-    __shared__ int xRank, zRank, *coordsMem;        // xRank = zRank + 2
+    __shared__ T sharedMem[CUDA_BLOCK_SIZE];
+    __shared__ int xRank, zRank;        // xRank = zRank + 2
     __shared__ Nd4jLong xLen, zLen;
 
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<T*>(shmem);
-        coordsMem = reinterpret_cast<int*>(shmem + blockDim.x * sizeof(T));
-
         xRank = shape::rank(xShapeInfo);
         zRank = shape::rank(zShapeInfo);
         xLen = shape::length(xShapeInfo);
@@ -109,7 +108,7 @@ __global__ static void traceCuda(const void* vx, const Nd4jLong* xShapeInfo, voi
     }
     __syncthreads();
 
-    auto coords = coordsMem + threadIdx.x * xRank;
+    Nd4jLong coords[MAX_RANK];
 
     for (uint m = blockIdx.x; m < zLen; m += gridDim.x) {   // one block per each element of z, that is per each matrix
 
@@ -158,9 +157,9 @@ void trace(sd::LaunchContext* context, const NDArray& input, NDArray& output) {
     PointersManager manager(context, "trace");
 
     const uint diagLen = input.sizeAt(-1) < input.sizeAt(-2) ? input.sizeAt(-1) : input.sizeAt(-2);
-    const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    const int threadsPerBlock = CUDA_BLOCK_SIZE;
     const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = threadsPerBlock * (sizeof(int) * input.rankOf() + input.sizeOfT()) + 128;
+    const int sharedMem = 1024;
 
     NDArray::prepareSpecialUse({&output}, {&input});
     BUILD_SINGLE_SELECTOR(input.dataType(), traceCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), input.specialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), diagLen), LIBND4J_TYPES);
@@ -177,13 +176,10 @@ __global__ static void triuBPCuda(const void* vx, const Nd4jLong* xShapeInfo, vo
     const auto x = reinterpret_cast<const T*>(vx);  // gradO
           auto z = reinterpret_cast<T*>(vz);        // gradI
 
-    __shared__ int rank, areSameOffsets, *sharedMem;                // xRank = zRank
+    __shared__ int rank, areSameOffsets;
     __shared__ Nd4jLong len, totalThreads;  // xLen = zLen
 
     if (threadIdx.x == 0) {
-
-        extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<int*>(shmem);
         areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
         rank = shape::rank(xShapeInfo);
         len  = shape::length(zShapeInfo);
@@ -192,7 +188,7 @@ __global__ static void triuBPCuda(const void* vx, const Nd4jLong* xShapeInfo, vo
 
     __syncthreads();
 
-    auto coords = sharedMem + threadIdx.x * rank;
+    Nd4jLong coords[MAX_RANK];
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -240,14 +236,10 @@ __global__ static void tileBPCuda(const void* vx, const Nd4jLong* xShapeInfo, vo
     const auto x = reinterpret_cast<const T*>(vx);  // gradO
           auto z = reinterpret_cast<T*>(vz);        // gradI
 
-    __shared__ int xRank, zRank, *sharedMem;                // xRank >= zRank
+    __shared__ int xRank, zRank;                // xRank >= zRank
     __shared__ Nd4jLong numOfXOffsets, zLen, totalThreads;  // xLen >= zLen
 
     if (threadIdx.x == 0) {
-
-        extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<int*>(shmem);
-
         xRank = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
         numOfXOffsets = shape::length(xShapeInfo) / zLen;
@@ -259,7 +251,7 @@ __global__ static void tileBPCuda(const void* vx, const Nd4jLong* xShapeInfo, vo
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    auto memBuff  = sharedMem + threadIdx.x * 2 * xRank;
+    int memBuff[MAX_RANK * 2];
     auto xOffsets = globMem + tid * numOfXOffsets;
 
     for (Nd4jLong i = tid; i < zLen; i += totalThreads) {

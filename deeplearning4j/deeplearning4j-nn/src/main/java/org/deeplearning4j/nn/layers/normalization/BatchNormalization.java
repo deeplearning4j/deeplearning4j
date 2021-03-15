@@ -1,23 +1,28 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.normalization;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -46,16 +51,6 @@ import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.*;
 
-/**
- * Batch normalization layer.<br>
- * Rerences:<br>
- *  <a href="https://arxiv.org/pdf/1502.03167v3.pdf">https://arxiv.org/pdf/1502.03167v3.pdf</a><br>
- *  <a href="https://arxiv.org/pdf/1410.7455v8.pdf">https://arxiv.org/pdf/1410.7455v8.pdf</a><br>
- *  <a href="https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html">
- *      https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html</a>
- *
- * Batch normalization should be applied between the output of a layer (with identity activation) and the activation function.
- **/
 @Slf4j
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
     protected static final double ONE_ON_2LOGE_10 = 1.0 / (2 * Math.log(10.0));
@@ -75,24 +70,18 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
-        if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.normalization.CudnnBatchNormalizationHelper")
-                        .asSubclass(BatchNormalizationHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnBatchNormalizationHelper successfully initialized");
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnBatchNormalizationHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
-            }
-        } else if("CPU".equalsIgnoreCase(backend)){
+
+        if ("CUDA".equalsIgnoreCase(backend)) {
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.normalization.CudnnBatchNormalizationHelper",
+                    BatchNormalizationHelper.class,
+                    dataType);
+            log.debug("CudnnBatchNormalizationHelper successfully initialized");
+        } else if ("CPU".equalsIgnoreCase(backend)){
             helper = new MKLDNNBatchNormHelper(dataType);
             log.trace("Created MKLDNNBatchNormHelper, layer {}", layerConf().getLayerName());
         }
+
         if (helper != null && !helper.checkSupported(layerConf().getEps(), layerConf().isLockGammaBeta())) {
             log.debug("Removed helper {} as not supported with epsilon {}, lockGammaBeta={}", helper.getClass(), layerConf().getEps(), layerConf().isLockGammaBeta());
             helper = null;

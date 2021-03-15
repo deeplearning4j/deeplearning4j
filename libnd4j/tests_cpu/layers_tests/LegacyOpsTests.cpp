@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -70,7 +72,7 @@ TEST_F(LegacyOpsTests, TransformTests_2) {
 
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(LegacyOpsTests,  Reciprocal_1) {
@@ -126,7 +128,7 @@ TEST_F(LegacyOpsTests,  PWT_Tests_2) {
     //z->printBuffer("Z");
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(LegacyOpsTests, Scalar_Test_1) {
@@ -157,7 +159,7 @@ TEST_F(LegacyOpsTests, Scalar_Test_2) {
     auto z = result.at(0);
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -176,7 +178,7 @@ TEST_F(LegacyOpsTests, ReduceTests_1) {
     ASSERT_TRUE(z->isScalar());
     ASSERT_NEAR(x.sumNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
-    
+
 }
 
 
@@ -197,7 +199,7 @@ TEST_F(LegacyOpsTests, ReduceTests_2) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -217,7 +219,7 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -238,7 +240,7 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 TEST_F(LegacyOpsTests, ReduceTests_5) {
@@ -256,7 +258,7 @@ TEST_F(LegacyOpsTests, ReduceTests_5) {
     ASSERT_TRUE(z->isScalar());
     ASSERT_NEAR(x.meanNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
-    
+
 }
 
 
@@ -277,7 +279,7 @@ TEST_F(LegacyOpsTests, ReduceTests_6) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -297,7 +299,7 @@ TEST_F(LegacyOpsTests, ReduceTests_7) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -319,7 +321,7 @@ TEST_F(LegacyOpsTests, ReduceTests_8) {
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
-    
+
 }
 
 
@@ -338,7 +340,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_1) {
     ASSERT_TRUE(z->isScalar());
     ASSERT_EQ(24, z->e<int>(0));
 
-    
+
 }
 
 
@@ -362,7 +364,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     //ASSERT_EQ(4, z->e<int>(3));
     //ASSERT_EQ(4, z->e<int>(4));
 
-    
+
 }
 
 TEST_F(LegacyOpsTests, BroadcastingTests_1) {
@@ -707,7 +709,7 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_1) {
                                         x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                                         nullptr,
                                         z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
-                                        &dim, 1, x.platformShapeInfo(), nullptr);
+                                        &dim, 1);
 
     ASSERT_EQ(e, z);
 }
@@ -720,7 +722,7 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_2) {
 
     int dim = 1;
 
-    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Min, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.platformShapeInfo(), nullptr);
+    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Min, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1);
 
     ASSERT_EQ(e, z);
 }
@@ -733,7 +735,7 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_3) {
 
     int dim = 1;
 
-    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Max, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.platformShapeInfo(), nullptr);
+    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Max, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1);
 
     ASSERT_EQ(e, z);
 }

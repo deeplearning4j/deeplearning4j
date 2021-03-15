@@ -1,22 +1,26 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.iterator;
 
+import com.sun.jna.Platform;
 import lombok.Getter;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.iterator.bert.BertMaskedLMMasker;
@@ -54,9 +58,11 @@ public class TestBertIterator extends BaseDL4JTest {
     public TestBertIterator() throws IOException {
     }
 
-    @Test(timeout = 20000L)
+    @Test()
     public void testBertSequenceClassification() throws Exception {
-
+        if(Platform.isWindows()) {
+            return;
+        }
         int minibatchSize = 2;
         TestSentenceHelper testHelper = new TestSentenceHelper();
         BertIterator b = BertIterator.builder()
@@ -305,6 +311,9 @@ public class TestBertIterator extends BaseDL4JTest {
      */
     @Test
     public void testSentencePairsSingle() throws IOException {
+        if(Platform.isWindows()) {
+            return;
+        }
         boolean prependAppend;
         int numOfSentences;
 
@@ -364,7 +373,9 @@ public class TestBertIterator extends BaseDL4JTest {
     */
     @Test
     public void testSentencePairsUnequalLengths() throws IOException {
-
+        if(Platform.isWindows()) {
+            return;
+        }
         int minibatchSize = 4;
         int numOfSentencesinIter = 3;
 
@@ -453,6 +464,9 @@ public class TestBertIterator extends BaseDL4JTest {
 
     @Test
     public void testSentencePairFeaturizer() throws IOException {
+        if(Platform.isWindows()) {
+            return;
+        }
         int minibatchSize = 2;
         TestSentencePairsHelper testPairHelper = new TestSentencePairsHelper(minibatchSize);
         BertIterator b = BertIterator.builder()

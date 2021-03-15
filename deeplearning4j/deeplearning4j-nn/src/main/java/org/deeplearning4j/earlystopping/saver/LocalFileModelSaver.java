@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.earlystopping.saver;
 
@@ -25,20 +29,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
-/** Save the best (and latest/most recent) models learned during early stopping training to the local file system.<br>
- * Instances of this class will save 3 files for best (and optionally, latest) models:<br>
- * (a) The network configuration: bestModelConf.json<br>
- * (b) The network parameters: bestModelParams.bin<br>
- * (c) The network updater: bestModelUpdater.bin<br>
- * <br>
- * NOTE: The model updater is an object that contains the internal state for training features such as AdaGrad, Momentum
- * and RMSProp.<br>
- * The updater is <i>not</i> required to use the network at test time; it is saved in case further training is required.
- * Without saving the updater, any further training would result in the updater being recreated, without the benefit
- * of the history/internal state. This could negatively impact training performance after loading the network.
- *
- * @author Alex Black
- */
 public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNetwork> {
 
     private static final String BEST_MODEL_BIN = "bestModel.bin";

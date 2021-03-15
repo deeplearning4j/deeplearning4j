@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.transform.analysis.counter;
 
@@ -22,11 +26,6 @@ import lombok.Data;
 import org.datavec.api.transform.analysis.AnalysisCounter;
 import org.datavec.api.writable.Writable;
 
-/**
- * A counter function for doing analysis on Double columns, on Spark
- *
- * @author Alex Black
- */
 @AllArgsConstructor
 @Data
 public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCounter> {
@@ -49,27 +48,27 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
   private TDigest digest = TDigest.createDigest(100);
 
 
-    public DoubleAnalysisCounter() {};
+    public DoubleAnalysisCounter() {}
 
     public double getMinValueSeen() {
         return counter.getMin();
-    };
+    }
 
     public double getMaxValueSeen() {
         return counter.getMax();
-    };
+    }
 
     public double getSum() {
         return counter.getSum();
-    };
+    }
 
     public long getCountTotal() {
         return counter.getCount();
-    };
+    }
 
     public double getSampleStdev() {
         return counter.getStddev(false);
-    };
+    }
 
     public double getMean() {
         return counter.getMean();
@@ -105,7 +104,7 @@ public class DoubleAnalysisCounter implements AnalysisCounter<DoubleAnalysisCoun
             countPositive++;
         } else {
             countNegative++;
-        } ;
+        }
 
         digest.add(value);
         counter.add(value);

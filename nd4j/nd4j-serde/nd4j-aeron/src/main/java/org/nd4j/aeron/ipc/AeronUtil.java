@@ -1,16 +1,24 @@
-package org.nd4j.aeron.ipc;
 /*
- * Copyright 2014 - 2016 Real Logic Ltd.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
  */
+
+package org.nd4j.aeron.ipc;
 
 import io.aeron.Aeron;
 import io.aeron.Image;
@@ -28,9 +36,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-/**
- * Utility functions for samples
- */
 public class AeronUtil {
 
     /**
@@ -54,13 +59,15 @@ public class AeronUtil {
             ipcLength += 2;
         // System.setProperty("aeron.term.buffer.size",String.valueOf(ipcLength));
         final MediaDriver.Context ctx =
-                        new MediaDriver.Context().threadingMode(ThreadingMode.SHARED).dirsDeleteOnStart(true)
-                                        /*  .ipcTermBufferLength(ipcLength)
-                                          .publicationTermBufferLength(ipcLength)
-                                          .maxTermBufferLength(ipcLength)*/
-                                        .conductorIdleStrategy(new BusySpinIdleStrategy())
-                                        .receiverIdleStrategy(new BusySpinIdleStrategy())
-                                        .senderIdleStrategy(new BusySpinIdleStrategy());
+                new MediaDriver.Context().threadingMode(ThreadingMode.SHARED)
+                        .dirDeleteOnStart(true)
+                        .dirDeleteOnShutdown(true)
+                        /*  .ipcTermBufferLength(ipcLength)
+                          .publicationTermBufferLength(ipcLength)
+                          .maxTermBufferLength(ipcLength)*/
+                        .conductorIdleStrategy(new BusySpinIdleStrategy())
+                        .receiverIdleStrategy(new BusySpinIdleStrategy())
+                        .senderIdleStrategy(new BusySpinIdleStrategy());
         return ctx;
     }
 
@@ -87,7 +94,7 @@ public class AeronUtil {
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(final FragmentHandler fragmentHandler, final int limit,
-                    final AtomicBoolean running, final AtomicBoolean launched) {
+                                                        final AtomicBoolean running, final AtomicBoolean launched) {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
         return subscriberLoop(fragmentHandler, limit, running, idleStrategy, launched);
     }
@@ -104,7 +111,7 @@ public class AeronUtil {
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(final FragmentHandler fragmentHandler, final int limit,
-                    final AtomicBoolean running, final IdleStrategy idleStrategy, final AtomicBoolean launched) {
+                                                        final AtomicBoolean running, final IdleStrategy idleStrategy, final AtomicBoolean launched) {
         return (subscription) -> {
             try {
                 while (running.get()) {
@@ -129,7 +136,7 @@ public class AeronUtil {
             buffer.getBytes(offset, data);
 
             System.out.println(String.format("Message to stream %d from session %d (%d@%d) <<%s>>", streamId,
-                            header.sessionId(), length, offset, new String(data)));
+                    header.sessionId(), length, offset, new String(data)));
         };
     }
 
@@ -144,7 +151,7 @@ public class AeronUtil {
      * @param cause     of the error
      */
     public static void printError(final String channel, final int streamId, final int sessionId, final String message,
-                    final HeaderFlyweight cause) {
+                                  final HeaderFlyweight cause) {
         System.out.println(message);
     }
 
@@ -157,9 +164,9 @@ public class AeronUtil {
      * @param totalBytes     being reported
      */
     public static void printRate(final double messagesPerSec, final double bytesPerSec, final long totalMessages,
-                    final long totalBytes) {
+                                 final long totalBytes) {
         System.out.println(String.format("%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB", messagesPerSec,
-                        bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
+                bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
     }
 
     /**
@@ -170,7 +177,7 @@ public class AeronUtil {
     public static void printAvailableImage(final Image image) {
         final Subscription subscription = image.subscription();
         System.out.println(String.format("Available image on %s streamId=%d sessionId=%d from %s",
-                        subscription.channel(), subscription.streamId(), image.sessionId(), image.sourceIdentity()));
+                subscription.channel(), subscription.streamId(), image.sessionId(), image.sourceIdentity()));
     }
 
     /**
@@ -181,7 +188,7 @@ public class AeronUtil {
     public static void printUnavailableImage(final Image image) {
         final Subscription subscription = image.subscription();
         System.out.println(String.format("Unavailable image on %s streamId=%d sessionId=%d", subscription.channel(),
-                        subscription.streamId(), image.sessionId()));
+                subscription.streamId(), image.sessionId()));
     }
 
     private static final AtomicInteger conductorCount = new AtomicInteger();

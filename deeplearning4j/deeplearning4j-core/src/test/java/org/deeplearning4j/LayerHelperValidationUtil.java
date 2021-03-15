@@ -1,24 +1,29 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j;
 
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
@@ -66,23 +71,23 @@ public class LayerHelperValidationUtil {
 
     public static void disableCppHelpers(){
         try {
-            Class<?> c = Class.forName("org.nd4j.nativeblas.Nd4jCpu$Environment");
-            Method m = c.getMethod("getInstance");
-            Object instance = m.invoke(null);
-            Method m2 = c.getMethod("allowHelpers", boolean.class);
-            m2.invoke(instance, false);
+            Class<?> clazz = DL4JClassLoading.loadClassByName("org.nd4j.nativeblas.Nd4jCpu$Environment");
+            Method getInstance = clazz.getMethod("getInstance");
+            Object instance = getInstance.invoke(null);
+            Method allowHelpers = clazz.getMethod("allowHelpers", boolean.class);
+            allowHelpers.invoke(instance, false);
         } catch (Throwable t){
             throw new RuntimeException(t);
         }
     }
 
     public static void enableCppHelpers(){
-        try{
-            Class<?> c = Class.forName("org.nd4j.nativeblas.Nd4jCpu$Environment");
-            Method m = c.getMethod("getInstance");
-            Object instance = m.invoke(null);
-            Method m2 = c.getMethod("allowHelpers", boolean.class);
-            m2.invoke(instance, true);
+        try {
+            Class<?> clazz = DL4JClassLoading.loadClassByName("org.nd4j.nativeblas.Nd4jCpu$Environment");
+            Method getInstance = clazz.getMethod("getInstance");
+            Object instance = getInstance.invoke(null);
+            Method allowHelpers = clazz.getMethod("allowHelpers", boolean.class);
+            allowHelpers.invoke(instance, true);
         } catch (Throwable t){
             throw new RuntimeException(t);
         }

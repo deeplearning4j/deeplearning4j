@@ -42,8 +42,7 @@ public class SDCNN extends SDOps {
   /**
    * 2D Convolution layer operation - average pooling 2d<br>
    *
-   * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param Pooling2DConfig Configuration Object
    * @return output Result after applying average pooling on the input (NUMERIC type)
    */
@@ -56,8 +55,7 @@ public class SDCNN extends SDOps {
    * 2D Convolution layer operation - average pooling 2d<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param Pooling2DConfig Configuration Object
    * @return output Result after applying average pooling on the input (NUMERIC type)
    */
@@ -70,9 +68,7 @@ public class SDCNN extends SDOps {
   /**
    * 3D convolution layer operation - average pooling 3d <br>
    *
-   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
-   *                         (shape [minibatch, channels, depth, height, width]) or NDHWC format
-   *                         (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param Pooling3DConfig Configuration Object
    * @return output after applying average pooling on the input (NUMERIC type)
    */
@@ -85,9 +81,7 @@ public class SDCNN extends SDOps {
    * 3D convolution layer operation - average pooling 3d <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
-   *                         (shape [minibatch, channels, depth, height, width]) or NDHWC format
-   *                         (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param Pooling3DConfig Configuration Object
    * @return output after applying average pooling on the input (NUMERIC type)
    */
@@ -302,9 +296,7 @@ public class SDCNN extends SDOps {
   /**
    * Convolution 3D operation with optional bias <br>
    *
-   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
-   * (shape [minibatch, channels, depth, height, width]) or NDHWC format
-   * (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
    * @param bias  Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
    * @param Conv3DConfig Configuration Object
@@ -322,9 +314,7 @@ public class SDCNN extends SDOps {
    * Convolution 3D operation with optional bias <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
-   * (shape [minibatch, channels, depth, height, width]) or NDHWC format
-   * (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
    * @param bias  Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
    * @param Conv3DConfig Configuration Object
@@ -342,9 +332,7 @@ public class SDCNN extends SDOps {
   /**
    * Convolution 3D operation with optional bias <br>
    *
-   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
-   * (shape [minibatch, channels, depth, height, width]) or NDHWC format
-   * (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
    * @param Conv3DConfig Configuration Object
    * @return output Conv3d output variable (NUMERIC type)
@@ -359,9 +347,7 @@ public class SDCNN extends SDOps {
    * Convolution 3D operation with optional bias <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
-   * (shape [minibatch, channels, depth, height, width]) or NDHWC format
-   * (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param weights  Weights for conv3d. Rank 5 with shape [kernelDepth, kernelHeight, kernelWidth, inputChannels, outputChannels]. (NUMERIC type)
    * @param Conv3DConfig Configuration Object
    * @return output Conv3d output variable (NUMERIC type)
@@ -377,8 +363,7 @@ public class SDCNN extends SDOps {
   /**
    * 2D deconvolution operation with optional bias<br>
    *
-   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
-   * (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
    * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
    * @param DeConv2DConfig Configuration Object
@@ -396,8 +381,7 @@ public class SDCNN extends SDOps {
    * 2D deconvolution operation with optional bias<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
-   * (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
    * @param bias Optional 1D bias array with shape [outputChannels]. May be null. (NUMERIC type)
    * @param DeConv2DConfig Configuration Object
@@ -415,8 +399,7 @@ public class SDCNN extends SDOps {
   /**
    * 2D deconvolution operation with optional bias<br>
    *
-   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
-   * (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
    * @param DeConv2DConfig Configuration Object
    * @return output result of deconv2d op (NUMERIC type)
@@ -432,8 +415,7 @@ public class SDCNN extends SDOps {
    * 2D deconvolution operation with optional bias<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format
-   * (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param layerInput the input to deconvolution 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param weights Weights for the 2d deconvolution operation. 4 dimensions with format [inputChannels, outputChannels, kernelHeight, kernelWidth] (NUMERIC type)
    * @param DeConv2DConfig Configuration Object
    * @return output result of deconv2d op (NUMERIC type)
@@ -519,8 +501,7 @@ public class SDCNN extends SDOps {
    * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]<br>
    * = [mb, 2, 4, 4]<br>
    *
-   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
-   *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param blockSize Block size, in the height/width dimension
    * @param dataFormat Data format: "NCHW" or "NHWC"
    * @return output Output variable (NUMERIC type)
@@ -537,8 +518,7 @@ public class SDCNN extends SDOps {
    * = [mb, 2, 4, 4]<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
-   *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param blockSize Block size, in the height/width dimension
    * @param dataFormat Data format: "NCHW" or "NHWC"
    * @return output Output variable (NUMERIC type)
@@ -756,8 +736,7 @@ public class SDCNN extends SDOps {
   /**
    * 2D Convolution layer operation - Max pooling on the input and outputs both max values and indices <br>
    *
-   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param Pooling2DConfig Configuration Object
    */
   public SDVariable[] maxPoolWithArgmax(SDVariable input, Pooling2DConfig Pooling2DConfig) {
@@ -769,8 +748,7 @@ public class SDCNN extends SDOps {
    * 2D Convolution layer operation - Max pooling on the input and outputs both max values and indices <br>
    *
    * @param names names May be null. Arrays of names for the output variables.
-   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param Pooling2DConfig Configuration Object
    */
   public SDVariable[] maxPoolWithArgmax(String[] names, SDVariable input,
@@ -783,8 +761,7 @@ public class SDCNN extends SDOps {
   /**
    * 2D Convolution layer operation - max pooling 2d <br>
    *
-   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param Pooling2DConfig Configuration Object
    * @return output Result after applying max pooling on the input (NUMERIC type)
    */
@@ -797,8 +774,7 @@ public class SDCNN extends SDOps {
    * 2D Convolution layer operation - max pooling 2d <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                         (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param input the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param Pooling2DConfig Configuration Object
    * @return output Result after applying max pooling on the input (NUMERIC type)
    */
@@ -811,9 +787,7 @@ public class SDCNN extends SDOps {
   /**
    * 3D convolution layer operation - max pooling 3d operation.<br>
    *
-   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
-   *                         (shape [minibatch, channels, depth, height, width]) or NDHWC format
-   *                         (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param Pooling3DConfig Configuration Object
    * @return output Result after applying max pooling on the input (NUMERIC type)
    */
@@ -826,9 +800,7 @@ public class SDCNN extends SDOps {
    * 3D convolution layer operation - max pooling 3d operation.<br>
    *
    * @param name name May be null. Name for the output variable
-   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format
-   *                         (shape [minibatch, channels, depth, height, width]) or NDHWC format
-   *                         (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
+   * @param input the input to average pooling 3d operation - 5d activations in NCDHW format (shape [minibatch, channels, depth, height, width]) or NDHWC format (shape [minibatch, depth, height, width, channels]) (NUMERIC type)
    * @param Pooling3DConfig Configuration Object
    * @return output Result after applying max pooling on the input (NUMERIC type)
    */
@@ -841,8 +813,7 @@ public class SDCNN extends SDOps {
   /**
    * Separable 2D convolution operation with optional bias <br>
    *
-   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                      (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
    * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]. May be null (NUMERIC type)
    * @param bias Optional bias, rank 1 with shape [outputChannels]. May be null. (NUMERIC type)
@@ -862,8 +833,7 @@ public class SDCNN extends SDOps {
    * Separable 2D convolution operation with optional bias <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                      (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
    * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]. May be null (NUMERIC type)
    * @param bias Optional bias, rank 1 with shape [outputChannels]. May be null. (NUMERIC type)
@@ -883,8 +853,7 @@ public class SDCNN extends SDOps {
   /**
    * Separable 2D convolution operation with optional bias <br>
    *
-   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                      (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
    * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]. May be null (NUMERIC type)
    * @param Conv2DConfig Configuration Object
@@ -902,8 +871,7 @@ public class SDCNN extends SDOps {
    * Separable 2D convolution operation with optional bias <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format
-   *                      (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param layerInput the input to max pooling 2d operation - 4d CNN (image) activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param depthWeights Separable conv2d depth weights. 4 dimensions with format [kernelHeight, kernelWidth, inputChannels, depthMultiplier] (NUMERIC type)
    * @param pointWeights Point weights, rank 4 with format [1, 1, inputChannels*depthMultiplier, outputChannels]. May be null (NUMERIC type)
    * @param Conv2DConfig Configuration Object
@@ -964,8 +932,7 @@ public class SDCNN extends SDOps {
    * Example: if input has shape [mb, 2, 4, 4] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]<br>
    * = [mb, 2, 4, 4] <br>
    *
-   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
-   *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param blockSize  Block size, in the height/width dimension
    * @param dataFormat Data format: "NCHW" or "NHWC"
    * @return output Output variable (NUMERIC type)
@@ -982,8 +949,7 @@ public class SDCNN extends SDOps {
    * = [mb, 2, 4, 4] <br>
    *
    * @param name name May be null. Name for the output variable
-   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format
-   *                    (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
+   * @param x the input to depth to space pooling 2d operation - 4d activations in NCHW format (shape [minibatch, channels, height, width]) or NHWC format (shape [minibatch, height, width, channels]) (NUMERIC type)
    * @param blockSize  Block size, in the height/width dimension
    * @param dataFormat Data format: "NCHW" or "NHWC"
    * @return output Output variable (NUMERIC type)

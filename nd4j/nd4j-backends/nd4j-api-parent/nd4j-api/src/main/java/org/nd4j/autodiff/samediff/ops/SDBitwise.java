@@ -248,7 +248,7 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise left cyclical shift operation. Supports broadcasting.<br>
-   * Unlike {@link #leftShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":<br>
    * {@code leftShiftCyclic(01110000, 2) -> 11000001}<br>
    *
    * @param x Input to be bit shifted (INT type)
@@ -263,7 +263,7 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise left cyclical shift operation. Supports broadcasting.<br>
-   * Unlike {@link #leftShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * Unlike #leftShift(INDArray, INDArray) the bits will "wrap around":<br>
    * {@code leftShiftCyclic(01110000, 2) -> 11000001}<br>
    *
    * @param name name May be null. Name for the output variable
@@ -346,7 +346,7 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise right cyclical shift operation. Supports broadcasting.<br>
-   * Unlike {@link #rightShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":<br>
    * {@code rightShiftCyclic(00001110, 2) -> 10000011}<br>
    *
    * @param x Input to be bit shifted (INT type)
@@ -361,7 +361,7 @@ public class SDBitwise extends SDOps {
 
   /**
    * Bitwise right cyclical shift operation. Supports broadcasting.<br>
-   * Unlike {@link #rightShift(INDArray, INDArray)} the bits will "wrap around":<br>
+   * Unlike rightShift(INDArray, INDArray) the bits will "wrap around":<br>
    * {@code rightShiftCyclic(00001110, 2) -> 10000011}<br>
    *
    * @param name name May be null. Name for the output variable

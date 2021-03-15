@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.graph;
 
@@ -1797,7 +1801,9 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(10)
                                 .nOut(4).build(),
                         "lstm")
-                .setOutputs("out1", "out2").build();
+                .setOutputs("out1", "out2")
+                .setInputTypes(InputType.recurrent(5,5,RNNFormat.NCW),InputType.recurrent(5,5,RNNFormat.NCW))
+                .build();
 
         ComputationGraph net = new ComputationGraph(conf);
         net.init();
@@ -1809,7 +1815,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
     }
 
     @Test
-    public void testCompGraphDropoutOutputLayers2(){
+    public void testCompGraphDropoutOutputLayers2() {
         //https://github.com/deeplearning4j/deeplearning4j/issues/6326
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
                 .dropOut(0.8)
@@ -1832,6 +1838,7 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                                 .lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5)
                                 .nOut(4).build(),
                         "dense")
+                .setInputTypes(InputType.feedForward(5),InputType.feedForward(5))
                 .setOutputs("out1", "out2").build();
 
         ComputationGraph net = new ComputationGraph(conf);
@@ -1971,13 +1978,13 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         //https://github.com/deeplearning4j/deeplearning4j/issues/7027
         int inputSize = 300;
         int hiddenSize = 100;
-
+        int dataSize = 10;
+        int seqLen = 5;
         ComputationGraphConfiguration configuration = new NeuralNetConfiguration.Builder()
                 .updater(new Adam())
                 .graphBuilder()
                 .addInputs("x_emb")
-                .setInputTypes(InputType.recurrent(inputSize))
-                .addLayer("agg_lstm", new Bidirectional(CONCAT, new LSTM.Builder().nIn(inputSize).nOut(hiddenSize/2).build()), "x_emb")
+                .addLayer("agg_lstm", new Bidirectional(CONCAT, new LSTM.Builder().nOut(hiddenSize/2).build()), "x_emb")
                 .addLayer("agg_att", new DenseLayer.Builder().nIn(100).nOut(1).activation(Activation.SOFTMAX).build(), "agg_lstm")
                 .addVertex("att", new PreprocessorVertex(new ComposableInputPreProcessor(new FeedForwardToRnnPreProcessor(), new PermutePreprocessor(new int[] {0,2,1}), new RnnToFeedForwardPreProcessor())), "agg_att")
                 .addLayer("att_repeat", new RepeatVector.Builder(hiddenSize).build(),"att")
@@ -1987,13 +1994,13 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addLayer("agg_out", new DenseLayer.Builder().nIn(100).nOut(6).activation(Activation.TANH).build(), "sum")
                 .addLayer("output", new OutputLayer.Builder().nIn(6).nOut(6).lossFunction(LossFunctions.LossFunction.RECONSTRUCTION_CROSSENTROPY).build(), "agg_out")
                 .setOutputs("output")
+                .setInputTypes(InputType.recurrent(inputSize,seqLen,RNNFormat.NCW))
                 .build();
 
         ComputationGraph net = new ComputationGraph(configuration);
         net.init();
 
-        int dataSize = 10;
-        int seqLen = 5;
+
         INDArray features = Nd4j.rand(new int[] {dataSize, inputSize, seqLen});
         INDArray labels = Nd4j.rand(new int[] {dataSize, 6});
         INDArray featuresMask = Nd4j.ones(dataSize, seqLen);
@@ -2188,10 +2195,12 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
                 .addInputs("in")
                 .layer("l0", new ConvolutionLayer.Builder()
                         .nOut(16)
+                        .dataFormat(CNN2DFormat.NHWC)
                         .kernelSize(2,2).stride(1,1)
                         .build(), "in")
                 .layer("l1", new ConvolutionLayer.Builder()
                         .nOut(8)
+                        .dataFormat(CNN2DFormat.NHWC)
                         .kernelSize(2,2).stride(1,1)
                         .build(), "in")
                 .addVertex("merge", new MergeVertex(), "l0", "l1")

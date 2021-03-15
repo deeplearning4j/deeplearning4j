@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.recurrent;
 
@@ -34,15 +38,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.Arrays;
 
-/**Recurrent Neural Network Output Layer.<br>
- * Handles calculation of gradients etc for various objective functions.<br>
- * Functionally the same as OutputLayer, but handles output and label reshaping
- * automatically.<br>
- * Input and output activations are same as other RNN layers: 3 dimensions with shape
- * [miniBatchSize,nIn,timeSeriesLength] and [miniBatchSize,nOut,timeSeriesLength] respectively.
- * @author Alex Black
- * @see BaseOutputLayer, OutputLayer
- */
 public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.layers.RnnOutputLayer> {
 
     public RnnOutputLayer(NeuralNetConfiguration conf, DataType dataType) {
@@ -57,16 +52,19 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
                     "Input is not rank 3. RnnOutputLayer expects rank 3 input with shape [minibatch, layerInSize, sequenceLength]." +
                             " Got input with rank " + input.rank() + " and shape " + Arrays.toString(input.shape()) + " - " + layerId());
         }
+
         RNNFormat format = layerConf().getRnnDataFormat();
         int td = (format == RNNFormat.NCW) ? 2 : 1;
         Preconditions.checkState(labels.rank() == 3, "Expected rank 3 labels array, got label array with shape %ndShape", labels);
         Preconditions.checkState(input.size(td) == labels.size(td), "Sequence lengths do not match for RnnOutputLayer input and labels:" +
                 "Arrays should be rank 3 with shape [minibatch, size, sequenceLength] - mismatch on dimension 2 (sequence length) - input=%ndShape vs. label=%ndShape", input, labels);
 
+
         INDArray inputTemp = input;
         if (layerConf().getRnnDataFormat() == RNNFormat.NWC){
             this.input = input.permute(0, 2, 1);
         }
+
         this.input = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.BP_WORKING_MEM);
 
         applyDropOutIfNecessary(true, workspaceMgr);    //Edge case: we skip OutputLayer forward pass during training as this isn't required to calculate gradients
@@ -111,7 +109,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         if (input.rank() == 3) {
             //Case when called from RnnOutputLayer
             INDArray inputTemp = input;
-            input = (layerConf().getRnnDataFormat()==RNNFormat.NWC)? input.permute(0, 2, 1):input;
+            input = (layerConf().getRnnDataFormat() == RNNFormat.NWC) ? input.permute(0, 2, 1):input;
             input = TimeSeriesUtils.reshape3dTo2d(input, workspaceMgr, ArrayType.FF_WORKING_MEM);
             INDArray out = super.preOutput(training, workspaceMgr);
             this.input = inputTemp;
@@ -127,7 +125,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     protected INDArray getLabels2d(LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         INDArray labels = this.labels;
         if (labels.rank() == 3){
-            labels = (layerConf().getRnnDataFormat()==RNNFormat.NWC)?labels.permute(0, 2, 1):labels;
+            labels = (layerConf().getRnnDataFormat() == RNNFormat.NWC) ? labels.permute(0, 2, 1) : labels;
             return TimeSeriesUtils.reshape3dTo2d(labels, workspaceMgr, arrayType);
         }
         return labels;

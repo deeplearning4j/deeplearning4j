@@ -1,24 +1,31 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.common.io;
+
+import org.nd4j.common.config.ND4JClassLoading;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.*;
+import java.util.Objects;
 
 
 public abstract class ResourceUtils {
@@ -54,7 +61,7 @@ public abstract class ResourceUtils {
         Assert.notNull(resourceLocation, "Resource location must not be null");
         if (resourceLocation.startsWith("classpath:")) {
             String ex = resourceLocation.substring("classpath:".length());
-            URL ex2 = ClassUtils.getDefaultClassLoader().getResource(ex);
+            URL ex2 = ND4JClassLoading.getNd4jClassloader().getResource(ex);
             if (ex2 == null) {
                 String description = "class path resource [" + ex + "]";
                 throw new FileNotFoundException(description + " cannot be resolved to URL because it does not exist");
@@ -80,7 +87,7 @@ public abstract class ResourceUtils {
         if (resourceLocation.startsWith("classpath:")) {
             String ex = resourceLocation.substring("classpath:".length());
             String description = "class path resource [" + ex + "]";
-            URL url = ClassUtils.getDefaultClassLoader().getResource(ex);
+            URL url = ND4JClassLoading.getNd4jClassloader().getResource(ex);
             if (url == null) {
                 throw new FileNotFoundException(description + " cannot be resolved to absolute file path "
                                 + "because it does not reside in the file system");
@@ -169,5 +176,18 @@ public abstract class ResourceUtils {
 
     public static void useCachesIfNecessary(URLConnection con) {
         con.setUseCaches(con.getClass().getSimpleName().startsWith("JNLP"));
+    }
+
+    public static String classPackageAsResourcePath(Class<?> clazz) {
+        Objects.requireNonNull(clazz);
+
+        String className = clazz.getName();
+        int packageEndIndex = className.lastIndexOf(46);
+        if (packageEndIndex == -1) {
+            return "";
+        } else {
+            String packageName = className.substring(0, packageEndIndex);
+            return packageName.replace('.', '/');
+        }
     }
 }

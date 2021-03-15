@@ -1,28 +1,32 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.parameterserver.distributed.messages;
 
-import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.io.input.ClassLoaderObjectInputStream;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
-import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.logic.Storage;
+import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
@@ -30,9 +34,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 
-/**
- * @author raver119@gmail.com
- */
 @Deprecated
 public interface VoidMessage extends Serializable {
 
@@ -52,17 +53,16 @@ public interface VoidMessage extends Serializable {
 
     UnsafeBuffer asUnsafeBuffer();
 
+    @SuppressWarnings("unchecked")
     static <T extends VoidMessage> T fromBytes(byte[] array) {
-        try {
-            ObjectInputStream in = new ClassLoaderObjectInputStream(Thread.currentThread().getContextClassLoader(),
-                            new ByteArrayInputStream(array));
+        ClassLoader classloader = ND4JClassLoading.getNd4jClassloader();
 
-            T result = (T) in.readObject();
-            return result;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(array);
+             ObjectInputStream ois = new ClassLoaderObjectInputStream(classloader, bis)) {
+            return (T) ois.readObject();
+        } catch (Exception objectReadException) {
+            throw new RuntimeException(objectReadException);
         }
-        //return SerializationUtils.deserialize(array);
     }
 
     /**

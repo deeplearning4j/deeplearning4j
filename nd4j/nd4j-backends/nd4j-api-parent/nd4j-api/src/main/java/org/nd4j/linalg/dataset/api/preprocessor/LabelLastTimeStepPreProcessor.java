@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.dataset.api.preprocessor;
 
@@ -26,26 +30,6 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-/**
- * Used to extract the labels from a 3d format (shape: [minibatch, nOut, sequenceLength]) to a 2d format (shape: [minibatch, nOut])
- * where the values are the last time step of the labels.<br>
- * <br>
- * For example, for 2 sequences:<br>
- * [a, b, c, 0, 0]<br>
- * [p, q, r, s, t]<br>
- * (where a/b/p etc represet a vector of size numOutputs), and each row is the sequence for each <br
- * with label mask:<br>
- * [1, 1, 1, 0, 0]<br>
- * [1, 1, 1, 1, 1]<br>
- * The new labels would be a rank 2 array of shape [minibatch, nOut] with values:<br>
- * [c]<br>
- * [t]<br>
- * <br>
- * This preprocessor can be used for example to convert from "single non-masked time step" labels format (produced by
- * RecordReaderDataSetIterator, used in RnnOutputLayer) to 2d labels format (used in OutputLayer).
- *
- * @author Alex Black
- */
 public class LabelLastTimeStepPreProcessor implements DataSetPreProcessor {
     @Override
     public void preProcess(DataSet toPreProcess) {

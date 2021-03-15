@@ -1,32 +1,36 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
 import org.deeplearning4j.gym.StepReply;
-import org.deeplearning4j.rl4j.agent.learning.ILearningBehavior;
+import org.deeplearning4j.rl4j.agent.learning.behavior.ILearningBehavior;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.configuration.QLearningConfiguration;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.CommonOutputNames;
+import org.deeplearning4j.rl4j.network.NeuralNetOutput;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.observation.Observation;
-import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.junit.Before;
@@ -40,7 +44,6 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
@@ -101,6 +104,8 @@ public class QLearningDiscreteTest {
         when(mockQlearningConfiguration.getRewardFactor()).thenReturn(rewardFactor);
         when(mockQlearningConfiguration.getExpRepMaxSize()).thenReturn(maxExperienceReplay);
         when(mockQlearningConfiguration.getSeed()).thenReturn(123L);
+        when(mockQlearningConfiguration.getTargetDqnUpdateFreq()).thenReturn(1);
+        when(mockDQN.clone()).thenReturn(mockDQN);
 
         if(learningBehavior != null) {
             qLearningDiscrete = mock(
@@ -154,7 +159,9 @@ public class QLearningDiscreteTest {
 
         // An example observation and 2 Q values output (2 actions)
         Observation observation = new Observation(Nd4j.zeros(observationShape));
-        when(mockDQN.output(eq(observation))).thenReturn(Nd4j.create(new float[] {1.0f, 0.5f}));
+        NeuralNetOutput netOutputResult = new NeuralNetOutput();
+        netOutputResult.put(CommonOutputNames.QValues, Nd4j.create(new float[] {1.0f, 0.5f}));
+        when(mockDQN.output(eq(observation))).thenReturn(netOutputResult);
 
         when(mockMDP.step(anyInt())).thenReturn(new StepReply<>(new Observation(Nd4j.zeros(observationShape)), 0, false, null));
 

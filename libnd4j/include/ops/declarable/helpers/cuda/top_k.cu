@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -38,15 +40,12 @@ __global__ static void inTopKCuda(const void* vx, const Nd4jLong* xShapeInfo,
     const auto y = reinterpret_cast<const Y*>(vy);
           auto z = reinterpret_cast<bool*>(vz);
 
-    __shared__ uint* sharedMem;
+    __shared__ uint sharedMem[CUDA_BLOCK_SIZE];
     __shared__ X elemToCompare;
     __shared__ const X* xTad;
     __shared__ Nd4jLong idx, xTadLen;
 
     if (threadIdx.x == 0) {
-        extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<uint*>(shmem);
-
         xTadLen = shape::length(xTadShapeInfo);
 
         xTad = reinterpret_cast<const X*>(vx) + xTadOffsets[blockIdx.x];
@@ -93,9 +92,9 @@ int inTopKFunctor(sd::LaunchContext * context, const NDArray* predictions, const
 
     const auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(predictions->shapeInfo(), {1});
 
-    const int threadsPerBlock = MAX_NUM_THREADS;
+    const int threadsPerBlock = CUDA_BLOCK_SIZE;
     const int blocksPerGrid = static_cast<int>(packX.numberOfTads());
-    const int sharedMem = sizeof(uint) * threadsPerBlock + 128;
+    const int sharedMem = 1024;
 
     const auto xType = predictions->dataType();
     const auto yType = targets->dataType();

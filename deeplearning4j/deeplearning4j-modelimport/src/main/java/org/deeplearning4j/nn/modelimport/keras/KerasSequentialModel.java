@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelimport.keras;
 
@@ -28,19 +32,15 @@ import org.deeplearning4j.nn.modelimport.keras.layers.KerasInput;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.common.base.Preconditions;
 import org.nd4j.common.primitives.Pair;
+import org.nd4j.common.util.ArrayUtil;
 
 import java.io.IOException;
 import java.util.*;
 
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils.importWeights;
 
-/**
- * Build DL4J MultiLayerNetwork model from Keras Sequential
- * model configuration.
- *
- * @author dave@skymind.io
- */
 @Slf4j
 public class KerasSequentialModel extends KerasModel {
 
@@ -117,6 +117,7 @@ public class KerasSequentialModel extends KerasModel {
         } else {
             /* Add placeholder input layer and update lists of input and output layers. */
             int[] firstLayerInputShape = this.layersOrdered.get(0).getInputShape();
+            Preconditions.checkState(ArrayUtil.prod(firstLayerInputShape) > 0,"Input shape must not be zero!");
             inputLayer = new KerasInput("input1", firstLayerInputShape);
             inputLayer.setDimOrder(this.layersOrdered.get(0).getDimOrder());
             this.layers.put(inputLayer.getLayerName(), inputLayer);
@@ -143,6 +144,7 @@ public class KerasSequentialModel extends KerasModel {
                     " your keras model with `model.save('model_path.h5'. If you store model config and weights" +
                     " separately no training configuration is attached.");
         }
+
         this.outputTypes = inferOutputTypes(inputShape);
 
         if (weightsArchive != null)
@@ -180,7 +182,8 @@ public class KerasSequentialModel extends KerasModel {
         }
 
         NeuralNetConfiguration.ListBuilder listBuilder = modelBuilder.list();
-
+        //don't forcibly over ride for keras import
+        listBuilder.overrideNinUponBuild(false);
         /* Add layers one at a time. */
         KerasLayer prevLayer = null;
         int layerIndex = 0;
@@ -197,13 +200,25 @@ public class KerasSequentialModel extends KerasModel {
                     if (prevLayer.isInputPreProcessor()) {
                         inputTypes[0] = this.outputTypes.get(prevLayer.getInboundLayerNames().get(0));
                         preprocessor = prevLayer.getInputPreprocessor(inputTypes);
+                        InputType outputType = preprocessor.getOutputType(inputTypes[0]);
+                        layer.getLayer().setNIn(outputType,listBuilder.isOverrideNinUponBuild());
                     } else {
                         inputTypes[0] = this.outputTypes.get(prevLayer.getLayerName());
                         preprocessor = layer.getInputPreprocessor(inputTypes);
+                        if(preprocessor != null) {
+                            InputType outputType = preprocessor.getOutputType(inputTypes[0]);
+                            layer.getLayer().setNIn(outputType,listBuilder.isOverrideNinUponBuild());
+                        }
+                        else
+                            layer.getLayer().setNIn(inputTypes[0],listBuilder.isOverrideNinUponBuild());
+
                     }
                     if (preprocessor != null)
                         listBuilder.inputPreProcessor(layerIndex, preprocessor);
+
+
                 }
+
                 listBuilder.layer(layerIndex++, layer.getLayer());
             } else if (layer.getVertex() != null)
                 throw new InvalidKerasConfigurationException("Cannot add vertex to MultiLayerConfiguration (class name "
@@ -211,17 +226,17 @@ public class KerasSequentialModel extends KerasModel {
             prevLayer = layer;
         }
 
-        InputType inputType = this.layersOrdered.get(0).getOutputType();
-        if (inputType != null)
-            listBuilder.setInputType(inputType);
-
         /* Whether to use standard backprop (or BPTT) or truncated BPTT. */
         if (this.useTruncatedBPTT && this.truncatedBPTT > 0)
             listBuilder.backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(truncatedBPTT)
                     .tBPTTBackwardLength(truncatedBPTT);
         else
             listBuilder.backpropType(BackpropType.Standard);
-        return listBuilder.build();
+
+        MultiLayerConfiguration build = listBuilder.build();
+
+
+        return build;
     }
 
     /**

@@ -1,17 +1,21 @@
 /*
- * Copyright (c) 2015-2019 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
  */
 
 package org.nd4j.evaluation.custom;
@@ -29,23 +33,8 @@ import lombok.RequiredArgsConstructor;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
-import org.nd4j.evaluation.regression.RegressionEvaluation;
-import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-/**
- * A evaluation using lambdas to calculate the score.
- *
- * Uses 3 lambdas:<br>
- *     EvaluationLambda: takes in the labels, predictions, mask, and metadata and returns a value of type T<br>
- *     MergeLambda: takes in two lists of Ts, returns one.  Used in merging for distributed training<br>
-*      ResultLambda (in Metric): takes a list of Ts, returns a double value<br>
- *     <br>
- * The EvaluationLambda will be called on each batch, and the results will be stored in a list.
- * MergeLambda merges two of those lists for distributed training (think Spark or Map-Reduce).
- * ResultLambda gets a score from that list.
- *
- */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class CustomEvaluation<T> extends BaseEvaluation<CustomEvaluation> {

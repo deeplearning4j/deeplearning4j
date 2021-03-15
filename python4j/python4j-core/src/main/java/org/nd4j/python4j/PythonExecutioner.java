@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 
 package org.nd4j.python4j;
@@ -32,16 +36,16 @@ import org.apache.commons.io.IOUtils;
 import org.bytedeco.cpython.global.python;
 
 import static org.bytedeco.cpython.global.python.*;
-import static org.bytedeco.cpython.global.python.PyImport_ImportModule;
 import static org.bytedeco.cpython.helper.python.Py_SetPath;
 
 
 public class PythonExecutioner {
     private final static String PYTHON_EXCEPTION_KEY = "__python_exception__";
     private static AtomicBoolean init = new AtomicBoolean(false);
-    private final static String DEFAULT_PYTHON_PATH_PROPERTY = "org.eclipse.python4j.path";
-    private final static String JAVACPP_PYTHON_APPEND_TYPE = "org.eclipse.python4j.path.append";
-    private final static String DEFAULT_APPEND_TYPE = "before";
+    public final static String DEFAULT_PYTHON_PATH_PROPERTY = "org.eclipse.python4j.path";
+    public final static String JAVACPP_PYTHON_APPEND_TYPE = "org.eclipse.python4j.path.append";
+    public final static String DEFAULT_APPEND_TYPE = "before";
+
     static {
         init();
     }
@@ -50,15 +54,19 @@ public class PythonExecutioner {
         if (init.get()) {
             return;
         }
+
         init.set(true);
         initPythonPath();
         PyEval_InitThreads();
         Py_InitializeEx(0);
-        for (PythonType type: PythonTypes.get()){
+        for (PythonType type: PythonTypes.get()) {
             type.init();
         }
-        // Constructors of custom types may contain initialization code that should
-        // run on the main the thread.
+
+        //set the main thread state for the gil
+        PythonGIL.setMainThreadState();
+        PyEval_SaveThread();
+
     }
 
     /**
@@ -157,6 +165,7 @@ public class PythonExecutioner {
      */
     public static synchronized void simpleExec(String code) {
         PythonGIL.assertThreadSafe();
+
         int result = PyRun_SimpleStringFlags(code, null);
         if (result != 0) {
             throw new PythonException("Execution failed, unable to retrieve python exception.");

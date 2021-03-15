@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.convolution;
 
@@ -24,16 +28,13 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
+import java.util.List;
 
-/**
- * Convolution is the
- * code for applying
- * the convolution operator.
- *
- * @author Adam Gibson
- */
+
 public class Convolution {
 
 
@@ -190,8 +191,24 @@ public class Convolution {
         return im2col.outputArguments().get(0);
     }
 
+    /**
+     * Execute im2col. Note the input must be NCHW.
+     * @param img the input image in NCHW
+     * @param kh
+     * @param kw
+     * @param sy
+     * @param sx
+     * @param ph
+     * @param pw
+     * @param dH
+     * @param dW
+     * @param isSameMode
+     * @param out
+     * @return
+     */
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dH, int dW, boolean isSameMode,
                                   INDArray out) {
+
         Im2col im2col = Im2col.builder()
                 .outputs(new INDArray[]{out})
                 .inputArrays(new INDArray[]{img})

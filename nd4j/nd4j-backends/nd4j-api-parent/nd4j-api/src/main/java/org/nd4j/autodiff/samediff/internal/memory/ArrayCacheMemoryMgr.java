@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.nd4j.autodiff.samediff.internal.memory;
 
 import lombok.*;
@@ -6,38 +26,12 @@ import org.nd4j.common.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.util.ArrayUtil;
 
 import java.util.*;
 
-/**
- * ArrayCacheMemoryMgr reuses arrays to reduce the number of memory allocations and deallocations.<br>
- * Memory allocations and deallocations can be quite expensive, especially on GPUs.<br>
- * Note that when arrays are reused, they are reused for the same datatype only.<br>
- * If caching a released array would result in the the maximum cache size being is exceeded, the oldest arrays will
- * be deallocated first, until the new array can in the cache.
- * <br><br>
- * By default, the following parameters are used for the cache:
- * <ul>
- * <li>Maximum cache size: 0.25 x max memory, where:</li>
- * <ul>
- *      <li>CPU: max memory is determined using {@link Pointer#maxBytes()}</li>
- *      <li>GPU: max memory is determined using GPU 0 total memory</li>
- * </ul>
- * <li>Larger array max multiple: 2.0</li>
- * <ul>
- *     <li>This means: if an exact array size can't be provided from the cache, use the next smallest array with a buffer up to 2.0x larger than requested</li>
- *     <li>If no cached arrays of size &lt; 2x requested exists, allocate a new array</li>
- * </ul>
- * <li>Small array threshold: 1024 elements</li>
- * <ul>
- *      <li>This means: the "larger array max multiple" doesn't apply below this level. For example, we might return a size 1 array backed by a size 1023 buffer</li>
- * </ul>
- * </ul>
- *
- * @author Alex Black
- */
 @Getter
 public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
@@ -71,7 +65,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
      */
     public ArrayCacheMemoryMgr(double maxMemFrac, long smallArrayThreshold, double largerArrayMaxMultiple) {
         Preconditions.checkArgument(maxMemFrac > 0 && maxMemFrac < 1, "Maximum memory fraction for cache must be between 0.0 and 1.0, got %s", maxMemFrac);
-        Preconditions.checkArgument(smallArrayThreshold >= 0, "Small array threshould must be >= 0, got %s", smallArrayThreshold);
+        Preconditions.checkArgument(smallArrayThreshold >= 0, "Small array threshold must be >= 0, got %s", smallArrayThreshold);
         Preconditions.checkArgument(largerArrayMaxMultiple >= 1.0, "Larger array max multiple must be >= 1.0, got %s", largerArrayMaxMultiple);
         this.maxMemFrac = maxMemFrac;
         this.smallArrayThreshold = smallArrayThreshold;
@@ -88,7 +82,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         maxCacheBytes = (long)(maxMemFrac * totalMemBytes);
     }
 
-    private boolean isCpu(){
+    private boolean isCpu() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         return !"CUDA".equalsIgnoreCase(backend);
     }
@@ -111,7 +105,34 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
     @Override
     public INDArray allocate(boolean detached, LongShapeDescriptor descriptor) {
-        return allocate(detached, descriptor.dataType(), descriptor.getShape());
+        if(descriptor.isEmpty()) {
+            INDArray ret =  Nd4j.create(descriptor);
+            if(detached) {
+                ret = ret.detach();
+            }
+
+            return ret;
+        }
+
+        DataType dataType = descriptor.dataType();
+        long[] shape = descriptor.getShape();
+        if (arrayStores.containsKey(dataType)) {
+            INDArray arr = arrayStores.get(dataType).get(shape);
+            if(arr != null && arr.ordering() != descriptor.getOrder()) {
+                arr.setOrder(descriptor.getOrder());
+            }
+
+
+            if (arr != null) {
+                //Decrement cache size
+                currentCacheSize -= dataType.width() * arr.data().length();
+
+                return arr; //Allocated from cache
+            }
+        }
+
+        //Allocation failed, allocate new array
+        return Nd4j.createUninitializedDetached(dataType, shape);
     }
 
     @Override
@@ -122,13 +143,18 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
 
         DataType dt = array.dataType();
+        if(array.data() == null && array.closeable()) {
+            array.close();
+            return;
+        }
+
         long thisBytes = array.data().length() * dt.width();
         if(array.dataType() == DataType.UTF8) {
             //Don't cache string arrays due to variable length buffers
             if(array.closeable())
                 array.close();
         } else if (currentCacheSize + thisBytes > maxCacheBytes) {
-            if(thisBytes > maxCacheBytes){
+            if(thisBytes > maxCacheBytes) {
                 //Can't store even if we clear everything - too large
                 if(array.closeable())
                     array.close();
@@ -137,7 +163,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
 
             //Need to deallocate some arrays to stay under limit - do in "oldest first" order
             Iterator<Long> iter = lruCache.iterator();
-            while(currentCacheSize + thisBytes > maxCacheBytes){
+            while(currentCacheSize + thisBytes > maxCacheBytes) {
                 long next = iter.next();
                 iter.remove();
                 INDArray nextOldest = lruCacheValues.remove(next);
@@ -162,7 +188,7 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         lruCacheValues.put(array.getId(), array);
     }
 
-    private void cacheArray(INDArray array){
+    private void cacheArray(INDArray array) {
         DataType dt = array.dataType();
         if (!arrayStores.containsKey(dt))
             arrayStores.put(dt, new ArrayStore());
@@ -252,11 +278,13 @@ public class ArrayCacheMemoryMgr extends AbstractMemoryMgr {
         private void removeObject(INDArray array){
             long length = array.data().length();
             int idx = Arrays.binarySearch(lengths, 0, size, length);
-            Preconditions.checkState(idx > 0, "Cannot remove array from ArrayStore: no array with this length exists in the cache");
+            Preconditions.checkState(idx >= 0,
+                    "Cannot remove array from ArrayStore: no array with this length exists in the cache");
             boolean found = false;
             int i = 0;
-            while(!found && i <= size && lengths[i] == length){
-                found = sorted[i++] == array; //Object equality
+            while (!found && i < size) {
+                found = sorted[i] == array && lengths[i] == length; //Object and length equality
+                ++i;
             }
             Preconditions.checkState(found, "Cannot remove array: not found in ArrayCache");
             removeIdx(i - 1);

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.weightnoise;
 
@@ -29,15 +33,6 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-/**
- * Apply noise of the specified distribution to the weights at training time.
- * Note that both additive and multiplicative modes are supported - when additive, noise should be mean 0,
- * when multiplicative, noise should be mean 1.
- * That is, additive noise: x = x + noise<br>
- * multiplicative noise: x = x * noise
- *
- * @author Alex Black
- */
 @Data
 public class WeightNoise implements IWeightNoise {
 

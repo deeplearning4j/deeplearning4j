@@ -1,19 +1,23 @@
 #!/usr/bin/env bash
-################################################################################
-# Copyright (c) 2015-2018 Skymind, Inc.
 #
-# This program and the accompanying materials are made available under the
-# terms of the Apache License, Version 2.0 which is available at
-# https://www.apache.org/licenses/LICENSE-2.0.
+# /* ******************************************************************************
+#  *
+#  *
+#  * This program and the accompanying materials are made available under the
+#  * terms of the Apache License, Version 2.0 which is available at
+#  * https://www.apache.org/licenses/LICENSE-2.0.
+#  *
+#  *  See the NOTICE file distributed with this work for additional
+#  *  information regarding copyright ownership.
+#  * Unless required by applicable law or agreed to in writing, software
+#  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#  * License for the specific language governing permissions and limitations
+#  * under the License.
+#  *
+#  * SPDX-License-Identifier: Apache-2.0
+#  ******************************************************************************/
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-#
-# SPDX-License-Identifier: Apache-2.0
-################################################################################
 
 set -eu
 
@@ -47,7 +51,6 @@ fi
 
 }
 
-
 export CMAKE_COMMAND="cmake"
 if which cmake3 &> /dev/null; then
     export CMAKE_COMMAND="cmake3"
@@ -79,7 +82,7 @@ OPERATIONS=
 CLEAN="false"
 MINIFIER="false"
 TESTS="false"
-VERBOSE="false"
+VERBOSE="true"
 VERBOSE_ARG="VERBOSE=1"
 HELPER=
 CHECK_VECTORIZATION="OFF"
@@ -199,17 +202,22 @@ fi
 
 case "$OS" in
     linux-armhf)
-      export RPI_BIN=$RPI_HOME/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/arm-linux-gnueabihf
-      export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake -DSD_ARM_BUILD=true"
       if [ -z "$ARCH" ]; then
-        ARCH="armv7-r"
+        ARCH="armv7-a"
       fi
+      if [ ! -z ${RPI_BIN+set} ]; then
+        export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
+      fi
+      export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_ARM_BUILD=true -DSD_SANITIZE=OFF "
     ;;
 
     linux-arm64)
       if [ -z "$ARCH" ]; then
         ARCH="armv8-a"
       fi
+      if [ ! -z ${RPI_BIN+set} ]; then
+        export CMAKE_COMMAND="$CMAKE_COMMAND -D CMAKE_TOOLCHAIN_FILE=cmake/rpi.cmake"
+      fi      
       export CMAKE_COMMAND="$CMAKE_COMMAND -DSD_ARM_BUILD=true"
     ;;
 
@@ -369,7 +377,8 @@ case "$OS" in
 
       # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
       if [ -z "${VCINSTALLDIR:-}" ]; then
-        export VisualStudioVersion=12.0
+        echo "NEED TO SET DEFAULTS FOR VISUAL STUDIO, NO VCINSTALLDIR environment variable found"
+      	export VisualStudioVersion=12.0
         export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
         export VCINSTALLDIR="$VSINSTALLDIR\\VC"
         export WindowsSdkDir="C:\\Program Files (x86)\\Windows Kits\\8.1"
@@ -402,9 +411,7 @@ if [ -z "$PACKAGING" ]; then
  PACKAGING="none"
 fi
 
-if [ -z "$COMPUTE" ]; then
- COMPUTE="all"
-fi
+
 
 if [ "$CHIP_EXTENSION" == "avx512" ] || [ "$ARCH" == "avx512" ]; then
     CHIP_EXTENSION="avx512"
@@ -419,6 +426,14 @@ fi
 
 if [ -z "$ARCH" ]; then
  ARCH="x86-64"
+fi
+
+if [ -z "$COMPUTE" ]; then
+  if [ "$ARCH" == "x86-64" ]; then
+   COMPUTE="all"
+  else
+      COMPUTE="all"
+  fi
 fi
 
 OPERATIONS_ARG=
@@ -494,14 +509,17 @@ if [ "$TESTS" == "true" ]; then
     TESTS_ARG="-DSD_BUILD_TESTS=ON"
 fi
 
+
 ARCH_ARG="-DSD_ARCH=$ARCH -DSD_EXTENSION=$CHIP_EXTENSION"
 
-CUDA_COMPUTE="-DCOMPUTE=$COMPUTE"
+CUDA_COMPUTE="-DCOMPUTE=\"$COMPUTE\""
 
 if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     case $OS in
         linux*)
-        export CUDA_PATH="/usr/local/cuda-$CHIP_VERSION/"
+        if [ "${CUDA_PATH-}" == "" ]; then
+            export CUDA_PATH="/usr/local/cuda-$CHIP_VERSION/"
+        fi
         ;;
         macosx*)
         export CUDA_PATH="/Developer/NVIDIA/CUDA-$CHIP_VERSION/"
@@ -608,3 +626,4 @@ exec 3>&-
 else
 eval "$MAKE_COMMAND" "$MAKE_ARGUMENTS"  && cd ../../..
 fi
+

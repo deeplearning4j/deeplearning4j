@@ -1,19 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  * See the NOTICE file distributed with this work for additional
+ *  * information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.cuda.convolution;
 
@@ -254,17 +257,34 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                     throw new IllegalArgumentException("Unknown BwdDataAlgo: " + bwdDataAlgo);
             }
         } else {
+            /*
             code = cudnnGetConvolutionBackwardFilterAlgorithm(cudnnContext, cudnnContext.srcTensorDesc,
                     cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.filterDesc,
                     mode == AlgoMode.NO_WORKSPACE ? CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE
                             : CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST,
                     0, algo1);
+            */
+            val fa = new cudnnConvolutionBwdFilterAlgoPerf_t();
+            val counts = new int[1];
+            code = cudnnFindConvolutionBackwardFilterAlgorithm(cudnnContext,  cudnnContext.srcTensorDesc,
+                    cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.filterDesc, 1, counts, fa);
+            algo1[0] = fa.algo();
+
             checkCudnn(false, "cudnnGetConvolutionBackwardFilterAlgorithm", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
+
+            /*
             code = cudnnGetConvolutionBackwardDataAlgorithm(cudnnContext, cudnnContext.filterDesc,
                     cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.srcTensorDesc,
                     mode == AlgoMode.NO_WORKSPACE ? CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE
                             : CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
                     0, algo2);
+             */
+
+            val da = new cudnnConvolutionBwdDataAlgoPerf_t();
+            code = cudnnFindConvolutionBackwardDataAlgorithm(cudnnContext, cudnnContext.filterDesc,
+                    cudnnContext.deltaTensorDesc, cudnnContext.convDesc, cudnnContext.srcTensorDesc, 1, counts, da);
+
+            algo2[0] = da.algo();
             checkCudnn(false, "cudnnGetConvolutionBackwardDataAlgorithm", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
         }
 
@@ -461,11 +481,17 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                     throw new IllegalArgumentException("Unknown FwdAlgo: " + fwdAlgo);
             }
         } else {
-            code = cudnnGetConvolutionForwardAlgorithm(cudnnContext, cudnnContext.srcTensorDesc,
+            /*
+            code = cudnnGetConvolutionForwardAlgorithm_v7(cudnnContext, cudnnContext.srcTensorDesc,
                     cudnnContext.filterDesc, cudnnContext.convDesc,
                     cudnnContext.dstTensorDesc, mode == AlgoMode.NO_WORKSPACE
-                            ? CUDNN_CONVOLUTION_FWD_NO_WORKSPACE : CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
+                            ? CUDNN_CONVOLUTION_FWD_ : CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
                     0, algo);
+            */
+
+            val cdf = new cudnnConvolutionFwdAlgoPerf_t();
+            val count = new int[1];
+            code = cudnnFindConvolutionForwardAlgorithm(cudnnContext, cudnnContext.srcTensorDesc, cudnnContext.filterDesc, cudnnContext.convDesc, cudnnContext.dstTensorDesc, 1, count, cdf);
 
             if(code != CUDNN_STATUS_SUCCESS){
                 //If CuDNN can't infer algorithm - try IMPLICIT_GEMM
@@ -477,6 +503,8 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                 fwdAlgo = FwdAlgo.IMPLICIT_GEMM;
                 algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
             }
+
+            algo[0] = cdf.algo();
         }
 
         if(log.isTraceEnabled()){

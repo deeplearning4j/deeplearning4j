@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -193,11 +195,9 @@ __device__ void softMaxForVectorCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
 	__shared__ Nd4jLong  len;
 	__shared__ int numOfIters;
-	__shared__ T* shmem;
+	__shared__ T shmem[CUDA_BLOCK_SIZE];
 
 	if (threadIdx.x == 0) {
-		extern __shared__ char shared[];
-		shmem = reinterpret_cast<T*>(shared);
 		len = shape::length(xShapeInfo);
 		numOfIters = (len + blockDim.x - 1) / blockDim.x;   // ceil (len / blockDim.x)
 	}
@@ -274,7 +274,7 @@ __global__ void softMaxForVectorCudaGlobal(const void *vx, const Nd4jLong *xShap
 template <typename T>
 linkage void softMaxForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
 
-	softMaxForVectorCudaGlobal<T><<<1, MAX_NUM_THREADS / 4 , (MAX_NUM_THREADS / 4) * sizeof(T) + 512, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
+	softMaxForVectorCudaGlobal<T><<<1, CUDA_BLOCK_SIZE, 1024, *stream>>>(vx, xShapeInfo, vz, zShapeInfo);
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -324,9 +324,9 @@ void softmax(sd::LaunchContext * context, const NDArray& input, NDArray& output,
 		auto packX = sd::ConstantTadHelper::getInstance().tadForDimensions(input.shapeInfo(), {dimension});
         auto packZ = sd::ConstantTadHelper::getInstance().tadForDimensions(output.shapeInfo(), {dimension});
 
-        const int threadsPerBlock = MAX_NUM_THREADS / 4;
+        const int threadsPerBlock = CUDA_BLOCK_SIZE;
         const int blocksPerGrid = packZ.numberOfTads();
-        const int sharedMem = input.sizeOfT() * threadsPerBlock + 512;
+        const int sharedMem = 1024;
 
         NDArray::prepareSpecialUse({&output}, {&input});
     	BUILD_SINGLE_SELECTOR(input.dataType(), softMaxCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.specialBuffer(), packX.specialShapeInfo(), packX.specialOffsets(), output.specialBuffer(), packZ.specialShapeInfo(), packZ.specialOffsets()), FLOAT_TYPES);
@@ -356,11 +356,9 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 
 	__shared__ Nd4jLong  len;
 	__shared__ int numOfIters;
-	__shared__ T* shmem;
+	__shared__ T shmem[CUDA_BLOCK_SIZE];
 
 	if (threadIdx.x == 0) {
-		extern __shared__ char shared[];
-		shmem = reinterpret_cast<T*>(shared);
 		len = shape::length(xzShapeInfo);
 		numOfIters = (len + blockDim.x - 1) / blockDim.x;   // ceil (len / blockDim.x)
 	}
@@ -430,7 +428,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 template <typename T>
 linkage void logSoftMaxForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
-	logSoftMaxForVectorCuda<T><<<1, MAX_NUM_THREADS, MAX_NUM_THREADS * sizeof(T) + 512, *stream>>>(vx, xzShapeInfo, vz);
+	logSoftMaxForVectorCuda<T><<<1, CUDA_BLOCK_SIZE, 1024, *stream>>>(vx, xzShapeInfo, vz);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -475,11 +473,9 @@ __global__ linkage void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong
 
 	__shared__ Nd4jLong  len;
 	__shared__ int numOfIters;
-	__shared__ T* shmem;
+	__shared__ T shmem[CUDA_BLOCK_SIZE];
 
 	if (threadIdx.x == 0) {
-		extern __shared__ char shared[];
-		shmem = reinterpret_cast<T*>(shared);
 		len = shape::length(xzShapeInfo);
 		numOfIters = (len + blockDim.x - 1) / blockDim.x;   // ceil (len / blockDim.x)
 	}
@@ -550,7 +546,7 @@ __global__ linkage void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong
 template <typename T>
 linkage void softMaxDerivForVectorCudaLauncher(const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz) {
 
-	softMaxDerivForVectorCuda<T><<<1, MAX_NUM_THREADS, MAX_NUM_THREADS * sizeof(T) + 512, *stream>>>(vx, xzShapeInfo, vz);
+	softMaxDerivForVectorCuda<T><<<1, CUDA_BLOCK_SIZE, 1024, *stream>>>(vx, xzShapeInfo, vz);
 }
 
 ///////////////////////////////////////////////////////////////////

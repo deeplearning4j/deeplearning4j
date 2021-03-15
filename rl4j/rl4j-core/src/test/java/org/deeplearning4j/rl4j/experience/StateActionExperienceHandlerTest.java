@@ -1,3 +1,23 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.deeplearning4j.rl4j.experience;
 
 import org.deeplearning4j.rl4j.observation.Observation;
@@ -10,16 +30,22 @@ import static org.junit.Assert.*;
 
 public class StateActionExperienceHandlerTest {
 
+    private StateActionExperienceHandler.Configuration buildConfiguration(int batchSize) {
+        return StateActionExperienceHandler.Configuration.builder()
+                .batchSize(batchSize)
+                .build();
+    }
+
     @Test
     public void when_addingExperience_expect_generateTrainingBatchReturnsIt() {
         // Arrange
-        StateActionExperienceHandler sut = new StateActionExperienceHandler(Integer.MAX_VALUE);
+        StateActionExperienceHandler sut = new StateActionExperienceHandler(buildConfiguration(Integer.MAX_VALUE));
         sut.reset();
         Observation observation = new Observation(Nd4j.zeros(1));
         sut.addExperience(observation, 123, 234.0, true);
 
         // Act
-        List<StateActionPair<Integer>> result = sut.generateTrainingBatch();
+        List<StateActionReward<Integer>> result = sut.generateTrainingBatch();
 
         // Assert
         assertEquals(1, result.size());
@@ -32,14 +58,14 @@ public class StateActionExperienceHandlerTest {
     @Test
     public void when_addingMultipleExperiences_expect_generateTrainingBatchReturnsItInSameOrder() {
         // Arrange
-        StateActionExperienceHandler sut = new StateActionExperienceHandler(Integer.MAX_VALUE);
+        StateActionExperienceHandler sut = new StateActionExperienceHandler(buildConfiguration(Integer.MAX_VALUE));
         sut.reset();
         sut.addExperience(null, 1, 1.0, false);
         sut.addExperience(null, 2, 2.0, false);
         sut.addExperience(null, 3, 3.0, false);
 
         // Act
-        List<StateActionPair<Integer>> result = sut.generateTrainingBatch();
+        List<StateActionReward<Integer>> result = sut.generateTrainingBatch();
 
         // Assert
         assertEquals(3, result.size());
@@ -51,13 +77,13 @@ public class StateActionExperienceHandlerTest {
     @Test
     public void when_gettingExperience_expect_experienceStoreIsCleared() {
         // Arrange
-        StateActionExperienceHandler sut = new StateActionExperienceHandler(Integer.MAX_VALUE);
+        StateActionExperienceHandler sut = new StateActionExperienceHandler(buildConfiguration(Integer.MAX_VALUE));
         sut.reset();
         sut.addExperience(null, 1, 1.0, false);
 
         // Act
-        List<StateActionPair<Integer>> firstResult = sut.generateTrainingBatch();
-        List<StateActionPair<Integer>> secondResult = sut.generateTrainingBatch();
+        List<StateActionReward<Integer>> firstResult = sut.generateTrainingBatch();
+        List<StateActionReward<Integer>> secondResult = sut.generateTrainingBatch();
 
         // Assert
         assertEquals(1, firstResult.size());
@@ -67,7 +93,7 @@ public class StateActionExperienceHandlerTest {
     @Test
     public void when_addingExperience_expect_getTrainingBatchSizeReturnSize() {
         // Arrange
-        StateActionExperienceHandler sut = new StateActionExperienceHandler(Integer.MAX_VALUE);
+        StateActionExperienceHandler sut = new StateActionExperienceHandler(buildConfiguration(Integer.MAX_VALUE));
         sut.reset();
         sut.addExperience(null, 1, 1.0, false);
         sut.addExperience(null, 2, 2.0, false);
@@ -83,7 +109,7 @@ public class StateActionExperienceHandlerTest {
     @Test
     public void when_experienceIsEmpty_expect_TrainingBatchNotReady() {
         // Arrange
-        StateActionExperienceHandler sut = new StateActionExperienceHandler(5);
+        StateActionExperienceHandler sut = new StateActionExperienceHandler(buildConfiguration(5));
         sut.reset();
 
         // Act
@@ -96,7 +122,7 @@ public class StateActionExperienceHandlerTest {
     @Test
     public void when_experienceSizeIsGreaterOrEqualToThanBatchSize_expect_TrainingBatchIsReady() {
         // Arrange
-        StateActionExperienceHandler sut = new StateActionExperienceHandler(5);
+        StateActionExperienceHandler sut = new StateActionExperienceHandler(buildConfiguration(5));
         sut.reset();
         sut.addExperience(null, 1, 1.0, false);
         sut.addExperience(null, 2, 2.0, false);
@@ -114,7 +140,7 @@ public class StateActionExperienceHandlerTest {
     @Test
     public void when_experienceSizeIsSmallerThanBatchSizeButFinalObservationIsSet_expect_TrainingBatchIsReady() {
         // Arrange
-        StateActionExperienceHandler sut = new StateActionExperienceHandler(5);
+        StateActionExperienceHandler sut = new StateActionExperienceHandler(buildConfiguration(5));
         sut.reset();
         sut.addExperience(null, 1, 1.0, false);
         sut.addExperience(null, 2, 2.0, false);
@@ -130,7 +156,7 @@ public class StateActionExperienceHandlerTest {
     @Test
     public void when_experienceSizeIsZeroAndFinalObservationIsSet_expect_TrainingBatchIsNotReady() {
         // Arrange
-        StateActionExperienceHandler sut = new StateActionExperienceHandler(5);
+        StateActionExperienceHandler sut = new StateActionExperienceHandler(buildConfiguration(5));
         sut.reset();
         sut.setFinalObservation(null);
 

@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.nativeblas;
 
@@ -41,11 +45,6 @@ import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Base class with {@link NativeOps}
- *
- * @author Adam Gibson
- */
 @Slf4j
 public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
 
@@ -677,15 +676,24 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         int n = nativeOps.getNumNpyArraysInMap(pointer);
         HashMap<String, INDArray> map = new HashMap<>();
 
-        for (int i=0; i<n; i++){
-            String arrName = nativeOps.getNpyArrayNameFromMap(pointer, i);
+        for (int i=0; i < n; i++) {
+            //pre allocate 255 chars, only use up to null terminated
+            //create a null terminated string buffer pre allocated for use
+            //with the buffer
+            byte[] buffer = new byte[255];
+            for(int j = 0; j < buffer.length; j++) {
+                buffer[j] = '\0';
+            }
+
+            BytePointer charPointer = new BytePointer(buffer);
+            String arrName = nativeOps.getNpyArrayNameFromMap(pointer, i,charPointer);
             Pointer arrPtr = nativeOps.getNpyArrayFromMap(pointer, i);
             int ndim = nativeOps.getNpyArrayRank(arrPtr);
             long[] shape = new long[ndim];
             LongPointer shapePtr = nativeOps.getNpyArrayShape(arrPtr);
 
             long length = 1;
-            for (int j=0; j<ndim; j++){
+            for (int j = 0; j < ndim; j++) {
                 shape[j] = shapePtr.get(j);
                 length *= shape[j];
             }

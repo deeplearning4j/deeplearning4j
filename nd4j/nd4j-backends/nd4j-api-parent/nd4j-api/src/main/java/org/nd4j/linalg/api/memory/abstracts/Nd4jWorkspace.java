@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.memory.abstracts;
 
@@ -44,13 +48,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Basic implementation for
- * MemoryWorkspace interface,
- * further extended in corresponding backends
- *
- * @author raver119@gmail.com
- */
 @Slf4j
 public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Getter
@@ -123,6 +120,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected File tempFile;
 
     protected AtomicLong generationId = new AtomicLong(0);
+
+    // this field is used as alignment base for all allocations within this workspace
+    public final static int alignmentBase = 16;
 
     // this memory manager implementation will be used to allocate real memory for this workspace
 
@@ -340,9 +340,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
         // we enforce 8 byte alignment to ensure CUDA doesn't blame us
-        long div = requiredMemory % 8;
+        long div = requiredMemory % alignmentBase;
         if (div != 0)
-            requiredMemory += (8 - div);
+            requiredMemory += (alignmentBase - div);
 
         // shortcut made to skip workspace
         if (!isUsed.get()) {

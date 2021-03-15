@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -186,7 +188,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     auto result0 = op.evaluate({&x}, {0.}, {});
 
     auto z0 = result0.at(0);
-    auto exp0 = x.reduceAlongDimension(reduce::NormFrobenius, empty, false, false);
+    auto exp0 = x.reduceAlongDimension(reduce::NormFrobenius, empty);
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp0.equalsTo(z0));
 
@@ -194,7 +196,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     ASSERT_EQ(result1.status(), ND4J_STATUS_OK);
     auto z1 = result1.at(0);
     // z1->printIndexedBuffer("Z1");
-    auto exp1 = x.reduceAlongDimension(reduce::Norm2, dims, false, false);
+    auto exp1 = x.reduceAlongDimension(reduce::Norm2, dims);
     // exp1.printIndexedBuffer("EXP1");
     // z1->printShapeInfo("Z1 shape");
     // exp1.printShapeInfo("EXP1 shape");
@@ -204,7 +206,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     auto result4 = op.evaluate({&x}, {4.}, {1});
 
     auto z4 = result4.at(0);
-    auto exp4= x.reduceAlongDimension(reduce::NormMax, dims, false, false);
+    auto exp4= x.reduceAlongDimension(reduce::NormMax, dims);
     ASSERT_TRUE(exp4.isSameShape(z4));
     ASSERT_TRUE(exp4.equalsTo(z4));
 }
@@ -222,7 +224,7 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
     auto result0 = op.evaluate({&x}, {0}, {});
 
     auto z0 = result0.at(0);
-    auto exp0 = x.reduceAlongDimension(reduce::NormFrobenius, empty, false, false);
+    auto exp0 = x.reduceAlongDimension(reduce::NormFrobenius, empty);
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp0.equalsTo(z0));
 
@@ -231,14 +233,14 @@ TEST_F(DeclarableOpsTests3, Test_Norm_2) {
     auto result1 = op.evaluate({&x, &axis}, {1}, {});
 
     auto z1 = result1.at(0);
-    auto exp1 = x.reduceAlongDimension(reduce::Norm2, dims, false, false);
+    auto exp1 = x.reduceAlongDimension(reduce::Norm2, dims);
     ASSERT_TRUE(exp1.isSameShape(z1));
     ASSERT_TRUE(exp1.equalsTo(z1));
 
     auto result4 = op.evaluate({&x, &axis}, {4}, {});
 
     auto z4 = result4.at(0);
-    auto exp4= x.reduceAlongDimension(reduce::NormMax, dims, false, false);
+    auto exp4= x.reduceAlongDimension(reduce::NormMax, dims);
     ASSERT_TRUE(exp4.isSameShape(z4));
     ASSERT_TRUE(exp4.equalsTo(z4));
 

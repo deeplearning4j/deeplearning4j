@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2019 Konduit K.K.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -57,6 +59,9 @@ namespace platforms {
 
     DECLARE_PLATFORM(maxpool3dnew, ENGINE_CUDA);
     DECLARE_PLATFORM(maxpool3dnew_bp, ENGINE_CUDA);
+
+    DECLARE_PLATFORM(ctc_loss, ENGINE_CUDA);
+    DECLARE_PLATFORM(ctc_loss_grad, ENGINE_CUDA);
 
 //////////////////////////////////////////////////////////////////////////
 FORCEINLINE cudnnDataType_t cudnnDataType(sd::DataType dataType) {

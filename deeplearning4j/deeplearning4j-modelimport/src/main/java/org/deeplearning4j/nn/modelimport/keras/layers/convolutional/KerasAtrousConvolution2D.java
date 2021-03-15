@@ -1,22 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelimport.keras.layers.convolutional;
 
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
+import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -32,12 +37,6 @@ import static org.deeplearning4j.nn.modelimport.keras.utils.KerasInitilizationUt
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getHasBiasFromConfig;
 import static org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils.getNOutFromConfig;
 
-/**
- * Keras 1D atrous / dilated convolution layer. Note that in keras 2 this layer has been
- * removed and dilations are now available through the "dilated" argument in regular Conv1D layers
- * <p>
- * author: Max Pumperla
- */
 public class KerasAtrousConvolution2D extends KerasConvolution {
 
     /**
@@ -93,6 +92,7 @@ public class KerasAtrousConvolution2D extends KerasConvolution {
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))
                 .kernelSize(getKernelSizeFromConfig(layerConfig, 2, conf, kerasMajorVersion))
+                .dataFormat(dimOrder == DimOrder.TENSORFLOW ? CNN2DFormat.NHWC : CNN2DFormat.NCHW)
                 .hasBias(hasBias)
                 .stride(getStrideFromConfig(layerConfig, 2, conf));
         int[] padding = getPaddingFromBorderModeConfig(layerConfig, 2, conf, kerasMajorVersion);

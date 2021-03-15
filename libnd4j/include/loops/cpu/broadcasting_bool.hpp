@@ -1,10 +1,12 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+/* ******************************************************************************
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
  * https://www.apache.org/licenses/LICENSE-2.0.
  *
+ *  See the NOTICE file distributed with this work for additional
+ *  information regarding copyright ownership.
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
@@ -665,24 +667,14 @@ static void execDefault(const X *x, const Nd4jLong *xShapeInfo, const X *y, cons
     const bool xzSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
     const bool yzSameOffsets = shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo);
 
-    const int rank = shape::rank(zShapeInfo);   // xRank = yRank = zRank
-
     auto func = PRAGMA_THREADS_FOR{
 
-        int xCoords[MAX_RANK], yCoords[MAX_RANK], zCoords[MAX_RANK];
+        int coords[MAX_RANK];
+        Nd4jLong xOffset, yOffset, zOffset;
 
         for (auto i = start; i < stop; ++i) {
 
-            shape::index2coordsCPU(start, i, zShapeInfo, zCoords);
-
-            for (uint j = 0; j < rank; ++j) {
-                xCoords[j] = shape::sizeAt(xShapeInfo, j) == 1 ? 0 : zCoords[j];
-                yCoords[j] = shape::sizeAt(yShapeInfo, j) == 1 ? 0 : zCoords[j];
-            }
-
-            const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
-            const auto xOffset = xzSameOffsets ? zOffset : shape::getOffset(xShapeInfo, xCoords);
-            const auto yOffset = yzSameOffsets ? zOffset : shape::getOffset(yShapeInfo, yCoords);
+            shape::getOffsetBroadcast(start, i, zShapeInfo, xShapeInfo, yShapeInfo, xzSameOffsets, yzSameOffsets, coords, zOffset, xOffset, yOffset);
 
             z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
         }

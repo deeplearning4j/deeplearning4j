@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.learning.config;
 
@@ -27,17 +31,6 @@ import org.nd4j.linalg.schedule.ISchedule;
 import java.util.Arrays;
 import java.util.Map;
 
-/**
- * https://www.matthewzeiler.com/mattzeiler/adadelta.pdf
- * https://arxiv.org/pdf/1212.5701v1.pdf
- * <p>
- * Ada delta updater. More robust adagrad that keeps track of a moving window
- * average of the gradient rather than the every decaying learning rates of adagrad
- * <p>
- * Note: AdaDelta is unique in that it doesn't require manual setting of a learning rate
- *
- * @author Adam Gibson
- */
 @Data
 @AllArgsConstructor
 @Builder(builderClassName = "Builder")

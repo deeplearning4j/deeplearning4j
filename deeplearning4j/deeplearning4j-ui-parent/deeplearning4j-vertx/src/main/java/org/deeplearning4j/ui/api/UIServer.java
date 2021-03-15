@@ -1,19 +1,22 @@
-/* ******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.ui.api;
 
@@ -27,11 +30,6 @@ import org.nd4j.common.function.Function;
 
 import java.util.List;
 
-/**
- * Interface for user interface server
- *
- * @author Alex Black
- */
 public interface UIServer {
 
     /**
@@ -168,4 +166,14 @@ public interface UIServer {
      * @param stopCallback callback {@link Promise} to notify on completion
      */
     void stopAsync(Promise<Void> stopCallback);
+
+    /**
+     * Get shutdown hook of UI server, that will stop the server when the Runtime is stopped.
+     * You may de-register this shutdown hook with {@link Runtime#removeShutdownHook(Thread)},
+     * and add your own hook with {@link Runtime#addShutdownHook(Thread)}
+     * @return shutdown hook
+     */
+    static Thread getShutdownHook() {
+        return VertxUIServer.getShutdownHook();
+    };
 }

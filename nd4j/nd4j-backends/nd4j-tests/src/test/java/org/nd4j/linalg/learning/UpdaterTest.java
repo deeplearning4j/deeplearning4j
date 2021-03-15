@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.learning;
 
@@ -24,7 +28,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.AdaMax;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Nadam;
+import org.nd4j.linalg.learning.config.Nesterovs;
 
 import static org.junit.Assert.assertEquals;
 
@@ -54,7 +63,6 @@ public class UpdaterTest extends BaseNd4jTest {
         int rows = 10;
         int cols = 2;
 
-
         NesterovsUpdater grad = new NesterovsUpdater(new Nesterovs(0.5, 0.9));
         grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new long[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
@@ -69,12 +77,10 @@ public class UpdaterTest extends BaseNd4jTest {
         }
     }
 
-
     @Test
     public void testAdaGrad() {
         int rows = 10;
         int cols = 2;
-
 
         AdaGradUpdater grad = new AdaGradUpdater(new AdaGrad(0.1, AdaGrad.DEFAULT_ADAGRAD_EPSILON));
         grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new long[] {rows, cols}, 'c', true);

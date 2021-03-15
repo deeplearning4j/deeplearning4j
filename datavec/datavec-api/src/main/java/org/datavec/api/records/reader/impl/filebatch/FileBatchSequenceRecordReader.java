@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.records.reader.impl.filebatch;
 
@@ -34,23 +38,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * FileBatchSequenceRecordReader reads the files contained in a {@link FileBatch} using the specified SequenceRecordReader.<br>
- * Specifically, the {@link SequenceRecordReader#sequenceRecord(URI, DataInputStream)} } method of the underlying sequence
- * reader is used to load files.<br>
- * For example, if the FileBatch was constructed using csv sequence files (each file represents one example),
- * FileBatchSequencRecordReader could be used with CSVSequenceRecordReader. For example:<br>
- * <pre>
- * {@code
- * List<File> fileList = ...;
- * FileBatch fb = FileBatch.forFiles(imgFiles);
- * SequenceRecordReader rr = new CSVSequenceRecordReader();
- * FileBatchSequenceRecordReader fbrr = new FileBatchSequenceRecordReader(rr, fb);
- * }
- * </pre>
- *
- * @author Alex Black
- */
 public class FileBatchSequenceRecordReader implements SequenceRecordReader {
 
     private final SequenceRecordReader recordReader;

@@ -1,19 +1,22 @@
-/* ******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.ui;
 
@@ -60,9 +63,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by Alex on 08/10/2016.
- */
 @Slf4j
 @Ignore
 public class TestVertxUI extends BaseDL4JTest {
@@ -346,12 +346,16 @@ public class TestVertxUI extends BaseDL4JTest {
     }
 
     @Test
-    public void testUIAutoStopOnThreadExit() throws InterruptedException {
-        AtomicReference<UIServer> uiServer = new AtomicReference<>();
-        Thread thread = new Thread(() -> uiServer.set(UIServer.getInstance()));
-        thread.start();
-        thread.join();
-        Thread.sleep(1_000);
-        assertTrue(uiServer.get().isStopped());
+    public void testUIShutdownHook() throws InterruptedException {
+        UIServer uIServer = UIServer.getInstance();
+        Thread shutdownHook = UIServer.getShutdownHook();
+        shutdownHook.start();
+        shutdownHook.join();
+        /*
+         * running the shutdown hook thread before the Runtime is terminated
+         * enables us to check if the UI server has been shut down or not
+         */
+        assertTrue(uIServer.isStopped());
+        log.info("Deeplearning4j UI server stopped in shutdown hook.");
     }
 }

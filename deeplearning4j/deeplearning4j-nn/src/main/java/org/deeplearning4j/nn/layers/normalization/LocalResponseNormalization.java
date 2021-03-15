@@ -1,22 +1,28 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -36,39 +42,12 @@ import org.nd4j.common.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.common.primitives.Triple;
-import org.nd4j.common.util.OneTimeLogger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 
-/**
- * Deep neural net normalization approach normalizes activations between layers
- * "brightness normalization"
- * Used for nets like AlexNet
- * <p>
- * For a^i_{x,y} the activity of a neuron computed by applying kernel i
- * at position (x,y) and applying ReLU nonlinearity, the response
- * normalized activation b^i_{x,y} is given by:
- * <p>
- * x^2 = (a^j_{x,y})^2
- * unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
- * y = b^i_{x,y} = x * unitScale**-beta
- * <p>
- * gy = epsilon (aka deltas from previous layer)
- * sumPart = sum(a^j_{x,y} * gb^j_{x,y})
- * gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}
- * <p>
- * Reference:<br>
- * <a href="http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf">http://www.cs.toronto.edu/~fritz/absps/imagenet.pdf</a><br>
- * <a href="https://github.com/vlfeat/matconvnet/issues/10">https://github.com/vlfeat/matconvnet/issues/10</a><br>
- * <p>
- * Created by nyghtowl on 10/29/15.
- */
+@Slf4j
 public class LocalResponseNormalization
-                extends AbstractLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
-    protected static final Logger log =
-                    LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
+        extends AbstractLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
 
     protected LocalResponseNormalizationHelper helper = null;
     protected int helperCountFail = 0;
@@ -86,21 +65,13 @@ public class LocalResponseNormalization
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
         if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelper")
-                        .asSubclass(LocalResponseNormalizationHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnLocalResponseNormalizationHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
-            }
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.normalization.CudnnLocalResponseNormalizationHelper",
+                    LocalResponseNormalizationHelper.class,
+                    dataType);
+            log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
         }
-        //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/deeplearning4j/deeplearning4j/issues/7272
+        //2019-03-09 AB - MKL-DNN helper disabled: https://github.com/eclipse/deeplearning4j/issues/7272
 //        else if("CPU".equalsIgnoreCase(backend)){
 //            helper = new MKLDNNLocalResponseNormalizationHelper();
 //            log.debug("Created MKLDNNLocalResponseNormalizationHelper");

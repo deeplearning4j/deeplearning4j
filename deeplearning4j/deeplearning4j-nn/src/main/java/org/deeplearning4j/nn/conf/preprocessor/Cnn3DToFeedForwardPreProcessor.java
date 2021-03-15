@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.conf.preprocessor;
 
@@ -33,21 +37,6 @@ import java.util.Arrays;
 
 import static org.nd4j.linalg.api.shape.Shape.hasDefaultStridesForShape;
 
-/**
- * A preprocessor to allow CNN and standard feed-forward network layers to be used together.<br>
- * For example, CNN3D -> Denselayer <br>
- * This does two things:<br>
- * (b) Reshapes 5d activations out of CNN layer, with shape
- * [numExamples, numChannels, inputDepth, inputHeight, inputWidth]) into 2d activations (with shape
- * [numExamples, inputDepth*inputHeight*inputWidth*numChannels]) for use in feed forward layer
- * (a) Reshapes epsilons (weights*deltas) out of FeedFoward layer (which is 2D or 3D with shape
- * [numExamples, inputDepth* inputHeight*inputWidth*numChannels]) into 5d epsilons (with shape
- * [numExamples, numChannels, inputDepth, inputHeight, inputWidth]) suitable to feed into CNN layers.<br>
- * Note: numChannels is equivalent to featureMaps referenced in different literature
- *
- * @author Max Pumperla
- * @see FeedForwardToCnn3DPreProcessor for opposite case (i.e., DenseLayer -> CNN3D)
- */
 @Data
 public class Cnn3DToFeedForwardPreProcessor implements InputPreProcessor {
     protected long inputDepth;

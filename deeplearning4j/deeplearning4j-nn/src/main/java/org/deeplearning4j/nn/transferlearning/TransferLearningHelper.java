@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.transferlearning;
 
@@ -32,19 +36,6 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 import java.util.*;
 
-/**
- * This class is intended for use with the transfer learning API.
- * Often times transfer learning models have "frozen" layers where parameters are held constant during training
- * For ease of training and quick turn around times, the dataset to be trained on can be featurized and saved to disk.
- * Featurizing in this case refers to conducting a forward pass on the network and saving the activations from the output
- * of the frozen layers.
- * During training the forward pass and the backward pass through the frozen layers can be skipped entirely and the "featurized"
- * dataset can be fit with the smaller unfrozen part of the computation graph which allows for quicker iterations.
- * The class internally traverses the computation graph/MLN and builds an instance of the computation graph/MLN that is
- * equivalent to the unfrozen subset.
- *
- * @author susaneraly
- */
 public class TransferLearningHelper {
 
     private boolean isGraph = true;

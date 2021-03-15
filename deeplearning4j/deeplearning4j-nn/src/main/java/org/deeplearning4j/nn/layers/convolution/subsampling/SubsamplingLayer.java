@@ -1,22 +1,27 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.common.config.DL4JClassLoading;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CNN2DFormat;
@@ -30,24 +35,15 @@ import org.deeplearning4j.nn.layers.mkldnn.MKLDNNSubsamplingHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
+import org.nd4j.common.primitives.Pair;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.common.primitives.Pair;
-import org.nd4j.common.util.OneTimeLogger;
 
 import java.util.Arrays;
 
-
-/**
- * Subsampling layer.
- *
- * Used for downsampling a convolution
- *
- * @author Adam Gibson
- */
 @Slf4j
 public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
 
@@ -64,27 +60,21 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     void initializeHelper() {
         String backend = Nd4j.getExecutioner().getEnvironmentInformation().getProperty("backend");
+
         if("CUDA".equalsIgnoreCase(backend)) {
-            try {
-                helper = Class.forName("org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper")
-                        .asSubclass(SubsamplingHelper.class).getConstructor(DataType.class).newInstance(dataType);
-                log.debug("CudnnSubsamplingHelper successfully initialized");
-                if (!helper.checkSupported()) {
-                    helper = null;
-                }
-            } catch (Throwable t) {
-                if (!(t instanceof ClassNotFoundException)) {
-                    log.warn("Could not initialize CudnnSubsamplingHelper", t);
-                } else {
-                    OneTimeLogger.info(log, "cuDNN not found: "
-                            + "use cuDNN for better GPU performance by including the deeplearning4j-cuda module. "
-                            + "For more information, please refer to: https://deeplearning4j.konduit.ai/config/backends/config-cudnn", t);
-                }
+            helper = DL4JClassLoading.createNewInstance(
+                    "org.deeplearning4j.cuda.convolution.subsampling.CudnnSubsamplingHelper",
+                    SubsamplingHelper.class,
+                    dataType);
+            log.debug("CudnnSubsamplingHelper successfully initialized");
+            if (!helper.checkSupported()) {
+                helper = null;
             }
         } else if("CPU".equalsIgnoreCase(backend) ){
             helper = new MKLDNNSubsamplingHelper(dataType);
             log.trace("Created MKL-DNN helper: MKLDNNSubsamplingHelper, layer {}", layerConf().getLayerName());
         }
+
         if (helper != null && !helper.checkSupported()) {
             log.debug("Removed helper {} as not supported", helper.getClass());
             helper = null;
@@ -250,6 +240,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             pad = layerConf().getPadding();
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation, layerConf().getCnn2dDataFormat()); //Also performs validation
         }
+
         long outH = outSize[0];
         long outW = outSize[1];
 

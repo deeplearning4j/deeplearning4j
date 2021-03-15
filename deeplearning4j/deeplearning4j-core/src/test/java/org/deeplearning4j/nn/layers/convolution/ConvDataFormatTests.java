@@ -1,18 +1,22 @@
-/* ******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 package org.deeplearning4j.nn.layers.convolution;
 
 import lombok.*;
@@ -62,6 +66,11 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     @Parameterized.Parameters(name = "{0}")
     public static Object[] params(){
         return new DataType[]{DataType.FLOAT, DataType.DOUBLE};
+    }
+
+    @Override
+    public long getTimeoutMilliseconds() {
+        return 999999999L;
     }
 
     @Test
@@ -683,12 +692,14 @@ public class ConvDataFormatTests extends BaseDL4JTest {
             return getNetWithLayer(new Deconvolution2D.Builder().nOut(2)
                     .activation(Activation.TANH)
                     .kernelSize(2,2)
+                    .dataFormat(format)
                     .stride(2,2)
                     .build(), format, cm, null);
         } else {
             return getNetWithLayer(new Deconvolution2D.Builder().nOut(2)
                     .activation(Activation.TANH)
                     .kernelSize(2,2)
+                    .dataFormat(format)
                     .stride(2,2)
                     .build(), format, cm, null);
         }
@@ -764,12 +775,12 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                         .kernelSize(3, 3)
                         .stride(2, 2)
                         .activation(Activation.TANH)
-                        .dataFormat(format)
                         .nOut(3)
                         .helperAllowFallback(false)
                         .build())
                 .layer(layer)
-                .layer(new OutputLayer.Builder().activation(Activation.SOFTMAX).nOut(10).build())
+                .layer(new OutputLayer.Builder().nOut(10)
+                        .activation(Activation.SOFTMAX).build())
                 .setInputType(inputType != null ? inputType : InputType.convolutional(12, 12, 3, format));
 
         if(format == CNN2DFormat.NHWC && !(layer instanceof GlobalPoolingLayer)){
@@ -808,9 +819,11 @@ public class ConvDataFormatTests extends BaseDL4JTest {
                         .helperAllowFallback(false)
                         .build());
         if(setOnLayerAlso){
-            builder.layer(new CnnLossLayer.Builder().format(format).activation(Activation.SOFTMAX).build());
+            builder.layer(new CnnLossLayer.Builder()
+                    .format(format).activation(Activation.SOFTMAX).build());
         } else {
-            builder.layer(new CnnLossLayer.Builder().activation(Activation.SOFTMAX).build());
+            builder.layer(new CnnLossLayer.Builder()
+                    .activation(Activation.SOFTMAX).build());
         }
 
         builder.setInputType(InputType.convolutional(12, 12, 3, format));
@@ -926,7 +939,7 @@ public class ConvDataFormatTests extends BaseDL4JTest {
 
     }
 
-    private static List<String> differentGrads(Gradient g1, Gradient g2){
+    private static List<String> differentGrads(Gradient g1, Gradient g2) {
         List<String> differs = new ArrayList<>();
         Map<String,INDArray> m1 = g1.gradientForVariable();
         Map<String,INDArray> m2 = g2.gradientForVariable();
@@ -976,27 +989,29 @@ public class ConvDataFormatTests extends BaseDL4JTest {
     @Test
     public void testWrongFormatIn(){
 
-        for(CNN2DFormat df : CNN2DFormat.values()){
-
-
-            for(int i=0; i<4; i++ ){
-
+        for(CNN2DFormat df : CNN2DFormat.values()) {
+            for(int i = 0; i < 4; i++) {
                 NeuralNetConfiguration.ListBuilder b = new NeuralNetConfiguration.Builder()
                         .list();
                 switch (i){
                     case 0:
                         b.layer(new ConvolutionLayer.Builder().kernelSize(2,2).nIn(3).nOut(3).dataFormat(df).build());
+                        b.setInputType(InputType.convolutional(12,12,3,df));
                         break;
                     case 1:
                         b.layer(new DepthwiseConvolution2D.Builder().kernelSize(2,2).nIn(3).nOut(3).dataFormat(df).build());
+                        b.setInputType(InputType.convolutional(12,12,3,df));
                         break;
                     case 2:
                         b.layer(new Deconvolution2D.Builder().dataFormat(df).kernelSize(2,2).nIn(3).nOut(3).build());
+                        b.setInputType(InputType.convolutional(12,12,3,df));
                         break;
                     case 3:
                         b.layer(new SeparableConvolution2D.Builder().dataFormat(df).kernelSize(2,2).nIn(3).nOut(3).build());
+                        b.setInputType(InputType.convolutional(12,12,3,df));
                         break;
                 }
+
 
                 MultiLayerNetwork net = new MultiLayerNetwork(b.build());
                 net.init();
@@ -1015,10 +1030,10 @@ public class ConvDataFormatTests extends BaseDL4JTest {
 
                 try {
                     net.output(wrongFormatIn);
-                } catch (DL4JInvalidInputException e){
+                } catch (DL4JInvalidInputException e) {
 //                    e.printStackTrace();
                     String msg = e.getMessage();
-                    assertTrue(msg, msg.contains(ConvolutionUtils.NCHW_NHWC_ERROR_MSG));
+                    assertTrue(msg, msg.contains(ConvolutionUtils.NCHW_NHWC_ERROR_MSG) || msg.contains("input array channels does not match CNN layer configuration"));
                 }
             }
         }

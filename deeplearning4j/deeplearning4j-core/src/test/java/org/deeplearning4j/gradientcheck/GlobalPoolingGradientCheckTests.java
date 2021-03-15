@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.gradientcheck;
 
@@ -39,9 +43,6 @@ import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
 
-/**
- * Created by Alex on 17/01/2017.
- */
 public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
 
     static {
@@ -135,7 +136,9 @@ public class GlobalPoolingGradientCheckTests extends BaseDL4JTest {
                             .dataType(DataType.DOUBLE)
                             .updater(new NoOp())
                             .dist(new NormalDistribution(0, 1.0)).seed(12345L).list()
-                            .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nOut(layerDepth)
+                            .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1)
+                                    .dataFormat(nchw ? CNN2DFormat.NCHW : CNN2DFormat.NHWC)
+                                    .nOut(layerDepth)
                                     .build())
                             .layer(1, new GlobalPoolingLayer.Builder().poolingType(pt).build())
                             .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)

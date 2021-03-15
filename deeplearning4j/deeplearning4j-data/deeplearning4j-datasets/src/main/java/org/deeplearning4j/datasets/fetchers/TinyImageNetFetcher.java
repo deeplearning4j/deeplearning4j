@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.datasets.fetchers;
 
@@ -30,17 +34,6 @@ import org.nd4j.common.base.Preconditions;
 import java.io.File;
 import java.util.Random;
 
-/**
- * Tiny ImageNet is a subset of the ImageNet database. TinyImageNet is the default course challenge for CS321n
- * at Stanford University.
- *
- * Tiny ImageNet has 200 classes, each consisting of 500 training images.
- *
- * See: <a href="http://cs231n.stanford.edu/">http://cs231n.stanford.edu/</a> and
- * <a href="https://tiny-imagenet.herokuapp.com/">https://tiny-imagenet.herokuapp.com/</a>
- *
- * @author Justin Long (crockpotveggies)
- */
 public class TinyImageNetFetcher extends CacheableExtractableDataSetFetcher {
     public static final String WORDS_FILENAME = "words.txt";
     public static final String LOCAL_CACHE_NAME = "TINYIMAGENET_200";

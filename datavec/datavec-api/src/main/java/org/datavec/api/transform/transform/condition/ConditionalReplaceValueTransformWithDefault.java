@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.api.transform.transform.condition;
 
@@ -29,19 +33,6 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Replace the value in a specified column with a 'yes' value, if a condition is satisfied/true.<br>
- * Replace the value of this same column with a 'no' value otherwise.
- * Note that the condition can be any generic condition, including on other column(s), different to the column
- * that will be modified if the condition is satisfied/true.<br>
- * <p>
- * <b>Note</b>: For sequences, this transform use the convention that each step in the sequence is passed to the condition,
- * and replaced (or not) separately (i.e., Condition.condition(List<Writable>) is used on each time step individually)
- *
- * @author Alex Black
- * @author kepricon
- * @see ConditionalReplaceValueTransform the version without a 'no' Value
- */
 @JsonIgnoreProperties({"filterColIdx"})
 @EqualsAndHashCode(exclude = {"filterColIdx"})
 @Data

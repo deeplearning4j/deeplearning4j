@@ -1,36 +1,47 @@
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
+
 package org.nd4j.common.resources;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.resources.strumpf.StrumpfResolver;
 
 import java.io.File;
 import java.io.InputStream;
 import java.util.*;
 
-/**
- * API for accessing resources (usually test resources) from a path.
- * For example, depending on the implementation (underlying set of {@link Resolver instances} this class cas be used to
- * resolve files on the classpath, or reference files (referring to a remote file that needs to be downloaded).<br>
- * By default only the {@link StrumpfResolver} is used, but others can be added using the Java {@link ServiceLoader} mechanism
- * for {@link Resolver} class.
- *
- * @author Alex Black
- */
+@Slf4j
 public class Resources {
     private static Resources INSTANCE = new Resources();
 
     protected final List<Resolver> resolvers;
 
     protected Resources() {
-
-        ServiceLoader<Resolver> loader = ServiceLoader.load(Resolver.class);
-        Iterator<Resolver> iter = loader.iterator();
+        ServiceLoader<Resolver> loader = ND4JClassLoading.loadService(Resolver.class);
 
         resolvers = new ArrayList<>();
         resolvers.add(new StrumpfResolver());
-        while (iter.hasNext()) {
-            Resolver r = iter.next();
-            resolvers.add(r);
+        for (Resolver resolver : loader) {
+            resolvers.add(resolver);
         }
 
         //Sort resolvers by priority: check resolvers with lower numbers first
@@ -40,8 +51,6 @@ public class Resources {
                 return Integer.compare(r1.priority(), r2.priority());
             }
         });
-
-
     }
 
     /**
@@ -120,6 +129,7 @@ public class Resources {
     public InputStream getAsStream(String resourcePath) {
         for (Resolver r : resolvers) {
             if (r.exists(resourcePath)) {
+                log.debug("Resolved resource with resolver " + r.getClass().getName() + " for path " + resourcePath);
                 return r.asStream(resourcePath);
             }
         }

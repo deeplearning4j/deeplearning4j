@@ -1,18 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.datavec.spark.transform.utils;
 
@@ -33,14 +37,12 @@ import org.datavec.api.transform.ui.HtmlAnalysis;
 import org.datavec.api.writable.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Created by Alex on 7/03/2016.
- */
 public class SparkUtils {
 
     public static <T> List<JavaRDD<T>> splitData(SplitStrategy splitStrategy, JavaRDD<T> data, long seed) {
@@ -96,7 +98,7 @@ public class SparkUtils {
     public static void writeStringToFile(String path, String toWrite, Configuration hadoopConfig) throws IOException {
         FileSystem fileSystem = FileSystem.get(hadoopConfig);
         try (BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))) {
-            bos.write(toWrite.getBytes("UTF-8"));
+            bos.write(toWrite.getBytes(StandardCharsets.UTF_8));
         }
     }
 
@@ -130,7 +132,7 @@ public class SparkUtils {
         FileSystem fileSystem = FileSystem.get(hadoopConfig);
         try (BufferedInputStream bis = new BufferedInputStream(fileSystem.open(new Path(path)))) {
             byte[] asBytes = IOUtils.toByteArray(bis);
-            return new String(asBytes, "UTF-8");
+            return new String(asBytes, StandardCharsets.UTF_8);
         }
     }
 

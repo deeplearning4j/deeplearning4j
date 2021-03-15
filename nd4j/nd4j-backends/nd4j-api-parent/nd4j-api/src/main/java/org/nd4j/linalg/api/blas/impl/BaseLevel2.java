@@ -1,22 +1,25 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.linalg.api.blas.impl;
 
-import lombok.val;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.blas.params.GemvParameters;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -27,16 +30,9 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
 
-/**
- * Base class for level 2 functions, abstract headers pulled from:
- * http://www.netlib.org/blas/blast-forum/cblas.h
- *
- * @author Adam Gibson
- */
 public abstract class BaseLevel2 extends BaseLevel implements Level2 {
     /**
      * gemv computes a matrix-vector product using a general matrix and performs one of the following matrix-vector operations:

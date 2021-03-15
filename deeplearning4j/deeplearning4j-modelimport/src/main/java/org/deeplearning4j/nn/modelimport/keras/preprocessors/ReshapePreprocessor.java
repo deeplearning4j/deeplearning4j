@@ -1,19 +1,22 @@
-/* ******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- * Copyright (c) 2019 Konduit K.K.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.nn.modelimport.keras.preprocessors;
 
@@ -38,16 +41,6 @@ import java.util.Arrays;
 
 import static org.nd4j.common.util.ArrayUtil.prodLong;
 
-/**
- * Generic reshape preprocessor.
- * Note that shapes may be specified with or without the leading minibatch dimension, as long as hasMiniBatchDimension
- * is set appropriately in {@link #ReshapePreprocessor(long[], long[], boolean)}<br>
- * For example, to reshape from [minibatch, 32] to [minibatch, 2, 4, 4] you could use:<br>
- * hasMiniBatchDimension = true with inputShape = [-1, 32] and targetShape = [-1, 2, 4, 4] OR<br>
- * hasMiniBatchDimension = false with inputShape = [32] and targetShape = [2, 4, 4]
- *
- * @author Max Pumperla
- */
 @Data
 @Slf4j
 @EqualsAndHashCode(callSuper = false)
@@ -106,7 +99,6 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
     public INDArray preProcess(INDArray input, int miniBatchSize, LayerWorkspaceMgr workspaceMgr) {
         // the target shape read from a keras config does not have mini-batch size included. We prepend it here dynamically.
         long[] targetShape = getShape(this.targetShape, miniBatchSize);
-        long[] inputShape = getShape(this.inputShape, miniBatchSize);
 
         if (prodLong(input.shape()) == prodLong((targetShape))) {
             if (input.ordering() != 'c' || !Shape.hasDefaultStridesForShape(input)) {
@@ -115,7 +107,7 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input.reshape(targetShape));
         } else {
             throw new IllegalStateException("Input shape " + Arrays.toString(input.shape())
-                    + " and output shape" + Arrays.toString(inputShape) + " do not match");
+                    + " and target shape" + Arrays.toString(targetShape) + " do not match");
         }
     }
 
@@ -148,15 +140,17 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
                 ret = InputType.feedForward(shape[1]);
                 break;
             case 3:
-                RNNFormat format = RNNFormat.NCW;
+                RNNFormat format = RNNFormat.NWC;
                 if(this.format != null && this.format instanceof RNNFormat)
-                    format = (RNNFormat)this.format;
+                    format = (RNNFormat) this.format;
 
                 ret = InputType.recurrent(shape[2], shape[1], format);
                 break;
             case 4:
                 if (inputShape.length == 1 || inputType.getType() == InputType.Type.RNN) {
-                    ret = InputType.convolutional(shape[1], shape[2], shape[3]);
+                    //note here the default is tensorflow initialization for keras.
+                    //being channels first has side effects when working with other models
+                    ret = InputType.convolutional(shape[1], shape[2], shape[3],CNN2DFormat.NHWC);
                 } else {
 
                     CNN2DFormat cnnFormat = CNN2DFormat.NCHW;

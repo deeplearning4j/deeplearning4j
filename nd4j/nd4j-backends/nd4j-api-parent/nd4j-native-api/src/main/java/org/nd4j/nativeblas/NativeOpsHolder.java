@@ -1,35 +1,37 @@
-/*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.nd4j.nativeblas;
 
 import java.util.Properties;
 import lombok.Getter;
 import org.bytedeco.javacpp.Loader;
+import org.nd4j.common.config.ND4JClassLoading;
 import org.nd4j.common.config.ND4JEnvironmentVars;
 import org.nd4j.common.config.ND4JSystemProperties;
+import org.nd4j.common.io.ReflectionUtils;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * @author raver119@gmail.com
- * @author saudet
- */
 public class NativeOpsHolder {
     private static Logger log = LoggerFactory.getLogger(NativeOpsHolder.class);
     private static final NativeOpsHolder INSTANCE = new NativeOpsHolder();
@@ -82,8 +84,10 @@ public class NativeOpsHolder {
             Properties props = Nd4jContext.getInstance().getConf();
 
             String name = System.getProperty(Nd4j.NATIVE_OPS, props.get(Nd4j.NATIVE_OPS).toString());
-            Class<? extends NativeOps> nativeOpsClazz = Class.forName(name).asSubclass(NativeOps.class);
-            deviceNativeOps = nativeOpsClazz.newInstance();
+            Class<? extends NativeOps> nativeOpsClass = ND4JClassLoading
+                    .loadClassByName(name)
+                    .asSubclass(NativeOps.class);
+            deviceNativeOps = ReflectionUtils.newInstance(nativeOpsClass);
 
             deviceNativeOps.initializeDevicesAndFunctions();
             int numThreads;

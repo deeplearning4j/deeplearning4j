@@ -1,20 +1,22 @@
-/*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
- * Copyright (c) 2020 Konduit K.K.
- *
- *
- * This program and the accompanying materials are made available under the
- * terms of the Apache License, Version 2.0 which is available at
- * https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- *
- * SPDX-License-Identifier: Apache-2.0
- ******************************************************************************/
+/*
+ *  ******************************************************************************
+ *  *
+ *  *
+ *  * This program and the accompanying materials are made available under the
+ *  * terms of the Apache License, Version 2.0 which is available at
+ *  * https://www.apache.org/licenses/LICENSE-2.0.
+ *  *
+ *  *  See the NOTICE file distributed with this work for additional
+ *  *  information regarding copyright ownership.
+ *  * Unless required by applicable law or agreed to in writing, software
+ *  * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *  * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *  * License for the specific language governing permissions and limitations
+ *  * under the License.
+ *  *
+ *  * SPDX-License-Identifier: Apache-2.0
+ *  *****************************************************************************
+ */
 
 package org.deeplearning4j.rl4j.learning.async;
 
@@ -34,11 +36,6 @@ import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 
-/**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
- * <p>
- * Async Learning specialized for the Discrete Domain
- */
 public abstract class AsyncThreadDiscrete<OBSERVATION extends Encodable, NN extends NeuralNet>
         extends AsyncThread<OBSERVATION, Integer, DiscreteSpace, NN> {
 
@@ -62,7 +59,10 @@ public abstract class AsyncThreadDiscrete<OBSERVATION extends Encodable, NN exte
             current = (NN) asyncGlobal.getTarget().clone();
         }
 
-        experienceHandler = new StateActionExperienceHandler(getNStep());
+        StateActionExperienceHandler.Configuration experienceHandlerConfiguration = StateActionExperienceHandler.Configuration.builder()
+            .batchSize(getNStep())
+            .build();
+        experienceHandler = new StateActionExperienceHandler(experienceHandlerConfiguration);
     }
 
     private int getNStep() {
@@ -99,7 +99,7 @@ public abstract class AsyncThreadDiscrete<OBSERVATION extends Encodable, NN exte
      */
     public SubEpochReturn trainSubEpoch(Observation sObs, int trainingSteps) {
 
-        current.copy(getAsyncGlobal().getTarget());
+        current.copyFrom(getAsyncGlobal().getTarget());
 
         Observation obs = sObs;
         IPolicy<Integer> policy = getPolicy(current);
