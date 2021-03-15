@@ -156,7 +156,7 @@
                                 <include>**/*Test.java</include>
                                 <include>**/*TestCase.java</include>
                             </includes>
-                            <junitArtifactName>junit:junit</junitArtifactName>
+                            <junitArtifactName>org.junit.jupiter:junit-jupiter</junitArtifactName>
                             <systemPropertyVariables>
                                 <org.nd4j.linalg.defaultbackend>
                                     org.nd4j.linalg.cpu.nativecpu.CpuBackend
@@ -210,7 +210,7 @@
                                 <include>**/*Test.java</include>
                                 <include>**/*TestCase.java</include>
                             </includes>
-                            <junitArtifactName>junit:junit</junitArtifactName>
+                            <junitArtifactName>org.junit.jupiter:junit-jupiter</junitArtifactName>
                             <systemPropertyVariables>
                                 <org.nd4j.linalg.defaultbackend>
                                     org.nd4j.linalg.jcublas.JCublasBackend
