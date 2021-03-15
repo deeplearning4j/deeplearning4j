@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping2D;
@@ -26,27 +25,31 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasCropping2D;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasCropping2DTest extends BaseDL4JTest {
+@DisplayName("Keras Cropping 2 D Test")
+class KerasCropping2DTest extends BaseDL4JTest {
 
     private final String LAYER_NAME = "cropping_2D_layer";
-    private final int[] CROPPING = new int[]{2, 3};
+
+    private final int[] CROPPING = new int[] { 2, 3 };
 
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testCropping2DLayer() throws Exception {
+    @DisplayName("Test Cropping 2 D Layer")
+    void testCropping2DLayer() throws Exception {
         Integer keras1 = 1;
         buildCropping2DLayer(conf1, keras1);
         Integer keras2 = 2;
@@ -55,31 +58,29 @@ public class KerasCropping2DTest extends BaseDL4JTest {
         buildCroppingSingleDim2DLayer(conf2, keras2);
     }
 
-
-    private void buildCropping2DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
-            throws Exception {
+    private void buildCropping2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CROPPING_2D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        ArrayList padding = new ArrayList<Integer>() {{
-            for (int i : CROPPING) add(i);
-        }};
+        ArrayList padding = new ArrayList<Integer>() {
+
+            {
+                for (int i : CROPPING) add(i);
+            }
+        };
         config.put(conf.getLAYER_FIELD_CROPPING(), padding);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         Cropping2D layer = new KerasCropping2D(layerConfig).getCropping2DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(CROPPING[0], layer.getCropping()[0]);
         assertEquals(CROPPING[0], layer.getCropping()[1]);
         assertEquals(CROPPING[1], layer.getCropping()[2]);
         assertEquals(CROPPING[1], layer.getCropping()[3]);
-
     }
 
-    private void buildCroppingSingleDim2DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
-            throws Exception {
+    private void buildCroppingSingleDim2DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CROPPING_2D());
         Map<String, Object> config = new HashMap<>();
@@ -87,7 +88,6 @@ public class KerasCropping2DTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_CROPPING(), CROPPING[0]);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         Cropping2D layer = new KerasCropping2D(layerConfig).getCropping2DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(CROPPING[0], layer.getCropping()[0]);

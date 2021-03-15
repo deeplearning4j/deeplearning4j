@@ -17,23 +17,24 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.util;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.util.MovingWindowMatrix;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
 import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
-
-public class MovingWindowMatrixTest extends BaseDL4JTest {
+@DisplayName("Moving Window Matrix Test")
+class MovingWindowMatrixTest extends BaseDL4JTest {
 
     @Test
-    public void testMovingWindow() {
+    @DisplayName("Test Moving Window")
+    void testMovingWindow() {
         INDArray ones = Nd4j.ones(4, 4);
         org.deeplearning4j.core.util.MovingWindowMatrix m = new org.deeplearning4j.core.util.MovingWindowMatrix(ones, 2, 2);
         List<INDArray> windows = m.windows();
@@ -41,10 +42,5 @@ public class MovingWindowMatrixTest extends BaseDL4JTest {
         org.deeplearning4j.core.util.MovingWindowMatrix m2 = new MovingWindowMatrix(ones, 2, 2, true);
         List<INDArray> windowsRotate = m2.windows();
         assertEquals(16, windowsRotate.size());
-
-
     }
-
-
-
 }

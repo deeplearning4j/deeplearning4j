@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.e2e;
 
 import lombok.extern.slf4j.Slf4j;
@@ -44,10 +43,10 @@ import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelUtils;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
@@ -60,7 +59,6 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.impl.LossSparseMCXENT;
 import org.nd4j.common.resources.Resources;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -68,8 +66,11 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.DisplayName;
+import java.nio.file.Path;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Unit tests for end-to-end Keras model import.
@@ -77,116 +78,139 @@ import static org.junit.Assert.*;
  * @author dave@skymind.io, Max Pumperla
  */
 @Slf4j
-public class KerasModelEndToEndTest extends BaseDL4JTest {
+@DisplayName("Keras Model End To End Test")
+class KerasModelEndToEndTest extends BaseDL4JTest {
+
     private static final String GROUP_ATTR_INPUTS = "inputs";
+
     private static final String GROUP_ATTR_OUTPUTS = "outputs";
+
     private static final String GROUP_PREDICTIONS = "predictions";
+
     private static final String GROUP_ACTIVATIONS = "activations";
+
     private static final String TEMP_OUTPUTS_FILENAME = "tempOutputs";
+
     private static final String TEMP_MODEL_FILENAME = "tempModel";
+
     private static final String H5_EXTENSION = ".h5";
+
     private static final double EPS = 1E-5;
 
     private static final boolean SKIP_GRAD_CHECKS = true;
 
-    @Rule
-    public final TemporaryFolder testDir = new TemporaryFolder();
+
 
     @Override
     public long getTimeoutMilliseconds() {
-        return 900000000L;     //Most benchmarks should run very quickly; large timeout is to avoid issues with unusually slow download of test resources
+        // Most benchmarks should run very quickly; large timeout is to avoid issues with unusually slow download of test resources
+        return 900000000L;
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void fileNotFoundEndToEnd() throws Exception {
-        String modelPath = "modelimport/keras/examples/foo/bar.h5";
-        importEndModelTest(modelPath, null, true, true, false, false);
+    @Test
+    @DisplayName("File Not Found End To End")
+    void fileNotFoundEndToEnd(@TempDir Path tempDir) {
+        assertThrows(IllegalStateException.class, () -> {
+            String modelPath = "modelimport/keras/examples/foo/bar.h5";
+            importEndModelTest(tempDir,modelPath, null, true, true, false, false);
+        });
     }
 
     /**
      * MNIST MLP tests
      */
     @Test
-    public void importMnistMlpTfKeras1() throws Exception {
+    @DisplayName("Import Mnist Mlp Tf Keras 1")
+    void importMnistMlpTfKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false);
     }
 
     @Test
-    public void importMnistMlpThKeras1() throws Exception {
+    @DisplayName("Import Mnist Mlp Th Keras 1")
+    void importMnistMlpThKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, true, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, false, true, false, false);
     }
 
     @Test
-    public void importMnistMlpTfKeras2() throws Exception {
+    @DisplayName("Import Mnist Mlp Tf Keras 2")
+    void importMnistMlpTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_mlp/mnist_mlp_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false);
     }
 
     @Test
-    public void importMnistMlpReshapeTfKeras1() throws Exception {
+    @DisplayName("Import Mnist Mlp Reshape Tf Keras 1")
+    void importMnistMlpReshapeTfKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_mlp_reshape/mnist_mlp_reshape_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_mlp_reshape/mnist_mlp_reshape_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, true, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, true, false);
     }
 
     /**
      * MNIST CNN tests
      */
     @Test
-    public void importMnistCnnTfKeras1() throws Exception {
+    @DisplayName("Import Mnist Cnn Tf Keras 1")
+    void importMnistCnnTfKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, false, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, false, false, false);
     }
 
     @Test
-    public void importMnistCnnThKeras1() throws Exception {
+    @DisplayName("Import Mnist Cnn Th Keras 1")
+    void importMnistCnnThKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, true, true, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, false, true, true, false);
     }
 
     @Test
-    public void importMnistCnnTfKeras2() throws Exception {
+    @DisplayName("Import Mnist Cnn Tf Keras 2")
+    void importMnistCnnTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/mnist_cnn/mnist_cnn_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, true, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, true, false);
     }
 
     /**
      * IMDB Embedding and LSTM test
      */
     @Test
-    public void importImdbLstmTfKeras1() throws Exception {
+    @DisplayName("Import Imdb Lstm Tf Keras 1")
+    void importImdbLstmTfKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, null);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false, true, null, null);
     }
 
     @Test
-    public void importImdbLstmThKeras1() throws Exception {
+    @DisplayName("Import Imdb Lstm Th Keras 1")
+    void importImdbLstmThKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, null);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false, true, null, null);
     }
 
     @Test
-    public void importImdbLstmTfKeras2() throws Exception {
+    @DisplayName("Import Imdb Lstm Tf Keras 2")
+    void importImdbLstmTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, null);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false, true, null, null);
     }
 
     @Test
-    public void importImdbLstmThKeras2() throws Exception {
+    @DisplayName("Import Imdb Lstm Th Keras 2")
+    void importImdbLstmThKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_lstm/imdb_lstm_th_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, true, false, false, true, null, null);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, false, true, false, false, true, null, null);
     }
 
     /**
@@ -194,99 +218,106 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      */
     // TODO: prediction checks fail due to globalpooling for fasttext, very few grads fail as well
     @Test
-    public void importImdbFasttextTfKeras1() throws Exception {
+    @DisplayName("Import Imdb Fasttext Tf Keras 1")
+    void importImdbFasttextTfKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_fasttext/imdb_fasttext_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_fasttext/imdb_fasttext_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, false, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, false, false, false, false);
     }
 
     @Test
-    public void importImdbFasttextThKeras1() throws Exception {
+    @DisplayName("Import Imdb Fasttext Th Keras 1")
+    void importImdbFasttextThKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_fasttext/imdb_fasttext_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_fasttext/imdb_fasttext_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, false, false, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, false, false, false, false);
     }
 
     @Test
-    public void importImdbFasttextTfKeras2() throws Exception {
+    @DisplayName("Import Imdb Fasttext Tf Keras 2")
+    void importImdbFasttextTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/imdb_fasttext/imdb_fasttext_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/imdb_fasttext/imdb_fasttext_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, false, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, false, false, false);
     }
 
     /**
      * Simple LSTM (return sequences = false) into Dense layer test
      */
     @Test
-    public void importSimpleLstmTfKeras1() throws Exception {
+    @DisplayName("Import Simple Lstm Tf Keras 1")
+    void importSimpleLstmTfKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false);
     }
 
     @Test
-    public void importSimpleLstmThKeras1() throws Exception {
+    @DisplayName("Import Simple Lstm Th Keras 1")
+    void importSimpleLstmThKeras1(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_th_keras_1_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_th_keras_1_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false);
     }
 
     @Test
-    public void importSimpleLstmTfKeras2() throws Exception {
+    @DisplayName("Import Simple Lstm Tf Keras 2")
+    void importSimpleLstmTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/simple_lstm/simple_lstm_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, false, false, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, false, false, false);
     }
-
 
     /**
      * Simple LSTM (return sequences = true) into flatten into Dense layer test
      */
     @Test
-    public void importSimpleFlattenLstmTfKeras2() throws Exception {
+    @DisplayName("Import Simple Flatten Lstm Tf Keras 2")
+    void importSimpleFlattenLstmTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/simple_flatten_lstm/simple_flatten_lstm_tf_keras_2_model.h5";
-        String inputsOutputPath = "modelimport/keras/examples/simple_flatten_lstm/" +
-                "simple_flatten_lstm_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false);
+        String inputsOutputPath = "modelimport/keras/examples/simple_flatten_lstm/" + "simple_flatten_lstm_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false);
     }
 
     /**
      * Simple RNN (return sequences = true) into flatten into Dense layer test
      */
     @Test
-    public void importSimpleFlattenRnnTfKeras2() throws Exception {
+    @DisplayName("Import Simple Flatten Rnn Tf Keras 2")
+    void importSimpleFlattenRnnTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/simple_flatten_rnn/simple_flatten_rnn_tf_keras_2_model.h5";
-        String inputsOutputPath = "modelimport/keras/examples/simple_flatten_rnn/" +
-                "simple_flatten_rnn_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false, true, null, null);
+        String inputsOutputPath = "modelimport/keras/examples/simple_flatten_rnn/" + "simple_flatten_rnn_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false, true, null, null);
     }
 
     /**
      * Simple RNN (return sequences = false) into Dense layer test
      */
     @Test
-    public void importSimpleRnnTfKeras2() throws Exception {
+    @DisplayName("Import Simple Rnn Tf Keras 2")
+    void importSimpleRnnTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/simple_rnn/simple_rnn_tf_keras_2_model.h5";
-        String inputsOutputPath = "modelimport/keras/examples/simple_rnn/" +
-                "simple_rnn_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, false, false);
+        String inputsOutputPath = "modelimport/keras/examples/simple_rnn/" + "simple_rnn_tf_keras_2_inputs_and_outputs.h5";
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, false, false);
     }
 
     /**
      * CNN without bias test
      */
     @Test
-    public void importCnnNoBiasTfKeras2() throws Exception {
+    @DisplayName("Import Cnn No Bias Tf Keras 2")
+    void importCnnNoBiasTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/cnn_no_bias/mnist_cnn_no_bias_tf_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/cnn_no_bias/mnist_cnn_no_bias_tf_keras_2_inputs_and_outputs.h5";
-        importEndModelTest(modelPath, inputsOutputPath, true, true, true, false);
+        importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, true, false);
     }
 
     @Test
-    public void importSparseXent() throws Exception {
+    @DisplayName("Import Sparse Xent")
+    void importSparseXent(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/simple_sparse_xent/simple_sparse_xent_mlp_keras_2_model.h5";
         String inputsOutputPath = "modelimport/keras/examples/simple_sparse_xent/simple_sparse_xent_mlp_keras_2_inputs_and_outputs.h5";
-        MultiLayerNetwork net = importEndModelTest(modelPath, inputsOutputPath, true, true, true, true);
+        MultiLayerNetwork net = importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, true, true);
         Layer outLayer = net.getOutputLayer();
         assertTrue(outLayer instanceof org.deeplearning4j.nn.layers.LossLayer);
         LossLayer llConf = (LossLayer) outLayer.getConfig();
@@ -297,38 +328,45 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * GAN import tests
      */
     @Test
-    public void importDcganMnistDiscriminator() throws Exception {
-        importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_discriminator_epoch_50.h5");
+    @DisplayName("Import Dcgan Mnist Discriminator")
+    void importDcganMnistDiscriminator(@TempDir Path tempDir) throws Exception {
+        importSequentialModelH5Test(tempDir,"modelimport/keras/examples/mnist_dcgan/dcgan_discriminator_epoch_50.h5");
     }
 
     @Test
-    @Ignore("Neither keras or tfkeras can load this.")
-    public void importDcganMnistGenerator() throws Exception {
-        importSequentialModelH5Test("modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
+    @Disabled("Neither keras or tfkeras can load this.")
+    @DisplayName("Import Dcgan Mnist Generator")
+    void importDcganMnistGenerator(@TempDir Path tempDir) throws Exception {
+        importSequentialModelH5Test(tempDir,"modelimport/keras/examples/mnist_dcgan/dcgan_generator_epoch_50.h5");
     }
 
     /**
      * Auxillary classifier GAN import test
      */
     @Test
-    public void importAcganDiscriminator() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_discriminator_1_epochs.h5");
-        INDArray input = Nd4j.create(10, 28, 28, 1);        //NHWC
+    @DisplayName("Import Acgan Discriminator")
+    void importAcganDiscriminator(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/acgan/acgan_discriminator_1_epochs.h5");
+        // NHWC
+        INDArray input = Nd4j.create(10, 28, 28, 1);
         INDArray[] output = model.output(input);
     }
 
-    @Test    //AB 2020/04/22 Ignored until Keras model import updated to use NHWC support
-    public void importAcganGenerator() throws Exception {
-         ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
-        //System.out.println(model.summary()) ;
+    // AB 2020/04/22 Ignored until Keras model import updated to use NHWC support
+    @Test
+    @DisplayName("Import Acgan Generator")
+    void importAcganGenerator(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/acgan/acgan_generator_1_epochs.h5");
+        // System.out.println(model.summary()) ;
         INDArray latent = Nd4j.create(10, 100);
         INDArray label = Nd4j.create(10, 1);
         INDArray[] output = model.output(latent, label);
     }
 
     @Test
-    public void importAcganCombined() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/acgan/acgan_combined_1_epochs.h5");
+    @DisplayName("Import Acgan Combined")
+    void importAcganCombined(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/acgan/acgan_combined_1_epochs.h5");
         // TODO: imports, but incorrectly. Has only one input, should have two.
     }
 
@@ -336,117 +374,124 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * Deep convolutional GAN import test
      */
     @Test
-    public void importDcganDiscriminator() throws Exception {
-        importSequentialModelH5Test("modelimport/keras/examples/gans/dcgan_discriminator.h5");
+    @DisplayName("Import Dcgan Discriminator")
+    void importDcganDiscriminator(@TempDir Path tempDir) throws Exception {
+        importSequentialModelH5Test(tempDir,"modelimport/keras/examples/gans/dcgan_discriminator.h5");
     }
 
     @Test
-    public void importDcganGenerator() throws Exception {
-        importSequentialModelH5Test("modelimport/keras/examples/gans/dcgan_generator.h5");
+    @DisplayName("Import Dcgan Generator")
+    void importDcganGenerator(@TempDir Path tempDir) throws Exception {
+        importSequentialModelH5Test(tempDir,"modelimport/keras/examples/gans/dcgan_generator.h5");
     }
 
     /**
      * Wasserstein GAN import test
      */
     @Test
-    public void importWganDiscriminator() throws Exception {
+    @DisplayName("Import Wgan Discriminator")
+    void importWganDiscriminator(@TempDir Path tempDir) throws Exception {
         for (int i = 0; i < 100; i++) {
             // run a few times to make sure HDF5 doesn't crash
-            importSequentialModelH5Test("modelimport/keras/examples/gans/wgan_discriminator.h5");
+            importSequentialModelH5Test(tempDir,"modelimport/keras/examples/gans/wgan_discriminator.h5");
         }
     }
 
     @Test
-    public void importWganGenerator() throws Exception {
-        importSequentialModelH5Test("modelimport/keras/examples/gans/wgan_generator.h5");
+    @DisplayName("Import Wgan Generator")
+    void importWganGenerator(@TempDir Path tempDir) throws Exception {
+        importSequentialModelH5Test(tempDir,"modelimport/keras/examples/gans/wgan_generator.h5");
     }
 
     @Test
-    public void importCnn1d() throws Exception {
-        importSequentialModelH5Test("modelimport/keras/examples/cnn1d/cnn1d_flatten_tf_keras2.h5");
+    @DisplayName("Import Cnn 1 d")
+    void importCnn1d(@TempDir Path tempDir) throws Exception {
+        importSequentialModelH5Test(tempDir,"modelimport/keras/examples/cnn1d/cnn1d_flatten_tf_keras2.h5");
     }
 
     /**
      * DGA classifier test
      */
     @Test
-    public void importDgaClassifier() throws Exception {
-        importSequentialModelH5Test("modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
+    @DisplayName("Import Dga Classifier")
+    void importDgaClassifier(@TempDir Path tempDir) throws Exception {
+        importSequentialModelH5Test(tempDir,"modelimport/keras/examples/dga_classifier/keras2_dga_classifier_tf_model.h5");
     }
 
     /**
      * Reshape flat input into 3D to fit into an LSTM model
      */
     @Test
-    public void importFlatIntoLSTM() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/reshape_to_rnn/reshape_model.h5");
+    @DisplayName("Import Flat Into LSTM")
+    void importFlatIntoLSTM(@TempDir Path tempDir) throws Exception {
+        importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/reshape_to_rnn/reshape_model.h5");
     }
-    
 
     /**
      * Functional LSTM test
      */
     @Test
-    public void importFunctionalLstmTfKeras2() throws Exception {
+    @DisplayName("Import Functional Lstm Tf Keras 2")
+    void importFunctionalLstmTfKeras2(@TempDir Path tempDir) throws Exception {
         String modelPath = "modelimport/keras/examples/functional_lstm/lstm_functional_tf_keras_2.h5";
-
         // No training enabled
-        ComputationGraph graphNoTrain = importFunctionalModelH5Test(modelPath, null, false);
+        ComputationGraph graphNoTrain = importFunctionalModelH5Test(tempDir,modelPath, null, false);
         System.out.println(graphNoTrain.summary());
-
         // Training enabled
-        ComputationGraph graph = importFunctionalModelH5Test(modelPath, null, true);
+        ComputationGraph graph = importFunctionalModelH5Test(tempDir,modelPath, null, true);
         System.out.println(graph.summary());
-
         // Make predictions
         int miniBatch = 32;
-        INDArray input = Nd4j.ones(miniBatch, 10, 4);       //NWC format - with nIn=4, seqLength = 10
+        // NWC format - with nIn=4, seqLength = 10
+        INDArray input = Nd4j.ones(miniBatch, 10, 4);
         INDArray[] out = graph.output(input);
-
         // Fit model
-        graph.fit(new INDArray[]{input}, out);
+        graph.fit(new INDArray[] { input }, out);
     }
 
     /**
      * U-Net
      */
     @Test
-    public void importUnetTfKeras2() throws Exception {
-        importFunctionalModelH5Test(
-                "modelimport/keras/examples/unet/unet_keras_2_tf.h5", null, true);
+    @DisplayName("Import Unet Tf Keras 2")
+    void importUnetTfKeras2(@TempDir Path tempDir) throws Exception {
+        importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/unet/unet_keras_2_tf.h5", null, true);
     }
 
     /**
      * ResNet50
      */
     @Test
-    public void importResnet50() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/resnet/resnet50_weights_tf_dim_ordering_tf_kernels.h5");
+    @DisplayName("Import Resnet 50")
+    void importResnet50(@TempDir Path tempDir) throws Exception {
+        importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/resnet/resnet50_weights_tf_dim_ordering_tf_kernels.h5");
     }
 
     /**
      * DenseNet
      */
     @Test
-    public void importDenseNet() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/densenet/densenet121_tf_keras_2.h5");
+    @DisplayName("Import Dense Net")
+    void importDenseNet(@TempDir Path tempDir) throws Exception {
+        importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/densenet/densenet121_tf_keras_2.h5");
     }
 
     /**
      * SqueezeNet
      */
     @Test
-    public void importSqueezeNet() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/squeezenet/squeezenet.h5");
+    @DisplayName("Import Squeeze Net")
+    void importSqueezeNet(@TempDir Path tempDir) throws Exception {
+        importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/squeezenet/squeezenet.h5");
     }
-
 
     /**
      * MobileNet
      */
     @Test
-    public void importMobileNet() throws Exception {
-        ComputationGraph graph = importFunctionalModelH5Test("modelimport/keras/examples/mobilenet/alternative.hdf5");
+    @DisplayName("Import Mobile Net")
+    void importMobileNet(@TempDir Path tempDir) throws Exception {
+        ComputationGraph graph = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/mobilenet/alternative.hdf5");
         INDArray input = Nd4j.ones(10, 299, 299, 3);
         graph.output(input);
     }
@@ -455,11 +500,12 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * InceptionV3 Keras 2 no top
      */
     @Test
-    public void importInceptionKeras2() throws Exception {
-        int[] inputShape = new int[]{299, 299, 3};
-        ComputationGraph graph = importFunctionalModelH5Test(
-                "modelimport/keras/examples/inception/inception_tf_keras_2.h5", inputShape, false);
-        INDArray input = Nd4j.ones(10, 299, 299, 3);        //TF = channels last = NHWC
+    @DisplayName("Import Inception Keras 2")
+    void importInceptionKeras2(@TempDir Path tempDir) throws Exception {
+        int[] inputShape = new int[] { 299, 299, 3 };
+        ComputationGraph graph = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/inception/inception_tf_keras_2.h5", inputShape, false);
+        // TF = channels last = NHWC
+        INDArray input = Nd4j.ones(10, 299, 299, 3);
         graph.output(input);
         System.out.println(graph.summary());
     }
@@ -468,12 +514,13 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * InceptionV3
      */
     @Test
-    //note this is actually keras 1 and its input dimension ordering is channels first
+    @DisplayName("Import Inception")
+    // note this is actually keras 1 and its input dimension ordering is channels first
     // Takes unreasonably long, but works
-    public void importInception() throws Exception {
-        ComputationGraph graph = importFunctionalModelH5Test(
-                "modelimport/keras/examples/inception/inception_v3_complete.h5");
-        INDArray input = Nd4j.ones(10, 3,299, 299);        //TH = channels first = NCHW
+    void importInception(@TempDir Path tempDir) throws Exception {
+        ComputationGraph graph = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/inception/inception_v3_complete.h5");
+        // TH = channels first = NCHW
+        INDArray input = Nd4j.ones(10, 3, 299, 299);
         graph.output(input);
         System.out.println(graph.summary());
     }
@@ -482,46 +529,40 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * Inception V4
      */
     @Test
-    @Ignore
+    @Disabled
+    @DisplayName("Import Inception V 4")
     // Model and weights have about 170mb, too large for test resources and also too excessive to enable as unit test
-    public void importInceptionV4() throws Exception {
-        String modelUrl = DL4JResources.getURLString(
-                "models/inceptionv4_keras_imagenet_weightsandconfig.h5");
-        File kerasFile = testDir.newFile("inceptionv4_keras_imagenet_weightsandconfig.h5");
-
+    void importInceptionV4(@TempDir Path testDir) throws Exception {
+        String modelUrl = DL4JResources.getURLString("models/inceptionv4_keras_imagenet_weightsandconfig.h5");
+        File kerasFile = testDir.resolve("inceptionv4_keras_imagenet_weightsandconfig.h5").toFile();
         if (!kerasFile.exists()) {
             FileUtils.copyURLToFile(new URL(modelUrl), kerasFile);
             kerasFile.deleteOnExit();
         }
-
-        int[] inputShape = new int[]{299, 299, 3};
-        ComputationGraph graph = importFunctionalModelH5Test(
-                kerasFile.getAbsolutePath(), inputShape, false);
-
+        int[] inputShape = new int[] { 299, 299, 3 };
+        ComputationGraph graph = importFunctionalModelH5Test(testDir,kerasFile.getAbsolutePath(), inputShape, false);
         // System.out.println(graph.summary());
-
     }
 
     /**
      * Xception
      */
     @Test
-    public void importXception() throws Exception {
-        int[] inputShape = new int[]{299, 299, 3};
-        ComputationGraph graph = importFunctionalModelH5Test(
-                "modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape, false);
+    @DisplayName("Import Xception")
+    void importXception(@TempDir Path tempDir) throws Exception {
+        int[] inputShape = new int[] { 299, 299, 3 };
+        ComputationGraph graph = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/xception/xception_tf_keras_2.h5", inputShape, false);
     }
 
     /**
      * Seq2seq model
      */
     @Test
-     // does not work yet, needs DL4J enhancements
-    public void importSeq2Seq() throws Exception {
-        importFunctionalModelH5Test("modelimport/keras/examples/seq2seq/full_model_seq2seq_5549.h5");
-
+    @DisplayName("Import Seq 2 Seq")
+    // does not work yet, needs DL4J enhancements
+    void importSeq2Seq(@TempDir Path tempDir) throws Exception {
+        importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/seq2seq/full_model_seq2seq_5549.h5");
     }
-
 
     /**
      * Import all AlphaGo Zero model variants, i.e.
@@ -530,57 +571,64 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * - Separate (policy and value) residual architecture
      * - Separate (policy and value) convolutional architecture
      */
-    @Test  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    public void importSepConvPolicy() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_policy.h5");
+    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test
+    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    @DisplayName("Import Sep Conv Policy")
+    void importSepConvPolicy(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_conv_policy.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    public void importSepResPolicy() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_policy.h5");
+    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test
+    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    @DisplayName("Import Sep Res Policy")
+    void importSepResPolicy(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_res_policy.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-
-    @Test  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    public void importSepConvValue() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_conv_value.h5");
+    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test
+    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    @DisplayName("Import Sep Conv Value")
+    void importSepConvValue(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/sep_conv_value.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test()  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    public void importSepResValue() throws Exception {
+    @Test
+    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    @DisplayName("Import Sep Res Value")
+    void importSepResValue(@TempDir Path tempDir) throws Exception {
         String filePath = "C:\\Users\\agibs\\Documents\\GitHub\\keras1-import-test\\sep_res_value.h5";
-        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(filePath)
-                .enforceTrainingConfig(false);
-
+        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(filePath).enforceTrainingConfig(false);
         KerasModel model = builder.buildModel();
         ComputationGraph compGraph = model.getComputationGraph();
-        //ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
+        // ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/sep_res_value.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         compGraph.output(input);
     }
 
-    @Test  //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    public void importDualRes() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_res.h5");
+    // AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
+    @Test
+    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    @DisplayName("Import Dual Res")
+    void importDualRes(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/dual_res.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
 
-    @Test() //AB 20200427 Bad keras model - Keras JSON has input shape [null, 10, 19, 19] (i.e., NCHW) but all layers are set to channels_last
-    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    public void importDualConv() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/agz/dual_conv.h5");
+    @Test
+    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    @DisplayName("Import Dual Conv")
+    void importDualConv(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/agz/dual_conv.h5");
         INDArray input = Nd4j.create(32, 19, 19, 10);
         model.output(input);
     }
@@ -589,74 +637,60 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
      * MTCNN
      */
     @Test
-    public void importMTCNN() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/48net_complete.h5");
+    @DisplayName("Import MTCNN")
+    void importMTCNN(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/48net_complete.h5");
     }
-
-    @Test()
-    @Ignore("Data and channel layout mismatch. We don't support permuting the weights yet.")
-    public void testNCHWNWHCChangeImportModel() throws Exception {
-        ComputationGraph computationGraph = importFunctionalModelH5Test("modelimport/keras/weights/simpleconv2d_model.hdf5");
-        computationGraph.output(Nd4j.zeros(1,1,28,28));
-
-    }
-
 
     @Test
+    @Disabled("Data and channel layout mismatch. We don't support permuting the weights yet.")
+    @DisplayName("Test NCHWNWHC Change Import Model")
+    void testNCHWNWHCChangeImportModel(@TempDir Path tempDir) throws Exception {
+        ComputationGraph computationGraph = importFunctionalModelH5Test(tempDir,"modelimport/keras/weights/simpleconv2d_model.hdf5");
+        computationGraph.output(Nd4j.zeros(1, 1, 28, 28));
+    }
+
+    @Test
+    @DisplayName("Import MTCNN 2 D")
     // TODO: fails, since we can't use OldSoftMax on >2D data (here: convolution layer)
     // TODO: also related to #6339, fix this together
-    public void importMTCNN2D() throws Exception {
-        ComputationGraph model = importFunctionalModelH5Test("modelimport/keras/examples/12net.h5",
-                new int[] {24, 24, 3}, false);
-        INDArray input = Nd4j.create(10,  24, 24,3);
+    void importMTCNN2D(@TempDir Path tempDir) throws Exception {
+        ComputationGraph model = importFunctionalModelH5Test(tempDir,"modelimport/keras/examples/12net.h5", new int[] { 24, 24, 3 }, false);
+        INDArray input = Nd4j.create(10, 24, 24, 3);
         model.output(input);
-//        System.out.println(model.summary());
+        // System.out.println(model.summary());
     }
 
     /**
      * Masking layers (simple Masking into LSTM)
      */
     @Test
-    public void testMaskingZeroValue() throws Exception {
-        MultiLayerNetwork model = importSequentialModelH5Test(
-                "modelimport/keras/examples/masking/masking_zero_lstm.h5");
+    @DisplayName("Test Masking Zero Value")
+    void testMaskingZeroValue(@TempDir Path tempDir) throws Exception {
+        MultiLayerNetwork model = importSequentialModelH5Test(tempDir,"modelimport/keras/examples/masking/masking_zero_lstm.h5");
         model.summary();
     }
 
     @Test
-    public void testMaskingTwoValue() throws Exception {
-        MultiLayerNetwork model = importSequentialModelH5Test(
-                "modelimport/keras/examples/masking/masking_two_lstm.h5");
+    @DisplayName("Test Masking Two Value")
+    void testMaskingTwoValue(@TempDir Path tempDir) throws Exception {
+        MultiLayerNetwork model = importSequentialModelH5Test(tempDir,"modelimport/keras/examples/masking/masking_two_lstm.h5");
         model.summary();
     }
 
     @Test
-    public void testCausalConv1D() throws Exception {
-        String[] names = new String[]{
-                "causal_conv1d_k2_s1_d1_cl_model.h5",
-                "causal_conv1d_k2_s1_d2_cl_model.h5",
-                "causal_conv1d_k2_s2_d1_cl_model.h5",
-                "causal_conv1d_k2_s3_d1_cl_model.h5",
-                "causal_conv1d_k3_s1_d1_cl_model.h5",
-                "causal_conv1d_k3_s1_d2_cl_model.h5",
-                "causal_conv1d_k3_s2_d1_cl_model.h5",
-                "causal_conv1d_k3_s3_d1_cl_model.h5",
-                "causal_conv1d_k4_s1_d1_cl_model.h5",
-                "causal_conv1d_k4_s1_d2_cl_model.h5",
-                "causal_conv1d_k4_s2_d1_cl_model.h5",
-                "causal_conv1d_k4_s3_d1_cl_model.h5"
-        };
-
-        for(String name : names) {
+    @DisplayName("Test Causal Conv 1 D")
+    void testCausalConv1D(@TempDir Path tempDir) throws Exception {
+        String[] names = new String[] { "causal_conv1d_k2_s1_d1_cl_model.h5", "causal_conv1d_k2_s1_d2_cl_model.h5", "causal_conv1d_k2_s2_d1_cl_model.h5", "causal_conv1d_k2_s3_d1_cl_model.h5", "causal_conv1d_k3_s1_d1_cl_model.h5", "causal_conv1d_k3_s1_d2_cl_model.h5", "causal_conv1d_k3_s2_d1_cl_model.h5", "causal_conv1d_k3_s3_d1_cl_model.h5", "causal_conv1d_k4_s1_d1_cl_model.h5", "causal_conv1d_k4_s1_d2_cl_model.h5", "causal_conv1d_k4_s2_d1_cl_model.h5", "causal_conv1d_k4_s3_d1_cl_model.h5" };
+        for (String name : names) {
             System.out.println("Starting test: " + name);
             String modelPath = "modelimport/keras/examples/causal_conv1d/" + name;
-            String inputsOutputPath = "modelimport/keras/examples/causal_conv1d/" + (name.substring(0,name.length() - "model.h5".length()) + "inputs_and_outputs.h5");
-            //TODO:
+            String inputsOutputPath = "modelimport/keras/examples/causal_conv1d/" + (name.substring(0, name.length() - "model.h5".length()) + "inputs_and_outputs.h5");
+            // TODO:
             /**
              * Difference in weights. Same elements, but loaded differently. Likely acceptable difference. Need to confirm though.
              */
-            MultiLayerNetwork net = importEndModelTest(modelPath, inputsOutputPath, true, true,
-                    true, true, false, null, null);
+            MultiLayerNetwork net = importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, true, true, false, null, null);
             Layer l = net.getLayer(0);
             Convolution1DLayer c1d = (Convolution1DLayer) l.getConfig();
             assertEquals(ConvolutionMode.Causal, c1d.getConvolutionMode());
@@ -664,106 +698,41 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testConv1D() throws Exception {
-        String[] names = new String[]{
-                "conv1d_k2_s1_d1_cf_same_model.h5",
-                "conv1d_k2_s1_d1_cf_valid_model.h5",
-                "conv1d_k2_s1_d1_cl_same_model.h5",
-                "conv1d_k2_s1_d1_cl_valid_model.h5",
-                "conv1d_k2_s1_d2_cf_same_model.h5",
-                "conv1d_k2_s1_d2_cf_valid_model.h5",
-                "conv1d_k2_s1_d2_cl_same_model.h5",
-                "conv1d_k2_s1_d2_cl_valid_model.h5",
-                "conv1d_k2_s2_d1_cf_same_model.h5",
-                "conv1d_k2_s2_d1_cf_valid_model.h5",
-                "conv1d_k2_s2_d1_cl_same_model.h5",
-                "conv1d_k2_s2_d1_cl_valid_model.h5",
-                "conv1d_k2_s3_d1_cf_same_model.h5",
-                "conv1d_k2_s3_d1_cf_valid_model.h5",
-                "conv1d_k2_s3_d1_cl_same_model.h5",
-                "conv1d_k2_s3_d1_cl_valid_model.h5",
-                "conv1d_k3_s1_d1_cf_same_model.h5",
-                "conv1d_k3_s1_d1_cf_valid_model.h5",
-                "conv1d_k3_s1_d1_cl_same_model.h5",
-                "conv1d_k3_s1_d1_cl_valid_model.h5",
-                "conv1d_k3_s1_d2_cf_same_model.h5",
-                "conv1d_k3_s1_d2_cf_valid_model.h5",
-                "conv1d_k3_s1_d2_cl_same_model.h5",
-                "conv1d_k3_s1_d2_cl_valid_model.h5",
-                "conv1d_k3_s2_d1_cf_same_model.h5",
-                "conv1d_k3_s2_d1_cf_valid_model.h5",
-                "conv1d_k3_s2_d1_cl_same_model.h5",
-                "conv1d_k3_s2_d1_cl_valid_model.h5",
-                "conv1d_k3_s3_d1_cf_same_model.h5",
-                "conv1d_k3_s3_d1_cf_valid_model.h5",
-                "conv1d_k3_s3_d1_cl_same_model.h5",
-                "conv1d_k3_s3_d1_cl_valid_model.h5",
-                "conv1d_k4_s1_d1_cf_same_model.h5",
-                "conv1d_k4_s1_d1_cf_valid_model.h5",
-                "conv1d_k4_s1_d1_cl_same_model.h5",
-                "conv1d_k4_s1_d1_cl_valid_model.h5",
-                "conv1d_k4_s1_d2_cf_same_model.h5",
-                "conv1d_k4_s1_d2_cf_valid_model.h5",
-                "conv1d_k4_s1_d2_cl_same_model.h5",
-                "conv1d_k4_s1_d2_cl_valid_model.h5",
-                "conv1d_k4_s2_d1_cf_same_model.h5",
-                "conv1d_k4_s2_d1_cf_valid_model.h5",
-                "conv1d_k4_s2_d1_cl_same_model.h5",
-                "conv1d_k4_s2_d1_cl_valid_model.h5",
-                "conv1d_k4_s3_d1_cf_same_model.h5",
-                "conv1d_k4_s3_d1_cf_valid_model.h5",
-                "conv1d_k4_s3_d1_cl_same_model.h5",
-                "conv1d_k4_s3_d1_cl_valid_model.h5",
-        };
-
-        for(String name : names) {
+    @DisplayName("Test Conv 1 D")
+    void testConv1D(@TempDir Path tempDir) throws Exception {
+        String[] names = new String[] { "conv1d_k2_s1_d1_cf_same_model.h5", "conv1d_k2_s1_d1_cf_valid_model.h5", "conv1d_k2_s1_d1_cl_same_model.h5", "conv1d_k2_s1_d1_cl_valid_model.h5", "conv1d_k2_s1_d2_cf_same_model.h5", "conv1d_k2_s1_d2_cf_valid_model.h5", "conv1d_k2_s1_d2_cl_same_model.h5", "conv1d_k2_s1_d2_cl_valid_model.h5", "conv1d_k2_s2_d1_cf_same_model.h5", "conv1d_k2_s2_d1_cf_valid_model.h5", "conv1d_k2_s2_d1_cl_same_model.h5", "conv1d_k2_s2_d1_cl_valid_model.h5", "conv1d_k2_s3_d1_cf_same_model.h5", "conv1d_k2_s3_d1_cf_valid_model.h5", "conv1d_k2_s3_d1_cl_same_model.h5", "conv1d_k2_s3_d1_cl_valid_model.h5", "conv1d_k3_s1_d1_cf_same_model.h5", "conv1d_k3_s1_d1_cf_valid_model.h5", "conv1d_k3_s1_d1_cl_same_model.h5", "conv1d_k3_s1_d1_cl_valid_model.h5", "conv1d_k3_s1_d2_cf_same_model.h5", "conv1d_k3_s1_d2_cf_valid_model.h5", "conv1d_k3_s1_d2_cl_same_model.h5", "conv1d_k3_s1_d2_cl_valid_model.h5", "conv1d_k3_s2_d1_cf_same_model.h5", "conv1d_k3_s2_d1_cf_valid_model.h5", "conv1d_k3_s2_d1_cl_same_model.h5", "conv1d_k3_s2_d1_cl_valid_model.h5", "conv1d_k3_s3_d1_cf_same_model.h5", "conv1d_k3_s3_d1_cf_valid_model.h5", "conv1d_k3_s3_d1_cl_same_model.h5", "conv1d_k3_s3_d1_cl_valid_model.h5", "conv1d_k4_s1_d1_cf_same_model.h5", "conv1d_k4_s1_d1_cf_valid_model.h5", "conv1d_k4_s1_d1_cl_same_model.h5", "conv1d_k4_s1_d1_cl_valid_model.h5", "conv1d_k4_s1_d2_cf_same_model.h5", "conv1d_k4_s1_d2_cf_valid_model.h5", "conv1d_k4_s1_d2_cl_same_model.h5", "conv1d_k4_s1_d2_cl_valid_model.h5", "conv1d_k4_s2_d1_cf_same_model.h5", "conv1d_k4_s2_d1_cf_valid_model.h5", "conv1d_k4_s2_d1_cl_same_model.h5", "conv1d_k4_s2_d1_cl_valid_model.h5", "conv1d_k4_s3_d1_cf_same_model.h5", "conv1d_k4_s3_d1_cf_valid_model.h5", "conv1d_k4_s3_d1_cl_same_model.h5", "conv1d_k4_s3_d1_cl_valid_model.h5" };
+        for (String name : names) {
             System.out.println("Starting test: " + name);
             String modelPath = "modelimport/keras/examples/conv1d/" + name;
-            String inputsOutputPath = "modelimport/keras/examples/conv1d/" + (name.substring(0,name.length()-"model.h5".length()) + "inputs_and_outputs.h5");
-
-            importEndModelTest(modelPath, inputsOutputPath, true, true,
-                    true, true, false, null, null); //f, f2);
+            String inputsOutputPath = "modelimport/keras/examples/conv1d/" + (name.substring(0, name.length() - "model.h5".length()) + "inputs_and_outputs.h5");
+            importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, true, true, false, null, // f, f2);
+            null);
         }
     }
-
 
     @Test
-    public void testActivationLayers() throws Exception {
-        String[] names = new String[]{
-                "ELU_0_model.h5",
-                "LeakyReLU_0_model.h5",
-                "ReLU_0_model.h5",
-                "ReLU_1_model.h5",
-                "ReLU_2_model.h5",
-                "ReLU_3_model.h5",
-                "Softmax_0_model.h5",
-                "ThresholdReLU_0_model.h5",
-        };
-
-        for(String name : names ){
+    @DisplayName("Test Activation Layers")
+    void testActivationLayers(@TempDir Path tempDir) throws Exception {
+        String[] names = new String[] { "ELU_0_model.h5", "LeakyReLU_0_model.h5", "ReLU_0_model.h5", "ReLU_1_model.h5", "ReLU_2_model.h5", "ReLU_3_model.h5", "Softmax_0_model.h5", "ThresholdReLU_0_model.h5" };
+        for (String name : names) {
             System.out.println("Starting test: " + name);
             String modelPath = "modelimport/keras/examples/activations/" + name;
-            String inputsOutputPath = "modelimport/keras/examples/activations/" + (name.substring(0,name.length()-"model.h5".length()) + "inputs_and_outputs.h5");
-
-            importEndModelTest(modelPath, inputsOutputPath, true, true,
-                    true, true, false, null, null);
+            String inputsOutputPath = "modelimport/keras/examples/activations/" + (name.substring(0, name.length() - "model.h5".length()) + "inputs_and_outputs.h5");
+            importEndModelTest(tempDir,modelPath, inputsOutputPath, true, true, true, true, false, null, null);
         }
     }
 
-    private ComputationGraph importFunctionalModelH5Test(String modelPath) throws Exception {
-        return importFunctionalModelH5Test(modelPath, null, false);
+    private ComputationGraph importFunctionalModelH5Test(Path tempDir,String modelPath) throws Exception {
+        return importFunctionalModelH5Test(tempDir,modelPath, null, false);
     }
 
-
-    private ComputationGraph importFunctionalModelH5Test(String modelPath, int[] inputShape, boolean train)
-            throws Exception {
+    private ComputationGraph importFunctionalModelH5Test(Path tempDir,String modelPath, int[] inputShape, boolean train) throws Exception {
         File modelFile;
-        try(InputStream is = Resources.asStream(modelPath)) {
-            modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+        try (InputStream is = Resources.asStream(modelPath)) {
+            modelFile = createTempFile(tempDir,TEMP_MODEL_FILENAME, H5_EXTENSION);
             Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
-        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                .enforceTrainingConfig(train);
+        KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath()).enforceTrainingConfig(train);
         if (inputShape != null) {
             builder.inputShape(inputShape);
         }
@@ -771,17 +740,15 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         return model.getComputationGraph();
     }
 
-    private MultiLayerNetwork importSequentialModelH5Test(String modelPath) throws Exception {
-        return importSequentialModelH5Test(modelPath, null);
+    private MultiLayerNetwork importSequentialModelH5Test(Path tempDir,String modelPath) throws Exception {
+        return importSequentialModelH5Test(tempDir,modelPath, null);
     }
 
-
-    private MultiLayerNetwork importSequentialModelH5Test(String modelPath, int[] inputShape) throws Exception {
-        try(InputStream is = Resources.asStream(modelPath)) {
-            File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+    private MultiLayerNetwork importSequentialModelH5Test(Path tempDir,String modelPath, int[] inputShape) throws Exception {
+        try (InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = createTempFile(tempDir,TEMP_MODEL_FILENAME, H5_EXTENSION);
             Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                    .enforceTrainingConfig(false);
+            KerasModelBuilder builder = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath()).enforceTrainingConfig(false);
             if (inputShape != null) {
                 builder.inputShape(inputShape);
             }
@@ -790,35 +757,27 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         }
     }
 
-    public MultiLayerNetwork importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions,
-                                    boolean checkGradients, boolean enforceTrainingConfig) throws Exception {
-        return importEndModelTest(modelPath, inputsOutputsPath, tfOrdering, checkPredictions, checkGradients, true, enforceTrainingConfig, null, null);
+    public MultiLayerNetwork importEndModelTest(Path tempDir,String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions, boolean checkGradients, boolean enforceTrainingConfig) throws Exception {
+        return importEndModelTest(tempDir,modelPath, inputsOutputsPath, tfOrdering, checkPredictions, checkGradients, true, enforceTrainingConfig, null, null);
     }
 
-    public MultiLayerNetwork importEndModelTest(String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions,
-                                                boolean checkGradients, boolean enforceTrainingConfig, boolean checkAuc, Function<INDArray,INDArray> inputPreProc,
-                                                BiFunction<String,INDArray,INDArray> expectedPreProc) throws Exception {
+    public MultiLayerNetwork importEndModelTest(Path tempDir,String modelPath, String inputsOutputsPath, boolean tfOrdering, boolean checkPredictions, boolean checkGradients, boolean enforceTrainingConfig, boolean checkAuc, Function<INDArray, INDArray> inputPreProc, BiFunction<String, INDArray, INDArray> expectedPreProc) throws Exception {
         MultiLayerNetwork model;
-        try(InputStream is = Resources.asStream(modelPath)) {
-            File modelFile = createTempFile(TEMP_MODEL_FILENAME, H5_EXTENSION);
+        try (InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = createTempFile(tempDir,TEMP_MODEL_FILENAME, H5_EXTENSION);
             Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            KerasSequentialModel kerasModel = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                    .enforceTrainingConfig(enforceTrainingConfig).buildSequential();
-
+            KerasSequentialModel kerasModel = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath()).enforceTrainingConfig(enforceTrainingConfig).buildSequential();
             model = kerasModel.getMultiLayerNetwork();
         }
-
-        File outputsFile = createTempFile(TEMP_OUTPUTS_FILENAME, H5_EXTENSION);
-        try(InputStream is = Resources.asStream(inputsOutputsPath)) {
+        File outputsFile = createTempFile(tempDir,TEMP_OUTPUTS_FILENAME, H5_EXTENSION);
+        try (InputStream is = Resources.asStream(inputsOutputsPath)) {
             Files.copy(is, outputsFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
         try (Hdf5Archive outputsArchive = new Hdf5Archive(outputsFile.getAbsolutePath())) {
-
             if (checkPredictions) {
                 INDArray input = getInputs(outputsArchive, tfOrdering)[0];
-                if(inputPreProc != null)
+                if (inputPreProc != null)
                     input = inputPreProc.apply(input);
-
                 Map<String, INDArray> activationsKeras = getActivations(outputsArchive, tfOrdering);
                 for (int i = 0; i < model.getLayers().length; i++) {
                     String layerName = model.getLayerNames().get(i);
@@ -828,34 +787,29 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                         INDArray exp = activationsKeras.get(layerName);
                         Nd4j.getExecutioner().enableDebugMode(true);
                         Nd4j.getExecutioner().enableVerboseMode(true);
-                        if(expectedPreProc != null)
+                        if (expectedPreProc != null)
                             exp = expectedPreProc.apply(layerName, exp);
                         compareINDArrays(layerName, exp, activationsDl4j, EPS);
                     }
                 }
-
                 INDArray predictionsKeras = getPredictions(outputsArchive, tfOrdering)[0];
                 INDArray predictionsDl4j = model.output(input, false);
-                if(expectedPreProc != null)
+                if (expectedPreProc != null)
                     predictionsKeras = expectedPreProc.apply("output", predictionsKeras);
                 compareINDArrays("predictions", predictionsKeras, predictionsDl4j, EPS);
                 INDArray outputs = getOutputs(outputsArchive, true)[0];
-
-                if(outputs.rank() == 1) {
+                if (outputs.rank() == 1) {
                     outputs = outputs.reshape(outputs.length(), 1);
                 }
                 val nOut = (int) outputs.size(-1);
-
-                if(checkAuc)
+                if (checkAuc)
                     compareMulticlassAUC("predictions", outputs, predictionsKeras, predictionsDl4j, nOut, EPS);
             }
-
-            if (checkGradients && ! SKIP_GRAD_CHECKS) {
+            if (checkGradients && !SKIP_GRAD_CHECKS) {
                 Random r = new Random(12345);
                 INDArray input = getInputs(outputsArchive, tfOrdering)[0];
                 INDArray predictionsDl4j = model.output(input, false);
-
-                //Infer one-hot labels... this probably won't work for all
+                // Infer one-hot labels... this probably won't work for all
                 INDArray testLabels = Nd4j.create(predictionsDl4j.shape());
                 if (testLabels.rank() == 2) {
                     for (int i = 0; i < testLabels.size(0); i++) {
@@ -873,13 +827,11 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                 checkGradients(model, input, testLabels);
             }
         }
-
         return model;
     }
 
     private static INDArray[] getInputs(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
-        List<String> inputNames = (List<String>) KerasModelUtils
-                .parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_INPUTS)).get(GROUP_ATTR_INPUTS);
+        List<String> inputNames = (List<String>) KerasModelUtils.parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_INPUTS)).get(GROUP_ATTR_INPUTS);
         INDArray[] inputs = new INDArray[inputNames.size()];
         for (int i = 0; i < inputNames.size(); i++) {
             inputs[i] = archive.readDataSet(inputNames.get(i), GROUP_ATTR_INPUTS);
@@ -887,8 +839,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         return inputs;
     }
 
-    private static Map<String, INDArray> getActivations(Hdf5Archive archive, boolean tensorFlowImageDimOrdering)
-            throws Exception {
+    private static Map<String, INDArray> getActivations(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
         Map<String, INDArray> activations = new HashMap<>();
         for (String layerName : archive.getDataSets(GROUP_ACTIVATIONS)) {
             INDArray activation = archive.readDataSet(layerName, GROUP_ACTIVATIONS);
@@ -897,10 +848,8 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         return activations;
     }
 
-    private static INDArray[] getOutputs(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws
-            Exception {
-        List<String> outputNames = (List<String>) KerasModelUtils
-                .parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_OUTPUTS)).get(GROUP_ATTR_OUTPUTS);
+    private static INDArray[] getOutputs(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
+        List<String> outputNames = (List<String>) KerasModelUtils.parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_OUTPUTS)).get(GROUP_ATTR_OUTPUTS);
         INDArray[] outputs = new INDArray[outputNames.size()];
         for (int i = 0; i < outputNames.size(); i++) {
             outputs[i] = archive.readDataSet(outputNames.get(i), GROUP_ATTR_OUTPUTS);
@@ -908,10 +857,8 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         return outputs;
     }
 
-    private static INDArray[] getPredictions(Hdf5Archive archive, boolean tensorFlowImageDimOrdering)
-            throws Exception {
-        List<String> outputNames = (List<String>) KerasModelUtils
-                .parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_OUTPUTS)).get(GROUP_ATTR_OUTPUTS);
+    private static INDArray[] getPredictions(Hdf5Archive archive, boolean tensorFlowImageDimOrdering) throws Exception {
+        List<String> outputNames = (List<String>) KerasModelUtils.parseJsonString(archive.readAttributeAsJson(GROUP_ATTR_OUTPUTS)).get(GROUP_ATTR_OUTPUTS);
         INDArray[] predictions = new INDArray[outputNames.size()];
         for (int i = 0; i < outputNames.size(); i++) {
             predictions[i] = archive.readDataSet(outputNames.get(i), GROUP_PREDICTIONS);
@@ -920,7 +867,7 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
     }
 
     private static void compareINDArrays(String label, INDArray expected, INDArray actual, double eps) {
-        if(!expected.equalShapes(actual)){
+        if (!expected.equalShapes(actual)) {
             throw new IllegalStateException("Shapes do not match for \"" + label + "\": got " + Arrays.toString(expected.shape()) + " vs " + Arrays.toString(actual.shape()));
         }
         INDArray diff = expected.sub(actual.castTo(expected.dataType()));
@@ -930,21 +877,19 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         double threshold = 1e-7;
         double aAbsMax = Math.max(Math.abs(expected.minNumber().doubleValue()), Math.abs(expected.maxNumber().doubleValue()));
         double bAbsMax = Math.max(Math.abs(actual.minNumber().doubleValue()), Math.abs(actual.maxNumber().doubleValue()));
-
         // skip too small absolute inputs
         if (Math.abs(aAbsMax) > threshold && Math.abs(bAbsMax) > threshold) {
             boolean eq = expected.equalsWithEps(actual.castTo(expected.dataType()), eps);
-            if(!eq){
+            if (!eq) {
                 System.out.println("Expected: " + Arrays.toString(expected.shape()) + ", actual: " + Arrays.toString(actual.shape()));
                 System.out.println("Expected:\n" + expected);
                 System.out.println("Actual: \n" + actual);
             }
-            assertTrue("Output differs: " + label, eq);
+            assertTrue(eq,"Output differs: " + label);
         }
     }
 
-    private static void compareMulticlassAUC(String label, INDArray target, INDArray a, INDArray b, int nbClasses,
-                                             double eps) {
+    private static void compareMulticlassAUC(String label, INDArray target, INDArray a, INDArray b, int nbClasses, double eps) {
         ROCMultiClass evalA = new ROCMultiClass(100);
         evalA.eval(target, a);
         double avgAucA = evalA.calculateAverageAUC();
@@ -952,7 +897,6 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         evalB.eval(target, b);
         double avgAucB = evalB.calculateAverageAUC();
         assertEquals(avgAucA, avgAucB, EPS);
-
         double[] aucA = new double[nbClasses];
         double[] aucB = new double[nbClasses];
         if (nbClasses > 1) {
@@ -968,43 +912,25 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
         double eps = 1e-6;
         double max_rel_error = 1e-3;
         double min_abs_error = 1e-8;
-
         MultiLayerNetwork netToTest;
         if (net.getOutputLayer() instanceof IOutputLayer) {
             netToTest = net;
         } else {
             org.deeplearning4j.nn.conf.layers.Layer l;
             if (labels.rank() == 2) {
-                l = new LossLayer.Builder()
-                        .lossFunction(LossFunctions.LossFunction.MSE)
-                        .activation(Activation.IDENTITY)
-                        .build();
+                l = new LossLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).build();
             } else {
-                //Rank 3
-                l = new RnnOutputLayer.Builder()
-                        .lossFunction(LossFunctions.LossFunction.MSE)
-                        .activation(Activation.IDENTITY)
-                        .nIn(labels.size(1))
-                        .nOut(labels.size(1))
-                        .build();
+                // Rank 3
+                l = new RnnOutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nIn(labels.size(1)).nOut(labels.size(1)).build();
             }
-            netToTest = new TransferLearning.Builder(net)
-                    .fineTuneConfiguration(new FineTuneConfiguration.Builder()
-                            .updater(new NoOp())
-                            .dropOut(0.0)
-                            .build())
-                    .addLayer(l)
-                    .build();
+            netToTest = new TransferLearning.Builder(net).fineTuneConfiguration(new FineTuneConfiguration.Builder().updater(new NoOp()).dropOut(0.0).build()).addLayer(l).build();
         }
-
         log.info("Num params: " + net.numParams());
-
         for (Layer l : netToTest.getLayers()) {
             // Remove any dropout manually - until this is fixed:
             // https://github.com/eclipse/deeplearning4j/issues/4368
-             l.conf().getLayer().setIDropout(null);
-
-            //Also swap out activation functions... this is a bit of a hack, but should make the net gradient checkable...
+            l.conf().getLayer().setIDropout(null);
+            // Also swap out activation functions... this is a bit of a hack, but should make the net gradient checkable...
             if (l.conf().getLayer() instanceof FeedForwardLayer) {
                 FeedForwardLayer ffl = (FeedForwardLayer) l.conf().getLayer();
                 IActivation activation = ffl.getActivationFn();
@@ -1015,14 +941,15 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                 }
             }
         }
-
         Nd4j.setDataType(DataType.DOUBLE);
-        boolean passed = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(netToTest).input(input)
-                .labels(labels).subset(true).maxPerParam(9));
-        assertTrue("Gradient check failed", passed);
+        boolean passed = GradientCheckUtil.checkGradients(new GradientCheckUtil.MLNConfig().net(netToTest).input(input).labels(labels).subset(true).maxPerParam(9));
+        assertTrue(passed, "Gradient check failed");
     }
 
-    private File createTempFile(String prefix, String suffix) throws IOException {
-        return testDir.newFile(prefix + "-" + System.nanoTime() + suffix);
+    private File createTempFile(Path testDir,String prefix, String suffix) throws IOException {
+        File ret = new File(testDir.toFile(),prefix + "-" + System.nanoTime() + suffix);
+        ret.createNewFile();
+        ret.deleteOnExit();
+        return ret;
     }
 }

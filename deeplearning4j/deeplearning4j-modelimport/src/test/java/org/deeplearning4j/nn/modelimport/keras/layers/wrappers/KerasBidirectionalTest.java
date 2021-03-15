@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.wrappers;
 
 import org.deeplearning4j.nn.conf.layers.LSTM;
@@ -27,38 +26,53 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.activations.Activation;
-
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasBidirectionalTest extends BaseDL4JTest {
+@DisplayName("Keras Bidirectional Test")
+class KerasBidirectionalTest extends BaseDL4JTest {
 
     private final String ACTIVATION_KERAS = "linear";
+
     private final String ACTIVATION_DL4J = "identity";
+
     private final String LAYER_NAME = "bidirectional_layer";
+
     private final String INIT_KERAS = "glorot_normal";
+
     private final WeightInit INIT_DL4J = WeightInit.XAVIER;
+
     private final double L1_REGULARIZATION = 0.01;
+
     private final double L2_REGULARIZATION = 0.02;
+
     private final double DROPOUT_KERAS = 0.3;
+
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
+
     private final int N_OUT = 13;
+
     private final String mode = "sum";
 
     private Integer keras1 = 1;
+
     private Integer keras2 = 2;
+
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testLstmLayer() throws Exception {
+    @DisplayName("Test Lstm Layer")
+    void testLstmLayer() throws Exception {
         buildLstmLayer(conf1, keras1);
         buildLstmLayer(conf2, keras2);
     }
@@ -66,17 +80,17 @@ public class KerasBidirectionalTest extends BaseDL4JTest {
     private void buildLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         String innerActivation = "hard_sigmoid";
         String lstmForgetBiasString = "one";
-
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
         Map<String, Object> lstmConfig = new HashMap<>();
-        lstmConfig.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS); // keras linear -> dl4j identity
-        lstmConfig.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation); // keras linear -> dl4j identity
+        // keras linear -> dl4j identity
+        lstmConfig.put(conf.getLAYER_FIELD_ACTIVATION(), ACTIVATION_KERAS);
+        // keras linear -> dl4j identity
+        lstmConfig.put(conf.getLAYER_FIELD_INNER_ACTIVATION(), innerActivation);
         lstmConfig.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
         if (kerasVersion == 1) {
             lstmConfig.put(conf.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
             lstmConfig.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
-
         } else {
             Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
@@ -88,31 +102,23 @@ public class KerasBidirectionalTest extends BaseDL4JTest {
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         lstmConfig.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
         lstmConfig.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), true);
-
         lstmConfig.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         lstmConfig.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
         lstmConfig.put(conf.getLAYER_FIELD_FORGET_BIAS_INIT(), lstmForgetBiasString);
         lstmConfig.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
         lstmConfig.put(conf.getLAYER_FIELD_UNROLL(), true);
-
         Map<String, Object> innerRnnConfig = new HashMap<>();
         innerRnnConfig.put("class_name", "LSTM");
         innerRnnConfig.put("config", lstmConfig);
-
         Map<String, Object> innerConfig = new HashMap<>();
         innerConfig.put("merge_mode", mode);
         innerConfig.put("layer", innerRnnConfig);
         innerConfig.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-
         layerConfig.put("config", innerConfig);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         KerasBidirectional kerasBidirectional = new KerasBidirectional(layerConfig);
         Bidirectional layer = kerasBidirectional.getBidirectionalLayer();
-
         assertEquals(Bidirectional.Mode.ADD, layer.getMode());
-        assertEquals(Activation.HARDSIGMOID.toString().toLowerCase(),
-                ((LSTM) kerasBidirectional.getUnderlyingRecurrentLayer()).getGateActivationFn().toString());
-
+        assertEquals(Activation.HARDSIGMOID.toString().toLowerCase(), ((LSTM) kerasBidirectional.getUnderlyingRecurrentLayer()).getGateActivationFn().toString());
     }
 }

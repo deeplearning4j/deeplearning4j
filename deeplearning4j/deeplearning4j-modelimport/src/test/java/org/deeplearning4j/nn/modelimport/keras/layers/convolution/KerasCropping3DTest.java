@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.layers.convolutional.Cropping3D;
@@ -26,27 +25,31 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasCropping3D;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasCropping3DTest extends BaseDL4JTest {
+@DisplayName("Keras Cropping 3 D Test")
+class KerasCropping3DTest extends BaseDL4JTest {
 
     private final String LAYER_NAME = "cropping_3D_layer";
-    private final int[] CROPPING = new int[]{2, 3, 5};
+
+    private final int[] CROPPING = new int[] { 2, 3, 5 };
 
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testCropping3DLayer() throws Exception {
+    @DisplayName("Test Cropping 3 D Layer")
+    void testCropping3DLayer() throws Exception {
         Integer keras1 = 1;
         buildCropping3DLayer(conf1, keras1);
         Integer keras2 = 2;
@@ -55,20 +58,20 @@ public class KerasCropping3DTest extends BaseDL4JTest {
         buildCroppingSingleDim3DLayer(conf2, keras2);
     }
 
-
-    private void buildCropping3DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
-            throws Exception {
+    private void buildCropping3DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CROPPING_3D());
         Map<String, Object> config = new HashMap<>();
         config.put(conf.getLAYER_FIELD_NAME(), LAYER_NAME);
-        ArrayList padding = new ArrayList<Integer>() {{
-            for (int i : CROPPING) add(i);
-        }};
+        ArrayList padding = new ArrayList<Integer>() {
+
+            {
+                for (int i : CROPPING) add(i);
+            }
+        };
         config.put(conf.getLAYER_FIELD_CROPPING(), padding);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         Cropping3D layer = new KerasCropping3D(layerConfig).getCropping3DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(CROPPING[0], layer.getCropping()[0]);
@@ -77,11 +80,9 @@ public class KerasCropping3DTest extends BaseDL4JTest {
         assertEquals(CROPPING[1], layer.getCropping()[3]);
         assertEquals(CROPPING[2], layer.getCropping()[4]);
         assertEquals(CROPPING[2], layer.getCropping()[5]);
-
     }
 
-    private void buildCroppingSingleDim3DLayer(KerasLayerConfiguration conf, Integer kerasVersion)
-            throws Exception {
+    private void buildCroppingSingleDim3DLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_CROPPING_3D());
         Map<String, Object> config = new HashMap<>();
@@ -89,7 +90,6 @@ public class KerasCropping3DTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_CROPPING(), CROPPING[0]);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         Cropping3D layer = new KerasCropping3D(layerConfig).getCropping3DLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(CROPPING[0], layer.getCropping()[0]);

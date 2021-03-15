@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.datavec.api.records.reader.impl;
 
 import org.datavec.api.records.Record;
@@ -26,28 +25,28 @@ import org.datavec.api.split.CollectionInputSplit;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.tests.BaseND4JTest;
 import org.nd4j.common.io.ClassPathResource;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
-public class FileRecordReaderTest  extends BaseND4JTest {
+@DisplayName("File Record Reader Test")
+class FileRecordReaderTest extends BaseND4JTest {
 
     @Test
-    public void testReset() throws Exception {
+    @DisplayName("Test Reset")
+    void testReset() throws Exception {
         FileRecordReader rr = new FileRecordReader();
         rr.initialize(new FileSplit(new ClassPathResource("datavec-api/iris.dat").getFile()));
-
         int nResets = 5;
         for (int i = 0; i < nResets; i++) {
-
             int lineCount = 0;
             while (rr.hasNext()) {
                 List<Writable> line = rr.next();
@@ -61,25 +60,20 @@ public class FileRecordReaderTest  extends BaseND4JTest {
     }
 
     @Test
-    public void testMeta() throws Exception {
+    @DisplayName("Test Meta")
+    void testMeta() throws Exception {
         FileRecordReader rr = new FileRecordReader();
-
-
         URI[] arr = new URI[3];
         arr[0] = new ClassPathResource("datavec-api/csvsequence_0.txt").getFile().toURI();
         arr[1] = new ClassPathResource("datavec-api/csvsequence_1.txt").getFile().toURI();
         arr[2] = new ClassPathResource("datavec-api/csvsequence_2.txt").getFile().toURI();
-
         InputSplit is = new CollectionInputSplit(Arrays.asList(arr));
         rr.initialize(is);
-
         List<List<Writable>> out = new ArrayList<>();
         while (rr.hasNext()) {
             out.add(rr.next());
         }
-
         assertEquals(3, out.size());
-
         rr.reset();
         List<List<Writable>> out2 = new ArrayList<>();
         List<Record> out3 = new ArrayList<>();
@@ -90,13 +84,10 @@ public class FileRecordReaderTest  extends BaseND4JTest {
             out2.add(r.getRecord());
             out3.add(r);
             meta.add(r.getMetaData());
-
             assertEquals(arr[count++], r.getMetaData().getURI());
         }
-
         assertEquals(out, out2);
         List<Record> fromMeta = rr.loadFromMetaData(meta);
         assertEquals(out3, fromMeta);
     }
-
 }

@@ -91,15 +91,7 @@ public class FlatModelUtilsTest extends BaseDL4JTest {
         assertEquals(arr1, arr2);
     }
 
-    @Test
-    @Ignore
-    public void testWordsNearestTree1() throws Exception {
-        vec.setModelUtils(new TreeModelUtils<VocabWord>());
 
-        Collection<String> list = vec.wordsNearest("energy", 10);
-        log.info("Tree model results:");
-        printWords("energy", list, vec);
-    }
 
     private static void printWords(String target, Collection<String> list, WordVectors vec) {
         System.out.println("Words close to [" + target + "]:");

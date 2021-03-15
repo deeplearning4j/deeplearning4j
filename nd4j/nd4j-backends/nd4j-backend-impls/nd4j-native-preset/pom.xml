@@ -203,6 +203,7 @@
                     <plugin>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
                         <configuration>
                             <properties>${javacpp.platform}-mingw</properties>
                         </configuration>
@@ -226,6 +227,7 @@
                     <plugin>
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
+                        <version>${javacpp.version}</version>
                         <configuration>
                             <properties>${javacpp.platform}-mingw</properties>
                         </configuration>

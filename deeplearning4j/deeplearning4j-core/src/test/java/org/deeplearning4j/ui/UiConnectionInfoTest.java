@@ -17,107 +17,97 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.ui;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.core.ui.UiConnectionInfo;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
+@DisplayName("Ui Connection Info Test")
+class UiConnectionInfoTest extends BaseDL4JTest {
 
-public class UiConnectionInfoTest extends BaseDL4JTest {
-
-    @Before
-    public void setUp() throws Exception {
-
+    @BeforeEach
+    void setUp() throws Exception {
     }
 
     @Test
-    public void testGetFirstPart1() throws Exception {
+    @DisplayName("Test Get First Part 1")
+    void testGetFirstPart1() throws Exception {
         UiConnectionInfo info = new UiConnectionInfo.Builder().setPort(8080).build();
-
-        assertEquals("http://localhost:8080", info.getFirstPart());
+        assertEquals(info.getFirstPart(), "http://localhost:8080");
     }
 
     @Test
-    public void testGetFirstPart2() throws Exception {
+    @DisplayName("Test Get First Part 2")
+    void testGetFirstPart2() throws Exception {
         UiConnectionInfo info = new UiConnectionInfo.Builder().enableHttps(true).setPort(8080).build();
-
-        assertEquals("https://localhost:8080", info.getFirstPart());
+        assertEquals(info.getFirstPart(), "https://localhost:8080");
     }
 
     @Test
-    public void testGetFirstPart3() throws Exception {
-        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082)
-                        .build();
-
-        assertEquals("https://192.168.1.1:8082", info.getFirstPart());
-    }
-
-
-    @Test
-    public void testGetSecondPart1() throws Exception {
-        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082)
-                        .setPath("www-data").build();
-
-        assertEquals("/www-data/", info.getSecondPart());
+    @DisplayName("Test Get First Part 3")
+    void testGetFirstPart3() throws Exception {
+        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082).build();
+        assertEquals(info.getFirstPart(), "https://192.168.1.1:8082");
     }
 
     @Test
-    public void testGetSecondPart2() throws Exception {
-        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082)
-                        .setPath("/www-data/tmp/").build();
-
-        assertEquals("/www-data/tmp/", info.getSecondPart());
+    @DisplayName("Test Get Second Part 1")
+    void testGetSecondPart1() throws Exception {
+        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082).setPath("www-data").build();
+        assertEquals(info.getSecondPart(), "/www-data/");
     }
 
     @Test
-    public void testGetSecondPart3() throws Exception {
-        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082)
-                        .setPath("/www-data/tmp").build();
-
-        assertEquals("/www-data/tmp/", info.getSecondPart());
+    @DisplayName("Test Get Second Part 2")
+    void testGetSecondPart2() throws Exception {
+        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082).setPath("/www-data/tmp/").build();
+        assertEquals(info.getSecondPart(), "/www-data/tmp/");
     }
 
     @Test
-    public void testGetSecondPart4() throws Exception {
-        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082)
-                        .setPath("/www-data//tmp").build();
-
-        assertEquals("/www-data/tmp/", info.getSecondPart());
+    @DisplayName("Test Get Second Part 3")
+    void testGetSecondPart3() throws Exception {
+        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082).setPath("/www-data/tmp").build();
+        assertEquals(info.getSecondPart(), "/www-data/tmp/");
     }
 
     @Test
-    public void testGetSecondPart5() throws Exception {
-        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082)
-                        .setPath("/www-data//tmp").build();
-
-        assertEquals("/www-data/tmp/alpha/", info.getSecondPart("alpha"));
+    @DisplayName("Test Get Second Part 4")
+    void testGetSecondPart4() throws Exception {
+        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082).setPath("/www-data//tmp").build();
+        assertEquals(info.getSecondPart(), "/www-data/tmp/");
     }
 
     @Test
-    public void testGetSecondPart6() throws Exception {
-        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082)
-                        .setPath("//www-data//tmp").build();
-
-        assertEquals("/www-data/tmp/alpha/", info.getSecondPart("/alpha/"));
+    @DisplayName("Test Get Second Part 5")
+    void testGetSecondPart5() throws Exception {
+        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082).setPath("/www-data//tmp").build();
+        assertEquals(info.getSecondPart("alpha"), "/www-data/tmp/alpha/");
     }
 
     @Test
-    public void testGetSecondPart7() throws Exception {
-        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082)
-                        .setPath("//www-data//tmp").build();
-
-        assertEquals("/www-data/tmp/alpha/beta/", info.getSecondPart("/alpha//beta/"));
+    @DisplayName("Test Get Second Part 6")
+    void testGetSecondPart6() throws Exception {
+        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082).setPath("//www-data//tmp").build();
+        assertEquals(info.getSecondPart("/alpha/"), "/www-data/tmp/alpha/");
     }
 
     @Test
-    public void testGetSecondPart8() throws Exception {
-        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(false)
-                        .setPort(8082).setPath("/www-data//tmp").build();
+    @DisplayName("Test Get Second Part 7")
+    void testGetSecondPart7() throws Exception {
+        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(true).setPort(8082).setPath("//www-data//tmp").build();
+        assertEquals(info.getSecondPart("/alpha//beta/"), "/www-data/tmp/alpha/beta/");
+    }
 
-        assertEquals("http://192.168.1.1:8082/www-data/tmp/", info.getFullAddress());
+    @Test
+    @DisplayName("Test Get Second Part 8")
+    void testGetSecondPart8() throws Exception {
+        UiConnectionInfo info = new UiConnectionInfo.Builder().setAddress("192.168.1.1").enableHttps(false).setPort(8082).setPath("/www-data//tmp").build();
+        assertEquals(info.getFullAddress(), "http://192.168.1.1:8082/www-data/tmp/");
     }
 }

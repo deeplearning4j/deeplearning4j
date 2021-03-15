@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import org.deeplearning4j.nn.conf.layers.util.MaskZeroLayer;
@@ -25,32 +24,31 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasMaskingTest extends BaseDL4JTest {
-
+@DisplayName("Keras Masking Test")
+class KerasMaskingTest extends BaseDL4JTest {
 
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
-
     @Test
-    public void testMaskingLayer() throws Exception {
+    @DisplayName("Test Masking Layer")
+    void testMaskingLayer() throws Exception {
         Integer keras1 = 1;
         buildMaskingLayer(conf1, keras1);
         Integer keras2 = 2;
         buildMaskingLayer(conf2, keras2);
     }
-
 
     private void buildMaskingLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
@@ -62,10 +60,7 @@ public class KerasMaskingTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_MASK_VALUE(), MASKING_VALUE);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         MaskZeroLayer layer = new KerasMasking(layerConfig).getMaskingLayer();
         assertEquals(MASKING_VALUE, layer.getMaskingValue(), 0.0);
     }
-
-
 }

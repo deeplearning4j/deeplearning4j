@@ -17,41 +17,38 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.util;
 
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.util.SerializationUtils;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-
 import java.io.File;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import java.nio.file.Path;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
+@DisplayName("Serialization Utils Test")
+class SerializationUtilsTest extends BaseDL4JTest {
 
-public class SerializationUtilsTest extends BaseDL4JTest {
-
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+    @TempDir
+    public Path testDir;
 
     @Test
-    public void testWriteRead() throws Exception {
+    @DisplayName("Test Write Read")
+    void testWriteRead() throws Exception {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
         String irisData = "irisData.dat";
-
         DataSet freshDataSet = iter.next(150);
-
-        File f = testDir.newFile(irisData);
+        File f = testDir.resolve(irisData).toFile();
         SerializationUtils.saveObject(freshDataSet, f);
-
         DataSet readDataSet = SerializationUtils.readObject(f);
-
         assertEquals(freshDataSet.getFeatures(), readDataSet.getFeatures());
         assertEquals(freshDataSet.getLabels(), readDataSet.getLabels());
     }
-
 }

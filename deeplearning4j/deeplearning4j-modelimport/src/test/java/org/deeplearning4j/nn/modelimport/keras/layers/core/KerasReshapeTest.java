@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -29,40 +28,45 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
 import java.util.*;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasReshapeTest extends BaseDL4JTest {
+@DisplayName("Keras Reshape Test")
+class KerasReshapeTest extends BaseDL4JTest {
 
     private Integer keras1 = 1;
+
     private Integer keras2 = 2;
+
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
-
     @Test
-    public void testReshapeLayer() throws Exception {
+    @DisplayName("Test Reshape Layer")
+    void testReshapeLayer() throws Exception {
         buildReshapeLayer(conf1, keras1);
         buildReshapeLayer(conf2, keras2);
     }
 
     @Test
-    public void testReshapeDynamicMinibatch() throws Exception {
+    @DisplayName("Test Reshape Dynamic Minibatch")
+    void testReshapeDynamicMinibatch() throws Exception {
         testDynamicMinibatches(conf1, keras1);
         testDynamicMinibatches(conf2, keras2);
     }
 
     private void buildReshapeLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
-        int[] targetShape = new int[]{10, 5};
+        int[] targetShape = new int[] { 10, 5 };
         List<Integer> targetShapeList = new ArrayList<>();
         targetShapeList.add(targetShape[0]);
         targetShapeList.add(targetShape[1]);
@@ -71,9 +75,7 @@ public class KerasReshapeTest extends BaseDL4JTest {
         assertEquals(preProcessor.getTargetShape()[1], targetShape[1]);
     }
 
-    private ReshapePreprocessor getReshapePreProcessor(KerasLayerConfiguration conf, Integer kerasVersion,
-                                                       List<Integer> targetShapeList)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    private ReshapePreprocessor getReshapePreProcessor(KerasLayerConfiguration conf, Integer kerasVersion, List<Integer> targetShapeList) throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_RESHAPE());
         Map<String, Object> config = new HashMap<>();
@@ -85,7 +87,6 @@ public class KerasReshapeTest extends BaseDL4JTest {
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
         InputType inputType = InputType.InputTypeFeedForward.feedForward(20);
         return (ReshapePreprocessor) new KerasReshape(layerConfig).getInputPreprocessor(inputType);
-
     }
 
     private void testDynamicMinibatches(KerasLayerConfiguration conf, Integer kerasVersion) throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
@@ -93,7 +94,7 @@ public class KerasReshapeTest extends BaseDL4JTest {
         ReshapePreprocessor preprocessor = getReshapePreProcessor(conf, kerasVersion, targetShape);
         INDArray r1 = preprocessor.preProcess(Nd4j.zeros(10, 20), 10, LayerWorkspaceMgr.noWorkspaces());
         INDArray r2 = preprocessor.preProcess(Nd4j.zeros(5, 20), 5, LayerWorkspaceMgr.noWorkspaces());
-        Assert.assertArrayEquals(r2.shape(), new long[]{5, 20});
-        Assert.assertArrayEquals(r1.shape(), new long[]{10, 20});
+        Assertions.assertArrayEquals(r2.shape(), new long[] { 5, 20 });
+        Assertions.assertArrayEquals(r1.shape(), new long[] { 10, 20 });
     }
 }

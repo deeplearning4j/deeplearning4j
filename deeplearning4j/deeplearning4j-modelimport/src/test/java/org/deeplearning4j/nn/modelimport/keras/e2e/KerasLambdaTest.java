@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.e2e;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -29,63 +28,72 @@ import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.common.resources.Resources;
-
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-
+import org.junit.jupiter.api.DisplayName;
+import java.nio.file.Path;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * Test importing Keras models with multiple Lamdba layers.
  *
  * @author Max Pumperla
  */
-public class KerasLambdaTest extends BaseDL4JTest {
+@DisplayName("Keras Lambda Test")
+class KerasLambdaTest extends BaseDL4JTest {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+    @TempDir
+    public Path testDir;
 
-    public class ExponentialLambda extends SameDiffLambdaLayer {
+    @DisplayName("Exponential Lambda")
+    class ExponentialLambda extends SameDiffLambdaLayer {
+
         @Override
-        public SDVariable defineLayer(SameDiff sd, SDVariable x) { return x.mul(x); }
+        public SDVariable defineLayer(SameDiff sd, SDVariable x) {
+            return x.mul(x);
+        }
 
         @Override
-        public InputType getOutputType(int layerIndex, InputType inputType) { return inputType; }
+        public InputType getOutputType(int layerIndex, InputType inputType) {
+            return inputType;
+        }
     }
 
-    public class TimesThreeLambda extends SameDiffLambdaLayer {
-        @Override
-        public SDVariable defineLayer(SameDiff sd, SDVariable x) { return x.mul(3); }
+    @DisplayName("Times Three Lambda")
+    class TimesThreeLambda extends SameDiffLambdaLayer {
 
         @Override
-        public InputType getOutputType(int layerIndex, InputType inputType) { return inputType; }
+        public SDVariable defineLayer(SameDiff sd, SDVariable x) {
+            return x.mul(3);
+        }
+
+        @Override
+        public InputType getOutputType(int layerIndex, InputType inputType) {
+            return inputType;
+        }
     }
-
 
     @Test
-    public void testSequentialLambdaLayerImport() throws Exception {
+    @DisplayName("Test Sequential Lambda Layer Import")
+    void testSequentialLambdaLayerImport() throws Exception {
         KerasLayer.registerLambdaLayer("lambda_1", new ExponentialLambda());
         KerasLayer.registerLambdaLayer("lambda_2", new TimesThreeLambda());
-
         String modelPath = "modelimport/keras/examples/lambda/sequential_lambda.h5";
-
-        try(InputStream is = Resources.asStream(modelPath)) {
-            File modelFile = testDir.newFile("tempModel" + System.currentTimeMillis() + ".h5");
+        try (InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = testDir.resolve("tempModel" + System.currentTimeMillis() + ".h5").toFile();
             Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            MultiLayerNetwork model = new KerasSequentialModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                    .enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
-
+            MultiLayerNetwork model = new KerasSequentialModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath()).enforceTrainingConfig(false).buildSequential().getMultiLayerNetwork();
             System.out.println(model.summary());
-            INDArray input = Nd4j.create(new int[]{10, 100});
-
+            INDArray input = Nd4j.create(new int[] { 10, 100 });
             model.output(input);
         } finally {
             KerasLayer.clearLambdaLayers();
@@ -93,25 +101,21 @@ public class KerasLambdaTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testModelLambdaLayerImport() throws Exception {
+    @DisplayName("Test Model Lambda Layer Import")
+    void testModelLambdaLayerImport() throws Exception {
         KerasLayer.registerLambdaLayer("lambda_3", new ExponentialLambda());
         KerasLayer.registerLambdaLayer("lambda_4", new TimesThreeLambda());
-
         String modelPath = "modelimport/keras/examples/lambda/model_lambda.h5";
-
-        try(InputStream is = Resources.asStream(modelPath)) {
-            File modelFile = testDir.newFile("tempModel" + System.currentTimeMillis() + ".h5");
+        try (InputStream is = Resources.asStream(modelPath)) {
+            File modelFile = testDir.resolve("tempModel" + System.currentTimeMillis() + ".h5").toFile();
             Files.copy(is, modelFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-            ComputationGraph model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath())
-                    .enforceTrainingConfig(false).buildModel().getComputationGraph();
-
+            ComputationGraph model = new KerasModel().modelBuilder().modelHdf5Filename(modelFile.getAbsolutePath()).enforceTrainingConfig(false).buildModel().getComputationGraph();
             System.out.println(model.summary());
-            INDArray input = Nd4j.create(new int[]{10, 784});
-
+            INDArray input = Nd4j.create(new int[] { 10, 784 });
             model.output(input);
         } finally {
-            KerasLayer.clearLambdaLayers(); // Clear all lambdas, so other tests aren't affected.
+            // Clear all lambdas, so other tests aren't affected.
+            KerasLayer.clearLambdaLayers();
         }
     }
-
 }

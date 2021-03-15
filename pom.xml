@@ -95,8 +95,8 @@
 
 
     <properties>
-        <maven.compiler.source>1.7</maven.compiler.source>
-        <maven.compiler.target>1.7</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.testTarget>1.8</maven.compiler.testTarget>
         <maven.compiler.testSource>1.8</maven.compiler.testSource>
         <encoding>UTF-8</encoding>
@@ -202,7 +202,7 @@
         <tensorflow.version>1.15.5</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
-        <archunit.version>0.14.1</archunit.version>
+        <archunit.version>0.17</archunit.version>
         <commons-compress.version>1.18</commons-compress.version>
         <commonsmath.version>3.5</commonsmath.version>
         <commonslang.version>3.6</commonslang.version>
@@ -224,7 +224,7 @@
         <spark.major.version>2</spark.major.version>
         <args4j.version>2.0.29</args4j.version>
         <slf4j.version>1.7.21</slf4j.version>
-        <junit.version>4.13</junit.version>
+        <junit.version>5.8.0-M1</junit.version>
         <archunit.version>0.14.1</archunit.version>
         <logback.version>1.2.3</logback.version>
         <jackson.version>2.10.1</jackson.version>
@@ -234,7 +234,7 @@
         <lombok.version>1.18.16</lombok.version>
         <cleartk.version>2.0.0</cleartk.version>
         <lucene-solr.version>7.7.1</lucene-solr.version>
-        <json.version>20131018</json.version>
+        <json.versiounitn>20131018</json.versiounitn>
         <google.protobuf.version>3.8.0</google.protobuf.version>
         <google.protobuf.solr.version>2.6.1</google.protobuf.solr.version>
         <failIfNoTests>false</failIfNoTests>
@@ -327,6 +327,30 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.vintage</groupId>
+                <artifactId>junit-vintage-engine</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-engine</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
             <dependency>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-stdlib-jdk8</artifactId>
@@ -614,28 +638,6 @@
 
         <plugins>
             <plugin>
-                <!-- Note this will not work if you run tests using -rf : and the nd4j module is not present. Ensure -rf: always starts from a point that includes nd4j.-->
-                <groupId>org.commonjava.maven.plugins</groupId>
-                <artifactId>directory-maven-plugin</artifactId>
-                <version>0.3.1</version>
-                <executions>
-                    <execution>
-                        <id>native-dir</id>
-                        <goals>
-                            <goal>directory-of</goal>
-                        </goals>
-                        <phase>initialize</phase>
-                        <configuration>
-                            <property>nd4j.basedir</property>
-                            <project>
-                                <groupId>org.nd4j</groupId>
-                                <artifactId>nd4j</artifactId>
-                            </project>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
                 <version>${maven-source-plugin.version}</version>
@@ -783,9 +785,6 @@
             <properties>
                 <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
-                <jumpy.test.skip>true</jumpy.test.skip>
-                <pydatavec.test.skip>true</pydatavec.test.skip>
-                <pydl4j.test.skip>true</pydl4j.test.skip>
                 <scala.test.skip>true</scala.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
@@ -801,9 +800,6 @@
             <properties>
                 <libnd4j.tests></libnd4j.tests>
                 <libnd4j.test.skip>true</libnd4j.test.skip>
-                <jumpy.test.skip>true</jumpy.test.skip>
-                <pydatavec.test.skip>true</pydatavec.test.skip>
-                <pydl4j.test.skip>true</pydl4j.test.skip>
                 <scala.test.skip>true</scala.test.skip>
                 <skipBackendChoice>true</skipBackendChoice>
                 <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
@@ -826,10 +822,6 @@
                     <version>${dl4j-test-resources.version}</version>
                     <classifier>${dl4j-test-resources.classifier}</classifier>
                     <scope>test</scope>
-                </dependency>
-                <dependency>
-                    <groupId>org.walkmod</groupId>
-                    <artifactId>junit4git</artifactId>
                 </dependency>
             </dependencies>
         </profile>

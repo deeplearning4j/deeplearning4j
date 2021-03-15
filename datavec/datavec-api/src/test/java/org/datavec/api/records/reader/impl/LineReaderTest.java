@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.datavec.api.records.reader.impl;
 
 import org.apache.commons.io.FileUtils;
@@ -31,10 +30,9 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.writable.Writable;
 import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.nd4j.common.tests.BaseND4JTest;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -45,34 +43,31 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import java.nio.file.Path;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
+@DisplayName("Line Reader Test")
+class LineReaderTest extends BaseND4JTest {
 
-public class LineReaderTest extends BaseND4JTest {
-
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
 
     @Test
-    public void testLineReader() throws Exception {
-        File tmpdir = testDir.newFolder();
+    @DisplayName("Test Line Reader")
+    void testLineReader(@TempDir Path tmpDir) throws Exception {
+        File tmpdir =  tmpDir.toFile();
         if (tmpdir.exists())
             tmpdir.delete();
         tmpdir.mkdir();
-
         File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp1.txt"));
         File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp2.txt"));
         File tmp3 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp3.txt"));
-
         FileUtils.writeLines(tmp1, Arrays.asList("1", "2", "3"));
         FileUtils.writeLines(tmp2, Arrays.asList("4", "5", "6"));
         FileUtils.writeLines(tmp3, Arrays.asList("7", "8", "9"));
-
         InputSplit split = new FileSplit(tmpdir);
-
         RecordReader reader = new LineRecordReader();
         reader.initialize(split);
-
         int count = 0;
         List<List<Writable>> list = new ArrayList<>();
         while (reader.hasNext()) {
@@ -81,34 +76,27 @@ public class LineReaderTest extends BaseND4JTest {
             list.add(l);
             count++;
         }
-
         assertEquals(9, count);
     }
 
     @Test
-    public void testLineReaderMetaData() throws Exception {
-        File tmpdir = testDir.newFolder();
-
+    @DisplayName("Test Line Reader Meta Data")
+    void testLineReaderMetaData(@TempDir Path tmpDir) throws Exception {
+        File tmpdir = tmpDir.toFile();
         File tmp1 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp1.txt"));
         File tmp2 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp2.txt"));
         File tmp3 = new File(FilenameUtils.concat(tmpdir.getPath(), "tmp3.txt"));
-
         FileUtils.writeLines(tmp1, Arrays.asList("1", "2", "3"));
         FileUtils.writeLines(tmp2, Arrays.asList("4", "5", "6"));
         FileUtils.writeLines(tmp3, Arrays.asList("7", "8", "9"));
-
         InputSplit split = new FileSplit(tmpdir);
-
         RecordReader reader = new LineRecordReader();
         reader.initialize(split);
-
         List<List<Writable>> list = new ArrayList<>();
         while (reader.hasNext()) {
             list.add(reader.next());
         }
         assertEquals(9, list.size());
-
-
         List<List<Writable>> out2 = new ArrayList<>();
         List<Record> out3 = new ArrayList<>();
         List<RecordMetaData> meta = new ArrayList<>();
@@ -124,13 +112,10 @@ public class LineReaderTest extends BaseND4JTest {
             assertEquals(uri, split.locations()[fileIdx]);
             count++;
         }
-
         assertEquals(list, out2);
-
         List<Record> fromMeta = reader.loadFromMetaData(meta);
         assertEquals(out3, fromMeta);
-
-        //try: second line of second and third files only...
+        // try: second line of second and third files only...
         List<RecordMetaData> subsetMeta = new ArrayList<>();
         subsetMeta.add(meta.get(4));
         subsetMeta.add(meta.get(7));
@@ -141,27 +126,22 @@ public class LineReaderTest extends BaseND4JTest {
     }
 
     @Test
-    public void testLineReaderWithInputStreamInputSplit() throws Exception {
-        File tmpdir = testDir.newFolder();
-
+    @DisplayName("Test Line Reader With Input Stream Input Split")
+    void testLineReaderWithInputStreamInputSplit(@TempDir Path testDir) throws Exception {
+        File tmpdir = testDir.toFile();
         File tmp1 = new File(tmpdir, "tmp1.txt.gz");
-
         OutputStream os = new GZIPOutputStream(new FileOutputStream(tmp1, false));
         IOUtils.writeLines(Arrays.asList("1", "2", "3", "4", "5", "6", "7", "8", "9"), null, os);
         os.flush();
         os.close();
-
         InputSplit split = new InputStreamInputSplit(new GZIPInputStream(new FileInputStream(tmp1)));
-
         RecordReader reader = new LineRecordReader();
         reader.initialize(split);
-
         int count = 0;
         while (reader.hasNext()) {
             assertEquals(1, reader.next().size());
             count++;
         }
-
         assertEquals(9, count);
     }
 }

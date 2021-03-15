@@ -19,17 +19,17 @@
  */
 package org.nd4j.onnxruntime.runner;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.common.io.ClassPathResource;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 
 public class OnnxRuntimeRunnerTests {
 

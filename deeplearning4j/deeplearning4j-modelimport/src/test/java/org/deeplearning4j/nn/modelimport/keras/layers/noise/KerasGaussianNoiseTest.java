@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.noise;
 
 import org.deeplearning4j.nn.conf.dropout.GaussianNoise;
@@ -26,33 +25,37 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasGaussianNoiseTest extends BaseDL4JTest {
+@DisplayName("Keras Gaussian Noise Test")
+class KerasGaussianNoiseTest extends BaseDL4JTest {
 
     String LAYER_NAME = "gaussian_noise";
+
     private final double STDDEV = 0.3;
 
     private Integer keras1 = 1;
+
     private Integer keras2 = 2;
+
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
-
     @Test
-    public void testGaussianNoiseLayer() throws Exception {
+    @DisplayName("Test Gaussian Noise Layer")
+    void testGaussianNoiseLayer() throws Exception {
         buildGaussianNoiseLayer(conf1, keras1);
         buildGaussianNoiseLayer(conf2, keras2);
     }
-
 
     private void buildGaussianNoiseLayer(KerasLayerConfiguration conf, Integer kerasVersion) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
@@ -62,10 +65,8 @@ public class KerasGaussianNoiseTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_GAUSSIAN_VARIANCE(), STDDEV);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         DropoutLayer layer = new KerasGaussianNoise(layerConfig).getGaussianNoiseLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         assertEquals(new GaussianNoise(STDDEV), layer.getIDropout());
     }
-
 }

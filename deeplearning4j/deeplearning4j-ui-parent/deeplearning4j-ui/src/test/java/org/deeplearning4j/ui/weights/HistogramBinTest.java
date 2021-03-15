@@ -21,21 +21,16 @@
 package org.deeplearning4j.ui.weights;
 
 import org.deeplearning4j.ui.model.weights.HistogramBin;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.math.BigDecimal;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class HistogramBinTest {
 
-    @Before
-    public void setUp() throws Exception {
-
-    }
 
     @Test
     public void testGetBins() throws Exception {

@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.recurrent;
 
 import org.deeplearning4j.nn.conf.dropout.Dropout;
@@ -35,41 +34,57 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.layers.embeddings.KerasEmbedding;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
-import org.junit.Assert;
-import org.junit.Test;
-
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasLSTMTest extends BaseDL4JTest {
+@DisplayName("Keras LSTM Test")
+class KerasLSTMTest extends BaseDL4JTest {
 
     private final String ACTIVATION_KERAS = "linear";
+
     private final String ACTIVATION_DL4J = "identity";
+
     private final String LAYER_NAME = "lstm_layer";
+
     private final String INIT_KERAS = "glorot_normal";
+
     private final IWeightInit INIT_DL4J = new WeightInitXavier();
+
     private final double L1_REGULARIZATION = 0.01;
+
     private final double L2_REGULARIZATION = 0.02;
+
     private final double DROPOUT_KERAS = 0.3;
+
     private final double DROPOUT_DL4J = 1 - DROPOUT_KERAS;
+
     private final int N_OUT = 13;
 
-    private Boolean[] returnSequences = new Boolean[]{true, false};
-    private Boolean[] maskZero = new Boolean[]{true, false};
+    private Boolean[] returnSequences = new Boolean[] { true, false };
+
+    private Boolean[] maskZero = new Boolean[] { true, false };
+
     private Integer keras1 = 1;
+
     private Integer keras2 = 2;
+
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testLstmLayer() throws Exception {
+    @DisplayName("Test Lstm Layer")
+    void testLstmLayer() throws Exception {
         for (Boolean rs : returnSequences) {
             buildLstmLayer(conf1, keras1, rs);
             buildLstmLayer(conf2, keras2, rs);
@@ -85,7 +100,6 @@ public class KerasLSTMTest extends BaseDL4JTest {
         double lstmForgetBiasDouble = 1.0;
         String lstmForgetBiasString = "one";
         boolean lstmUnroll = true;
-
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
         Map<String, Object> config = new HashMap<>();
@@ -95,7 +109,6 @@ public class KerasLSTMTest extends BaseDL4JTest {
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
             config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
-
         } else {
             Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
@@ -107,7 +120,6 @@ public class KerasLSTMTest extends BaseDL4JTest {
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
         config.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), rs);
-
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
         config.put(conf.getLAYER_FIELD_FORGET_BIAS_INIT(), lstmForgetBiasString);
@@ -115,7 +127,6 @@ public class KerasLSTMTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_UNROLL(), lstmUnroll);
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-
         LSTM layer;
         LastTimeStep lts;
         KerasLSTM kerasLstm = new KerasLSTM(layerConfig);
@@ -137,15 +148,12 @@ public class KerasLSTMTest extends BaseDL4JTest {
         assertEquals(new Dropout(DROPOUT_DL4J), layer.getIDropout());
         assertEquals(lstmForgetBiasDouble, layer.getForgetGateBiasInit(), 0.0);
         assertEquals(N_OUT, layer.getNOut());
-
     }
 
-    private void buildMaskZeroLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean maskZero)
-            throws Exception {
+    private void buildMaskZeroLstmLayer(KerasLayerConfiguration conf, Integer kerasVersion, Boolean maskZero) throws Exception {
         String innerActivation = "hard_sigmoid";
         String lstmForgetBiasString = "one";
         boolean lstmUnroll = true;
-
         Map<String, Object> layerConfig = new HashMap<>();
         layerConfig.put(conf.getLAYER_FIELD_CLASS_NAME(), conf.getLAYER_CLASS_NAME_LSTM());
         Map<String, Object> config = new HashMap<>();
@@ -155,7 +163,6 @@ public class KerasLSTMTest extends BaseDL4JTest {
         if (kerasVersion == 1) {
             config.put(conf.getLAYER_FIELD_INNER_INIT(), INIT_KERAS);
             config.put(conf.getLAYER_FIELD_INIT(), INIT_KERAS);
-
         } else {
             Map<String, Object> init = new HashMap<>();
             init.put("class_name", conf.getINIT_GLOROT_NORMAL());
@@ -166,28 +173,22 @@ public class KerasLSTMTest extends BaseDL4JTest {
         W_reg.put(conf.getREGULARIZATION_TYPE_L1(), L1_REGULARIZATION);
         W_reg.put(conf.getREGULARIZATION_TYPE_L2(), L2_REGULARIZATION);
         config.put(conf.getLAYER_FIELD_W_REGULARIZER(), W_reg);
-
         config.put(conf.getLAYER_FIELD_DROPOUT_W(), DROPOUT_KERAS);
         config.put(conf.getLAYER_FIELD_DROPOUT_U(), 0.0);
         config.put(conf.getLAYER_FIELD_FORGET_BIAS_INIT(), lstmForgetBiasString);
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), N_OUT);
         config.put(conf.getLAYER_FIELD_UNROLL(), lstmUnroll);
         config.put(conf.getLAYER_FIELD_RETURN_SEQUENCES(), true);
-
         layerConfig.put(conf.getLAYER_FIELD_CONFIG(), config);
         layerConfig.put(conf.getLAYER_FIELD_KERAS_VERSION(), kerasVersion);
-        layerConfig.put(conf.getLAYER_FIELD_INBOUND_NODES(),
-                Arrays.asList(Arrays.asList(
-                        Arrays.asList("embedding"))));
+        layerConfig.put(conf.getLAYER_FIELD_INBOUND_NODES(), Arrays.asList(Arrays.asList(Arrays.asList("embedding"))));
         KerasEmbedding embedding = getEmbedding(maskZero);
         Map<String, KerasEmbedding> previousLayers = Collections.singletonMap("embedding", embedding);
-
         KerasLSTM kerasLstm = new KerasLSTM(layerConfig, previousLayers);
-        Assert.assertEquals(kerasLstm.getLayer() instanceof MaskZeroLayer, maskZero);
+        Assertions.assertEquals(kerasLstm.getLayer() instanceof MaskZeroLayer, maskZero);
     }
 
-    private KerasEmbedding getEmbedding(boolean maskZero)
-            throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
+    private KerasEmbedding getEmbedding(boolean maskZero) throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         KerasEmbedding embedding = new KerasEmbedding();
         embedding.setZeroMasking(maskZero);
         return embedding;

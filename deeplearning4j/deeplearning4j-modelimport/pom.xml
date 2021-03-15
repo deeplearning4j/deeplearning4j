@@ -81,9 +81,13 @@
             <version>${project.version}</version>
         </dependency>
         <!-- For unit tests -->
+            <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+        </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
         </dependency>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -167,7 +171,7 @@
 
                                 For testing large zoo models, this may not be enough (so comment it out).
                             -->
-                            <argLine> "</argLine>
+                            <argLine></argLine>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -219,7 +223,6 @@
                                 Maximum heap size was set to 6g, as a minimum required value for tests run.
                                 Depending on a build machine, default value is not always enough.
                             -->
-                            <argLine> -Djava.library.path="${nd4j.basedir}/nd4j-backends/nd4j-backend-impls/nd4j-cuda/target/classes"</argLine>
                         </configuration>
                     </plugin>
                 </plugins>

@@ -17,7 +17,6 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.deeplearning4j.nn.modelimport.keras.layers.embeddings;
 
 import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
@@ -26,30 +25,39 @@ import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-
 import java.util.*;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
  * @author Max Pumperla
  */
-public class KerasEmbeddingTest extends BaseDL4JTest {
+@DisplayName("Keras Embedding Test")
+class KerasEmbeddingTest extends BaseDL4JTest {
 
     private final String LAYER_NAME = "embedding_sequence_layer";
+
     private final String INIT_KERAS = "glorot_normal";
-    private final int[] INPUT_SHAPE = new int[]{100, 20};
-    private static final boolean[] MASK_ZERO = new boolean[]{false, true};
+
+    private final int[] INPUT_SHAPE = new int[] { 100, 20 };
+
+    private static final boolean[] MASK_ZERO = new boolean[] { false, true };
+
     private Integer keras1 = 1;
+
     private Integer keras2 = 2;
+
     private Keras1LayerConfiguration conf1 = new Keras1LayerConfiguration();
+
     private Keras2LayerConfiguration conf2 = new Keras2LayerConfiguration();
 
     @Test
-    public void testEmbeddingLayer() throws Exception {
+    @DisplayName("Test Embedding Layer")
+    void testEmbeddingLayer() throws Exception {
         for (boolean mz : MASK_ZERO) {
             buildEmbeddingLayer(conf1, keras1, mz);
             buildEmbeddingLayer(conf2, keras2, mz);
@@ -57,16 +65,16 @@ public class KerasEmbeddingTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testEmbeddingLayerSetWeightsMaskZero() throws Exception {
-        //GIVEN keras embedding with mask zero true
+    @DisplayName("Test Embedding Layer Set Weights Mask Zero")
+    void testEmbeddingLayerSetWeightsMaskZero() throws Exception {
+        // GIVEN keras embedding with mask zero true
         KerasEmbedding embedding = buildEmbeddingLayer(conf1, keras1, true);
-        //WHEN
+        // WHEN
         embedding.setWeights(Collections.singletonMap(conf1.getLAYER_FIELD_EMBEDDING_WEIGHTS(), Nd4j.ones(INPUT_SHAPE)));
-        //THEN first row is set to zeros
+        // THEN first row is set to zeros
         INDArray weights = embedding.getWeights().get(DefaultParamInitializer.WEIGHT_KEY);
-        assertEquals(embedding.getWeights().get(DefaultParamInitializer.WEIGHT_KEY).columns(),INPUT_SHAPE[1]);
+        assertEquals(embedding.getWeights().get(DefaultParamInitializer.WEIGHT_KEY).columns(), INPUT_SHAPE[1]);
     }
-
 
     private KerasEmbedding buildEmbeddingLayer(KerasLayerConfiguration conf, Integer kerasVersion, boolean maskZero) throws Exception {
         Map<String, Object> layerConfig = new HashMap<>();
@@ -78,7 +86,6 @@ public class KerasEmbeddingTest extends BaseDL4JTest {
         config.put(conf.getLAYER_FIELD_INPUT_DIM(), inputDim);
         config.put(conf.getLAYER_FIELD_INPUT_LENGTH(), inputLength);
         config.put(conf.getLAYER_FIELD_OUTPUT_DIM(), outputDim);
-
         List<Integer> inputShape = new ArrayList<>(INPUT_SHAPE.length);
         for (int i : INPUT_SHAPE) {
             inputShape.add(i);
@@ -98,7 +105,6 @@ public class KerasEmbeddingTest extends BaseDL4JTest {
         KerasEmbedding kerasEmbedding = new KerasEmbedding(layerConfig, false);
         assertEquals(kerasEmbedding.getNumParams(), 1);
         assertEquals(kerasEmbedding.isZeroMasking(), maskZero);
-
         EmbeddingSequenceLayer layer = kerasEmbedding.getEmbeddingLayer();
         assertEquals(LAYER_NAME, layer.getLayerName());
         return kerasEmbedding;

@@ -17,56 +17,50 @@
  *  * SPDX-License-Identifier: Apache-2.0
  *  *****************************************************************************
  */
-
 package org.datavec.image.transform;
 
 import org.bytedeco.javacv.Frame;
 import org.datavec.image.data.ImageWritable;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import static org.junit.Assert.assertEquals;
+@DisplayName("Resize Image Transform Test")
+class ResizeImageTransformTest {
 
-public class ResizeImageTransformTest {
-    @Before
-    public void setUp() throws Exception {
-
+    @BeforeEach
+    void setUp() throws Exception {
     }
 
     @Test
-    public void testResizeUpscale1() throws Exception {
+    @DisplayName("Test Resize Upscale 1")
+    void testResizeUpscale1() throws Exception {
         ImageWritable srcImg = TestImageTransform.makeRandomImage(32, 32, 3);
-
         ResizeImageTransform transform = new ResizeImageTransform(200, 200);
-
         ImageWritable dstImg = transform.transform(srcImg);
-
         Frame f = dstImg.getFrame();
         assertEquals(f.imageWidth, 200);
         assertEquals(f.imageHeight, 200);
-
-        float[] coordinates = {100, 200};
+        float[] coordinates = { 100, 200 };
         float[] transformed = transform.query(coordinates);
         assertEquals(200f * 100 / 32, transformed[0], 0);
         assertEquals(200f * 200 / 32, transformed[1], 0);
     }
 
     @Test
-    public void testResizeDownscale() throws Exception {
+    @DisplayName("Test Resize Downscale")
+    void testResizeDownscale() throws Exception {
         ImageWritable srcImg = TestImageTransform.makeRandomImage(571, 443, 3);
-
         ResizeImageTransform transform = new ResizeImageTransform(200, 200);
-
         ImageWritable dstImg = transform.transform(srcImg);
-
         Frame f = dstImg.getFrame();
         assertEquals(f.imageWidth, 200);
         assertEquals(f.imageHeight, 200);
-
-        float[] coordinates = {300, 400};
+        float[] coordinates = { 300, 400 };
         float[] transformed = transform.query(coordinates);
         assertEquals(200f * 300 / 443, transformed[0], 0);
         assertEquals(200f * 400 / 571, transformed[1], 0);
     }
-
 }
